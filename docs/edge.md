@@ -6,7 +6,7 @@ from HTTP clients e.g. Firefox telemetry.
 ## General Data Flow
 
 HTTP submissions come in from the wild, hit a load balancer, then optionally an
-Nginx proxy, then the HTTP Edge Server described in this document. Data is
+nginx proxy, then the HTTP edge server described in this document. Data is
 accepted via a POST/PUT request from clients, which the server will wrap in a
 [PubSub message](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage)
 and forward to Google Cloud PubSub, where any further processing, analysis, and storage will
@@ -17,7 +17,7 @@ be handled.
 Namespaces are used to control the processing of data from different types of
 clients, from the metadata that is collected to the destinations where the data
 is written, processed and accessible. Data sent to a namespace that is not
-specifially configured is assumed to be in the
+specifically configured is assumed to be in the
 [non-Telemetry JSON format described here](https://docs.telemetry.mozilla.org/cookbooks/new_ping.html).
 To request a new namespace configuration file a bug against the
 [Data Platform Team](https://bugzilla.mozilla.org/enter_bug.cgi?product=Data%20Platform%20and%20Tools&component=Pipeline%20Ingestion)
@@ -29,12 +29,12 @@ configuration options.
 The message is written to PubSub. If the message cannot be written to PubSub it
 is written to a disk queue that will periodically retry writing to PubSub.
 
-#### Edge Server PubSub Message Schema
+### Edge Server PubSub Message Schema
 
 ```
 required string data                   // base64 encoded body
-required group  attributes {
-  required string time                 // server time, example: "2018-03-12 21:02:18"
+required group attributes {
+  required string submission_timestamp // server time, ISO 8601 with microseconds and timezone "Z", example: "2018-03-12T21:02:18.123456Z"
   required string uri                  // example: "/submit/telemetry/6c49ec73-4350-45a0-9c8a-6c8f5aded0cf/main/Firefox/58.0.2/release/20180206200532"
   required string protocol             // example: "HTTP/1.1"
   required string method               // example: "POST"
@@ -98,8 +98,8 @@ submissions. This is *not* intended to be the `clientId` field from Telemetry.
 ### POST/PUT Response codes
 
 * *200* - ok, request accepted into the pipeline
-* *400* - bad request, for example an un-encoded space in the URL
-* *404* - not found, for example using a telemetry format url in a non-telemetry namespace or vice-versa
+* *400* - bad request, for example an unencoded space in the URL
+* *404* - not found, for example using a telemetry format URL in a non-telemetry namespace or vice-versa
 * *411* - missing content-length header
 * *413* - request body too large (note that if we have badly-behaved clients that retry on `4XX`, we should send back 202 on body/path too long).
 * *414* - request path too long (see above)
@@ -141,9 +141,16 @@ the message is forwarded to a validated PubSub topic.
 ### Data Retention
 
 The edge server only stores data when PubSub cannot be reached, and removes
-data after it is successfully written to PubSub. Downscaling will be disabled
+data after it is successfully written to PubSub. Down scaling will be disabled
 for the Kubernetes pod and cluster when data is being stored, so that data is
 not lost.
+
+### Submission Timestamp Format
+
+`submission_timestamp` is formatted as ISO 8601 with microseconds and timezone,
+because it is compatible with BigQuery's
+[Timestamp Type](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp-type),
+so that the field doesn't need transformation.
 
 ## Testing
 
@@ -154,31 +161,32 @@ The edge server must have tests covering the full expected behavior.
 CI will test all of the behavior described in [Server Request/Response](#server-request-response),
 including, but not limited to:
 
- * api specfication
-   * hitting every valid url pattern
-   * hitting every listed response code
-   * supplying both gzipped and non-gzipped payloads
- * fuzzing the api with potentially invalid requests
- * handling mocked pubsub outages
-   * requests to pubsub hang after tcp connect
-   * requests to pubsub cannot reach pubsub ips
-   * requests to pubsub cannot resolve pubsub dns
-   * requests to pubsub return 500
-   * % of requests to pubsub return 500
-   * control test with no outage, checking that disk queue isn't used
-   * all above with disk queue artificially permanently full
+ * API specification
+   * Hitting every valid URL pattern
+   * Hitting every listed response code
+   * Supplying both gzipped and non-gzipped payloads
+   * Present, absent, and gibberish optional attribute fields
+ * Fuzzing the API with potentially invalid requests
+ * Handling mocked PubSub outages
+   * Requests to PubSub hang after TCP connect
+   * Requests to PubSub cannot reach PubSub IPs
+   * Requests to PubSub cannot resolve PubSub DNS
+   * Requests to PubSub return 500
+   * % of requests to PubSub return 500
+   * Control test with no outage, checking that disk queue isn't used
+   * All above with disk queue artificially permanently full
 
-### Pre deployment testing
+### Pre-deployment Testing
 
 Before being deployed to production each release should have these tests run:
 
  * Load test both with and without a
-   pubsub outage for each of the outage types listed in [CI Testing](#ci-testing)
-   * assert that disk queue wasn't used during the non-outage test
-   * use 1.5x peak production traffic volume over the last month. As of
+   PubSub outage for each of the outage types listed in [CI Testing](#ci-testing)
+   * Assert that disk queue wasn't used during the non-outage test
+   * Use 1.5x peak production traffic volume over the last month. As of
      2018-08-01 peak production traffic volume is about 11K req/s.
-   * check that disk queue can handle PubSub returning 500 for at least 1.5x
+   * Check that disk queue can handle PubSub returning 500 for at least 1.5x
      the longest PubSub outage in the last year. As of 2018-08-01 the longest
      outage was about 4.5 hours.
  * Black box testing against the load balancer through PubSub sections,
-   covering the api specification and fuzzing scenarios from [CI Testing](#ci-testing)
+   covering the API specification and fuzzing scenarios from [CI Testing](#ci-testing)
