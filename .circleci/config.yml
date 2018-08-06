@@ -1,0 +1,15 @@
+version: 2
+jobs:
+  spelling:
+    docker:
+    - image: mozilla/markdown-spellcheck
+    steps:
+    - checkout
+    - run:
+        name: Spell Check
+        command: mdspell --ignore-numbers --en-us --report '**/*.md'
+workflows:
+  version: 2
+  build:
+    jobs:
+    - spelling
