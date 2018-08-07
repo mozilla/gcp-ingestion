@@ -125,7 +125,12 @@ incidence of such things.
 Since the actual message is not examined by the edge server the only failures
 that occur are defined by the response status codes above. Messages are only
 forwarded to the pipeline when a response code of 200 is returned to the
- client.
+client.
+
+### PubSub Topics
+
+All messages that sent a response code of 200 are forwarded to a single PubSub
+topic for validation and landfill.
 
 ### GeoIP Lookups
 
