@@ -16,6 +16,7 @@ GeoIP
 GroupByKey
 gzip
 gzipped
+HTTPS
 IPs
 JSON
 Kubernetes
@@ -30,6 +31,7 @@ PubSub
 Redis
 TCP
 timestamp
+TLS
 unencoded
 URL
 UUID

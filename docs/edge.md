@@ -95,6 +95,17 @@ Note that `docId` above is a unique document ID, which is used for de-duping
 submissions. This is *not* intended to be the `clientId` field from Telemetry.
 `docId` is required and must be a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier).
 
+#### Legacy Systems
+
+Accept [TLS Error Reports](https://wiki.mozilla.org/SecurityEngineering/TLS_Error_Reports)
+as POST or PUT to `/submit/sslreports` with no `docType`, `docVersion`, or
+`docId`.
+
+Accept [Stub Installer pings](https://firefox-source-docs.mozilla.org/browser/installer/windows/installer/StubPing.html)
+as GET to `/stub/[docVersion]/[dimensions]`, with no `docType` or `docId`, and
+are allowed over both HTTP and HTTPS. Although this endpoint is for GET
+requests, it uses [POST/PUT Response codes](#post-put-response-codes).
+
 ### POST/PUT Response codes
 
 * *200* - ok, request accepted into the pipeline
