@@ -103,7 +103,7 @@ as POST or PUT to `/submit/sslreports` with no `docType`, `docVersion`, or
 
 Accept [Stub Installer pings](https://firefox-source-docs.mozilla.org/browser/installer/windows/installer/StubPing.html)
 as GET to `/stub/[docVersion]/[dimensions]`, with no `docType` or `docId`, and
-over both HTTP and HTTPS. Use [POST/PUT Response codes](#post-put-response-codes),
+over both HTTP and HTTPS. Use [POST/PUT Response codes](#postput-response-codes),
 even though this endpoint is for GET requests.
 
 ### POST/PUT Response codes
@@ -169,7 +169,7 @@ The edge server must have tests covering the full expected behavior.
 
 ### CI Testing
 
-CI will test all of the behavior described in [Server Request/Response](#server-request-response),
+CI will test all of the behavior described in [Server Request/Response](#server-requestresponse),
 including, but not limited to:
 
  * API specification
