@@ -18,17 +18,17 @@ in the Structured Ingestion pipeline.
 
 ### Implementation
 
-The above steps will be executed as a single Dataflow job that can accept
-either a streaming input from PubSub or a batch input from Cloud Storage.
-Message deduplication will be done by checking for the presence of ids as keys
-in Cloud Memory Store (managed Redis), and adding ids to Memory Store after
-successful delivery to PubSub.
+Execute the above steps as a single Dataflow job that can accept either a
+streaming input from PubSub or a batch input from Cloud Storage. Deduplicate
+messages by checking for the presence of `docId` as a key in Cloud Memory Store
+(managed Redis), and adding `docId` to Memory Store after successful delivery
+to PubSub.
 
 ### Validation Errors
 
-All messages that are rejected at any step of the Data Flow above will be
-forwarded to a PubSub error topic, for backfill and monitoring purposes.
-This includes duplicate messages based on `docId`.
+Forward all messages that are rejected at any step of the Data Flow above to a
+PubSub error topic, for backfill and monitoring purposes. This includes
+duplicate messages based on `docId`.
 
 #### Error message schema
 
@@ -75,32 +75,33 @@ required group metadata {
 
 ### Message Acks
 
-Messages should only be acknowledged in the PubSub raw topic subscription after
-delivery to either a validated topic or the error topic.
+Only acknowledge messages in the PubSub raw topic subscription after delivery
+to either a validated topic or the error topic.
 
-If this is not possible then any time a message is not successfully delivered
-to PubSub it should by treated as lost data and the appropriate time window
-will be backfilled from Cloud Storage in batch mode, and appropriate steps will
-be taken downstream to handle the backfill.
+If that is not possible then any time a message is not successfully delivered
+to PubSub treat it as lost data and backfill the appropriate time window from
+Cloud Storage in batch mode, and take appropriate steps downstream to handle
+the backfill.
 
-Deployments should always terminate functional pipelines using the `drain`
-method, to ensure ack'd messages are fully delivered.
+Always use the `drain` method to terminate functional pipelines, to ensure
+ack'd messages are fully delivered whenever possible.
 
 ### Deduplication
 
-Each `docId` will be allowed through "at least once", and only be
-rejected as a duplicate if we have completed delivery of a message with the
-same `docId`. Duplicates will be considered errors and sent to the error topic.
-"Exactly once" semantics can be applied to derived data sets using SQL in
-BigQuery, and GroupByKey in Dataflow and Spark.
+Allow each `docId` through "at least once", and only reject it as a duplicate
+if we have completed delivery of a message with the same `docId`. Treat
+duplicates as errors and send them to the error topic.
+
+"Exactly once" semantics can be achieved in later stages of the pipeline using
+SQL in BigQuery, and GroupByKey in Dataflow and Spark.
 
 ## Testing
 
-The validation service must have tests covering the full expected behavior.
+Test the full expected behavior of the service.
 
 ### CI Testing
 
-CI will test all of the behavior described in [Data Flow](#data-flow)
+Run CI tests for all of the behavior described in [Data Flow](#data-flow)
 including, but not limited to:
 
  * A valid message for every combination of
@@ -124,14 +125,13 @@ including, but not limited to:
 
 ### Pre-deployment Testing
 
-Before being deployed to production each release should have these tests run:
+Run the following tests for each release before deploying to production:
 
  * CI Tests using actual Google Cloud services
  * Load test
-   * With and without a simulated PubSub outage.
+   * Simulate a PubSub outage.
    * Use 1.5x peak production traffic volume over the last month. As of
      2018-08-01 peak production traffic volume is about 11K req/s.
-   * Handle PubSub returning 500 for at least 1.5x the longest PubSub outage in
-     the last year. As of 2018-08-01 the longest outage was about 4.5 hours.
-   * Non-outage load tests for 50% invalid messages and 5% invalid messages, with
-     time limits to ensure that we aren't incurring excessive processing delays.
+   * Use 50% invalid messages and 5% invalid messages
+   * Impose a time limit to ensure that we aren't incurring excessive
+     processing delays.

@@ -6,8 +6,9 @@ from HTTP clients e.g. Firefox telemetry.
 ## General Data Flow
 
 HTTP submissions come in from the wild, hit a load balancer, then optionally an
-nginx proxy, then the HTTP edge server described in this document. Data is
-accepted via a POST/PUT request from clients, which the server will wrap in a
+nginx proxy, then the HTTP edge server described in this document.
+
+Accept data via a POST/PUT request from clients, wrap it in a
 [PubSub message](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage)
 and forward to Google Cloud PubSub, where any further processing, analysis, and storage will
 be handled.
@@ -16,18 +17,20 @@ be handled.
 
 Namespaces are used to control the processing of data from different types of
 clients, from the metadata that is collected to the destinations where the data
-is written, processed and accessible. Data sent to a namespace that is not
-specifically configured is assumed to be in the
-[non-Telemetry JSON format described here](https://docs.telemetry.mozilla.org/cookbooks/new_ping.html).
-To request a new namespace configuration file a bug against the
+is written, processed and accessible.
+
+New namespace configurations are requested by filing a bug against the
 [Data Platform Team](https://bugzilla.mozilla.org/enter_bug.cgi?product=Data%20Platform%20and%20Tools&component=Pipeline%20Ingestion)
 with a short description of what the namespace will be used for and the desired
 configuration options.
 
+Assume data sent to a namespace that is not specifically configured to be in the
+[non-Telemetry JSON format described here](https://docs.telemetry.mozilla.org/cookbooks/new_ping.html).
+
 ### Forwarding to the pipeline
 
-The message is written to PubSub. If the message cannot be written to PubSub it
-is written to a disk queue that will periodically retry writing to PubSub.
+Write messages to PubSub. If the message cannot be written to PubSub, write it
+to a disk queue that will periodically retry writing to PubSub.
 
 ### Edge Server PubSub Message Schema
 
@@ -91,9 +94,9 @@ Specific non-Telemetry example:
 
 `/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049`
 
-Note that `docId` above is a unique document ID, which is used for de-duping
+Note that `docId` above is a unique document ID used to deduplicate
 submissions. This is *not* intended to be the `clientId` field from Telemetry.
-`docId` is required and must be a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier).
+`docId` is a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier).
 
 #### Legacy Systems
 
@@ -125,51 +128,47 @@ even though this endpoint is for GET requests.
 
 ### Compression
 
-It is not desirable to do decompression on the edge node. We want to pass along
-messages from the HTTP Edge node without "cracking the egg" of the payload.
+Do not do decompression on the edge node. We want to pass along messages from
+the HTTP Edge node without "cracking the egg" of the payload.
 
-We may also receive badly formed payloads, and we will want to track the
-incidence of such things.
+We may receive badly formed payloads, and we will want to track the incidence
+of such things.
 
 ### Bad Messages
 
-Since the actual message is not examined by the edge server the only failures
-that occur are defined by the response status codes above. Messages are only
-forwarded to the pipeline when a response code of 200 is returned to the
-client.
+Do not examine the actual message, so that the only failures that occur are
+defined by the response status codes above. Only forward messages to the
+pipeline when a response code of 200 is returned to the client.
 
 ### PubSub Topics
 
-All messages that sent a response code of 200 are forwarded to a single PubSub
-topic for validation and landfill.
+Forward all messages that sent a response code of 200 to a single PubSub topic.
 
 ### GeoIP Lookups
 
-No GeoIP lookup is performed by the edge server. If a client IP is available
-then the PubSub consumer performs the lookup and then discards the IP before
-the message is forwarded to a validated PubSub topic.
+Do not perform a GeoIP lookup. If a client IP is available then the PubSub
+consumer performs the lookup and then discards the IP before the message is
+forwarded to a validated PubSub topic.
 
 ### Data Retention
 
-The edge server only stores data when PubSub cannot be reached, and removes
-data after it is successfully written to PubSub. Down scaling will be disabled
-for the Kubernetes pod and cluster when data is being stored, so that data is
-not lost.
+Only store data when PubSub cannot be reached, and remove data after it is
+successfully written to PubSub. Disable down scaling for the Kubernetes pod
+and cluster when data is being stored, so that data is not lost.
 
 ### Submission Timestamp Format
 
-`submission_timestamp` is formatted as ISO 8601 with microseconds and timezone,
-because it is compatible with BigQuery's
-[Timestamp Type](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp-type),
-so that the field doesn't need transformation.
+Format `submission_timestamp` as ISO 8601 with microseconds and timezone,
+because so that the field doesn't need transformation to be used as BigQuery's
+[Timestamp Type](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp-type).
 
 ## Testing
 
-The edge server must have tests covering the full expected behavior.
+Test the full expected behavior of the server.
 
 ### CI Testing
 
-CI will test all of the behavior described in [Server Request/Response](#server-requestresponse),
+Run CI tests for all of the behavior described in [Server Request/Response](#server-requestresponse),
 including, but not limited to:
 
  * API specification
@@ -189,15 +188,15 @@ including, but not limited to:
 
 ### Pre-deployment Testing
 
-Before being deployed to production each release should have these tests run:
+Run the following tests for each release before deploying to production:
 
- * Load test both with and without a
-   PubSub outage for each of the outage types listed in [CI Testing](#ci-testing)
+ * Load test both with and without a PubSub outage for each of the outage types
+   listed in [CI Testing](#ci-testing)
    * Assert that disk queue wasn't used during the non-outage test
    * Use 1.5x peak production traffic volume over the last month. As of
      2018-08-01 peak production traffic volume is about 11K req/s.
    * Check that disk queue can handle PubSub returning 500 for at least 1.5x
      the longest PubSub outage in the last year. As of 2018-08-01 the longest
      outage was about 4.5 hours.
- * Black box testing against the load balancer through PubSub sections,
-   covering the API specification and fuzzing scenarios from [CI Testing](#ci-testing)
+ * Black box test against the load balancer through PubSub sections, covering
+   the API specification and fuzzing scenarios from [CI Testing](#ci-testing).
