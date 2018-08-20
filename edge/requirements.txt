@@ -1,0 +1,10 @@
+blinker==1.4
+dockerflow==2018.4.0
+Flask==0.12
+google-cloud-pubsub==0.37.1
+gunicorn==19.8.1
+pytest-mypy==0.3.2
+pytest==3.7.2
+pytest-cov==2.5.1
+pytest-flake8==1.0.2
+python-dateutil==2.7.3
