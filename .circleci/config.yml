@@ -1,3 +1,8 @@
+env_vars: &env
+  PUBSUB_PORT: 8085
+  EDGE_PORT: 8000
+  ROUTE_TABLE: '[["/submit/<path:suffix>","projects/test/topics/test"]]'
+
 version: 2
 jobs:
   spelling:
@@ -8,8 +13,76 @@ jobs:
     - run:
         name: Spell Check
         command: mdspell --ignore-numbers --en-us --report '**/*.md'
+  edge:
+    docker:
+    - image: docker:18.05.0-ce
+    steps:
+    - checkout
+    - setup_remote_docker:
+        docker_layer_caching: true
+    - run:
+        name: Create version.json
+        command: >-
+          printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n'
+          "$CIRCLE_SHA1"
+          "${CIRCLE_TAG-}"
+          "$CIRCLE_PROJECT_USERNAME"
+          "$CIRCLE_PROJECT_REPONAME"
+          "$CIRCLE_BUILD_URL"
+          > edge/version.json
+    - run:
+        name: Build Docker Container
+        command: docker build -t mozilla/edge:build edge
+    - run:
+        name: Create Docker Network
+        command: docker network ls --format '{{.Name}}' | grep -qx edge || docker network create edge
+    - run:
+        name: Start PubSub Emulator
+        command: >-
+          docker run
+          --detach
+          --network edge
+          --name pubsub
+          google/cloud-sdk
+          gcloud beta emulators pubsub start --host-port 0.0.0.0:$PUBSUB_PORT
+        environment: *env
+    - run:
+        name: Run Server
+        command: >-
+          docker run
+          --detach
+          --env PORT=$EDGE_PORT
+          --env PUBSUB_EMULATOR_HOST=pubsub:$PUBSUB_PORT
+          --env ROUTE_TABLE=$ROUTE_TABLE
+          --env CREATE_TOPICS=yes
+          --network edge
+          --name edge
+          mozilla/edge:build
+        environment: *env
+    - run:
+        name: PyTest
+        command: >-
+          docker run
+          --rm
+          --tty
+          --interactive
+          --env PUBSUB_EMULATOR_HOST=pubsub:$PUBSUB_PORT
+          --env ROUTE_TABLE=$ROUTE_TABLE
+          --network edge
+          mozilla/edge:build
+          py.test
+          --server http://edge:8000
+          --create-pubsub-resources
+          --flake8
+          --mypy --mypy-ignore-missing-imports
+        environment: *env
+    - run:
+        name: Remove Background Containers
+        command: docker rm -f edge pubsub
+        when: always
 workflows:
   version: 2
   build:
     jobs:
     - spelling
+    - edge
