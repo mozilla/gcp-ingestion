@@ -51,7 +51,7 @@ jobs:
           --detach
           --network ingestion-edge
           --name pubsub
-          google/cloud-sdk
+          mozilla/gcloud-sdk-emulators
           gcloud beta emulators pubsub start --host-port 0.0.0.0:$PUBSUB_PORT
         environment: *env
     - run:
