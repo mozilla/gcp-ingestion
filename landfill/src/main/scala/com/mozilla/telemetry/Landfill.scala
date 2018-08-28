@@ -12,10 +12,9 @@ import org.apache.beam.sdk.io.TextIO
 import org.apache.beam.sdk.io.gcp.pubsub.{PubsubIO, PubsubMessage}
 import org.apache.beam.sdk.options.Validation.Required
 import org.apache.beam.sdk.options.{Default, Description, PipelineOptions, PipelineOptionsFactory, ValueProvider}
-import org.apache.beam.sdk.transforms.DoFn
-import org.apache.beam.sdk.transforms.DoFn.{Element, ProcessElement}
-import org.apache.beam.sdk.transforms.ParDo
+import org.apache.beam.sdk.transforms.MapElements
 import org.apache.beam.sdk.transforms.windowing.{FixedWindows, Window}
+import org.apache.beam.sdk.values.{TypeDescriptor, TypeDescriptors}
 import org.apache.beam.sdk.values.PCollection
 import org.joda.time.Duration // scalastyle:ignore
 
@@ -26,10 +25,24 @@ object Landfill {
     def getInputType: String
     def setInputType(path: String)
 
+    @Description("File format for --inputType=file, must be json (each line"
+      + " contains payload[String] and attributeMap[String,String]) or text"
+      + " (each line is payload)")
+    @Default.String("json")
+    def getInputFileFormat: String
+    def setInputFileFormat(path: String)
+
     @Description("Type of --input, must be pubsub, file or stdout")
     @Default.String("file")
     def getOutputType: String
     def setOutputType(path: String)
+
+    @Description("File format for --outputType=file|stdout, must be json (each"
+      + " line contains payload[String] and attributeMap[String,String]) or"
+      + " text (each line is payload)")
+    @Default.String("json")
+    def getOutputFileFormat: String
+    def setOutputFileFormat(path: String)
 
     @Description("Fixed window duration, in minutes")
     @Default.Long(10)
@@ -71,59 +84,89 @@ object Landfill {
   def readInput(pipeline: Pipeline, options: Options): PCollection[PubsubMessage] = {
     options.getInputType.toLowerCase match {
       case "pubsub" => pipeline
-        .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput))
-      case "file" => pipeline
-        .apply(TextIO.read.from(options.getInput))
-        .apply(ParseJsons
-          .of(classOf[PubsubMessage])
-          .withMapper(new ObjectMapper()
-            .addMixIn(classOf[PubsubMessage], classOf[PubsubMessageMixin])))
-        .setCoder(PubsubMessageWithAttributesCoder.of)
+        .apply(PubsubIO
+          .readMessagesWithAttributes()
+          .fromSubscription(options.getInput))
+      case "file" =>
+        val input = pipeline
+          .apply(TextIO
+            .read
+            .from(options.getInput))
+        options.getInputFileFormat.toLowerCase match {
+          case "json" => decodeJson(input)
+          case "text" => decodeText(input)
+          case fileType => throw new IllegalArgumentException(s"Unsupported --inputFileType=$fileType")
+        }
+      case inputType => throw new IllegalArgumentException(s"Unsupported --inputType=$inputType")
     }
   }
 
   def writeOutput(records: PCollection[PubsubMessage], options: Options): Unit = {
+    val stringEncoder = options.getOutputFileFormat.toLowerCase match {
+      case "json" => encodeJson(_)
+      case "text" => encodeText(_)
+      case fileType => throw new IllegalArgumentException(s"Unsupported --outputFileType=$fileType")
+    }
     options.getOutputType.toLowerCase match {
       case "pubsub" => records
-        .apply(PubsubIO.writeMessages().to(options.getOutput))
-      case "stdout" => records
-        .apply(AsJsons.of(classOf[PubsubMessage]))
-        .apply(ParDo.of(PrintString))
-      case "file" => records
-        .apply(AsJsons.of(classOf[PubsubMessage]))
-        .apply(Window.into(FixedWindows.of(Duration.standardMinutes(options.getWindowMinutes))))
+        .apply(PubsubIO
+          .writeMessages()
+          .to(options.getOutput))
+      case "stdout" => stringEncoder(records)
+        .apply(MapElements
+          .into(new TypeDescriptor[Unit]{})
+          .via((element: String) => println(element))) // scalastyle:ignore
+      case "file" => stringEncoder(records)
+        .apply(Window
+          .into(FixedWindows
+            .of(Duration
+              .standardMinutes(options.getWindowMinutes))))
         .apply(TextIO
           .write
           .to(options.getOutput)
           .withWindowedWrites())
+      case outputType => throw new IllegalArgumentException(s"Unsupported --outputType=$outputType")
     }
   }
-}
 
-/* Required to deserialize PubsubMessage from json
- *
- * This is necessary because jackson can automatically determine how to encode
- * PubsubMessage as json, but it can't automatically tell how to decode it
- * because the 'getAttributeMap' method returns the value for the 'attributes'
- * parameter. Additionally jackson doesn't like that there are no setter
- * methods on PubsubMessage.
- *
- * The default jackson output format for PubsubMessage, which we want to read,
- * looks like:
- * {
- *   "payload": "<base64 encoded byte array",
- *   "attributeMap": {"<key>": "<value>"...}
- * }
- */
-@JsonCreator
-abstract class PubsubMessageMixin(
-  @JsonProperty("payload") val payload: Array[Byte],
-  @JsonProperty("attributeMap") val attributes: java.util.Map[String,String]) {
-}
+  def encodeText(input: PCollection[PubsubMessage]): PCollection[String] = input
+    .apply(MapElements
+      .into(TypeDescriptors.strings)
+      .via((record: PubsubMessage) => new String(record.getPayload)))
 
-object PrintString extends DoFn[String,String] {
-  @ProcessElement
-  def processElement(@Element element: String): Unit = {
-    println(element) // scalastyle:ignore
+  def decodeText(input: PCollection[String]): PCollection[PubsubMessage] = input
+    .apply(MapElements
+      .into(new TypeDescriptor[PubsubMessage]{})
+      .via((string: String) => new PubsubMessage(string.getBytes, null)))
+
+  def encodeJson(input: PCollection[PubsubMessage]): PCollection[String] = input
+    .apply(AsJsons.of(classOf[PubsubMessage]))
+
+  def decodeJson(input: PCollection[String]): PCollection[PubsubMessage] = input
+    .apply(ParseJsons
+      .of(classOf[PubsubMessage])
+      .withMapper(new ObjectMapper()
+        .addMixIn(classOf[PubsubMessage], classOf[PubsubMessageMixin])))
+    .setCoder(PubsubMessageWithAttributesCoder.of)
+
+  /* Required to decode PubsubMessage from json
+   *
+   * This is necessary because jackson can automatically determine how to encode
+   * PubsubMessage as json, but it can't automatically tell how to decode it
+   * because the 'getAttributeMap' method returns the value for the 'attributes'
+   * parameter. Additionally jackson doesn't like that there are no setter
+   * methods on PubsubMessage.
+   *
+   * The default jackson output format for PubsubMessage, which we want to read,
+   * looks like:
+   * {
+   *   "payload": "<base64 encoded byte array",
+   *   "attributeMap": {"<key>": "<value>"...}
+   * }
+   */
+  @JsonCreator
+  abstract class PubsubMessageMixin(
+    @JsonProperty("payload") val payload: Array[Byte],
+    @JsonProperty("attributeMap") val attributes: java.util.Map[String,String]) {
   }
 }

@@ -17,7 +17,7 @@ To run the job locally:
 
 ```bash
 # create a test input file
-echo '{"payload":"test","attributeMap":{"host":"test"}}' > /tmp/input.json
+echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' > /tmp/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a directory
 sbt 'run --inputType=file --input=/tmp/input.json --outputType=file --output=/tmp/output'
@@ -39,7 +39,7 @@ To run the job on Dataflow
 BUCKET="gs://$(gcloud config get-value project)"
 
 # create a test input file
-echo '{"payload":"test","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
+echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a bucket
 sbt "run --runner=Dataflow --inputType=file --input=$BUCKET/input.json --outputType=file --output=$BUCKET/output/"
@@ -61,7 +61,7 @@ BUCKET="gs://$(gcloud config get-value project)"
 sbt "run --inputType=file --outputType=file --runner=Dataflow --templateLocation=$BUCKET/landfill/templates/FileToFile --stagingLocation=$BUCKET/landfill/staging"
 
 # create a test input file
-echo '{"payload":"test","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
+echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
 # run the dataflow template with gcloud
 JOBNAME=FileToFile1

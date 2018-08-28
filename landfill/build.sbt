@@ -9,6 +9,7 @@ javacOptions ++= Seq(
 scalacOptions ++= Seq(
     "-Xmax-classfile-name", "242",
     "-feature",
+    "-Xfatal-warnings",
     "-Ywarn-unused",
     "-Ywarn-unused-import"
 )
