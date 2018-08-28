@@ -32,7 +32,9 @@ nginx
 ok
 pre-deployment
 PubSub
+PubsubMessage
 Redis
+stdout
 TCP
 timestamp
 TLS

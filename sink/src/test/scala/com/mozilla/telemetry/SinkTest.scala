@@ -5,7 +5,7 @@ package com.mozilla.telemetry
 
 import org.scalatest.{FlatSpec, Matchers}
 
-class LandfillTest extends FlatSpec with Matchers {
+class SinkTest extends FlatSpec with Matchers {
   "pubsubMessages" must "convert to and from json" in {
     // TODO: write this test
   }
