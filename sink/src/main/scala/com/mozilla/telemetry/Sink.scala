@@ -18,7 +18,7 @@ import org.apache.beam.sdk.values.{TypeDescriptor, TypeDescriptors}
 import org.apache.beam.sdk.values.PCollection
 import org.joda.time.Duration // scalastyle:ignore
 
-object Landfill {
+object Sink {
   trait Options extends PipelineOptions {
     @Description("Type of --input, must be pubsub or file")
     @Default.String("pubsub")

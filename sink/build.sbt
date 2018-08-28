@@ -18,7 +18,7 @@ val beamVersion = "2.6.0"
 
 lazy val root = (project in file(".")).
   settings(
-    name := "landfill",
+    name := "telemetry-sink",
     version := "0.1",
     scalaVersion := "2.12.6",
     retrieveManaged := true,

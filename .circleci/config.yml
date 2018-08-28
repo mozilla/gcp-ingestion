@@ -80,18 +80,18 @@ jobs:
         name: Remove Background Containers
         command: docker rm -f edge pubsub
         when: always
-  landfill:
+  sink:
     docker:
     - image: mozilla/sbt:8u171_1.2.1
     steps:
     - checkout
     - run:
         name: SBT Test
-        command: cd landfill; sbt scalastyle test:scalastyle test
+        command: cd sink; sbt scalastyle test:scalastyle test
 workflows:
   version: 2
   build:
     jobs:
     - spelling
     - edge
-    - landfill
+    - sink
