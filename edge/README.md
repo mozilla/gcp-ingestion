@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/mozilla/gcp-ingestion/tree/master.svg?style=svg)](https://circleci.com/gh/mozilla/gcp-ingestion/tree/master)
+[![CircleCI](https://circleci.com/gh/mozilla/gcp-ingestion.svg?style=svg&circle-token=d98a470269580907d5c6d74d0e67612834a21be7)](https://circleci.com/gh/mozilla/gcp-ingestion)
 
 # Edge Server
 
