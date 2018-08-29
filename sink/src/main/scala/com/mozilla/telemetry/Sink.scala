@@ -5,21 +5,21 @@ package com.mozilla.telemetry
 
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.api.services.bigquery.model.TableRow
 import org.apache.beam.sdk.Pipeline
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder
 import org.apache.beam.sdk.extensions.jackson.{AsJsons, ParseJsons}
 import org.apache.beam.sdk.io.TextIO
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder
 import org.apache.beam.sdk.io.gcp.pubsub.{PubsubIO, PubsubMessage}
 import org.apache.beam.sdk.options.Validation.Required
 import org.apache.beam.sdk.options.{Default, Description, PipelineOptions, PipelineOptionsFactory, ValueProvider}
-import org.apache.beam.sdk.transforms.MapElements
+import org.apache.beam.sdk.transforms.{MapElements, PTransform}
 import org.apache.beam.sdk.transforms.windowing.{FixedWindows, Window}
-import org.apache.beam.sdk.values.{TypeDescriptor, TypeDescriptors}
-import org.apache.beam.sdk.values.PCollection
+import org.apache.beam.sdk.values.{PCollection, TypeDescriptor, TypeDescriptors}
 import org.joda.time.Duration // scalastyle:ignore
 
 object Sink {
-
   trait Options extends PipelineOptions {
     @Description("Type of --input; must be one of [pubsub, file]")
     @Default.String("pubsub")
@@ -103,7 +103,8 @@ object Sink {
     case object PubSub extends OutputType
     case object File extends OutputType
     case object Stdout extends OutputType
-    val values = Seq(PubSub, File, Stdout)
+    case object BigQuery extends OutputType
+    val values = Seq(PubSub, File, Stdout, BigQuery)
   }
 
   sealed trait FileFormat
@@ -136,33 +137,33 @@ object Sink {
         .apply(PubsubIO
           .readMessagesWithAttributes()
           .fromSubscription(options.getInput))
-      case InputType.File =>
-        val input = pipeline
-          .apply(TextIO
-            .read
-            .from(options.getInput))
-        FileFormat(options.getInputFileFormat) match {
-          case FileFormat.Json => decodeJson(input)
-          case FileFormat.Text => decodeText(input)
-        }
+      case InputType.File => pipeline
+        .apply(TextIO
+          .read
+          .from(options.getInput))
+        .apply(FileFormat(options.getInputFileFormat) match {
+          case FileFormat.Json => decodeJson
+          case FileFormat.Text => decodeText})
     }
   }
 
   def writeOutput(records: PCollection[PubsubMessage], options: Options): Unit = {
     val encode = FileFormat(options.getOutputFileFormat) match {
-      case FileFormat.Json => encodeJson _
-      case FileFormat.Text => encodeText _
+      case FileFormat.Json => encodeJson
+      case FileFormat.Text => encodeText
     }
     OutputType(options.getOutputType.toLowerCase) match {
       case OutputType.PubSub => records
         .apply(PubsubIO
           .writeMessages()
           .to(options.getOutput))
-      case OutputType.Stdout => encode(records)
+      case OutputType.Stdout => records
+        .apply(encode)
         .apply(MapElements
           .into(new TypeDescriptor[Unit]{})
           .via((element: String) => println(element))) // scalastyle:ignore
-      case OutputType.File => encode(records)
+      case OutputType.File => records
+        .apply(encode)
         .apply(Window
           .into(FixedWindows
             .of(Duration
@@ -171,28 +172,36 @@ object Sink {
           .write
           .to(options.getOutput)
           .withWindowedWrites())
+      case OutputType.BigQuery => records
+        .apply(encodeText)
+        .apply(decodeTableRow)
+        .apply(BigQueryIO
+          .write()
+          .to(options.getOutput))
     }
   }
 
-  def encodeText(input: PCollection[PubsubMessage]): PCollection[String] = input
-    .apply(MapElements
-      .into(TypeDescriptors.strings)
-      .via((record: PubsubMessage) => new String(record.getPayload)))
+  val encodeText = MapElements
+    .into(TypeDescriptors.strings)
+    .via((record: PubsubMessage) => new String(record.getPayload))
 
-  def decodeText(input: PCollection[String]): PCollection[PubsubMessage] = input
-    .apply(MapElements
-      .into(new TypeDescriptor[PubsubMessage]{})
-      .via((string: String) => new PubsubMessage(string.getBytes, null)))
+  val decodeText = MapElements
+    .into(new TypeDescriptor[PubsubMessage]{})
+    .via((string: String) => new PubsubMessage(string.getBytes, null))
 
-  def encodeJson(input: PCollection[PubsubMessage]): PCollection[String] = input
-    .apply(AsJsons.of(classOf[PubsubMessage]))
+  val encodeJson = AsJsons.of(classOf[PubsubMessage])
 
-  def decodeJson(input: PCollection[String]): PCollection[PubsubMessage] = input
-    .apply(ParseJsons
-      .of(classOf[PubsubMessage])
-      .withMapper(new ObjectMapper()
-        .addMixIn(classOf[PubsubMessage], classOf[PubsubMessageMixin])))
-    .setCoder(PubsubMessageWithAttributesCoder.of)
+  // Create a new PTransform in order to call .setCoder
+  val decodeJson = new PTransform[PCollection[String],PCollection[PubsubMessage]] {
+    override def expand(input: PCollection[String]): PCollection[PubsubMessage] = input
+      .apply(ParseJsons
+        .of(classOf[PubsubMessage])
+        .withMapper(new ObjectMapper()
+          .addMixIn(classOf[PubsubMessage], classOf[PubsubMessageMixin])))
+      .setCoder(PubsubMessageWithAttributesCoder.of)
+  }
+
+  val decodeTableRow = ParseJsons.of(classOf[TableRow])
 
   /* Required to decode PubsubMessage from json
    *
