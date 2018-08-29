@@ -19,26 +19,27 @@ import org.apache.beam.sdk.values.PCollection
 import org.joda.time.Duration // scalastyle:ignore
 
 object Sink {
+
   trait Options extends PipelineOptions {
-    @Description("Type of --input, must be pubsub or file")
+    @Description("Type of --input; must be one of [pubsub, file]")
     @Default.String("pubsub")
     def getInputType: String
     def setInputType(path: String)
 
-    @Description("File format for --inputType=file, must be json (each line"
-      + " contains payload[String] and attributeMap[String,String]) or text"
-      + " (each line is payload)")
+    @Description("File format for --inputType=file; must be one of"
+      + " json (each line contains payload[String] and attributeMap[String,String]) or"
+      + " text (each line is payload)")
     @Default.String("json")
     def getInputFileFormat: String
     def setInputFileFormat(path: String)
 
-    @Description("Type of --input, must be pubsub, file or stdout")
+    @Description("Type of --output; must be one of [pubsub, file, stdout]")
     @Default.String("file")
     def getOutputType: String
     def setOutputType(path: String)
 
-    @Description("File format for --outputType=file|stdout, must be json (each"
-      + " line contains payload[String] and attributeMap[String,String]) or"
+    @Description("File format for --outputType=file|stdout; must be one of "
+      + " json (each line contains payload[String] and attributeMap[String,String]) or"
       + " text (each line is payload)")
     @Default.String("json")
     def getOutputFileFormat: String
@@ -54,16 +55,64 @@ object Sink {
      * all options at once.
      */
 
-    @Description("Input to read from")
+    @Description("Input to read from (path to file, PubSub subscription, etc.)")
     @Required
     def getInput: ValueProvider[String]
     def setInput(path: ValueProvider[String])
 
-    @Description("Output to write to")
+    @Description("Output to write to (path to file or directory, Pubsub topic, etc.)")
     @Required
     def getOutput: ValueProvider[String]
     def setOutput(path: ValueProvider[String])
   }
+
+  /**
+    * A helper trait for the Scala pattern of defining ADTs
+    * (algebraic data types) that serve as enumerations.
+    *
+    * We have several pipeline configuration options that logically should only
+    * allow a small set of defined strings, and this pattern allows us to do
+    * exhaustive pattern matches on case objects rather than on string literals.
+    * It also allows us to centralize error handling for invalid inputs.
+    *
+    * For more on ADT-based enumerations, see https://stackoverflow.com/a/13347823/1260237
+    *
+    * @tparam T the sealed trait type for this enumeration
+    */
+  trait ConfigEnum[T] {
+    def values: Seq[T]
+    def names: Seq[String] = values.map(_.toString.toLowerCase)
+    def valuesByName: Map[String, T] = (names, values).zipped.toMap
+    def namesByValue: Map[T, String] = (values, names).zipped.toMap
+    def apply(name: String): T = {
+      valuesByName.getOrElse(name.toLowerCase(),
+        throw new IllegalArgumentException(s"$name is not a valid ${this.toString};"
+        + s" must be one of [${names.mkString(", ")}]"))
+    }
+  }
+
+  sealed trait InputType
+  object InputType extends ConfigEnum[InputType] {
+    case object PubSub extends InputType
+    case object File extends InputType
+    val values = Seq(PubSub, File)
+  }
+
+  sealed trait OutputType
+  object OutputType extends ConfigEnum[OutputType] {
+    case object PubSub extends OutputType
+    case object File extends OutputType
+    case object Stdout extends OutputType
+    val values = Seq(PubSub, File, Stdout)
+  }
+
+  sealed trait FileFormat
+  object FileFormat extends ConfigEnum[FileFormat] {
+    case object Json extends FileFormat
+    case object Text extends FileFormat
+    val values = Seq(Json, Text)
+  }
+
 
   def main(args: Array[String]): Unit = {
     // register options class so that `--help=Options` works
@@ -82,41 +131,38 @@ object Sink {
   }
 
   def readInput(pipeline: Pipeline, options: Options): PCollection[PubsubMessage] = {
-    options.getInputType.toLowerCase match {
-      case "pubsub" => pipeline
+    InputType(options.getInputType) match {
+      case InputType.PubSub => pipeline
         .apply(PubsubIO
           .readMessagesWithAttributes()
           .fromSubscription(options.getInput))
-      case "file" =>
+      case InputType.File =>
         val input = pipeline
           .apply(TextIO
             .read
             .from(options.getInput))
-        options.getInputFileFormat.toLowerCase match {
-          case "json" => decodeJson(input)
-          case "text" => decodeText(input)
-          case fileType => throw new IllegalArgumentException(s"Unsupported --inputFileType=$fileType")
+        FileFormat(options.getInputFileFormat) match {
+          case FileFormat.Json => decodeJson(input)
+          case FileFormat.Text => decodeText(input)
         }
-      case inputType => throw new IllegalArgumentException(s"Unsupported --inputType=$inputType")
     }
   }
 
   def writeOutput(records: PCollection[PubsubMessage], options: Options): Unit = {
-    val stringEncoder = options.getOutputFileFormat.toLowerCase match {
-      case "json" => encodeJson(_)
-      case "text" => encodeText(_)
-      case fileType => throw new IllegalArgumentException(s"Unsupported --outputFileType=$fileType")
+    val encode = FileFormat(options.getOutputFileFormat) match {
+      case FileFormat.Json => encodeJson _
+      case FileFormat.Text => encodeText _
     }
-    options.getOutputType.toLowerCase match {
-      case "pubsub" => records
+    OutputType(options.getOutputType.toLowerCase) match {
+      case OutputType.PubSub => records
         .apply(PubsubIO
           .writeMessages()
           .to(options.getOutput))
-      case "stdout" => stringEncoder(records)
+      case OutputType.Stdout => encode(records)
         .apply(MapElements
           .into(new TypeDescriptor[Unit]{})
           .via((element: String) => println(element))) // scalastyle:ignore
-      case "file" => stringEncoder(records)
+      case OutputType.File => encode(records)
         .apply(Window
           .into(FixedWindows
             .of(Duration
@@ -125,7 +171,6 @@ object Sink {
           .write
           .to(options.getOutput)
           .withWindowedWrites())
-      case outputType => throw new IllegalArgumentException(s"Unsupported --outputType=$outputType")
     }
   }
 
