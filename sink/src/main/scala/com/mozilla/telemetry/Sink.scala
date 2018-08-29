@@ -5,6 +5,8 @@ package com.mozilla.telemetry
 
 import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.util.StdConverter
 import org.apache.beam.sdk.Pipeline
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder
 import org.apache.beam.sdk.extensions.jackson.{AsJsons, ParseJsons}
@@ -22,9 +24,8 @@ object Sink {
 
   trait Options extends PipelineOptions {
     @Description("Type of --input; must be one of [pubsub, file]")
-    @Default.String("pubsub")
-    def getInputType: String
-    def setInputType(path: String)
+    def getInputType: InputType
+    def setInputType(path: InputType)
 
     @Description("File format for --inputType=file; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"
@@ -87,15 +88,21 @@ object Sink {
     def apply(name: String): T = {
       valuesByName.getOrElse(name.toLowerCase(),
         throw new IllegalArgumentException(s"$name is not a valid ${this.toString};"
-        + s" must be one of [${names.mkString(", ")}]"))
+          + s" must be one of [${names.mkString(", ")}]"))
     }
   }
 
-  sealed trait InputType
+  abstract class ConfigEnumDeserializer[T](enum: ConfigEnum[T]) extends StdConverter[String, T] {
+    override def convert(value: String): T = enum(value)
+  }
+
+  @JsonDeserialize(converter = classOf[InputType.Deserializer])
+  sealed abstract class InputType extends Product with Serializable
   object InputType extends ConfigEnum[InputType] {
     case object PubSub extends InputType
     case object File extends InputType
     val values = Seq(PubSub, File)
+    class Deserializer extends ConfigEnumDeserializer(this)
   }
 
   sealed trait OutputType
@@ -131,7 +138,7 @@ object Sink {
   }
 
   def readInput(pipeline: Pipeline, options: Options): PCollection[PubsubMessage] = {
-    InputType(options.getInputType) match {
+    options.getInputType match {
       case InputType.PubSub => pipeline
         .apply(PubsubIO
           .readMessagesWithAttributes()
