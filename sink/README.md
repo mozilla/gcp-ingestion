@@ -28,6 +28,16 @@ string, and `attributeMap` as an optional object with string keys and values.
 The `text` file format stores newline delimited strings, encoding the field
 `payload` as `UTF-8`.
 
+We'll construct example inputs based on the following two values and their base64 encodings:
+
+```
+$ echo -en "test" | base64
+dGVzdA==
+
+$ echo -en "test\n" | base64
+dGVzdAo=
+```
+
 Example `json` file:
 
     {"payload":"dGVzdA==","attributeMap":{"meta":"data"}}
