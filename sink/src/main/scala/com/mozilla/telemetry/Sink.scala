@@ -55,12 +55,12 @@ object Sink {
      * all options at once.
      */
 
-    @Description("Input to read from (path to file, PubSub topic name, etc.)")
+    @Description("Input to read from (path to file, PubSub subscription, etc.)")
     @Required
     def getInput: ValueProvider[String]
     def setInput(path: ValueProvider[String])
 
-    @Description("Output to write to (path to file or directory, Pubsub topic name, etc.)")
+    @Description("Output to write to (path to file or directory, Pubsub subscription, etc.)")
     @Required
     def getOutput: ValueProvider[String]
     def setOutput(path: ValueProvider[String])
