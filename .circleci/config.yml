@@ -82,12 +82,12 @@ jobs:
         when: always
   sink:
     docker:
-    - image: mozilla/sbt:8u171_1.2.1
+    - image: maven
     steps:
     - checkout
     - run:
-        name: SBT Test
-        command: cd sink; sbt scalastyle test:scalastyle test
+        name: Maven
+        command: cd sink; mvn test checkstyle:check
 workflows:
   version: 2
   build:
