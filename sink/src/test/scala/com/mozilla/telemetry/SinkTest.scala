@@ -16,6 +16,7 @@ class SinkTest extends FlatSpec with Matchers {
       .apply(Create.of(message))
       .apply(Sink.encodeJson)
       .apply(Sink.decodeJson)
+      .get(Sink.decodeJson.mainTag)
 
     PAssert.that(output).containsInAnyOrder(message)
   }

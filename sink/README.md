@@ -70,6 +70,8 @@ sbt 'run
     --outputFileFormat=json
     --outputType=file
     --output=/tmp/output
+    --errorOutputType=file
+    --errorOutput=/tmp/error
 '
 
 # check that the message was delivered
@@ -82,6 +84,7 @@ sbt 'run
     --input=/tmp/input.json
     --outputFileFormat=text
     --outputType=stdout
+    --errorOutputType=stderr
 '
 
 # check the help page to see all options
@@ -106,6 +109,8 @@ sbt "run
     --outputFileFormat=json
     --outputType=file
     --output=$BUCKET/output
+    --errorOutputType=file
+    --errorOutput=$BUCKET/error
 "
 
 # wait for the job to finish
@@ -128,6 +133,7 @@ sbt "run
     --inputType=file
     --outputFileFormat=json
     --outputType=file
+    --errorOutputType=file
     --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile
     --stagingLocation=$BUCKET/sink/staging
 "
@@ -137,7 +143,7 @@ echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCK
 
 # run the dataflow template with gcloud
 JOBNAME=FileToFile1
-gcloud dataflow jobs run $JOBNAME --gcs-location=$BUCKET/sink/templates/JsonFileToJsonFile --parameters "input=$BUCKET/input.json,output=$BUCKET/output/"
+gcloud dataflow jobs run $JOBNAME --gcs-location=$BUCKET/sink/templates/JsonFileToJsonFile --parameters "input=$BUCKET/input.json,output=$BUCKET/output/,errorOutput=$BUCKET/error"
 
 # get the job id
 JOB_ID="$(gcloud dataflow jobs list --filter name=fileToStdout1 | tail -1 | cut -d' ' -f1)"
