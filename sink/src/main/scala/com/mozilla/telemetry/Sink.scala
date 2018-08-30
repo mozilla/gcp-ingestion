@@ -3,20 +3,18 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package com.mozilla.telemetry
 
-import com.fasterxml.jackson.annotation.{JsonCreator, JsonProperty}
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.api.services.bigquery.model.TableRow
+import com.mozilla.telemetry.transforms.{JsonToPubsubMessage, PubsubMessageToTableRow}
 import org.apache.beam.sdk.Pipeline
-import org.apache.beam.sdk.extensions.jackson.{AsJsons, ParseJsons}
+import org.apache.beam.sdk.extensions.jackson.AsJsons
 import org.apache.beam.sdk.io.TextIO
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder
 import org.apache.beam.sdk.io.gcp.pubsub.{PubsubIO, PubsubMessage}
 import org.apache.beam.sdk.options.Validation.Required
 import org.apache.beam.sdk.options.{Default, Description, PipelineOptions, PipelineOptionsFactory, ValueProvider}
 import org.apache.beam.sdk.transforms.{MapElements, PTransform}
 import org.apache.beam.sdk.transforms.windowing.{FixedWindows, Window}
-import org.apache.beam.sdk.values.{PCollection, TypeDescriptor, TypeDescriptors}
+import org.apache.beam.sdk.values.{PBegin, PCollection, PCollectionTuple, PDone, TypeDescriptor, TypeDescriptors}
 import org.joda.time.Duration // scalastyle:ignore
 
 object Sink {
@@ -45,6 +43,11 @@ object Sink {
     def getOutputFileFormat: String
     def setOutputFileFormat(path: String)
 
+    @Description("Type of --errorOutput; must be one of [pubsub, file]")
+    @Default.String("pubsub")
+    def getErrorOutputType: String
+    def setErrorOutputType(path: String)
+
     @Description("Fixed window duration, in minutes")
     @Default.Long(10)
     def getWindowMinutes: Long
@@ -64,6 +67,11 @@ object Sink {
     @Required
     def getOutput: ValueProvider[String]
     def setOutput(path: ValueProvider[String])
+
+    @Description("Error output to write to (path to file or directory, Pubsub topic, etc.)")
+    @Required
+    def getErrorOutput: ValueProvider[String]
+    def setErrorOutput(path: ValueProvider[String])
   }
 
   /**
@@ -107,6 +115,14 @@ object Sink {
     val values = Seq(PubSub, File, Stdout, BigQuery)
   }
 
+  sealed trait ErrorOutputType
+  object ErrorOutputType extends ConfigEnum[ErrorOutputType] {
+    case object PubSub extends ErrorOutputType
+    case object File extends ErrorOutputType
+    case object Stderr extends ErrorOutputType
+    val values = Seq(PubSub, File, Stderr)
+  }
+
   sealed trait FileFormat
   object FileFormat extends ConfigEnum[FileFormat] {
     case object Json extends FileFormat
@@ -125,59 +141,132 @@ object Sink {
       .as(classOf[Options])
 
     val pipeline = Pipeline.create(options)
-    val records = readInput(pipeline, options)
-    writeOutput(records, options)
+
+    val errorOutput = writeErrorOutput(options)
+    pipeline
+      .apply(readInput(options, errorOutput))
+      .apply(writeOutput(options, errorOutput))
 
     pipeline.run()
   }
 
-  def readInput(pipeline: Pipeline, options: Options): PCollection[PubsubMessage] = {
+  type InputTransform = PTransform[PBegin,PCollection[PubsubMessage]]
+  type OutputTransform = PTransform[PCollection[PubsubMessage],PDone]
+
+  def readInput(options: Options, errorOutput: OutputTransform): InputTransform = {
     InputType(options.getInputType) match {
-      case InputType.PubSub => pipeline
-        .apply(PubsubIO
-          .readMessagesWithAttributes()
-          .fromSubscription(options.getInput))
-      case InputType.File => pipeline
-        .apply(TextIO
-          .read
-          .from(options.getInput))
-        .apply(FileFormat(options.getInputFileFormat) match {
-          case FileFormat.Json => decodeJson
-          case FileFormat.Text => decodeText})
+      case InputType.PubSub => PubsubIO
+        .readMessagesWithAttributes()
+        .fromSubscription(options.getInput)
+
+      case InputType.File => new InputTransform {
+        override def expand(input: PBegin): PCollection[PubsubMessage] = {
+          val lines = input
+            .apply(TextIO
+              .read
+              .from(options.getInput))
+
+          FileFormat(options.getInputFileFormat) match {
+            case FileFormat.Text => lines.apply(decodeText)
+            case FileFormat.Json =>
+              val result = lines.apply(decodeJson)
+              result
+                .get(decodeJson.errorTag)
+                .apply(errorOutput)
+              result.get(decodeJson.mainTag)
+          }
+        }
+      }
     }
   }
 
-  def writeOutput(records: PCollection[PubsubMessage], options: Options): Unit = {
+  def writeOutput(options: Options, errorOutput: OutputTransform): OutputTransform = {
     val encode = FileFormat(options.getOutputFileFormat) match {
       case FileFormat.Json => encodeJson
       case FileFormat.Text => encodeText
     }
+
     OutputType(options.getOutputType.toLowerCase) match {
-      case OutputType.PubSub => records
-        .apply(PubsubIO
-          .writeMessages()
-          .to(options.getOutput))
-      case OutputType.Stdout => records
-        .apply(encode)
-        .apply(MapElements
-          .into(new TypeDescriptor[Unit]{})
-          .via((element: String) => println(element))) // scalastyle:ignore
-      case OutputType.File => records
-        .apply(encode)
-        .apply(Window
-          .into(FixedWindows
-            .of(Duration
-              .standardMinutes(options.getWindowMinutes))))
-        .apply(TextIO
-          .write
-          .to(options.getOutput)
-          .withWindowedWrites())
-      case OutputType.BigQuery => records
-        .apply(encodeText)
-        .apply(decodeTableRow)
-        .apply(BigQueryIO
-          .write()
-          .to(options.getOutput))
+      case OutputType.PubSub => PubsubIO
+        .writeMessages()
+        .to(options.getOutput)
+
+      case OutputType.File => new OutputTransform {
+        override def expand(input: PCollection[PubsubMessage]): PDone = input
+          .apply(encode)
+          .apply(Window
+            .into(FixedWindows
+              .of(Duration
+                .standardMinutes(options.getWindowMinutes))))
+          .apply(TextIO
+            .write
+            .to(options.getOutput)
+            .withWindowedWrites())
+      }
+
+      case OutputType.Stdout => new PTransform[PCollection[PubsubMessage],PDone] {
+        override def expand(input: PCollection[PubsubMessage]): PDone = {
+          input
+            .apply(encode)
+            .apply(MapElements
+              .into(new TypeDescriptor[Unit]{})
+              .via((element: String) => println(element))) // scalastyle:ignore
+          PDone.in(input.getPipeline)
+        }
+      }
+
+      case OutputType.BigQuery => new OutputTransform {
+        override def expand(input: PCollection[PubsubMessage]): PDone = {
+          val encodeTableRow: PTransform[PCollection[TableRow],PCollection[String]] = AsJsons.of(classOf[TableRow])
+          val result: PCollectionTuple = input.apply(PubsubMessageToTableRow)
+
+          result
+            .get(PubsubMessageToTableRow.errorTag)
+            .apply(errorOutput)
+
+          result
+            .get(PubsubMessageToTableRow.mainTag)
+            .apply(BigQueryIO
+              .write()
+              .to(options.getOutput))
+            .getFailedInserts
+            .apply(encodeTableRow)
+            .apply(decodeText) // TODO: add error_{type,message} fields
+            .apply(errorOutput)
+        }
+      }
+    }
+  }
+
+  def writeErrorOutput(options: Options): OutputTransform = {
+    ErrorOutputType(options.getErrorOutputType.toLowerCase) match {
+      case ErrorOutputType.PubSub => PubsubIO
+        .writeMessages()
+        .to(options.getErrorOutput)
+
+      case ErrorOutputType.Stderr => new PTransform[PCollection[PubsubMessage],PDone] {
+        override def expand(input: PCollection[PubsubMessage]): PDone = {
+          input
+            .apply(encodeJson)
+            .apply(MapElements
+              .into(new TypeDescriptor[Unit]{})
+              .via((element: String) => System.err.println(element))) // scalastyle:ignore
+          PDone.in(input.getPipeline)
+        }
+      }
+
+      case ErrorOutputType.File => new OutputTransform {
+        override def expand(input: PCollection[PubsubMessage]): PDone = input
+          .apply(encodeJson)
+          .apply(Window
+            .into(FixedWindows
+              .of(Duration
+                .standardMinutes(options.getWindowMinutes))))
+          .apply(TextIO
+            .write
+            .to(options.getErrorOutput)
+            .withWindowedWrites())
+      }
     }
   }
 
@@ -191,36 +280,5 @@ object Sink {
 
   val encodeJson = AsJsons.of(classOf[PubsubMessage])
 
-  // Create a new PTransform in order to call .setCoder
-  val decodeJson = new PTransform[PCollection[String],PCollection[PubsubMessage]] {
-    override def expand(input: PCollection[String]): PCollection[PubsubMessage] = input
-      .apply(ParseJsons
-        .of(classOf[PubsubMessage])
-        .withMapper(new ObjectMapper()
-          .addMixIn(classOf[PubsubMessage], classOf[PubsubMessageMixin])))
-      .setCoder(PubsubMessageWithAttributesCoder.of)
-  }
-
-  val decodeTableRow = ParseJsons.of(classOf[TableRow])
-
-  /* Required to decode PubsubMessage from json
-   *
-   * This is necessary because jackson can automatically determine how to encode
-   * PubsubMessage as json, but it can't automatically tell how to decode it
-   * because the 'getAttributeMap' method returns the value for the 'attributes'
-   * parameter. Additionally jackson doesn't like that there are no setter
-   * methods on PubsubMessage.
-   *
-   * The default jackson output format for PubsubMessage, which we want to read,
-   * looks like:
-   * {
-   *   "payload": "<base64 encoded byte array",
-   *   "attributeMap": {"<key>": "<value>"...}
-   * }
-   */
-  @JsonCreator
-  abstract class PubsubMessageMixin(
-    @JsonProperty("payload") val payload: Array[Byte],
-    @JsonProperty("attributeMap") val attributes: java.util.Map[String,String]) {
-  }
+  val decodeJson = JsonToPubsubMessage
 }
