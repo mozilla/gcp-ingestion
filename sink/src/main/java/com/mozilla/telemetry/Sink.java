@@ -44,33 +44,33 @@ public class Sink {
      */
     private interface Options extends PipelineOptions {
         @Description("Type of --input; must be one of [pubsub, file]")
-        @Default.String("pubsub")
-        String getInputType();
-        void setInputType(String value);
+        @Default.Enum("pubsub")
+        InputType getInputType();
+        void setInputType(InputType value);
 
         @Description("File format for --inputType=file; must be one of"
                 + " json (each line contains payload[String] and attributeMap[String,String]) or"
                 + " text (each line is payload)")
-        @Default.String("json")
-        String getInputFileFormat();
-        void setInputFileFormat(String value);
+        @Default.Enum("json")
+        FileFormat getInputFileFormat();
+        void setInputFileFormat(FileFormat value);
 
         @Description("Type of --output; must be one of [pubsub, file, stdout]")
-        @Default.String("file")
-        String getOutputType();
-        void setOutputType(String value);
+        @Default.Enum("file")
+        OutputType getOutputType();
+        void setOutputType(OutputType value);
 
         @Description("File format for --outputType=file|stdout; must be one of "
                 + " json (each line contains payload[String] and attributeMap[String,String]) or"
                 + " text (each line is payload)")
-        @Default.String("json")
-        String getOutputFileFormat();
-        void setOutputFileFormat(String value);
+        @Default.Enum("json")
+        FileFormat getOutputFileFormat();
+        void setOutputFileFormat(FileFormat value);
 
         @Description("Type of --errorOutput; must be one of [pubsub, file]")
-        @Default.String("pubsub")
-        String getErrorOutputType();
-        void setErrorOutputType(String value);
+        @Default.Enum("pubsub")
+        ErrorOutputType getErrorOutputType();
+        void setErrorOutputType(ErrorOutputType value);
 
         @Description("Fixed window duration, in minutes")
         @Default.Long(10)
@@ -99,19 +99,19 @@ public class Sink {
     }
 
     enum FileFormat {
-        JSON, TEXT
+        json, text
     }
 
     enum InputType {
-        PUBSUB, FILE
+        pubsub, file
     }
 
     enum OutputType {
-        PUBSUB, FILE, STDOUT, BIGQUERY
+        pubsub, file, stdout, bigquery
     }
 
     enum ErrorOutputType {
-        PUBSUB, FILE, STDERR
+        pubsub, file, stderr
     }
 
     public static void main(String[] args) {
@@ -134,17 +134,17 @@ public class Sink {
     }
 
     static PTransform<PBegin, PCollection<PubsubMessage>> getInputTransform(Options options, PTransform<PCollection<PubsubMessage>, PDone> errorOutput) {
-        switch (InputType.valueOf(options.getInputType().toUpperCase())) {
+        switch (options.getInputType()) {
             default:
-            case PUBSUB: return PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput());
-            case FILE: return new PTransform<PBegin, PCollection<PubsubMessage>>() {
+            case pubsub: return PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput());
+            case file: return new PTransform<PBegin, PCollection<PubsubMessage>>() {
                 @Override
                 public PCollection<PubsubMessage> expand(PBegin input) {
                     PCollection<String> lines = input.apply(TextIO.read().from(options.getInput()));
-                    switch(FileFormat.valueOf(options.getInputFileFormat().toUpperCase())) {
+                    switch(options.getInputFileFormat()) {
                         default:
-                        case TEXT: return lines.apply(decodeText);
-                        case JSON:
+                        case text: return lines.apply(decodeText);
+                        case json:
                             PCollectionTuple result = lines.apply(decodeJson);
                             result.get(decodeJson.getErrorTag()).apply(errorOutput);
                             return result.get(decodeJson.getMainTag());
@@ -156,19 +156,19 @@ public class Sink {
 
     static PTransform<PCollection<PubsubMessage>, PDone> getOutputTransform(Options options, PTransform<PCollection<PubsubMessage>, PDone> errorOutput) {
         MapElements<PubsubMessage, String> encode;
-        switch (FileFormat.valueOf(options.getOutputFileFormat().toUpperCase())) {
+        switch (options.getOutputFileFormat()) {
             default:
-            case JSON:
+            case json:
                 encode = encodeJson;
                 break;
-            case TEXT:
+            case text:
                 encode = encodeText;
                 break;
         }
-        switch (OutputType.valueOf(options.getOutputType().toUpperCase())) {
+        switch (options.getOutputType()) {
             default:
-            case PUBSUB: return PubsubIO.writeMessages().to(options.getOutput());
-            case FILE: return new PTransform<PCollection<PubsubMessage>, PDone>() {
+            case pubsub: return PubsubIO.writeMessages().to(options.getOutput());
+            case file: return new PTransform<PCollection<PubsubMessage>, PDone>() {
                 @Override
                 public PDone expand(PCollection<PubsubMessage> input) {
                     input
@@ -178,7 +178,7 @@ public class Sink {
                     return PDone.in(input.getPipeline());
                 }
             };
-            case BIGQUERY: return new PTransform<PCollection<PubsubMessage>, PDone>() {
+            case bigquery: return new PTransform<PCollection<PubsubMessage>, PDone>() {
                 @Override
                 public PDone expand(PCollection<PubsubMessage> input) {
                     AsJsons<TableRow> encodeTableRow = AsJsons.of(TableRow.class);
@@ -199,7 +199,7 @@ public class Sink {
                     return PDone.in(input.getPipeline());
                 }
             };
-            case STDOUT: return new PTransform<PCollection<PubsubMessage>, PDone>() {
+            case stdout: return new PTransform<PCollection<PubsubMessage>, PDone>() {
                 class Fn extends DoFn<String, String> {
                     @ProcessElement
                     public void processElement(@Element String element) {
@@ -216,10 +216,10 @@ public class Sink {
     }
 
     static PTransform<PCollection<PubsubMessage>, PDone> getErrorOutputTransform(Options options) {
-        switch (ErrorOutputType.valueOf(options.getErrorOutputType().toUpperCase())) {
+        switch (options.getErrorOutputType()) {
             default:
-            case PUBSUB: return PubsubIO.writeMessages().to(options.getErrorOutput());
-            case FILE: return new PTransform<PCollection<PubsubMessage>, PDone>() {
+            case pubsub: return PubsubIO.writeMessages().to(options.getErrorOutput());
+            case file: return new PTransform<PCollection<PubsubMessage>, PDone>() {
                 @Override
                 public PDone expand(PCollection<PubsubMessage> input) {
                     input
@@ -235,7 +235,7 @@ public class Sink {
                     return PDone.in(input.getPipeline());
                 }
             };
-            case STDERR: return new PTransform<PCollection<PubsubMessage>, PDone>() {
+            case stderr: return new PTransform<PCollection<PubsubMessage>, PDone>() {
                 class Fn extends DoFn<String, String> {
                     @ProcessElement
                     public void processElement(@Element String element) {
