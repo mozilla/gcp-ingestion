@@ -56,8 +56,8 @@ two text messages, one of which is blank.
 
 ## Executing Jobs
 
-Note: -Dexec.args does not handle newlines gracefully, but bash will remove `\`
-escaped newlines in `"`s.
+Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove
+`\` escaped newlines in `"`s.
 
 ### Locally
 
