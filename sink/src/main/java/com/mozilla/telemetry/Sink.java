@@ -145,7 +145,7 @@ public class Sink {
    * Generate an input transform from options and errorOutput.
    *
    * @param options provided to configure this pipeline.
-   * @param errorOutput to which error outputs should be sent.
+   * @param errorOutput to which errors should be sent.
    * @return input transform.
    */
   public static PTransform<PBegin, PCollection<PubsubMessage>> getInputTransform(
@@ -178,7 +178,7 @@ public class Sink {
    * Generate an output transform from options and errorOutput.
    *
    * @param options provided to configure this pipeline.
-   * @param errorOutput to which error outputs should be sent.
+   * @param errorOutput to which errors should be sent.
    * @return output transform.
    */
   public static PTransform<PCollection<PubsubMessage>, PDone> getOutputTransform(
