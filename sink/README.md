@@ -56,6 +56,9 @@ two text messages, one of which is blank.
 
 ## Executing Jobs
 
+Note: -Dexec.args does not handle newlines gracefully, but bash will remove `\`
+escaped newlines in `"`s.
+
 ### Locally
 
 ```bash
@@ -63,32 +66,32 @@ two text messages, one of which is blank.
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' > /tmp/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a directory
-sbt 'run
-    --inputFileFormat=json
-    --inputType=file
-    --input=/tmp/input.json
-    --outputFileFormat=json
-    --outputType=file
-    --output=/tmp/output
-    --errorOutputType=file
-    --errorOutput=/tmp/error
-'
+mvn compile exec:java -Dexec.args="\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=/tmp/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=/tmp/output \
+    --errorOutputType=file \
+    --errorOutput=/tmp/error \
+"
 
 # check that the message was delivered
 cat /tmp/output/*
 
 # write message payload straight to stdout
-sbt 'run
-    --inputFileFormat=json
-    --inputType=file
-    --input=/tmp/input.json
-    --outputFileFormat=text
-    --outputType=stdout
-    --errorOutputType=stderr
-'
+mvn compile exec:java -Dexec.args="\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=/tmp/input.json \
+    --outputFileFormat=text \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+"
 
 # check the help page to see all options
-sbt 'run --help=Options'
+mvn compile exec:java -Dexec.args=--help=Options
 ```
 
 ### On Dataflow
@@ -101,16 +104,16 @@ BUCKET="gs://$(gcloud config get-value project)"
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a bucket
-sbt "run
-    --runner=Dataflow
-    --inputFileFormat=json
-    --inputType=file
-    --input=$BUCKET/input.json
-    --outputFileFormat=json
-    --outputType=file
-    --output=$BUCKET/output
-    --errorOutputType=file
-    --errorOutput=$BUCKET/error
+mvn compile exec:java -Dexec.args="\
+    --runner=Dataflow \
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=$BUCKET/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=$BUCKET/output \
+    --errorOutputType=file \
+    --errorOutput=$BUCKET/error \
 "
 
 # wait for the job to finish
@@ -127,15 +130,15 @@ gsutil cat $BUCKET/output/*
 BUCKET="gs://$(gcloud config get-value project)"
 
 # create a template
-sbt "run
-    --runner=Dataflow
-    --inputFileFormat=json
-    --inputType=file
-    --outputFileFormat=json
-    --outputType=file
-    --errorOutputType=file
-    --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile
-    --stagingLocation=$BUCKET/sink/staging
+mvn compile exec:java -Dexec.args="\
+    --runner=Dataflow \
+    --inputFileFormat=json \
+    --inputType=file \
+    --outputFileFormat=json \
+    --outputType=file \
+    --errorOutputType=file \
+    --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile \
+    --stagingLocation=$BUCKET/sink/staging \
 "
 
 # create a test input file

@@ -10,6 +10,7 @@
 
     <properties>
         <beam.version>2.6.0</beam.version>
+        <exec.mainClass>com.mozilla.telemetry.Sink</exec.mainClass>
     </properties>
 
     <dependencies>
@@ -69,6 +70,21 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <mainClass>${exec.mainClass}</mainClass>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
