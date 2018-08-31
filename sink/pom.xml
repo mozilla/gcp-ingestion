@@ -8,26 +8,30 @@
     <artifactId>sink</artifactId>
     <version>0.1-SNAPSHOT</version>
 
+    <properties>
+        <beam.version>2.6.0</beam.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-runners-direct-java</artifactId>
-            <version>2.6.0</version>
+            <version>${beam.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-runners-google-cloud-dataflow-java</artifactId>
-            <version>2.6.0</version>
+            <version>${beam.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-extensions-json-jackson</artifactId>
-            <version>2.6.0</version>
+            <version>${beam.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
-            <version>2.6.0</version>
+            <version>${beam.version}</version>
         </dependency>
     </dependencies>
 
