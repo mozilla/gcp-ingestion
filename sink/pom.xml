@@ -9,6 +9,7 @@
     <version>0.1-SNAPSHOT</version>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <beam.version>2.6.0</beam.version>
         <exec.mainClass>com.mozilla.telemetry.Sink</exec.mainClass>
     </properties>
@@ -39,6 +40,12 @@
             <artifactId>hamcrest-all</artifactId>
             <version>1.3</version>
             <scope>test</scope>
+        </dependency>
+        <!-- Following https://github.com/apache/beam/blob/v2.6.0/examples/java/build.gradle#L64 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.7.25</version>
         </dependency>
     </dependencies>
 
