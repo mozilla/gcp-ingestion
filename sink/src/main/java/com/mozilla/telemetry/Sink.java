@@ -37,7 +37,6 @@ import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.joda.time.Duration;
 
 public class Sink {
   /**
