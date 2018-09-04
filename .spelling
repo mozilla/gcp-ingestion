@@ -37,6 +37,7 @@ PubSub
 PubsubMessage
 Redis
 stdout
+stderr
 TCP
 timestamp
 TLS

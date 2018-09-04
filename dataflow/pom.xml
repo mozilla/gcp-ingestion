@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mozilla.telemetry</groupId>
-    <artifactId>sink</artifactId>
+    <artifactId>ingestion</artifactId>
     <version>0.1-SNAPSHOT</version>
 
     <properties>
@@ -34,6 +34,11 @@
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
             <version>${beam.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.maxmind.geoip2</groupId>
+            <artifactId>geoip2</artifactId>
+            <version>2.12.0</version>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
@@ -72,7 +77,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>com.mozilla.telemetry.Sink</mainClass>
+                            <mainClass>${exec.mainClass}</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

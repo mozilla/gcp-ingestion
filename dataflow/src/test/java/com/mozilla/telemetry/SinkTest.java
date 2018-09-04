@@ -36,7 +36,7 @@ public class SinkTest {
             "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}",
             "{\"attributeMap\":null,\"payload\":\"\"}");
 
-    PCollection<String> output = pipeline
+    final PCollection<String> output = pipeline
         .apply(Create.of(input))
         .apply(Sink.decodeJson)
         .get(Sink.decodeJson.mainTag)
