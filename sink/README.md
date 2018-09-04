@@ -61,12 +61,19 @@ Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove
 
 ### Locally
 
+If you install Java and maven, you can invoke `mvn` directly in the following commands;
+be aware, though, that Java 8 is the target JVM and some reflection warnings may be thrown on
+newer versions, though these are generally harmless.
+
+The provided `bin/mvn` script downloads and runs maven via docker so that less
+setup is needed on the local machine.
+
 ```bash
 # create a test input file
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' > /tmp/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a directory
-mvn compile exec:java -Dexec.args="\
+./bin/mvn compile exec:java -Dexec.args="\
     --inputFileFormat=json \
     --inputType=file \
     --input=/tmp/input.json \
@@ -81,7 +88,7 @@ mvn compile exec:java -Dexec.args="\
 cat /tmp/output/*
 
 # write message payload straight to stdout
-mvn compile exec:java -Dexec.args="\
+./bin/mvn compile exec:java -Dexec.args="\
     --inputFileFormat=json \
     --inputType=file \
     --input=/tmp/input.json \
@@ -91,7 +98,7 @@ mvn compile exec:java -Dexec.args="\
 "
 
 # check the help page to see all options
-mvn compile exec:java -Dexec.args=--help=Options
+./bin/mvn compile exec:java -Dexec.args=--help=Options
 ```
 
 ### On Dataflow
@@ -104,7 +111,7 @@ BUCKET="gs://$(gcloud config get-value project)"
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a bucket
-mvn compile exec:java -Dexec.args="\
+./bin/mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
     --inputFileFormat=json \
     --inputType=file \
@@ -130,7 +137,7 @@ gsutil cat $BUCKET/output/*
 BUCKET="gs://$(gcloud config get-value project)"
 
 # create a template
-mvn compile exec:java -Dexec.args="\
+./bin/mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
     --inputFileFormat=json \
     --inputType=file \
@@ -164,6 +171,13 @@ Run tests locally with [CircleCI Local CLI](https://circleci.com/docs/2.0/local-
 
 ```bash
 (cd .. && circleci build --job sink)
+```
+
+To make more targeted test invocations, you can install Java and maven locally or
+use the `bin/mvn` executable to run maven in docker:
+
+```bash
+./bin/mvn clean test
 ```
 
 # License

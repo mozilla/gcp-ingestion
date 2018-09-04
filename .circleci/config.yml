@@ -87,7 +87,7 @@ jobs:
     - checkout
     - run:
         name: Maven
-        command: cd sink; mvn test checkstyle:check
+        command: cd sink && mvn clean test checkstyle:check
 workflows:
   version: 2
   build:
