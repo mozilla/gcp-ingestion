@@ -6,6 +6,8 @@
 
 set -e
 
+cd "$(dirname "$0")/.."
+
 # Create dir to cache maven dependencies if it doesn't already exist.
 mkdir -p ~/.m2
 
