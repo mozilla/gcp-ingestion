@@ -5,6 +5,7 @@
 package com.mozilla.telemetry;
 
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.transforms.JsonToPubsubMessage;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import java.io.PrintStream;
@@ -79,11 +80,15 @@ public class Sink {
 
     void setErrorOutputType(ErrorOutputType value);
 
-    @Description("Fixed window duration, in minutes")
-    @Default.Long(10)
-    Long getWindowMinutes();
+    @Description("Fixed window duration. Defaults to 10m. "
+        + "Allowed formats are: "
+        + "Ns (for seconds, example: 5s), "
+        + "Nm (for minutes, example: 12m), "
+        + "Nh (for hours, example: 2h).")
+    @Default.String("10m")
+    String getWindowDuration();
 
-    void setWindowMinutes(Long value);
+    void setWindowDuration(String value);
 
     /* Note: Dataflow templates accept ValueProvider options at runtime, and
      * other options at creation time. When running without templates specify
@@ -204,8 +209,8 @@ public class Sink {
         public PDone expand(PCollection<PubsubMessage> input) {
           input
               .apply(encode)
-              .apply(Window
-                  .into(FixedWindows.of(Duration.standardMinutes(options.getWindowMinutes()))))
+              .apply(Window.into(
+                  FixedWindows.of(DurationUtils.parseDuration(options.getWindowDuration()))))
               .apply(TextIO.write().to(options.getOutput()).withWindowedWrites());
           return PDone.in(input.getPipeline());
         }
@@ -282,10 +287,8 @@ public class Sink {
         public PDone expand(PCollection<PubsubMessage> input) {
           input
               .apply(encodeJson)
-              .apply(Window
-                  .into(FixedWindows
-                      .of(Duration
-                          .standardMinutes(options.getWindowMinutes()))))
+              .apply(Window.into(
+                  FixedWindows.of(DurationUtils.parseDuration(options.getWindowDuration()))))
               .apply(TextIO
                   .write()
                   .to(options.getErrorOutput())
