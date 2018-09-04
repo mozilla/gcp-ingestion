@@ -94,7 +94,7 @@ jobs:
           - maven-repo-v1-
     - run:
         name: Maven
-        command: cd sink && mvn clean test checkstyle:check
+        command: cd sink && mvn clean test
     - save_cache:
         paths:
           - ~/.m2
