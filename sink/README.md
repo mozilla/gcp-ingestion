@@ -56,39 +56,50 @@ two text messages, one of which is blank.
 
 ## Executing Jobs
 
+Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove
+`\` escaped newlines in `"`s.
+
 ### Locally
+
+If you install Java and maven, you can invoke `mvn` directly in the following commands;
+be aware, though, that Java 8 is the target JVM and some reflection warnings may be thrown on
+newer versions, though these are generally harmless.
+
+The provided `bin/mvn` script downloads and runs maven via docker so that less
+setup is needed on the local machine.
 
 ```bash
 # create a test input file
-echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' > /tmp/input.json
+mkdir -p tmp/
+echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' > tmp/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a directory
-sbt 'run
-    --inputFileFormat=json
-    --inputType=file
-    --input=/tmp/input.json
-    --outputFileFormat=json
-    --outputType=file
-    --output=/tmp/output
-    --errorOutputType=file
-    --errorOutput=/tmp/error
-'
+./bin/mvn compile exec:java -Dexec.args="\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=tmp/output/out \
+    --errorOutputType=file \
+    --errorOutput=tmp/error \
+"
 
 # check that the message was delivered
-cat /tmp/output/*
+cat tmp/output/*
 
 # write message payload straight to stdout
-sbt 'run
-    --inputFileFormat=json
-    --inputType=file
-    --input=/tmp/input.json
-    --outputFileFormat=text
-    --outputType=stdout
-    --errorOutputType=stderr
-'
+./bin/mvn compile exec:java -Dexec.args="\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputFileFormat=text \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+"
 
 # check the help page to see all options
-sbt 'run --help=Options'
+./bin/mvn compile exec:java -Dexec.args=--help=Options
 ```
 
 ### On Dataflow
@@ -101,16 +112,16 @@ BUCKET="gs://$(gcloud config get-value project)"
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a bucket
-sbt "run
-    --runner=Dataflow
-    --inputFileFormat=json
-    --inputType=file
-    --input=$BUCKET/input.json
-    --outputFileFormat=json
-    --outputType=file
-    --output=$BUCKET/output
-    --errorOutputType=file
-    --errorOutput=$BUCKET/error
+./bin/mvn compile exec:java -Dexec.args="\
+    --runner=Dataflow \
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=$BUCKET/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=$BUCKET/output \
+    --errorOutputType=file \
+    --errorOutput=$BUCKET/error \
 "
 
 # wait for the job to finish
@@ -127,15 +138,15 @@ gsutil cat $BUCKET/output/*
 BUCKET="gs://$(gcloud config get-value project)"
 
 # create a template
-sbt "run
-    --runner=Dataflow
-    --inputFileFormat=json
-    --inputType=file
-    --outputFileFormat=json
-    --outputType=file
-    --errorOutputType=file
-    --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile
-    --stagingLocation=$BUCKET/sink/staging
+./bin/mvn compile exec:java -Dexec.args="\
+    --runner=Dataflow \
+    --inputFileFormat=json \
+    --inputType=file \
+    --outputFileFormat=json \
+    --outputType=file \
+    --errorOutputType=file \
+    --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile \
+    --stagingLocation=$BUCKET/sink/staging \
 "
 
 # create a test input file
@@ -161,6 +172,13 @@ Run tests locally with [CircleCI Local CLI](https://circleci.com/docs/2.0/local-
 
 ```bash
 (cd .. && circleci build --job sink)
+```
+
+To make more targeted test invocations, you can install Java and maven locally or
+use the `bin/mvn` executable to run maven in docker:
+
+```bash
+./bin/mvn clean test
 ```
 
 # License

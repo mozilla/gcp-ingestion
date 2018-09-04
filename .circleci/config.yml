@@ -82,12 +82,24 @@ jobs:
         when: always
   sink:
     docker:
-    - image: mozilla/sbt:8u171_1.2.1
+    - image: maven
     steps:
     - checkout
+    - restore_cache:
+        keys:
+          # when lock file changes, use increasingly general patterns to restore cache
+          # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
+          - maven-repo-v1-{{ .Branch }}-{{ checksum "sink/pom.xml" }}
+          - maven-repo-v1-{{ .Branch }}-
+          - maven-repo-v1-
     - run:
-        name: SBT Test
-        command: cd sink; sbt scalastyle test:scalastyle test
+        name: Maven
+        command: cd sink && mvn clean test checkstyle:check
+    - save_cache:
+        paths:
+          - ~/.m2
+        key: maven-repo-v1-{{ .Branch }}-{{ checksum "sink/pom.xml" }}
+
 workflows:
   version: 2
   build:
