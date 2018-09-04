@@ -70,28 +70,29 @@ setup is needed on the local machine.
 
 ```bash
 # create a test input file
-echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' > /tmp/input.json
+mkdir -p tmp/
+echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' > tmp/input.json
 
 # consume messages from the test file, decode and re-encode them, and write to a directory
 ./bin/mvn compile exec:java -Dexec.args="\
     --inputFileFormat=json \
     --inputType=file \
-    --input=/tmp/input.json \
+    --input=tmp/input.json \
     --outputFileFormat=json \
     --outputType=file \
-    --output=/tmp/output \
+    --output=tmp/output/out \
     --errorOutputType=file \
-    --errorOutput=/tmp/error \
+    --errorOutput=tmp/error \
 "
 
 # check that the message was delivered
-cat /tmp/output/*
+cat tmp/output/*
 
 # write message payload straight to stdout
 ./bin/mvn compile exec:java -Dexec.args="\
     --inputFileFormat=json \
     --inputType=file \
-    --input=/tmp/input.json \
+    --input=tmp/input.json \
     --outputFileFormat=text \
     --outputType=stdout \
     --errorOutputType=stderr \
