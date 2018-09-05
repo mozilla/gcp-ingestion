@@ -6,3 +6,4 @@ derby.log
 *.iml
 .DS_Store
 tmp/
+GeoLite2-City.mmdb

@@ -30,6 +30,7 @@ metadata
 MPL
 namespace
 namespaces
+natively
 nginx
 ok
 pre-deployment
@@ -37,6 +38,7 @@ PubSub
 PubsubMessage
 Redis
 stdout
+stderr
 TCP
 timestamp
 TLS

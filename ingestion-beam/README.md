@@ -1,10 +1,27 @@
 [![CircleCI](https://circleci.com/gh/mozilla/gcp-ingestion.svg?style=svg&circle-token=d98a470269580907d5c6d74d0e67612834a21be7)](https://circleci.com/gh/mozilla/gcp-ingestion)
 
-# Sink Service
+# Apache Beam Jobs for Ingestion
 
-A Dataflow job for delivering messages between Google Cloud services.
+This java module contains our Apache Beam jobs for use in Ingestion.
+Google Cloud Dataflow is a Google Cloud Platform service that natively runs
+Apache Beam jobs.
 
-## Supported Services
+# Table of Contents
+
+ * [Sink Job](#sink-job)
+   * [Supported Input and Outputs](#supported-input-and-outputs)
+   * [Encoding](#encoding)
+   * [Executing Jobs](#executing-jobs)
+ * [Validation Job](#validation-job)
+   * [Transforms](#transforms)
+   * [Executing Validation Jobs](#executing-validation-jobs)
+ * [Testing](#testing)
+
+# Sink Job
+
+A job for delivering messages between Google Cloud services.
+
+## Supported Input and Outputs
 
 Supported inputs:
 
@@ -15,7 +32,16 @@ Supported outputs:
 
  * Google Cloud PubSub
  * Google Cloud Storage
- * stdout (Java direct runner only)
+ * Google Cloud BigQuery
+ * stdout
+ * stderr
+
+Supported error outputs, must include attributes and must not validate messages:
+
+ * Google Cloud PubSub
+ * Google Cloud Storage with JSON encoding
+ * stdout with JSON encoding
+ * stderr with JSON encoding
 
 ## Encoding
 
@@ -166,12 +192,62 @@ gcloud dataflow jobs show "$JOB_ID"
 gsutil cat $BUCKET/output/*
 ```
 
-## Testing
+# Validation Job
+
+A job for normalizing ingestion messages.
+
+## Transforms
+
+These transforms are currently executed against each message in order.
+
+### GeoIP Lookup
+
+1. Extract `ip` from the `x_forwarded_for` attribute
+   * fall back to the `remote_addr` attribute, then to an empty string
+1. Execute the following steps until one fails and ignore the exception
+    1. Parse `ip` using `InetAddress.getByName`
+    1. Lookup `ip` in the configured `GeoIP2City.mmdb`
+    1. Extract `country.iso_code` as `geo_country`
+    1. Extract `city.name` as `geo_city`
+    1. Extract `subdivisions[0].iso_code` as `geo_subdivision1`
+    1. Extract `subdivisions[1].iso_code` as `geo_subdivision2`
+1. Remove the `x_forwarded_for` and `remote_addr` attributes
+1. Remove any`null` values added to attributes
+
+## Executing Validation Jobs
+
+Validation jobs are executed the same way as [executing sink jobs](#executing-jobs)
+but with a few extra flags:
+
+ * `-Dexec.mainClass=com.mozilla.telemetry.Validate`
+ * `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
+
+Example:
+
+```bash
+# create a test input file
+mkdir -p tmp/
+echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > tmp/input.json
+
+# Download `GeoLite2-City.mmdb`
+./bin/download-geolite2
+
+# do geo lookup on messages to stdout
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Validate -Dexec.args="\
+    --geoCityDatabase=GeoLite2-City.mmdb \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+"
+```
+
+# Testing
 
 Run tests locally with [CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
 
 ```bash
-(cd .. && circleci build --job sink)
+(cd .. && circleci build --job ingestion-beam)
 ```
 
 To make more targeted test invocations, you can install Java and maven locally or

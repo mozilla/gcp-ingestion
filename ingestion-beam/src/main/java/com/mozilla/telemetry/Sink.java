@@ -8,7 +8,6 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.transforms.JsonToPubsubMessage;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
-import java.io.PrintStream;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.extensions.jackson.AsJsons;
 import org.apache.beam.sdk.io.TextIO;
@@ -44,7 +43,7 @@ public class Sink {
    *
    * <p>Inherits standard configuration options.
    */
-  private interface Options extends PipelineOptions {
+  public interface Options extends PipelineOptions {
     @Description("Type of --input; must be one of [pubsub, file]")
     @Default.Enum("pubsub")
     InputType getInputType();
@@ -113,13 +112,13 @@ public class Sink {
     void setErrorOutput(ValueProvider<String> value);
   }
 
-  enum FileFormat { json, text }
+  public enum FileFormat { json, text }
 
-  enum InputType { pubsub, file }
+  public enum InputType { pubsub, file }
 
-  enum OutputType { pubsub, file, stdout, stderr, bigquery }
+  public enum OutputType { pubsub, file, stdout, stderr, bigquery }
 
-  enum ErrorOutputType { pubsub, file, stdout, stderr }
+  public enum ErrorOutputType { pubsub, file, stdout, stderr }
 
   /**
    * Execute an Apache Beam pipeline.
@@ -130,17 +129,18 @@ public class Sink {
     // register options class so that `--help=Options` works
     PipelineOptionsFactory.register(Options.class);
 
-    Options options = PipelineOptionsFactory
+    final Options options = PipelineOptionsFactory
         .fromArgs(args)
         .withValidation()
         .as(Options.class);
 
-    PTransform<PCollection<PubsubMessage>, PDone> errorOutput = getErrorOutputTransform(options);
-    PTransform<PCollection<PubsubMessage>, PDone> output = getOutputTransform(options, errorOutput);
-    PTransform<PBegin, PCollection<PubsubMessage>> input = getInputTransform(options, errorOutput);
+    final PTransform<PCollection<PubsubMessage>, PDone> errorOutput =
+        getErrorOutputTransform(options);
 
-    Pipeline pipeline = Pipeline.create(options);
-    pipeline.apply(input).apply(output);
+    final Pipeline pipeline = Pipeline.create(options);
+    pipeline
+        .apply("input", getInputTransform(options, errorOutput))
+        .apply("output", getOutputTransform(options, errorOutput));
     pipeline.run();
 
   }
@@ -162,7 +162,7 @@ public class Sink {
       case file: return new PTransform<PBegin, PCollection<PubsubMessage>>() {
         @Override
         public PCollection<PubsubMessage> expand(PBegin input) {
-          PCollection<String> lines = input.apply(TextIO.read().from(options.getInput()));
+          final PCollection<String> lines = input.apply(TextIO.read().from(options.getInput()));
           switch (options.getInputFileFormat()) {
             default:
             case text:
@@ -198,7 +198,6 @@ public class Sink {
         encode = encodeText;
         break;
     }
-    PrintStream printStream;
     switch (options.getOutputType()) {
       default: throw new IllegalArgumentException(
           "Unknown --outputType=" + options.getOutputType().name());
@@ -326,18 +325,18 @@ public class Sink {
     }
   }
 
-  public static MapElements<String, PubsubMessage> decodeText = MapElements
+  public static final MapElements<String, PubsubMessage> decodeText = MapElements
       .into(new TypeDescriptor<PubsubMessage>() { })
       .via((String value) -> new PubsubMessage(value.getBytes(), null));
 
-  public static MapElements<PubsubMessage, String> encodeText = MapElements
+  public static final MapElements<PubsubMessage, String> encodeText = MapElements
       .into(new TypeDescriptor<String>() { })
       .via((PubsubMessage value) -> new String(value.getPayload()));
 
   // TODO extract these into a separate class with error output
-  public static ObjectMapper objectMapper = new ObjectMapper();
+  public static final ObjectMapper objectMapper = new ObjectMapper();
 
-  public static MapElements<PubsubMessage, String> encodeJson = MapElements.via(
+  public static final MapElements<PubsubMessage, String> encodeJson = MapElements.via(
       new SimpleFunction<PubsubMessage, String>() {
         @Override
         public String apply(PubsubMessage value) {
@@ -350,7 +349,7 @@ public class Sink {
       }
   );
 
-  public static JsonToPubsubMessage decodeJson = new JsonToPubsubMessage();
+  public static final JsonToPubsubMessage decodeJson = new JsonToPubsubMessage();
 
-  public static PubsubMessageToTableRow decodeTableRow = new PubsubMessageToTableRow();
+  public static final PubsubMessageToTableRow decodeTableRow = new PubsubMessageToTableRow();
 }

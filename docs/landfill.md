@@ -12,7 +12,7 @@ certain size, if possible.
 
 ### Implementation
 
-Execute this as a Dataflow job.
+Execute this as an Apache Beam job.
 
 ### Latency
 
@@ -24,8 +24,8 @@ within 5 minutes of the batch window closing.
 ### Message Acks
 
 Only acknowledge messages in the PubSub topic subscription after delivery to
-Cloud Storage. This is the default behavior for Dataflow as long as no shuffle
-operations are performed. For very long windows Dataflow should automatically
+Cloud Storage. This is the default behavior for Beam as long as no shuffle
+operations are performed. For very long windows Beam should automatically
 extend the ack deadline of undelivered messages.
 
 ## Testing
