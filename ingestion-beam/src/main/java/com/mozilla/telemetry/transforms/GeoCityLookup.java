@@ -10,6 +10,8 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.Subdivision;
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ public class GeoCityLookup extends PTransform<PCollection<PubsubMessage>, PColle
               // TODO pull this in a way that allows gs:// paths
               .Builder(new File(geoCityDatabase))
               .withCache(new CHMCache())
+              // Throws IOException
               .build();
         }
 
@@ -59,7 +62,7 @@ public class GeoCityLookup extends PTransform<PCollection<PubsubMessage>, PColle
           // Throws UnknownHostException
           InetAddress ipAddress = InetAddress.getByName(ip);
 
-          // Throws GeoIp2Exception
+          // Throws GeoIp2Exception and IOException
           CityResponse response = geoIP2City.city(ipAddress);
 
           attributes.put("geo_country", response.getCountry().getIsoCode());
@@ -81,8 +84,9 @@ public class GeoCityLookup extends PTransform<PCollection<PubsubMessage>, PColle
         attributes.values().removeIf(Objects::isNull);
 
         return new PubsubMessage(value.getPayload(), attributes);
-      } catch (Throwable e) {
-        throw new RuntimeException(e.getMessage());
+      } catch (IOException e) {
+        // Re-throw unchecked, so that the pipeline will fail at run time if it occurs
+        throw new UncheckedIOException(e);
       }
     }
   }
