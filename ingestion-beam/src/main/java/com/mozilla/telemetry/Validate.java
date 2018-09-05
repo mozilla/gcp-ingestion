@@ -5,6 +5,7 @@
 package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.transforms.GeoCityLookup;
+import com.mozilla.telemetry.transforms.GzipDecompress;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.Description;
@@ -43,6 +44,7 @@ public class Validate extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     pipeline
         .apply("input", getInputTransform(options, errorOutput))
+        .apply("decompress", new GzipDecompress())
         .apply("geoCityLookup", new GeoCityLookup(options.getGeoCityDatabase()))
         .apply("output", getOutputTransform(options, errorOutput));
     pipeline.run();
