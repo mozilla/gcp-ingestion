@@ -200,6 +200,11 @@ A job for normalizing ingestion messages.
 
 These transforms are currently executed against each message in order.
 
+### Decompress
+
+Attempt to decompress payload with gzip, on failure pass the message through
+unmodified.
+
 ### GeoIP Lookup
 
 1. Extract `ip` from the `x_forwarded_for` attribute
