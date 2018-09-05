@@ -4,6 +4,9 @@
 
 package com.mozilla.telemetry;
 
+import com.mozilla.telemetry.options.InputFileFormat;
+import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.GeoCityLookup;
 import com.mozilla.telemetry.transforms.GzipDecompress;
 import com.mozilla.telemetry.transforms.ParseUserAgent;
@@ -13,7 +16,6 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
-import org.codehaus.jackson.map.SerializationConfig;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -23,9 +25,6 @@ public class ValidateTest {
 
   @Test
   public void gzipDecompress() {
-    // Without setting this feature, the ordering of properties in output JSON is non-deterministic.
-    Sink.objectMapper.configure(SerializationConfig.Feature.SORT_PROPERTIES_ALPHABETICALLY, true);
-
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
         // TODO calculate this compression for the test
@@ -38,10 +37,10 @@ public class ValidateTest {
 
     final PCollection<String> output = pipeline
         .apply(Create.of(input))
-        .apply("decodeJson", Validate.decodeJson)
-        .get(Validate.decodeJson.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode())
+        .get(DecodePubsubMessages.mainTag)
         .apply("gzipDecompress", new GzipDecompress())
-        .apply("encodeJson", Validate.encodeJson);
+        .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 
@@ -50,9 +49,6 @@ public class ValidateTest {
 
   @Test
   public void geoCityLookup() {
-    // Without setting this feature, the ordering of properties in output JSON is non-deterministic.
-    Sink.objectMapper.configure(SerializationConfig.Feature.SORT_PROPERTIES_ALPHABETICALLY, true);
-
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
         "{\"attributeMap\":{\"remote_addr\":\"8.8.8.8\"},\"payload\":\"\"}",
@@ -72,10 +68,10 @@ public class ValidateTest {
 
     final PCollection<String> output = pipeline
         .apply(Create.of(input))
-        .apply("decodeJson", Validate.decodeJson)
-        .get(Validate.decodeJson.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode())
+        .get(DecodePubsubMessages.mainTag)
         .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb"))
-        .apply("encodeJson", Validate.encodeJson);
+        .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 
@@ -84,9 +80,6 @@ public class ValidateTest {
 
   @Test
   public void parseUserAgent() {
-    // Without setting this feature, the ordering of properties in output JSON is non-deterministic.
-    Sink.objectMapper.configure(SerializationConfig.Feature.SORT_PROPERTIES_ALPHABETICALLY, true);
-
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
         "{\"attributeMap\":{\"user_agent\":\"\"},\"payload\":\"dGVzdA==\"}",
@@ -106,10 +99,10 @@ public class ValidateTest {
 
     final PCollection<String> output = pipeline
         .apply(Create.of(input))
-        .apply("decodeJson", Validate.decodeJson)
-        .get(Validate.decodeJson.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode())
+        .get(DecodePubsubMessages.mainTag)
         .apply("parseUserAgent", new ParseUserAgent())
-        .apply("encodeJson", Validate.encodeJson);
+        .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 

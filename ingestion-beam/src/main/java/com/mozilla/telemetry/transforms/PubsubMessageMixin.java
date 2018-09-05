@@ -6,7 +6,10 @@ package com.mozilla.telemetry.transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 /* Required to decode PubsubMessage from json
  *
@@ -24,10 +27,15 @@ import java.util.Map;
  * }
  */
 
+@JsonPropertyOrder(alphabetic = true)
 public abstract class PubsubMessageMixin {
   @JsonCreator
   public PubsubMessageMixin(
       @JsonProperty("payload") byte[] payload,
       @JsonProperty("attributeMap") Map<String, String> attributes
   ) { }
+
+  /** A Jackson ObjectMapper pre-configured to use this mixin for PubsubMessage. */
+  public static ObjectMapper MAPPER = new ObjectMapper()
+      .addMixIn(PubsubMessage.class, PubsubMessageMixin.class);
 }
