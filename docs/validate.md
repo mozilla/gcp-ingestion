@@ -18,7 +18,7 @@ in the Structured Ingestion pipeline.
 
 ### Implementation
 
-The above steps will be executed as a single Dataflow job that can accept
+The above steps will be executed as a single Apache Beam job that can accept
 either a streaming input from PubSub or a batch input from Cloud Storage.
 Message deduplication will be done by checking for the presence of ids as keys
 in Cloud Memory Store (managed Redis), and adding ids to Memory Store after
@@ -92,7 +92,7 @@ Each `docId` will be allowed through "at least once", and only be
 rejected as a duplicate if we have completed delivery of a message with the
 same `docId`. Duplicates will be considered errors and sent to the error topic.
 "Exactly once" semantics can be applied to derived data sets using SQL in
-BigQuery, and GroupByKey in Dataflow and Spark.
+BigQuery, and GroupByKey in Beam and Spark.
 
 ## Testing
 

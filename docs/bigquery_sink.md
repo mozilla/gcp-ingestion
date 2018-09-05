@@ -10,7 +10,7 @@ into BigQuery. Send errors to another PubSub topic or Cloud Storage location.
 
 ### Implementation
 
-Execute this as a Dataflow job.
+Execute this as an Apache Beam job.
 
 ### Configuration
 

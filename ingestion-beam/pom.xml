@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.mozilla.telemetry</groupId>
-    <artifactId>ingestion</artifactId>
+    <artifactId>ingestion-beam</artifactId>
     <version>0.1-SNAPSHOT</version>
 
     <properties>

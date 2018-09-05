@@ -1,10 +1,25 @@
 [![CircleCI](https://circleci.com/gh/mozilla/gcp-ingestion.svg?style=svg&circle-token=d98a470269580907d5c6d74d0e67612834a21be7)](https://circleci.com/gh/mozilla/gcp-ingestion)
 
-# Sink Service
+# Apache Beam Jobs for Ingestion
 
-A Dataflow job for delivering messages between Google Cloud services.
+This java module contains our Apache Beam jobs for use in Ingestion.
+Google Cloud Dataflow is a Google Cloud Platform service that natively runs
+Apache Beam jobs.
 
-For normalizing messages, see [Validation Service](#validation-service).
+# Table of Contents
+
+ * [Sink Job](#sink-job)
+   * [Supported Input and Outputs](#supported-input-and-outputs)
+   * [Encoding](#encoding)
+   * [Executing Jobs](#executing-jobs)
+ * [Validation Job](#validation-job)
+   * [Transforms](#transforms)
+   * [Executing Validation Jobs](#executing-validation-jobs)
+ * [Testing](#testing)
+
+# Sink Job
+
+A job for delivering messages between Google Cloud services.
 
 ## Supported Input and Outputs
 
@@ -177,9 +192,9 @@ gcloud dataflow jobs show "$JOB_ID"
 gsutil cat $BUCKET/output/*
 ```
 
-# Validation Service
+# Validation Job
 
-A Dataflow job for normalizing ingestion messages.
+A job for normalizing ingestion messages.
 
 ## Transforms
 
@@ -232,7 +247,7 @@ echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > 
 Run tests locally with [CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
 
 ```bash
-(cd .. && circleci build --job dataflow)
+(cd .. && circleci build --job ingestion-beam)
 ```
 
 To make more targeted test invocations, you can install Java and maven locally or

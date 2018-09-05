@@ -80,7 +80,7 @@ jobs:
         name: Remove Background Containers
         command: docker rm -f edge pubsub
         when: always
-  dataflow:
+  ingestion-beam:
     docker:
     - image: maven
     steps:
@@ -89,19 +89,19 @@ jobs:
         keys:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
-          - maven-repo-v1-{{ .Branch }}-{{ checksum "dataflow/pom.xml" }}
+          - maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
           - maven-repo-v1-{{ .Branch }}-
           - maven-repo-v1-
     - run:
         name: Download Geolite2
-        command: dataflow/bin/download-geolite2
+        command: ingestion-beam/bin/download-geolite2
     - run:
         name: Maven Test
-        command: cd dataflow && mvn clean test
+        command: cd ingestion-beam && mvn clean test
     - save_cache:
         paths:
           - ~/.m2
-        key: maven-repo-v1-{{ .Branch }}-{{ checksum "dataflow/pom.xml" }}
+        key: maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
 
 workflows:
   version: 2
@@ -109,4 +109,4 @@ workflows:
     jobs:
     - spelling
     - edge
-    - dataflow
+    - ingestion-beam
