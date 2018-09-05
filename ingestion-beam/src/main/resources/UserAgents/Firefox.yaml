@@ -1,0 +1,28 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# Docs: https://yauaa.basjes.nl/Internals-MakingNewRules.html
+
+config:
+# TODO add all matchers in https://github.com/relud/telemetry-sample/blob/master/appengine/validate/ua.py#L25-L58
+- matcher:
+    variable:
+    - 'Browser: agent.product.name="Firefox"^'
+    require:
+    - 'agent.product[1]="Firefox"'
+    extract:
+    - 'AgentName           : 1 : @Browser.name'
+    - 'AgentVersion        : 1 : @Browser.version'
+    - 'OperatingSystemName : 1 : agent.product.comments.(1)entry'
+- test:
+    input:
+      user_agent_string: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:63.0) Gecko/20100101 Firefox/63.0'
+    expected:
+      AgentName: Firefox
+      AgentVersion: '63.0'
+      AgentVersionMajor: '63'
+      AgentNameVersion: Firefox 63.0
+      AgentNameVersionMajor: Firefox 63
+      OperatingSystemName: Macintosh
+      OperatingSystemNameVersion: Macintosh ??
