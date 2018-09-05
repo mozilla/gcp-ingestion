@@ -24,7 +24,8 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PCollection;
 
-public class GeoCityLookup extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+public class GeoCityLookup
+    extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
   private final String geoCityDatabase;
 
   public GeoCityLookup(String geoCityDatabase) {

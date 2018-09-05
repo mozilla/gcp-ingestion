@@ -219,6 +219,11 @@ unmodified.
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
 1. Remove any`null` values added to attributes
 
+### Parse User Agent
+
+Attempt to extract browser, browser version, and os from the `user_agent`
+attribute, drop any nulls, and remove `user_agent` from attributes.
+
 ## Executing Validation Jobs
 
 Validation jobs are executed the same way as [executing sink jobs](#executing-jobs)
