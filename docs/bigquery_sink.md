@@ -1,6 +1,6 @@
 # BigQuery Sink Service Specification
 
-This document specifies the behavior of the service that delivers validated
+This document specifies the behavior of the service that delivers decoded
 messages into BigQuery.
 
 ## Data Flow
@@ -30,8 +30,8 @@ Accept optional configuration for:
 ### Routing
 
 Send messages to the fallback PubSub topic if they have no route configured.
-and add the additional attributes specified in [Validation Error Message Schema
-](validate.md#error-message-schema). If no fallback PubSub topic has been
+and add the additional attributes specified in [Decoded Error Message Schema
+](decoder.md#error-message-schema). If no fallback PubSub topic has been
 specified, drop the message.
 
 ### Ignore Unknown Values
@@ -55,8 +55,8 @@ errors returned are non-transient.
 
 #### Error Message Schema
 
-Always include the error attributes specified in the [Validation Error Message
-Schema](validate.md#error-message-schema).
+Always include the error attributes specified in the [Decoded Error Message
+Schema](decoder.md#error-message-schema).
 
 Encode errors received as type `TableRow` as JSON in the payload of a
 `PubsubMessage`, and add error attributes.

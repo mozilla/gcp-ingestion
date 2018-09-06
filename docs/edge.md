@@ -141,13 +141,13 @@ client.
 ### PubSub Topics
 
 All messages that sent a response code of 200 are forwarded to a single PubSub
-topic for validation and landfill.
+topic for decoding and landfill.
 
 ### GeoIP Lookups
 
 No GeoIP lookup is performed by the edge server. If a client IP is available
 then the PubSub consumer performs the lookup and then discards the IP before
-the message is forwarded to a validated PubSub topic.
+the message is forwarded to a decoded PubSub topic.
 
 ### Data Retention
 

@@ -19,7 +19,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ValidateTest {
+public class DecoderTest {
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 

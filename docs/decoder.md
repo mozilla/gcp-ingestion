@@ -1,6 +1,6 @@
-# Validation Service Specification
+# Decoder Service Specification
 
-This document specifies the behavior of the service that validates messages
+This document specifies the behavior of the service that decodes messages
 in the Structured Ingestion pipeline.
 
 ## Data Flow
@@ -13,7 +13,7 @@ in the Structured Ingestion pipeline.
 1. Add metadata fields to message
 1. Deduplicate message by `docId`
    * Generate `docId` for submission types that don't have one
-1. Write message to PubSub validated topic based on namespace and `docType`
+1. Write message to PubSub decoded topic based on `namespace` and `docType`
 1. Mark `docId` as seen in deduplication storage
 
 ### Implementation
@@ -24,7 +24,7 @@ Message deduplication will be done by checking for the presence of ids as keys
 in Cloud Memory Store (managed Redis), and adding ids to Memory Store after
 successful delivery to PubSub.
 
-### Validation Errors
+### Decoding Errors
 
 All messages that are rejected at any step of the Data Flow above will be
 forwarded to a PubSub error topic, for backfill and monitoring purposes.
@@ -32,8 +32,7 @@ This includes duplicate messages based on `docId`.
 
 #### Error message schema
 
-[Edge Server PubSub Message Schema](edge.md#edge-server-pubsub-message-schema)
-with two additional fields:
+The message that failed decoding, with two additional attributes:
 
 ```
 ...
@@ -48,7 +47,7 @@ required group attributes {
 
 See [Edge Server PubSub Message Schema](edge.md#edge-server-pubsub-message-schema).
 
-### Validated message metadata schema
+### Decoded message metadata schema
 
 Schema of the metadata object that is added to the message:
 
@@ -76,7 +75,7 @@ required group metadata {
 ### Message Acks
 
 Messages should only be acknowledged in the PubSub raw topic subscription after
-delivery to either a validated topic or the error topic.
+delivery to either a decoded topic or the error topic.
 
 If this is not possible then any time a message is not successfully delivered
 to PubSub it should by treated as lost data and the appropriate time window
@@ -96,7 +95,9 @@ BigQuery, and GroupByKey in Beam and Spark.
 
 ## Testing
 
-The validation service must have tests covering the full expected behavior.
+Always have 100% branch and statement test coverage for code that is in
+production. If a statement has variable behavior without branching, test all
+such variations.
 
 ### CI Testing
 

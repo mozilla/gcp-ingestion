@@ -12,9 +12,9 @@ Apache Beam jobs.
    * [Supported Input and Outputs](#supported-input-and-outputs)
    * [Encoding](#encoding)
    * [Executing Jobs](#executing-jobs)
- * [Validation Job](#validation-job)
+ * [Decoder Job](#decoder-job)
    * [Transforms](#transforms)
-   * [Executing Validation Jobs](#executing-validation-jobs)
+   * [Executing Decoder Jobs](#executing-decoder-jobs)
  * [Testing](#testing)
 
 # Sink Job
@@ -192,7 +192,7 @@ gcloud dataflow jobs show "$JOB_ID"
 gsutil cat $BUCKET/output/*
 ```
 
-# Validation Job
+# Decoder Job
 
 A job for normalizing ingestion messages.
 
@@ -224,12 +224,12 @@ unmodified.
 Attempt to extract browser, browser version, and os from the `user_agent`
 attribute, drop any nulls, and remove `user_agent` from attributes.
 
-## Executing Validation Jobs
+## Executing Decoder Jobs
 
-Validation jobs are executed the same way as [executing sink jobs](#executing-jobs)
+Decoder jobs are executed the same way as [executing sink jobs](#executing-jobs)
 but with a few extra flags:
 
- * `-Dexec.mainClass=com.mozilla.telemetry.Validate`
+ * `-Dexec.mainClass=com.mozilla.telemetry.Decoder`
  * `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
 
 Example:
@@ -243,7 +243,7 @@ echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > 
 ./bin/download-geolite2
 
 # do geo lookup on messages to stdout
-./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Validate -Dexec.args="\
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
     --geoCityDatabase=GeoLite2-City.mmdb \
     --inputType=file \
     --input=tmp/input.json \
