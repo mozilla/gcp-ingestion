@@ -154,6 +154,7 @@
                         <configuration>
                             <checkstyleRules>
                                 <module name="Checker">
+                                    <module name="NewlineAtEndOfFile"/>
                                     <module name="TreeWalker">
                                         <module name="UnusedImports"/>
                                     </module>
