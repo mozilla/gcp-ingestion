@@ -63,7 +63,8 @@ public class Decoder extends Sink {
         .apply("decompress", new GzipDecompress())
         .apply("geoCityLookup", new GeoCityLookup(options.getGeoCityDatabase()))
         .apply("parseUserAgent", new ParseUserAgent())
-        .apply("write main output", options.getOutputType().write(options));
+        .apply("write main output", options.getOutputType().write(options))
+        .apply("write output errors", errorOutput);
 
     pipeline.run();
   }
