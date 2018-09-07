@@ -124,7 +124,8 @@ public class Sink {
               input.get(DecodePubsubMessages.errorTag).apply(errorOutput);
               return input.get(DecodePubsubMessages.mainTag);
             }))
-        .apply("write main output", options.getOutputType().write(options));
+        .apply("write main output", options.getOutputType().write(options))
+        .apply("write output errors", errorOutput);
 
     pipeline.run();
   }
