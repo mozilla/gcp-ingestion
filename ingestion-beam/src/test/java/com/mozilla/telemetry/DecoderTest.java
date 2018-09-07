@@ -9,6 +9,7 @@ import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.GeoCityLookup;
 import com.mozilla.telemetry.transforms.GzipDecompress;
+import com.mozilla.telemetry.transforms.ParseUri;
 import com.mozilla.telemetry.transforms.ParseUserAgent;
 import java.util.Arrays;
 import java.util.List;
@@ -102,6 +103,47 @@ public class DecoderTest {
         .apply("decodeJson", InputFileFormat.json.decode())
         .get(DecodePubsubMessages.mainTag)
         .apply("parseUserAgent", new ParseUserAgent())
+        .apply("encodeJson", OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void parseUri() {
+    final List<String> input = Arrays.asList(
+        "{\"attributeMap\":"
+            + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
+            + "/main/Firefox/61.0a1/nightly/20180328030202\""
+            + "},\"payload\":\"\"}",
+        "{\"attributeMap\":"
+            + "{\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+            + "},\"payload\":\"\"}");
+
+    final List<String> expected = Arrays.asList(
+        "{\"attributeMap\":"
+            + "{\"app_name\":\"Firefox\""
+            + ",\"app_version\":\"61.0a1\""
+            + ",\"app_build_id\":\"20180328030202\""
+            + ",\"app_update_channel\":\"nightly\""
+            + ",\"document_namespace\":\"telemetry\""
+            + ",\"document_id\":\"ce39b608-f595-4c69-b6a6-f7a436604648\""
+            + ",\"document_type\":\"main\""
+            + "},\"payload\":\"\"}",
+        "{\"attributeMap\":"
+            + "{\"document_namespace\":\"eng-workflow\""
+            + ",\"document_version\":\"1\""
+            + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+            + ",\"document_type\":\"hgpush\""
+            + "},\"payload\":\"\"}");
+
+    final PCollection<String> output = pipeline
+        .apply(Create.of(input))
+        .apply("decodeJson", InputFileFormat.json.decode())
+        .get(DecodePubsubMessages.mainTag)
+        .apply("parseUserAgent", new ParseUri())
+        .get(ParseUri.mainTag)
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);

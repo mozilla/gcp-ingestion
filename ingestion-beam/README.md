@@ -200,6 +200,11 @@ A job for normalizing ingestion messages.
 
 These transforms are currently executed against each message in order.
 
+### Parse URI
+
+Attempt to extract attributes from `uri`, on failure send messages to the
+configured error output.
+
 ### Decompress
 
 Attempt to decompress payload with gzip, on failure pass the message through
@@ -217,7 +222,7 @@ unmodified.
     1. Extract `subdivisions[0].iso_code` as `geo_subdivision1`
     1. Extract `subdivisions[1].iso_code` as `geo_subdivision2`
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
-1. Remove any`null` values added to attributes
+1. Remove any `null` values added to attributes
 
 ### Parse User Agent
 
