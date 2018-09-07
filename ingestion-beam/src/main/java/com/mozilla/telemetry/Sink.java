@@ -9,15 +9,20 @@ import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.options.OutputType;
+import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation.Required;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.PDone;
 
 public class Sink {
   /**
@@ -109,16 +114,17 @@ public class Sink {
         .as(Options.class);
 
     final Pipeline pipeline = Pipeline.create(options);
+    final PTransform<PCollection<PubsubMessage>, PDone> errorOutput =
+        options.getErrorOutputType().write(options);
 
-    final PCollectionTuple inputs = pipeline.apply("input", options.getInputType().read(options));
-
-    inputs
-        .get(DecodePubsubMessages.mainTag)
+    pipeline
+        .apply("input", options.getInputType().read(options))
+        .apply("write input parsing errors",
+            CompositeTransform.of((PCollectionTuple input) -> {
+              input.get(DecodePubsubMessages.errorTag).apply(errorOutput);
+              return input.get(DecodePubsubMessages.mainTag);
+            }))
         .apply("write main output", options.getOutputType().write(options));
-
-    inputs
-        .get(DecodePubsubMessages.errorTag)
-        .apply("write error output", options.getErrorOutputType().write(options));
 
     pipeline.run();
   }
