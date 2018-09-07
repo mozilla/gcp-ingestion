@@ -14,7 +14,7 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.Validation.Required;
 import org.apache.beam.sdk.values.PCollectionTuple;
 
-public class Validate extends Sink {
+public class Decoder extends Sink {
   public interface Options extends Sink.Options {
     @Description("Path to GeoIP2-City.mmdb")
     @Required

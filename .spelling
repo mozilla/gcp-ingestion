@@ -43,5 +43,6 @@ TCP
 timestamp
 TLS
 unencoded
+URI
 URL
 UUID
