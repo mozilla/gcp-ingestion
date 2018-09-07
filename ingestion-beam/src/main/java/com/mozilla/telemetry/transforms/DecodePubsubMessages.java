@@ -4,9 +4,7 @@
 
 package com.mozilla.telemetry.transforms;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
-import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -106,22 +104,13 @@ public abstract class DecodePubsubMessages
 
   abstract PubsubMessage transform(String element) throws java.io.IOException;
 
-  private PubsubMessage toError(String element, Throwable e) {
-    // Create attributes map with required error fields
-    Map<String, String> attributes = ImmutableMap.of(
-        "error_type", this.toString(),
-        "error_message", e.toString()
-    );
-    return new PubsubMessage(element.getBytes(), attributes);
-  }
-
   private class Fn extends DoFn<String, PubsubMessage> {
     @ProcessElement
     public void processElement(@Element String element, MultiOutputReceiver out) {
       try {
         out.get(mainTag).output(transform(element));
       } catch (Throwable e) {
-        out.get(errorTag).output(toError(element, e));
+        out.get(errorTag).output(FailureMessage.of(this, element, e));
       }
     }
   }

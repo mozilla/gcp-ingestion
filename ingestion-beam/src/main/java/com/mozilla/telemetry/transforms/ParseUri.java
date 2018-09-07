@@ -63,21 +63,14 @@ public class ParseUri
     return new PubsubMessage(value.getPayload(), attributes);
   }
 
-  private static PubsubMessage toError(PubsubMessage value, Throwable e) {
-    // Copy attributes
-    final Map<String, String> attributes = new HashMap<>(value.getAttributeMap());
-    attributes.put("error_type", ParseUri.class.getName());
-    attributes.put("error_message", e.toString());
-    return new PubsubMessage(value.getPayload(), attributes);
-  }
-
   private static class Fn extends DoFn<PubsubMessage, PubsubMessage> {
     @ProcessElement
-    public void processElement(@Element PubsubMessage value, MultiOutputReceiver out) {
+    public void processElement(@Element PubsubMessage element, MultiOutputReceiver out) {
       try {
-        out.get(mainTag).output(transform(value));
+        out.get(mainTag).output(transform(element));
       } catch (Throwable e) {
-        out.get(errorTag).output(toError(value, e));
+        out.get(errorTag).output(
+            FailureMessage.of(ParseUri.class.getName(), element.getPayload(), e));
       }
     }
   }

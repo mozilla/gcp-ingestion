@@ -6,8 +6,6 @@ package com.mozilla.telemetry.transforms;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.services.bigquery.model.TableRow;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -34,21 +32,12 @@ public class PubsubMessageToTableRow
       return output;
     }
 
-    private PubsubMessage toError(PubsubMessage element, Throwable e) {
-      // Create attributes map with required error fields
-      Map<String, String> attributes = new HashMap<String, String>(element.getAttributeMap());
-      attributes.put("error_type", this.toString());
-      attributes.put("error_message", e.toString());
-      // Return a new PubsubMessage
-      return new PubsubMessage(element.getPayload(), attributes);
-    }
-
     @ProcessElement
     public void processElement(@Element PubsubMessage element, MultiOutputReceiver out) {
       try {
         out.get(mainTag).output(transform(element));
       } catch (Throwable e) {
-        out.get(errorTag).output(toError(element, e));
+        out.get(errorTag).output(FailureMessage.of(this, element.getPayload(), e));
       }
     }
   }
