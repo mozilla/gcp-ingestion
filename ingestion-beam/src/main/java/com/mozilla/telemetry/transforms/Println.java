@@ -10,53 +10,36 @@ import org.apache.beam.sdk.values.PDone;
  * Transform that prints each element of the collection to a specified console stream.
  */
 public class Println extends PTransform<PCollection<String>, PDone> {
-
-  public enum Destination {
-    stdout, stderr
-  }
-
-  private final Fn fn;
+  private final DoFn<String, Void> fn;
 
   // Private constructor forces use of static factory methods.
-  private Println(Fn fn) {
+  private Println(DoFn<String, Void> fn) {
     this.fn = fn;
   }
 
-  public static Println to(Destination destination) {
-    return new Println(new Fn(destination));
-  }
-
+  /** Transform that prints to stdout. */
   public static Println stdout() {
-    return new Println(new Fn(Destination.stdout));
-  }
-
-  public static Println stderr() {
-    return new Println(new Fn(Destination.stderr));
-  }
-
-  private static class Fn extends DoFn<String, Void> {
-    private final Destination destination;
-
-    public Fn(Destination destination) {
-      this.destination = destination;
-    }
-
-    @ProcessElement
-    public void processElement(@Element String element) {
-      if (destination.equals(Destination.stdout)) {
+    return new Println(new DoFn<String, Void>() {
+      @ProcessElement
+      public void processElement(@Element String element) {
         System.out.println(element);
       }
-      if (destination.equals(Destination.stderr)) {
+    });
+  }
+
+  /** Transform that prints to stderr. */
+  public static Println stderr() {
+    return new Println(new DoFn<String, Void>() {
+      @ProcessElement
+      public void processElement(@Element String element) {
         System.err.println(element);
       }
-    }
+    });
   }
 
   @Override
   public PDone expand(PCollection<String> input) {
-    input.apply(
-        "Print to " + fn.destination.toString(),
-        ParDo.of(fn));
+    input.apply(ParDo.of(fn));
     return PDone.in(input.getPipeline());
   }
 }
