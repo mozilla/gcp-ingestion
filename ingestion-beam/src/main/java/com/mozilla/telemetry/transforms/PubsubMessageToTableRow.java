@@ -37,7 +37,7 @@ public class PubsubMessageToTableRow
       try {
         out.get(mainTag).output(transform(element));
       } catch (Throwable e) {
-        out.get(errorTag).output(FailureMessage.of(this, element.getPayload(), e));
+        out.get(errorTag).output(FailureMessage.of(this, element, e));
       }
     }
   }

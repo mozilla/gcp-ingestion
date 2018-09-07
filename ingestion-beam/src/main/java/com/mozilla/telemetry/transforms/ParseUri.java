@@ -70,7 +70,7 @@ public class ParseUri
         out.get(mainTag).output(transform(element));
       } catch (Throwable e) {
         out.get(errorTag).output(
-            FailureMessage.of(ParseUri.class.getName(), element.getPayload(), e));
+            FailureMessage.of(ParseUri.class.getName(), element, e));
       }
     }
   }

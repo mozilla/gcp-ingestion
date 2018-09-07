@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.transforms;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 import java.util.Arrays;
 import java.util.Map;
@@ -10,6 +11,18 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
  * packets for error output.
  */
 public class FailureMessage {
+
+  /**
+   * Return a PubsubMessage wrapping a String payload with attributes describing the error.
+   */
+  public static PubsubMessage of(Object caller, PubsubMessage payload, Throwable e) {
+    try {
+      return FailureMessage.of(caller, PubsubMessageMixin.MAPPER.writeValueAsBytes(payload), e);
+    } catch (JsonProcessingException jsonException) {
+      throw new RuntimeException(
+          "Unexpected failure to encode a PubsubMessage to bytes", jsonException);
+    }
+  }
 
   /**
    * Return a PubsubMessage wrapping a String payload with attributes describing the error.
