@@ -6,10 +6,10 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
-import com.mozilla.telemetry.transforms.GeoCityLookup;
-import com.mozilla.telemetry.transforms.GzipDecompress;
-import com.mozilla.telemetry.transforms.ParseUri;
-import com.mozilla.telemetry.transforms.ParseUserAgent;
+import com.mozilla.telemetry.decoder.GeoCityLookup;
+import com.mozilla.telemetry.decoder.GzipDecompress;
+import com.mozilla.telemetry.decoder.ParseUri;
+import com.mozilla.telemetry.decoder.ParseUserAgent;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.Description;
