@@ -49,15 +49,17 @@ public class Decoder extends Sink {
 
     pipeline
         .apply("input", options.getInputType().read(options))
-        .apply(CompositeTransform.of((PCollectionTuple input) -> {
-          input.get(DecodePubsubMessages.errorTag).apply(errorOutput);
-          return input.get(DecodePubsubMessages.mainTag);
-        }))
-        .apply(new ParseUri())
-        .apply(CompositeTransform.of((PCollectionTuple input) -> {
-          input.get(ParseUri.errorTag).apply(errorOutput);
-          return input.get(ParseUri.mainTag);
-        }))
+        .apply("write input parsing errors",
+            CompositeTransform.of((PCollectionTuple input) -> {
+              input.get(DecodePubsubMessages.errorTag).apply(errorOutput);
+              return input.get(DecodePubsubMessages.mainTag);
+            }))
+        .apply("parseUri", new ParseUri())
+        .apply("write parseUri errors",
+            CompositeTransform.of((PCollectionTuple input) -> {
+              input.get(ParseUri.errorTag).apply(errorOutput);
+              return input.get(ParseUri.mainTag);
+            }))
         .apply("decompress", new GzipDecompress())
         .apply("geoCityLookup", new GeoCityLookup(options.getGeoCityDatabase()))
         .apply("parseUserAgent", new ParseUserAgent())
