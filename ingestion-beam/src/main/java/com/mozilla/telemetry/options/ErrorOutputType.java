@@ -1,7 +1,7 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.Sink;
-import com.mozilla.telemetry.transforms.Println.Destination;
+import com.mozilla.telemetry.transforms.Println;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
@@ -16,7 +16,7 @@ public enum ErrorOutputType {
     public PTransform<PCollection<PubsubMessage>, PDone> write(
         Sink.Options options
     ) {
-      return OutputType.print(FORMAT, Destination.stdout);
+      return OutputType.print(FORMAT, Println.stdout());
     }
   },
 
@@ -25,7 +25,7 @@ public enum ErrorOutputType {
     public PTransform<PCollection<PubsubMessage>, PDone> write(
         Sink.Options options
     ) {
-      return OutputType.print(FORMAT, Destination.stderr);
+      return OutputType.print(FORMAT, Println.stderr());
     }
   },
 
