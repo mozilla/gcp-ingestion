@@ -4,10 +4,13 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.google.common.io.Resources;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -31,42 +34,43 @@ public class ValidateSchema
   public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
   public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
 
+  private static class SchemaNotFoundException extends Exception {}
+
   private static final Map<String, Schema> schemas = new HashMap<>();
 
-  private static void loadSchema(String name) {
-    try (InputStream inputStream = ValidateSchema.class.getResourceAsStream(name)) {
-      JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
+  private static void loadSchema(String name) throws SchemaNotFoundException {
+    try {
+      final URL url = Resources.getResource(name);
+      final String schema = Resources.toString(url, Charset.defaultCharset());
+      JSONObject rawSchema = new JSONObject(schema);
       schemas.put(name, SchemaLoader.load(rawSchema));
     } catch (IOException e) {
-      throw new UncheckedIOException(e);
+      // TODO load all existing schemas on startup
+      throw new SchemaNotFoundException();
     }
   }
 
-  private static Schema getSchema(Map<String, String> attributes) {
-    String name = null;
-    if (attributes != null) {
-      name = StringSubstitutor.replace(
-        "schemas/${document_namespace}/${document_type}/"
-            + "${document_type}.${document_version}.schema.json",
-        attributes);
-      // TODO load all existing schemas on startup
-      if (!schemas.containsKey(name)) {
-        loadSchema(name);
-      }
+  private static Schema getSchema(Map<String, String> attributes) throws SchemaNotFoundException {
+    if (attributes == null) {
+      throw new SchemaNotFoundException();
+    }
+    final String name = StringSubstitutor.replace(
+      "schemas/${document_namespace}/${document_type}/"
+          + "${document_type}.${document_version}.schema.json",
+      attributes);
+    if (!schemas.containsKey(name)) {
+      loadSchema(name);
     }
     return schemas.get(name);
   }
 
-  private static PubsubMessage transform(PubsubMessage element) {
+  private static PubsubMessage transform(PubsubMessage element) throws SchemaNotFoundException {
     // Throws JSONException if payload isn't a valid json object
     final JSONObject json = new JSONObject(new String(element.getPayload()));
-    // Returns null if there's no matching schema
+    // Throws SchemaNotFoundException if there's no schema
     final Schema schema = getSchema(element.getAttributeMap());
-    // Accept any valid json object if there's no schema
-    if (schema != null) {
-      // Throws ValidationException if schema doesn't match
-      schema.validate(json);
-    }
+    // Throws ValidationException if schema doesn't match
+    schema.validate(json);
     return new PubsubMessage(element.getPayload(), element.getAttributeMap());
   }
 

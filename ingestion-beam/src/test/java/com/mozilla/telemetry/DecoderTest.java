@@ -4,6 +4,8 @@
 
 package com.mozilla.telemetry;
 
+import com.google.common.io.Resources;
+import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -12,13 +14,25 @@ import com.mozilla.telemetry.decoder.ValidateSchema;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TypeDescriptor;
+import org.everit.json.schema.loader.SchemaLoader;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -113,7 +127,7 @@ public class DecoderTest {
   }
 
   @Test
-  public void parseUri() {
+  public void parseUri() throws IOException {
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":"
             + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
@@ -160,6 +174,13 @@ public class DecoderTest {
         .apply(Create.of(input))
         .apply("decodeText", InputFileFormat.text.decode())
         .get(DecodePubsubMessages.mainTag)
+        .apply("addAttributes", MapElements
+            .into(new TypeDescriptor<PubsubMessage>(){})
+            .via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of(
+                "document_namespace", "test",
+                "document_type", "test",
+                "document_version", "1"
+            ))))
         .apply("validateSchema", new ValidateSchema());
 
     final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}");
