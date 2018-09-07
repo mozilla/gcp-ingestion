@@ -9,9 +9,8 @@ import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
-import com.mozilla.telemetry.transforms.Foreach;
+import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
-import java.util.function.Consumer;
 import org.apache.beam.sdk.extensions.jackson.AsJsons;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
@@ -47,7 +46,7 @@ public enum OutputType {
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply(
-            print(options.getOutputFileFormat(), System.out::println));
+            print(options.getOutputFileFormat(), Println.stdout()));
         return input.apply(EMPTY_ERROR_COLLECTION);
       });
     }
@@ -60,7 +59,7 @@ public enum OutputType {
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply(
-            print(options.getOutputFileFormat(), System.err::println));
+            print(options.getOutputFileFormat(), Println.stderr()));
         return input.apply(EMPTY_ERROR_COLLECTION);
       });
     }
@@ -120,11 +119,11 @@ public enum OutputType {
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> print(
       OutputFileFormat format,
-      Consumer<String> fn
+      PTransform<PCollection<String>, PDone> output
   ) {
     return CompositeTransform.of(input -> input
         .apply(format.encode())
-        .apply(Foreach.string(fn))
+        .apply(output)
     );
   }
 
@@ -178,11 +177,10 @@ public enum OutputType {
    * Public static fields and methods.
    */
 
-  private static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> EMPTY_ERROR_COLLECTION =
-      CompositeTransform.of(input -> input
+  private static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>>
+      EMPTY_ERROR_COLLECTION = CompositeTransform.of(input -> input
           .getPipeline()
-          .apply(Create.empty(PubsubMessageWithAttributesCoder.of())
-      ));
+          .apply(Create.empty(PubsubMessageWithAttributesCoder.of())));
 
   public static FixedWindows parseWindow(String duration) {
     return FixedWindows.of(DurationUtils.parseDuration(duration));

@@ -44,4 +44,18 @@ public class SinkTest {
 
     pipeline.run();
   }
+
+  @Test
+  public void mainCanWriteToStdout() {
+    String inputPath = this.getClass().getResource("single-message-input.json").getPath();
+
+    // We are simply making sure this runs without throwing an exception.
+    Sink.main(new String[]{
+        "--inputFileFormat=json",
+        "--inputType=file",
+        "--input=" + inputPath,
+        "--outputFileFormat=json",
+        "--outputType=stdout"
+    });
+  }
 }
