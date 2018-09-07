@@ -7,8 +7,6 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
@@ -26,7 +24,6 @@ import org.apache.commons.text.StringSubstitutor;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 
 public class ValidateSchema
     extends PTransform<PCollection<PubsubMessage>, PCollectionTuple> {
@@ -55,9 +52,9 @@ public class ValidateSchema
       throw new SchemaNotFoundException();
     }
     final String name = StringSubstitutor.replace(
-      "schemas/${document_namespace}/${document_type}/"
-          + "${document_type}.${document_version}.schema.json",
-      attributes);
+        "schemas/${document_namespace}/${document_type}/"
+            + "${document_type}.${document_version}.schema.json",
+        attributes);
     if (!schemas.containsKey(name)) {
       loadSchema(name);
     }
