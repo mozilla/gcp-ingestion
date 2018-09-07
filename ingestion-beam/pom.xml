@@ -171,6 +171,9 @@
                         <configuration>
                             <checkstyleRules>
                                 <module name="Checker">
+                                    <module name="TreeWalker">
+                                        <module name="AvoidStarImport"/>
+                                    </module>
                                     <module name="NewlineAtEndOfFile"/>
                                     <module name="TreeWalker">
                                         <module name="UnusedImports"/>

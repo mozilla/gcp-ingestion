@@ -22,7 +22,6 @@ public class ParseUri
 
   public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
   public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
-  public static TupleTagList additionalOutputTags = TupleTagList.of(errorTag);
 
   private static Map<String, String> zip(String[] keys, String[] values) {
     Map<String, String> map = new HashMap<>();
@@ -82,7 +81,7 @@ public class ParseUri
   public PCollectionTuple expand(PCollection<PubsubMessage> input) {
     PCollectionTuple output = input.apply(ParDo
         .of(FN)
-        .withOutputTags(mainTag, additionalOutputTags)
+        .withOutputTags(mainTag, TupleTagList.of(errorTag))
     );
     output.get(errorTag).setCoder(PubsubMessageWithAttributesCoder.of());
     return output;

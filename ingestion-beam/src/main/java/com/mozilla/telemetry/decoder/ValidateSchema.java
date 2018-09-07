@@ -30,7 +30,6 @@ public class ValidateSchema
 
   public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
   public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
-  public static TupleTagList additionalOutputTags = TupleTagList.of(errorTag);
 
   private static final Map<String, Schema> schemas = new HashMap<>();
 
@@ -44,24 +43,29 @@ public class ValidateSchema
   }
 
   private static Schema getSchema(Map<String, String> attributes) {
-    final String name = StringSubstitutor.replace(
+    String name = null;
+    if (attributes != null) {
+      name = StringSubstitutor.replace(
         "schemas/${document_namespace}/${document_type}/"
             + "${document_type}.${document_version}.schema.json",
         attributes);
-    // TODO load all existing schemas on startup
-    if (!schemas.containsKey(name)) {
-      loadSchema(name);
+      // TODO load all existing schemas on startup
+      if (!schemas.containsKey(name)) {
+        loadSchema(name);
+      }
     }
     return schemas.get(name);
   }
 
   private static PubsubMessage transform(PubsubMessage element) {
+    // Throws JSONException if payload isn't a valid json object
     final JSONObject json = new JSONObject(new String(element.getPayload()));
-    if (element.getAttributeMap() != null) {
-      final Schema schema = getSchema(element.getAttributeMap());
-      if (schema != null) {
-        schema.validate(json);
-      }
+    // Returns null if there's no matching schema
+    final Schema schema = getSchema(element.getAttributeMap());
+    // Accept any valid json object if there's no schema
+    if (schema != null) {
+      // Throws ValidationException if schema doesn't match
+      schema.validate(json);
     }
     return new PubsubMessage(element.getPayload(), element.getAttributeMap());
   }
@@ -84,7 +88,7 @@ public class ValidateSchema
   public PCollectionTuple expand(PCollection<PubsubMessage> input) {
     PCollectionTuple output = input.apply(ParDo
         .of(FN)
-        .withOutputTags(mainTag, additionalOutputTags)
+        .withOutputTags(mainTag, TupleTagList.of(errorTag))
     );
     output.get(errorTag).setCoder(PubsubMessageWithAttributesCoder.of());
     return output;
