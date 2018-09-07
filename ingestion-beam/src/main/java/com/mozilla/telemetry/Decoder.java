@@ -4,12 +4,13 @@
 
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.transforms.CompositeTransform;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
+import com.mozilla.telemetry.decoder.ValidateSchema;
+import com.mozilla.telemetry.transforms.CompositeTransform;
+import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.Description;
@@ -59,6 +60,12 @@ public class Decoder extends Sink {
             CompositeTransform.of((PCollectionTuple input) -> {
               input.get(ParseUri.errorTag).apply(errorOutput);
               return input.get(ParseUri.mainTag);
+            }))
+        .apply("validateSchema", new ValidateSchema())
+        .apply("write validateSchema errors",
+            CompositeTransform.of((PCollectionTuple input) -> {
+              input.get(ValidateSchema.errorTag).apply(errorOutput);
+              return input.get(ValidateSchema.mainTag);
             }))
         .apply("decompress", new GzipDecompress())
         .apply("geoCityLookup", new GeoCityLookup(options.getGeoCityDatabase()))

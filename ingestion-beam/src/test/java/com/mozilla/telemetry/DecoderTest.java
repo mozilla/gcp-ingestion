@@ -4,19 +4,21 @@
 
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.options.InputFileFormat;
-import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
+import com.mozilla.telemetry.decoder.ValidateSchema;
+import com.mozilla.telemetry.options.InputFileFormat;
+import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionTuple;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -142,11 +144,35 @@ public class DecoderTest {
         .apply(Create.of(input))
         .apply("decodeJson", InputFileFormat.json.decode())
         .get(DecodePubsubMessages.mainTag)
-        .apply("parseUserAgent", new ParseUri())
+        .apply("parseUri", new ParseUri())
         .get(ParseUri.mainTag)
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void validateSchema() {
+    final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
+    final PCollectionTuple output = pipeline
+        .apply(Create.of(input))
+        .apply("decodeText", InputFileFormat.text.decode())
+        .get(DecodePubsubMessages.mainTag)
+        .apply("validateSchema", new ValidateSchema());
+
+    final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}");
+    final PCollection<String> main = output
+        .get(ValidateSchema.mainTag)
+        .apply("encodeTextMain", OutputFileFormat.text.encode());
+    PAssert.that(main).containsInAnyOrder(expectedMain);
+
+    final List<String> expectedError = Arrays.asList("[]", "{");
+    final PCollection<String> error = output
+        .get(ValidateSchema.errorTag)
+        .apply("encodeTextError", OutputFileFormat.text.encode());
+    PAssert.that(error).containsInAnyOrder(expectedError);
 
     pipeline.run();
   }
