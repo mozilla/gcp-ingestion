@@ -31,7 +31,11 @@ public class ValidateSchema
   public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
   public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
 
-  private static class SchemaNotFoundException extends Exception {}
+  private static class SchemaNotFoundException extends Exception {
+    SchemaNotFoundException(String msg) {
+      super(msg);
+    }
+  }
 
   private static final Map<String, Schema> schemas = new HashMap<>();
 
@@ -43,14 +47,15 @@ public class ValidateSchema
       schemas.put(name, SchemaLoader.load(rawSchema));
     } catch (IOException e) {
       // TODO load all existing schemas on startup
-      throw new SchemaNotFoundException();
+      throw new SchemaNotFoundException("No schema with name:" + name);
     }
   }
 
   private static Schema getSchema(Map<String, String> attributes) throws SchemaNotFoundException {
     if (attributes == null) {
-      throw new SchemaNotFoundException();
+      throw new SchemaNotFoundException("No schema for message with null attributeMap");
     }
+    // This is the path provided by mozilla-pipeline-schemas
     final String name = StringSubstitutor.replace(
         "schemas/${document_namespace}/${document_type}/"
             + "${document_type}.${document_version}.schema.json",
