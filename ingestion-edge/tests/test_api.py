@@ -27,8 +27,8 @@ def test_publish(
     requests_session: requests.Session,
     server: str,
 ):
-    from edge.conf import ROUTE_TABLE
-    from edge.publish import client as publisher
+    from ingestion_edge.conf import ROUTE_TABLE
+    from ingestion_edge.publish import client as publisher
     from google.cloud.pubsub import SubscriberClient
 
     subscriber = SubscriberClient()
