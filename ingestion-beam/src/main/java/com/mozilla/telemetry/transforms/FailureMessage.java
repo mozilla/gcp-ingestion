@@ -16,7 +16,10 @@ public class FailureMessage {
    * Return a modified PubsubMessage with additional attributes describing the error.
    */
   public static PubsubMessage of(Object caller, PubsubMessage message, Throwable e) {
-    final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+    final Map<String, String> attributes = new HashMap<>();
+    if (message.getAttributeMap() != null) {
+      attributes.putAll(message.getAttributeMap());
+    }
     attributes.putAll(errorAttributes(caller, e));
     return new PubsubMessage(message.getPayload(), attributes);
   }
