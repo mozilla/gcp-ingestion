@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry;
 
+import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -70,6 +71,12 @@ public class Decoder extends Sink {
         .apply("decompress", new GzipDecompress())
         .apply("geoCityLookup", new GeoCityLookup(options.getGeoCityDatabase()))
         .apply("parseUserAgent", new ParseUserAgent())
+        .apply("addMetadata", new AddMetadata())
+        .apply("write addMetadata errors",
+            CompositeTransform.of((PCollectionTuple input) -> {
+              input.get(AddMetadata.errorTag).apply(errorOutput);
+              return input.get(AddMetadata.mainTag);
+            }))
         .apply("write main output", options.getOutputType().write(options))
         .apply("write output errors", errorOutput);
 

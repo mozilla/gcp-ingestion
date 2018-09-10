@@ -6,9 +6,9 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.transforms.FailureMessage;
+import com.mozilla.telemetry.utils.Json;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -42,8 +42,9 @@ public class ValidateSchema
   private static void loadSchema(String name) throws SchemaNotFoundException {
     try {
       final URL url = Resources.getResource(name);
-      final String schema = Resources.toString(url, Charset.defaultCharset());
-      JSONObject rawSchema = new JSONObject(schema);
+      final byte[] schema = Resources.toByteArray(url);
+      // Throws IOException if not a valid json object
+      JSONObject rawSchema = Json.readJSONObject(schema);
       schemas.put(name, SchemaLoader.load(rawSchema));
     } catch (IOException e) {
       // TODO load all existing schemas on startup
@@ -66,14 +67,15 @@ public class ValidateSchema
     return schemas.get(name);
   }
 
-  private static PubsubMessage transform(PubsubMessage element) throws SchemaNotFoundException {
-    // Throws JSONException if payload isn't a valid json object
-    final JSONObject json = new JSONObject(new String(element.getPayload()));
+  private static PubsubMessage transform(PubsubMessage element)
+      throws SchemaNotFoundException, IOException {
+    // Throws IOException if not a valid json object
+    final JSONObject json = Json.readJSONObject(element.getPayload());
     // Throws SchemaNotFoundException if there's no schema
     final Schema schema = getSchema(element.getAttributeMap());
     // Throws ValidationException if schema doesn't match
     schema.validate(json);
-    return new PubsubMessage(element.getPayload(), element.getAttributeMap());
+    return new PubsubMessage(json.toString().getBytes(), element.getAttributeMap());
   }
 
   private static class Fn extends DoFn<PubsubMessage, PubsubMessage> {

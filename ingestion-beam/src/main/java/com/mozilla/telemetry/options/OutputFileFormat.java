@@ -4,7 +4,7 @@
 
 package com.mozilla.telemetry.options;
 
-import com.mozilla.telemetry.transforms.PubsubMessageMixin;
+import com.mozilla.telemetry.utils.Json;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.TypeDescriptors;
@@ -27,9 +27,9 @@ public enum OutputFileFormat {
           .into(TypeDescriptors.strings())
           .via((PubsubMessage message) -> {
             try {
-              return PubsubMessageMixin.MAPPER.writeValueAsString(message);
+              return Json.asString(message);
             } catch (Throwable e) {
-              throw new RuntimeException();
+              throw new RuntimeException(e);
             }
           });
     }

@@ -5,6 +5,7 @@
 package com.mozilla.telemetry;
 
 import com.google.common.collect.ImmutableMap;
+import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -182,6 +183,36 @@ public class DecoderTest {
     final List<String> expectedError = Arrays.asList("[]", "{");
     final PCollection<String> error = output
         .get(ValidateSchema.errorTag)
+        .apply("encodeTextError", OutputFileFormat.text.encode());
+    PAssert.that(error).containsInAnyOrder(expectedError);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void addMetadata() {
+    final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
+    final PCollectionTuple output = pipeline
+        .apply(Create.of(input))
+        .apply("decodeText", InputFileFormat.text.decode())
+        .get(DecodePubsubMessages.mainTag)
+        .apply("addAttributes", MapElements
+            .into(new TypeDescriptor<PubsubMessage>(){})
+            .via(element ->
+                new PubsubMessage(element.getPayload(), ImmutableMap.of("meta", "data"))))
+        .apply("addMetadata", new AddMetadata());
+
+    final List<String> expectedMain = Arrays.asList(
+        "{\"metadata\":{\"meta\":\"data\"}}",
+        "{\"metadata\":{\"meta\":\"data\"},\"id\":null}");
+    final PCollection<String> main = output
+        .get(AddMetadata.mainTag)
+        .apply("encodeTextMain", OutputFileFormat.text.encode());
+    PAssert.that(main).containsInAnyOrder(expectedMain);
+
+    final List<String> expectedError = Arrays.asList("{", "[]");
+    final PCollection<String> error = output
+        .get(AddMetadata.errorTag)
         .apply("encodeTextError", OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 

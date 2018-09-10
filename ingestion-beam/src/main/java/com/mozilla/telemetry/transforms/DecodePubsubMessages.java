@@ -70,13 +70,7 @@ public abstract class DecodePubsubMessages
 
   public static class Json extends DecodePubsubMessages {
     PubsubMessage transform(String element) throws IOException {
-      PubsubMessage output = PubsubMessageMixin.MAPPER.readValue(element, PubsubMessage.class);
-      if (output == null) {
-        throw new NullPointerException();
-      } else if (output.getPayload() == null) {
-        throw new NullPointerException();
-      }
-      return output;
+      return com.mozilla.telemetry.utils.Json.readPubsubMessage(element);
     }
   }
 
