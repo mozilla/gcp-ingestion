@@ -13,7 +13,7 @@ jobs:
     - run:
         name: Spell Check
         command: mdspell --ignore-numbers --en-us --report '**/*.md'
-  edge:
+  ingestion-edge:
     docker:
     - image: docker:18.05.0-ce
     steps:
@@ -29,19 +29,19 @@ jobs:
           "$CIRCLE_PROJECT_USERNAME"
           "$CIRCLE_PROJECT_REPONAME"
           "$CIRCLE_BUILD_URL"
-          > edge/version.json
+          > ingestion-edge/version.json
     - run:
         name: Build Docker Container
-        command: docker build -t mozilla/edge:build edge
+        command: docker build -t mozilla/ingestion-edge:build ingestion-edge
     - run:
         name: Create Docker Network
-        command: docker network ls --format '{{.Name}}' | grep -qx edge || docker network create edge
+        command: docker network ls --format '{{.Name}}' | grep -qx ingestion-edge || docker network create ingestion-edge
     - run:
         name: Start PubSub Emulator
         command: >-
           docker run
           --detach
-          --network edge
+          --network ingestion-edge
           --name pubsub
           google/cloud-sdk
           gcloud beta emulators pubsub start --host-port 0.0.0.0:$PUBSUB_PORT
@@ -55,9 +55,9 @@ jobs:
           --env PUBSUB_EMULATOR_HOST=pubsub:$PUBSUB_PORT
           --env ROUTE_TABLE=$ROUTE_TABLE
           --env CREATE_TOPICS=yes
-          --network edge
-          --name edge
-          mozilla/edge:build
+          --network ingestion-edge
+          --name ingestion-edge
+          mozilla/ingestion-edge:build
         environment: *env
     - run:
         name: PyTest
@@ -68,17 +68,17 @@ jobs:
           --interactive
           --env PUBSUB_EMULATOR_HOST=pubsub:$PUBSUB_PORT
           --env ROUTE_TABLE=$ROUTE_TABLE
-          --network edge
-          mozilla/edge:build
+          --network ingestion-edge
+          mozilla/ingestion-edge:build
           py.test
-          --server http://edge:8000
+          --server http://ingestion-edge:8000
           --create-pubsub-resources
           --flake8
           --mypy --mypy-ignore-missing-imports
         environment: *env
     - run:
         name: Remove Background Containers
-        command: docker rm -f edge pubsub
+        command: docker rm -f ingestion-edge pubsub
         when: always
   ingestion-beam:
     docker:
@@ -108,5 +108,5 @@ workflows:
   build:
     jobs:
     - spelling
-    - edge
+    - ingestion-edge
     - ingestion-beam
