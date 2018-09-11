@@ -20,7 +20,7 @@ import org.apache.beam.sdk.options.Validation.Required;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.PDone;
+import org.apache.beam.sdk.values.POutput;
 
 public class Decoder extends Sink {
   public interface Options extends Sink.Options {
@@ -46,7 +46,7 @@ public class Decoder extends Sink {
         .as(Options.class);
 
     final Pipeline pipeline = Pipeline.create(options);
-    final PTransform<PCollection<PubsubMessage>, PDone> errorOutput =
+    final PTransform<PCollection<PubsubMessage>, ? extends POutput> errorOutput =
         options.getErrorOutputType().write(options);
 
     pipeline

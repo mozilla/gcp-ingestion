@@ -11,14 +11,21 @@ import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
+import com.mozilla.telemetry.utils.DynamicPathTemplate;
+import java.util.List;
+import org.apache.beam.sdk.coders.ListCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.jackson.AsJsons;
+import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.WriteFilesResult;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -127,15 +134,32 @@ public enum OutputType {
     );
   }
 
-  protected static PTransform<PCollection<PubsubMessage>, PDone> writeFiles(
+  /**
+   * For details of the intended behavior for file paths, see:
+   * https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam#output-path-specification
+   */
+  protected static
+        PTransform<PCollection<PubsubMessage>, WriteFilesResult<List<String>>> writeFiles(
       ValueProvider<String> outputPrefix,
       OutputFileFormat format,
       String windowDuration
   ) {
+    DynamicPathTemplate pathTemplate = new DynamicPathTemplate(outputPrefix.get());
     return CompositeTransform.of(input -> input
-        .apply(format.encode())
-        .apply(Window.into(parseWindow(windowDuration)))
-        .apply(TextIO.write().to(outputPrefix).withWindowedWrites())
+        .apply("fixedWindows", Window.into(parseWindow(windowDuration)))
+        .apply("writeFiles", FileIO
+            .<List<String>, PubsubMessage>writeDynamic()
+            // We can't pass the attribute map to by() directly since MapCoder isn't deterministic;
+            // instead, we extract an ordered list of the needed placeholder values.
+            // That list is later available to withNaming() to determine output location.
+            .by(message -> pathTemplate.extractValuesFrom(message.getAttributeMap()))
+            .withDestinationCoder(ListCoder.of(StringUtf8Coder.of()))
+            .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink())
+            .to(pathTemplate.staticPrefix)
+            .withNaming(placeholderValues ->
+                FileIO.Write.defaultNaming(
+                    pathTemplate.replaceDynamicPart(placeholderValues),
+                    format.suffix())))
     );
   }
 

@@ -58,4 +58,19 @@ public class SinkTest {
         "--outputType=stdout"
     });
   }
+
+  @Test
+  public void mainThrowsExceptionOnNullPlaceholder() {
+    String inputPath = this.getClass().getResource("single-message-input.json").getPath();
+
+    Sink.main(new String[]{
+        "--inputFileFormat=json",
+        "--inputType=file",
+        "--input=" + inputPath,
+        "--outputFileFormat=json",
+        "--outputType=file",
+        "--output=tmp/${some_attribute}/out"
+    });
+  }
+
 }

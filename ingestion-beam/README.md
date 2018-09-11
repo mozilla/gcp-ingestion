@@ -80,6 +80,79 @@ The above file when stored in the `text` format:
 Note that the newline embedded at the end of the second JSON message results in
 two text messages, one of which is blank.
 
+## Output Path Specification
+
+When using `--outputType=file`, the `--output` path that you provide controls
+several aspects of the behavior.
+
+### Protocol
+
+`--output` may be prefixed by a protocol specifier to determine the
+target data store. Without a protocol prefix, the output path is assumed
+to be a relative or absolute path on the filesystem. To write to Google
+Cloud Storage, use a `gs://` path like:
+
+    --output=gs://mybucket/somdir/myfileprefix
+
+### Attribute placeholders
+
+We support `FileIO`'s "Dynamic destinations" feature (`FileIO.writeDynamic`) where
+it's possible to route individual messages to different output locations based
+on properties of the message.
+In our case, we allow routing messages based on the `PubsubMessage` attribute map.
+Routing is accomplished by adding placeholders to the path of form `${attribute_name}`.
+
+For example, to route based on a `document_type` attribute, your path might look like:
+
+    --output=gs://mybucket/mydocs/${document_type}/myfileprefix
+
+Messages with `document_type` of "main" would be grouped together and end up in
+the following directory:
+
+    gs://mybucket/mydocs/main/
+
+Note, however, that by specifying a placeholder, you are requiring that every
+message in the dataset will have a non-null value set for that attribute.
+A message missing the attribute will raise an exception, causing the pipeline to exit.
+To avoid this, you may provide a default value 
+using `${attribute_name:-default_value}` syntax.
+
+If we update our path with a default:
+
+    --output=gs://mybucket/mydocs/${document_type:-defaultdoctype}/myfileprefix
+
+messages with no `document_type` attribute would now end up in path:
+
+    gs://mybucket/mydocs/defaultdoctype/
+
+The templating and default syntax used here is based on the
+[Apache commons-text `StringSubstitutor`](https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html),
+which in turn bases its syntax on common practice in bash and other Unix/Linux shells.
+Beware the need for proper escaping on the command line (use `\$` in place of `$`),
+as your shell may try to substitute in values
+for your placeholders before they're passed to `Sink`.
+
+### File prefix
+
+Individual files are named using the default format discussed in
+the "File naming" section of Beam's
+[`FileIO` Javadoc](https://beam.apache.org/documentation/sdks/javadoc/2.6.0/org/apache/beam/sdk/io/FileIO.html):
+
+    $prefix-$start-$end-$pane-$shard-of-$numShards$suffix$compressionSuffix
+
+In our case, `$prefix` is determined from the last `/`-delimited piece of the `--output`
+path. If you specify a path ending in `/`, you'll end up with an empty prefix
+and your file names will begin with `-`. This is probably not what you want, 
+so it's recommended to end your output path with a non-empty file prefix.
+
+For example, given:
+
+    --output=/tmp/output/out
+
+An output file might be:
+
+    /tmp/output/out--290308-12-21T20:00:00.000Z--290308-12-21T20:10:00.000Z-00000-of-00001.ndjson
+
 ## Executing Jobs
 
 Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove

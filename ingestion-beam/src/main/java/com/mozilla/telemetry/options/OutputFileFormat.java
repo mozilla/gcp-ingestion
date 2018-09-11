@@ -5,6 +5,8 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.utils.Json;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.TypeDescriptors;
@@ -12,28 +14,41 @@ import org.apache.beam.sdk.values.TypeDescriptors;
 public enum OutputFileFormat {
 
   text {
-    /** Return a PTransform that encodes just the payload of PubsubMessages as text. */
-    public MapElements<PubsubMessage, String> encode() {
-      return MapElements
-          .into(TypeDescriptors.strings())
-          .via((PubsubMessage value) -> new String(value.getPayload()));
+    /** Return this PubsubMessage payload as text. */
+    public String encodeSingleMessage(PubsubMessage message) {
+      return new String(message.getPayload());
+    }
+
+    /** Return the appropriate file format suffix for arbitrary text. */
+    public String suffix() {
+      return ".txt";
     }
   },
 
   json {
-    /** Return a PTransform that encodes PubsubMessages as JSON. */
-    public MapElements<PubsubMessage, String> encode() {
-      return MapElements
-          .into(TypeDescriptors.strings())
-          .via((PubsubMessage message) -> {
-            try {
-              return Json.asString(message);
-            } catch (Throwable e) {
-              throw new RuntimeException(e);
-            }
-          });
+    /** Return this PubsubMessage encoded as a JSON string. */
+    public String encodeSingleMessage(PubsubMessage message) {
+      try {
+        return Json.asString(message);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    /** Return the appropriate file format suffix for newline-delimited JSON. */
+    public String suffix() {
+      return ".ndjson";
     }
   };
 
-  public abstract MapElements<PubsubMessage, String> encode();
+  /** Return a PTransform that encodes PubsubMessages to String. */
+  public MapElements<PubsubMessage, String> encode() {
+    return MapElements
+        .into(TypeDescriptors.strings())
+        .via(this::encodeSingleMessage);
+  }
+
+  public abstract String encodeSingleMessage(PubsubMessage message);
+
+  public abstract String suffix();
 }
