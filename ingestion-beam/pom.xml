@@ -172,26 +172,6 @@
                             <configLocation>checkstyle.xml</configLocation>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>mozilla_checkstyle</id>
-                        <phase>test</phase>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <configuration>
-                            <checkstyleRules>
-                                <module name="Checker">
-                                    <module name="TreeWalker">
-                                        <module name="AvoidStarImport"/>
-                                    </module>
-                                    <module name="NewlineAtEndOfFile"/>
-                                    <module name="TreeWalker">
-                                        <module name="UnusedImports"/>
-                                    </module>
-                                </module>
-                            </checkstyleRules>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
             <plugin>
