@@ -36,6 +36,7 @@ public class Json {
    *
    * @exception IOException if {@code data} does not contain a valid json object.
    */
+  @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
   public static JSONObject readJSONObject(byte[] data) throws IOException {
     // Read data into a tree
     TreeNode tree = MAPPER.readTree(data);
