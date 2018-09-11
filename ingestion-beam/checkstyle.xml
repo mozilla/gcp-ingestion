@@ -4,6 +4,14 @@
           "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <!--
+    This file was forked from the google_checkstyle.xml included with checkstyle:
+    https://github.com/checkstyle/checkstyle/blob/checkstyle-8.12/src/xdocs/google_style.xml
+
+    To see what we've customized, run a diff like the following (bash syntax):
+    diff checkstyle.xml <(curl -s https://raw.githubusercontent.com/checkstyle/checkstyle/checkstyle-8.12/src/xdocs/google_style.xml)
+ -->
+
+<!--
     Checkstyle configuration that checks the Google coding conventions from Google Java Style
     that can be found at https://google.github.io/styleguide/javaguide.html.
 
@@ -18,7 +26,7 @@
 <module name = "Checker">
     <property name="charset" value="UTF-8"/>
 
-    <property name="severity" value="warning"/>
+    <property name="severity" value="error"/>
 
     <property name="fileExtensions" value="java, properties, xml"/>
     <!-- Checks for whitespace                               -->
@@ -28,8 +36,10 @@
     </module>
 
     <module name="NewlineAtEndOfFile"/>
+    <module name="SuppressWarningsFilter"/>
 
     <module name="TreeWalker">
+        <module name="SuppressWarningsHolder"/>
         <module name="UnusedImports"/>
         <module name="OuterTypeFilename"/>
         <module name="IllegalTokenText">
