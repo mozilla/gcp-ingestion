@@ -45,9 +45,9 @@ public enum OutputType {
         Sink.Options options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
-        input.apply(
+        input.apply("print to stdout",
             print(options.getOutputFileFormat(), Println.stdout()));
-        return input.apply(EMPTY_ERROR_COLLECTION);
+        return input.apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
     }
   },
@@ -58,9 +58,9 @@ public enum OutputType {
         Sink.Options options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
-        input.apply(
+        input.apply("print to stderr",
             print(options.getOutputFileFormat(), Println.stderr()));
-        return input.apply(EMPTY_ERROR_COLLECTION);
+        return input.apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
     }
   },
@@ -71,12 +71,12 @@ public enum OutputType {
         Sink.Options options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
-        input.apply(
+        input.apply("write files",
             writeFiles(
                 options.getOutput(),
                 options.getOutputFileFormat(),
                 options.getWindowDuration()));
-        return input.apply(EMPTY_ERROR_COLLECTION);
+        return input.apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
     }
   },
@@ -87,9 +87,9 @@ public enum OutputType {
         Sink.Options options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
-        input.apply(
+        input.apply("write to pubsub",
             writePubsub(options.getOutput()));
-        return input.apply(EMPTY_ERROR_COLLECTION);
+        return input.apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
     }
   },
@@ -122,8 +122,8 @@ public enum OutputType {
       PTransform<PCollection<String>, PDone> output
   ) {
     return CompositeTransform.of(input -> input
-        .apply(format.encode())
-        .apply(output)
+        .apply("endcode PubsubMessages as strings", format.encode())
+        .apply("print", output)
     );
   }
 
@@ -143,7 +143,7 @@ public enum OutputType {
       ValueProvider<String> location
   ) {
     return CompositeTransform.of(input -> input
-        .apply(PubsubIO.writeMessages().to(location))
+        .apply("writePubsub", PubsubIO.writeMessages().to(location))
     );
   }
 
@@ -153,10 +153,10 @@ public enum OutputType {
     return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
       PubsubMessageToTableRow decodeTableRow = new PubsubMessageToTableRow();
       AsJsons<TableRow> encodeTableRow = AsJsons.of(TableRow.class);
-      PCollectionTuple tableRows = input.apply(decodeTableRow);
+      PCollectionTuple tableRows = input.apply("decodeTableRow", decodeTableRow);
       final WriteResult writeResult = tableRows
           .get(decodeTableRow.mainTag)
-          .apply(BigQueryIO
+          .apply("writeTableRows", BigQueryIO
               .writeTableRows()
               .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
               .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
@@ -169,7 +169,7 @@ public enum OutputType {
               .apply(encodeTableRow)
               .apply(InputFileFormat.text.decode()) // TODO: add error_{type,message} fields
               .get(DecodePubsubMessages.mainTag))
-          .apply(Flatten.pCollections());
+          .apply("flatten writeBigQuery error collections", Flatten.pCollections());
     });
   }
 
@@ -180,7 +180,8 @@ public enum OutputType {
   private static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>>
       EMPTY_ERROR_COLLECTION = CompositeTransform.of(input -> input
           .getPipeline()
-          .apply(Create.empty(PubsubMessageWithAttributesCoder.of())));
+          .apply("create empty error collection",
+              Create.empty(PubsubMessageWithAttributesCoder.of())));
 
   public static FixedWindows parseWindow(String duration) {
     return FixedWindows.of(DurationUtils.parseDuration(duration));
