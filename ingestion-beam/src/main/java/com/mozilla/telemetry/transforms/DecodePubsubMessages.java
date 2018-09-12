@@ -6,14 +6,6 @@ package com.mozilla.telemetry.transforms;
 
 import java.io.IOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
 
 /**
  * Base class for decoding PubsubMessage from various input formats.
@@ -26,11 +18,7 @@ import org.apache.beam.sdk.values.TupleTagList;
  * https://beam.apache.org/contribute/ptransform-style-guide/#packaging-a-family-of-transforms
  */
 public abstract class DecodePubsubMessages
-    extends PTransform<PCollection<? extends String>, PCollectionTuple> {
-
-  public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
-  public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
-  public static TupleTagList additionalOutputTags = TupleTagList.of(errorTag);
+    extends MapElementsWithErrors.ToPubsubMessageFrom<String> {
 
   // Force use of static factory methods.
   private DecodePubsubMessages() {}
@@ -63,62 +51,21 @@ public abstract class DecodePubsubMessages
    */
 
   public static class Text extends DecodePubsubMessages {
-    PubsubMessage transform(String element) {
+    protected PubsubMessage processElement(String element) {
       return new PubsubMessage(element.getBytes(), null);
     }
   }
 
   public static class Json extends DecodePubsubMessages {
-    PubsubMessage transform(String element) throws IOException {
+    protected PubsubMessage processElement(String element) throws IOException {
       return com.mozilla.telemetry.utils.Json.readPubsubMessage(element);
     }
   }
 
-  public static class AlreadyDecoded
-      extends PTransform<PCollection<PubsubMessage>, PCollectionTuple> {
-    class Fn extends DoFn<PubsubMessage, PubsubMessage> {
-      @ProcessElement
-      public void processElement(@Element PubsubMessage element, MultiOutputReceiver out) {
-        out.get(mainTag).output(element);
-      }
+  public static class AlreadyDecoded extends ToPubsubMessageFrom<PubsubMessage> {
+
+    protected PubsubMessage processElement(PubsubMessage element) {
+      return element;
     }
-
-    @Override
-    public PCollectionTuple expand(PCollection<PubsubMessage> input) {
-      return input
-          .apply(ParDo
-              .of(new Fn())
-              .withOutputTags(mainTag, additionalOutputTags));
-    }
-  }
-
-  /*
-   * Other methods and fields.
-   */
-
-  abstract PubsubMessage transform(String element) throws java.io.IOException;
-
-  private class Fn extends DoFn<String, PubsubMessage> {
-    @ProcessElement
-    public void processElement(@Element String element, MultiOutputReceiver out) {
-      try {
-        out.get(mainTag).output(transform(element));
-      } catch (Throwable e) {
-        out.get(errorTag).output(FailureMessage.of(this, element, e));
-      }
-    }
-  }
-
-  private Fn fn = new Fn();
-
-  @Override
-  public PCollectionTuple expand(PCollection<? extends String> input) {
-    PCollectionTuple output = input.apply(ParDo
-        .of(fn)
-        .withOutputTags(mainTag, additionalOutputTags)
-    );
-    output.get(mainTag).setCoder(PubsubMessageWithAttributesCoder.of());
-    output.get(errorTag).setCoder(PubsubMessageWithAttributesCoder.of());
-    return output;
   }
 }

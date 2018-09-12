@@ -4,24 +4,23 @@
 
 package com.mozilla.telemetry.decoder;
 
-import com.mozilla.telemetry.transforms.FailureMessage;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
 
-public class ParseUri
-    extends PTransform<PCollection<PubsubMessage>, PCollectionTuple> {
+public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+  private static class InvalidUriException extends Exception { }
 
-  public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
-  public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
+  private static class NullUriException extends InvalidUriException { }
+
+  private static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
+  private static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[]{
+      "document_id", "document_type", "app_name", "app_version", "app_update_channel",
+      "app_build_id"};
+  private static final String GENERIC_URI_PREFIX = "/submit/";
+  private static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[]{
+      "document_namespace", "document_type", "document_version", "document_id"};
 
   private static Map<String, String> zip(String[] keys, String[] values) {
     Map<String, String> map = new HashMap<>();
@@ -32,21 +31,15 @@ public class ParseUri
     return map;
   }
 
-  private static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
-  private static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[]{
-      "document_id", "document_type", "app_name", "app_version", "app_update_channel",
-      "app_build_id"};
-  private static final String GENERIC_URI_PREFIX = "/submit/";
-  private static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[]{
-      "document_namespace", "document_type", "document_version", "document_id"};
-
-  private static PubsubMessage transform(PubsubMessage value) {
+  protected PubsubMessage processElement(PubsubMessage element) throws InvalidUriException {
     // Copy attributes
-    final Map<String, String> attributes = new HashMap<>(value.getAttributeMap());
+    final Map<String, String> attributes = new HashMap<>(element.getAttributeMap());
 
     // parse uri based on prefix
     final String uri = attributes.get("uri");
-    if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
+    if (uri == null) {
+      throw new NullUriException();
+    } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
       // TODO acquire document_version from attributes.get("args")
       attributes.put("document_namespace", "telemetry");
       attributes.putAll(zip(
@@ -57,33 +50,9 @@ public class ParseUri
           GENERIC_URI_SUFFIX_ELEMENTS,
           uri.substring(GENERIC_URI_PREFIX.length()).split("/")));
     } else {
-      throw new AssertionError();
+      throw new InvalidUriException();
     }
     attributes.remove("uri");
-    return new PubsubMessage(value.getPayload(), attributes);
-  }
-
-  private static class Fn extends DoFn<PubsubMessage, PubsubMessage> {
-    @ProcessElement
-    public void processElement(@Element PubsubMessage element, MultiOutputReceiver out) {
-      try {
-        out.get(mainTag).output(transform(element));
-      } catch (Throwable e) {
-        out.get(errorTag).output(
-            FailureMessage.of(ParseUri.class.getName(), element, e));
-      }
-    }
-  }
-
-  private static final Fn FN = new Fn();
-
-  @Override
-  public PCollectionTuple expand(PCollection<PubsubMessage> input) {
-    PCollectionTuple output = input.apply(ParDo
-        .of(FN)
-        .withOutputTags(mainTag, TupleTagList.of(errorTag))
-    );
-    output.get(errorTag).setCoder(PubsubMessageWithAttributesCoder.of());
-    return output;
+    return new PubsubMessage(element.getPayload(), attributes);
   }
 }

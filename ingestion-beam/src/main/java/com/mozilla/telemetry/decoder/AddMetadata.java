@@ -4,29 +4,16 @@
 
 package com.mozilla.telemetry.decoder;
 
-import com.mozilla.telemetry.transforms.FailureMessage;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.utils.Json;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
 
-public class AddMetadata
-    extends PTransform<PCollection<PubsubMessage>, PCollectionTuple> {
-
-  public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
-  public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
-
+public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
   private static final byte[] METADATA_PREFIX = "{\"metadata\":".getBytes();
 
-  private static PubsubMessage transform(PubsubMessage element) throws IOException {
+  protected PubsubMessage processElement(PubsubMessage element) throws IOException {
     // Get payload
     final byte[] payload = element.getPayload();
     // Get attributes as bytes, throws IOException
@@ -50,29 +37,5 @@ public class AddMetadata
     // Write payload without leading `{`
     payloadWithMetadata.write(payload, 1, payload.length - 1);
     return new PubsubMessage(payloadWithMetadata.toByteArray(), element.getAttributeMap());
-  }
-
-  private static class Fn extends DoFn<PubsubMessage, PubsubMessage> {
-    @ProcessElement
-    public void processElement(@Element PubsubMessage element, MultiOutputReceiver out) {
-      try {
-        out.get(mainTag).output(transform(element));
-      } catch (Throwable e) {
-        out.get(errorTag).output(
-            FailureMessage.of(AddMetadata.class.getName(), element, e));
-      }
-    }
-  }
-
-  private static final Fn FN = new Fn();
-
-  @Override
-  public PCollectionTuple expand(PCollection<PubsubMessage> input) {
-    PCollectionTuple output = input.apply(ParDo
-        .of(FN)
-        .withOutputTags(mainTag, TupleTagList.of(errorTag))
-    );
-    output.get(errorTag).setCoder(PubsubMessageWithAttributesCoder.of());
-    return output;
   }
 }

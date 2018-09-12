@@ -5,32 +5,19 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.io.Resources;
-import com.mozilla.telemetry.transforms.FailureMessage;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.utils.Json;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.TupleTag;
-import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.commons.text.StringSubstitutor;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 
-public class ValidateSchema
-    extends PTransform<PCollection<PubsubMessage>, PCollectionTuple> {
-
-  public static TupleTag<PubsubMessage> mainTag = new TupleTag<PubsubMessage>();
-  public static TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>();
-
+public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
   private static class SchemaNotFoundException extends Exception {
     SchemaNotFoundException(String msg) {
       super(msg);
@@ -67,7 +54,7 @@ public class ValidateSchema
     return schemas.get(name);
   }
 
-  private static PubsubMessage transform(PubsubMessage element)
+  protected PubsubMessage processElement(PubsubMessage element)
       throws SchemaNotFoundException, IOException {
     // Throws IOException if not a valid json object
     final JSONObject json = Json.readJSONObject(element.getPayload());
@@ -76,29 +63,5 @@ public class ValidateSchema
     // Throws ValidationException if schema doesn't match
     schema.validate(json);
     return new PubsubMessage(json.toString().getBytes(), element.getAttributeMap());
-  }
-
-  private static class Fn extends DoFn<PubsubMessage, PubsubMessage> {
-    @ProcessElement
-    public void processElement(@Element PubsubMessage element, MultiOutputReceiver out) {
-      try {
-        out.get(mainTag).output(transform(element));
-      } catch (Throwable e) {
-        out.get(errorTag).output(
-            FailureMessage.of(this, element, e));
-      }
-    }
-  }
-
-  private static final Fn FN = new Fn();
-
-  @Override
-  public PCollectionTuple expand(PCollection<PubsubMessage> input) {
-    PCollectionTuple output = input.apply(ParDo
-        .of(FN)
-        .withOutputTags(mainTag, TupleTagList.of(errorTag))
-    );
-    output.get(errorTag).setCoder(PubsubMessageWithAttributesCoder.of());
-    return output;
   }
 }

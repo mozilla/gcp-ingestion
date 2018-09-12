@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
+import com.google.api.services.bigquery.model.TableRow;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -26,6 +27,20 @@ public class Json {
   private static final ObjectMapper MAPPER = new ObjectMapper()
       .addMixIn(PubsubMessage.class, PubsubMessageMixin.class)
       .registerModule(new JsonOrgModule());
+
+  /**
+   * Read a {@link TableRow} from a byte array.
+   *
+   * @exception IOException if {@code data} does not contain a valid {@link TableRow}.
+   */
+  public static TableRow readTableRow(byte[] data) throws IOException {
+    // Throws IOException
+    TableRow output = Json.MAPPER.readValue(data, TableRow.class);
+    if (output == null) {
+      throw new IOException("not a valid TableRow: null");
+    }
+    return output;
+  }
 
   /**
    * Read a {@link JSONObject} from a byte array.
