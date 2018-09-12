@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Updates the Table of Contents in README.md; see
+# https://github.com/ekalinin/github-markdown-toc
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+IMAGE=gh-md-toc
+GH_MD_TOC_URL='https://raw.githubusercontent.com/ekalinin/github-markdown-toc/master/gh-md-toc'
+
+docker build --tag $IMAGE - <<EOF
+FROM ubuntu:18.04
+RUN apt-get update && apt-get install -y curl
+RUN curl -sO $GH_MD_TOC_URL && chmod a+x gh-md-toc && mv gh-md-toc /bin/
+ENTRYPOINT ["/bin/gh-md-toc"]
+EOF
+
+docker run -it --rm \
+       --volume $PWD:/root/project \
+       --workdir /root/project \
+       $IMAGE \
+       --insert README.md
