@@ -346,6 +346,9 @@ echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > 
     --input=tmp/input.json \
     --outputType=stdout \
     --errorOutputType=stderr \
+
+# check the DecoderOptions help page for options specific to Decoder
+./bin/mvn compile exec:java -Dexec.args=--help=DecoderOptions
 "
 ```
 

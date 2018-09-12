@@ -5,45 +5,37 @@
 package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.AddMetadata;
+import com.mozilla.telemetry.decoder.DecoderOptions;
+import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.ValidateSchema;
-import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.options.Validation.Required;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.POutput;
 
 public class Decoder extends Sink {
-  public interface Options extends SinkOptions {
-    @Description("Path to GeoIP2-City.mmdb")
-    @Required
-    String getGeoCityDatabase();
-    void setGeoCityDatabase(String value);
-  }
-
   /**
    * Execute an Apache Beam pipeline.
    *
    * @param args command line arguments
    */
   public static void main(String[] args) {
-    // register options class so that `--help=Options` works
-    PipelineOptionsFactory.register(Options.class);
+    // register options class so that `--help=DecoderOptions` works
+    PipelineOptionsFactory.register(DecoderOptions.class);
 
-    final Options options = PipelineOptionsFactory
+    final DecoderOptions options = PipelineOptionsFactory
         .fromArgs(args)
         .withValidation()
-        .as(Options.class);
+        .as(DecoderOptions.class);
 
     final Pipeline pipeline = Pipeline.create(options);
     final PTransform<PCollection<PubsubMessage>, ? extends POutput> errorOutput =
@@ -76,6 +68,22 @@ public class Decoder extends Sink {
             CompositeTransform.of((PCollectionTuple input) -> {
               input.get(AddMetadata.errorTag).apply(errorOutput);
               return input.get(AddMetadata.mainTag);
+            }))
+        .apply("removeDuplicates", Deduplicate.removeDuplicates(options.getRedisUri()))
+        .apply("write removeDuplicates errors",
+            CompositeTransform.of((PCollectionTuple input) -> {
+              input.get(Deduplicate.errorTag).apply(errorOutput);
+              return input.get(Deduplicate.mainTag);
+            }))
+        .apply("markAsSeen",
+            CompositeTransform.of((PCollection<PubsubMessage> input) -> {
+              options.getSeenMessagesSource()
+                  .read(options, input)
+                  .apply(Deduplicate
+                      .markAsSeen(options.getRedisUri(), options.getDeduplicateExpireDuration()))
+                  .get(Deduplicate.errorTag)
+                  .apply(errorOutput);
+              return input;
             }))
         .apply("write main output", options.getOutputType().write(options))
         .apply("write output errors", errorOutput);

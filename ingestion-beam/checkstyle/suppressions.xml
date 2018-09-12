@@ -8,5 +8,5 @@
     <suppress checks="EmptyLineSeparator"
               files="SinkOptions.java"/>
     <suppress checks="EmptyLineSeparator"
-              files="Decoder.java"/>
+              files="DecoderOptions.java"/>
 </suppressions>
