@@ -37,14 +37,6 @@ public abstract class DecodePubsubMessages
     return new Json();
   }
 
-  /**
-   * Pass-through for pre-decoded PubsubMessages. It simply routes all inputs to the mainTag.
-   *
-   * <p>This is necessary to provide a uniform interface for different input sources.
-   */
-  public static AlreadyDecoded alreadyDecoded() {
-    return new AlreadyDecoded();
-  }
 
   /*
    * Concrete subclasses.
@@ -59,13 +51,6 @@ public abstract class DecodePubsubMessages
   public static class Json extends DecodePubsubMessages {
     protected PubsubMessage processElement(String element) throws IOException {
       return com.mozilla.telemetry.utils.Json.readPubsubMessage(element);
-    }
-  }
-
-  public static class AlreadyDecoded extends ToPubsubMessageFrom<PubsubMessage> {
-
-    protected PubsubMessage processElement(PubsubMessage element) {
-      return element;
     }
   }
 }

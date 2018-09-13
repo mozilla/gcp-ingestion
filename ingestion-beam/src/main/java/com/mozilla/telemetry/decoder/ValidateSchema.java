@@ -54,6 +54,7 @@ public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<Pu
     return schemas.get(name);
   }
 
+  @Override
   protected PubsubMessage processElement(PubsubMessage element)
       throws SchemaNotFoundException, IOException {
     // Throws IOException if not a valid json object

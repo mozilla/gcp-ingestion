@@ -31,6 +31,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     return map;
   }
 
+  @Override
   protected PubsubMessage processElement(PubsubMessage element) throws InvalidUriException {
     // Copy attributes
     final Map<String, String> attributes = new HashMap<>(element.getAttributeMap());

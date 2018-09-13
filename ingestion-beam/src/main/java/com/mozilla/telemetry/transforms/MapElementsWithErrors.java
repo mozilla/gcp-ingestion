@@ -126,5 +126,14 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       output.get(mainTag).setCoder(PubsubMessageWithAttributesCoder.of());
       return output;
     }
+
+    /**
+     * Default processElement method for {@code InputT} == {@link PubsubMessage}.
+     *
+     * <p>Throws throwable to allow overrides to throw exceptions.
+     */
+    protected PubsubMessage processElement(PubsubMessage element) throws Throwable {
+      return element;
+    }
   }
 }
