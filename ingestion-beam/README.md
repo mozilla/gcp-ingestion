@@ -6,16 +6,32 @@ This java module contains our Apache Beam jobs for use in Ingestion.
 Google Cloud Dataflow is a Google Cloud Platform service that natively runs
 Apache Beam jobs.
 
-# Table of Contents
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
- * [Sink Job](#sink-job)
-   * [Supported Input and Outputs](#supported-input-and-outputs)
-   * [Encoding](#encoding)
-   * [Executing Jobs](#executing-jobs)
- * [Decoder Job](#decoder-job)
-   * [Transforms](#transforms)
-   * [Executing Decoder Jobs](#executing-decoder-jobs)
- * [Testing](#testing)
+
+- [Sink Job](#sink-job)
+  - [Supported Input and Outputs](#supported-input-and-outputs)
+  - [Encoding](#encoding)
+  - [Output Path Specification](#output-path-specification)
+    - [Protocol](#protocol)
+    - [Attribute placeholders](#attribute-placeholders)
+    - [File prefix](#file-prefix)
+  - [Executing Jobs](#executing-jobs)
+    - [Locally](#locally)
+    - [On Dataflow](#on-dataflow)
+    - [On Dataflow with templates](#on-dataflow-with-templates)
+- [Decoder Job](#decoder-job)
+  - [Transforms](#transforms)
+    - [Parse URI](#parse-uri)
+    - [Decompress](#decompress)
+    - [GeoIP Lookup](#geoip-lookup)
+    - [Parse User Agent](#parse-user-agent)
+  - [Executing Decoder Jobs](#executing-decoder-jobs)
+- [Testing](#testing)
+- [License](#license)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Sink Job
 

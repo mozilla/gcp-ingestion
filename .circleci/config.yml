@@ -13,6 +13,14 @@ jobs:
     - run:
         name: Spell Check
         command: mdspell --ignore-numbers --en-us --report '**/*.md'
+  doctoc:
+    docker:
+    - image: node:8.10.0
+    steps:
+      - checkout
+      - run:
+          name: Ensure markdown tables of contents are up to date
+          command: ./.circleci/doctoc-check.sh
   ingestion-edge:
     docker:
     - image: docker:18.05.0-ce
@@ -108,5 +116,6 @@ workflows:
   build:
     jobs:
     - spelling
+    - doctoc
     - ingestion-edge
     - ingestion-beam
