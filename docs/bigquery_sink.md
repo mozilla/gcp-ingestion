@@ -3,6 +3,25 @@
 This document specifies the behavior of the service that delivers decoded
 messages into BigQuery.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+
+- [Data Flow](#data-flow)
+  - [Implementation](#implementation)
+  - [Configuration](#configuration)
+  - [Routing](#routing)
+  - [Ignore Unknown Values](#ignore-unknown-values)
+  - [Errors](#errors)
+    - [Error Message Schema](#error-message-schema)
+- [Other Considerations](#other-considerations)
+  - [Message Acks](#message-acks)
+- [Testing](#testing)
+  - [CI Testing](#ci-testing)
+  - [Pre-deployment Testing](#pre-deployment-testing)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Data Flow
 
 Consume messages from a PubSub topic or Cloud Storage location and insert them
