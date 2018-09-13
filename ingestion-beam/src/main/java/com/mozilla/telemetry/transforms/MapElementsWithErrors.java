@@ -107,7 +107,6 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
     return output;
   }
 
-
   /**
    * Define {@link MapElementsWithErrors} for {@code OutputT} of {@link PubsubMessage}.
    */
@@ -125,6 +124,24 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       PCollectionTuple output = super.expand(input);
       output.get(mainTag).setCoder(PubsubMessageWithAttributesCoder.of());
       return output;
+    }
+
+    /*
+     * Static factory methods for subclasses.
+     */
+
+    public static Identity identity() {
+      return new Identity();
+    }
+
+    /*
+     * Static subclasses.
+     */
+
+    public static class Identity extends ToPubsubMessageFrom<PubsubMessage> {
+      protected PubsubMessage processElement(PubsubMessage element) {
+        return element;
+      }
     }
   }
 }

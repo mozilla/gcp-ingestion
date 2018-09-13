@@ -5,7 +5,7 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.transforms.CompositeTransform;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -19,7 +19,7 @@ public enum InputType {
     public PTransform<PBegin, PCollectionTuple> read(SinkOptions options) {
       return CompositeTransform.of(input -> input
           .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput()))
-          .apply(DecodePubsubMessages.alreadyDecoded())
+          .apply(MapElementsWithErrors.ToPubsubMessageFrom.identity())
       );
     }
   },

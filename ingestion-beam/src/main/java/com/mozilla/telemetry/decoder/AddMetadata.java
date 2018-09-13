@@ -13,6 +13,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
   private static final byte[] METADATA_PREFIX = "{\"metadata\":".getBytes();
 
+  @Override
   protected PubsubMessage processElement(PubsubMessage element) throws IOException {
     // Get payload
     final byte[] payload = element.getPayload();
