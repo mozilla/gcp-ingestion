@@ -10,7 +10,7 @@ import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.options.OutputType;
 import com.mozilla.telemetry.transforms.CompositeTransform;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.Default;
@@ -121,8 +121,8 @@ public class Sink {
         .apply("input", options.getInputType().read(options))
         .apply("write input parsing errors",
             CompositeTransform.of((PCollectionTuple input) -> {
-              input.get(DecodePubsubMessages.errorTag).apply(errorOutput);
-              return input.get(DecodePubsubMessages.mainTag);
+              input.get(ToPubsubMessageFrom.errorTag).apply(errorOutput);
+              return input.get(ToPubsubMessageFrom.mainTag);
             }))
         .apply("write main output", options.getOutputType().write(options))
         .apply("write output errors", errorOutput);

@@ -107,7 +107,6 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
     return output;
   }
 
-
   /**
    * Define {@link MapElementsWithErrors} for {@code OutputT} of {@link PubsubMessage}.
    */
@@ -127,13 +126,22 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       return output;
     }
 
-    /**
-     * Default processElement method for {@code InputT} == {@link PubsubMessage}.
-     *
-     * <p>Throws throwable to allow overrides to throw exceptions.
+    /*
+     * Static factory methods for subclasses.
      */
-    protected PubsubMessage processElement(PubsubMessage element) throws Throwable {
-      return element;
+
+    public static Identity identity() {
+      return new Identity();
+    }
+
+    /*
+     * Static subclasses.
+     */
+
+    public static class Identity extends ToPubsubMessageFrom<PubsubMessage> {
+      protected PubsubMessage processElement(PubsubMessage element) {
+        return element;
+      }
     }
   }
 }

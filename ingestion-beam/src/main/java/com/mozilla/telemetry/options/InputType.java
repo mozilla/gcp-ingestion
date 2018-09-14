@@ -21,7 +21,7 @@ public enum InputType {
     public PTransform<PBegin, PCollectionTuple> read(Sink.Options options) {
       return CompositeTransform.of(input -> input
           .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput()))
-          .apply(new MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage>(){})
+          .apply(MapElementsWithErrors.ToPubsubMessageFrom.identity())
       );
     }
   },
