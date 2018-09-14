@@ -34,6 +34,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PDone;
+import org.joda.time.Duration;
 
 /**
  * Enumeration of output types that each provide a {@code write} method.
@@ -48,7 +49,7 @@ public enum OutputType {
      * Return a PTransform that prints messages to STDOUT; only for local running.
      */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        SinkOptions options
+        SinkOptions.Parsed options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("print to stdout",
@@ -61,7 +62,7 @@ public enum OutputType {
   stderr {
     /** Return a PTransform that prints messages to STDERR; only for local running. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        SinkOptions options
+        SinkOptions.Parsed options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("print to stderr",
@@ -74,14 +75,14 @@ public enum OutputType {
   file {
     /** Return a PTransform that writes to local or remote files. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        SinkOptions options
+        SinkOptions.Parsed options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("write files",
             writeFiles(
                 options.getOutput(),
                 options.getOutputFileFormat(),
-                options.getWindowDuration()));
+                options.getParsedWindowDuration()));
         return input.apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
     }
@@ -90,7 +91,7 @@ public enum OutputType {
   pubsub {
     /** Return a PTransform that writes to Google Pubsub. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        SinkOptions options
+        SinkOptions.Parsed options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("write to pubsub",
@@ -103,7 +104,7 @@ public enum OutputType {
   bigquery {
     /** Return a PTransform that writes to a BigQuery table and collects failed inserts. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        SinkOptions options
+        SinkOptions.Parsed options
     ) {
       return writeBigQuery(options.getOutput());
     }
@@ -115,7 +116,7 @@ public enum OutputType {
    * @return A PCollection of failure messages about data that could not be written.
    */
   public abstract PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-      SinkOptions options
+      SinkOptions.Parsed options
   );
 
   /*
@@ -141,11 +142,11 @@ public enum OutputType {
         PTransform<PCollection<PubsubMessage>, WriteFilesResult<List<String>>> writeFiles(
       ValueProvider<String> outputPrefix,
       OutputFileFormat format,
-      String windowDuration
+      Duration windowDuration
   ) {
     DynamicPathTemplate pathTemplate = new DynamicPathTemplate(outputPrefix.get());
     return CompositeTransform.of(input -> input
-        .apply("fixedWindows", Window.into(parseWindow(windowDuration)))
+        .apply("fixedWindows", Window.into(FixedWindows.of(windowDuration)))
         .apply("writeFiles", FileIO
             .<List<String>, PubsubMessage>writeDynamic()
             // We can't pass the attribute map to by() directly since MapCoder isn't deterministic;

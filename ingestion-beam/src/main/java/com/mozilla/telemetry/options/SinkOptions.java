@@ -1,14 +1,18 @@
 package com.mozilla.telemetry.options;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.Sink;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
+import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.joda.time.Duration;
 
 /**
- * DecoderOptions supported by {@link Sink}.
+ * Options supported by {@link Sink}.
  *
  * <p>Inherits standard configuration options.
  */
@@ -70,4 +74,40 @@ public interface SinkOptions extends PipelineOptions {
   @Validation.Required
   ValueProvider<String> getErrorOutput();
   void setErrorOutput(ValueProvider<String> value);
+
+  /*
+   * Subinterface and static methods.
+   */
+
+  /**
+   * A custom {@link PipelineOptions} that includes derived fields.
+   *
+   * <p>This class should only be instantiated from an existing {@link SinkOptions} instance
+   * via the static {@link #parse(SinkOptions)} method.
+   * This follows a similar pattern to the Beam Spark runner's {@code SparkContextOptions}
+   * which is instantiated from {@code SparkPipelineOptions} and then enriched.
+   */
+  @Hidden
+  interface Parsed extends SinkOptions {
+    @JsonIgnore
+    Duration getParsedWindowDuration();
+    void setParsedWindowDuration(Duration value);
+  }
+
+  /**
+   * Return the input {@link SinkOptions} instance promoted to a {@link SinkOptions.Parsed}
+   * and with all derived fields set.
+   */
+  static Parsed parse(SinkOptions options) {
+    final Parsed parsed = options.as(Parsed.class);
+    enrich(parsed);
+    return parsed;
+  }
+
+  /**
+   * Set all the derived fields of a {@link SinkOptions.Parsed} instance.
+   */
+  static void enrich(Parsed options) {
+    options.setParsedWindowDuration(DurationUtils.parseDuration(options.getWindowDuration()));
+  }
 }

@@ -23,6 +23,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.Locale;
+import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.MutablePeriod;
@@ -73,5 +75,14 @@ public class DurationUtils {
     checkArgument(duration.getMillis() > 0, "The window duration must be greater than 0!");
 
     return duration;
+  }
+
+  /**
+   * Like {@link #parseDuration(String)}, but using a {@link ValueProvider}.
+   *
+   * <p>The value will be parsed once when first used; the result is cached and reused.
+   */
+  public static ValueProvider<Duration> parseDuration(ValueProvider<String> value) {
+    return NestedValueProvider.of(value, DurationUtils::parseDuration);
   }
 }

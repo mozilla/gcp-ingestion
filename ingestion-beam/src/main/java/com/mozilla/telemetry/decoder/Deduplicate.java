@@ -4,7 +4,6 @@
 
 package com.mozilla.telemetry.decoder;
 
-import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -14,6 +13,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.joda.time.Duration;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -71,11 +71,11 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
     return new RemoveDuplicates(StaticValueProvider.of(uri));
   }
 
-  public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<String> ttl) {
+  public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<Duration> ttl) {
     return new MarkAsSeen(uri, ttl);
   }
 
-  public static Deduplicate markAsSeen(URI uri, String ttl) {
+  public static Deduplicate markAsSeen(URI uri, Duration ttl) {
     return markAsSeen(StaticValueProvider.of(uri), StaticValueProvider.of(ttl));
   }
 
@@ -112,16 +112,16 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    */
   public static class MarkAsSeen extends Deduplicate {
     Integer ttlSeconds;
-    final ValueProvider<String> ttl;
+    final ValueProvider<Duration> ttl;
 
     int getTtlSeconds() {
       if (ttlSeconds == null) {
-        ttlSeconds = (int) DurationUtils.parseDuration(ttl.get()).getStandardSeconds();
+        ttlSeconds = (int) ttl.get().getStandardSeconds();
       }
       return ttlSeconds;
     }
 
-    private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<String> ttl) {
+    private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Duration> ttl) {
       super(uri);
       this.ttl = ttl;
     }

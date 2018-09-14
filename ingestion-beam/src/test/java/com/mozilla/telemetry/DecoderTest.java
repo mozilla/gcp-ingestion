@@ -29,6 +29,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
+import org.joda.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 import redis.embedded.RedisServer;
@@ -257,7 +258,8 @@ public class DecoderTest {
       final PCollectionTuple seen = pipeline
           .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
           .apply("create seen messages", mapStringsToId)
-          .apply("record seen ids", Deduplicate.markAsSeen(redisUri, "24h"));
+          .apply("record seen ids",
+              Deduplicate.markAsSeen(redisUri, Duration.standardHours(24)));
 
       // errorTag is empty
       PAssert.that(seen.get(Deduplicate.errorTag).apply(OutputFileFormat.json.encode())).empty();

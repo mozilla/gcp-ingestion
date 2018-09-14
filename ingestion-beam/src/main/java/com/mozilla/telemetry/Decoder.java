@@ -32,10 +32,12 @@ public class Decoder extends Sink {
     // register options class so that `--help=DecoderOptions` works
     PipelineOptionsFactory.register(DecoderOptions.class);
 
-    final DecoderOptions options = PipelineOptionsFactory
-        .fromArgs(args)
-        .withValidation()
-        .as(DecoderOptions.class);
+    final DecoderOptions.Parsed options = DecoderOptions.parse(
+        PipelineOptionsFactory
+            .fromArgs(args)
+            .withValidation()
+            .as(DecoderOptions.class)
+    );
 
     final Pipeline pipeline = Pipeline.create(options);
     final PTransform<PCollection<PubsubMessage>, ? extends POutput> errorOutput =
@@ -80,7 +82,8 @@ public class Decoder extends Sink {
               options.getSeenMessagesSource()
                   .read(options, input)
                   .apply(Deduplicate
-                      .markAsSeen(options.getRedisUri(), options.getDeduplicateExpireDuration()))
+                      .markAsSeen(
+                          options.getRedisUri(), options.getParsedDeduplicateExpireDuration()))
                   .get(Deduplicate.errorTag)
                   .apply(errorOutput);
               return input;

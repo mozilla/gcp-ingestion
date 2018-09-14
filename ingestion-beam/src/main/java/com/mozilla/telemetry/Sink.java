@@ -25,10 +25,12 @@ public class Sink {
     // register options class so that `--help=SinkOptions` works
     PipelineOptionsFactory.register(SinkOptions.class);
 
-    final SinkOptions options = PipelineOptionsFactory
-        .fromArgs(args)
-        .withValidation()
-        .as(SinkOptions.class);
+    final SinkOptions.Parsed options = SinkOptions.parse(
+        PipelineOptionsFactory
+            .fromArgs(args)
+            .withValidation()
+            .as(SinkOptions.class)
+    );
 
     final Pipeline pipeline = Pipeline.create(options);
     final PTransform<PCollection<PubsubMessage>, ? extends POutput> errorOutput =

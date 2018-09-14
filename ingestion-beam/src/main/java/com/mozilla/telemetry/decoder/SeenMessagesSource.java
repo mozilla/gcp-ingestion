@@ -15,7 +15,7 @@ public enum SeenMessagesSource {
   pubsub {
     /** Read from a PubSub subscription. */
     public PCollection<PubsubMessage> read(
-        DecoderOptions options, PCollection<PubsubMessage> undelivered) {
+        DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered) {
       return undelivered
           .getPipeline()
           .apply(PubsubIO
@@ -27,7 +27,7 @@ public enum SeenMessagesSource {
   undelivered {
     /** Mark messages as seen without waiting for delivery. */
     public PCollection<PubsubMessage> read(
-        DecoderOptions options, PCollection<PubsubMessage> undelivered) {
+        DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered) {
       return undelivered;
     }
   },
@@ -35,7 +35,7 @@ public enum SeenMessagesSource {
   none {
     /** Do not mark messages as seen. */
     public PCollection<PubsubMessage> read(
-        DecoderOptions options, PCollection<PubsubMessage> undelivered) {
+        DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered) {
       return undelivered
           .getPipeline()
           .apply("create empty collection",
@@ -45,5 +45,5 @@ public enum SeenMessagesSource {
 
   /** Get a PCollection of messages to mark as seen from a PCollection of undelivered messages. */
   public abstract PCollection<PubsubMessage> read(
-      DecoderOptions options, PCollection<PubsubMessage> undelivered);
+      DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered);
 }

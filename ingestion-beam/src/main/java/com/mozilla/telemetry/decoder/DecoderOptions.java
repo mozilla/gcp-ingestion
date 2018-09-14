@@ -1,13 +1,23 @@
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.options.SinkOptions;
 import java.net.URI;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
+import org.apache.beam.sdk.options.Hidden;
+import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.joda.time.Duration;
 
-public interface DecoderOptions extends SinkOptions {
+/**
+ * Options supported by {@code Decoder}.
+ *
+ * <p>Inherits standard configuration options and {@code Sink} configuration options.
+ */
+public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Description("Path to GeoIP2-City.mmdb")
   @Validation.Required
   String getGeoCityDatabase();
@@ -41,4 +51,43 @@ public interface DecoderOptions extends SinkOptions {
   @Default.String("24h")
   ValueProvider<String> getDeduplicateExpireDuration();
   void setDeduplicateExpireDuration(ValueProvider<String> value);
+
+  /*
+   * Subinterface and static methods.
+   */
+
+  /**
+   * A custom {@link PipelineOptions} that includes derived fields.
+   *
+   * <p>This class should only be instantiated from an existing {@link DecoderOptions} instance
+   * via the static {@link #parse(DecoderOptions)} method.
+   * This follows a similar pattern to the Beam Spark runner's {@code SparkContextOptions}
+   * which is instantiated from {@code SparkPipelineOptions} and then enriched.
+   */
+  @Hidden
+  interface Parsed extends DecoderOptions, SinkOptions.Parsed {
+    @JsonIgnore
+    ValueProvider<Duration> getParsedDeduplicateExpireDuration();
+    void setParsedDeduplicateExpireDuration(ValueProvider<Duration> value);
+  }
+
+  /**
+   * Return the input {@link DecoderOptions} instance promoted to a {@link DecoderOptions.Parsed}
+   * and with all derived fields set.
+   */
+  static Parsed parse(DecoderOptions options) {
+    final Parsed parsed = options.as(Parsed.class);
+    enrich(parsed);
+    return parsed;
+  }
+
+  /**
+   * Set all the derived fields of a {@link DecoderOptions.Parsed} instance.
+   */
+  static void enrich(Parsed options) {
+    SinkOptions.enrich(options);
+    options.setParsedDeduplicateExpireDuration(DurationUtils
+        .parseDuration(options.getDeduplicateExpireDuration()));
+  }
+
 }
