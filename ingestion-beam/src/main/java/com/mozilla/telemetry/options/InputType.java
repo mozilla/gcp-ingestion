@@ -4,7 +4,6 @@
 
 package com.mozilla.telemetry.options;
 
-import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import org.apache.beam.sdk.io.TextIO;
@@ -17,7 +16,7 @@ public enum InputType {
 
   pubsub {
     /** Return a PTransform that reads from a Pubsub subscription. */
-    public PTransform<PBegin, PCollectionTuple> read(Sink.Options options) {
+    public PTransform<PBegin, PCollectionTuple> read(SinkOptions options) {
       return CompositeTransform.of(input -> input
           .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput()))
           .apply(DecodePubsubMessages.alreadyDecoded())
@@ -27,7 +26,7 @@ public enum InputType {
 
   file {
     /** Return a PTransform that reads from local or remote files. */
-    public PTransform<PBegin, PCollectionTuple> read(Sink.Options options) {
+    public PTransform<PBegin, PCollectionTuple> read(SinkOptions options) {
       return CompositeTransform.of(input -> input
           .apply(TextIO.read().from(options.getInput()))
           .apply(options.getInputFileFormat().decode())
@@ -35,5 +34,5 @@ public enum InputType {
     }
   };
 
-  public abstract PTransform<PBegin, PCollectionTuple> read(Sink.Options options);
+  public abstract PTransform<PBegin, PCollectionTuple> read(SinkOptions options);
 }

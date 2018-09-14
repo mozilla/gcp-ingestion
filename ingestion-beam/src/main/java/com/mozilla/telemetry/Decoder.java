@@ -10,6 +10,7 @@ import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.ValidateSchema;
+import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import org.apache.beam.sdk.Pipeline;
@@ -23,7 +24,7 @@ import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.POutput;
 
 public class Decoder extends Sink {
-  public interface Options extends Sink.Options {
+  public interface Options extends SinkOptions {
     @Description("Path to GeoIP2-City.mmdb")
     @Required
     String getGeoCityDatabase();

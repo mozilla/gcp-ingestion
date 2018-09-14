@@ -6,7 +6,6 @@ package com.mozilla.telemetry.options;
 
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.teleport.util.DurationUtils;
-import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.Println;
@@ -49,7 +48,7 @@ public enum OutputType {
      * Return a PTransform that prints messages to STDOUT; only for local running.
      */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        Sink.Options options
+        SinkOptions options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("print to stdout",
@@ -62,7 +61,7 @@ public enum OutputType {
   stderr {
     /** Return a PTransform that prints messages to STDERR; only for local running. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        Sink.Options options
+        SinkOptions options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("print to stderr",
@@ -75,7 +74,7 @@ public enum OutputType {
   file {
     /** Return a PTransform that writes to local or remote files. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        Sink.Options options
+        SinkOptions options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("write files",
@@ -91,7 +90,7 @@ public enum OutputType {
   pubsub {
     /** Return a PTransform that writes to Google Pubsub. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        Sink.Options options
+        SinkOptions options
     ) {
       return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
         input.apply("write to pubsub",
@@ -104,7 +103,7 @@ public enum OutputType {
   bigquery {
     /** Return a PTransform that writes to a BigQuery table and collects failed inserts. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-        Sink.Options options
+        SinkOptions options
     ) {
       return writeBigQuery(options.getOutput());
     }
@@ -116,7 +115,7 @@ public enum OutputType {
    * @return A PCollection of failure messages about data that could not be written.
    */
   public abstract PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
-      Sink.Options options
+      SinkOptions options
   );
 
   /*
@@ -210,5 +209,4 @@ public enum OutputType {
   public static FixedWindows parseWindow(String duration) {
     return FixedWindows.of(DurationUtils.parseDuration(duration));
   }
-
 }

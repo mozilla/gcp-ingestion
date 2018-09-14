@@ -6,7 +6,7 @@
 
 <suppressions>
     <suppress checks="EmptyLineSeparator"
-              files="Sink.java"/>
+              files="SinkOptions.java"/>
     <suppress checks="EmptyLineSeparator"
               files="Decoder.java"/>
 </suppressions>

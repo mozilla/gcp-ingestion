@@ -213,8 +213,11 @@ cat tmp/output/*
     --errorOutputType=stderr \
 "
 
-# check the help page to see all options
-./bin/mvn compile exec:java -Dexec.args=--help=Options
+# check the help page to see types of options
+./bin/mvn compile exec:java -Dexec.args=--help
+
+# check the SinkOptions help page for options specific to Sink
+./bin/mvn compile exec:java -Dexec.args=--help=SinkOptions
 ```
 
 ### On Dataflow
