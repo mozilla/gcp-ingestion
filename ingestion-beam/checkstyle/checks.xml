@@ -8,7 +8,7 @@
     https://github.com/checkstyle/checkstyle/blob/checkstyle-8.12/src/xdocs/google_style.xml
 
     To see what we've customized, run a diff like the following (bash syntax):
-    diff checkstyle.xml <(curl -s https://raw.githubusercontent.com/checkstyle/checkstyle/checkstyle-8.12/src/xdocs/google_style.xml)
+    diff checks.xml <(curl -s https://raw.githubusercontent.com/checkstyle/checkstyle/checkstyle-8.12/src/xdocs/google_style.xml)
  -->
 
 <!--

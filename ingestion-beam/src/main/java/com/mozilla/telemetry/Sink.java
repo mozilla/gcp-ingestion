@@ -34,7 +34,6 @@ public class Sink {
     @Description("Type of --input; must be one of [pubsub, file]")
     @Default.Enum("pubsub")
     InputType getInputType();
-
     void setInputType(InputType value);
 
     @Description("File format for --inputType=file; must be one of"
@@ -42,13 +41,11 @@ public class Sink {
         + " text (each line is payload)")
     @Default.Enum("json")
     InputFileFormat getInputFileFormat();
-
     void setInputFileFormat(InputFileFormat value);
 
     @Description("Type of --output; must be one of [pubsub, file, stdout]")
     @Default.Enum("file")
     OutputType getOutputType();
-
     void setOutputType(OutputType value);
 
     @Description("File format for --outputType=file|stdout; must be one of "
@@ -56,13 +53,11 @@ public class Sink {
         + " text (each line is payload)")
     @Default.Enum("json")
     OutputFileFormat getOutputFileFormat();
-
     void setOutputFileFormat(OutputFileFormat value);
 
     @Description("Type of --errorOutput; must be one of [pubsub, file]")
     @Default.Enum("pubsub")
     ErrorOutputType getErrorOutputType();
-
     void setErrorOutputType(ErrorOutputType value);
 
     @Description("Fixed window duration. Defaults to 10m. "
@@ -72,7 +67,6 @@ public class Sink {
         + "Nh (for hours, example: 2h).")
     @Default.String("10m")
     String getWindowDuration();
-
     void setWindowDuration(String value);
 
     /* Note: Dataflow templates accept ValueProvider options at runtime, and
@@ -83,19 +77,16 @@ public class Sink {
     @Description("Input to read from (path to file, PubSub subscription, etc.)")
     @Required
     ValueProvider<String> getInput();
-
     void setInput(ValueProvider<String> value);
 
     @Description("Output to write to (path to file or directory, Pubsub topic, etc.)")
     @Required
     ValueProvider<String> getOutput();
-
     void setOutput(ValueProvider<String> value);
 
     @Description("Error output to write to (path to file or directory, Pubsub topic, etc.)")
     @Required
     ValueProvider<String> getErrorOutput();
-
     void setErrorOutput(ValueProvider<String> value);
   }
 

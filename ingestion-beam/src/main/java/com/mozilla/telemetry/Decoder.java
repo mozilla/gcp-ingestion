@@ -27,7 +27,6 @@ public class Decoder extends Sink {
     @Description("Path to GeoIP2-City.mmdb")
     @Required
     String getGeoCityDatabase();
-
     void setGeoCityDatabase(String value);
   }
 
