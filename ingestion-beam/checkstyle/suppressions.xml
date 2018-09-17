@@ -9,4 +9,6 @@
               files="SinkOptions.java"/>
     <suppress checks="EmptyLineSeparator"
               files="DecoderOptions.java"/>
+    <suppress checks="Header"
+              files="DurationUtils.java"/>
 </suppressions>
