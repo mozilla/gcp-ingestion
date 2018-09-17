@@ -1,8 +1,3 @@
-env_vars: &env
-  PUBSUB_PORT: 8085
-  EDGE_PORT: 8000
-  ROUTE_TABLE: '[["/submit/<path:suffix>","projects/test/topics/test"]]'
-
 version: 2
 jobs:
   spelling:
@@ -13,6 +8,7 @@ jobs:
     - run:
         name: Spell Check
         command: mdspell --ignore-numbers --en-us --report '**/*.md'
+
   doctoc:
     docker:
     - image: node:8.10.0
@@ -21,9 +17,10 @@ jobs:
       - run:
           name: Ensure markdown tables of contents are up to date
           command: ./.circleci/doctoc-check.sh
+
   ingestion-edge:
     docker:
-    - image: docker:18.05.0-ce
+    - image: docker/compose:1.22.0
     steps:
     - checkout
     - setup_remote_docker:
@@ -33,61 +30,24 @@ jobs:
         command: >-
           printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n'
           "$CIRCLE_SHA1"
-          "${CIRCLE_TAG-}"
+          "${CIRCLE_TAG-latest}"
           "$CIRCLE_PROJECT_USERNAME"
           "$CIRCLE_PROJECT_REPONAME"
           "$CIRCLE_BUILD_URL"
           > ingestion-edge/version.json
     - run:
-        name: Build Docker Container
-        command: docker build -t mozilla/ingestion-edge:build ingestion-edge
-    - run:
-        name: Create Docker Network
-        command: docker network ls --format '{{.Name}}' | grep -qx ingestion-edge || docker network create ingestion-edge
-    - run:
-        name: Start PubSub Emulator
+        name: Docker Compose Test
         command: >-
-          docker run
-          --detach
-          --network ingestion-edge
-          --name pubsub
-          mozilla/gcloud-sdk-emulators
-          gcloud beta emulators pubsub start --host-port 0.0.0.0:$PUBSUB_PORT
-        environment: *env
-    - run:
-        name: Run Server
-        command: >-
-          docker run
-          --detach
-          --env PORT=$EDGE_PORT
-          --env PUBSUB_EMULATOR_HOST=pubsub:$PUBSUB_PORT
-          --env ROUTE_TABLE=$ROUTE_TABLE
-          --env CREATE_TOPICS=yes
-          --network ingestion-edge
-          --name ingestion-edge
-          mozilla/ingestion-edge:build
-        environment: *env
-    - run:
-        name: PyTest
-        command: >-
-          docker run
-          --rm
-          --tty
-          --interactive
-          --env PUBSUB_EMULATOR_HOST=pubsub:$PUBSUB_PORT
-          --env ROUTE_TABLE=$ROUTE_TABLE
-          --network ingestion-edge
-          mozilla/ingestion-edge:build
-          py.test
-          --server http://ingestion-edge:8000
-          --create-pubsub-resources
-          --flake8
-          --mypy --mypy-ignore-missing-imports
-        environment: *env
-    - run:
-        name: Remove Background Containers
-        command: docker rm -f ingestion-edge pubsub
-        when: always
+          docker-compose
+          up
+          --build
+          --exit-code-from test
+          --force-recreate
+          --quiet-pull
+        environment:
+          COMPOSE_FILE: ingestion-edge/docker-compose.yml
+          COMPOSE_PROJECT_NAME: circleci-ingestion-edge
+
   ingestion-beam:
     docker:
     - image: maven

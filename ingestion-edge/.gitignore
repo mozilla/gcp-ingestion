@@ -1,4 +1,5 @@
 *.pyc
 *.swo
 *.swp
-version.json
+.mypy_cache
+.pytest_cache

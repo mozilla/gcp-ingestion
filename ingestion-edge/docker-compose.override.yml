@@ -1,0 +1,23 @@
+# docker-compose.override.yml is in the default path for docker-compose
+version: '3'
+
+# override docker-compose.yml to run the flask server in a way that
+# automatically detects changes and only needs to build on new requirements
+services:
+  web:
+    command:
+    - python
+    - -m
+    - flask
+    - run
+    - --host=0.0.0.0
+    - --port=8000
+    environment:
+    - FLASK_APP=ingestion_edge.app:app
+    ports:
+    - 8000:8000
+    volumes:
+    - .:/app
+  test:
+    volumes:
+    - .:/app

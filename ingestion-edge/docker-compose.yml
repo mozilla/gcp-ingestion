@@ -1,0 +1,28 @@
+version: '3'
+
+# configure ingestion-edge for ci
+services:
+  pubsub:
+    image: mozilla/gcloud-sdk-emulators
+    command: gcloud beta emulators pubsub start --host-port 0.0.0.0:8085
+  web:
+    build: .
+    image: &image ingestion-edge:build
+    environment:
+    - &emulator_host PUBSUB_EMULATOR_HOST=pubsub:8085
+    - &route_table ROUTE_TABLE=[["/submit/<path:suffix>","projects/test/topics/test"]]
+  test:
+    image: *image
+    entrypoint: py.test
+    command:
+    - --create-pubsub-resources
+    - --flake8
+    - --mypy
+    - --mypy-ignore-missing-imports
+    - --server=http://web:8000
+    depends_on:
+    - pubsub
+    - web
+    environment:
+    - *emulator_host
+    - *route_table

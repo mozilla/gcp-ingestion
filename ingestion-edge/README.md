@@ -18,44 +18,54 @@ A simple service for delivering HTTP messages to Google Cloud PubSub
 ## Building
 
 ```bash
-docker build -t mozilla/ingestion-edge:build .
+docker-compose build
 ```
 
 ## Running
 
-To run the server locally:
+Use `docker-compose` to run a local development server that auto-detects changes:
 
 ```bash
-# create network edge to communicate with pubsub
-docker network create ingestion-edge
-
-# run the pubsub emulator
-PUBSUB_PORT=8085
-docker run --detach --network ingestion-edge --name pubsub google/cloud-sdk gcloud beta emulators pubsub start --host-port 0.0.0.0:$PUBSUB_PORT
-
-# run the server
-docker run --rm --tty --interactive --network ingestion-edge --publish 8000:8000 --env PUBSUB_EMULATOR_HOST=pubsub:$PUBSUB_PORT --env ROUTE_TABLE='[["/submit/<path:suffix>","projects/test/topics/test"]]' mozilla/ingestion-edge:build
+# run the web server and pubsub emulator
+docker-compose up --detach web
 
 # manually check the server
 curl http://localhost:8000/__version__
 curl http://localhost:8000/__heartbeat__
 curl http://localhost:8000/__lbheartbeat__
 curl http://localhost:8000/submit/test -d "test"
+
+# check web logs
+docker-compose logs web
+
+# clean up docker-compose environment
+docker-compose down --timeout 0
 ```
 
 ## Testing
 
-Run tests locally with [CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
+Run tests locally with `docker-compose` or
+[CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
 
 ```bash
-circleci build --job ingestion-edge
+# only print test logs and leave other services running
+docker-compose run --rm test
+
+# print all logs and stop all services when done
+docker-compose up --force-recreate --exit-code-from test
+
+# circleci
+(cd .. && circleci build --job ingestion-edge)
 ```
 
-Test a remote server from docker (requires credentials to read PubSub)
+Test a remote server (requires credentials to read PubSub)
 
 ```bash
 # define the same ROUTE_TABLE as your edge server
-docker run --rm --tty --interactive --env ROUTE_TABLE=$ROUTE_TABLE mozilla/ingestion-edge:build py.test --server https://myedgeserver.example.com
+docker-compose run --no-deps --rm --env ROUTE_TABLE=$ROUTE_TABLE test --server https://myedgeserver.example.com
+
+# or using the latest published version without a code checkout
+docker run --rm --tty --interactive --env ROUTE_TABLE=$ROUTE_TABLE mozilla/ingestion-edge:latest py.test --server https://myedgeserver.example.com
 ```
 
 # License

@@ -1,4 +1,10 @@
 *.pyc
 *.swo
 *.swp
+.dockerignore
+.gitignore
+.mypy_cache
+.pytest_cache
 Dockerfile
+README.md
+docker-compose.yml
