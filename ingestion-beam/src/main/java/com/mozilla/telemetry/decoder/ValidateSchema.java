@@ -6,7 +6,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
-import com.mozilla.telemetry.utils.Json;
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;

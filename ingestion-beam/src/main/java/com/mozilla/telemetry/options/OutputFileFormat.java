@@ -4,7 +4,7 @@
 
 package com.mozilla.telemetry.options;
 
-import com.mozilla.telemetry.utils.Json;
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;

@@ -10,7 +10,7 @@ import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
-import com.mozilla.telemetry.utils.DynamicPathTemplate;
+import com.mozilla.telemetry.util.DynamicPathTemplate;
 import java.util.List;
 import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;

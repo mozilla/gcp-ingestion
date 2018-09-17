@@ -50,7 +50,7 @@ public abstract class DecodePubsubMessages
 
   public static class Json extends DecodePubsubMessages {
     protected PubsubMessage processElement(String element) throws IOException {
-      return com.mozilla.telemetry.utils.Json.readPubsubMessage(element);
+      return com.mozilla.telemetry.util.Json.readPubsubMessage(element);
     }
   }
 }

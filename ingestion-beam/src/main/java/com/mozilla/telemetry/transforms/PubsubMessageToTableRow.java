@@ -5,7 +5,7 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.api.services.bigquery.model.TableRow;
-import com.mozilla.telemetry.utils.Json;
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.values.TupleTag;

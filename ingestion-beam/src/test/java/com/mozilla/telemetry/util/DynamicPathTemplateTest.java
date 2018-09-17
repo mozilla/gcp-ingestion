@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.utils;
+package com.mozilla.telemetry.util;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -6,7 +6,7 @@ import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.mozilla.telemetry.utils.DynamicPathTemplate.PathSplitter;
+import com.mozilla.telemetry.util.DynamicPathTemplate.PathSplitter;
 import java.util.Arrays;
 import org.junit.Test;
 

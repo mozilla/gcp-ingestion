@@ -5,7 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
-import com.mozilla.telemetry.utils.Json;
+import com.mozilla.telemetry.util.Json;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;

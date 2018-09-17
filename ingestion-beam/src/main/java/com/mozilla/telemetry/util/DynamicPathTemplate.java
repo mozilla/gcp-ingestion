@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.utils;
+package com.mozilla.telemetry.util;
 
 import java.io.Serializable;
 import java.util.ArrayList;
