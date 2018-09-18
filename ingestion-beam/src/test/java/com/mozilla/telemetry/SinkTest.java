@@ -9,6 +9,7 @@ import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.beam.sdk.Pipeline.PipelineExecutionException;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -59,7 +60,7 @@ public class SinkTest {
     });
   }
 
-  @Test
+  @Test(expected = PipelineExecutionException.class)
   public void mainThrowsExceptionOnNullPlaceholder() {
     String inputPath = this.getClass().getResource("single-message-input.json").getPath();
 
@@ -69,7 +70,7 @@ public class SinkTest {
         "--input=" + inputPath,
         "--outputFileFormat=json",
         "--outputType=file",
-        "--output=tmp/${some_attribute}/out"
+        "--output=tmp/${some_nonexistent_attribute}/out"
     });
   }
 

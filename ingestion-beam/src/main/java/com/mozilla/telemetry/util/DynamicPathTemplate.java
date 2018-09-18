@@ -142,7 +142,7 @@ public class DynamicPathTemplate implements Serializable {
       // This regex matches either of these patterns,
       // capturing the name of the placeholder as group 1
       // and the default value (or null if no default is provided) as group 2.
-      "\\$\\{(\\p{Alnum}+)(?::-(\\p{Alnum}+))?}"
+      "\\$\\{([A-Za-z0-9-_]+)(?::-([A-Za-z0-9-_]+))?}"
   );
 
 }
