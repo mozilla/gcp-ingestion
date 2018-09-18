@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.maxmind.db.CHMCache;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -32,8 +35,16 @@ public class GeoCityLookup
     this.geoCityDatabase = geoCityDatabase;
   }
 
-  private class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
+  @VisibleForTesting
+  public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
     private transient DatabaseReader geoIP2City;
+
+    private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip-from-x-forwarded-for");
+    private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip-from-remote-addr");
+    private final Counter foundIp = Metrics.counter(Fn.class, "found-ip");
+    private final Counter foundCity = Metrics.counter(Fn.class, "found-city");
+    private final Counter foundGeo1 = Metrics.counter(Fn.class, "found-geo-subdivision-1");
+    private final Counter foundGeo2 = Metrics.counter(Fn.class, "found-geo-subdivision-2");
 
     @Override
     public PubsubMessage apply(PubsubMessage value) {
@@ -55,16 +66,20 @@ public class GeoCityLookup
         if (attributes.containsKey("x_forwarded_for")) {
           String[] ips = attributes.get("x_forwarded_for").split(" *, *");
           ip = ips[ips.length - 1];
+          countIpForwarded.inc();
         } else {
           ip = attributes.getOrDefault("remote_addr", "");
+          countIpRemoteAddr.inc();
         }
 
         try {
           // Throws UnknownHostException
           InetAddress ipAddress = InetAddress.getByName(ip);
+          foundIp.inc();
 
           // Throws GeoIp2Exception and IOException
           CityResponse response = geoIP2City.city(ipAddress);
+          foundCity.inc();
 
           attributes.put("geo_country", response.getCountry().getIsoCode());
           attributes.put("geo_city", response.getCity().getName());
@@ -72,7 +87,9 @@ public class GeoCityLookup
           List<Subdivision> subdivisions = response.getSubdivisions();
           // Throws IndexOutOfBoundsException
           attributes.put("geo_subdivision1", subdivisions.get(0).getIsoCode());
+          foundGeo1.inc();
           attributes.put("geo_subdivision2", subdivisions.get(1).getIsoCode());
+          foundGeo2.inc();
         } catch (UnknownHostException | GeoIp2Exception | IndexOutOfBoundsException ignore) {
           // ignore these exceptions
         }
