@@ -213,6 +213,11 @@ public class DecoderTest {
         .apply("encodeTextError", OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 
+    // At time of writing this test, there were 47 schemas to load, but that number will
+    // likely increase over time.
+    assertThat("Instantiating ValidateSchema caused all schemas to be loaded",
+        ValidateSchema.numLoadedSchemas(), greaterThan(40));
+
     pipeline.run();
   }
 
