@@ -4,7 +4,12 @@
 
 package com.mozilla.telemetry;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
@@ -20,7 +25,11 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.MetricNameFilter;
+import org.apache.beam.sdk.metrics.MetricResult;
+import org.apache.beam.sdk.metrics.MetricsFilter;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -90,7 +99,18 @@ public class DecoderTest {
 
     PAssert.that(output).containsInAnyOrder(expected);
 
-    pipeline.run();
+    final PipelineResult result = pipeline.run();
+
+    final List<MetricResult<Long>> counters = Lists.newArrayList(result
+        .metrics()
+        .queryMetrics(
+            MetricsFilter.builder()
+                .addNameFilter(MetricNameFilter.inNamespace(GeoCityLookup.Fn.class))
+                .build())
+        .getCounters());
+
+    assertEquals(counters.size(), 5);
+    counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
   @Test
