@@ -5,7 +5,9 @@
 from flask import Flask
 from .dockerflow import dockerflow
 from .publish import publish
+from .disk_queue import disk_queue
 
 app = Flask(__name__)
 app.register_blueprint(publish)
+app.register_blueprint(disk_queue)
 dockerflow.init_app(app)

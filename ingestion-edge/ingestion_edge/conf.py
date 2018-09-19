@@ -19,6 +19,10 @@ ROUTE_TABLE = [
     for value in json.loads(environ.get("ROUTE_TABLE", "[]"))
 ]
 
+QUEUE_FILE = environ.get("QUEUE_FILE", "queue.ndjson")
+
+QUEUE_POSITION_FILE = environ.get("QUEUE_POSITION_FILE", "queue_position")
+
 dictConfig({
     'version': 1,
     'formatters': {
