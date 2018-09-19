@@ -3,6 +3,7 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 from .conf import ROUTE_TABLE
+from . import disk_queue
 from datetime import datetime
 from flask import Blueprint, request
 from google.cloud.pubsub import PublisherClient
@@ -29,8 +30,7 @@ def handle_request(topic: str, **kwargs) -> Tuple[str, int]:
         x_forwarded_for=request.headers.get("X-Forwarded-For"),
         x_pingsender_version=request.headers.get("X-Pingsender-Version"),
     )
-    # publish message
-    future = client.publish(
+    publish_kwargs = dict(
         topic=topic,
         data=request.get_data(),
         **{
@@ -39,8 +39,12 @@ def handle_request(topic: str, **kwargs) -> Tuple[str, int]:
             if value is not None
         }
     )
-    # returns message_id, which we don't use
-    future.result()
+    try:
+        # publish message
+        client.publish(**publish_kwargs).result()
+    except Exception:  # TODO only catch transient exceptions
+        # when publishing fails, write to disk
+        disk_queue.write(publish_kwargs)
     return "", 200
 
 
