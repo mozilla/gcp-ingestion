@@ -3,3 +3,4 @@
 *.swp
 .mypy_cache
 .pytest_cache
+queue

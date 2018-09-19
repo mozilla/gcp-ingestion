@@ -3,6 +3,7 @@ dockerflow==2018.4.0
 Flask==1.0.2
 google-cloud-pubsub==0.37.1
 gunicorn==19.9.0
+persist-queue==0.4.0
 pytest-mypy==0.3.2
 pytest==3.8.0
 pytest-cov==2.6.0

@@ -19,6 +19,8 @@ ROUTE_TABLE = [
     for value in json.loads(environ.get("ROUTE_TABLE", "[]"))
 ]
 
+QUEUE_PATH = environ.get("QUEUE_PATH", "queue")
+
 dictConfig({
     'version': 1,
     'formatters': {
