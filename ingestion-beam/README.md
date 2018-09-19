@@ -148,6 +148,14 @@ Beware the need for proper escaping on the command line (use `\$` in place of `$
 as your shell may try to substitute in values
 for your placeholders before they're passed to `Sink`.
 
+[Google's PubsubMessage format](https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage)
+allows arbitrary strings for attribute names and values. We place the following restrictions
+on attribute names and default values used in placeholders:
+
+- attribute names may not contain the string `:-`
+- attribute names may not contain curly braces (`{` or `}`)
+- default values may not contain curly braces (`{` or `}`)
+
 ### File prefix
 
 Individual files are named using the default format discussed in
