@@ -44,7 +44,7 @@ def handle_request(topic: str, **kwargs) -> Tuple[str, int]:
         client.publish(**publish_kwargs).result()
     except Exception:  # TODO only catch transient exceptions
         # when publishing fails, write to disk
-        disk_queue.write(**publish_kwargs)
+        disk_queue.write(publish_kwargs)
     return "", 200
 
 

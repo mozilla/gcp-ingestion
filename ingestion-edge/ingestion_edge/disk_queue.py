@@ -6,65 +6,93 @@ from .conf import QUEUE_FILE
 from .conf import QUEUE_POSITION_FILE
 from flask import Blueprint
 from google.cloud.pubsub import PublisherClient
-from os import remove
-from os.path import exists
-from threading import Lock
 from typing import Tuple
 import ujson
+import threading
+import os
+import os.path
+import sys
 
 disk_queue = Blueprint("disk_queue", __name__)
 client = PublisherClient()
-read_lock = Lock()
-write_lock = Lock()
+read_lock = threading.Lock()
+write_lock = threading.Lock()
 
 
-def write(**kwargs):
+def _remove_if_found(path):
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
+
+
+def write(publish_kwargs):
+    # write lock allows one writer at a time to avoid splicing writes
     with write_lock:
         # TODO disable autoscaling
+        # TODO keep file pointer open and handle file rotation
         with open(QUEUE_FILE, "a") as q:
-            q.write(ujson.dumps(kwargs) + "\n")
+            ujson.dump(publish_kwargs, q)
+            q.write("\n")
             q.flush()
 
 
 @disk_queue.route("/__flush__")
 def flush_queue() -> Tuple[str, int]:
-    if not exists(QUEUE_FILE):
-        # early return for empty queue
-        return "", 204
+    published = 0
+    # read_lock allows one flush at a time to avoid duplicate publish calls
     with read_lock:
         # initialize queue state
-        done = False
-        start = 0
-        end = 0
-        if exists(QUEUE_POSITION_FILE):
-            with open(QUEUE_POSITION_FILE, "r") as qp:
-                start = int(qp.read())
         try:
-            # process the queue
-            # TODO release write lock between line reads
-            with write_lock:
-                # TODO rotate queue file and handle rotated files first
-                with open(QUEUE_FILE, "r") as q:
-                    for line in q:
-                        if end < start:
-                            # TODO use q.seek(start)
-                            end += 1
-                            continue
-                        client.publish(**ujson.loads(line)).result()
-                        # update end only on success
-                        end += 1
-            remove(QUEUE_FILE)
-            done = True
+            with open(QUEUE_POSITION_FILE, "rb") as qp:
+                start = int.from_bytes(qp.read(), sys.byteorder)
+        except FileNotFoundError:
+            start = 0
+        done = False
+        end = start
+        try:
+            # process queue
+            # TODO rotate queue file and handle rotated files first
+            # NOTE rotated files will not require write_lock
+            with open(QUEUE_FILE, "r") as q:
+                # seek to previous end position
+                q.seek(start)
+                # can't use `for line in q` because it disables `q.tell()`
+                # and doesn't allow for releasing write_lock between line reads
+                # or using formats with framing other than newline
+                while True:
+                    # write_lock ensures we don't read a partial line
+                    # or write to queue immediately before removing it
+                    with write_lock:
+                        line = q.readline()
+                        if not line:
+                            # at EOF, remove queue and break
+                            # ignore FileNotFoundError
+                            # remove position first to prevent corrupted state
+                            _remove_if_found(QUEUE_POSITION_FILE)
+                            _remove_if_found(QUEUE_FILE)
+                            done = True
+                            break
+                    # when this throws an exception, stop flushing
+                    # TODO return 202 for transient exceptions
+                    client.publish(**ujson.loads(line)).result()
+                    # record new file position
+                    end = q.tell()
+                    # increment counter for items successfully published
+                    published += 1
+        except FileNotFoundError:
+            # no queue to flush
+            return "", 204
         finally:
-            # update the queue position
-            if end > start and not done:
+            # update queue position if we didn't finish but made progress
+            if not done and end > start:
+                # use upside down floor division for ceiling division
+                end_length = -(-end.bit_length() // 8)
+                end_bytes = end.to_bytes(end_length, sys.byteorder)
                 # record queue position if we moved forward and didn't finish
-                with open(QUEUE_POSITION_FILE, "r+") as qp:
-                    qp.write(str(end))
+                with open(QUEUE_POSITION_FILE, "wb") as qp:
+                    qp.write(end_bytes)
                     qp.flush()
-            elif done and start > 0:
-                # remove existing queue position because we finished
-                remove(QUEUE_POSITION_FILE)
     # TODO enable autoscaling
-    # return number of queue requests successfully published
-    return str(end - start) + "\n", 200
+    # return number of queue items successfully published
+    return str(published) + "\n", 200
