@@ -52,6 +52,14 @@ public class DynamicPathTemplateTest {
     assertThat(
         new DynamicPathTemplate("tmp/test").placeholderNames,
         is(ImmutableList.of()));
+
+    assertThat(
+        new DynamicPathTemplate("tmp/${foo_1:-bar_1}/${foo-2:-bar-2}").placeholderNames,
+        is(ImmutableList.of("foo_1", "foo-2")));
+
+    assertThat(
+        new DynamicPathTemplate("tmp/${foo:baz-baz:-mydefault:-hi}").placeholderNames,
+        is(ImmutableList.of("foo:baz-baz")));
   }
 
   @Test
@@ -59,6 +67,14 @@ public class DynamicPathTemplateTest {
     assertThat(
         new DynamicPathTemplate("tmp/${bar}-${foo:-hi}/${baz}-test").placeholderDefaults,
         is(Arrays.asList(null, "hi", null)));
+
+    assertThat(
+        new DynamicPathTemplate("tmp/${foo_1:-bar_1}/${foo-2:-bar-2}").placeholderDefaults,
+        is(ImmutableList.of("bar_1", "bar-2")));
+
+    assertThat(
+        new DynamicPathTemplate("tmp/${foo:baz-baz:-mydefault:-hi}").placeholderDefaults,
+        is(ImmutableList.of("mydefault:-hi")));
   }
 
   @Test
