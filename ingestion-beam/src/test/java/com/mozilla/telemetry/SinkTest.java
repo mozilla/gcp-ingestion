@@ -9,7 +9,6 @@ import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.beam.sdk.Pipeline.PipelineExecutionException;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -45,33 +44,4 @@ public class SinkTest {
 
     pipeline.run();
   }
-
-  @Test
-  public void mainCanWriteToStdout() {
-    String inputPath = this.getClass().getResource("single-message-input.json").getPath();
-
-    // We are simply making sure this runs without throwing an exception.
-    Sink.main(new String[]{
-        "--inputFileFormat=json",
-        "--inputType=file",
-        "--input=" + inputPath,
-        "--outputFileFormat=json",
-        "--outputType=stdout"
-    });
-  }
-
-  @Test(expected = PipelineExecutionException.class)
-  public void mainThrowsExceptionOnNullPlaceholder() {
-    String inputPath = this.getClass().getResource("single-message-input.json").getPath();
-
-    Sink.main(new String[]{
-        "--inputFileFormat=json",
-        "--inputType=file",
-        "--input=" + inputPath,
-        "--outputFileFormat=json",
-        "--outputType=file",
-        "--output=tmp/${some_nonexistent_attribute}/out"
-    });
-  }
-
 }

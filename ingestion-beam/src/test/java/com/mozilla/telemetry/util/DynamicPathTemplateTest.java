@@ -20,8 +20,8 @@ public class DynamicPathTemplateTest {
   public void testSplittingPrefixFromDynamicPath() {
     final PathSplitter absoluteStaticPath = new PathSplitter(
         "/tmp/abcd/foo/test");
-    assertEquals("/tmp/abcd/foo/test", absoluteStaticPath.staticPrefix);
-    assertEquals("", absoluteStaticPath.dynamicPart);
+    assertEquals("/tmp/abcd/foo/", absoluteStaticPath.staticPrefix);
+    assertEquals("test", absoluteStaticPath.dynamicPart);
 
     final PathSplitter absoluteDynamicPath = new PathSplitter(
         "/tmp/abcd/bar-${foo}/test");
