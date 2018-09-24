@@ -116,22 +116,24 @@ public class DynamicPathTemplate implements Serializable {
     final String dynamicPart;
 
     PathSplitter(String rawPath) {
-      final int indexOfFirstPlaceholder = rawPath.indexOf("${");
+      int indexOfFirstPlaceholder = rawPath.indexOf("${");
+
+      int indexOfLastSlash;
       if (indexOfFirstPlaceholder == -1) {
-        this.staticPrefix = rawPath;
-        this.dynamicPart = "";
+        indexOfLastSlash = rawPath
+            .lastIndexOf('/');
       } else {
-        final int indexOfLastSlashBeforePlaceholder =
-            rawPath
-                .substring(0, indexOfFirstPlaceholder)
-                .lastIndexOf('/');
-        if (indexOfLastSlashBeforePlaceholder == -1) {
-          this.staticPrefix = "";
-          this.dynamicPart = rawPath;
-        } else {
-          this.staticPrefix = rawPath.substring(0, indexOfLastSlashBeforePlaceholder) + "/";
-          this.dynamicPart = rawPath.substring(indexOfLastSlashBeforePlaceholder + 1);
-        }
+        indexOfLastSlash = rawPath
+            .substring(0, indexOfFirstPlaceholder)
+            .lastIndexOf('/');
+      }
+
+      if (indexOfLastSlash == -1) {
+        this.staticPrefix = "";
+        this.dynamicPart = rawPath;
+      } else {
+        this.staticPrefix = rawPath.substring(0, indexOfLastSlash) + "/";
+        this.dynamicPart = rawPath.substring(indexOfLastSlash + 1);
       }
     }
   }
