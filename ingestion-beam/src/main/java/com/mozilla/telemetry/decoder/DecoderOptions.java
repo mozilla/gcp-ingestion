@@ -14,7 +14,6 @@ import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.joda.time.Duration;
 
 /**
  * Options supported by {@code Decoder}.
@@ -71,8 +70,8 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Hidden
   interface Parsed extends DecoderOptions, SinkOptions.Parsed {
     @JsonIgnore
-    ValueProvider<Duration> getParsedDeduplicateExpireDuration();
-    void setParsedDeduplicateExpireDuration(ValueProvider<Duration> value);
+    ValueProvider<Long> getDeduplicateExpireSeconds();
+    void setDeduplicateExpireSeconds(ValueProvider<Long> value);
   }
 
   /**
@@ -90,8 +89,8 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    options.setParsedDeduplicateExpireDuration(Time
-        .parseDuration(options.getDeduplicateExpireDuration()));
+    options.setDeduplicateExpireSeconds(Time
+        .parseSeconds(options.getDeduplicateExpireDuration()));
   }
 
 }

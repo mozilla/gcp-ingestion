@@ -6,6 +6,8 @@ package com.mozilla.telemetry.util;
 
 import static org.junit.Assert.assertEquals;
 
+import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.junit.Test;
 
 public class TimeTest {
@@ -21,6 +23,7 @@ public class TimeTest {
   @Test
   public void testExtendedParseDuration() {
     assertEquals(Time.parseDuration("5.5 seconds").getMillis(), 5500L);
+    assertEquals(Time.parseDuration("5.5 SECONDS").getMillis(), 5500L);
     assertEquals(Time.parseDuration("4m13s").getMillis(), 4 * 60 * 1000L + 13000L);
     assertEquals(Time.parseDuration("1 hour").getMillis(), 60 * 60 * 1000L);
     assertEquals(Time.parseDuration("2 days").getMillis(), 2 * 24 * 60 * 60 * 1000L);
@@ -33,4 +36,21 @@ public class TimeTest {
     Time.parseDuration("foo");
   }
 
+  @Test
+  public void testParseDurationValueProvider() {
+    final ValueProvider<String> provider = StaticValueProvider.of("13s");
+    assertEquals(Time.parseDuration(provider).get().getMillis(), 13000L);
+  }
+
+  @Test
+  public void testParseSeconds() {
+    assertEquals(Time.parseSeconds("13s"), 13L);
+    assertEquals(Time.parseSeconds("4m"), 4 * 60L);
+  }
+
+  @Test
+  public void testParseSecondsValueProvider() {
+    final ValueProvider<String> provider = StaticValueProvider.of("13s");
+    assertEquals(Time.parseSeconds(provider).get().intValue(), 13);
+  }
 }

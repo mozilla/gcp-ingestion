@@ -284,7 +284,7 @@ public class DecoderTest {
           .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
           .apply("create seen messages", mapStringsToId)
           .apply("record seen ids",
-              Deduplicate.markAsSeen(redisUri, Duration.standardHours(24)));
+              Deduplicate.markAsSeen(redisUri, Duration.standardHours(24).getStandardSeconds()));
 
       // errorTag is empty
       PAssert.that(seen.get(Deduplicate.errorTag).apply(OutputFileFormat.json.encode())).empty();

@@ -37,46 +37,7 @@ public class Time {
    * @see java.time.Duration#parse(CharSequence)
    */
   public static org.joda.time.Duration parseDuration(String value) {
-    checkNotNull(value, "The specified duration must be a non-null value!");
-    java.time.Duration duration;
-
-    try {
-      // This is already an ISO-8601 duration.
-      duration = java.time.Duration.parse(value);
-    } catch (java.time.format.DateTimeParseException outer) {
-      String modifiedValue = value
-          .replaceAll("seconds", "S")
-          .replaceAll("second", "S")
-          .replaceAll("sec", "S")
-          .replaceAll("minutes", "M")
-          .replaceAll("minute", "M")
-          .replaceAll("mins", "M")
-          .replaceAll("min", "M")
-          .replaceAll("hours", "H")
-          .replaceAll("hour", "H")
-          .replaceAll("days", "DT")
-          .replaceAll("day", "DT")
-          .replaceAll("\\s+", "")
-          .toUpperCase();
-      if (!modifiedValue.contains("T")) {
-        modifiedValue = "T" + modifiedValue;
-      }
-      if (modifiedValue.endsWith("T")) {
-        modifiedValue += "0S";
-      }
-      modifiedValue = "P" + modifiedValue;
-      try {
-        duration = java.time.Duration.parse(modifiedValue);
-      } catch (java.time.format.DateTimeParseException e) {
-        throw new IllegalArgumentException("User-provided duration '" + value
-            + "' was transformed to '" + modifiedValue
-            + "', but java.time.Duration.parse() could not understand it.", e);
-      }
-    }
-
-    checkArgument(duration.toMillis() > 0, "The window duration must be greater than 0!");
-
-    return toJoda(duration);
+    return parseJodaDuration(value);
   }
 
   /**
@@ -88,8 +49,78 @@ public class Time {
     return NestedValueProvider.of(value, Time::parseDuration);
   }
 
+  /**
+   * Like {@link #parseDuration(String)}, but returns the number of seconds in the parsed duration.
+   */
+  public static long parseSeconds(String value) {
+    return parseJavaDuration(value).getSeconds();
+  }
+
+  /**
+   * Like {@link #parseSeconds(String)}, but using a {@link ValueProvider}.
+   *
+   * <p>The value will be parsed once when first used; the result is cached and reused.
+   */
+  public static ValueProvider<Long> parseSeconds(ValueProvider<String> value) {
+    return NestedValueProvider.of(value, Time::parseSeconds);
+  }
+
+  /*
+   * Private methods.
+   */
+
   private static org.joda.time.Duration toJoda(java.time.Duration duration) {
     return org.joda.time.Duration.millis(duration.toMillis());
+  }
+
+  private static org.joda.time.Duration parseJodaDuration(String value) {
+    return toJoda(parseJavaDuration(value));
+  }
+
+  private static java.time.Duration parseJavaDuration(String value) {
+    checkNotNull(value, "The specified duration must be a non-null value!");
+    java.time.Duration duration;
+
+    try {
+      // This is already an ISO-8601 duration.
+      duration = java.time.Duration.parse(value);
+    } catch (java.time.format.DateTimeParseException outer) {
+      String modifiedValue = value
+          .toLowerCase()
+          .replaceAll("seconds", "s")
+          .replaceAll("second", "s")
+          .replaceAll("sec", "s")
+          .replaceAll("minutes", "m")
+          .replaceAll("minute", "m")
+          .replaceAll("mins", "m")
+          .replaceAll("min", "m")
+          .replaceAll("hours", "h")
+          .replaceAll("hour", "h")
+          .replaceAll("days", "dt")
+          .replaceAll("day", "dt")
+          .replaceAll("\\s+", "")
+          .toUpperCase();
+      if (!modifiedValue.contains("T")) {
+        modifiedValue = "T" + modifiedValue;
+      }
+      if (!modifiedValue.contains("P")) {
+        modifiedValue = "P" + modifiedValue;
+      }
+      if (modifiedValue.endsWith("T")) {
+        modifiedValue += "0S";
+      }
+      try {
+        duration = java.time.Duration.parse(modifiedValue);
+      } catch (java.time.format.DateTimeParseException e) {
+        throw new IllegalArgumentException("User-provided duration '" + value
+            + "' was transformed to '" + modifiedValue
+            + "', but java.time.Duration.parse() could not understand it.", e);
+      }
+    }
+
+    checkArgument(duration.toMillis() > 0, "The window duration must be greater than 0!");
+
+    return duration;
   }
 
 }
