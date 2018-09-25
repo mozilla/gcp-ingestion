@@ -1,7 +1,0 @@
-{"attributeMap":{"host":"test"},"payload":"dGVzdA=="}
-{"attributeMap":{"host":"test"},"payload":"missing_closing_quote}
-{"attributeMap":null,"payload":"dGVzdA=="}
-{"attributeMap":nonexistent_json_literal,"payload":"dGVzdA=="}
-{"payload":"dGVzdA=="}
-{"attributeMap":null,"payload":null}
-{"payload":""}
