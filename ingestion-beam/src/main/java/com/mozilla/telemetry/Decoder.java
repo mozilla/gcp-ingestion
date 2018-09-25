@@ -32,7 +32,7 @@ public class Decoder extends Sink {
     // register options class so that `--help=DecoderOptions` works
     PipelineOptionsFactory.register(DecoderOptions.class);
 
-    final DecoderOptions.Parsed options = DecoderOptions.parse(
+    final DecoderOptions.Parsed options = DecoderOptions.parseDecoderOptions(
         PipelineOptionsFactory
             .fromArgs(args)
             .withValidation()

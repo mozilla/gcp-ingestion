@@ -87,7 +87,7 @@ public interface SinkOptions extends PipelineOptions {
    * A custom {@link PipelineOptions} that includes derived fields.
    *
    * <p>This class should only be instantiated from an existing {@link SinkOptions} instance
-   * via the static {@link #parse(SinkOptions)} method.
+   * via the static {@link #parseSinkOptions(SinkOptions)} method.
    * This follows a similar pattern to the Beam Spark runner's {@code SparkContextOptions}
    * which is instantiated from {@code SparkPipelineOptions} and then enriched.
    */
@@ -102,16 +102,16 @@ public interface SinkOptions extends PipelineOptions {
    * Return the input {@link SinkOptions} instance promoted to a {@link SinkOptions.Parsed}
    * and with all derived fields set.
    */
-  static Parsed parse(SinkOptions options) {
+  static Parsed parseSinkOptions(SinkOptions options) {
     final Parsed parsed = options.as(Parsed.class);
-    enrich(parsed);
+    enrichSinkOptions(parsed);
     return parsed;
   }
 
   /**
    * Set all the derived fields of a {@link SinkOptions.Parsed} instance.
    */
-  static void enrich(Parsed options) {
+  static void enrichSinkOptions(Parsed options) {
     options.setParsedWindowDuration(DurationUtils.parseDuration(options.getWindowDuration()));
   }
 }
