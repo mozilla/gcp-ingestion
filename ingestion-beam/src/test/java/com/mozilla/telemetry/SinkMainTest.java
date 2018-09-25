@@ -111,7 +111,8 @@ public class SinkMainTest {
 
   @Test
   public void canWriteErrorOutput() {
-    String input = Resources.getResource("testdata/basic-messages-mixed-validity.ndjson").getPath();
+    String inputPath = Resources.getResource("testdata").getPath();
+    String input = inputPath + "/basic-messages-*valid.ndjson";
     String output = outputPath + "/valid/out";
     String errorOutput = outputPath + "/error/out";
 
