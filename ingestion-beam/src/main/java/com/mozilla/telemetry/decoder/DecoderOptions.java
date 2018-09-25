@@ -64,7 +64,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    * A custom {@link PipelineOptions} that includes derived fields.
    *
    * <p>This class should only be instantiated from an existing {@link DecoderOptions} instance
-   * via the static {@link #parse(DecoderOptions)} method.
+   * via the static {@link #parseDecoderOptions(DecoderOptions)} method.
    * This follows a similar pattern to the Beam Spark runner's {@code SparkContextOptions}
    * which is instantiated from {@code SparkPipelineOptions} and then enriched.
    */
@@ -79,17 +79,17 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    * Return the input {@link DecoderOptions} instance promoted to a {@link DecoderOptions.Parsed}
    * and with all derived fields set.
    */
-  static Parsed parse(DecoderOptions options) {
+  static Parsed parseDecoderOptions(DecoderOptions options) {
     final Parsed parsed = options.as(Parsed.class);
-    enrich(parsed);
+    enrichDecoderOptions(parsed);
     return parsed;
   }
 
   /**
    * Set all the derived fields of a {@link DecoderOptions.Parsed} instance.
    */
-  static void enrich(Parsed options) {
-    SinkOptions.enrich(options);
+  static void enrichDecoderOptions(Parsed options) {
+    SinkOptions.enrichSinkOptions(options);
     options.setParsedDeduplicateExpireDuration(DurationUtils
         .parseDuration(options.getDeduplicateExpireDuration()));
   }

@@ -25,7 +25,7 @@ public class Sink {
     // register options class so that `--help=SinkOptions` works
     PipelineOptionsFactory.register(SinkOptions.class);
 
-    final SinkOptions.Parsed options = SinkOptions.parse(
+    final SinkOptions.Parsed options = SinkOptions.parseSinkOptions(
         PipelineOptionsFactory
             .fromArgs(args)
             .withValidation()
