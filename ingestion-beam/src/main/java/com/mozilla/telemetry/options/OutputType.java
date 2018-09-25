@@ -5,7 +5,6 @@
 package com.mozilla.telemetry.options;
 
 import com.google.api.services.bigquery.model.TableRow;
-import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.Println;
@@ -207,7 +206,4 @@ public enum OutputType {
           .apply("create empty error collection",
               Create.empty(PubsubMessageWithAttributesCoder.of())));
 
-  public static FixedWindows parseWindow(String duration) {
-    return FixedWindows.of(DurationUtils.parseDuration(duration));
-  }
 }

@@ -5,8 +5,8 @@
 package com.mozilla.telemetry.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.Sink;
+import com.mozilla.telemetry.util.Time;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
@@ -112,6 +112,6 @@ public interface SinkOptions extends PipelineOptions {
    * Set all the derived fields of a {@link SinkOptions.Parsed} instance.
    */
   static void enrichSinkOptions(Parsed options) {
-    options.setParsedWindowDuration(DurationUtils.parseDuration(options.getWindowDuration()));
+    options.setParsedWindowDuration(Time.parseDuration(options.getWindowDuration()));
   }
 }

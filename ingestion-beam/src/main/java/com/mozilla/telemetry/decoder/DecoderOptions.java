@@ -5,8 +5,8 @@
 package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.cloud.teleport.util.DurationUtils;
 import com.mozilla.telemetry.options.SinkOptions;
+import com.mozilla.telemetry.util.Time;
 import java.net.URI;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
@@ -90,7 +90,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    options.setParsedDeduplicateExpireDuration(DurationUtils
+    options.setParsedDeduplicateExpireDuration(Time
         .parseDuration(options.getDeduplicateExpireDuration()));
   }
 
