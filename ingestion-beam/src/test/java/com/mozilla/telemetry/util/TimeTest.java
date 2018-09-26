@@ -4,6 +4,10 @@
 
 package com.mozilla.telemetry.util;
 
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.beam.sdk.options.ValueProvider;
@@ -14,21 +18,22 @@ public class TimeTest {
 
   @Test
   public void testParseDuration() {
-    assertEquals(Time.parseDuration("13s").getMillis(), 13000L);
-    assertEquals(Time.parseDuration("4m").getMillis(), 4 * 60 * 1000L);
-    assertEquals(Time.parseDuration("1h").getMillis(), 60 * 60 * 1000L);
-    assertEquals(Time.parseDuration("P2D").getMillis(), 2 * 24 * 60 * 60 * 1000L);
+    assertEquals(Time.parseDuration("13s").getMillis(), SECONDS.toMillis(13));
+    assertEquals(Time.parseDuration("4m").getMillis(), MINUTES.toMillis(4));
+    assertEquals(Time.parseDuration("1h").getMillis(), HOURS.toMillis(1));
+    assertEquals(Time.parseDuration("P2D").getMillis(), DAYS.toMillis(2));
   }
 
   @Test
   public void testExtendedParseDuration() {
     assertEquals(Time.parseDuration("5.5 seconds").getMillis(), 5500L);
     assertEquals(Time.parseDuration("5.5 SECONDS").getMillis(), 5500L);
-    assertEquals(Time.parseDuration("4m13s").getMillis(), 4 * 60 * 1000L + 13000L);
-    assertEquals(Time.parseDuration("1 hour").getMillis(), 60 * 60 * 1000L);
-    assertEquals(Time.parseDuration("2 days").getMillis(), 2 * 24 * 60 * 60 * 1000L);
-    assertEquals(
-        Time.parseDuration("2 day 0.001 second").getMillis(), 2 * 24 * 60 * 60 * 1000L + 1L);
+    assertEquals(Time.parseDuration("1 hour").getMillis(), HOURS.toMillis(1));
+    assertEquals(Time.parseDuration("2 days").getMillis(), DAYS.toMillis(2));
+    assertEquals(Time.parseDuration("2 day 0.001 second").getMillis(),
+        DAYS.toMillis(2) + 1L);
+    assertEquals(Time.parseDuration("4m13s").getMillis(),
+        MINUTES.toMillis(4) + SECONDS.toMillis(13));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -39,13 +44,13 @@ public class TimeTest {
   @Test
   public void testParseDurationValueProvider() {
     final ValueProvider<String> provider = StaticValueProvider.of("13s");
-    assertEquals(Time.parseDuration(provider).get().getMillis(), 13000L);
+    assertEquals(Time.parseDuration(provider).get().getMillis(), SECONDS.toMillis(13));
   }
 
   @Test
   public void testParseSeconds() {
     assertEquals(Time.parseSeconds("13s"), 13L);
-    assertEquals(Time.parseSeconds("4m"), 4 * 60L);
+    assertEquals(Time.parseSeconds("4m"), MINUTES.toSeconds(4));
   }
 
   @Test
