@@ -83,7 +83,7 @@ public class Decoder extends Sink {
                   .read(options, input)
                   .apply(Deduplicate
                       .markAsSeen(
-                          options.getRedisUri(), options.getParsedDeduplicateExpireDuration()))
+                          options.getRedisUri(), options.getDeduplicateExpireSeconds()))
                   .get(Deduplicate.errorTag)
                   .apply(errorOutput);
               return input;

@@ -5,8 +5,9 @@
 package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.cloud.teleport.util.DurationUtils;
+import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.options.SinkOptions;
+import com.mozilla.telemetry.util.Time;
 import java.net.URI;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
@@ -14,7 +15,7 @@ import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.joda.time.Duration;
+import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 
 /**
  * Options supported by {@code Decoder}.
@@ -71,8 +72,8 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Hidden
   interface Parsed extends DecoderOptions, SinkOptions.Parsed {
     @JsonIgnore
-    ValueProvider<Duration> getParsedDeduplicateExpireDuration();
-    void setParsedDeduplicateExpireDuration(ValueProvider<Duration> value);
+    ValueProvider<Integer> getDeduplicateExpireSeconds();
+    void setDeduplicateExpireSeconds(ValueProvider<Integer> value);
   }
 
   /**
@@ -90,8 +91,9 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    options.setParsedDeduplicateExpireDuration(DurationUtils
-        .parseDuration(options.getDeduplicateExpireDuration()));
+    options.setDeduplicateExpireSeconds(
+        NestedValueProvider.of(options.getDeduplicateExpireDuration(),
+            value -> Ints.checkedCast(Time.parseSeconds(value))));
   }
 
 }

@@ -13,7 +13,6 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.joda.time.Duration;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -71,12 +70,12 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
     return new RemoveDuplicates(StaticValueProvider.of(uri));
   }
 
-  public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<Duration> ttl) {
-    return new MarkAsSeen(uri, ttl);
+  public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
+    return new MarkAsSeen(uri, ttlSeconds);
   }
 
-  public static Deduplicate markAsSeen(URI uri, Duration ttl) {
-    return markAsSeen(StaticValueProvider.of(uri), StaticValueProvider.of(ttl));
+  public static Deduplicate markAsSeen(URI uri, Integer ttlSeconds) {
+    return markAsSeen(StaticValueProvider.of(uri), StaticValueProvider.of(ttlSeconds));
   }
 
   /*
@@ -111,23 +110,15 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    * {@link PTransform} to mark messages as seen, so any duplicates are removed.
    */
   public static class MarkAsSeen extends Deduplicate {
-    Integer ttlSeconds;
-    final ValueProvider<Duration> ttl;
+    final ValueProvider<Integer> ttlSeconds;
 
-    int getTtlSeconds() {
-      if (ttlSeconds == null) {
-        ttlSeconds = (int) ttl.get().getStandardSeconds();
-      }
-      return ttlSeconds;
-    }
-
-    private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Duration> ttl) {
+    private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
       super(uri);
-      this.ttl = ttl;
+      this.ttlSeconds = ttlSeconds;
     }
 
     private String setex(byte[] id) {
-      return getJedis().setex(id, getTtlSeconds(), new byte[0]);
+      return getJedis().setex(id, ttlSeconds.get(), new byte[0]);
     }
 
     @Override
