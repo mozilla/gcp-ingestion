@@ -10,17 +10,40 @@ services:
     image: &image ingestion-edge:build
     environment:
     - &emulator_host PUBSUB_EMULATOR_HOST=pubsub:8085
-    - &route_table ROUTE_TABLE=[["/submit/<path:suffix>","projects/test/topics/test"]]
+    - &route_table >-
+      ROUTE_TABLE=[
+        [
+          "/submit",
+          "projects/test/topics/ingestion"
+        ],
+        [
+          "/submit/<path:suffix>",
+          "projects/test/topics/ingestion",
+          ["PoSt", "pUt"]
+        ],
+        [
+          "/submit/telemetry/<path:suffix>",
+          "projects/test/topics/telemetry"
+        ],
+        [
+          "/submit/sslreports",
+          "projects/test/topics/tls_error_reports",
+          ["post", "put"]
+        ],
+        [
+          "/stub/<path:suffix>",
+          "projects/test/topics/stub_installer",
+          ["GET"]
+        ]
+      ]
   test:
     image: *image
     entrypoint: py.test
     command:
-    - --create-pubsub-resources
     - --flake8
     - --docstyle
     - --mypy
     - --mypy-ignore-missing-imports
-    - --server=http://web:8000
     depends_on:
     - pubsub
     - web

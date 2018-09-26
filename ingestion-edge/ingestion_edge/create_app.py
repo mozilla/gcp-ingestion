@@ -5,9 +5,15 @@
 """Definition of our Flask application."""
 
 from flask import Flask
+from . import config, publish
 from .dockerflow import dockerflow
-from .publish import publish
 
-app = Flask(__name__)
-app.register_blueprint(publish)
-dockerflow.init_app(app)
+
+def create_app(**kwargs) -> Flask:
+    """Generate Flask application."""
+    app = Flask(__name__)
+    app.config.from_object(config)
+    app.config.update(**kwargs)
+    dockerflow.init_app(app)
+    publish.init_app(app)
+    return app

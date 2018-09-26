@@ -9,4 +9,4 @@ CMD $CMD_PREFIX gunicorn \
   --log-file - \
   --worker-class ${GUNICORN_WORKER_CLASS:-sync} \
   --max-requests ${GUNICORN_MAX_REQUESTS:-0} \
-  ingestion_edge.app:app
+  ingestion_edge.wsgi:app

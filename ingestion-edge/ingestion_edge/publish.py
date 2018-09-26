@@ -2,18 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-"""Main logic for handling data requests."""
+"""Main logic for handling submit requests."""
 
-from .conf import ROUTE_TABLE
-from .conf import QUEUE_PATH
 from datetime import datetime
-from flask import Blueprint, request
+from flask import Flask, request
+from functools import partial
 from google.cloud.pubsub_v1 import PublisherClient
 from google.cloud.pubsub_v1.publisher.exceptions import PublishError
 from google.cloud.pubsub_v1.types import PubsubMessage
 from persistqueue import SQLiteAckQueue
 from persistqueue.exceptions import Empty
-from typing import Tuple
+from typing import Dict, Tuple
 import google.api_core.exceptions
 import json
 
@@ -39,16 +38,10 @@ TRANSIENT_ERRORS = (
     TimeoutError,
 )
 
-publish = Blueprint('publish', __name__)
 client = PublisherClient()
-# Use a SQLiteAckQueue because:
-# * we use acks to ensure messages only removed on success
-# * persist-queue's SQLite*Queue is faster than its Queue
-# * SQLite provides thread-safe and process-safe access
-q = SQLiteAckQueue(QUEUE_PATH)
 
 
-def _publish(topic, data, attrs) -> str:
+def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
     """Publish one message to the topic.
 
     Uses PublisherClient to try to publish the message in a batch and handles
@@ -72,8 +65,7 @@ def _publish(topic, data, attrs) -> str:
         return response.message_ids[0]
 
 
-@publish.route("/__flush__")
-def flush_queue() -> Tuple[str, int]:
+def flush(q: SQLiteAckQueue) -> Tuple[str, int]:
     """Flush messages from the local queue to pubsub.
 
     Call periodically on each docker container to ensure reliable delivery.
@@ -110,7 +102,7 @@ def flush_queue() -> Tuple[str, int]:
     return json.dumps(dict(done=done, pending=0)), FLUSH_COMPLETE_STATUS
 
 
-def handle_request(topic: str, **kwargs) -> Tuple[str, int]:
+def submit(q: SQLiteAckQueue, topic: str, **kwargs) -> Tuple[str, int]:
     """Deliver request to the pubsub topic.
 
     Deliver to the local queue to be retried on transient errors.
@@ -123,7 +115,7 @@ def handle_request(topic: str, **kwargs) -> Tuple[str, int]:
             uri=request.path,
             protocol=request.scheme,
             method=request.method,
-            args=request.query_string,
+            args=request.query_string.decode(),
             remote_addr=request.remote_addr,
             content_length=str(request.content_length),
             date=request.date,
@@ -143,9 +135,27 @@ def handle_request(topic: str, **kwargs) -> Tuple[str, int]:
     return "", 200
 
 
-for path, topic, methods in ROUTE_TABLE:
-    publish.route(
-        path,
-        defaults={'topic': topic},
-        methods=methods,
-    )(handle_request)
+def init_app(app: Flask):
+    """Initialize Flask app with url rules."""
+    # Use a SQLiteAckQueue because:
+    # * we use acks to ensure messages only removed on success
+    # * persist-queue's SQLite*Queue is faster than its Queue
+    # * SQLite provides thread-safe and process-safe access
+    q = SQLiteAckQueue(**app.config.get_namespace("QUEUE_"))
+    # route flush
+    app.add_url_rule("/__flush__", "flush", partial(flush, q))
+    # generate one view_func per topic
+    view_funcs = {
+        route.topic: partial(submit, q, route.topic)
+        for route in app.config["ROUTE_TABLE"]
+    }
+    # add routes for ROUTE_TABLE
+    for route in app.config["ROUTE_TABLE"]:
+        app.add_url_rule(
+            route.rule,
+            # required because view_func.__name__ does not exist
+            # must be a unique endpoint for each view_func
+            endpoint="submit_" + route.topic,
+            view_func=view_funcs[route.topic],
+            methods=route.methods,
+        )

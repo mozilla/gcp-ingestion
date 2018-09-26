@@ -8,24 +8,11 @@ Some configuration is hard-coded here, but most is provided via
 environment variables.
 """
 
+from dataclasses import dataclass
 from logging.config import dictConfig
 from os import environ
-from typing import List, Tuple
+from typing import Tuple
 import json
-
-Route = Tuple[str, str, List[str]]
-
-
-def _route(path: str, topic: str, methods: List[str]=["POST", "PUT"]) -> Route:
-    return path, topic, methods
-
-
-ROUTE_TABLE = [
-    _route(*value)
-    for value in json.loads(environ.get("ROUTE_TABLE", "[]"))
-]
-
-QUEUE_PATH = environ.get("QUEUE_PATH", "queue")
 
 dictConfig({
     'version': 1,
@@ -49,3 +36,20 @@ dictConfig({
         },
     }
 })
+
+
+@dataclass
+class Route:
+    """Dataclass for entries in ROUTE_TABLE."""
+
+    rule: str
+    topic: str
+    methods: Tuple = ("POST", "PUT")
+
+
+ROUTE_TABLE = [
+    Route(*route)
+    for route in json.loads(environ.get("ROUTE_TABLE", "[]"))
+]
+
+QUEUE_PATH = environ.get("QUEUE_PATH", "queue")
