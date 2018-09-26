@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.util.Time;
 import java.net.URI;
@@ -14,6 +15,7 @@ import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 
 /**
  * Options supported by {@code Decoder}.
@@ -70,8 +72,8 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Hidden
   interface Parsed extends DecoderOptions, SinkOptions.Parsed {
     @JsonIgnore
-    ValueProvider<Long> getDeduplicateExpireSeconds();
-    void setDeduplicateExpireSeconds(ValueProvider<Long> value);
+    ValueProvider<Integer> getDeduplicateExpireSeconds();
+    void setDeduplicateExpireSeconds(ValueProvider<Integer> value);
   }
 
   /**
@@ -89,8 +91,9 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    options.setDeduplicateExpireSeconds(Time
-        .parseSeconds(options.getDeduplicateExpireDuration()));
+    options.setDeduplicateExpireSeconds(
+        NestedValueProvider.of(options.getDeduplicateExpireDuration(),
+            value -> Ints.checkedCast(Time.parseSeconds(value))));
   }
 
 }

@@ -70,11 +70,11 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
     return new RemoveDuplicates(StaticValueProvider.of(uri));
   }
 
-  public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<Long> ttlSeconds) {
+  public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
     return new MarkAsSeen(uri, ttlSeconds);
   }
 
-  public static Deduplicate markAsSeen(URI uri, Long ttlSeconds) {
+  public static Deduplicate markAsSeen(URI uri, Integer ttlSeconds) {
     return markAsSeen(StaticValueProvider.of(uri), StaticValueProvider.of(ttlSeconds));
   }
 
@@ -110,15 +110,15 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    * {@link PTransform} to mark messages as seen, so any duplicates are removed.
    */
   public static class MarkAsSeen extends Deduplicate {
-    final ValueProvider<Long> ttlSeconds;
+    final ValueProvider<Integer> ttlSeconds;
 
-    private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Long> ttlSeconds) {
+    private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
       super(uri);
       this.ttlSeconds = ttlSeconds;
     }
 
     private String setex(byte[] id) {
-      return getJedis().setex(id, ttlSeconds.get().intValue(), new byte[0]);
+      return getJedis().setex(id, ttlSeconds.get(), new byte[0]);
     }
 
     @Override
