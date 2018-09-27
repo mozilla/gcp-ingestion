@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+"""Main logic for handling data requests."""
+
 from .conf import ROUTE_TABLE
 from .conf import QUEUE_PATH
 from datetime import datetime
@@ -47,10 +49,10 @@ q = SQLiteAckQueue(QUEUE_PATH)
 
 
 def _publish(topic, data, attrs) -> str:
-    """Publish one message to the topic
+    """Publish one message to the topic.
 
     Uses PublisherClient to try to publish the message in a batch and handles
-    non-transient batch failure by retrying with a single message
+    non-transient batch failure by retrying with a single message.
 
     Note that this method will block until it gets a result, but gunicorn can
     be configured with worker processes that each use coroutines to handle many
@@ -72,11 +74,11 @@ def _publish(topic, data, attrs) -> str:
 
 @publish.route("/__flush__")
 def flush_queue() -> Tuple[str, int]:
-    """Flush messages from the local queue to pubsub
+    """Flush messages from the local queue to pubsub.
 
-    Call periodically on each docker container to ensure reliable delivery
+    Call periodically on each docker container to ensure reliable delivery.
 
-    Access to this endpoint should be restricted
+    Access to this endpoint should be restricted.
     """
     if q.size == 0:
         # early return for empty queue
@@ -109,9 +111,9 @@ def flush_queue() -> Tuple[str, int]:
 
 
 def handle_request(topic: str, **kwargs) -> Tuple[str, int]:
-    """Deliver request to the pubsub topic
+    """Deliver request to the pubsub topic.
 
-    Deliver to the local queue to be retried on transient errors
+    Deliver to the local queue to be retried on transient errors.
     """
     data = request.get_data()
     attrs = {

@@ -17,6 +17,7 @@ services:
     command:
     - --create-pubsub-resources
     - --flake8
+    - --docstyle
     - --mypy
     - --mypy-ignore-missing-imports
     - --server=http://web:8000
