@@ -2,16 +2,16 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-"""Definition of our Flask application."""
+"""Definition of our Sanic application."""
 
-from flask import Flask
+from sanic import Sanic
 from . import config, publish
 from .dockerflow import dockerflow
 
 
-def create_app(**kwargs) -> Flask:
-    """Generate Flask application."""
-    app = Flask(__name__)
+def create_app(**kwargs) -> Sanic:
+    """Generate Sanic application."""
+    app = Sanic(__name__)
     app.config.from_object(config)
     app.config.update(**kwargs)
     dockerflow.init_app(app)

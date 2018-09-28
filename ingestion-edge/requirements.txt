@@ -1,6 +1,5 @@
-blinker==1.4
-dockerflow==2018.4.0
-Flask==1.0.2
+aiohttp==3.4.4
+git+git://github.com/relud/python-dockerflow@master#egg=dockerflow
 google-cloud-pubsub==0.38.0
 gunicorn==19.9.0
 persist-queue==0.4.0
@@ -10,3 +9,4 @@ pytest-cov==2.6.0
 pytest-docstyle==1.4.0
 pytest-flake8==1.0.2
 python-dateutil==2.7.3
+Sanic==0.8.3

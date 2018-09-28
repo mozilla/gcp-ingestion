@@ -39,15 +39,19 @@ def _create_pubsub_resources(topic: str):
         created_subscriptions.add(subscription)
 
 
-def test_dockerflow(requests_session: requests.Session, server: str):
+def test_heartbeat(requests_session: requests.Session, server: str):
     r = requests_session.get(server + "/__heartbeat__")
     r.raise_for_status()
     assert r.json() == {"checks": {}, "details": {}, "status": "ok"}
 
+
+def test_lbheartbeat(requests_session: requests.Session, server: str):
     r = requests_session.get(server + "/__lbheartbeat__")
     r.raise_for_status()
     assert r.text == ""
 
+
+def test_version(requests_session: requests.Session, server: str):
     r = requests_session.get(server + "/__version__")
     r.raise_for_status()
     assert sorted(r.json().keys()) == ["build", "commit", "source", "version"]
@@ -82,7 +86,7 @@ def test_publish(
             )
 
         # submit request to edge
-        uri = route.rule.replace("<path:suffix>", "test")
+        uri = route.uri.replace("<suffix:path>", "test")
         data = "test"
         req_time = datetime.utcnow()
         r = requests_session.request(method, server + uri, data=data)
@@ -97,7 +101,7 @@ def test_publish(
         rec_time = parse(attrs.pop("submission_timestamp")[:-1])
         assert (req_time - rec_time).total_seconds() < 1
         assert "remote_addr" in attrs
-        attrs.pop("remote_addr")
+        assert attrs.pop("remote_addr") != ""
         assert attrs == {
             "args": "",
             "content_length": str(len(data)),

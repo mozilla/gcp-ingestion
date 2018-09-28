@@ -13,16 +13,12 @@ services:
     - &route_table >-
       ROUTE_TABLE=[
         [
-          "/submit",
-          "projects/test/topics/ingestion"
+          "/stub/<suffix:path>",
+          "projects/test/topics/stub_installer",
+          ["GET"]
         ],
         [
-          "/submit/<path:suffix>",
-          "projects/test/topics/ingestion",
-          ["PoSt", "pUt"]
-        ],
-        [
-          "/submit/telemetry/<path:suffix>",
+          "/submit/telemetry/<suffix:path>",
           "projects/test/topics/telemetry"
         ],
         [
@@ -31,9 +27,13 @@ services:
           ["post", "put"]
         ],
         [
-          "/stub/<path:suffix>",
-          "projects/test/topics/stub_installer",
-          ["GET"]
+          "/submit/<suffix:path>",
+          "projects/test/topics/ingestion",
+          ["PoSt", "pUt"]
+        ],
+        [
+          "/submit",
+          "projects/test/topics/ingestion"
         ]
       ]
   test:

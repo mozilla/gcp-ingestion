@@ -7,6 +7,6 @@
 See https://github.com/mozilla-services/Dockerflow
 """
 
-from dockerflow.flask import Dockerflow
+from dockerflow.sanic import Dockerflow
 
 dockerflow = Dockerflow()
