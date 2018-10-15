@@ -13,6 +13,7 @@ from google.cloud.pubsub_v1.publisher.exceptions import PublishError
 from persistqueue import SQLiteAckQueue
 from persistqueue.exceptions import Empty
 from typing import Dict, Tuple
+from .util import async_wrap
 import google.api_core.exceptions
 
 FLUSH_EMPTY_STATUS = 204
@@ -40,7 +41,7 @@ TRANSIENT_ERRORS = (
 client = PublisherClient()
 
 
-def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
+async def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
     """Publish one message to the topic.
 
     Use PublisherClient to publish the message in a batch.
@@ -55,17 +56,19 @@ def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
     worker.
     """
     try:
-        return client.publish(topic, data, **attrs).result()
+        return await async_wrap(client.publish(topic, data, **attrs))
     except PublishError:
         # Batch failed because pubsub permanently rejected at least one message
         # retry this message alone to determine if it was rejected
-        response = client.api.publish(
+        batch = client._batch_class(
+            autocommit=False,
+            client=client,
+            settings=client.batch_settings,
             topic=topic,
-            messages=[{'data': data, 'attributes': attrs}],
         )
-        if len(response.message_ids) != 1:
-            raise PublishError("message was not successfully published")
-        return response.message_ids[0]
+        future = batch.publish({'data': data, 'attributes': attrs})
+        batch.commit()  # spawns thread to commit batch
+        return await async_wrap(future)
 
 
 async def flush(request: Request, q: SQLiteAckQueue) -> Tuple[str, int]:
@@ -87,7 +90,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> Tuple[str, int]:
             # queue is empty or sqlite needs a retry
             continue
         try:
-            _publish(*message)
+            await _publish(*message)
         except TRANSIENT_ERRORS:
             # message not delivered
             q.nack(message)
@@ -133,7 +136,7 @@ async def submit(request: Request, q: SQLiteAckQueue, topic: str,
         if value is not None
     }
     try:
-        _publish(topic, data, attrs)
+        await _publish(topic, data, attrs)
     except TRANSIENT_ERRORS:
         # transient api call failure, write to queue
         q.put((topic, data, attrs))

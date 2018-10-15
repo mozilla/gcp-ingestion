@@ -33,8 +33,9 @@ def test_version(client: SanicTestClient):
 def test_publish(client: SanicTestClient, route: Route):
     messages: List[Tuple[str, bytes, Dict[str, str]]] = []
 
-    def _publish(*args):
+    async def _publish(*args):
         messages.append(args)
+        return len(messages)
 
     with patch("ingestion_edge.publish._publish", new=_publish):
         # test route
