@@ -9,7 +9,6 @@ from flask import Flask, request
 from functools import partial
 from google.cloud.pubsub_v1 import PublisherClient
 from google.cloud.pubsub_v1.publisher.exceptions import PublishError
-from google.cloud.pubsub_v1.types import PubsubMessage
 from persistqueue import SQLiteAckQueue
 from persistqueue.exceptions import Empty
 from typing import Dict, Tuple
@@ -44,21 +43,25 @@ client = PublisherClient()
 def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
     """Publish one message to the topic.
 
-    Uses PublisherClient to try to publish the message in a batch and handles
-    non-transient batch failure by retrying with a single message.
+    Use PublisherClient to publish the message in a batch.
 
-    Note that this method will block until it gets a result, but gunicorn can
-    be configured with worker processes that each use coroutines to handle many
-    requests at once.
+    PublishError from PublisherClient requires special handling because it is a
+    non-transient error. It is raised for the whole batch and does not indicate
+    what message failed or whether all messages failed. Circumvent batching to
+    determine if this message in particular failed.
+
+    Note that this method will block until it gets a result, but gevent workers
+    should yield the coroutine during IO to handle multiple connections per
+    worker.
     """
     try:
         return client.publish(topic, data, **attrs).result()
     except PublishError:
-        # Batch failed because pubsub rejected at least one message
+        # Batch failed because pubsub permanently rejected at least one message
         # retry this message alone to determine if it was rejected
         response = client.api.publish(
             topic=topic,
-            messages=[PubsubMessage(data=data, attributes=attrs)],
+            messages=[{'data': data, 'attributes': attrs}],
         )
         if len(response.message_ids) != 1:
             raise PublishError("message was not successfully published")
