@@ -15,6 +15,8 @@ import traceback
 def client() -> Generator[SanicTestClient, None, None]:
     with TemporaryDirectory() as tmp:
         app = create_app(QUEUE_PATH=tmp, TESTING=True)
+        # remove existing error handlers
+        app.error_handler.handlers = []
 
         @app.exception(Exception)
         def handler(request, exception):
