@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-"""Utility functions."""
+"""Utilities."""
 
 import asyncio
 
@@ -33,3 +33,13 @@ def async_wrap(future, loop=None):
     future.add_done_callback(callback)
 
     return async_future
+
+
+class HTTP_STATUS:
+    """HTTP Status Codes for responses."""
+
+    OK = 200
+    NO_CONTENT = 204
+    BAD_REQUEST = 400
+    GATEWAY_TIMEOUT = 504
+    INSUFFICIENT_STORAGE = 507

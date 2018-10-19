@@ -101,7 +101,7 @@ def test_publish(
         rec_time = parse(attrs.pop("submission_timestamp")[:-1])
         assert (req_time - rec_time).total_seconds() < 1
         assert "remote_addr" in attrs
-        assert attrs.pop("remote_addr") != ""
+        assert attrs.pop("remote_addr")
         assert attrs == {
             "args": "",
             "content_length": str(len(data)),

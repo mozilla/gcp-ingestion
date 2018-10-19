@@ -5,6 +5,7 @@
 """Main logic for handling submit requests."""
 
 from datetime import datetime
+from sqlite3 import DatabaseError
 from sanic import Sanic, response
 from sanic.request import Request
 from functools import partial
@@ -12,13 +13,10 @@ from google.cloud.pubsub_v1 import PublisherClient
 from google.cloud.pubsub_v1.publisher.exceptions import PublishError
 from persistqueue import SQLiteAckQueue
 from persistqueue.exceptions import Empty
-from typing import Dict, Tuple
-from .util import async_wrap
+from typing import Dict
+from .util import async_wrap, HTTP_STATUS
 import google.api_core.exceptions
 
-FLUSH_EMPTY_STATUS = 204
-FLUSH_COMPLETE_STATUS = 200
-FLUSH_INCOMPLETE_STATUS = 504
 # Errors where message should be queued locally after pubsub delivery fails
 # To minimize data loss include errors that may require manual intervention
 TRANSIENT_ERRORS = (
@@ -71,7 +69,7 @@ async def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
         return await async_wrap(future)
 
 
-async def flush(request: Request, q: SQLiteAckQueue) -> Tuple[str, int]:
+async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
     """Flush messages from the local queue to pubsub.
 
     Call periodically on each docker container to ensure reliable delivery.
@@ -80,7 +78,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> Tuple[str, int]:
     """
     if q.size == 0:
         # early return for empty queue
-        return response.raw(b"", FLUSH_EMPTY_STATUS)
+        return response.raw(b"", HTTP_STATUS.NO_CONTENT)
     result = {"done": 0, "pending": 0}
     # while queue has messages ready to process
     while q.size > 0:
@@ -97,7 +95,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> Tuple[str, int]:
             # update result with remaining queue size
             result["pending"] = q.size
             # transient errors stop processing queue until next flush
-            return response.json(result, FLUSH_INCOMPLETE_STATUS)
+            return response.json(result, HTTP_STATUS.GATEWAY_TIMEOUT)
         except:  # noqa: E722
             # message not delivered
             q.nack(message)
@@ -106,11 +104,11 @@ async def flush(request: Request, q: SQLiteAckQueue) -> Tuple[str, int]:
         else:
             q.ack(message)
             result["done"] += 1
-    return response.json(result, FLUSH_COMPLETE_STATUS)
+    return response.json(result, HTTP_STATUS.OK)
 
 
 async def submit(request: Request, q: SQLiteAckQueue, topic: str,
-                 **kwargs) -> Tuple[str, int]:
+                 **kwargs) -> response.HTTPResponse:
     """Deliver request to the pubsub topic.
 
     Deliver to the local queue to be retried on transient errors.
@@ -139,7 +137,14 @@ async def submit(request: Request, q: SQLiteAckQueue, topic: str,
         await _publish(topic, data, attrs)
     except TRANSIENT_ERRORS:
         # transient api call failure, write to queue
-        q.put((topic, data, attrs))
+        try:
+            q.put((topic, data, attrs))
+        except DatabaseError:
+            # sqlite queue is probably out of space
+            return response.raw(b"", HTTP_STATUS.INSUFFICIENT_STORAGE)
+    except PublishError:
+        # api permanently rejected this message without giving a reason
+        return response.raw(b"", HTTP_STATUS.BAD_REQUEST)
     return response.raw(b"")
 
 
