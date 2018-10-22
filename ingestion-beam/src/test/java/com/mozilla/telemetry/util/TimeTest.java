@@ -30,8 +30,7 @@ public class TimeTest {
     assertEquals(Time.parseDuration("5.5 SECONDS").getMillis(), 5500L);
     assertEquals(Time.parseDuration("1 hour").getMillis(), HOURS.toMillis(1));
     assertEquals(Time.parseDuration("2 days").getMillis(), DAYS.toMillis(2));
-    assertEquals(Time.parseDuration("2 day 0.001 second").getMillis(),
-        DAYS.toMillis(2) + 1L);
+    assertEquals(Time.parseDuration("2 day 0.001 second").getMillis(), DAYS.toMillis(2) + 1L);
     assertEquals(Time.parseDuration("4m13s").getMillis(),
         MINUTES.toMillis(4) + SECONDS.toMillis(13));
   }

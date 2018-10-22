@@ -24,6 +24,7 @@ import redis.clients.jedis.Jedis;
  * https://beam.apache.org/contribute/ptransform-style-guide/#packaging-a-family-of-transforms
  */
 public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+
   private final ValueProvider<URI> uri;
   private transient Jedis jedis;
 
@@ -47,15 +48,10 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    * @exception IllegalArgumentException if {@code document_id} is an invalid {@link UUID}.
    */
   static Optional<byte[]> getId(PubsubMessage element) {
-    return Optional
-        .ofNullable(element.getAttributeMap())
-        .flatMap(m -> Optional.ofNullable(m.get("document_id")))
-        .map(UUID::fromString)
-        .map(id -> ByteBuffer
-            .wrap(new byte[16])
-            .putLong(id.getLeastSignificantBits())
-            .putLong(id.getMostSignificantBits())
-            .array());
+    return Optional.ofNullable(element.getAttributeMap())
+        .flatMap(m -> Optional.ofNullable(m.get("document_id"))).map(UUID::fromString)
+        .map(id -> ByteBuffer.wrap(new byte[16]).putLong(id.getLeastSignificantBits())
+            .putLong(id.getMostSignificantBits()).array());
   }
 
   /*
@@ -86,19 +82,20 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    * {@link PTransform} that redirects messages already seen to {@code errorTag}.
    */
   private static class RemoveDuplicates extends Deduplicate {
+
     private RemoveDuplicates(ValueProvider<URI> uri) {
       super(uri);
     }
 
-    private static class DuplicateIdException extends Exception {}
+    private static class DuplicateIdException extends Exception {
+    }
 
     @Override
     protected PubsubMessage processElement(PubsubMessage element) throws DuplicateIdException {
       // Throws IllegalArgumentException if id is present and invalid
       if (getId(element)
           // Throws JedisConnectionException if redis can't be reached
-          .filter(getJedis()::exists)
-          .isPresent()) {
+          .filter(getJedis()::exists).isPresent()) {
         // Throw DuplicateIdException if id was in redis
         throw new DuplicateIdException();
       }
@@ -110,6 +107,7 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    * {@link PTransform} to mark messages as seen, so any duplicates are removed.
    */
   public static class MarkAsSeen extends Deduplicate {
+
     final ValueProvider<Integer> ttlSeconds;
 
     private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {

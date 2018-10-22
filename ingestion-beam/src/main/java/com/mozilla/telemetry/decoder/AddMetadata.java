@@ -11,6 +11,7 @@ import java.io.IOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+
   private static final byte[] METADATA_PREFIX = "{\"metadata\":".getBytes();
 
   @Override
@@ -24,8 +25,8 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
       throw new IOException("invalid json object: must start with {");
     }
     // Create an output stream for joining metadata with payload
-    final ByteArrayOutputStream payloadWithMetadata =
-        new ByteArrayOutputStream(METADATA_PREFIX.length + metadata.length + payload.length);
+    final ByteArrayOutputStream payloadWithMetadata = new ByteArrayOutputStream(
+        METADATA_PREFIX.length + metadata.length + payload.length);
     // Write metadata prefix
     payloadWithMetadata.write(METADATA_PREFIX);
     // Write metadata

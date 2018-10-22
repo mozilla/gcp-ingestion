@@ -15,38 +15,38 @@ import org.apache.beam.sdk.values.POutput;
  */
 public enum ErrorOutputType {
   stdout {
+
     /** Return a PTransform that prints errors to STDOUT; only for local running. */
     public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
-        SinkOptions.Parsed options
-    ) {
+        SinkOptions.Parsed options) {
       return OutputType.print(FORMAT, Println.stdout());
     }
   },
 
   stderr {
+
     /** Return a PTransform that prints errors to STDERR; only for local running. */
     public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
-        SinkOptions.Parsed options
-    ) {
+        SinkOptions.Parsed options) {
       return OutputType.print(FORMAT, Println.stderr());
     }
   },
 
   file {
+
     /** Return a PTransform that writes errors to local or remote files. */
     public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
-        SinkOptions.Parsed options
-    ) {
-      return OutputType.writeFiles(
-          options.getErrorOutput(), FORMAT, options.getParsedWindowDuration());
+        SinkOptions.Parsed options) {
+      return OutputType.writeFile(options.getErrorOutput(), FORMAT,
+          options.getParsedWindowDuration());
     }
   },
 
   pubsub {
+
     /** Return a PTransform that writes to Google Pubsub. */
     public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
-        SinkOptions.Parsed options
-    ) {
+        SinkOptions.Parsed options) {
       return OutputType.writePubsub(options.getErrorOutput());
     }
   };
@@ -54,6 +54,5 @@ public enum ErrorOutputType {
   public static OutputFileFormat FORMAT = OutputFileFormat.json;
 
   public abstract PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
-      SinkOptions.Parsed options
-  );
+      SinkOptions.Parsed options);
 }

@@ -11,6 +11,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.values.TupleTag;
 
 public class PubsubMessageToTableRow extends MapElementsWithErrors<PubsubMessage, TableRow> {
+
   public static final TupleTag<TableRow> mainTag = new TupleTag<>();
 
   @Override

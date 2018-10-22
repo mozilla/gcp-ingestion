@@ -12,6 +12,7 @@ import org.apache.beam.sdk.values.PCollectionTuple;
 public enum InputFileFormat {
 
   text {
+
     /** Return a PTransform for decoding attribute-free PubsubMessages from payload strings. */
     public PTransform<PCollection<? extends String>, PCollectionTuple> decode() {
       return DecodePubsubMessages.text();
@@ -19,6 +20,7 @@ public enum InputFileFormat {
   },
 
   json {
+
     /** Return a PTransform for decoding PubsubMessages from JSON strings. */
     public PTransform<PCollection<? extends String>, PCollectionTuple> decode() {
       return DecodePubsubMessages.json();

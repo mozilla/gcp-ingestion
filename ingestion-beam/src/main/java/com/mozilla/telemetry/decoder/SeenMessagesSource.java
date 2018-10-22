@@ -13,37 +13,35 @@ import org.apache.beam.sdk.values.PCollection;
 public enum SeenMessagesSource {
 
   pubsub {
+
     /** Read from a PubSub subscription. */
-    public PCollection<PubsubMessage> read(
-        DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered) {
-      return undelivered
-          .getPipeline()
-          .apply(PubsubIO
-              .readMessagesWithAttributes()
-              .fromSubscription(options.getDeliveredMessagesSubscription()));
+    public PCollection<PubsubMessage> read(DecoderOptions.Parsed options,
+        PCollection<PubsubMessage> undelivered) {
+      return undelivered.getPipeline().apply(PubsubIO.readMessagesWithAttributes()
+          .fromSubscription(options.getDeliveredMessagesSubscription()));
     }
   },
 
   undelivered {
+
     /** Mark messages as seen without waiting for delivery. */
-    public PCollection<PubsubMessage> read(
-        DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered) {
+    public PCollection<PubsubMessage> read(DecoderOptions.Parsed options,
+        PCollection<PubsubMessage> undelivered) {
       return undelivered;
     }
   },
 
   none {
+
     /** Do not mark messages as seen. */
-    public PCollection<PubsubMessage> read(
-        DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered) {
-      return undelivered
-          .getPipeline()
-          .apply("create empty collection",
-              Create.empty(PubsubMessageWithAttributesCoder.of()));
+    public PCollection<PubsubMessage> read(DecoderOptions.Parsed options,
+        PCollection<PubsubMessage> undelivered) {
+      return undelivered.getPipeline().apply("create empty collection",
+          Create.empty(PubsubMessageWithAttributesCoder.of()));
     }
   };
 
   /** Get a PCollection of messages to mark as seen from a PCollection of undelivered messages. */
-  public abstract PCollection<PubsubMessage> read(
-      DecoderOptions.Parsed options, PCollection<PubsubMessage> undelivered);
+  public abstract PCollection<PubsubMessage> read(DecoderOptions.Parsed options,
+      PCollection<PubsubMessage> undelivered);
 }

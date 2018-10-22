@@ -73,13 +73,11 @@ public class Lines {
   private static List<String> readAllLinesFromGlobWithPrefix(String globWithPrefix) {
     List<String> lines = new ArrayList<>();
     try {
-      final Resource[] resources =
-          new PathMatchingResourcePatternResolver()
-              .getResources(globWithPrefix);
+      final Resource[] resources = new PathMatchingResourcePatternResolver()
+          .getResources(globWithPrefix);
       for (Resource resource : resources) {
-        readAllLines(resource.getFile().toPath())
-            .stream()
-            .filter(line -> !line.startsWith("//")) // support comments
+        // support comments
+        readAllLines(resource.getFile().toPath()).stream().filter(line -> !line.startsWith("//"))
             .forEach(lines::add);
       }
       return lines;

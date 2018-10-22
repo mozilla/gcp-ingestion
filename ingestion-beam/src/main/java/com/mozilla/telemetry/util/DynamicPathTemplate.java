@@ -112,6 +112,7 @@ public class DynamicPathTemplate implements Serializable {
    * we find before we encounter a dynamic attribute placeholder.
    */
   static class PathSplitter implements Serializable {
+
     final String staticPrefix;
     final String dynamicPart;
 
@@ -120,12 +121,9 @@ public class DynamicPathTemplate implements Serializable {
 
       int indexOfLastSlash;
       if (indexOfFirstPlaceholder == -1) {
-        indexOfLastSlash = rawPath
-            .lastIndexOf('/');
+        indexOfLastSlash = rawPath.lastIndexOf('/');
       } else {
-        indexOfLastSlash = rawPath
-            .substring(0, indexOfFirstPlaceholder)
-            .lastIndexOf('/');
+        indexOfLastSlash = rawPath.substring(0, indexOfFirstPlaceholder).lastIndexOf('/');
       }
 
       if (indexOfLastSlash == -1) {
@@ -144,7 +142,6 @@ public class DynamicPathTemplate implements Serializable {
       // This regex matches either of these patterns,
       // capturing the name of the placeholder as group 1
       // and the default value (or null if no default is provided) as group 2.
-      "\\$\\{([^{}]+?(?=:-|}))(?::-([^{}]+))?}"
-  );
+      "\\$\\{([^{}]+?(?=:-|}))(?::-([^{}]+))?}");
 
 }

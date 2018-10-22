@@ -22,7 +22,9 @@ import org.apache.beam.sdk.values.PCollection;
  */
 public class ParseUserAgent
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+
   private static class Field implements Serializable {
+
     private final String attribute;
     private final String field;
 
@@ -44,15 +46,12 @@ public class ParseUserAgent
   private static final Set<String> parseFailures = Sets.newHashSet("Unknown", "??");
 
   private static class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
-    static final UserAgentAnalyzer analyzer = UserAgentAnalyzer
-        .newBuilder()
-        .withField(USER_AGENT_BROWSER.field)
-        .withField(USER_AGENT_OS.field)
+
+    static final UserAgentAnalyzer analyzer = UserAgentAnalyzer.newBuilder()
+        .withField(USER_AGENT_BROWSER.field).withField(USER_AGENT_OS.field)
         .withField(USER_AGENT_VERSION.field)
         // Only use our matchers
-        .dropDefaultResources()
-        .addResources("UserAgents/*.yaml")
-        .build();
+        .dropDefaultResources().addResources("UserAgents/*.yaml").build();
 
     @Override
     public PubsubMessage apply(PubsubMessage value) {

@@ -21,7 +21,9 @@ import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 
 public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+
   private static class SchemaNotFoundException extends Exception {
+
     SchemaNotFoundException(String name) {
       super("No schema with name: " + name);
     }
@@ -46,14 +48,10 @@ public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<Pu
   }
 
   private static void loadAllSchemas() throws SchemaNotFoundException, IOException {
-    final Resource[] resources =
-        new PathMatchingResourcePatternResolver()
-            .getResources("classpath*:schemas/**/*.schema.json");
+    final Resource[] resources = new PathMatchingResourcePatternResolver()
+        .getResources("classpath*:schemas/**/*.schema.json");
     for (Resource resource : resources) {
-      final String name = resource
-          .getURL()
-          .getPath()
-          .replaceFirst("^.*/schemas/", "schemas/");
+      final String name = resource.getURL().getPath().replaceFirst("^.*/schemas/", "schemas/");
       loadSchema(name);
     }
   }
@@ -83,10 +81,8 @@ public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<Pu
       throw new SchemaNotFoundException("No schema for message with null attributeMap");
     }
     // This is the path provided by mozilla-pipeline-schemas
-    final String name = StringSubstitutor.replace(
-        "schemas/${document_namespace}/${document_type}/"
-            + "${document_type}.${document_version}.schema.json",
-        attributes);
+    final String name = StringSubstitutor.replace("schemas/${document_namespace}/${document_type}/"
+        + "${document_type}.${document_version}.schema.json", attributes);
     return getSchema(name);
   }
 

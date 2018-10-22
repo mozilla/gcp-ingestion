@@ -10,6 +10,7 @@ import nl.basjes.parse.useragent.debug.UserAgentAnalyzerTester;
 import org.junit.Test;
 
 public class UserAgentsTest {
+
   @Test
   public void runDocumentationExample() {
     UserAgentAnalyzerTester uaa = new UserAgentAnalyzerTester("UserAgents/*.yaml");

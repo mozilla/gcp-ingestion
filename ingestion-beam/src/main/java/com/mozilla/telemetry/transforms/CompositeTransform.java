@@ -22,14 +22,16 @@ import org.apache.beam.sdk.values.POutput;
  * @param <OutputT> Type of the output collection
  */
 public interface CompositeTransform<InputT extends PInput, OutputT extends POutput> {
+
   OutputT expand(InputT input);
 
   /**
    * The public factory method that serves as the entrypoint for users to create a PTransform.
    */
-  static <InputT extends PInput, OutputT extends POutput>
-        PTransform<InputT, OutputT> of(CompositeTransform<InputT, OutputT> transform) {
+  static <InputT extends PInput, OutputT extends POutput> PTransform<InputT, OutputT> of(
+      CompositeTransform<InputT, OutputT> transform) {
     return new PTransform<InputT, OutputT>() {
+
       @Override
       public OutputT expand(InputT input) {
         return transform.expand(input);

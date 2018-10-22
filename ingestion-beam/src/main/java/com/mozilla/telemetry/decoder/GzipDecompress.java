@@ -19,7 +19,9 @@ import org.apache.commons.io.IOUtils;
 
 public class GzipDecompress
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+
   private class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
+
     private final Counter compressedInput = Metrics.counter(Fn.class, "compressed-input");
     private final Counter uncompressedInput = Metrics.counter(Fn.class, "uncompressed-input");
 

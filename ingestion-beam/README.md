@@ -10,6 +10,7 @@ Apache Beam jobs.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 
+- [Code Formatting](#code-formatting)
 - [Sink Job](#sink-job)
   - [Supported Input and Outputs](#supported-input-and-outputs)
   - [Encoding](#encoding)
@@ -32,6 +33,20 @@ Apache Beam jobs.
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+# Code Formatting
+
+Use spotless to automatically reformat code:
+
+```bash
+mvn spotless:apply
+```
+
+or use just check what changes it requires:
+
+```bash
+mvn spotless:check
+```
 
 # Sink Job
 

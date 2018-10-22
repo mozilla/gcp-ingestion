@@ -15,22 +15,21 @@ import org.apache.beam.sdk.values.PCollectionTuple;
 public enum InputType {
 
   pubsub {
+
     /** Return a PTransform that reads from a Pubsub subscription. */
     public PTransform<PBegin, PCollectionTuple> read(SinkOptions.Parsed options) {
       return CompositeTransform.of(input -> input
           .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput()))
-          .apply(MapElementsWithErrors.ToPubsubMessageFrom.identity())
-      );
+          .apply(MapElementsWithErrors.ToPubsubMessageFrom.identity()));
     }
   },
 
   file {
+
     /** Return a PTransform that reads from local or remote files. */
     public PTransform<PBegin, PCollectionTuple> read(SinkOptions.Parsed options) {
-      return CompositeTransform.of(input -> input
-          .apply(TextIO.read().from(options.getInput()))
-          .apply(options.getInputFileFormat().decode())
-      );
+      return CompositeTransform.of(input -> input.apply(TextIO.read().from(options.getInput()))
+          .apply(options.getInputFileFormat().decode()));
     }
   };
 

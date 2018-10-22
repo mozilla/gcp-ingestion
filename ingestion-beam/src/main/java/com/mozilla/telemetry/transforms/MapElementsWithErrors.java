@@ -84,6 +84,7 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
    * DoFn that redirects errors to {@code errorTag}.
    */
   private class DoFnWithErrors extends DoFn<InputT, OutputT> {
+
     @ProcessElement
     public void processElementOrError(@Element InputT element, MultiOutputReceiver out) {
       try {
@@ -112,6 +113,7 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
    */
   public abstract static class ToPubsubMessageFrom<InputT>
       extends MapElementsWithErrors<InputT, PubsubMessage> {
+
     public static final TupleTag<PubsubMessage> mainTag = new TupleTag<>();
 
     @Override
@@ -139,6 +141,7 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
      */
 
     public static class Identity extends ToPubsubMessageFrom<PubsubMessage> {
+
       protected PubsubMessage processElement(PubsubMessage element) {
         return element;
       }

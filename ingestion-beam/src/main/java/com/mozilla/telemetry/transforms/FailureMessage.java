@@ -43,10 +43,7 @@ public class FailureMessage {
   }
 
   private static Map<String, String> errorAttributes(Object caller, Throwable e) {
-    return ImmutableMap.of(
-        "error_type", caller.toString(),
-        "error_message", e.toString(),
-        "stack_trace", Arrays.toString(e.getStackTrace())
-    );
+    return ImmutableMap.of("error_type", caller.toString(), "error_message", e.toString(),
+        "stack_trace", Arrays.toString(e.getStackTrace()));
   }
 }

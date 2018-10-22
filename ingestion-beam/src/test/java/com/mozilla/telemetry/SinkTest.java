@@ -17,6 +17,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class SinkTest {
+
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
@@ -24,8 +25,7 @@ public class SinkTest {
   public void decodeJsonAndEncodeJson() {
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
-        "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}",
-        "{\"payload\":\"dGVzdA==\"}",
+        "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}", "{\"payload\":\"dGVzdA==\"}",
         "{\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(
@@ -34,10 +34,8 @@ public class SinkTest {
         "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}",
         "{\"attributeMap\":null,\"payload\":\"\"}");
 
-    final PCollection<String> output = pipeline
-        .apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode())
-        .get(DecodePubsubMessages.mainTag)
+    final PCollection<String> output = pipeline.apply(Create.of(input))
+        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);

@@ -29,6 +29,7 @@ import org.apache.beam.sdk.values.PCollection;
 
 public class GeoCityLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+
   private final String geoCityDatabase;
 
   public GeoCityLookup(String geoCityDatabase) {
@@ -37,6 +38,7 @@ public class GeoCityLookup
 
   @VisibleForTesting
   public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
+
     private transient DatabaseReader geoIP2City;
 
     private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip-from-x-forwarded-for");
@@ -52,10 +54,9 @@ public class GeoCityLookup
         if (geoIP2City == null) {
           geoIP2City = new DatabaseReader
               // TODO pull this in a way that allows gs:// paths
-              .Builder(new File(geoCityDatabase))
-              .withCache(new CHMCache())
-              // Throws IOException
-              .build();
+              .Builder(new File(geoCityDatabase)).withCache(new CHMCache())
+                  // Throws IOException
+                  .build();
         }
 
         // copy attributes

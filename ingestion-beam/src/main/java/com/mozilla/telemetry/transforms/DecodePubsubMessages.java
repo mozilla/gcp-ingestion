@@ -21,7 +21,8 @@ public abstract class DecodePubsubMessages
     extends MapElementsWithErrors.ToPubsubMessageFrom<String> {
 
   // Force use of static factory methods.
-  private DecodePubsubMessages() {}
+  private DecodePubsubMessages() {
+  }
 
   /*
    * Static factory methods.
@@ -37,18 +38,19 @@ public abstract class DecodePubsubMessages
     return new Json();
   }
 
-
   /*
    * Concrete subclasses.
    */
 
   public static class Text extends DecodePubsubMessages {
+
     protected PubsubMessage processElement(String element) {
       return new PubsubMessage(element.getBytes(), null);
     }
   }
 
   public static class Json extends DecodePubsubMessages {
+
     protected PubsubMessage processElement(String element) throws IOException {
       return com.mozilla.telemetry.util.Json.readPubsubMessage(element);
     }

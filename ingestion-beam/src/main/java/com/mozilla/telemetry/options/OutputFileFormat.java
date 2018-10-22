@@ -14,6 +14,7 @@ import org.apache.beam.sdk.values.TypeDescriptors;
 public enum OutputFileFormat {
 
   text {
+
     /** Return this PubsubMessage payload as text. */
     public String encodeSingleMessage(PubsubMessage message) {
       return new String(message.getPayload());
@@ -26,6 +27,7 @@ public enum OutputFileFormat {
   },
 
   json {
+
     /** Return this PubsubMessage encoded as a JSON string. */
     public String encodeSingleMessage(PubsubMessage message) {
       try {
@@ -43,9 +45,7 @@ public enum OutputFileFormat {
 
   /** Return a PTransform that encodes PubsubMessages to String. */
   public MapElements<PubsubMessage, String> encode() {
-    return MapElements
-        .into(TypeDescriptors.strings())
-        .via(this::encodeSingleMessage);
+    return MapElements.into(TypeDescriptors.strings()).via(this::encodeSingleMessage);
   }
 
   public abstract String encodeSingleMessage(PubsubMessage message);

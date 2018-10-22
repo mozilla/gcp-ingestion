@@ -14,6 +14,7 @@ import org.apache.beam.sdk.values.PDone;
  * Transform that prints each element of the collection to a specified console stream.
  */
 public class Println extends PTransform<PCollection<String>, PDone> {
+
   private final DoFn<String, Void> fn;
 
   // Private constructor forces use of static factory methods.
@@ -24,6 +25,7 @@ public class Println extends PTransform<PCollection<String>, PDone> {
   /** Transform that prints to stdout. */
   public static Println stdout() {
     return new Println(new DoFn<String, Void>() {
+
       @ProcessElement
       public void processElement(@Element String element) {
         System.out.println(element);
@@ -34,6 +36,7 @@ public class Println extends PTransform<PCollection<String>, PDone> {
   /** Transform that prints to stderr. */
   public static Println stderr() {
     return new Println(new DoFn<String, Void>() {
+
       @ProcessElement
       public void processElement(@Element String element) {
         System.err.println(element);

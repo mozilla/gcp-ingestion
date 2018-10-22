@@ -17,6 +17,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
 
 public class Json {
+
   /**
    * A Jackson ObjectMapper pre-configured for use in com.mozilla.telemetry.
    *
@@ -25,8 +26,7 @@ public class Json {
    * <p>Registers {@link JsonOrgModule} for decoding to json.org types.
    */
   private static final ObjectMapper MAPPER = new ObjectMapper()
-      .addMixIn(PubsubMessage.class, PubsubMessageMixin.class)
-      .registerModule(new JsonOrgModule());
+      .addMixIn(PubsubMessage.class, PubsubMessageMixin.class).registerModule(new JsonOrgModule());
 
   /**
    * Read a {@link TableRow} from a byte array.
@@ -87,7 +87,6 @@ public class Json {
     return MAPPER.writeValueAsBytes(data);
   }
 
-
   /**
    * Serialize {@code data} as a {@link String}.
    *
@@ -115,10 +114,10 @@ public class Json {
    */
   @JsonPropertyOrder(alphabetic = true)
   private abstract static class PubsubMessageMixin {
+
     @JsonCreator
-    public PubsubMessageMixin(
-        @JsonProperty("payload") byte[] payload,
-        @JsonProperty("attributeMap") Map<String, String> attributes
-    ) { }
+    public PubsubMessageMixin(@JsonProperty("payload") byte[] payload,
+        @JsonProperty("attributeMap") Map<String, String> attributes) {
+    }
   }
 }

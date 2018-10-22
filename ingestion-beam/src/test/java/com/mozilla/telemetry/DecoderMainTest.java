@@ -34,18 +34,10 @@ public class DecoderMainTest {
     String errorOutput = outputPath + "/error";
 
     // We are simply making sure this runs without throwing an exception.
-    Decoder.main(new String[]{
-        "--inputFileFormat=json",
-        "--inputType=file",
-        "--input=" + input,
-        "--outputFileFormat=json",
-        "--outputType=file",
-        "--output=" + output,
-        "--errorOutputType=file",
-        "--errorOutput=" + errorOutput,
-        "--geoCityDatabase=GeoLite2-City.mmdb",
-        "--seenMessagesSource=none"
-    });
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--errorOutputType=file", "--errorOutput=" + errorOutput,
+        "--geoCityDatabase=GeoLite2-City.mmdb", "--seenMessagesSource=none" });
 
     List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
     assertThat(errorOutputLines, Matchers.hasSize(1));
