@@ -4,59 +4,68 @@
 
 from datetime import datetime
 from dateutil.parser import parse
-from flask.testing import FlaskClient
+from sanic.testing import SanicTestClient
 from ingestion_edge.config import Route, ROUTE_TABLE
 from typing import Dict, List, Tuple
 from unittest.mock import patch
 import pytest
 
 
-def test_dockerflow(client: FlaskClient):
-    r = client.get("/__heartbeat__")
-    assert r.status_code == 200
+def test_heartbeat(client: SanicTestClient):
+    _, r = client.get("/__heartbeat__")
+    r.raise_for_status()
     assert r.json == {"checks": {}, "details": {}, "status": "ok"}
 
-    r = client.get("/__lbheartbeat__")
-    assert r.status_code == 200
-    assert not r.data
 
-    r = client.get("/__version__")
-    assert r.status_code == 200
+def test_lbheartbeat(client: SanicTestClient):
+    _, r = client.get("/__lbheartbeat__")
+    r.raise_for_status()
+    assert r.body == b""
+
+
+def test_version(client: SanicTestClient):
+    _, r = client.get("/__version__")
+    r.raise_for_status()
     assert sorted(r.json.keys()) == ["build", "commit", "source", "version"]
 
 
-@pytest.mark.parametrize('route', ROUTE_TABLE)
-def test_publish(client: FlaskClient, route: Route):
+@pytest.mark.parametrize("route", ROUTE_TABLE)
+def test_publish(client: SanicTestClient, route: Route):
     messages: List[Tuple[str, bytes, Dict[str, str]]] = []
 
-    def _publish(*args):
+    async def _publish(*args):
         messages.append(args)
+        return len(messages)
 
-    with patch('ingestion_edge.publish._publish', new=_publish):
+    with patch("ingestion_edge.publish._publish", new=_publish):
         # test route
         for method in route.methods:
             # submit request
-            uri = route.rule.replace("<path:suffix>", "test")
-            req_data = "test"
+            uri = route.uri.replace("<suffix:path>", "test")
             req_time = datetime.utcnow()
-            r = getattr(client, method.lower())(uri, data=req_data)
-            assert r.status_code == 200
+            req, res = getattr(client, method.lower())(
+                uri,
+                data="test",
+                headers={"User-Agent": "py.test"},
+            )
+            res.raise_for_status()
+            assert res.body == b""
 
             # validate message
             assert len(messages) == 1
-            topic, rec_data, attrs = messages.pop()
+            topic, data, attrs = messages.pop()
             assert topic == route.topic
-            assert rec_data == b"test"
+            assert data == req.body
             assert "submission_timestamp" in attrs
-            rec_time = parse(attrs.pop("submission_timestamp")[:-1])
-            assert (req_time - rec_time).total_seconds() < 1
+            sub_time = parse(attrs.pop("submission_timestamp")[:-1])
+            assert (req_time - sub_time).total_seconds() < 1
             assert attrs == {
                 "args": "",
-                "content_length": str(len(req_data)),
-                "host": "localhost",
+                "content_length": str(len(req.body)),
+                "host": "127.0.0.1:42101",
                 "method": method.upper(),
                 "protocol": "http",
                 "remote_addr": "127.0.0.1",
                 "uri": uri,
-                "user_agent": client.environ_base['HTTP_USER_AGENT'],
+                "user_agent": "py.test",
             }
