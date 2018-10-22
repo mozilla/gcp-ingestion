@@ -35,6 +35,8 @@ TRANSIENT_ERRORS = (
     # A python Future timed out
     TimeoutError,
 )
+DONE = "done"
+PENDING = "pending"
 
 client = PublisherClient()
 
@@ -79,7 +81,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
     if q.size == 0:
         # early return for empty queue
         return response.raw(b"", HTTP_STATUS.NO_CONTENT)
-    result = {"done": 0, "pending": 0}
+    result = {DONE: 0, PENDING: 0}
     # while queue has messages ready to process
     while q.size > 0:
         try:
@@ -93,7 +95,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
             # message not delivered
             q.nack(message)
             # update result with remaining queue size
-            result["pending"] = q.size
+            result[PENDING] = q.size
             # transient errors stop processing queue until next flush
             return response.json(result, HTTP_STATUS.GATEWAY_TIMEOUT)
         except:  # noqa: E722
@@ -103,7 +105,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
             raise
         else:
             q.ack(message)
-            result["done"] += 1
+            result[DONE] += 1
     return response.json(result, HTTP_STATUS.OK)
 
 
@@ -154,11 +156,12 @@ def init_app(app: Sanic):
     # * we use acks to ensure messages only removed on success
     # * persist-queue's SQLite*Queue is faster than its Queue
     # * SQLite provides thread-safe and process-safe access
-    q = SQLiteAckQueue(**{
+    queue_config = {
         key[6:].lower(): value
         for key, value in app.config.items()
         if key.startswith("QUEUE_")
-    })
+    }
+    q = SQLiteAckQueue(**queue_config)
     # route flush
     app.add_route(partial(flush, q=q), "/__flush__", name="flush")
     # generate one view_func per topic
