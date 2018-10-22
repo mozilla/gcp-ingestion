@@ -73,16 +73,11 @@ def test_publish(
     for method in route.methods:
         # fast forward subscriber to HEAD
         while True:
-            resp = subscriber.pull(
-                subscription,
-                100,
-                timeout=0.1,
-            )
+            resp = subscriber.pull(subscription, 100, timeout=0.1)
             if not resp.received_messages:
                 break
             subscriber.acknowledge(
-                subscription,
-                [message.ack_id for message in resp.received_messages],
+                subscription, [message.ack_id for message in resp.received_messages]
             )
 
         # submit request to edge

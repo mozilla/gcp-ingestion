@@ -14,28 +14,25 @@ from os import environ
 from typing import Tuple
 import json
 
-dictConfig({
-    'version': 1,
-    'formatters': {
-        'json': {
-            '()': 'dockerflow.logging.JsonLogFormatter',
-            'logger_name': 'myproject'
-        }
-    },
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'json'
+dictConfig(
+    {
+        "version": 1,
+        "formatters": {
+            "json": {
+                "()": "dockerflow.logging.JsonLogFormatter",
+                "logger_name": "myproject",
+            }
         },
-    },
-    'loggers': {
-        'request.summary': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
+        "handlers": {
+            "console": {
+                "level": "DEBUG",
+                "class": "logging.StreamHandler",
+                "formatter": "json",
+            }
         },
+        "loggers": {"request.summary": {"handlers": ["console"], "level": "DEBUG"}},
     }
-})
+)
 
 
 @dataclass
@@ -47,9 +44,6 @@ class Route:
     methods: Tuple = ("POST", "PUT")
 
 
-ROUTE_TABLE = [
-    Route(*route)
-    for route in json.loads(environ.get("ROUTE_TABLE", "[]"))
-]
+ROUTE_TABLE = [Route(*route) for route in json.loads(environ.get("ROUTE_TABLE", "[]"))]
 
 QUEUE_PATH = environ.get("QUEUE_PATH", "queue")

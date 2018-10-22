@@ -10,7 +10,4 @@ from os import environ
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(
-        host=environ.get("HOST", "0.0.0.0"),
-        port=int(environ.get("PORT", 8000)),
-    )
+    app.run(host=environ.get("HOST", "0.0.0.0"), port=int(environ.get("PORT", 8000)))

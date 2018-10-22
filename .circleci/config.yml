@@ -18,6 +18,18 @@ jobs:
           name: Ensure markdown tables of contents are up to date
           command: ./.circleci/doctoc-check.sh
 
+  format-python:
+    docker:
+    - image: python
+    steps:
+      - checkout
+      - run:
+          name: Install black
+          command: pip install black
+      - run:
+          name: Ensure ingestion-edge is formatted by black
+          command: black --check --diff ingestion-edge
+
   ingestion-edge:
     docker:
     - image: docker/compose:1.22.0
@@ -77,5 +89,6 @@ workflows:
     jobs:
     - spelling
     - doctoc
+    - format-python
     - ingestion-edge
     - ingestion-beam

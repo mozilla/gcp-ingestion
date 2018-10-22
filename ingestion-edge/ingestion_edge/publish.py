@@ -61,12 +61,9 @@ async def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
         # Batch failed because pubsub permanently rejected at least one message
         # retry this message alone to determine if it was rejected
         batch = client._batch_class(
-            autocommit=False,
-            client=client,
-            settings=client.batch_settings,
-            topic=topic,
+            autocommit=False, client=client, settings=client.batch_settings, topic=topic
         )
-        future = batch.publish({'data': data, 'attributes': attrs})
+        future = batch.publish({"data": data, "attributes": attrs})
         batch.commit()  # spawns thread to commit batch
         return await async_wrap(future)
 
@@ -109,8 +106,9 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
     return response.json(result, HTTP_STATUS.OK)
 
 
-async def submit(request: Request, q: SQLiteAckQueue, topic: str,
-                 **kwargs) -> response.HTTPResponse:
+async def submit(
+    request: Request, q: SQLiteAckQueue, topic: str, **kwargs
+) -> response.HTTPResponse:
     """Deliver request to the pubsub topic.
 
     Deliver to the local queue to be retried on transient errors.

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Formats ingestion-edge python code with black
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+docker run -it --rm \
+       --volume $PWD:/root/project \
+       --workdir /root/project \
+       python \
+       sh -c 'pip install black && black ingestion-edge'

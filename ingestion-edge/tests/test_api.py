@@ -44,9 +44,7 @@ def test_publish(client: SanicTestClient, route: Route):
             uri = route.uri.replace("<suffix:path>", "test")
             req_time = datetime.utcnow()
             req, res = getattr(client, method.lower())(
-                uri,
-                data="test",
-                headers={"User-Agent": "py.test"},
+                uri, data="test", headers={"User-Agent": "py.test"}
             )
             res.raise_for_status()
             assert res.body == b""
