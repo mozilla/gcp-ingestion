@@ -16,9 +16,6 @@ messages into BigQuery.
     - [Error Message Schema](#error-message-schema)
 - [Other Considerations](#other-considerations)
   - [Message Acks](#message-acks)
-- [Testing](#testing)
-  - [CI Testing](#ci-testing)
-  - [Pre-deployment Testing](#pre-deployment-testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -89,38 +86,3 @@ attributes.
 
 Acknowledge messages in the PubSub topic subscription only after successful
 delivery to an output. Only deliver messages to a single output.
-
-## Testing
-
-Always have 100% branch and statement test coverage for code that is in
-production. If a statement has variable behavior without branching, test all
-behavior variations.
-
-### CI Testing
-
-Run CI tests for all of the behavior described in [Data Flow](#data-flow)
-including, but not limited to:
-
- * Messages
-   * With and without `attributes`
-   * With exact same schema as BigQuery
-   * With extra fields
-   * With missing optional fields
-   * With missing required fields
-   * Invalid JSON
-   * Too long for each output mode for BigQuery
- * Each output mode for BigQuery
- * Handling brief BigQuery outages
-
-### Pre-deployment Testing
-
-Before being deployed to production each release should have these tests run:
-
- * CI Tests using actual Google Cloud services
- * Load test
-   * In each output mode for BigQuery
-   * Use 1.5x peak production traffic volume over the last month
-     * As of 2018-08-01 peak production traffic volume is about 11K req/s
-   * With and without BigQuery returning 500 for at least 1.5x the longest
-     BigQuery outage in the last year
-     * As of 2018-08-01 the longest outage was about 2.3 hours

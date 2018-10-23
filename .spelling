@@ -4,6 +4,7 @@ ack
 ack'd
 acks
 API
+async
 backfilled
 base64
 BigQuery
@@ -13,11 +14,12 @@ Dataflow
 dataset
 deduplicate
 deduplication
-Dockerflow
 DNS
+Dockerflow
 e.g.
 encodings
 filesystem
+GCP
 GeoIP
 GroupByKey
 gzip
@@ -36,12 +38,13 @@ namespaces
 natively
 nginx
 ok
-pre-deployment
+pre-production
 PubSub
 PubsubMessage
 Redis
-stdout
+SQLite
 stderr
+stdout
 TCP
 templating
 timestamp

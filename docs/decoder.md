@@ -16,9 +16,6 @@ in the Structured Ingestion pipeline.
 - [Other Considerations](#other-considerations)
   - [Message Acks](#message-acks)
   - [Deduplication](#deduplication)
-- [Testing](#testing)
-  - [CI Testing](#ci-testing)
-  - [Pre-deployment Testing](#pre-deployment-testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -111,47 +108,3 @@ rejected as a duplicate if we have completed delivery of a message with the
 same `docId`. Duplicates will be considered errors and sent to the error topic.
 "Exactly once" semantics can be applied to derived data sets using SQL in
 BigQuery, and GroupByKey in Beam and Spark.
-
-## Testing
-
-Always have 100% branch and statement test coverage for code that is in
-production. If a statement has variable behavior without branching, test all
-such variations.
-
-### CI Testing
-
-CI will test all of the behavior described in [Data Flow](#data-flow)
-including, but not limited to:
-
- * A valid message for every combination of
-   * `namespace`
-   * `docType`
-   * `docVersion`
-   * Gzipped body
-   * Present, absent, and gibberish optional PubSub message attribute fields
- * An invalid message for every combination, for each of the following reasons
-   * Invalid body field values
-   * Invalid body field types
-   * Invalid body JSON
-   * Invalid gzip data
-   * Invalid `uri`
-   * Invalid `docId`
-   * Duplicate `docId`
-   * Unknown `namespace`
-   * Unknown `docType`
-   * Unknown `docVersion`
- * In batch mode and streaming mode
-
-### Pre-deployment Testing
-
-Before being deployed to production each release should have these tests run:
-
- * CI Tests using actual Google Cloud services
- * Load test
-   * With and without a simulated PubSub outage.
-   * Use 1.5x peak production traffic volume over the last month. As of
-     2018-08-01 peak production traffic volume is about 11K req/s.
-   * Handle PubSub returning 500 for at least 1.5x the longest PubSub outage in
-     the last year. As of 2018-08-01 the longest outage was about 4.5 hours.
-   * Non-outage load tests for 50% invalid messages and 5% invalid messages, with
-     time limits to ensure that we aren't incurring excessive processing delays.

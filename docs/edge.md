@@ -25,9 +25,6 @@ from HTTP clients e.g. Firefox telemetry.
   - [GeoIP Lookups](#geoip-lookups)
   - [Data Retention](#data-retention)
   - [Submission Timestamp Format](#submission-timestamp-format)
-- [Testing](#testing)
-  - [CI Testing](#ci-testing)
-  - [Pre-deployment Testing](#pre-deployment-testing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -190,42 +187,3 @@ not lost.
 because it is compatible with BigQuery's
 [Timestamp Type](https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp-type),
 so that the field doesn't need transformation.
-
-## Testing
-
-The edge server must have tests covering the full expected behavior.
-
-### CI Testing
-
-CI will test all of the behavior described in [Server Request/Response](#server-requestresponse),
-including, but not limited to:
-
- * API specification
-   * Hitting every valid URL pattern
-   * Hitting every listed response code
-   * Supplying both gzipped and non-gzipped payloads
-   * Present, absent, and gibberish optional attribute fields
- * Fuzzing the API with potentially invalid requests
- * Handling mocked PubSub outages
-   * Requests to PubSub hang after TCP connect
-   * Requests to PubSub cannot reach PubSub IPs
-   * Requests to PubSub cannot resolve PubSub DNS
-   * Requests to PubSub return 500
-   * % of requests to PubSub return 500
-   * Control test with no outage, checking that disk queue isn't used
-   * All above with disk queue artificially permanently full
-
-### Pre-deployment Testing
-
-Before being deployed to production each release should have these tests run:
-
- * Load test both with and without a
-   PubSub outage for each of the outage types listed in [CI Testing](#ci-testing)
-   * Assert that disk queue wasn't used during the non-outage test
-   * Use 1.5x peak production traffic volume over the last month. As of
-     2018-08-01 peak production traffic volume is about 11K req/s.
-   * Check that disk queue can handle PubSub returning 500 for at least 1.5x
-     the longest PubSub outage in the last year. As of 2018-08-01 the longest
-     outage was about 4.5 hours.
- * Black box testing against the load balancer through PubSub sections,
-   covering the API specification and fuzzing scenarios from [CI Testing](#ci-testing)
