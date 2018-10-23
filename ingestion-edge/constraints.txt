@@ -43,7 +43,7 @@ mypy==0.641 \
 pluggy==0.7.1 \
     --hash=sha256:6e3836e39f4d36ae72840833db137f7b7d35105079aee6ec4a62d9f80d594dd1
 protobuf==3.6.1 \
-    --hash=sha256:196d3a80f93c537f27d2a19a4fafb826fb4c331b0b99110f985119391d170f96
+    --hash=sha256:4b92e235a3afd42e7493b281c8b80c0c65cbef45de30f43d571d1ee40a1f77ef
 py==1.7.0 \
     --hash=sha256:e76826342cefe3c3d5f7e8ee4316b80d1dd8a300781612ddbc765c17ba25a6c6
 pyasn1-modules==0.2.2 \
