@@ -14,7 +14,11 @@ import pytest
 def test_heartbeat(client: SanicTestClient):
     _, r = client.get("/__heartbeat__")
     r.raise_for_status()
-    assert r.json == {"checks": {}, "details": {}, "status": "ok"}
+    assert r.json == {
+        "checks": {"check_disk_bytes_free": "ok"},
+        "details": {},
+        "status": "ok",
+    }
 
 
 def test_lbheartbeat(client: SanicTestClient):
