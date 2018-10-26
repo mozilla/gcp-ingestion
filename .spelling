@@ -42,6 +42,8 @@ pre-production
 PubSub
 PubsubMessage
 Redis
+SLA
+SLO
 SQLite
 stderr
 stdout
@@ -50,6 +52,7 @@ templating
 timestamp
 TLS
 unencoded
+Uptime
 URI
 URL
 UUID
