@@ -5,8 +5,7 @@
 """Definition of our Sanic application."""
 
 from sanic import Sanic
-from . import config, publish
-from .dockerflow import dockerflow
+from . import config, publish, dockerflow
 
 
 def create_app(**kwargs) -> Sanic:
