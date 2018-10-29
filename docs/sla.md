@@ -1,20 +1,38 @@
+# Overview
+
+This document describes a prototype for how Downtime on GCP Ingestion will be
+measured and handled.
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+
+- [Disclaimer and Purpose](#disclaimer-and-purpose)
+- [Service Level Agreement (SLA)](#service-level-agreement-sla)
+  - [Service Level Objective](#service-level-objective)
+  - [Definitions](#definitions)
+  - [Exclusions](#exclusions)
+  - [Additional Information](#additional-information)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+# Disclaimer and Purpose
+
+**This agreement is intended solely for those directly running, writing, and
+managing GCP Ingestion. It is not an agreement, implicit or otherwise, with any
+other parties.** This agreement is a prototype that should be treated as a goal
+that will require adjustments.
+
+The purpose of this agreement is first and foremost to encourage behavior that
+reduces Downtime. The secondary purpose is to establish clear expectations for
+how to respond to Downtime and how much Downtime is considered acceptable.
+
 # Service Level Agreement (SLA)
 
 In production the Covered Service will provide a minimum Biweekly Uptime
 Percentage determined by the Service Level Objective (SLO). If the Covered
 Service does not meet the SLO then a Stability Work Period should be assigned
 to engineers supporting the Covered Service.
-
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [Service Level Objective](#service-level-objective)
-- [Definitions](#definitions)
-- [Exclusions](#exclusions)
-- [Additional Information](#additional-information)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Service Level Objective
 
