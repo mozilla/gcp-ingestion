@@ -63,17 +63,20 @@ Periods in the window, divided by the total number of minutes in the window.
 **"Stability Work"** means work on preventing downtime while all other features
 and work are suspended.
 
-**"Stability Work Period"** means a period of time spent on Stability Work
-determined below.
+**"Stability Work Period"** means a continuous period of time where engineers
+are assigned to exclusively to work on preventing downtime and nothing else
+should be deployed to production. During the Stability Work Period all other
+features and work are suspended. The length of the Stability Work Period is
+measured in calendar days, not engineering hours, and is determined below.
 
-| Covered Service | Biweekly Uptime Percentage | Time spent on Stability Work |
-|-----------------|----------------------------|------------------------------|
-| ingestion-edge  | 99.9% to < 99.99%          | 2 weeks                      |
-| ingestion-edge  | 99% to < 99.9%             | 4 weeks                      |
-| ingestion-edge  | < 99%                      | 3 months                     |
-| ingestion-beam  | 99% to < 99.5%             | 2 weeks                      |
-| ingestion-beam  | 95% to < 99%               | 4 weeks                      |
-| ingestion-beam  | < 95%                      | 3 months                     |
+| Covered Service | Biweekly Uptime Percentage | Length of Stability Work Period |
+|-----------------|----------------------------|---------------------------------|
+| ingestion-edge  | 99.9% to < 99.99%          | 2 weeks                         |
+| ingestion-edge  | 99% to < 99.9%             | 4 weeks                         |
+| ingestion-edge  | < 99%                      | 12 weeks                        |
+| ingestion-beam  | 99% to < 99.5%             | 2 weeks                         |
+| ingestion-beam  | 95% to < 99%               | 4 weeks                         |
+| ingestion-beam  | < 95%                      | 12 weeks                        |
 
 ## Exclusions
 
