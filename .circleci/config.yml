@@ -30,9 +30,9 @@ jobs:
           name: Ensure ingestion-edge is formatted by black
           command: black --check --diff ingestion-edge
 
-  ingestion-edge:
+  ingestion-edge-build:
     docker:
-    - image: docker/compose:1.22.0
+    - image: docker:18.02.0-ce
     steps:
     - checkout
     - setup_remote_docker:
@@ -48,6 +48,33 @@ jobs:
           "$CIRCLE_BUILD_URL"
           > ingestion-edge/version.json
     - run:
+        name: Build Docker image
+        command: docker build -t app:build ingestion-edge
+
+    # save the built docker container into CircleCI's cache. This is
+    # required since Workflows do not have the same remote docker instance.
+    - run:
+        name: docker save app:build
+        command: mkdir -p /cache; docker save -o /cache/docker.tar "app:build"
+    - save_cache:
+        key: v1-{{ .Branch }}-{{epoch}}
+        paths:
+          - /cache/docker.tar
+
+  ingestion-edge-test:
+    docker:
+    - image: docker/compose:1.22.0
+    steps:
+    - checkout
+    - setup_remote_docker:
+        docker_layer_caching: true
+    - restore_cache:
+        key: v1-{{.Branch}}
+    - run:
+        name: Restore Docker image cache
+        command: docker load -i /cache/docker.tar
+
+    - run:
         name: Docker Compose Test
         command: >-
           docker-compose
@@ -59,6 +86,33 @@ jobs:
         environment:
           COMPOSE_FILE: ingestion-edge/docker-compose.yml
           COMPOSE_PROJECT_NAME: circleci-ingestion-edge
+
+  ingestion-edge-deploy:
+    docker:
+    - image: docker:18.02.0-ce
+    steps:
+    - setup_remote_docker
+    - restore_cache:
+        key: v1-{{.Branch}}
+    - run:
+        name: Restore Docker image cache
+        command: docker load -i /cache/docker.tar
+
+    - run:
+        name: Deploy to Dockerhub
+        command: |
+          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+          # deploy master
+          if [ "${CIRCLE_BRANCH}" == "master" ]; then
+            docker tag app:build ${DOCKERHUB_REPO}:latest
+            docker push ${DOCKERHUB_REPO}:latest
+          elif  [ ! -z "${CIRCLE_TAG}" ]; then
+          # deploy a release tag...
+            echo "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+            docker tag app:build "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+            docker images
+            docker push "${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+          fi
 
   ingestion-beam:
     docker:
@@ -90,5 +144,23 @@ workflows:
     - spelling
     - doctoc
     - format-python
-    - ingestion-edge
+    - ingestion-edge-build:
+        filters:
+          tags:
+            only: /.*/
+    - ingestion-edge-test:
+        requires:
+          - ingestion-edge-build
+        filters:
+          tags:
+            only: /.*/
+    - ingestion-edge-deploy:
+        requires:
+          - ingestion-edge-build
+          - ingestion-edge-test
+        filters:
+          tags:
+            only: /.*/
+          branches:
+            only: master
     - ingestion-beam
