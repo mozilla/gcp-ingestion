@@ -56,9 +56,9 @@ job.
 Intermittent Downtime for a period of less than 60 consecutive seconds will not
 be counted towards any Downtime Periods.
 
-**"Biweekly Uptime Percentage"** means total number of minutes in two weeks,
-minus the number of minutes of Downtime suffered from all Downtime Periods in
-two weeks, divided by the total number of minutes in two weeks.
+**"Biweekly Uptime Percentage"** means total number of minutes in a rolling two
+week window, minus the number of minutes of Downtime suffered from all Downtime
+Periods in the window, divided by the total number of minutes in the window.
 
 **"Stability Work"** means work on preventing downtime while all other features
 and work are suspended.
