@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+from dataclasses import dataclass
 from datetime import datetime
 from dateutil.parser import parse
 from sanic.testing import SanicTestClient
@@ -11,14 +12,92 @@ from unittest.mock import patch
 import pytest
 
 
-def test_heartbeat(client: SanicTestClient):
-    _, r = client.get("/__heartbeat__")
-    r.raise_for_status()
+@dataclass
+class FakeStat:
+    f_bfree: int = 0
+    f_frsize: int = 0
+
+
+def test_heartbeat_noop(client: SanicTestClient):
+    def check(app):
+        assert app is client.app
+        return []
+
+    with patch("ingestion_edge.dockerflow.check_disk_bytes_free", new=check):
+        _, r = client.get("/__heartbeat__")
+
     assert r.json == {
         "checks": {"check_disk_bytes_free": "ok"},
         "details": {},
         "status": "ok",
     }
+    r.raise_for_status()
+
+
+def test_heartbeat_ok(client: SanicTestClient):
+    def statvfs(path):
+        assert path == client.app.config["QUEUE_PATH"]
+        return FakeStat(1, 1)
+
+    client.app.config["MINIMUM_DISK_FREE_BYTES"] = 1
+
+    with patch("os.statvfs", new=statvfs):
+        _, r = client.get("/__heartbeat__")
+
+    assert r.json == {
+        "checks": {"check_disk_bytes_free": "ok"},
+        "details": {},
+        "status": "ok",
+    }
+    r.raise_for_status()
+
+
+def test_heartbeat_warn(client: SanicTestClient):
+    def statvfs(path):
+        assert path == client.app.config["QUEUE_PATH"]
+        raise FileNotFoundError()
+
+    client.app.config["MINIMUM_DISK_FREE_BYTES"] = 1
+
+    with patch("os.statvfs", new=statvfs):
+        _, r = client.get("/__heartbeat__")
+
+    assert r.json == {
+        "checks": {"check_disk_bytes_free": "warning"},
+        "details": {
+            "check_disk_bytes_free": {
+                "level": 30,
+                "messages": {"edge.checks.W001": "queue path does not exist"},
+                "status": "warning",
+            }
+        },
+        "status": "warning",
+    }
+    assert r.status == 500
+
+
+def test_heartbeat_error(client: SanicTestClient):
+    def statvfs(path):
+        assert path == client.app.config["QUEUE_PATH"]
+        return FakeStat()
+
+    client.app.config["MINIMUM_DISK_FREE_BYTES"] = 1
+
+    with patch("os.statvfs", new=statvfs):
+        _, r = client.get("/__heartbeat__")
+
+    assert r.json == {
+        "checks": {"check_disk_bytes_free": "error"},
+        "details": {
+            "check_disk_bytes_free": {
+                "level": 40,
+                "messages": {"edge.checks.E001": "disk bytes free below threshold"},
+                "status": "error",
+            }
+        },
+        "status": "error",
+    }
+    assert r.status == 500
 
 
 def test_lbheartbeat(client: SanicTestClient):

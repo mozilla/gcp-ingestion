@@ -31,11 +31,13 @@ def check_disk_bytes_free(app):
     try:
         status = os.statvfs(path)
     except FileNotFoundError:
-        return [checks.Warn("queue path does not exist", NO_QUEUE_WARNING_ID)]
+        return [checks.Warning("queue path does not exist", id=NO_QUEUE_WARNING_ID)]
 
     bytes_free = status.f_bfree * status.f_frsize
     if bytes_free < threshold:
         return [checks.Error("disk bytes free below threshold", id=LOW_DISK_ERROR_ID)]
+    else:
+        return []
 
 
 def init_app(app: Sanic):
