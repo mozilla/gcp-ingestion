@@ -71,3 +71,39 @@ def test_publish(client: SanicTestClient, route: Route):
                 "uri": uri,
                 "user_agent": "py.test",
             }
+
+
+@pytest.mark.parametrize("route", ROUTE_TABLE[:1])
+def test_flush(client: SanicTestClient, route: Route):
+    async def _timeout(*args):
+        raise TimeoutError
+
+    uri = route.uri.replace("<suffix:path>", "test")
+
+    with patch("ingestion_edge.publish._publish", new=_timeout):
+        req, res = getattr(client, route.methods[0].lower())(
+            uri, data="test", headers={"User-Agent": "py.test"}
+        )
+
+    res.raise_for_status()
+    assert res.body == b""
+
+    messages: List[Tuple[str, bytes, Dict[str, str]]] = []
+
+    async def _publish(*args):
+        messages.append(args)
+        return len(messages)
+
+    with patch("ingestion_edge.publish._publish", new=_publish):
+        _, res = client.get("/__flush__")
+
+    assert res.status == 200
+    assert res.json == {"done": 1, "pending": 0}
+    assert len(messages) == 1
+    topic, data, attrs = messages.pop()
+    assert topic == route.topic
+    assert data == req.body
+    _, res = client.get("/__flush__")
+    assert res.status == 204
+    assert res.body == b""
+    client.get("/__heartbeat__")[1].raise_for_status()
