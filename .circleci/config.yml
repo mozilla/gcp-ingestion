@@ -71,6 +71,9 @@ jobs:
         command: |
           echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
           docker-compose push web
+        environment:
+          COMPOSE_FILE: ingestion-edge/docker-compose.yml
+          COMPOSE_PROJECT_NAME: circleci-ingestion-edge
 
   ingestion-beam:
     docker:
