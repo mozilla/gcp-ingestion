@@ -59,6 +59,18 @@ jobs:
         environment:
           COMPOSE_FILE: ingestion-edge/docker-compose.yml
           COMPOSE_PROJECT_NAME: circleci-ingestion-edge
+    - run:
+        name: Early return for no deploy
+        command: |
+          if [ -n "$CIRCLE_PR_NUMBER" ] || ([ "${CIRCLE_BRANCH}" != "master" ] && [ -z "${CIRCLE_TAG}" ]); then
+            echo "Nothing to deploy"
+            circleci step halt
+          fi
+    - run:
+        name: Deploy to Dockerhub
+        command: |
+          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+          docker-compose push web
 
   ingestion-beam:
     docker:
