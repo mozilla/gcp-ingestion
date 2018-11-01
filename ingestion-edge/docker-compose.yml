@@ -7,7 +7,7 @@ services:
     command: gcloud beta emulators pubsub start --host-port 0.0.0.0:8085
   web:
     build: .
-    image: &image ingestion-edge:build
+    image: &image "${DOCKERHUB_REPO-ingestion-edge}:${CIRCLE_TAG-latest}"
     environment:
     - &emulator_host PUBSUB_EMULATOR_HOST=pubsub:8085
     - &route_table >-

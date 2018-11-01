@@ -42,7 +42,11 @@ def _create_pubsub_resources(topic: str):
 def test_heartbeat(requests_session: requests.Session, server: str):
     r = requests_session.get(server + "/__heartbeat__")
     r.raise_for_status()
-    assert r.json() == {"checks": {}, "details": {}, "status": "ok"}
+    assert r.json() == {
+        "checks": {"check_disk_bytes_free": "ok"},
+        "details": {},
+        "status": "ok",
+    }
 
 
 def test_lbheartbeat(requests_session: requests.Session, server: str):

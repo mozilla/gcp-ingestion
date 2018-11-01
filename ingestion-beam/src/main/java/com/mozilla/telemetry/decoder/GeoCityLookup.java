@@ -10,8 +10,9 @@ import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.Subdivision;
-import java.io.File;
+import com.mozilla.telemetry.util.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -52,11 +53,8 @@ public class GeoCityLookup
     public PubsubMessage apply(PubsubMessage value) {
       try {
         if (geoIP2City == null) {
-          geoIP2City = new DatabaseReader
-              // TODO pull this in a way that allows gs:// paths
-              .Builder(new File(geoCityDatabase)).withCache(new CHMCache())
-                  // Throws IOException
-                  .build();
+          // Throws IOException
+          loadGeoIp2City();
         }
 
         // copy attributes
@@ -108,6 +106,17 @@ public class GeoCityLookup
         throw new UncheckedIOException(e);
       }
     }
+
+    private void loadGeoIp2City() throws IOException {
+      InputStream inputStream;
+      try {
+        inputStream = File.inputStream(geoCityDatabase);
+      } catch (IOException e) {
+        throw new IllegalArgumentException(
+            "Exception thrown while fetching configured geoCityDatabase", e);
+      }
+      geoIP2City = new DatabaseReader.Builder(inputStream).withCache(new CHMCache()).build();
+    }
   }
 
   private final Fn fn = new Fn();
@@ -116,4 +125,5 @@ public class GeoCityLookup
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> input) {
     return input.apply(MapElements.via(fn));
   }
+
 }

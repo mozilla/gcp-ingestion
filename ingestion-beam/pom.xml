@@ -10,8 +10,10 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <beam.version>2.7.0</beam.version>
+        <beam.version>2.8.0</beam.version>
         <exec.mainClass>com.mozilla.telemetry.Sink</exec.mainClass>
+        <!-- Workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
+        <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
     </properties>
 
     <repositories>
