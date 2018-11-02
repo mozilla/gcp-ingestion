@@ -24,11 +24,19 @@ import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
  */
 public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
-  @Description("Path to GeoIP2-City.mmdb")
+  @Description("Path (local or gs://) to GeoIP2-City.mmdb")
   @Validation.Required
   String getGeoCityDatabase();
 
   void setGeoCityDatabase(String value);
+
+  @Description("Path (local or gs://) to newline-delimited text file listing city names to allow"
+      + " in geoCity information; cities not in the list are considered too small to ensure"
+      + " user anonymity so we won't report geoCity in that case."
+      + " If not specified, no limiting is performed and we always report valid geoCity values.")
+  String getGeoCityFilter();
+
+  void setGeoCityFilter(String value);
 
   @Description("Source of messages to mark as seen for deduplication. Defaults to pubsub. "
       + "Allowed sources are: "

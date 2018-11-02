@@ -9,17 +9,27 @@ import com.maxmind.db.CHMCache;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
+import com.maxmind.geoip2.record.City;
 import com.maxmind.geoip2.record.Subdivision;
-import com.mozilla.telemetry.util.File;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.beam.sdk.io.FileSystems;
+import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -31,21 +41,27 @@ import org.apache.beam.sdk.values.PCollection;
 public class GeoCityLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
-  private final String geoCityDatabase;
+  private static final Pattern GEO_NAME_PATTERN = Pattern.compile("^(\\d+).*");
 
-  public GeoCityLookup(String geoCityDatabase) {
+  private final String geoCityDatabase;
+  private final String geoCityFilter;
+
+  public GeoCityLookup(String geoCityDatabase, String geoCityFilter) {
     this.geoCityDatabase = geoCityDatabase;
+    this.geoCityFilter = geoCityFilter;
   }
 
   @VisibleForTesting
   public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
 
     private transient DatabaseReader geoIP2City;
+    private transient Set<Integer> allowedCities;
 
     private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip-from-x-forwarded-for");
     private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip-from-remote-addr");
     private final Counter foundIp = Metrics.counter(Fn.class, "found-ip");
     private final Counter foundCity = Metrics.counter(Fn.class, "found-city");
+    private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found-city-allowed");
     private final Counter foundGeo1 = Metrics.counter(Fn.class, "found-geo-subdivision-1");
     private final Counter foundGeo2 = Metrics.counter(Fn.class, "found-geo-subdivision-2");
 
@@ -55,6 +71,9 @@ public class GeoCityLookup
         if (geoIP2City == null) {
           // Throws IOException
           loadGeoIp2City();
+          if (geoCityFilter != null) {
+            loadAllowedCities();
+          }
         }
 
         // copy attributes
@@ -81,7 +100,12 @@ public class GeoCityLookup
           foundCity.inc();
 
           attributes.put("geo_country", response.getCountry().getIsoCode());
-          attributes.put("geo_city", response.getCity().getName());
+
+          City city = response.getCity();
+          if (cityAllowed(city.getGeoNameId())) {
+            attributes.put("geo_city", response.getCity().getName());
+            foundCityAllowed.inc();
+          }
 
           List<Subdivision> subdivisions = response.getSubdivisions();
           // Throws IndexOutOfBoundsException
@@ -89,6 +113,7 @@ public class GeoCityLookup
           foundGeo1.inc();
           attributes.put("geo_subdivision2", subdivisions.get(1).getIsoCode());
           foundGeo2.inc();
+
         } catch (UnknownHostException | GeoIp2Exception | IndexOutOfBoundsException ignore) {
           // ignore these exceptions
         }
@@ -107,15 +132,51 @@ public class GeoCityLookup
       }
     }
 
+    private boolean cityAllowed(Integer geoNameId) {
+      if (geoNameId == null) {
+        return false;
+      } else if (allowedCities == null) {
+        return true;
+      } else {
+        return allowedCities.contains(geoNameId);
+      }
+    }
+
     private void loadGeoIp2City() throws IOException {
       InputStream inputStream;
       try {
-        inputStream = File.inputStream(geoCityDatabase);
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityDatabase);
+        ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
+        inputStream = Channels.newInputStream(channel);
       } catch (IOException e) {
-        throw new IllegalArgumentException(
-            "Exception thrown while fetching configured geoCityDatabase", e);
+        throw new IOException("Exception thrown while fetching configured geoCityDatabase", e);
       }
       geoIP2City = new DatabaseReader.Builder(inputStream).withCache(new CHMCache()).build();
+    }
+
+    private void loadAllowedCities() throws IOException {
+      InputStream inputStream;
+      try {
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityFilter);
+        ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
+        inputStream = Channels.newInputStream(channel);
+      } catch (IOException e) {
+        throw new IOException("Exception thrown while fetching configured geoCityFilter", e);
+      }
+      allowedCities = new HashSet<>();
+      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+      while (reader.ready()) {
+        String line = reader.readLine();
+        Matcher matcher = GEO_NAME_PATTERN.matcher(line);
+        if (matcher.find()) {
+          Integer geoNameId = Integer.valueOf(matcher.group(1));
+          allowedCities.add(geoNameId);
+        } else {
+          throw new IllegalStateException(
+              "Line of geoCityFilter file does not begin with a geoName integer ID: " + line);
+
+        }
+      }
     }
   }
 
