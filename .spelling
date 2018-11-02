@@ -5,6 +5,7 @@ ack'd
 acks
 API
 async
+AWS
 backfilled
 base64
 BigQuery
@@ -41,10 +42,12 @@ ok
 pre-production
 PubSub
 PubsubMessage
+Q4
 Redis
 SQLite
 stderr
 stdout
+sunsetting
 TCP
 templating
 timestamp
