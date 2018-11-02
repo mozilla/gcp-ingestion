@@ -2,6 +2,19 @@
 
 This document outlines plans to migrate edge traffic from AWS to GCP using the code in this repository.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+
+- [Current state](#current-state)
+- [Phase 1](#phase-1)
+- [Phase 2](#phase-2)
+- [Phase 3](#phase-3)
+- [Phase 3 (alternative)](#phase-3-alternative)
+- [Phase 4](#phase-4)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## Current state
 
 Today, data producers send data to the ingestion stack on AWS as described [here](https://github.com/mozilla/firefox-data-docs/blob/042fddcbf27aa5993ee5578224200a3ef65fd7c7/src/concepts/pipeline/data_pipeline_detail.md#ingestion).
