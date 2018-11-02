@@ -47,6 +47,7 @@ Redis
 SQLite
 stderr
 stdout
+sunsetting
 TCP
 templating
 timestamp

@@ -20,7 +20,7 @@ This "expected" data does _not_ include recording and replaying traffic that we 
 
 During this phase, we will collect logging info to determine exactly what data is being ignored by limiting to this "expected" data.
 
-Why have a GCP PubSub topic instead of running an HTTP output from the AWS consumer directly? The main reason is that we want 100% of data in a PubSub topic anyway, for staging purposes. This way we can have a production GCP Edge ingestion stack writing to production GCP resources, while being able to e.g. simulate load and various outage conditions using the same data in a staging environment. We could could in theory do the stage testing using the prod GCP edge output topic, assuming the edge has no issues. This will be the eventual end state of the system when there's no more AWS, but we are currently reusing most of the hindsight tooling for stage testing since it's already written and working in production.
+Why have a GCP PubSub topic instead of running an HTTP output from the AWS consumer directly? The main reason is that we want 100% of data in a PubSub topic anyway, for staging purposes. This way we can have a production GCP Edge ingestion stack writing to production GCP resources, while being able to e.g. simulate load and various outage conditions using the same data in a staging environment. We could in theory do the stage testing using the prod GCP edge output topic, assuming the edge has no issues. This will be the eventual end state of the system when there's no more AWS, but we are currently reusing most of the hindsight tooling for stage testing since it's already written and working in production.
 
 ## Phase 2
 
@@ -60,7 +60,7 @@ Data Producers -> Weighted DNS -> AWS Edge
 
 This alternative does not make use of a Tee to duplicate traffic.
 
-Depending on the results of Phase 2, an alternative strategy to teeing would be weighted DNS and running two GCP edges. In this configuration we could e.g. tee 1% of data directly to one of the GCP edges, while having the other 99% be processed by the other edge as per earlier phases. We would then need to do the reverse of Phase 1 and write that 1% back to AWS + Kafka for the AWS ingestion stack to process. This strategy can be just as dangerous as using the `OpenResty` tee because data loss on either side may result in partial data to both, and also requires writing code to convert the GCP representation back to the AWS representation. The risk can be mitigated by using the DNS weights to adjust the amount of data being sent directly to GCP, which is an advantage. This is an interesting variation more similar to a standard DNS cutover, if required.
+Depending on the results of Phase 2, an alternative strategy to teeing would be weighted DNS and running two GCP edges. In this configuration we could e.g. tee 1% of data directly to one of the GCP edges, while having the other 99% be processed by the other edge as per earlier phases. We would then need to do the reverse of Phase 1 and write that 1% back to AWS + Kafka for the AWS ingestion stack to process. This strategy can be just as dangerous as using the `OpenResty` tee because data loss on either side may result in partial data to both, and also requires writing code to convert the GCP representation back to the AWS representation. The risk can be mitigated by using the DNS weights to adjust the amount of data being sent directly to GCP, which is an advantage. This is an interesting variation more similar to a standard DNS cut-over, if required.
 
 ## Phase 4
 
