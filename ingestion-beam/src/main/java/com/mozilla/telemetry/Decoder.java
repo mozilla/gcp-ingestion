@@ -53,7 +53,8 @@ public class Decoder extends Sink {
           input.get(ValidateSchema.errorTag).apply(errorOutput);
           return input.get(ValidateSchema.mainTag);
         })).apply("decompress", new GzipDecompress())
-        .apply("geoCityLookup", new GeoCityLookup(options.getGeoCityDatabase()))
+        .apply("geoCityLookup",
+            new GeoCityLookup(options.getGeoCityDatabase(), options.getGeoCityFilter()))
         .apply("parseUserAgent", new ParseUserAgent()).apply("addMetadata", new AddMetadata())
         .apply("write addMetadata errors", CompositeTransform.of((PCollectionTuple input) -> {
           input.get(AddMetadata.errorTag).apply(errorOutput);
