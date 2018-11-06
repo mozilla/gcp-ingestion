@@ -48,6 +48,9 @@ jobs:
           "$CIRCLE_BUILD_URL"
           > ingestion-edge/version.json
     - run:
+        name: Persist CI environment file for passing into docker containers
+        command: env | grep '^CI' > ingestion-edge/circleci.env
+    - run:
         name: Docker Compose Test
         command: >-
           docker-compose
@@ -57,7 +60,7 @@ jobs:
           --force-recreate
           --quiet-pull
         environment:
-          COMPOSE_FILE: ingestion-edge/docker-compose.yml
+          COMPOSE_FILE: ingestion-edge/docker-compose.yml:ingestion-edge/docker-compose.circleci.yml
           COMPOSE_PROJECT_NAME: circleci-ingestion-edge
     - run:
         name: Early return for no deploy
@@ -95,7 +98,7 @@ jobs:
         command: cd ingestion-beam && mvn clean test
     - run:
         name: Report code coverage
-        command: bash <(curl -s https://codecov.io/bash) -F beam
+        command: bash <(curl -s https://codecov.io/bash) -F ingestion_beam
     - save_cache:
         paths:
           - ~/.m2

@@ -38,12 +38,13 @@ services:
       ]
   test:
     image: *image
-    entrypoint: py.test
+    entrypoint: pytest
     command:
     - --flake8
     - --docstyle
     - --mypy
     - --mypy-ignore-missing-imports
+    - --cov=./
     depends_on:
     - pubsub
     - web
