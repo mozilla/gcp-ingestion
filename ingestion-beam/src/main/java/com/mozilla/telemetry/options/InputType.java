@@ -4,7 +4,6 @@
 
 package com.mozilla.telemetry.options;
 
-import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
@@ -18,7 +17,7 @@ public enum InputType {
 
     /** Return a PTransform that reads from a Pubsub subscription. */
     public PTransform<PBegin, PCollectionTuple> read(SinkOptions.Parsed options) {
-      return CompositeTransform.of(input -> input
+      return PTransform.compose(input -> input
           .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput()))
           .apply(MapElementsWithErrors.ToPubsubMessageFrom.identity()));
     }
@@ -28,7 +27,7 @@ public enum InputType {
 
     /** Return a PTransform that reads from local or remote files. */
     public PTransform<PBegin, PCollectionTuple> read(SinkOptions.Parsed options) {
-      return CompositeTransform.of(input -> input.apply(TextIO.read().from(options.getInput()))
+      return PTransform.compose(input -> input.apply(TextIO.read().from(options.getInput()))
           .apply(options.getInputFileFormat().decode()));
     }
   };
