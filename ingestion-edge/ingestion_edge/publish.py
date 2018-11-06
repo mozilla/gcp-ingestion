@@ -77,7 +77,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
     """
     if q.size == 0:
         # early return for empty queue
-        return response.raw(b"", HTTP_STATUS.NO_CONTENT)
+        return response.text("", HTTP_STATUS.NO_CONTENT)
     result = {DONE: 0, PENDING: 0}
     # while queue has messages ready to process
     while q.size > 0:
@@ -141,11 +141,11 @@ async def submit(
             q.put((topic, data, attrs))
         except DatabaseError:
             # sqlite queue is probably out of space
-            return response.raw(b"", HTTP_STATUS.INSUFFICIENT_STORAGE)
+            return response.text("", HTTP_STATUS.INSUFFICIENT_STORAGE)
     except PublishError:
         # api permanently rejected this message without giving a reason
-        return response.raw(b"", HTTP_STATUS.BAD_REQUEST)
-    return response.raw(b"")
+        return response.text("", HTTP_STATUS.BAD_REQUEST)
+    return response.text("")
 
 
 def init_app(app: Sanic):
