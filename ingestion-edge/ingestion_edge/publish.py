@@ -107,7 +107,11 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
 
 
 async def submit(
-    request: Request, q: SQLiteAckQueue, topic: str, **kwargs
+    request: Request,
+    q: SQLiteAckQueue,
+    topic: str,
+    metadata_headers: Dict[str, str],
+    **kwargs
 ) -> response.HTTPResponse:
     """Deliver request to the pubsub topic.
 
@@ -123,13 +127,11 @@ async def submit(
             method=request.method,
             args=request.query_string,
             remote_addr=request.ip,
-            content_length=request.headers.get("Content-Length"),
-            date=request.headers.get("Date"),
-            dnt=request.headers.get("DNT"),
             host=request.host,
-            user_agent=request.headers.get("User-Agent"),
-            x_forwarded_for=request.headers.get("X-Forwarded-For"),
-            x_pingsender_version=request.headers.get("X-Pingsender-Version"),
+            **{
+                attr: request.headers.get(header)
+                for header, attr in metadata_headers.items()
+            }
         ).items()
         if value is not None
     }
@@ -162,9 +164,13 @@ def init_app(app: Sanic):
     q = SQLiteAckQueue(**queue_config)
     # route flush
     app.add_route(partial(flush, q=q), "/__flush__", name="flush")
+    # get metadata_headers config
+    metadata_headers = app.config["METADATA_HEADERS"]
     # generate one view_func per topic
     handlers = {
-        route.topic: partial(submit, q=q, topic=route.topic)
+        route.topic: partial(
+            submit, q=q, topic=route.topic, metadata_headers=metadata_headers
+        )
         for route in app.config["ROUTE_TABLE"]
     }
     # add routes for ROUTE_TABLE
