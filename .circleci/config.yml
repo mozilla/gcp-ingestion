@@ -93,6 +93,9 @@ jobs:
     - run:
         name: Maven Test
         command: cd ingestion-beam && mvn clean test
+    - run:
+        name: Report code coverage
+        command: bash <(curl -s https://codecov.io/bash) -F ingestion-beam
     - save_cache:
         paths:
           - ~/.m2
