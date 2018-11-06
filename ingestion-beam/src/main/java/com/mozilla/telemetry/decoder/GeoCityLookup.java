@@ -103,7 +103,7 @@ public class GeoCityLookup
 
           City city = response.getCity();
           if (cityAllowed(city.getGeoNameId())) {
-            attributes.put("geo_city", response.getCity().getName());
+            attributes.put("geo_city", city.getName());
             foundCityAllowed.inc();
           }
 
