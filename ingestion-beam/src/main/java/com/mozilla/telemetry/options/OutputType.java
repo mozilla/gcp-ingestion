@@ -5,7 +5,6 @@
 package com.mozilla.telemetry.options;
 
 import com.google.api.services.bigquery.model.TableRow;
-import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
@@ -50,7 +49,7 @@ public enum OutputType {
      */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
         SinkOptions.Parsed options) {
-      return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
+      return PTransform.compose((PCollection<PubsubMessage> input) -> {
         input.apply("print to stdout", print(options.getOutputFileFormat(), Println.stdout()));
         return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
@@ -62,7 +61,7 @@ public enum OutputType {
     /** Return a PTransform that prints messages to STDERR; only for local running. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
         SinkOptions.Parsed options) {
-      return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
+      return PTransform.compose((PCollection<PubsubMessage> input) -> {
         input.apply("print to stderr", print(options.getOutputFileFormat(), Println.stderr()));
         return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
@@ -74,7 +73,7 @@ public enum OutputType {
     /** Return a PTransform that writes to local or remote files. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
         SinkOptions.Parsed options) {
-      return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
+      return PTransform.compose((PCollection<PubsubMessage> input) -> {
         input.apply("write files", writeFile(options.getOutput(), options.getOutputFileFormat(),
             options.getParsedWindowDuration()));
         return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
@@ -87,7 +86,7 @@ public enum OutputType {
     /** Return a PTransform that writes to Google Pubsub. */
     public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
         SinkOptions.Parsed options) {
-      return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
+      return PTransform.compose((PCollection<PubsubMessage> input) -> {
         input.apply("write to pubsub", writePubsub(options.getOutput()));
         return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
@@ -118,7 +117,7 @@ public enum OutputType {
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> print(OutputFileFormat format,
       PTransform<PCollection<String>, PDone> output) {
-    return CompositeTransform.of(input -> input
+    return PTransform.compose(input -> input
         .apply("endcode PubsubMessages as strings", format.encode()).apply("print", output));
   }
 
@@ -129,8 +128,8 @@ public enum OutputType {
   protected static PTransform<PCollection<PubsubMessage>, POutput> writeFile(
       ValueProvider<String> outputPrefix, OutputFileFormat format, Duration windowDuration) {
     DynamicPathTemplate pathTemplate = new DynamicPathTemplate(outputPrefix.get());
-    return CompositeTransform
-        .of(input -> input.apply("fixedWindows", Window.into(FixedWindows.of(windowDuration)))
+    return PTransform
+        .compose(input -> input.apply("fixedWindows", Window.into(FixedWindows.of(windowDuration)))
             .apply("writeFile", FileIO.<List<String>, PubsubMessage>writeDynamic()
                 // We can't pass the attribute map to by() directly since MapCoder isn't
                 // deterministic;
@@ -146,13 +145,13 @@ public enum OutputType {
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> writePubsub(
       ValueProvider<String> location) {
-    return CompositeTransform
-        .of(input -> input.apply("writePubsub", PubsubIO.writeMessages().to(location)));
+    return PTransform
+        .compose(input -> input.apply("writePubsub", PubsubIO.writeMessages().to(location)));
   }
 
   protected static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> writeBigQuery(
       ValueProvider<String> tableSpec) {
-    return CompositeTransform.of((PCollection<PubsubMessage> input) -> {
+    return PTransform.compose((PCollection<PubsubMessage> input) -> {
       PubsubMessageToTableRow decodeTableRow = new PubsubMessageToTableRow();
       AsJsons<TableRow> encodeTableRow = AsJsons.of(TableRow.class);
       PCollectionTuple tableRows = input.apply("decodeTableRow", decodeTableRow);
