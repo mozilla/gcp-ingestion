@@ -90,6 +90,7 @@ def test_publish(
         req_time = datetime.utcnow()
         r = requests_session.request(method, server + uri, data=data)
         r.raise_for_status()
+        assert r.headers["Content-Type"].startswith("text/plain")
 
         # validate message delivered to pubsub
         resp = subscriber.pull(subscription, 1, timeout=0.1)

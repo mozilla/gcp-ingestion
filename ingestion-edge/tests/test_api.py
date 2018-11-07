@@ -131,6 +131,7 @@ def test_publish(client: SanicTestClient, route: Route):
             )
             res.raise_for_status()
             assert res.body == b""
+            assert res.headers["Content-Type"].startswith("text/plain")
 
             # validate message
             assert len(messages) == 1
