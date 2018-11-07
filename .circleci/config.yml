@@ -53,7 +53,7 @@ jobs:
           docker-compose
           up
           --build
-          --exit-code-from test
+          --abort-on-container-exit
           --force-recreate
           --quiet-pull
         environment:
