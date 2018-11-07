@@ -20,7 +20,7 @@ dictConfig(
         "formatters": {
             "json": {
                 "()": "dockerflow.logging.JsonLogFormatter",
-                "logger_name": "myproject",
+                "logger_name": "ingestion-edge",
             }
         },
         "handlers": {
