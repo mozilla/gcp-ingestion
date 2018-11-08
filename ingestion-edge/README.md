@@ -48,17 +48,19 @@ docker-compose down --timeout 0
 The ingestion-edge docker container accepts these configuration options from
 environment variables:
 
-- `ROUTE_TABLE`: a JSON list of tuples mapping `uri` to PubSub topic, defaults
-  to `[]`, tuples may include an optional third element for a list of allowed
-  methods instead of `["POST","PUT"]`
-- `QUEUE_PATH`: a filesystem path to a directory where a SQLite database may be
-  created to store requests when PubSub is unavailable, defaults to `queue`
+- `ROUTE_TABLE`: a JSON list of mappings from `uri` to PubSub topic, defaults
+  to `[]`, each mapping is a list and may include an optional third element
+  that specifies a list of allowed methods instead of the default
+  `["POST","PUT"]`
+- `QUEUE_PATH`: a filesystem path to a directory where a SQLite database will
+  be created to store requests when PubSub is unavailable, paths may be
+  relative to the docker container `WORKDIR`, defaults to `queue`
 - `MINIMUM_DISK_FREE_BYTES`: an integer indicating the threshold of free bytes
   at `QUEUE_PATH` below which `/__heartbeat__` will fail, defaults to `0` which
   disables the check
-- `METADATA_HEADERS`: a comma separated list of headers to preserve in PubSub
-  message attributes, defaults to `",".join(["Content-Length", "Date", "DNT",
-  "User-Agent", "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy"])`
+- `METADATA_HEADERS`: a comma separated list of headers to preserve as PubSub
+  message attributes, defaults to `Content-Length, Date, DNT, User-Agent,
+  X-Forwarded-For, X-Pingsender-Version, X-Pipeline-Proxy`
 
 ## Testing
 
