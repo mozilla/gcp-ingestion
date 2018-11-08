@@ -10,6 +10,7 @@ A simple service for delivering HTTP messages to Google Cloud PubSub
 
   - [Building](#building)
   - [Running](#running)
+  - [Configuration](#configuration)
   - [Testing](#testing)
 - [License](#license)
 
@@ -41,6 +42,23 @@ docker-compose logs web
 # clean up docker-compose environment
 docker-compose down --timeout 0
 ```
+
+## Configuration
+
+The ingestion-edge docker container accepts these configuration options from
+environment variables:
+
+- `ROUTE_TABLE`: a JSON list of tuples mapping `uri` to PubSub topic, defaults
+  to `[]`, tuples may include an optional third element for a list of allowed
+  methods instead of `["POST","PUT"]`
+- `QUEUE_PATH`: a filesystem path to a directory where a SQLite database may be
+  created to store requests when PubSub is unavailable, defaults to `queue`
+- `MINIMUM_DISK_FREE_BYTES`: an integer indicating the threshold of free bytes
+  at `QUEUE_PATH` below which `/__heartbeat__` will fail, defaults to `0` which
+  disables the check
+- `METADATA_HEADERS`: a comma separated list of headers to preserve in PubSub
+  message attributes, defaults to `",".join(["Content-Length", "Date", "DNT",
+  "User-Agent", "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy"])`
 
 ## Testing
 

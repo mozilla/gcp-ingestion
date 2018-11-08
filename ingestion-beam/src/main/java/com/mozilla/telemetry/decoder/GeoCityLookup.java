@@ -59,6 +59,7 @@ public class GeoCityLookup
 
     private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip-from-x-forwarded-for");
     private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip-from-remote-addr");
+    private final Counter countPipelineProxy = Metrics.counter(Fn.class, "count-pipeline-proxy");
     private final Counter foundIp = Metrics.counter(Fn.class, "found-ip");
     private final Counter foundCity = Metrics.counter(Fn.class, "found-city");
     private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found-city-allowed");
@@ -83,7 +84,14 @@ public class GeoCityLookup
         String ip;
         if (attributes.containsKey("x_forwarded_for")) {
           String[] ips = attributes.get("x_forwarded_for").split(" *, *");
-          ip = ips[ips.length - 1];
+          if (attributes.containsKey("x_pipeline_proxy")) {
+            // Use the ip reported by the proxy load balancer
+            ip = ips[ips.length - 2];
+            countPipelineProxy.inc();
+          } else {
+            // Use the ip reported by the ingestion-edge load balancer
+            ip = ips[ips.length - 1];
+          }
           countIpForwarded.inc();
         } else {
           ip = attributes.getOrDefault("remote_addr", "");
@@ -120,6 +128,7 @@ public class GeoCityLookup
 
         // remove client ip from attributes
         attributes.remove("x_forwarded_for");
+        attributes.remove("x_pipeline_proxy");
         attributes.remove("remote_addr");
 
         // remove null attributes because the coder can't handle them
