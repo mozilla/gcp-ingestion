@@ -328,6 +328,8 @@ unmodified.
 ### GeoIP Lookup
 
 1. Extract `ip` from the `x_forwarded_for` attribute
+   * when the `x_pipeline_proxy` attribute is present, use the second nearest
+     value, otherwise use the most recent value
    * fall back to the `remote_addr` attribute, then to an empty string
 1. Execute the following steps until one fails and ignore the exception
     1. Parse `ip` using `InetAddress.getByName`

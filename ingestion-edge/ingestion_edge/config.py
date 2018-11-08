@@ -50,12 +50,21 @@ QUEUE_PATH = environ.get("QUEUE_PATH", "queue")
 
 MINIMUM_DISK_FREE_BYTES = int(environ.get("MINIMUM_DISK_FREE_BYTES", 0)) or None
 
+DEFAULT_METADATA_HEADERS = [
+    "Content-Length",
+    "Date",
+    "DNT",
+    "User-Agent",
+    "X-Forwarded-For",
+    "X-Pingsender-Version",
+    "X-Pipeline-Proxy",
+]
+
 METADATA_HEADERS = {
     header: header.replace("-", "_")
-    for raw in environ.get(
-        "METADATA_HEADERS",
-        "content-length,dnt,date,user-agent,x-forwarded-for,x-pingsender-version",
-    ).split(",")
+    for raw in json.loads(
+        environ.get("METADATA_HEADERS", json.dumps(DEFAULT_METADATA_HEADERS))
+    )
     for header in (raw.strip().lower(),)
     if header
 }

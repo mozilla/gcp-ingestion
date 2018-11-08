@@ -75,12 +75,15 @@ public class DecoderTest {
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
         "{\"attributeMap\":{\"remote_addr\":\"8.8.8.8\"},\"payload\":\"\"}",
-        "{\"attributeMap\":" + "{\"remote_addr\":\"10.0.0.2\""
+        "{\"attributeMap\":{\"x_forwarded_for\":\"8.8.8.8, 63.245.208.195\""
+            + ",\"x_pipeline_proxy\":\"\",\"meta\":\"data\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"remote_addr\":\"10.0.0.2\""
             + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195\"" + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
         "{\"attributeMap\":{\"geo_country\":\"US\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"geo_country\":\"US\",\"meta\":\"data\"},\"payload\":\"\"}",
         "{\"attributeMap\":" + "{\"geo_country\":\"US\"" + ",\"geo_city\":\"Sacramento\""
             + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
 
@@ -98,7 +101,7 @@ public class DecoderTest {
             .addNameFilter(MetricNameFilter.inNamespace(GeoCityLookup.Fn.class)).build())
         .getCounters());
 
-    assertEquals(counters.size(), 6);
+    assertEquals(counters.size(), 7);
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
