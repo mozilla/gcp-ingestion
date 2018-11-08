@@ -6,7 +6,7 @@ RUN pip install --upgrade --no-cache-dir -r requirements.txt
 RUN pip install --no-index git+git://github.com/relud/python-dockerflow@master#egg=dockerflow[sanic]
 COPY . /app
 ENV HOST=0.0.0.0 PORT=8000
-CMD $CMD_PREFIX gunicorn \
+CMD exec gunicorn \
   --bind "$HOST:$PORT" \
   --log-file - \
   --worker-class sanic.worker.GunicornWorker \
