@@ -86,7 +86,7 @@ public class DecoderTest {
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
         .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
-        .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb"))
+        .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb", null))
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
@@ -98,8 +98,47 @@ public class DecoderTest {
             .addNameFilter(MetricNameFilter.inNamespace(GeoCityLookup.Fn.class)).build())
         .getCounters());
 
-    assertEquals(counters.size(), 5);
+    assertEquals(counters.size(), 6);
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
+  }
+
+  @Test
+  public void cityFilterNotAllowed() {
+    final List<String> input = Arrays.asList("{\"attributeMap\":" + "{\"remote_addr\":\"10.0.0.2\""
+        + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195\"" + "},\"payload\":\"\"}");
+
+    final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\""
+        + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
+
+    final PCollection<String> output = pipeline.apply(Create.of(input))
+        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("geoCityLookup",
+            new GeoCityLookup("GeoLite2-City.mmdb", "src/test/resources/cityFilters/milton.txt"))
+        .apply("encodeJson", OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    final PipelineResult result = pipeline.run();
+  }
+
+  @Test
+  public void cityFilterAllowed() {
+    final List<String> input = Arrays.asList("{\"attributeMap\":" + "{\"remote_addr\":\"10.0.0.2\""
+        + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195\"" + "},\"payload\":\"\"}");
+
+    final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\""
+        + ",\"geo_city\":\"Sacramento\"" + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
+
+    final PCollection<String> output = pipeline.apply(Create.of(input))
+        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("geoCityLookup",
+            new GeoCityLookup("GeoLite2-City.mmdb",
+                "src/test/resources/cityFilters/sacramento.txt"))
+        .apply("encodeJson", OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    final PipelineResult result = pipeline.run();
   }
 
   @Test

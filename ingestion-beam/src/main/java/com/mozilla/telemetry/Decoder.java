@@ -12,7 +12,6 @@ import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.ValidateSchema;
-import com.mozilla.telemetry.transforms.CompositeTransform;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -41,28 +40,29 @@ public class Decoder extends Sink {
         .getErrorOutputType().write(options);
 
     pipeline.apply("input", options.getInputType().read(options))
-        .apply("write input parsing errors", CompositeTransform.of((PCollectionTuple input) -> {
+        .apply("write input parsing errors", PTransform.compose((PCollectionTuple input) -> {
           input.get(DecodePubsubMessages.errorTag).apply(errorOutput);
           return input.get(DecodePubsubMessages.mainTag);
         })).apply("parseUri", new ParseUri())
-        .apply("write parseUri errors", CompositeTransform.of((PCollectionTuple input) -> {
+        .apply("write parseUri errors", PTransform.compose((PCollectionTuple input) -> {
           input.get(ParseUri.errorTag).apply(errorOutput);
           return input.get(ParseUri.mainTag);
         })).apply("validateSchema", new ValidateSchema())
-        .apply("write validateSchema errors", CompositeTransform.of((PCollectionTuple input) -> {
+        .apply("write validateSchema errors", PTransform.compose((PCollectionTuple input) -> {
           input.get(ValidateSchema.errorTag).apply(errorOutput);
           return input.get(ValidateSchema.mainTag);
         })).apply("decompress", new GzipDecompress())
-        .apply("geoCityLookup", new GeoCityLookup(options.getGeoCityDatabase()))
+        .apply("geoCityLookup",
+            new GeoCityLookup(options.getGeoCityDatabase(), options.getGeoCityFilter()))
         .apply("parseUserAgent", new ParseUserAgent()).apply("addMetadata", new AddMetadata())
-        .apply("write addMetadata errors", CompositeTransform.of((PCollectionTuple input) -> {
+        .apply("write addMetadata errors", PTransform.compose((PCollectionTuple input) -> {
           input.get(AddMetadata.errorTag).apply(errorOutput);
           return input.get(AddMetadata.mainTag);
         })).apply("removeDuplicates", Deduplicate.removeDuplicates(options.getRedisUri()))
-        .apply("write removeDuplicates errors", CompositeTransform.of((PCollectionTuple input) -> {
+        .apply("write removeDuplicates errors", PTransform.compose((PCollectionTuple input) -> {
           input.get(Deduplicate.errorTag).apply(errorOutput);
           return input.get(Deduplicate.mainTag);
-        })).apply("markAsSeen", CompositeTransform.of((PCollection<PubsubMessage> input) -> {
+        })).apply("markAsSeen", PTransform.compose((PCollection<PubsubMessage> input) -> {
           options.getSeenMessagesSource().read(options, input)
               .apply(Deduplicate.markAsSeen(options.getRedisUri(),
                   options.getDeduplicateExpireSeconds()))
