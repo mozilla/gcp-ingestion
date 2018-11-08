@@ -1,0 +1,46 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package com.mozilla.telemetry.decoder;
+
+import com.mozilla.telemetry.options.InputFileFormat;
+import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.transforms.DecodePubsubMessages;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.beam.sdk.testing.PAssert;
+import org.apache.beam.sdk.testing.TestPipeline;
+import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.values.PCollection;
+import org.junit.Rule;
+import org.junit.Test;
+
+public class GzipDecompressTest {
+
+  @Rule
+  public final transient TestPipeline pipeline = TestPipeline.create();
+
+  @Test
+  public void testOutput() {
+    final List<String> input = Arrays.asList(
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
+        // TODO calculate this compression for the test
+        // payload="$(printf test | gzip -c | base64)"
+        "{\"payload\":\"H4sIAM1ekFsAAytJLS4BAAx+f9gEAAAA\"}");
+
+    final List<String> expected = Arrays.asList(
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
+        "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}");
+
+    final PCollection<String> output = pipeline.apply(Create.of(input))
+        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("gzipDecompress", new GzipDecompress())
+        .apply("encodeJson", OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
+}
