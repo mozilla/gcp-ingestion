@@ -53,7 +53,7 @@ environment variables:
   that specifies a list of allowed methods instead of the default
   `["POST","PUT"]`
 - `QUEUE_PATH`: a filesystem path to a directory where a SQLite database will
-  be created to store requests when PubSub is unavailable, paths may be
+  be created to store requests for when PubSub is unavailable, paths may be
   relative to the docker container `WORKDIR`, defaults to `queue`
 - `MINIMUM_DISK_FREE_BYTES`: an integer indicating the threshold of free bytes
   on the filesystem where `QUEUE_PATH` is mounted below which `/__heartbeat__`
