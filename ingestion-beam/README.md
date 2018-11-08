@@ -131,30 +131,26 @@ We support `FileIO`'s "Dynamic destinations" feature (`FileIO.writeDynamic`) whe
 it's possible to route individual messages to different output locations based
 on properties of the message.
 In our case, we allow routing messages based on the `PubsubMessage` attribute map.
-Routing is accomplished by adding placeholders to the path of form `${attribute_name}`.
+Routing is accomplished by adding placeholders of form `${attribute_name:-default_value}`
+to the path.
 
 For example, to route based on a `document_type` attribute, your path might look like:
 
-    --output=gs://mybucket/mydocs/${document_type}/myfileprefix
+    --output=gs://mybucket/mydocs/${document_type:-UNSPECIFIED}/myfileprefix
 
 Messages with `document_type` of "main" would be grouped together and end up in
 the following directory:
 
     gs://mybucket/mydocs/main/
 
-Note, however, that by specifying a placeholder, you are requiring that every
-message in the dataset will have a non-null value set for that attribute.
-A message missing the attribute will raise an exception, causing the pipeline to exit.
-To avoid this, you may provide a default value 
-using `${attribute_name:-default_value}` syntax.
+Messages with `document_type` set to `null` or missing that attribute completely
+would be grouped together and end up in directory:
 
-If we update our path with a default:
+    gs://mybucket/mydocs/UNSPECIFIED/
 
-    --output=gs://mybucket/mydocs/${document_type:-defaultdoctype}/myfileprefix
-
-messages with no `document_type` attribute would now end up in path:
-
-    gs://mybucket/mydocs/defaultdoctype/
+Note that placeholders _must_ specify a default value so that a poorly formatted
+message doesn't cause a pipeline exception. A placeholder without a default will
+result in an `IllegalArgumentException` on pipeline startup.
 
 The templating and default syntax used here is based on the
 [Apache commons-text `StringSubstitutor`](https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html),

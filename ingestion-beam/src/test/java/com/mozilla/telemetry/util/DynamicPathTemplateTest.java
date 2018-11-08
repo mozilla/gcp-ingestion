@@ -22,25 +22,25 @@ public class DynamicPathTemplateTest {
     assertEquals("/tmp/abcd/foo/", absoluteStaticPath.staticPrefix);
     assertEquals("test", absoluteStaticPath.dynamicPart);
 
-    final PathSplitter absoluteDynamicPath = new PathSplitter("/tmp/abcd/bar-${foo}/test");
+    final PathSplitter absoluteDynamicPath = new PathSplitter("/tmp/abcd/bar-${foo:-f}/test");
     assertEquals("/tmp/abcd/", absoluteDynamicPath.staticPrefix);
-    assertEquals("bar-${foo}/test", absoluteDynamicPath.dynamicPart);
+    assertEquals("bar-${foo:-f}/test", absoluteDynamicPath.dynamicPart);
 
-    final PathSplitter relativeDynamicPath = new PathSplitter("bar-${foo}/test");
+    final PathSplitter relativeDynamicPath = new PathSplitter("bar-${foo:-f}/test");
     assertEquals("", relativeDynamicPath.staticPrefix);
-    assertEquals("bar-${foo}/test", relativeDynamicPath.dynamicPart);
+    assertEquals("bar-${foo:-f}/test", relativeDynamicPath.dynamicPart);
 
-    final PathSplitter gcsPath = new PathSplitter("gs://mybucket/abcd/bar-${foo}/test");
+    final PathSplitter gcsPath = new PathSplitter("gs://mybucket/abcd/bar-${foo:-f}/test");
     assertEquals("gs://mybucket/abcd/", gcsPath.staticPrefix);
-    assertEquals("bar-${foo}/test", gcsPath.dynamicPart);
+    assertEquals("bar-${foo:-f}/test", gcsPath.dynamicPart);
   }
 
   @Test
   public void testParsePlaceholderNames() {
-    assertThat(new DynamicPathTemplate("gs://mybucket/abcd/bar-${foo}/test").placeholderNames,
+    assertThat(new DynamicPathTemplate("gs://mybucket/abcd/bar-${foo:-f}/test").placeholderNames,
         is(ImmutableList.of("foo")));
 
-    assertThat(new DynamicPathTemplate("tmp/${bar}-${foo}/test").placeholderNames,
+    assertThat(new DynamicPathTemplate("tmp/${bar:-b}-${foo:-f}/test").placeholderNames,
         is(ImmutableList.of("bar", "foo")));
 
     assertThat(new DynamicPathTemplate("tmp/test").placeholderNames, is(ImmutableList.of()));
@@ -52,11 +52,14 @@ public class DynamicPathTemplateTest {
         is(ImmutableList.of("foo:baz-baz")));
   }
 
-  @Test
-  public void testParsePlaceholderDefaults() {
+  @Test(expected = IllegalArgumentException.class)
+  public void testEmptyDefaultThrows() {
     assertThat(new DynamicPathTemplate("tmp/${bar}-${foo:-hi}/${baz}-test").placeholderDefaults,
         is(Arrays.asList(null, "hi", null)));
+  }
 
+  @Test
+  public void testParsePlaceholderDefaults() {
     assertThat(new DynamicPathTemplate("tmp/${foo_1:-bar_1}/${foo-2:-bar-2}").placeholderDefaults,
         is(ImmutableList.of("bar_1", "bar-2")));
 
@@ -66,13 +69,13 @@ public class DynamicPathTemplateTest {
 
   @Test
   public void testReplaceDynamicPart() {
-    final DynamicPathTemplate path = new DynamicPathTemplate("tmp/${bar}-${foo}/test");
+    final DynamicPathTemplate path = new DynamicPathTemplate("tmp/${bar:-b}-${foo:-f}/test");
     assertEquals("hi-there/test", path.replaceDynamicPart(ImmutableList.of("hi", "there")));
   }
 
   @Test
   public void testExtractValuesFrom() {
-    final DynamicPathTemplate path = new DynamicPathTemplate("tmp/${bar}-${foo}/test");
+    final DynamicPathTemplate path = new DynamicPathTemplate("tmp/${bar:-b}-${foo:-f}/test");
     final ImmutableMap<String, String> attributes = ImmutableMap.of("bar", "hi", "foo", "there",
         "unused", "blah");
     assertThat(ImmutableList.of("hi", "there"), is(path.extractValuesFrom(attributes)));

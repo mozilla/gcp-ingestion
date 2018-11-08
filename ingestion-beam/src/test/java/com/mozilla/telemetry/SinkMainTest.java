@@ -11,7 +11,6 @@ import com.google.common.io.Resources;
 import com.mozilla.telemetry.matchers.Lines;
 import java.util.Collections;
 import java.util.List;
-import org.apache.beam.sdk.Pipeline.PipelineExecutionException;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +38,7 @@ public class SinkMainTest {
         "--outputFileFormat=json", "--outputType=stdout" });
   }
 
-  @Test(expected = PipelineExecutionException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void throwsExceptionOnNullPlaceholder() {
     String input = Resources.getResource("testdata/single-message-input.json").getPath();
 
@@ -52,7 +51,7 @@ public class SinkMainTest {
   public void testAttributePlaceholders() {
     String inputPath = Resources.getResource("testdata/attribute-placeholders").getPath();
     String input = inputPath + "/*.ndjson";
-    String output = outputPath + "/${host:-no_host}/${geo_city}/out";
+    String output = outputPath + "/${host:-no_host}/${geo_city:-no_city}/out";
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output });

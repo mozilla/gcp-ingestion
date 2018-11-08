@@ -44,8 +44,16 @@ public class DynamicPathTemplate implements Serializable {
 
     Matcher matcher = placeholdersPattern.matcher(rawPath);
     while (matcher.find()) {
-      this.placeholderNames.add(matcher.group(1));
-      this.placeholderDefaults.add(matcher.group(2));
+      String placeholderName = matcher.group(1);
+      String placeholderDefault = matcher.group(2);
+      if (placeholderDefault == null) {
+        throw new IllegalArgumentException("All placeholders in an output path must"
+            + " provide defaults using syntax '${placeholderName:-placeholderDefault}'"
+            + " but provided path " + rawPath + " contains defaultless placeholder '"
+            + matcher.group(0) + "'");
+      }
+      this.placeholderNames.add(placeholderName);
+      this.placeholderDefaults.add(placeholderDefault);
     }
 
   }
