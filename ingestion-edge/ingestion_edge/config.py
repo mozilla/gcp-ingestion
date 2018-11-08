@@ -62,9 +62,9 @@ DEFAULT_METADATA_HEADERS = [
 
 METADATA_HEADERS = {
     header: header.replace("-", "_")
-    for raw in environ.get(
-        "METADATA_HEADERS", ", ".join(DEFAULT_METADATA_HEADERS)
-    ).split(",")
+    for raw in json.loads(
+        environ.get("METADATA_HEADERS", json.dumps(DEFAULT_METADATA_HEADERS))
+    )
     for header in (raw.strip().lower(),)
     if header
 }

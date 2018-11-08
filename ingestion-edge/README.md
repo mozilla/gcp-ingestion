@@ -59,8 +59,8 @@ environment variables:
   on the filesystem where `QUEUE_PATH` is mounted below which `/__heartbeat__`
   will fail, defaults to `0` which disables the check
 - `METADATA_HEADERS`: a comma separated list of headers to preserve as PubSub
-  message attributes, defaults to `Content-Length, Date, DNT, User-Agent,
-  X-Forwarded-For, X-Pingsender-Version, X-Pipeline-Proxy`
+  message attributes, defaults to `["Content-Length", "Date", "DNT", "User-Agent",
+  "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy"]`
 
 ## Testing
 
