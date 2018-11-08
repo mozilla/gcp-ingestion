@@ -56,8 +56,8 @@ environment variables:
   be created to store requests when PubSub is unavailable, paths may be
   relative to the docker container `WORKDIR`, defaults to `queue`
 - `MINIMUM_DISK_FREE_BYTES`: an integer indicating the threshold of free bytes
-  at `QUEUE_PATH` below which `/__heartbeat__` will fail, defaults to `0` which
-  disables the check
+  on the filesystem where `QUEUE_PATH` is mounted below which `/__heartbeat__`
+  will fail, defaults to `0` which disables the check
 - `METADATA_HEADERS`: a comma separated list of headers to preserve as PubSub
   message attributes, defaults to `Content-Length, Date, DNT, User-Agent,
   X-Forwarded-For, X-Pingsender-Version, X-Pipeline-Proxy`
