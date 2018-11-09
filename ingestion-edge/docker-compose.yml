@@ -44,7 +44,7 @@ services:
     - --docstyle
     - --mypy
     - --mypy-ignore-missing-imports
-    - --cov=./
+    - --cov=./ingestion_edge/
     depends_on:
     - pubsub
     - web
