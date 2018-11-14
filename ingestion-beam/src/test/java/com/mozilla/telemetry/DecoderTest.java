@@ -255,7 +255,8 @@ public class DecoderTest {
   public void deduplicate() throws IOException {
     int redisPort = new redis.embedded.ports.EphemeralPortProvider().next();
     // create testing redis server
-    final RedisServer redis = new RedisServer(redisPort);
+    final RedisServer redis = RedisServer.builder().port(redisPort).setting("bind 127.0.0.1")
+        .build();
     final URI redisUri = URI.create("redis://localhost:" + redisPort);
     redis.start();
 
