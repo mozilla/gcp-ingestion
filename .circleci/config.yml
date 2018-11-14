@@ -133,7 +133,7 @@ jobs:
           cd ingestion-beam && mvn clean compile test-compile surefire:test -Dtest=BigQueryIntegrationTest
     - run:
         name: Report code coverage
-        command: bash <(curl -s https://codecov.io/bash) -F ingestion_beam_bigquery
+        command: bash <(curl -s https://codecov.io/bash) -F ingestion_beam
     # We don't save_cache here; we let the ingestion-beam job cover that.
 
 workflows:
