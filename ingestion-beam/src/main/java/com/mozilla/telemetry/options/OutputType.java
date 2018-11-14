@@ -16,6 +16,7 @@ import org.apache.beam.sdk.extensions.jackson.AsJsons;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -155,10 +156,12 @@ public enum OutputType {
       PubsubMessageToTableRow decodeTableRow = new PubsubMessageToTableRow();
       AsJsons<TableRow> encodeTableRow = AsJsons.of(TableRow.class);
       PCollectionTuple tableRows = input.apply("decodeTableRow", decodeTableRow);
-      final WriteResult writeResult = tableRows.get(decodeTableRow.mainTag).apply("writeTableRows",
-          BigQueryIO.writeTableRows().withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
-              .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
-              .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND).to(tableSpec));
+      final WriteResult writeResult = tableRows.get(decodeTableRow.mainTag)
+          .setCoder(TableRowJsonCoder.of()).apply("writeTableRows",
+              BigQueryIO.writeTableRows().withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
+                  .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
+                  .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                  .to(tableSpec));
       return PCollectionList.of(tableRows.get(decodeTableRow.errorTag))
           .and(writeResult.getFailedInserts().apply(encodeTableRow)
               .apply(InputFileFormat.text.decode()) // TODO: add error_{type,message} fields
