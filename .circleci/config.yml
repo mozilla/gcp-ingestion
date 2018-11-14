@@ -104,6 +104,38 @@ jobs:
           - ~/.m2
         key: maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
 
+  ingestion-beam-bigquery:
+    docker:
+    - image: maven
+    steps:
+    - run:
+        name: Early return if this build is from a forked PR
+        command: |
+          if [ -n "$CIRCLE_PR_NUMBER" ]; then
+            echo "Nothing to upload for forked PRs, so marking this step successful"
+            circleci step halt
+          fi
+    - checkout
+    - restore_cache:
+        keys:
+          # Use same cache as the ingestion-beam job.
+          - maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
+          - maven-repo-v1-{{ .Branch }}-
+          - maven-repo-v1-
+    - run:
+        name: Maven Test
+        # Google's client libraries will check for GOOGLE_APPLICATION_CREDENTIALS
+        # and use a file in that location for credentials if present;
+        # See https://cloud.google.com/docs/authentication/production
+        command: |
+          export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
+          echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          cd ingestion-beam && mvn clean compile test-compile surefire:test -Dtest=BigQueryIntegrationTest
+    - run:
+        name: Report code coverage
+        command: bash <(curl -s https://codecov.io/bash) -F ingestion_beam_bigquery
+    # We don't save_cache here; we let the ingestion-beam job cover that.
+
 workflows:
   version: 2
   build:
@@ -113,3 +145,4 @@ workflows:
     - format-python
     - ingestion-edge
     - ingestion-beam
+    - ingestion-beam-bigquery
