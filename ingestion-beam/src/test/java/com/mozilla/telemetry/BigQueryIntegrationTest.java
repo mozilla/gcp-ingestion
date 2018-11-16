@@ -6,6 +6,7 @@ package com.mozilla.telemetry;
 
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.DatasetInfo;
@@ -21,11 +22,14 @@ import com.google.cloud.bigquery.testing.RemoteBigQueryHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.matchers.Lines;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 /**
  * Test suite that accesses BigQuery in GCP.
@@ -49,6 +53,15 @@ public class BigQueryIntegrationTest {
     bigquery = bqHelper.getOptions().getService();
     projectId = bqHelper.getOptions().getProjectId();
     dataset = RemoteBigQueryHelper.generateDatasetName();
+  }
+
+  @Rule
+  public TemporaryFolder outputFolder = new TemporaryFolder();
+  private String outputPath;
+
+  @Before
+  public void initializeOutputPath() {
+    outputPath = outputFolder.getRoot().getAbsolutePath();
   }
 
   /** Remove all resources we created in BigQuery. */
@@ -78,6 +91,35 @@ public class BigQueryIntegrationTest {
 
     assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123", "abc123", "def456")));
+  }
+
+  @Test
+  public void canRecoverFailedInserts() throws Exception {
+    String table = "mytable";
+    String tableSpec = String.format("%s.%s", dataset, table);
+    TableId tableId = TableId.of(dataset, table);
+
+    bigquery.create(DatasetInfo.newBuilder(dataset).build());
+
+    // Create a table with missing column.
+    bigquery.create(TableInfo
+        .newBuilder(tableId,
+            StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING))))
+        .build());
+
+    String input = Resources.getResource("testdata/json-payload.ndjson").getPath();
+    String output = String.format("%s:%s", projectId, tableSpec);
+    String errorOutput = outputPath + "/error/out";
+
+    Sink.main(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=text", "--outputType=bigquery", "--output=" + output,
+        "--errorOutputType=file", "--errorOutput=" + errorOutput });
+
+    assertTrue(stringValuesQuery("SELECT clientId FROM " + tableSpec).isEmpty());
+
+    List<String> expectedErrorLines = Lines.resources("testdata/json-payload-wrapped.ndjson");
+    List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
+    assertThat(errorOutputLines, matchesInAnyOrder(expectedErrorLines));
   }
 
   private List<String> stringValuesQuery(String query) throws InterruptedException {

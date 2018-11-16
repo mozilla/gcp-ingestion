@@ -16,6 +16,7 @@ import org.apache.beam.sdk.extensions.jackson.AsJsons;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
@@ -161,6 +162,8 @@ public enum OutputType {
               BigQueryIO.writeTableRows().withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
                   .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
                   .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+                  .skipInvalidRows()
+                  .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors())
                   .to(tableSpec));
       return PCollectionList.of(tableRows.get(decodeTableRow.errorTag))
           .and(writeResult.getFailedInserts().apply(encodeTableRow)
