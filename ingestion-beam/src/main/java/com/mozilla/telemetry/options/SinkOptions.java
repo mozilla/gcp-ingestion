@@ -42,7 +42,7 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputType(OutputType value);
 
-  @Description("File format for --outputType=file|stdout; must be one of "
+  @Description("File format for --outputType=file|stdout; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"
       + " text (each line is payload)")
   @Default.Enum("json")
@@ -50,11 +50,27 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputFileFormat(OutputFileFormat value);
 
+  @Description("Number of output shards for --outputType=file; defaults to 0 (automatic)"
+      + " for batch running, but must be set to an explicit value for stream processing"
+      + " (--inputType=pubsub)")
+  @Default.Integer(0)
+  Integer getOutputNumShards();
+
+  void setOutputNumShards(Integer value);
+
   @Description("Type of --errorOutput; must be one of [pubsub, file]")
   @Default.Enum("pubsub")
   ErrorOutputType getErrorOutputType();
 
   void setErrorOutputType(ErrorOutputType value);
+
+  @Description("Number of output shards for --errorOutputType=file; defaults to 0 (automatic)"
+      + " for batch running, but must be set to an explicit value for stream processing"
+      + " (--inputType=pubsub)")
+  @Default.Integer(0)
+  Integer getErrorOutputNumShards();
+
+  void setErrorOutputNumShards(Integer value);
 
   @Description("Fixed window duration. Defaults to 10m. Allowed formats are: "
       + "Ns (for seconds, example: 5s), Nm (for minutes, example: 12m), "
