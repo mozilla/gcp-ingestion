@@ -39,6 +39,8 @@ import org.junit.rules.TemporaryFolder;
  * {@code -Dtest=BigQueryIntegrationTest}. Credentials can be provided by initializing a
  * configuration in the gcloud command-line tool or by providing a path to service account
  * credentials in environment variable {@code GOOGLE_APPLICATION_CREDENTIALS}.
+ *
+ * <p>The provided credentials are assumed to have "BigQuery Admin" privileges.
  */
 public class BigQueryIntegrationTest {
 

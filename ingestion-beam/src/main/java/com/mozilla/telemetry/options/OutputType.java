@@ -77,7 +77,7 @@ public enum OutputType {
         SinkOptions.Parsed options) {
       return PTransform.compose((PCollection<PubsubMessage> input) -> {
         input.apply("write files", writeFile(options.getOutput(), options.getOutputFileFormat(),
-            options.getParsedWindowDuration()));
+            options.getParsedWindowDuration(), options.getOutputNumShards()));
         return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
       });
     }
@@ -128,7 +128,8 @@ public enum OutputType {
    * https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam#output-path-specification
    */
   protected static PTransform<PCollection<PubsubMessage>, POutput> writeFile(
-      ValueProvider<String> outputPrefix, OutputFileFormat format, Duration windowDuration) {
+      ValueProvider<String> outputPrefix, OutputFileFormat format, Duration windowDuration,
+      int numShards) {
     DynamicPathTemplate pathTemplate = new DynamicPathTemplate(outputPrefix.get());
     return PTransform
         .compose(input -> input.apply("fixedWindows", Window.into(FixedWindows.of(windowDuration)))
@@ -138,7 +139,7 @@ public enum OutputType {
                 // instead, we extract an ordered list of the needed placeholder values.
                 // That list is later available to withNaming() to determine output location.
                 .by(message -> pathTemplate.extractValuesFrom(message.getAttributeMap()))
-                .withDestinationCoder(ListCoder.of(StringUtf8Coder.of()))
+                .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())).withNumShards(numShards)
                 .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink())
                 .to(pathTemplate.staticPrefix)
                 .withNaming(placeholderValues -> FileIO.Write.defaultNaming(
