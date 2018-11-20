@@ -38,7 +38,7 @@ public enum ErrorOutputType {
     public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
         SinkOptions.Parsed options) {
       return OutputType.writeFile(options.getErrorOutput(), FORMAT,
-          options.getParsedWindowDuration());
+          options.getParsedWindowDuration(), options.getErrorOutputNumShards());
     }
   },
 
