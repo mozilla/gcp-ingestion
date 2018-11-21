@@ -17,6 +17,11 @@ import org.junit.Test;
 public class TimeTest {
 
   @Test
+  public void instantiateTimeForCodeCoverage() {
+    new Time();
+  }
+
+  @Test
   public void testParseDuration() {
     assertEquals(Time.parseDuration("13s").getMillis(), SECONDS.toMillis(13));
     assertEquals(Time.parseDuration("4m").getMillis(), MINUTES.toMillis(4));
@@ -56,5 +61,15 @@ public class TimeTest {
   public void testParseSecondsValueProvider() {
     final ValueProvider<String> provider = StaticValueProvider.of("13s");
     assertEquals(Time.parseSeconds(provider).get().intValue(), 13);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testZeroThrows() {
+    Time.parseDuration("0m");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testNegativeThrows() {
+    Time.parseDuration("-PT6H");
   }
 }

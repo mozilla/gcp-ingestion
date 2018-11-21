@@ -4,15 +4,15 @@
 
 package com.mozilla.telemetry.decoder;
 
-import static java.util.concurrent.TimeUnit.HOURS;
-
 import com.google.common.collect.ImmutableMap;
+import com.mozilla.telemetry.decoder.DecoderOptions.Parsed;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -32,6 +32,11 @@ public class DeduplicateTest {
 
   @Test
   public void testOutput() throws IOException {
+    DecoderOptions decoderOptions = pipeline.getOptions().as(DecoderOptions.class);
+    decoderOptions.setDeduplicateExpireDuration(StaticValueProvider.of("24h"));
+    Parsed parsedOptions = DecoderOptions.parseDecoderOptions(decoderOptions);
+    Integer ttlSeconds = parsedOptions.getDeduplicateExpireSeconds().get();
+
     int redisPort = new redis.embedded.ports.EphemeralPortProvider().next();
     // create testing redis server
     final RedisServer redis = RedisServer.builder().port(redisPort).setting("bind 127.0.0.1")
@@ -64,7 +69,7 @@ public class DeduplicateTest {
       final PCollectionTuple seen = pipeline
           .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
           .apply("create seen messages", mapStringsToId)
-          .apply("record seen ids", Deduplicate.markAsSeen(redisUri, (int) HOURS.toSeconds(24)));
+          .apply("record seen ids", Deduplicate.markAsSeen(redisUri, ttlSeconds));
 
       // errorTag is empty
       PAssert.that(seen.get(Deduplicate.errorTag).apply(OutputFileFormat.json.encode())).empty();

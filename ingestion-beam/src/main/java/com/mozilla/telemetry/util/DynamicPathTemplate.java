@@ -100,13 +100,7 @@ public class DynamicPathTemplate implements Serializable {
       String name = placeholderNames.get(i);
       String value = attributes.get(name);
       if (value == null) {
-        String defaultValue = placeholderDefaults.get(i);
-        if (defaultValue == null) {
-          throw new IllegalArgumentException("The destination specified via --output"
-              + " includes an attribute placeholder `" + name + "' with no default,"
-              + " so a value is required, but this message has no attribute `" + name + "'.");
-        }
-        value = defaultValue;
+        value = placeholderDefaults.get(i);
       }
       placeholderValues.add(value);
     }
