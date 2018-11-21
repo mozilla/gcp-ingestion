@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.PipelineResult;
@@ -22,13 +23,18 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class GeoCityLookupTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void testOutput() {
@@ -99,6 +105,34 @@ public class GeoCityLookupTest {
     PAssert.that(output).containsInAnyOrder(expected);
 
     final PipelineResult result = pipeline.run();
+  }
+
+  @Test
+  public void testThrowsOnMissingCityDatabase() throws Exception {
+    thrown.expectCause(IsInstanceOf.instanceOf(UncheckedIOException.class));
+
+    final List<String> input = Arrays
+        .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
+
+    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode())
+        .get(DecodePubsubMessages.mainTag)
+        .apply("geoCityLookup", new GeoCityLookup("missing-file.mmdb", null));
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testThrowsOnMissingCityFilter() throws Exception {
+    thrown.expectCause(IsInstanceOf.instanceOf(IllegalStateException.class));
+
+    final List<String> input = Arrays
+        .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
+
+    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode())
+        .get(DecodePubsubMessages.mainTag).apply("geoCityLookup",
+            new GeoCityLookup("GeoLite2-City.mmdb", "src/test/resources/cityFilters/invalid.txt"));
+
+    pipeline.run();
   }
 
 }
