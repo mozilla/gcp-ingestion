@@ -1,0 +1,9 @@
+non-json text
+
+null
+{"type": "random json payload"}
+{"attributeMap":{"host":"test"},"payload":"missing_closing_quote}
+{"attributeMap":nonexistent_json_literal,"payload":"dGVzdA=="}
+{"attributeMap":null,"payload":null}
+{"attributeMap":null,"payload":"this is not base-64 encoded"}
+{}

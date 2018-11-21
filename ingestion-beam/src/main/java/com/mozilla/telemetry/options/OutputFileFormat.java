@@ -33,6 +33,8 @@ public enum OutputFileFormat {
       try {
         return Json.asString(message);
       } catch (IOException e) {
+        // We rely on PubsubMessage construction to fail on invalid data, so we should never
+        // see a non-encodable PubsubMessage here and we let the exception bubble up if it happens.
         throw new UncheckedIOException(e);
       }
     }
