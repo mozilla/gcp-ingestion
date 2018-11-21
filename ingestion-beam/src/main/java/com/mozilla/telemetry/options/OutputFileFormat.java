@@ -17,6 +17,9 @@ public enum OutputFileFormat {
 
     /** Return this PubsubMessage payload as text. */
     public String encodeSingleMessage(PubsubMessage message) {
+      if (message == null || message.getPayload() == null) {
+        return "";
+      }
       return new String(message.getPayload());
     }
 

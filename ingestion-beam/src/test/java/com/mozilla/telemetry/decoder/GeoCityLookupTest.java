@@ -123,6 +123,20 @@ public class GeoCityLookupTest {
 
   @Test
   public void testThrowsOnMissingCityFilter() throws Exception {
+    thrown.expectCause(IsInstanceOf.instanceOf(UncheckedIOException.class));
+
+    final List<String> input = Arrays
+        .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
+
+    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode())
+        .get(DecodePubsubMessages.mainTag)
+        .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb", "missing-file.txt"));
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testThrowsOnInvalidCityFilter() throws Exception {
     thrown.expectCause(IsInstanceOf.instanceOf(IllegalStateException.class));
 
     final List<String> input = Arrays

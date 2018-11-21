@@ -28,6 +28,11 @@ public class DecoderMainTest {
   }
 
   @Test
+  public void instantiateDecoderForCodeCoverage() {
+    new Decoder();
+  }
+
+  @Test
   public void testBasicErrorOutput() {
     String input = Resources.getResource("testdata/single-message-input.json").getPath();
     String output = outputPath + "/out";

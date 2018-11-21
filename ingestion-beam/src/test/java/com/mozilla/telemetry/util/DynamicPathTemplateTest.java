@@ -73,12 +73,25 @@ public class DynamicPathTemplateTest {
     assertEquals("hi-there/test", path.replaceDynamicPart(ImmutableList.of("hi", "there")));
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testReplaceDynamicPartThrows() {
+    final DynamicPathTemplate path = new DynamicPathTemplate("tmp/${bar:-b}-${foo:-f}/test");
+    assertEquals("hi-there/test", path.replaceDynamicPart(ImmutableList.of("hi")));
+  }
+
   @Test
   public void testExtractValuesFrom() {
     final DynamicPathTemplate path = new DynamicPathTemplate("tmp/${bar:-b}-${foo:-f}/test");
     final ImmutableMap<String, String> attributes = ImmutableMap.of("bar", "hi", "foo", "there",
         "unused", "blah");
-    assertThat(ImmutableList.of("hi", "there"), is(path.extractValuesFrom(attributes)));
+    assertThat(path.extractValuesFrom(attributes), is(ImmutableList.of("hi", "there")));
+    assertThat(path.extractValuesFrom(null), is(ImmutableList.of("b", "f")));
+  }
+
+  @Test
+  public void testWithoutDynamicPart() {
+    final DynamicPathTemplate path = new DynamicPathTemplate("tmp/");
+    assertEquals("", path.replaceDynamicPart(ImmutableList.of()));
   }
 
 }

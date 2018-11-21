@@ -30,12 +30,26 @@ public class SinkMainTest {
   }
 
   @Test
+  public void instantiateSinkForCodeCoverage() {
+    new Sink();
+  }
+
+  @Test
   public void canWriteToStdout() {
     String input = Resources.getResource("testdata/single-message-input.json").getPath();
 
     // We are simply making sure this runs without throwing an exception.
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=stdout" });
+  }
+
+  @Test
+  public void canWriteToStderr() {
+    String input = Resources.getResource("testdata/single-message-input.json").getPath();
+
+    // We are simply making sure this runs without throwing an exception.
+    Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=stderr" });
   }
 
   @Test(expected = IllegalArgumentException.class)
