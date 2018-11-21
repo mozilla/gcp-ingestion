@@ -56,8 +56,9 @@ public class DeduplicateTest {
       // Pass this through MarkAsSeen then RemoveDuplicates
       final String duplicatedId = UUID.randomUUID().toString();
 
-      // Only pass this through RemoveDuplicates
+      // Only pass these through RemoveDuplicates
       final String newId = UUID.randomUUID().toString();
+      final String invalidId = "foo";
 
       // mark messages as delivered
       final PCollectionTuple seen = pipeline
@@ -78,7 +79,7 @@ public class DeduplicateTest {
 
       // deduplicate messages
       final PCollectionTuple output = pipeline
-          .apply("ids", Create.of(Arrays.asList(newId, duplicatedId)))
+          .apply("ids", Create.of(Arrays.asList(newId, duplicatedId, invalidId)))
           .apply("create messages", mapStringsToId)
           .apply("deduplicate", Deduplicate.removeDuplicates(redisUri));
 
@@ -90,7 +91,7 @@ public class DeduplicateTest {
       // errorTag contains duplicate ids
       final PCollection<String> error = output.get(Deduplicate.errorTag).apply("get duplicate ids",
           mapMessagesToId);
-      PAssert.that(error).containsInAnyOrder(duplicatedId);
+      PAssert.that(error).containsInAnyOrder(duplicatedId, invalidId);
 
       // run RemoveDuplicates
       pipeline.run();
