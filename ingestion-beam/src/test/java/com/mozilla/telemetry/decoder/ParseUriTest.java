@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.google.common.collect.Iterables;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
@@ -12,7 +13,10 @@ import java.util.List;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -23,11 +27,20 @@ public class ParseUriTest {
 
   @Test
   public void testOutput() {
-    final List<String> input = Arrays.asList(
+    final List<String> validInput = Arrays.asList(
         "{\"attributeMap\":" + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
             + "/main/Firefox/61.0a1/nightly/20180328030202\"" + "},\"payload\":\"\"}",
         "{\"attributeMap\":"
             + "{\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+            + "},\"payload\":\"\"}");
+
+    final List<String> invalidInput = Arrays.asList("{\"attributeMap\":{},\"payload\":\"\"}",
+        "{\"attributeMap\":" + "{\"uri\":\"/nonexistent_prefix/ce39b608-f595-4c69-b6a6-f7a436604648"
+            + "/main/Firefox/61.0a1/nightly/20180328030202\"" + "},\"payload\":\"\"}",
+        "{\"attributeMap\":" + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
+            + "/Firefox/61.0a1/nightly/20180328030202\"" + "},\"payload\":\"\"}",
+        "{\"attributeMap\":"
+            + "{\"uri\":\"/submit/eng-workflow/hgpush/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
             + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(
@@ -41,12 +54,22 @@ public class ParseUriTest {
             + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
             + ",\"document_type\":\"hgpush\"" + "},\"payload\":\"\"}");
 
-    final PCollection<String> output = pipeline.apply(Create.of(input))
+    final PCollectionTuple parsed = pipeline
+        .apply(Create.of(Iterables.concat(validInput, invalidInput)))
         .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
-        .apply("parseUri", new ParseUri()).get(ParseUri.mainTag)
-        .apply("encodeJson", OutputFileFormat.json.encode());
+        .apply("parseUri", new ParseUri());
 
+    PCollection<String> output = parsed.get(ParseUri.mainTag).apply("encodeJson",
+        OutputFileFormat.json.encode());
     PAssert.that(output).containsInAnyOrder(expected);
+
+    PCollection<String> exceptions = parsed.get(ParseUri.errorTag).apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+    PAssert.that(exceptions)
+        .containsInAnyOrder(Arrays.asList("com.mozilla.telemetry.decoder.ParseUri$NullUriException",
+            "com.mozilla.telemetry.decoder.ParseUri$InvalidUriException",
+            "com.mozilla.telemetry.decoder.ParseUri$InvalidUriException",
+            "com.mozilla.telemetry.decoder.ParseUri$InvalidUriException"));
 
     pipeline.run();
   }

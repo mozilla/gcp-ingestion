@@ -12,6 +12,14 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
   private static class InvalidUriException extends Exception {
+
+    InvalidUriException() {
+      super();
+    }
+
+    InvalidUriException(String message) {
+      super(message);
+    }
   }
 
   private static class NullUriException extends InvalidUriException {
@@ -24,10 +32,15 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
   private static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { "document_namespace",
       "document_type", "document_version", "document_id" };
 
-  private static Map<String, String> zip(String[] keys, String[] values) {
+  private static Map<String, String> zip(String[] keys, String[] values)
+      throws InvalidUriException {
     Map<String, String> map = new HashMap<>();
-    int length = Math.min(keys.length, values.length);
-    for (int i = 0; i < length; i++) {
+    if (keys.length != values.length) {
+      throw new InvalidUriException(
+          String.format("Found %d more path elements in the URI than expected for this endpoint",
+              values.length - keys.length));
+    }
+    for (int i = 0; i < keys.length; i++) {
       map.put(keys[i], values[i]);
     }
     return map;
@@ -51,7 +64,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
       attributes.putAll(
           zip(GENERIC_URI_SUFFIX_ELEMENTS, uri.substring(GENERIC_URI_PREFIX.length()).split("/")));
     } else {
-      throw new InvalidUriException();
+      throw new InvalidUriException("Unknown URI prefix");
     }
     attributes.remove("uri");
     return new PubsubMessage(element.getPayload(), attributes);
