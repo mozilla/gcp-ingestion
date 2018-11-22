@@ -104,11 +104,9 @@ jobs:
           - ~/.m2
         key: maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
 
-  ingestion-beam-bigquery: &beam_integration_test
+  ingestion-beam-integration:
     docker:
     - image: maven
-      environment:
-      - TARGET_SYSTEM: BigQuery
     steps:
     - run:
         name: Early return if this build is from a forked PR
@@ -132,18 +130,11 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          cd ingestion-beam && mvn clean compile test-compile surefire:test -Dtest=${TARGET_SYSTEM}IntegrationTest
+          cd ingestion-beam && mvn clean test -Dtest=*IntegrationTest
     - run:
         name: Report code coverage
         command: bash <(curl -s https://codecov.io/bash) -F ingestion_beam
     # We don't save_cache here; we let the ingestion-beam job cover that.
-
-  ingestion-beam-pubsub:
-    <<: *beam_integration_test
-    docker:
-    - image: maven
-      environment:
-      - TARGET_SYSTEM: Pubsub
 
 workflows:
   version: 2
@@ -154,5 +145,4 @@ workflows:
     - format-python
     - ingestion-edge
     - ingestion-beam
-    - ingestion-beam-bigquery
-    - ingestion-beam-pubsub
+    - ingestion-beam-integration
