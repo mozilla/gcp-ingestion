@@ -56,7 +56,7 @@ public class Json {
     // Read data into a tree
     TreeNode tree = MAPPER.readTree(data);
     // Check that we have an object, because treeToValue won't
-    if (!tree.isObject()) {
+    if (tree == null || !tree.isObject()) {
       throw new IOException("json value is not an object");
     }
     // Return a JSONObject created from tree
