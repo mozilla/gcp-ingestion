@@ -38,6 +38,7 @@ public class TimeTest {
     assertEquals(Time.parseDuration("2 day 0.001 second").getMillis(), DAYS.toMillis(2) + 1L);
     assertEquals(Time.parseDuration("4m13s").getMillis(),
         MINUTES.toMillis(4) + SECONDS.toMillis(13));
+    assertEquals(Time.parseDuration("P2days").getMillis(), DAYS.toMillis(2));
   }
 
   @Test(expected = IllegalArgumentException.class)

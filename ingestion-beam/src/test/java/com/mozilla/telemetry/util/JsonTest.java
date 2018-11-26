@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.util;
 
+import java.io.IOException;
 import org.junit.Test;
 
 public class JsonTest {
@@ -11,6 +12,26 @@ public class JsonTest {
   @Test
   public void instantiateJsonForCodeCoverage() {
     new Json();
+  }
+
+  @Test
+  public void testReadTableRowSuceedsOnEmptyJsonObject() throws Exception {
+    Json.readTableRow("{}".getBytes());
+  }
+
+  @Test(expected = IOException.class)
+  public void testReadTableRowThrowsOnNull() throws Exception {
+    Json.readTableRow(null);
+  }
+
+  @Test(expected = IOException.class)
+  public void testReadTableRowThrowsOnEmptyArray() throws Exception {
+    Json.readTableRow(new byte[] {});
+  }
+
+  @Test(expected = IOException.class)
+  public void testReadTableRowThrowsOnNullJson() throws Exception {
+    Json.readTableRow("null".getBytes());
   }
 
 }
