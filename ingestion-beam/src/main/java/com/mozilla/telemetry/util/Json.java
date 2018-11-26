@@ -34,6 +34,9 @@ public class Json {
    * @exception IOException if {@code data} does not contain a valid {@link TableRow}.
    */
   public static TableRow readTableRow(byte[] data) throws IOException {
+    if (data == null) {
+      throw new IOException("cannot decode null byte array to TableRow");
+    }
     // Throws IOException
     TableRow output = Json.MAPPER.readValue(data, TableRow.class);
     if (output == null) {
