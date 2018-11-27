@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry;
+package com.mozilla.telemetry.integration;
 
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
 import static org.junit.Assert.assertThat;
@@ -22,6 +22,7 @@ import com.google.cloud.bigquery.testing.RemoteBigQueryHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.matchers.Lines;
 import java.util.List;
 import java.util.stream.Collectors;
