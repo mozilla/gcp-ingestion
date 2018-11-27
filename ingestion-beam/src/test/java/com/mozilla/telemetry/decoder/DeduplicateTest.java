@@ -7,6 +7,7 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.decoder.DecoderOptions.Parsed;
 import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.rules.RedisServer;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -23,87 +24,78 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
-import redis.embedded.RedisServer;
 
 public class DeduplicateTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
+  @Rule
+  public final RedisServer redis = new RedisServer();
+
   @Test
   public void testOutput() throws IOException {
     DecoderOptions decoderOptions = pipeline.getOptions().as(DecoderOptions.class);
     decoderOptions.setDeduplicateExpireDuration(StaticValueProvider.of("24h"));
+    decoderOptions.setRedisUri(StaticValueProvider.of(redis.uri));
     Parsed parsedOptions = DecoderOptions.parseDecoderOptions(decoderOptions);
     Integer ttlSeconds = parsedOptions.getDeduplicateExpireSeconds().get();
+    URI redisUri = parsedOptions.getParsedRedisUri().get();
 
-    int redisPort = new redis.embedded.ports.EphemeralPortProvider().next();
-    // create testing redis server
-    final RedisServer redis = RedisServer.builder().port(redisPort).setting("bind 127.0.0.1")
-        .build();
-    final URI redisUri = URI.create("redis://localhost:" + redisPort);
-    redis.start();
+    // Create new PubsubMessage with element as document_id attribute
+    final MapElements<String, PubsubMessage> mapStringsToId = MapElements
+        .into(new TypeDescriptor<PubsubMessage>() {
+        }).via(element -> new PubsubMessage(new byte[0], ImmutableMap.of("document_id", element)));
 
-    try {
-      // Create new PubsubMessage with element as document_id attribute
-      final MapElements<String, PubsubMessage> mapStringsToId = MapElements
-          .into(new TypeDescriptor<PubsubMessage>() {
-          })
-          .via(element -> new PubsubMessage(new byte[0], ImmutableMap.of("document_id", element)));
+    // Extract document_id attribute from PubsubMessage
+    final MapElements<PubsubMessage, String> mapMessagesToId = MapElements
+        .into(TypeDescriptors.strings()).via(element -> element.getAttribute("document_id"));
 
-      // Extract document_id attribute from PubsubMessage
-      final MapElements<PubsubMessage, String> mapMessagesToId = MapElements
-          .into(TypeDescriptors.strings()).via(element -> element.getAttribute("document_id"));
+    // Only pass this through MarkAsSeen
+    final String seenId = UUID.randomUUID().toString();
 
-      // Only pass this through MarkAsSeen
-      final String seenId = UUID.randomUUID().toString();
+    // Pass this through MarkAsSeen then RemoveDuplicates
+    final String duplicatedId = UUID.randomUUID().toString();
 
-      // Pass this through MarkAsSeen then RemoveDuplicates
-      final String duplicatedId = UUID.randomUUID().toString();
+    // Only pass these through RemoveDuplicates
+    final String newId = UUID.randomUUID().toString();
+    final String invalidId = "foo";
 
-      // Only pass these through RemoveDuplicates
-      final String newId = UUID.randomUUID().toString();
-      final String invalidId = "foo";
+    // mark messages as delivered
+    final PCollectionTuple seen = pipeline
+        .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
+        .apply("create seen messages", mapStringsToId)
+        .apply("record seen ids", Deduplicate.markAsSeen(redisUri, ttlSeconds));
 
-      // mark messages as delivered
-      final PCollectionTuple seen = pipeline
-          .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
-          .apply("create seen messages", mapStringsToId)
-          .apply("record seen ids", Deduplicate.markAsSeen(redisUri, ttlSeconds));
+    // errorTag is empty
+    PAssert.that(seen.get(Deduplicate.errorTag).apply(OutputFileFormat.json.encode())).empty();
 
-      // errorTag is empty
-      PAssert.that(seen.get(Deduplicate.errorTag).apply(OutputFileFormat.json.encode())).empty();
+    // mainTag contains seen ids
+    final PCollection<String> seenMain = seen.get(Deduplicate.mainTag).apply("get seen ids",
+        mapMessagesToId);
+    PAssert.that(seenMain).containsInAnyOrder(Arrays.asList(seenId, duplicatedId));
 
-      // mainTag contains seen ids
-      final PCollection<String> seenMain = seen.get(Deduplicate.mainTag).apply("get seen ids",
-          mapMessagesToId);
-      PAssert.that(seenMain).containsInAnyOrder(Arrays.asList(seenId, duplicatedId));
+    // run MarkAsSeen
+    pipeline.run();
 
-      // run MarkAsSeen
-      pipeline.run();
+    // deduplicate messages
+    final PCollectionTuple output = pipeline
+        .apply("ids", Create.of(Arrays.asList(newId, duplicatedId, invalidId)))
+        .apply("create messages", mapStringsToId)
+        .apply("deduplicate", Deduplicate.removeDuplicates(redisUri));
 
-      // deduplicate messages
-      final PCollectionTuple output = pipeline
-          .apply("ids", Create.of(Arrays.asList(newId, duplicatedId, invalidId)))
-          .apply("create messages", mapStringsToId)
-          .apply("deduplicate", Deduplicate.removeDuplicates(redisUri));
+    // mainTag contains new ids
+    final PCollection<String> main = output.get(Deduplicate.mainTag).apply("get new ids",
+        mapMessagesToId);
+    PAssert.that(main).containsInAnyOrder(newId);
 
-      // mainTag contains new ids
-      final PCollection<String> main = output.get(Deduplicate.mainTag).apply("get new ids",
-          mapMessagesToId);
-      PAssert.that(main).containsInAnyOrder(newId);
+    // errorTag contains duplicate ids
+    final PCollection<String> error = output.get(Deduplicate.errorTag).apply("get duplicate ids",
+        mapMessagesToId);
+    PAssert.that(error).containsInAnyOrder(duplicatedId, invalidId);
 
-      // errorTag contains duplicate ids
-      final PCollection<String> error = output.get(Deduplicate.errorTag).apply("get duplicate ids",
-          mapMessagesToId);
-      PAssert.that(error).containsInAnyOrder(duplicatedId, invalidId);
-
-      // run RemoveDuplicates
-      pipeline.run();
-    } finally {
-      // always stop redis
-      redis.stop();
-    }
+    // run RemoveDuplicates
+    pipeline.run();
   }
 
 }

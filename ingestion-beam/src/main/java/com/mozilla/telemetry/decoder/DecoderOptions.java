@@ -55,9 +55,9 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   @Description("URI of a redis server that will be used for deduplication")
   @Validation.Required
-  ValueProvider<URI> getRedisUri();
+  ValueProvider<String> getRedisUri();
 
-  void setRedisUri(ValueProvider<URI> value);
+  void setRedisUri(ValueProvider<String> value);
 
   @Description("Duration for which message ids should be stored for deduplication. "
       + "Defaults to 24h. Allowed formats are: Ns (for seconds, example: 5s), "
@@ -86,6 +86,11 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
     ValueProvider<Integer> getDeduplicateExpireSeconds();
 
     void setDeduplicateExpireSeconds(ValueProvider<Integer> value);
+
+    @JsonIgnore
+    ValueProvider<URI> getParsedRedisUri();
+
+    void setParsedRedisUri(ValueProvider<URI> value);
   }
 
   /**
@@ -106,6 +111,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
     options
         .setDeduplicateExpireSeconds(NestedValueProvider.of(options.getDeduplicateExpireDuration(),
             value -> Ints.checkedCast(Time.parseSeconds(value))));
+    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(), URI::create));
   }
 
 }

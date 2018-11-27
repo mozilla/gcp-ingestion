@@ -59,14 +59,14 @@ public class Decoder extends Sink {
         .apply("collect addMetadata errors", PTransform.compose((PCollectionTuple input) -> {
           errorCollections.add(input.get(AddMetadata.errorTag));
           return input.get(AddMetadata.mainTag);
-        })).apply("removeDuplicates", Deduplicate.removeDuplicates(options.getRedisUri()))
+        })).apply("removeDuplicates", Deduplicate.removeDuplicates(options.getParsedRedisUri()))
         .apply("collect removeDuplicates errors", PTransform.compose((PCollectionTuple input) -> {
           errorCollections.add(input.get(Deduplicate.errorTag));
           return input.get(Deduplicate.mainTag);
         })).apply("markAsSeen", PTransform.compose((PCollection<PubsubMessage> input) -> {
           errorCollections.add(options
               .getSeenMessagesSource().read(options, input).apply(Deduplicate
-                  .markAsSeen(options.getRedisUri(), options.getDeduplicateExpireSeconds()))
+                  .markAsSeen(options.getParsedRedisUri(), options.getDeduplicateExpireSeconds()))
               .get(Deduplicate.errorTag));
           return input;
         })).apply("write main output", options.getOutputType().write(options))
