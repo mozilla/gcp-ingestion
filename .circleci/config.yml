@@ -118,12 +118,6 @@ jobs:
     - checkout
     - restore_cache:
         <<: *restore_cache_beam
-    - restore_cache:
-        keys:
-          # Use same cache as the ingestion-beam job.
-          - maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
-          - maven-repo-v1-{{ .Branch }}-
-          - maven-repo-v1-
     - run:
         <<: *download_geolite2
     - run:
