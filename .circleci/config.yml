@@ -83,14 +83,14 @@ jobs:
     - image: maven
     steps:
     - checkout
-    - restore_cache:
+    - restore_cache: &restore_cache_beam
         keys:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
           - maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
           - maven-repo-v1-{{ .Branch }}-
           - maven-repo-v1-
-    - run:
+    - run: &download_geolite2
         name: Download Geolite2
         command: ingestion-beam/bin/download-geolite2
     - run:
@@ -117,11 +117,15 @@ jobs:
           fi
     - checkout
     - restore_cache:
+        <<: *restore_cache_beam
+    - restore_cache:
         keys:
           # Use same cache as the ingestion-beam job.
           - maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
           - maven-repo-v1-{{ .Branch }}-
           - maven-repo-v1-
+    - run:
+        <<: *download_geolite2
     - run:
         name: Maven Test
         # Google's client libraries will check for GOOGLE_APPLICATION_CREDENTIALS
