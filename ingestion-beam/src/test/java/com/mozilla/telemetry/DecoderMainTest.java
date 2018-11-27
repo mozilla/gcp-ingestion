@@ -80,8 +80,8 @@ public class DecoderMainTest {
     Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
         "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
-        "--errorOutputNumShards=1", "--geoCityDatabase=GeoLite2-City.mmdb",
-        "--seenMessagesSource=none", "--redisUri=" + redis.uri });
+        "--geoCityDatabase=GeoLite2-City.mmdb", "--seenMessagesSource=none",
+        "--redisUri=" + redis.uri });
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
