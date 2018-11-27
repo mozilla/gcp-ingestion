@@ -72,6 +72,15 @@ public interface SinkOptions extends PipelineOptions {
 
   void setErrorOutputNumShards(Integer value);
 
+  @Hidden
+  @Description("If true, include a 'stack_trace' attribute in error output messages;"
+      + " this should always be enabled except for specific testing scenarios where we want to "
+      + " validate error output without worrying about unstable stack traces")
+  @Default.Boolean(true)
+  Boolean getIncludeStackTrace();
+
+  void setIncludeStackTrace(Boolean value);
+
   @Description("Fixed window duration. Defaults to 10m. Allowed formats are: "
       + "Ns (for seconds, example: 5s), Nm (for minutes, example: 12m), "
       + "Nh (for hours, example: 2h).")

@@ -5,19 +5,24 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.transforms.Println;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.POutput;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
- * Enumeration of error output types that each provide a {@code write} method.
+ * Enumeration of error output types that each provide a {@code writeFailures} method.
  */
 public enum ErrorOutputType {
   stdout {
 
     /** Return a PTransform that prints errors to STDOUT; only for local running. */
-    public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
+    public PTransform<PCollection<PubsubMessage>, ? extends POutput> writeFailures(
         SinkOptions.Parsed options) {
       return OutputType.print(FORMAT, Println.stdout());
     }
@@ -26,7 +31,7 @@ public enum ErrorOutputType {
   stderr {
 
     /** Return a PTransform that prints errors to STDERR; only for local running. */
-    public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
+    public PTransform<PCollection<PubsubMessage>, ? extends POutput> writeFailures(
         SinkOptions.Parsed options) {
       return OutputType.print(FORMAT, Println.stderr());
     }
@@ -35,7 +40,7 @@ public enum ErrorOutputType {
   file {
 
     /** Return a PTransform that writes errors to local or remote files. */
-    public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
+    public PTransform<PCollection<PubsubMessage>, ? extends POutput> writeFailures(
         SinkOptions.Parsed options) {
       return OutputType.writeFile(options.getErrorOutput(), FORMAT,
           options.getParsedWindowDuration(), options.getErrorOutputNumShards());
@@ -45,7 +50,7 @@ public enum ErrorOutputType {
   pubsub {
 
     /** Return a PTransform that writes to Google Pubsub. */
-    public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
+    public PTransform<PCollection<PubsubMessage>, ? extends POutput> writeFailures(
         SinkOptions.Parsed options) {
       return OutputType.writePubsub(options.getErrorOutput());
     }
@@ -53,6 +58,25 @@ public enum ErrorOutputType {
 
   public static OutputFileFormat FORMAT = OutputFileFormat.json;
 
-  public abstract PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
+  protected abstract PTransform<PCollection<PubsubMessage>, ? extends POutput> writeFailures(
       SinkOptions.Parsed options);
+
+  /**
+   * Return a PTransform that writes to the destination configured in {@code options}.
+   */
+  public PTransform<PCollection<PubsubMessage>, ? extends POutput> write(
+      SinkOptions.Parsed options) {
+    if (options.getIncludeStackTrace()) {
+      // No transformation to do for the failure messages.
+      return writeFailures(options);
+    } else {
+      // Remove stack_trace attribute before applying writeFailures()
+      return PTransform.compose(input -> input.apply("remove stack_trace attribute",
+          MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
+            Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+            attributes.remove("stack_trace");
+            return new PubsubMessage(message.getPayload(), attributes);
+          })).setCoder(PubsubMessageWithAttributesCoder.of()).apply(writeFailures(options)));
+    }
+  }
 }
