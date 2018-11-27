@@ -18,17 +18,19 @@ public class ErrorOutputTypeTest {
 
   @Test
   public void stdout() {
+    SinkOptions.Parsed options = pipeline.getOptions().as(SinkOptions.Parsed.class);
     PubsubMessage message = new PubsubMessage(new byte[] {},
         ImmutableMap.of("purpose", "testing error output to stdout"));
-    pipeline.apply(Create.of(message)).apply(ErrorOutputType.stdout.write(null));
+    pipeline.apply(Create.of(message)).apply(ErrorOutputType.stdout.write(options));
     pipeline.run();
   }
 
   @Test
   public void stderr() {
+    SinkOptions.Parsed options = pipeline.getOptions().as(SinkOptions.Parsed.class);
     PubsubMessage message = new PubsubMessage(new byte[] {},
         ImmutableMap.of("purpose", "testing error output to stderr"));
-    pipeline.apply(Create.of(message)).apply(ErrorOutputType.stderr.write(null));
+    pipeline.apply(Create.of(message)).apply(ErrorOutputType.stderr.write(options));
     pipeline.run();
   }
 }

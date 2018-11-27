@@ -6,13 +6,16 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.POutput;
 
 public class Sink {
 
@@ -27,17 +30,21 @@ public class Sink {
 
     final SinkOptions.Parsed options = SinkOptions.parseSinkOptions(
         PipelineOptionsFactory.fromArgs(args).withValidation().as(SinkOptions.class));
-
     final Pipeline pipeline = Pipeline.create(options);
-    final PTransform<PCollection<PubsubMessage>, ? extends POutput> errorOutput = options
-        .getErrorOutputType().write(options);
+    final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
     pipeline.apply("input", options.getInputType().read(options))
-        .apply("write input parsing errors", PTransform.compose((PCollectionTuple input) -> {
-          input.get(ToPubsubMessageFrom.errorTag).apply(errorOutput);
+        .apply("collect input parsing errors", PTransform.compose((PCollectionTuple input) -> {
+          errorCollections.add(input.get(ToPubsubMessageFrom.errorTag));
           return input.get(ToPubsubMessageFrom.mainTag);
         })).apply("write main output", options.getOutputType().write(options))
-        .apply("write output errors", errorOutput);
+        .apply("collect output errors", PTransform.compose((PCollection<PubsubMessage> input) -> {
+          errorCollections.add(input);
+          return input;
+        }));
+
+    PCollectionList.of(errorCollections).apply(Flatten.pCollections()).apply("write error output",
+        options.getErrorOutputType().write(options));
 
     pipeline.run();
   }
