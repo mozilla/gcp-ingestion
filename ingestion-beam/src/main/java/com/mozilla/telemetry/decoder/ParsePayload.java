@@ -21,7 +21,7 @@ import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
   private static class SchemaNotFoundException extends Exception {
 
@@ -94,36 +94,30 @@ public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<Pu
   @Override
   protected PubsubMessage processElement(PubsubMessage element)
       throws SchemaNotFoundException, IOException {
-    try {
+    // Throws IOException if not a valid json object
+    final JSONObject json = Json.readJSONObject(element.getPayload());
 
-      // Throws IOException if not a valid json object
-      final JSONObject json = Json.readJSONObject(element.getPayload());
-
-      Map<String, String> attributes = element.getAttributeMap();
-      if (attributes != null && !attributes.containsKey("document_version")) {
-        // This element must be from the /submit/telemetry endpoint;
-        // we need to version from the payload.
-        attributes = new HashMap<>(attributes);
-        try {
-          String version = json.get("version").toString();
-          attributes.put("document_version", version);
-        } catch (JSONException e) {
-          throw new SchemaNotFoundException("Element contains no document_version attribute, "
-              + " so it's assumed to be a telemetry payload, but the payload does not include"
-              + " the expected telemetry top-level 'version' field");
-        }
+    Map<String, String> attributes = element.getAttributeMap();
+    if (attributes != null && !attributes.containsKey("document_version")) {
+      // This element must be from the /submit/telemetry endpoint;
+      // we need to version from the payload.
+      attributes = new HashMap<>(attributes);
+      try {
+        String version = json.get("version").toString();
+        attributes.put("document_version", version);
+      } catch (JSONException e) {
+        throw new SchemaNotFoundException("Element was assumed to be a telemetry message because"
+            + " it contains no document_version attribute, but the payload does not include"
+            + " the top-level 'version' field expected for a telemetry document");
       }
-
-      // Throws SchemaNotFoundException if there's no schema
-      final Schema schema = getSchema(attributes);
-      // Throws ValidationException if schema doesn't match
-      schema.validate(json);
-
-      byte[] normalizedPayload = json.toString().getBytes();
-      return new PubsubMessage(normalizedPayload, attributes);
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
     }
+
+    // Throws SchemaNotFoundException if there's no schema
+    final Schema schema = getSchema(attributes);
+    // Throws ValidationException if schema doesn't match
+    schema.validate(json);
+
+    byte[] normalizedPayload = json.toString().getBytes();
+    return new PubsubMessage(normalizedPayload, attributes);
   }
 }

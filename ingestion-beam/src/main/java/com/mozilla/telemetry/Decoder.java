@@ -9,9 +9,9 @@ import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GzipDecompress;
+import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
-import com.mozilla.telemetry.decoder.ValidateSchema;
 import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,10 +48,10 @@ public class Decoder extends Sink {
         .apply("collect parseUri errors", PTransform.compose((PCollectionTuple input) -> {
           errorCollections.add(input.get(ParseUri.errorTag));
           return input.get(ParseUri.mainTag);
-        })).apply("validateSchema", new ValidateSchema())
-        .apply("collect validateSchema errors", PTransform.compose((PCollectionTuple input) -> {
-          errorCollections.add(input.get(ValidateSchema.errorTag));
-          return input.get(ValidateSchema.mainTag);
+        })).apply("parsePayload", new ParsePayload())
+        .apply("collect parsePayload errors", PTransform.compose((PCollectionTuple input) -> {
+          errorCollections.add(input.get(ParsePayload.errorTag));
+          return input.get(ParsePayload.mainTag);
         })).apply("decompress", new GzipDecompress())
         .apply("geoCityLookup",
             new GeoCityLookup(options.getGeoCityDatabase(), options.getGeoCityFilter()))
