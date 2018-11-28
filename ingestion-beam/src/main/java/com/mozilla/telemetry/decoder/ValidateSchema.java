@@ -18,14 +18,19 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.commons.text.StringSubstitutor;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
   private static class SchemaNotFoundException extends Exception {
 
-    SchemaNotFoundException(String name) {
-      super("No schema with name: " + name);
+    SchemaNotFoundException(String message) {
+      super(message);
+    }
+
+    static SchemaNotFoundException forName(String name) {
+      return new SchemaNotFoundException("No schema with name: " + name);
     }
   }
 
@@ -64,14 +69,14 @@ public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<Pu
       JSONObject rawSchema = Json.readJSONObject(schema);
       schemas.put(name, SchemaLoader.load(rawSchema));
     } catch (IOException e) {
-      throw new SchemaNotFoundException(name);
+      throw SchemaNotFoundException.forName(name);
     }
   }
 
   private static Schema getSchema(String name) throws SchemaNotFoundException {
     final Schema schema = schemas.get(name);
     if (schema == null) {
-      throw new SchemaNotFoundException(name);
+      throw SchemaNotFoundException.forName(name);
     }
     return schema;
   }
@@ -89,12 +94,36 @@ public class ValidateSchema extends MapElementsWithErrors.ToPubsubMessageFrom<Pu
   @Override
   protected PubsubMessage processElement(PubsubMessage element)
       throws SchemaNotFoundException, IOException {
-    // Throws IOException if not a valid json object
-    final JSONObject json = Json.readJSONObject(element.getPayload());
-    // Throws SchemaNotFoundException if there's no schema
-    final Schema schema = getSchema(element.getAttributeMap());
-    // Throws ValidationException if schema doesn't match
-    schema.validate(json);
-    return new PubsubMessage(json.toString().getBytes(), element.getAttributeMap());
+    try {
+
+      // Throws IOException if not a valid json object
+      final JSONObject json = Json.readJSONObject(element.getPayload());
+
+      Map<String, String> attributes = element.getAttributeMap();
+      if (attributes != null && !attributes.containsKey("document_version")) {
+        // This element must be from the /submit/telemetry endpoint;
+        // we need to version from the payload.
+        attributes = new HashMap<>(attributes);
+        try {
+          String version = json.get("version").toString();
+          attributes.put("document_version", version);
+        } catch (JSONException e) {
+          throw new SchemaNotFoundException("Element contains no document_version attribute, "
+              + " so it's assumed to be a telemetry payload, but the payload does not include"
+              + " the expected telemetry top-level 'version' field");
+        }
+      }
+
+      // Throws SchemaNotFoundException if there's no schema
+      final Schema schema = getSchema(attributes);
+      // Throws ValidationException if schema doesn't match
+      schema.validate(json);
+
+      byte[] normalizedPayload = json.toString().getBytes();
+      return new PubsubMessage(normalizedPayload, attributes);
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw e;
+    }
   }
 }

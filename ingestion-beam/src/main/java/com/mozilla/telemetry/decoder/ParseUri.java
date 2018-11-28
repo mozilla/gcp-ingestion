@@ -56,7 +56,8 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     if (uri == null) {
       throw new NullUriException();
     } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
-      // TODO acquire document_version from attributes.get("args")
+      // We don't yet have access to the version field, so we delay populating the document_version
+      // attribute until the ValidateSchema step where we parse the JSON payload.
       attributes.put("document_namespace", "telemetry");
       attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
           uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));

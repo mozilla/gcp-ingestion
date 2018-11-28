@@ -87,7 +87,30 @@ public class ValidateSchemaTest {
         "com.mozilla.telemetry.decoder.ValidateSchema$SchemaNotFoundException");
 
     pipeline.run();
+  }
 
+  @Test
+  public void testVersionInPayload() {
+
+    // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
+    String input = "{\"attributeMap\":" + "{\"document_namespace\":\"telemetry\""
+        + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+        + ",\"document_type\":\"main\"" + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
+
+    final PCollectionTuple output = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("validateSchema", new ValidateSchema());
+
+    PCollection<String> exceptions = output.get(ToPubsubMessageFrom.errorTag).apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+
+    PAssert.that(output.get(DecodePubsubMessages.mainTag)).empty();
+
+    // If we get a ValidationException here, it means we successfully extracted version from
+    // the payload and found a valid schema; we expect the payload to not validate.
+    PAssert.that(exceptions).containsInAnyOrder("org.everit.json.schema.ValidationException");
+
+    pipeline.run();
   }
 
 }
