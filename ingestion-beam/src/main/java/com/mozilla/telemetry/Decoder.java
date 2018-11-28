@@ -12,7 +12,6 @@ import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -22,7 +21,6 @@ import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
-import org.apache.beam.sdk.values.PCollectionTuple;
 
 public class Decoder extends Sink {
 
@@ -32,7 +30,7 @@ public class Decoder extends Sink {
    * @param args command line arguments
    */
   public static void main(String[] args) {
-    // register options class so that `--help=DecoderOptions` works
+    // Register options class so that `--help=DecoderOptions` works.
     PipelineOptionsFactory.register(DecoderOptions.class);
 
     final DecoderOptions.Parsed options = DecoderOptions.parseDecoderOptions(
@@ -40,40 +38,31 @@ public class Decoder extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    pipeline.apply("input", options.getInputType().read(options))
-        .apply("collect input parsing errors", PTransform.compose((PCollectionTuple input) -> {
-          errorCollections.add(input.get(DecodePubsubMessages.errorTag));
-          return input.get(DecodePubsubMessages.mainTag);
-        })).apply("parseUri", new ParseUri())
-        .apply("collect parseUri errors", PTransform.compose((PCollectionTuple input) -> {
-          errorCollections.add(input.get(ParseUri.errorTag));
-          return input.get(ParseUri.mainTag);
-        })).apply("parsePayload", new ParsePayload())
-        .apply("collect parsePayload errors", PTransform.compose((PCollectionTuple input) -> {
-          errorCollections.add(input.get(ParsePayload.errorTag));
-          return input.get(ParsePayload.mainTag);
-        })).apply("decompress", new GzipDecompress())
+    // Trailing comments are used below to prevent rewrapping by google-java-format.
+    pipeline //
+        .apply("input", options.getInputType().read(options)) //
+        .addErrorCollectionTo(errorCollections).output() //
+        .apply("parseUri", new ParseUri()) //
+        .addErrorCollectionTo(errorCollections).output() //
+        .apply("parsePayload", new ParsePayload()) //
+        .addErrorCollectionTo(errorCollections).output() //
+        .apply("decompress", new GzipDecompress()) //
         .apply("geoCityLookup",
             new GeoCityLookup(options.getGeoCityDatabase(), options.getGeoCityFilter()))
-        .apply("parseUserAgent", new ParseUserAgent()).apply("addMetadata", new AddMetadata())
-        .apply("collect addMetadata errors", PTransform.compose((PCollectionTuple input) -> {
-          errorCollections.add(input.get(AddMetadata.errorTag));
-          return input.get(AddMetadata.mainTag);
-        })).apply("removeDuplicates", Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-        .apply("collect removeDuplicates errors", PTransform.compose((PCollectionTuple input) -> {
-          errorCollections.add(input.get(Deduplicate.errorTag));
-          return input.get(Deduplicate.mainTag);
-        })).apply("markAsSeen", PTransform.compose((PCollection<PubsubMessage> input) -> {
-          errorCollections.add(options
+        .apply("parseUserAgent", new ParseUserAgent()) //
+        .apply("addMetadata", new AddMetadata()) //
+        .addErrorCollectionTo(errorCollections).output() //
+        .apply("removeDuplicates", Deduplicate.removeDuplicates(options.getParsedRedisUri()))
+        .addErrorCollectionTo(errorCollections).output() //
+        .apply("markAsSeen", PTransform.compose((PCollection<PubsubMessage> input) -> {
+          options
               .getSeenMessagesSource().read(options, input).apply(Deduplicate
                   .markAsSeen(options.getParsedRedisUri(), options.getDeduplicateExpireSeconds()))
-              .get(Deduplicate.errorTag));
+              .addErrorCollectionTo(errorCollections);
           return input;
-        })).apply("write main output", options.getOutputType().write(options))
-        .apply("collect output errors", PTransform.compose((PCollection<PubsubMessage> input) -> {
-          errorCollections.add(input);
-          return input;
-        }));
+        })) //
+        .apply("write main output", options.getOutputType().write(options))
+        .addErrorCollectionTo(errorCollections).output();
 
     PCollectionList.of(errorCollections).apply(Flatten.pCollections()).apply("write error output",
         options.getErrorOutputType().write(options));

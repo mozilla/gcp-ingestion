@@ -6,8 +6,8 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.decoder.DecoderOptions.Parsed;
-import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.rules.RedisServer;
+import com.mozilla.telemetry.transforms.ResultWithErrors;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
@@ -19,7 +19,6 @@ import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
@@ -62,36 +61,33 @@ public class DeduplicateTest {
     final String invalidId = "foo";
 
     // mark messages as delivered
-    final PCollectionTuple seen = pipeline
+    ResultWithErrors<PCollection<PubsubMessage>> seen = pipeline
         .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
         .apply("create seen messages", mapStringsToId)
         .apply("record seen ids", Deduplicate.markAsSeen(redisUri, ttlSeconds));
 
-    // errorTag is empty
-    PAssert.that(seen.get(Deduplicate.errorTag).apply(OutputFileFormat.json.encode())).empty();
+    // errors is empty
+    PAssert.that(seen.errors()).empty();
 
     // mainTag contains seen ids
-    final PCollection<String> seenMain = seen.get(Deduplicate.mainTag).apply("get seen ids",
-        mapMessagesToId);
+    final PCollection<String> seenMain = seen.output().apply("get seen ids", mapMessagesToId);
     PAssert.that(seenMain).containsInAnyOrder(Arrays.asList(seenId, duplicatedId));
 
     // run MarkAsSeen
     pipeline.run();
 
     // deduplicate messages
-    final PCollectionTuple output = pipeline
+    ResultWithErrors<PCollection<PubsubMessage>> output = pipeline
         .apply("ids", Create.of(Arrays.asList(newId, duplicatedId, invalidId)))
         .apply("create messages", mapStringsToId)
         .apply("deduplicate", Deduplicate.removeDuplicates(redisUri));
 
     // mainTag contains new ids
-    final PCollection<String> main = output.get(Deduplicate.mainTag).apply("get new ids",
-        mapMessagesToId);
+    final PCollection<String> main = output.output().apply("get new ids", mapMessagesToId);
     PAssert.that(main).containsInAnyOrder(newId);
 
     // errorTag contains duplicate ids
-    final PCollection<String> error = output.get(Deduplicate.errorTag).apply("get duplicate ids",
-        mapMessagesToId);
+    final PCollection<String> error = output.errors().apply("get duplicate ids", mapMessagesToId);
     PAssert.that(error).containsInAnyOrder(duplicatedId, invalidId);
 
     // run RemoveDuplicates

@@ -6,7 +6,6 @@ package com.mozilla.telemetry.decoder;
 
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.testing.PAssert;
@@ -34,7 +33,7 @@ public class GzipDecompressTest {
         "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}");
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("gzipDecompress", new GzipDecompress())
         .apply("encodeJson", OutputFileFormat.json.encode());
 

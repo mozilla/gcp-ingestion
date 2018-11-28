@@ -7,15 +7,15 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.collect.Iterables;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
+import com.mozilla.telemetry.transforms.ResultWithErrors;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,16 +54,16 @@ public class ParseUriTest {
             + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
             + ",\"document_type\":\"hgpush\"" + "},\"payload\":\"\"}");
 
-    final PCollectionTuple parsed = pipeline
+    ResultWithErrors<PCollection<PubsubMessage>> parsed = pipeline
         .apply(Create.of(Iterables.concat(validInput, invalidInput)))
-        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("parseUri", new ParseUri());
 
-    PCollection<String> output = parsed.get(ParseUri.mainTag).apply("encodeJson",
+    PCollection<String> output = parsed.output().apply("encodeJson",
         OutputFileFormat.json.encode());
     PAssert.that(output).containsInAnyOrder(expected);
 
-    PCollection<String> exceptions = parsed.get(ParseUri.errorTag).apply(MapElements
+    PCollection<String> exceptions = parsed.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
     PAssert.that(exceptions)
         .containsInAnyOrder(Arrays.asList("com.mozilla.telemetry.decoder.ParseUri$NullUriException",

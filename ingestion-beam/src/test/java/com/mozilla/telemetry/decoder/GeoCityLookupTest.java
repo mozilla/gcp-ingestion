@@ -11,7 +11,6 @@ import static org.junit.Assert.assertThat;
 import com.google.common.collect.Lists;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +50,7 @@ public class GeoCityLookupTest {
             + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb", null))
         .apply("encodeJson", OutputFileFormat.json.encode());
 
@@ -77,7 +76,7 @@ public class GeoCityLookupTest {
         + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("geoCityLookup",
             new GeoCityLookup("GeoLite2-City.mmdb", "src/test/resources/cityFilters/milton.txt"))
         .apply("encodeJson", OutputFileFormat.json.encode());
@@ -96,7 +95,7 @@ public class GeoCityLookupTest {
         + ",\"geo_city\":\"Sacramento\"" + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
+        .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("geoCityLookup",
             new GeoCityLookup("GeoLite2-City.mmdb",
                 "src/test/resources/cityFilters/sacramento.txt"))
@@ -114,8 +113,7 @@ public class GeoCityLookupTest {
     final List<String> input = Arrays
         .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
 
-    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode())
-        .get(DecodePubsubMessages.mainTag)
+    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("geoCityLookup", new GeoCityLookup("missing-file.mmdb", null));
 
     pipeline.run();
@@ -128,8 +126,7 @@ public class GeoCityLookupTest {
     final List<String> input = Arrays
         .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
 
-    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode())
-        .get(DecodePubsubMessages.mainTag)
+    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb", "missing-file.txt"));
 
     pipeline.run();
@@ -142,8 +139,8 @@ public class GeoCityLookupTest {
     final List<String> input = Arrays
         .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
 
-    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode())
-        .get(DecodePubsubMessages.mainTag).apply("geoCityLookup",
+    pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode()).output()
+        .apply("geoCityLookup",
             new GeoCityLookup("GeoLite2-City.mmdb", "src/test/resources/cityFilters/invalid.txt"));
 
     pipeline.run();

@@ -8,16 +8,8 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.values.TupleTag;
 
 public class PubsubMessageToTableRow extends MapElementsWithErrors<PubsubMessage, TableRow> {
-
-  public static final TupleTag<TableRow> mainTag = new TupleTag<>();
-
-  @Override
-  public TupleTag<TableRow> getMainTag() {
-    return mainTag;
-  }
 
   protected TableRow processElement(PubsubMessage element) throws IOException {
     return Json.readTableRow(element.getPayload());

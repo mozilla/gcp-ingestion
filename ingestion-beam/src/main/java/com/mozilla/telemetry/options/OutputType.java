@@ -5,16 +5,18 @@
 package com.mozilla.telemetry.options;
 
 import com.google.api.services.bigquery.model.TableRow;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
+import com.mozilla.telemetry.transforms.ResultWithErrors;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import java.util.List;
 import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.extensions.jackson.AsJsons;
 import org.apache.beam.sdk.io.FileIO;
+import org.apache.beam.sdk.io.FileIO.Write;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.WriteFilesResult;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
@@ -31,17 +33,12 @@ import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
-import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.beam.sdk.values.POutput;
 import org.joda.time.Duration;
 
 /**
  * Enumeration of output types that each provide a {@code write} method.
- *
- * <p>For most outputs, {@code write} is a terminal operation that could return PDone,
- * but we instead return a PCollection that potentially contains error messages,
- * as is the case with BigQuery where we could have failed inserts.
  */
 public enum OutputType {
   stdout {
@@ -49,58 +46,46 @@ public enum OutputType {
     /**
      * Return a PTransform that prints messages to STDOUT; only for local running.
      */
-    public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
+    public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
-      return PTransform.compose((PCollection<PubsubMessage> input) -> {
-        input.apply("print to stdout", print(options.getOutputFileFormat(), Println.stdout()));
-        return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
-      });
+      return new EmptyErrors(print(options.getOutputFileFormat(), Println.stdout()));
     }
   },
 
   stderr {
 
     /** Return a PTransform that prints messages to STDERR; only for local running. */
-    public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
+    public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
-      return PTransform.compose((PCollection<PubsubMessage> input) -> {
-        input.apply("print to stderr", print(options.getOutputFileFormat(), Println.stderr()));
-        return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
-      });
+      return new EmptyErrors(print(options.getOutputFileFormat(), Println.stderr()));
     }
   },
 
   file {
 
     /** Return a PTransform that writes to local or remote files. */
-    public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
+    public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
-      return PTransform.compose((PCollection<PubsubMessage> input) -> {
-        input.apply("write files", writeFile(options.getOutput(), options.getOutputFileFormat(),
-            options.getParsedWindowDuration(), options.getOutputNumShards()));
-        return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
-      });
+      return new EmptyErrors(writeFile(options.getOutput(), options.getOutputFileFormat(),
+          options.getParsedWindowDuration(), options.getOutputNumShards()));
     }
   },
 
   pubsub {
 
     /** Return a PTransform that writes to Google Pubsub. */
-    public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
+    public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
-      return PTransform.compose((PCollection<PubsubMessage> input) -> {
-        input.apply("write to pubsub", writePubsub(options.getOutput()));
-        return input.getPipeline().apply("return empty error collection", EMPTY_ERROR_COLLECTION);
-      });
+      return new EmptyErrors(writePubsub(options.getOutput()));
     }
   },
 
   bigquery {
 
     /** Return a PTransform that writes to a BigQuery table and collects failed inserts. */
-    public PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
+    public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
-      return writeBigQuery(options.getOutput());
+      return PTransform.compose(input -> input.apply(writeBigQuery(options.getOutput())));
     }
   };
 
@@ -109,7 +94,7 @@ public enum OutputType {
    *
    * @return A PCollection of failure messages about data that could not be written.
    */
-  public abstract PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> write(
+  public abstract PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
       SinkOptions.Parsed options);
 
   /*
@@ -127,7 +112,7 @@ public enum OutputType {
    * For details of the intended behavior for file paths, see:
    * https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam#output-path-specification
    */
-  protected static PTransform<PCollection<PubsubMessage>, POutput> writeFile(
+  protected static PTransform<PCollection<PubsubMessage>, WriteFilesResult<List<String>>> writeFile(
       ValueProvider<String> outputPrefix, OutputFileFormat format, Duration windowDuration,
       int numShards) {
     DynamicPathTemplate pathTemplate = new DynamicPathTemplate(outputPrefix.get());
@@ -141,43 +126,56 @@ public enum OutputType {
                 .by(message -> pathTemplate.extractValuesFrom(message.getAttributeMap()))
                 .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())).withNumShards(numShards)
                 .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink())
-                .to(pathTemplate.staticPrefix)
-                .withNaming(placeholderValues -> FileIO.Write.defaultNaming(
+                .to(pathTemplate.staticPrefix).withNaming(placeholderValues -> Write.defaultNaming(
                     pathTemplate.replaceDynamicPart(placeholderValues), format.suffix()))));
   }
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> writePubsub(
       ValueProvider<String> location) {
-    return PTransform
-        .compose(input -> input.apply("writePubsub", PubsubIO.writeMessages().to(location)));
+    return PubsubIO.writeMessages().to(location);
   }
 
-  protected static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> writeBigQuery(
+  protected static PTransform<PCollection<PubsubMessage>, ResultWithErrors<WriteResult>> writeBigQuery(
       ValueProvider<String> tableSpec) {
     return PTransform.compose((PCollection<PubsubMessage> input) -> {
       PubsubMessageToTableRow decodeTableRow = new PubsubMessageToTableRow();
       AsJsons<TableRow> encodeTableRow = AsJsons.of(TableRow.class);
-      PCollectionTuple tableRows = input.apply("decodeTableRow", decodeTableRow);
-      final WriteResult writeResult = tableRows.get(decodeTableRow.mainTag)
-          .setCoder(TableRowJsonCoder.of()).apply("writeTableRows",
-              BigQueryIO.writeTableRows().withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
-                  .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
-                  .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-                  .skipInvalidRows()
-                  .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors())
-                  .to(tableSpec));
-      return PCollectionList.of(tableRows.get(decodeTableRow.errorTag))
+      ResultWithErrors<PCollection<TableRow>> tableRows = input.apply("decodeTableRow",
+          decodeTableRow);
+      final WriteResult writeResult = tableRows.output().setCoder(TableRowJsonCoder.of()).apply(
+          "writeTableRows",
+          BigQueryIO.writeTableRows().withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
+              .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
+              .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
+              .skipInvalidRows()
+              .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()).to(tableSpec));
+      PCollection<PubsubMessage> errorCollection = PCollectionList.of(tableRows.errors())
           .and(writeResult.getFailedInserts().apply(encodeTableRow)
               .apply(InputFileFormat.text.decode()) // TODO: add error_{type,message} fields
-              .get(DecodePubsubMessages.mainTag))
+              .output())
           .apply("flatten writeBigQuery error collections", Flatten.pCollections());
+      return ResultWithErrors.of(writeResult, errorCollection);
     });
   }
 
   /*
-   * Public static fields and methods.
+   * Private helpers.
    */
 
-  private static Create.Values<PubsubMessage> EMPTY_ERROR_COLLECTION = Create
-      .empty(PubsubMessageWithAttributesCoder.of());
+  private static class EmptyErrors
+      extends PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> {
+
+    private final PTransform<PCollection<PubsubMessage>, ? extends POutput> inner;
+
+    public EmptyErrors(PTransform<PCollection<PubsubMessage>, ? extends POutput> inner) {
+      this.inner = inner;
+    }
+
+    @Override
+    public ResultWithErrors<? extends POutput> expand(PCollection<PubsubMessage> input) {
+      return ResultWithErrors.of(input.apply(inner),
+          input.getPipeline().apply(Create.empty(PubsubMessageWithAttributesCoder.of())));
+    }
+  }
+
 }
