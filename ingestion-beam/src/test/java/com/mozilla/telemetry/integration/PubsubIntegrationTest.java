@@ -26,7 +26,6 @@ import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.options.OutputType;
 import com.mozilla.telemetry.options.SinkOptions;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -108,8 +107,8 @@ public class PubsubIntegrationTest {
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
     sinkOptions.setInput(StaticValueProvider.of(subscriptionName.toString()));
 
-    PCollection<String> output = pipeline.apply(InputType.pubsub.read(sinkOptions))
-        .get(ToPubsubMessageFrom.mainTag).apply("encodeJson", OutputFileFormat.json.encode());
+    PCollection<String> output = pipeline.apply(InputType.pubsub.read(sinkOptions)).output()
+        .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(inputLines);
 
@@ -132,8 +131,8 @@ public class PubsubIntegrationTest {
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
     sinkOptions.setOutput(StaticValueProvider.of(topicName.toString()));
 
-    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode())
-        .get(ToPubsubMessageFrom.mainTag).apply(OutputType.pubsub.write(sinkOptions));
+    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
+        .apply(OutputType.pubsub.write(sinkOptions));
 
     PipelineResult result = pipeline.run();
 

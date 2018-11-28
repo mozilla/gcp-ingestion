@@ -5,10 +5,15 @@
     "http://www.puppycrawl.com/dtds/suppressions_1_0.dtd">
 
 <suppressions>
-    <suppress checks="EmptyLineSeparator"
-              files="SinkOptions.java"/>
-    <suppress checks="EmptyLineSeparator"
-              files="DecoderOptions.java"/>
-    <suppress checks="Header"
-              files="DurationUtils.java"/>
+
+    <!-- google-java-format appears to allow lines over 100 chars in some cases -->
+    <suppress checks="LineLength"
+              files="InputFileFormat.java"/>
+    <suppress checks="LineLength"
+              files="OutputType.java"/>
+
+    <!-- suppress all checks in the generated directories -->
+    <suppress checks=".*" files=".+[\\\/]generated[\\\/].+\.java" />
+    <suppress checks=".*" files=".+[\\\/]generated-sources[\\\/].+\.java" />
+    <suppress checks=".*" files=".+[\\\/]generated-test-sources[\\\/].+\.java" />
 </suppressions>

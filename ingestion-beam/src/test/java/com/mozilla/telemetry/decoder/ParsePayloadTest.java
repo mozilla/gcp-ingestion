@@ -10,8 +10,7 @@ import static org.junit.Assert.assertThat;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.DecodePubsubMessages;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
+import com.mozilla.telemetry.transforms.ResultWithErrors;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -20,7 +19,6 @@ import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
@@ -34,20 +32,20 @@ public class ParsePayloadTest {
   @Test
   public void testOutput() {
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
-    final PCollectionTuple output = pipeline.apply(Create.of(input))
-        .apply("decodeText", InputFileFormat.text.decode()).get(DecodePubsubMessages.mainTag)
+    ResultWithErrors<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
+        .apply("decodeText", InputFileFormat.text.decode()).output()
         .apply("addAttributes", MapElements.into(new TypeDescriptor<PubsubMessage>() {
         }).via(element -> new PubsubMessage(element.getPayload(), ImmutableMap
             .of("document_namespace", "test", "document_type", "test", "document_version", "1"))))
         .apply("parsePayload", new ParsePayload());
 
     final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}");
-    final PCollection<String> main = output.get(ParsePayload.mainTag).apply("encodeTextMain",
+    final PCollection<String> main = output.output().apply("encodeTextMain",
         OutputFileFormat.text.encode());
     PAssert.that(main).containsInAnyOrder(expectedMain);
 
     final List<String> expectedError = Arrays.asList("[]", "{");
-    final PCollection<String> error = output.get(ParsePayload.errorTag).apply("encodeTextError",
+    final PCollection<String> error = output.errors().apply("encodeTextError",
         OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 
@@ -73,14 +71,14 @@ public class ParsePayloadTest {
         "{\"attributeMap\":{},\"payload\":\"e30K\"}",
         "{\"attributeMap\":null,\"payload\":\"e30K\"}");
 
-    final PCollectionTuple output = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).get(ToPubsubMessageFrom.mainTag)
+    ResultWithErrors<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
+        .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("parsePayload", new ParsePayload());
 
-    PCollection<String> exceptions = output.get(ToPubsubMessageFrom.errorTag).apply(MapElements
+    PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
 
-    PAssert.that(output.get(DecodePubsubMessages.mainTag)).empty();
+    PAssert.that(result.output()).empty();
     PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
         "com.mozilla.telemetry.decoder.ParsePayload$SchemaNotFoundException",
         "com.mozilla.telemetry.decoder.ParsePayload$SchemaNotFoundException",
@@ -97,14 +95,13 @@ public class ParsePayloadTest {
         + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
         + ",\"document_type\":\"main\"" + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
-    final PCollectionTuple output = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.json.decode()).get(DecodePubsubMessages.mainTag)
-        .apply("parsePayload", new ParsePayload());
+    ResultWithErrors<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.json.decode()).output().apply("parsePayload", new ParsePayload());
 
-    PCollection<String> exceptions = output.get(ToPubsubMessageFrom.errorTag).apply(MapElements
+    PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
 
-    PAssert.that(output.get(DecodePubsubMessages.mainTag)).empty();
+    PAssert.that(result.output()).empty();
 
     // If we get a ValidationException here, it means we successfully extracted version from
     // the payload and found a valid schema; we expect the payload to not validate.

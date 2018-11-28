@@ -24,17 +24,12 @@ import org.apache.beam.sdk.values.TupleTagList;
  * @param <OutputT> type of elements in the output {@link PCollection} for {@code mainTag}.
  */
 public abstract class MapElementsWithErrors<InputT, OutputT>
-    extends PTransform<PCollection<? extends InputT>, PCollectionTuple> {
+    extends PTransform<PCollection<? extends InputT>, ResultWithErrors<PCollection<OutputT>>> {
 
-  public static final TupleTag<PubsubMessage> errorTag = new TupleTag<>();
-  protected static final TupleTagList additionalTags = TupleTagList.of(errorTag);
-
-  private final TupleTag<OutputT> mainTag = new TupleTag<>();
-
-  // Using a getter allows for overriding with a static mainTag later.
-  public TupleTag<OutputT> getMainTag() {
-    return mainTag;
-  }
+  private final TupleTag<OutputT> successTag = new TupleTag<OutputT>() {
+  };
+  private final TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>() {
+  };
 
   /**
    * Method that returns one instance of {@code OutputT} for each {@code element}.
@@ -88,7 +83,7 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
     @ProcessElement
     public void processElementOrError(@Element InputT element, MultiOutputReceiver out) {
       try {
-        out.get(getMainTag()).output(processElement(element));
+        out.get(successTag).output(processElement(element));
       } catch (Throwable e) {
         out.get(errorTag).output(processError(element, e));
       }
@@ -101,11 +96,10 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
   private final DoFnWithErrors fn = new DoFnWithErrors();
 
   @Override
-  public PCollectionTuple expand(PCollection<? extends InputT> input) {
-    PCollectionTuple output = input
-        .apply(ParDo.of(fn).withOutputTags(getMainTag(), additionalTags));
-    output.get(errorTag).setCoder(PubsubMessageWithAttributesCoder.of());
-    return output;
+  public ResultWithErrors<PCollection<OutputT>> expand(PCollection<? extends InputT> input) {
+    PCollectionTuple tuple = input
+        .apply(ParDo.of(fn).withOutputTags(successTag, TupleTagList.of(errorTag)));
+    return ResultWithErrors.of(tuple.get(successTag), successTag, tuple.get(errorTag), errorTag);
   }
 
   /**
@@ -114,18 +108,12 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
   public abstract static class ToPubsubMessageFrom<InputT>
       extends MapElementsWithErrors<InputT, PubsubMessage> {
 
-    public static final TupleTag<PubsubMessage> mainTag = new TupleTag<>();
-
     @Override
-    public TupleTag<PubsubMessage> getMainTag() {
-      return mainTag;
-    }
-
-    @Override
-    public PCollectionTuple expand(PCollection<? extends InputT> input) {
-      PCollectionTuple output = super.expand(input);
-      output.get(mainTag).setCoder(PubsubMessageWithAttributesCoder.of());
-      return output;
+    public ResultWithErrors<PCollection<PubsubMessage>> expand(
+        PCollection<? extends InputT> input) {
+      ResultWithErrors<PCollection<PubsubMessage>> result = super.expand(input);
+      result.output().setCoder(PubsubMessageWithAttributesCoder.of());
+      return result;
     }
 
     /*
