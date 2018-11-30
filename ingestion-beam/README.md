@@ -22,6 +22,7 @@ Apache Beam jobs.
     - [Locally](#locally)
     - [On Dataflow](#on-dataflow)
     - [On Dataflow with templates](#on-dataflow-with-templates)
+    - [In streaming mode](#in-streaming-mode)
 - [Decoder Job](#decoder-job)
   - [Transforms](#transforms)
     - [Parse URI](#parse-uri)
@@ -302,6 +303,26 @@ gcloud dataflow jobs show "$JOB_ID"
 # check that the message was delivered
 gsutil cat $BUCKET/output/*
 ```
+
+### In streaming mode
+
+If `--inputType=pubsub`, Beam will execute in streaming mode, requiring some
+extra configuration for file-based outputs. You will need to specify sharding like:
+
+```
+    --outputNumShards=10
+    --errorOutputNumShards=10
+```
+
+As discussed in the
+[Beam documentation for `FileIO.Write#withNumShards`](https://beam.apache.org/releases/javadoc/2.8.0/org/apache/beam/sdk/io/FileIO.Write.html#withNumShards-int-),
+batch mode is most efficient when the runner is left to determine sharding,
+so `numShards` options should normally be left to their default of `0`, but
+streaming mode can't perform the same optimizations thus an exception will be thrown
+during pipeline construction if sharding is not specified.
+As codified in [apache/beam/pull/1952](https://github.com/apache/beam/pull/1952),
+the Dataflow runner suggests a reasonable starting point `numShards` is `2 * maxWorkers`
+or 10 if `--maxWorkers` is unspecified.
 
 # Decoder Job
 

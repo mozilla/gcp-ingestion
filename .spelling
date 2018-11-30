@@ -59,6 +59,7 @@ Q4
 Redis
 S3
 schemas
+sharding
 SQLite
 stderr
 stdout

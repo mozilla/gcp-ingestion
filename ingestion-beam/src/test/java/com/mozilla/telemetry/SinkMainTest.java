@@ -15,12 +15,16 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 public class SinkMainTest {
 
   @Rule
   public TemporaryFolder outputFolder = new TemporaryFolder();
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   private String outputPath;
 
@@ -147,6 +151,20 @@ public class SinkMainTest {
     List<String> expected = Lines.resources("testdata/basic-messages-payloads.txt");
 
     assertThat(outputLines, matchesInAnyOrder(expected));
+  }
+
+  @Test
+  public void testThrowsOnMissingNumShards() {
+    thrown.expectMessage(Matchers.startsWith("Configuration errors found"));
+    Sink.main(new String[] { "--inputType=pubsub", "--input=foo", "--outputType=file",
+        "--output=foo", "--errorOutputType=pubsub", "--errorOutput=bar" });
+  }
+
+  @Test
+  public void testThrowsOnMissingErrorNumShards() {
+    thrown.expectMessage(Matchers.startsWith("Configuration errors found"));
+    Sink.main(new String[] { "--inputType=pubsub", "--input=foo", "--outputType=pubsub",
+        "--output=foo", "--errorOutputType=file", "--errorOutput=bar" });
   }
 
 }
