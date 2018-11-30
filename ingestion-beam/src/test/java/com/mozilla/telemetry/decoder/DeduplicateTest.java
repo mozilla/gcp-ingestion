@@ -35,6 +35,8 @@ public class DeduplicateTest {
   @Test
   public void testOutput() throws IOException {
     DecoderOptions decoderOptions = pipeline.getOptions().as(DecoderOptions.class);
+    decoderOptions.setOutputNumShards(1);
+    decoderOptions.setErrorOutputNumShards(1);
     decoderOptions.setDeduplicateExpireDuration(StaticValueProvider.of("24h"));
     decoderOptions.setRedisUri(StaticValueProvider.of(redis.uri));
     Parsed parsedOptions = DecoderOptions.parseDecoderOptions(decoderOptions);

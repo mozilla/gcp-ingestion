@@ -7,6 +7,8 @@ package com.mozilla.telemetry.options;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.util.Time;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
@@ -147,6 +149,33 @@ public interface SinkOptions extends PipelineOptions {
    * Set all the derived fields of a {@link SinkOptions.Parsed} instance.
    */
   static void enrichSinkOptions(Parsed options) {
+    validateSinkOptions(options);
     options.setParsedWindowDuration(Time.parseDuration(options.getWindowDuration()));
+  }
+
+  /** Detect invalid combinations of parameters and fail fast with helpful error messages. */
+  static void validateSinkOptions(SinkOptions options) {
+    List<String> errorMessages = new ArrayList<>();
+    if (options.getInputType() == InputType.pubsub && options.getOutputType() == OutputType.file
+        && options.getOutputNumShards() == 0) {
+      errorMessages.add("Missing required parameter: "
+          + " --outputNumShards must be set to an explicit non-zero value when"
+          + " --outputType=file and the input is unbounded (--inputType=pubsub);"
+          + " Dataflow recommends starting with twice the value of --maxWorkers or 10"
+          + " (see https://github.com/apache/beam/pull/1952)");
+    }
+    if (options.getInputType() == InputType.pubsub
+        && options.getErrorOutputType() == ErrorOutputType.file
+        && options.getErrorOutputNumShards() == 0) {
+      errorMessages.add("Missing required parameter: "
+          + " --errorOutputNumShards must be set to an explicit non-zero value when"
+          + " --errorOutputType=file and the input is unbounded (--inputType=pubsub);"
+          + " Dataflow recommends starting with twice the value of --maxWorkers or 10"
+          + " (see https://github.com/apache/beam/pull/1952)");
+    }
+    if (!errorMessages.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Configuration errors found!\n* " + String.join("\n* ", errorMessages));
+    }
   }
 }
