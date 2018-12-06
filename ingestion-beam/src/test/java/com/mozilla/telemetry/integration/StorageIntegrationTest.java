@@ -120,6 +120,19 @@ public class StorageIntegrationTest {
         matchesInAnyOrder(expectedErrorOutputLines));
   }
 
+  @Test
+  public void testCompileDataflowTemplate() throws Exception {
+    String gcsPath = "gs://" + bucket;
+
+    Decoder.main(new String[] { "--runner=Dataflow", "--project=" + projectId,
+        "--templateLocation=" + gcsPath + "/templates/TestTemplate",
+        "--stagingLocation=" + gcsPath + "/temp/staging", "--inputFileFormat=json",
+        "--inputType=file", "--outputFileFormat=json", "--outputType=file",
+        "--errorOutputType=file", "--geoCityDatabase=GeoLite2-City.mmdb",
+        "--seenMessagesSource=none" });
+
+  }
+
   private void uploadInputFile(String localPath) throws IOException {
     String[] pathElements = localPath.split("/");
     String remotePath = "in/" + pathElements[pathElements.length - 1];
