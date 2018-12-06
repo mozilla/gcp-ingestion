@@ -56,10 +56,10 @@ public class SinkMainTest {
         "--outputFileFormat=json", "--outputType=stderr" });
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void throwsExceptionOnNullPlaceholder() {
+  @Test
+  public void throwsExceptionOnDefaultlessPlaceholder() {
     String input = Resources.getResource("testdata/single-message-input.json").getPath();
-
+    thrown.expectMessage(Matchers.containsString("defaultless placeholder"));
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file",
         "--output=tmp/${some_nonexistent_attribute}/out" });

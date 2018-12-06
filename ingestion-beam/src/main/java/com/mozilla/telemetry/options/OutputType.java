@@ -25,6 +25,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.Flatten;
@@ -115,19 +116,25 @@ public enum OutputType {
   protected static PTransform<PCollection<PubsubMessage>, WriteFilesResult<List<String>>> writeFile(
       ValueProvider<String> outputPrefix, OutputFileFormat format, Duration windowDuration,
       int numShards) {
-    DynamicPathTemplate pathTemplate = new DynamicPathTemplate(outputPrefix.get());
+    ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
+        DynamicPathTemplate::new);
+    ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
+        value -> value.staticPrefix);
     return PTransform
-        .compose(input -> input.apply("fixedWindows", Window.into(FixedWindows.of(windowDuration)))
-            .apply("writeFile", FileIO.<List<String>, PubsubMessage>writeDynamic()
-                // We can't pass the attribute map to by() directly since MapCoder isn't
-                // deterministic;
-                // instead, we extract an ordered list of the needed placeholder values.
-                // That list is later available to withNaming() to determine output location.
-                .by(message -> pathTemplate.extractValuesFrom(message.getAttributeMap()))
-                .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())).withNumShards(numShards)
-                .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink())
-                .to(pathTemplate.staticPrefix).withNaming(placeholderValues -> Write.defaultNaming(
-                    pathTemplate.replaceDynamicPart(placeholderValues), format.suffix()))));
+        .compose(
+            input -> input.apply("fixedWindows", Window.into(FixedWindows.of(windowDuration)))
+                .apply("writeFile", FileIO.<List<String>, PubsubMessage>writeDynamic()
+                    // We can't pass the attribute map to by() directly since MapCoder isn't
+                    // deterministic;
+                    // instead, we extract an ordered list of the needed placeholder values.
+                    // That list is later available to withNaming() to determine output location.
+                    .by(message -> pathTemplate.get().extractValuesFrom(message.getAttributeMap()))
+                    .withDestinationCoder(ListCoder.of(StringUtf8Coder.of()))
+                    .withNumShards(numShards)
+                    .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink()).to(staticPrefix)
+                    .withNaming(placeholderValues -> Write.defaultNaming(
+                        pathTemplate.get().replaceDynamicPart(placeholderValues),
+                        format.suffix()))));
   }
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> writePubsub(
