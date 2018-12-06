@@ -2,9 +2,6 @@ version: '3'
 
 # configure ingestion-edge for ci
 services:
-  pubsub:
-    image: mozilla/gcloud-sdk-emulators
-    command: gcloud beta emulators pubsub start --host-port 0.0.0.0:8085
   web:
     build: .
     image: &image "${DOCKERHUB_REPO-ingestion-edge}:${CIRCLE_TAG-latest}"
@@ -36,6 +33,11 @@ services:
           "projects/test/topics/ingestion"
         ]
       ]
+  pubsub:
+    image: *image
+    command: python -m pubsub_emulator
+    environment:
+      PORT: 8085
   test:
     image: *image
     entrypoint: pytest
