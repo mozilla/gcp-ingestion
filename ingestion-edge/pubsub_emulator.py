@@ -167,3 +167,17 @@ def create_server(
     emulator = PubsubEmulator(server)
     server.start()
     return server, port, emulator
+
+
+def main():
+    """Run PubsubEmulator gRPC server."""
+    server = create_server()[0]
+    try:
+        while True:
+            time.sleep(60)
+    except KeyboardInterrupt:
+        server.stop(grace=None)
+
+
+if __name__ == "__main__":
+    main()
