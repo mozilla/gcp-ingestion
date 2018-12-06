@@ -134,10 +134,27 @@ class PubsubEmulator(
         return empty_pb2.Empty()
 
     def UpdateTopic(self, request, context):
-        """Repurpose UpdateTopic API for setting up test conditions."""
+        """Repurpose UpdateTopic API for setting up test conditions.
+
+        :param request.topic.name: Name of the topic that needs overrides.
+        "param request.update_mask.paths: A list of overrides, over the form
+        "key=value".
+
+        Valid override keys are "status_code" and "sleep". An override value of
+        "" disables the override.
+
+        For the override key "status_code" the override value indicates the
+        status code that should be returned with an empty response by Publish
+        requests, and non-empty override values must be a property of
+        `grpc.StatusCode` such as "UNIMPLEMENTED".
+
+        For the override key "sleep" the override value indicates a number of
+        seconds Publish requests should sleep before returning, and non-empty
+        override values must be a valid float.
+        """
         try:
-            for path in request.update_mask.paths:
-                key, value = path.split("=", 1)
+            for override in request.update_mask.paths:
+                key, value = override.split("=", 1)
                 if key.lower() in ("status_code", "statuscode"):
                     if value:
                         self.status_codes[request.topic.name] = getattr(
