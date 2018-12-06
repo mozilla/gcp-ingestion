@@ -137,7 +137,7 @@ class PubsubEmulator(
         """Repurpose UpdateTopic API for setting up test conditions.
 
         :param request.topic.name: Name of the topic that needs overrides.
-        "param request.update_mask.paths: A list of overrides, over the form
+        :param request.update_mask.paths: A list of overrides, of the form
         "key=value".
 
         Valid override keys are "status_code" and "sleep". An override value of
