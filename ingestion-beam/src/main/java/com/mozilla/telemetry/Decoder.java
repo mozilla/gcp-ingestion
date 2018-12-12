@@ -12,6 +12,7 @@ import com.mozilla.telemetry.decoder.GzipDecompress;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
+import com.mozilla.telemetry.transforms.ParseSubmissionTimestamp;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -61,6 +62,7 @@ public class Decoder extends Sink {
               .addErrorCollectionTo(errorCollections);
           return input;
         })) //
+        .apply(ParseSubmissionTimestamp.enabled(options.getParseSubmissionTimestamp())) //
         .apply("write main output", options.getOutputType().write(options))
         .addErrorCollectionTo(errorCollections).output();
 
