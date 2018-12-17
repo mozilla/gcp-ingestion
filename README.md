@@ -10,4 +10,10 @@ ingestion system deployed to Google Cloud Platform (GCP).
 The overall architecture is described in [docs/architecture](docs/architecture)
 along with commentary on design decisions.
 Individual components are specified under [docs](docs) and implemented
-under the various `ingestion-*` service directories.
+under the various `ingestion-*` service directories:
+
+- [ingestion-edge](ingestion-edge): a simple Python service for accepting HTTP
+  messages and delivering to Google Cloud Pub/Sub
+- [ingestion-beam](ingestion-beam): a Java module defining
+  [Apache Beam](https://beam.apache.org/) jobs for streaming and batch
+  transformations of ingested messages
