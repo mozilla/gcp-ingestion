@@ -12,8 +12,7 @@ from functools import partial
 from google.cloud.pubsub_v1 import PublisherClient
 from google.cloud.pubsub_v1.publisher.exceptions import PublishError
 from persistqueue import SQLiteAckQueue
-from persistqueue.exceptions import Empty
-from typing import Dict
+from typing import Dict, Tuple
 from .util import async_wrap, HTTP_STATUS
 import google.api_core.exceptions
 
@@ -35,8 +34,6 @@ TRANSIENT_ERRORS = (
     # A python Future timed out
     TimeoutError,
 )
-DONE = "done"
-PENDING = "pending"
 
 
 async def _publish(
@@ -66,46 +63,6 @@ async def _publish(
         future = batch.publish({"data": data, "attributes": attrs})
         batch.commit()  # spawns thread to commit batch
         return await async_wrap(future)
-
-
-async def flush(
-    client: PublisherClient, request: Request, q: SQLiteAckQueue
-) -> response.HTTPResponse:
-    """Flush messages from the local queue to pubsub.
-
-    Call periodically on each docker container to ensure reliable delivery.
-
-    Access to this endpoint should be restricted.
-    """
-    if q.size == 0:
-        # early return for empty queue
-        return response.text("", HTTP_STATUS.NO_CONTENT)
-    result = {DONE: 0, PENDING: 0}
-    # while queue has messages ready to process
-    while q.size > 0:
-        try:
-            message = q.get(block=False)
-        except Empty:
-            # queue is empty or sqlite needs a retry
-            continue
-        try:
-            await _publish(client, *message)
-        except TRANSIENT_ERRORS:
-            # message not delivered
-            q.nack(message)
-            # update result with remaining queue size
-            result[PENDING] = q.size
-            # transient errors stop processing queue until next flush
-            return response.json(result, HTTP_STATUS.GATEWAY_TIMEOUT)
-        except:  # noqa: E722
-            # message not delivered
-            q.nack(message)
-            # raise from bare except
-            raise
-        else:
-            q.ack(message)
-            result[DONE] += 1
-    return response.json(result, HTTP_STATUS.OK)
 
 
 async def submit(
@@ -138,6 +95,12 @@ async def submit(
         ).items()
         if value is not None
     }
+    # assert valid pubsub message
+    for value in attrs.values():
+        if len(value.encode("utf8")) > 1024:
+            # attribute exceeds value size limit of 1024 bytes
+            # https://cloud.google.com/pubsub/quotas#resource_limits
+            return response.text("header too large\n", 431)
     try:
         await _publish(client, topic, data, attrs)
     except TRANSIENT_ERRORS:
@@ -153,7 +116,7 @@ async def submit(
     return response.text("")
 
 
-def init_app(app: Sanic):
+def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
     """Initialize Sanic app with url rules."""
     # Initialize PubSub client
     client = PublisherClient()
@@ -167,10 +130,13 @@ def init_app(app: Sanic):
         if key.startswith("QUEUE_")
     }
     q = SQLiteAckQueue(**queue_config)
-    # route flush
-    app.add_route(partial(flush, client=client, q=q), "/__flush__", name="flush")
     # get metadata_headers config
     metadata_headers = app.config["METADATA_HEADERS"]
+    # validate attribute keys
+    for attribute in metadata_headers.values():
+        if len(attribute.encode("utf8")) > 256:
+            # https://cloud.google.com/pubsub/quotas#resource_limits
+            raise ValueError("Metadata attribute exceeds key size limit of 256 bytes")
     # generate one view_func per topic
     handlers = {
         route.topic: partial(
@@ -192,4 +158,4 @@ def init_app(app: Sanic):
             # must be a unique name for each handler
             name="submit_" + route.topic,
         )
-    return q
+    return client, q

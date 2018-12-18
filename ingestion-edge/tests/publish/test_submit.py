@@ -10,6 +10,8 @@ from ingestion_edge import publish
 from multidict import CIMultiDict
 from sqlite3 import DatabaseError
 from unittest.mock import patch
+from sanic.response import HTTPResponse
+from typing import Any, Dict
 import google.api_core.exceptions
 import pytest
 
@@ -31,11 +33,11 @@ class ListQueue(list):
         self.append(item)
 
 
-async def call_submit(q=None):
+async def call_submit(q=None, **kwargs) -> HTTPResponse:
     return (
         datetime.utcnow(),
         await publish.submit(
-            request=MockRequest(),
+            request=MockRequest(**kwargs),
             client=None,
             q=q,
             topic="topic",
@@ -44,7 +46,7 @@ async def call_submit(q=None):
     )
 
 
-def validate(start_time, response, q):
+def validate(start_time: datetime, response: HTTPResponse, q: ListQueue):
     # validate response
     assert response.status == 200
     assert response.body == b""
@@ -79,6 +81,30 @@ async def test_ok():
         start_time, response = await call_submit()
 
     validate(start_time, response, q)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"host": "a" * 1025},
+        {"query_string": "a" * 1025},
+        {"path": "a" * 1025},
+        {"headers": CIMultiDict(header="a" * 1025)},
+        {"headers": CIMultiDict(header="\xff" * 513)},
+    ],
+)
+async def test_invalid(kwargs: Dict[str, Any]):
+    async def _publish(*args):
+        raise Exception()
+
+    q = ListQueue([])
+
+    with patch.object(publish, "_publish", new=_publish):
+        _, response = await call_submit(q=q, **kwargs)
+
+    assert len(q) == 0
+    assert response.status == 431
+    assert response.body == b"header too large\n"
 
 
 async def test_publish_error():
@@ -125,7 +151,7 @@ TRANSIENT_ERRORS = (
 
 
 @pytest.mark.parametrize("error", TRANSIENT_ERRORS)
-async def test_transient_error(error):
+async def test_transient_error(error: Exception):
     async def _publish(*_):
         raise error
 

@@ -2,82 +2,80 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from ingestion_edge.create_app import create_app
+from ingestion_edge import publish
 from ingestion_edge.config import Route
+from sanic import Sanic
 from sanic.request import Request
 import pytest
 
-
-class Config:
-    METADATA_HEADERS = {"Meta-Data": "headers"}
-
-    ROUTE_TABLE = [
-        Route("/stub/<suffix:path>", "stub_installer", ("GET",)),
-        Route("/submit/telemetry/<suffix:path>", "telemetry"),
-        Route("/submit/sslreports", "tls_error_reports", ("post", "put")),
-        Route("/submit/<suffix:path>", "ingestion", ("PoSt", "pUt")),
-        Route("/submit", "ingestion"),
-    ]
+ROUTE_TABLE = [
+    Route("/stub/<suffix:path>", "stub_installer", ("GET",)),
+    Route("/submit/telemetry/<suffix:path>", "telemetry"),
+    Route("/submit/sslreports", "tls_error_reports", ("post", "put")),
+    Route("/submit/<suffix:path>", "ingestion", ("PoSt", "pUt")),
+    Route("/submit", "ingestion"),
+]
 
 
-def generate_expect(uri_bytes, api_call="submit", method="GET", **kwargs):
-    return (api_call, Request(uri_bytes, {}, "1.1", method, "http"), [], kwargs)
-
-
-submit_kwargs = {
-    "q": {"path": "queue_path"},
-    "metadata_headers": Config.METADATA_HEADERS,
-}
+@pytest.fixture
+def app():
+    app = Sanic()
+    app.config.update(QUEUE_PATH=":memory:", METADATA_HEADERS={}, ROUTE_TABLE=[])
+    yield app
 
 
 @pytest.mark.parametrize(
-    "expect",
+    "uri_bytes,method,kwargs",
     [
-        generate_expect(b"/__flush__", "flush", q={"path": "queue_path"}),
-        generate_expect(
+        (
             b"/stub/some/path/with=stuff",
-            topic="stub_installer",
-            suffix="some/path/with=stuff",
-            **submit_kwargs
+            "GET",
+            {"topic": "stub_installer", "suffix": "some/path/with=stuff"},
         ),
-        generate_expect(
-            b"/submit/sslreports",
-            method="PUT",
-            topic="tls_error_reports",
-            **submit_kwargs
+        (
+            b"/submit/telemetry/path/with=stuff",
+            "POST",
+            {"topic": "telemetry", "suffix": "path/with=stuff"},
         ),
-        generate_expect(
-            b"/submit/telemetry/some/path/with=stuff",
-            method="POST",
-            topic="telemetry",
-            suffix="some/path/with=stuff",
-            **submit_kwargs
-        ),
-        generate_expect(
+        (
             b"/submit/some/path/with=stuff",
-            method="POST",
-            topic="ingestion",
-            suffix="some/path/with=stuff",
-            **submit_kwargs
+            "PUT",
+            {"topic": "ingestion", "suffix": "some/path/with=stuff"},
         ),
-        generate_expect(b"/submit", method="PUT", topic="ingestion", **submit_kwargs),
+        (b"/submit/sslreports", "POST", {"topic": "tls_error_reports"}),
+        (b"/submit", "PUT", {"topic": "ingestion"}),
     ],
 )
-async def test_endpoint(mocker, expect):
-    responses = []
-
+async def test_endpoint(app, kwargs, method, mocker, uri_bytes):
     mocker.patch("ingestion_edge.publish.SQLiteAckQueue", dict)
-    mocker.patch("ingestion_edge.publish.PublisherClient", list)
-    mocker.patch(
-        "ingestion_edge.publish.flush",
-        lambda req, client, **kw: ("flush", req, client, kw),
-    )
-    mocker.patch(
-        "ingestion_edge.publish.submit",
-        lambda req, client, **kw: ("submit", req, client, kw),
-    )
-    mocker.patch("ingestion_edge.create_app.config", Config)
-    app = create_app(QUEUE_PATH="queue_path")
-    await app.handle_request(expect[1], lambda r: responses.append(r), None)
+    mocker.patch("ingestion_edge.publish.PublisherClient", lambda: None)
+    mocker.patch("ingestion_edge.publish.submit", lambda req, **kw: (req, kw))
+    app.config["ROUTE_TABLE"] = ROUTE_TABLE
+    publish.init_app(app)
+    responses = []
+    request = Request(uri_bytes, {}, "1.1", method, None)
+    await app.handle_request(request, lambda r: responses.append(r), None)
+    assert responses == [
+        (
+            request,
+            dict(client=None, q={"path": ":memory:"}, metadata_headers={}, **kwargs),
+        )
+    ]
 
-    assert responses == [expect]
+
+def test_missing_queue_path(app):
+    del app.config["QUEUE_PATH"]
+    with pytest.raises(TypeError) as e_info:
+        publish.init_app(app)
+    assert e_info.value.args == (
+        "__init__() missing 1 required positional argument: 'path'",
+    )
+
+
+def test_invalid_attribute_key(app):
+    app.config["METADATA_HEADERS"] = {"a": "a" * 257}
+    with pytest.raises(ValueError) as e_info:
+        publish.init_app(app)
+    assert e_info.value.args == (
+        "Metadata attribute exceeds key size limit of 256 bytes",
+    )
