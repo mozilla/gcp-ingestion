@@ -10,6 +10,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
+/**
+ * A {@code PTransform} that adds the message's attributes into the JSON payload as a top-level
+ * "metadata" object.
+ *
+ * <p>This transform must come after {@code ParsePayload} to ensure any existing
+ * "metadata" key in the payload has been removed. Otherwise, this transform could add a
+ * duplicate key leading to invalid JSON.
+ */
 public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
   private static final byte[] METADATA_PREFIX = "{\"metadata\":".getBytes();
