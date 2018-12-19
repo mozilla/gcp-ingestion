@@ -26,6 +26,7 @@ import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.matchers.Lines;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.beam.sdk.PipelineResult;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,9 +89,11 @@ public class BigQueryIntegrationTest {
     String input = Resources.getResource("testdata/json-payload.ndjson").getPath();
     String output = String.format("%s:%s", projectId, tableSpec);
 
-    Sink.main(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=text", "--outputType=bigquery", "--output=" + output,
-        "--errorOutputType=stderr" });
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=text", "--outputType=bigquery",
+        "--output=" + output, "--errorOutputType=stderr" });
+
+    result.waitUntilFinish();
 
     assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123", "abc123", "def456")));
@@ -114,9 +117,11 @@ public class BigQueryIntegrationTest {
     String output = String.format("%s:%s", projectId, tableSpec);
     String errorOutput = outputPath + "/error/out";
 
-    Sink.main(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=text", "--outputType=bigquery", "--output=" + output,
-        "--errorOutputType=file", "--errorOutput=" + errorOutput });
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=text", "--outputType=bigquery",
+        "--output=" + output, "--errorOutputType=file", "--errorOutput=" + errorOutput });
+
+    result.waitUntilFinish();
 
     assertTrue(stringValuesQuery("SELECT clientId FROM " + tableSpec).isEmpty());
 
