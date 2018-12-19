@@ -110,4 +110,26 @@ public class ParsePayloadTest {
     pipeline.run();
   }
 
+  @Test
+  public void testMetadataInPayload() {
+    String input = "{\"id\":null,\"metadata\":"
+        + "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":1}}";
+
+    ResultWithErrors<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
+        .apply("decodeText", InputFileFormat.text.decode()).output()
+        .apply("parsePayload", new ParsePayload());
+
+    PAssert.that(output.errors()).empty();
+
+    final List<String> expectedMain = Arrays.asList("{\"id\":null}");
+    final PCollection<String> main = output.output().apply("encodeTextMain",
+        OutputFileFormat.text.encode());
+
+    final PCollection<Integer> attributeCounts = output.output().apply(MapElements
+        .into(TypeDescriptors.integers()).via(message -> message.getAttributeMap().size()));
+    PAssert.that(attributeCounts).containsInAnyOrder(Arrays.asList(3));
+
+    pipeline.run();
+  }
+
 }
