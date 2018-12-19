@@ -94,4 +94,23 @@ public class DecoderMainTest {
         matchesInAnyOrder(expectedErrorOutputLines));
   }
 
+  @Test
+  public void testGzippedPayload() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = "src/test/resources/testdata/decoder-integration";
+    String input = resourceDir + "/gzipped.ndjson";
+    String output = outputPath + "/out/out";
+    String errorOutput = outputPath + "/error/error";
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
+        "--geoCityDatabase=GeoLite2-City.mmdb", "--seenMessagesSource=none",
+        "--redisUri=" + redis.uri });
+
+    List<String> outputLines = Lines.files(output + "*.ndjson");
+    List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
+    assertThat("Main output differed from expectation", outputLines,
+        matchesInAnyOrder(expectedOutputLines));
+  }
 }
