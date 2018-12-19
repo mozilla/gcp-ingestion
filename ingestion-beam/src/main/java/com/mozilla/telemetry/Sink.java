@@ -9,6 +9,7 @@ import com.mozilla.telemetry.transforms.ParseSubmissionTimestamp;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Flatten;
@@ -23,11 +24,28 @@ public class Sink {
    * @param args command line arguments
    */
   public static void main(String[] args) {
+    run(args);
+  }
+
+  /**
+   * Execute an Apache Beam pipeline and return the {@code PipelineResult}.
+   *
+   * @param args command line arguments
+   */
+  public static PipelineResult run(String[] args) {
     // register options class so that `--help=SinkOptions` works
     PipelineOptionsFactory.register(SinkOptions.class);
 
     final SinkOptions.Parsed options = SinkOptions.parseSinkOptions(
         PipelineOptionsFactory.fromArgs(args).withValidation().as(SinkOptions.class));
+
+    return run(options);
+  }
+
+  /**
+   * Execute an Apache Beam pipeline and return the {@code PipelineResult}.
+   */
+  public static PipelineResult run(SinkOptions.Parsed options) {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
@@ -42,7 +60,7 @@ public class Sink {
     PCollectionList.of(errorCollections).apply(Flatten.pCollections()).apply("write error output",
         options.getErrorOutputType().write(options));
 
-    pipeline.run();
+    return pipeline.run();
   }
 
 }

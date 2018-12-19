@@ -16,6 +16,7 @@ import com.mozilla.telemetry.transforms.ParseSubmissionTimestamp;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
+import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Flatten;
@@ -31,11 +32,27 @@ public class Decoder extends Sink {
    * @param args command line arguments
    */
   public static void main(String[] args) {
-    // Register options class so that `--help=DecoderOptions` works.
-    PipelineOptionsFactory.register(DecoderOptions.class);
+    run(args);
+  }
 
+  /**
+   * Execute an Apache Beam pipeline and return the {@code PipelineResult}.
+   *
+   * @param args command line arguments
+   */
+  public static PipelineResult run(String[] args) {
     final DecoderOptions.Parsed options = DecoderOptions.parseDecoderOptions(
         PipelineOptionsFactory.fromArgs(args).withValidation().as(DecoderOptions.class));
+    // register options class so that `--help=DecoderOptions` works
+    PipelineOptionsFactory.register(DecoderOptions.class);
+
+    return run(options);
+  }
+
+  /**
+   * Execute an Apache Beam pipeline and return the {@code PipelineResult}.
+   */
+  public static PipelineResult run(DecoderOptions.Parsed options) {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
@@ -69,6 +86,6 @@ public class Decoder extends Sink {
     PCollectionList.of(errorCollections).apply(Flatten.pCollections()).apply("write error output",
         options.getErrorOutputType().write(options));
 
-    pipeline.run();
+    return pipeline.run();
   }
 }
