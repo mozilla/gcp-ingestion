@@ -36,7 +36,6 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.beam.runners.direct.DirectOptions;
 import org.apache.beam.sdk.PipelineResult;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -105,7 +104,7 @@ public class PubsubIntegrationTest {
     pipeline.getOptions().as(DirectOptions.class).setBlockOnRun(false);
 
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
-    sinkOptions.setInput(StaticValueProvider.of(subscriptionName.toString()));
+    sinkOptions.setInput(pipeline.newProvider(subscriptionName.toString()));
 
     PCollection<String> output = pipeline.apply(InputType.pubsub.read(sinkOptions)).output()
         .apply("encodeJson", OutputFileFormat.json.encode());
@@ -129,7 +128,7 @@ public class PubsubIntegrationTest {
     pipeline.getOptions().as(DirectOptions.class).setBlockOnRun(false);
 
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
-    sinkOptions.setOutput(StaticValueProvider.of(topicName.toString()));
+    sinkOptions.setOutput(pipeline.newProvider(topicName.toString()));
 
     pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
         .apply(OutputType.pubsub.write(sinkOptions));
