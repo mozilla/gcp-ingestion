@@ -167,4 +167,26 @@ public class SinkMainTest {
         "--output=foo", "--errorOutputType=file", "--errorOutput=bar" });
   }
 
+  @Test
+  public void testParseTimestamp() throws Exception {
+    String inputPath = Resources.getResource("testdata").getPath();
+    String input = inputPath + "/basic-messages-valid-*.ndjson";
+    String output = outputPath + "/${submission_date:-NULL}/${submission_hour:-NULL}/out";
+
+    Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--parseSubmissionTimestamp" });
+
+    List<String> nullLines = Lines
+        .resources("testdata/basic-messages-valid-null-attributes.ndjson");
+    List<String> timestampLines = Lines
+        .resources("testdata/basic-messages-valid-with-timestamp.ndjson");
+
+    List<String> outputNullLines = Lines.files(outputPath + "/NULL/NULL/out*.ndjson");
+    List<String> outputTimestampLines = Lines.files(outputPath + "/2018-03-12/21/out*.ndjson");
+
+    assertThat(outputNullLines, matchesInAnyOrder(nullLines));
+    assertThat(outputTimestampLines, Matchers.hasSize(timestampLines.size()));
+  }
+
 }

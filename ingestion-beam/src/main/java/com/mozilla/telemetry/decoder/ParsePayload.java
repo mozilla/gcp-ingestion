@@ -21,6 +21,13 @@ import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+/**
+ * A {@code PTransform} that parses the message's payload as a {@link JSONObject}, sets
+ * some attributes based on the content, and validates that it conforms to its schema.
+ *
+ * <p>There are several unrelated concerns all packed into this single transform so that we
+ * incur the cost of parsing the JSON only once.
+ */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
   private static class SchemaNotFoundException extends Exception {
@@ -97,11 +104,29 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // Throws IOException if not a valid json object
     final JSONObject json = Json.readJSONObject(element.getPayload());
 
-    Map<String, String> attributes = element.getAttributeMap();
-    if (attributes != null && !attributes.containsKey("document_version")) {
-      // This element must be from the /submit/telemetry endpoint;
-      // we need to version from the payload.
-      attributes = new HashMap<>(attributes);
+    Map<String, String> attributes;
+    if (element.getAttributeMap() == null) {
+      attributes = new HashMap<>();
+    } else {
+      attributes = new HashMap<>(element.getAttributeMap());
+    }
+
+    // Remove any top-level "metadata" field if it exists, and attempt to parse it as a
+    // key-value map of strings, adding all entries as attributes.
+    Object untypedMetadata = json.remove("metadata");
+    if (untypedMetadata instanceof JSONObject) {
+      JSONObject metadata = (JSONObject) untypedMetadata;
+      for (String key : metadata.keySet()) {
+        Object value = metadata.get(key);
+        if (value != null) {
+          attributes.put(key, metadata.get(key).toString());
+        }
+      }
+    }
+
+    // If no "document_version" attribute was parsed from the URI, this element must be from the
+    // /submit/telemetry endpoint and we now need to grab version from the payload.
+    if (!attributes.containsKey("document_version")) {
       try {
         String version = json.get("version").toString();
         attributes.put("document_version", version);
