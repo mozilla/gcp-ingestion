@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.PTransform;
 import redis.clients.jedis.Jedis;
 
@@ -62,16 +61,8 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
     return new RemoveDuplicates(uri);
   }
 
-  public static Deduplicate removeDuplicates(URI uri) {
-    return new RemoveDuplicates(StaticValueProvider.of(uri));
-  }
-
   public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
     return new MarkAsSeen(uri, ttlSeconds);
-  }
-
-  public static Deduplicate markAsSeen(URI uri, Integer ttlSeconds) {
-    return markAsSeen(StaticValueProvider.of(uri), StaticValueProvider.of(ttlSeconds));
   }
 
   /*
