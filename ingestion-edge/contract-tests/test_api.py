@@ -43,7 +43,7 @@ def test_heartbeat(requests_session: requests.Session, server: str):
     r = requests_session.get(server + "/__heartbeat__")
     r.raise_for_status()
     assert r.json() == {
-        "checks": {"check_disk_bytes_free": "ok"},
+        "checks": {"check_disk_bytes_free": "ok", "check_queue_size": "ok"},
         "details": {},
         "status": "ok",
     }
