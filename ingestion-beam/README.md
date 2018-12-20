@@ -274,6 +274,9 @@ BUCKET="gs://$(gcloud config get-value project)"
 # create a test input file
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
+# Set credentials; beam is not able to use gcloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/creds.json"
+
 # consume messages from the test file, decode and re-encode them, and write to a bucket
 ./bin/mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
@@ -296,13 +299,27 @@ gsutil cat $BUCKET/output/*
 
 ### On Dataflow with templates
 
+Dataflow templates make a distinction between
+[runtime parameters that implement the `ValueProvider` interface](https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface)
+and compile-time parameters which do not.
+All option can be specified at template compile time by passing command line flags,
+but runtime parameters can also be overridden when
+[executing the template](https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud)
+via the `--parameters` flag.
+In the output of `--help=SinkOptions`, runtime parameters are those 
+with type `ValueProvider`.
+
 ```bash
 # Pick a bucket to store files in
 BUCKET="gs://$(gcloud config get-value project)"
 
+# Set credentials; beam is not able to use gcloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/creds.json"
+
 # create a template
 ./bin/mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
+    --project=$(gcloud config get-value project) \
     --inputFileFormat=json \
     --inputType=file \
     --outputFileFormat=json \
