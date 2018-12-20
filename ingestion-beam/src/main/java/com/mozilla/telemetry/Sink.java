@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry;
 
+import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.transforms.ParseSubmissionTimestamp;
 import java.util.ArrayList;
@@ -33,9 +34,7 @@ public class Sink {
    * @param args command line arguments
    */
   public static PipelineResult run(String[] args) {
-    // register options class so that `--help=SinkOptions` works
-    PipelineOptionsFactory.register(SinkOptions.class);
-
+    registerOptions();
     final SinkOptions.Parsed options = SinkOptions.parseSinkOptions(
         PipelineOptionsFactory.fromArgs(args).withValidation().as(SinkOptions.class));
 
@@ -61,6 +60,16 @@ public class Sink {
         options.getErrorOutputType().write(options));
 
     return pipeline.run();
+  }
+
+  /**
+   * Register all options classes so that `--help=DecoderOptions`, etc.
+   * works without having to specify additionally specify the appropriate mainClass.
+   */
+  static void registerOptions() {
+    // register options classes so that `--help=SinkOptions`, etc. works
+    PipelineOptionsFactory.register(SinkOptions.class);
+    PipelineOptionsFactory.register(DecoderOptions.class);
   }
 
 }
