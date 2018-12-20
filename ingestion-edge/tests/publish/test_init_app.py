@@ -21,7 +21,7 @@ class Config:
 
 
 def generate_expect(uri_bytes, api_call="submit", method="GET", **kwargs):
-    return (api_call, Request(uri_bytes, {}, "1.1", method, "http"), kwargs)
+    return (api_call, Request(uri_bytes, {}, "1.1", method, "http"), [], kwargs)
 
 
 submit_kwargs = {
@@ -67,8 +67,15 @@ async def test_endpoint(mocker, expect):
     responses = []
 
     mocker.patch("ingestion_edge.publish.SQLiteAckQueue", dict)
-    mocker.patch("ingestion_edge.publish.flush", lambda req, **kw: ("flush", req, kw))
-    mocker.patch("ingestion_edge.publish.submit", lambda req, **kw: ("submit", req, kw))
+    mocker.patch("ingestion_edge.publish.PublisherClient", list)
+    mocker.patch(
+        "ingestion_edge.publish.flush",
+        lambda req, client, **kw: ("flush", req, client, kw),
+    )
+    mocker.patch(
+        "ingestion_edge.publish.submit",
+        lambda req, client, **kw: ("submit", req, client, kw),
+    )
     mocker.patch("ingestion_edge.create_app.config", Config)
     app = create_app(QUEUE_PATH="queue_path")
     await app.handle_request(expect[1], lambda r: responses.append(r), None)

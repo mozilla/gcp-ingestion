@@ -38,7 +38,7 @@ class MockQueue:
 
 async def test_empty():
     q = MockQueue()
-    res = await flush(None, q)
+    res = await flush(None, None, q)
     assert q.size == 0
     assert q.unacked == []
     assert res.status == 204
@@ -49,11 +49,11 @@ async def test_success():
     q = MockQueue()
     q.put(("topic", "data", {"attr": "value"}))
 
-    async def _publish(topic, data, attrs):
+    async def _publish(client, topic, data, attrs):
         return "message_id"
 
     with patch("ingestion_edge.publish._publish", new=_publish):
-        res = await flush(None, q)
+        res = await flush(None, None, q)
 
     assert q.size == 0
     assert q.unacked == []
@@ -76,11 +76,11 @@ async def test_queue_false_empty():
 
     q.get = get
 
-    async def _publish(topic, data, attrs):
+    async def _publish(client, topic, data, attrs):
         return "message_id"
 
     with patch("ingestion_edge.publish._publish", new=_publish):
-        res = await flush(None, q)
+        res = await flush(None, None, q)
 
     assert q.size == 0
     assert q.unacked == []
@@ -93,11 +93,11 @@ async def test_timeout():
     q = MockQueue()
     q.put(("topic", "data", {"attr": "value"}))
 
-    async def _publish(topic, data, attrs):
+    async def _publish(client, topic, data, attrs):
         raise TimeoutError()
 
     with patch("ingestion_edge.publish._publish", new=_publish):
-        res = await flush(None, q)
+        res = await flush(None, None, q)
 
     assert q.size == 1
     assert q.unacked == []
@@ -109,12 +109,12 @@ async def test_permanent_exception():
     q = MockQueue()
     q.put(("topic", "data", {"attr": "value"}))
 
-    async def _publish(topic, data, attrs):
+    async def _publish(client, topic, data, attrs):
         raise Exception()
 
     with pytest.raises(Exception):
         with patch("ingestion_edge.publish._publish", new=_publish):
-            await flush(None, q)
+            await flush(None, None, q)
 
     assert q.size == 1
     assert q.unacked == []

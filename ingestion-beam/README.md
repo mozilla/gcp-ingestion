@@ -15,6 +15,7 @@ Apache Beam jobs.
   - [Supported Input and Outputs](#supported-input-and-outputs)
   - [Encoding](#encoding)
   - [Output Path Specification](#output-path-specification)
+    - [BigQuery](#bigquery)
     - [Protocol](#protocol)
     - [Attribute placeholders](#attribute-placeholders)
     - [File prefix](#file-prefix)
@@ -114,12 +115,31 @@ two text messages, one of which is blank.
 
 ## Output Path Specification
 
-When using `--outputType=file`, the `--output` path that you provide controls
+Depending on the specified output type, the `--output` path that you provide controls
 several aspects of the behavior.
+
+### BigQuery
+
+When `--outputType=bigquery`, `--output` is a `tableSpec` of form `dataset.tablename`
+or the more verbose `projectId:dataset.tablename`. The values can contain
+attribute placeholders of form `${attribute_name}`. To set dataset to the
+document namespace and table name to the document type, specify:
+
+    --output='${document_namespace}.${document_type}'
+
+All `-` characters in the attributes will be converted to `_` per BigQuery
+naming restrictions.
+Defaults for the placeholders using `${attribute_name:-default_value}`
+are supported, but likely don't make much sense since it's unlikely that
+there is a default table whose schema is compatible with all potential
+payloads.
+Instead, records missing an attribute required by a placeholder
+will be redirected to error output if no default is provided.
 
 ### Protocol
 
-`--output` may be prefixed by a protocol specifier to determine the
+When `--outputType=file`, `--output` may be prefixed by a protocol specifier 
+to determine the
 target data store. Without a protocol prefix, the output path is assumed
 to be a relative or absolute path on the filesystem. To write to Google
 Cloud Storage, use a `gs://` path like:
