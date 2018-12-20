@@ -26,6 +26,8 @@ import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.matchers.Lines;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.beam.sdk.PipelineResult;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -88,12 +90,43 @@ public class BigQueryIntegrationTest {
     String input = Resources.getResource("testdata/json-payload.ndjson").getPath();
     String output = String.format("%s:%s", projectId, tableSpec);
 
-    Sink.main(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=text", "--outputType=bigquery", "--output=" + output,
-        "--errorOutputType=stderr" });
+    PipelineResult result = Sink
+        .run(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
+            "--outputType=bigquery", "--output=" + output, "--errorOutputType=stderr" });
+
+    result.waitUntilFinish();
 
     assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123", "abc123", "def456")));
+  }
+
+  @Test
+  public void canWriteToDynamicTables() throws Exception {
+    String table = "my_test_table";
+    TableId tableId = TableId.of(dataset, table);
+
+    bigquery.create(DatasetInfo.newBuilder(dataset).build());
+    bigquery.create(TableInfo.newBuilder(tableId,
+        StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+            Field.of("type", LegacySQLTypeName.STRING))))
+        .build());
+
+    String input = Resources.getResource("testdata/json-payload-attributes.ndjson").getPath();
+    String output = String.format("%s:%s.%s", projectId, dataset, "${document_type}_table");
+    String errorOutput = outputPath + "/error/out";
+
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
+        "--errorOutput=" + errorOutput });
+
+    result.waitUntilFinish();
+
+    String tableSpec = String.format("%s.%s", dataset, table);
+    assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
+        matchesInAnyOrder(ImmutableList.of("abc123")));
+
+    List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
+    assertThat(errorOutputLines, Matchers.hasSize(2));
   }
 
   @Test
@@ -114,9 +147,11 @@ public class BigQueryIntegrationTest {
     String output = String.format("%s:%s", projectId, tableSpec);
     String errorOutput = outputPath + "/error/out";
 
-    Sink.main(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=text", "--outputType=bigquery", "--output=" + output,
-        "--errorOutputType=file", "--errorOutput=" + errorOutput });
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=text", "--outputType=bigquery",
+        "--output=" + output, "--errorOutputType=file", "--errorOutput=" + errorOutput });
+
+    result.waitUntilFinish();
 
     assertTrue(stringValuesQuery("SELECT clientId FROM " + tableSpec).isEmpty());
 

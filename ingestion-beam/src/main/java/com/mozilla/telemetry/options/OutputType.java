@@ -19,7 +19,7 @@ import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.WriteFilesResult;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
-import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
+import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -32,10 +32,12 @@ import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.beam.sdk.values.POutput;
+import org.apache.beam.sdk.values.ValueInSingleWindow;
 import org.joda.time.Duration;
 
 /**
@@ -143,24 +145,27 @@ public enum OutputType {
   }
 
   protected static PTransform<PCollection<PubsubMessage>, ResultWithErrors<WriteResult>> writeBigQuery(
-      ValueProvider<String> tableSpec) {
+      ValueProvider<String> tableSpecTemplate) {
     return PTransform.compose((PCollection<PubsubMessage> input) -> {
-      PubsubMessageToTableRow decodeTableRow = new PubsubMessageToTableRow();
-      AsJsons<TableRow> encodeTableRow = AsJsons.of(TableRow.class);
-      ResultWithErrors<PCollection<TableRow>> tableRows = input.apply("decodeTableRow",
-          decodeTableRow);
-      final WriteResult writeResult = tableRows.output().setCoder(TableRowJsonCoder.of()).apply(
-          "writeTableRows",
-          BigQueryIO.writeTableRows().withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS)
-              .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER)
-              .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND)
-              .skipInvalidRows()
-              .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()).to(tableSpec));
+      ResultWithErrors<PCollection<KV<TableDestination, TableRow>>> tableRows = input
+          .apply(PubsubMessageToTableRow.of(tableSpecTemplate));
+
+      WriteResult writeResult = tableRows.output().apply(BigQueryIO //
+          .<KV<TableDestination, TableRow>>write() //
+          .withFormatFunction(KV::getValue) //
+          .to((ValueInSingleWindow<KV<TableDestination, TableRow>> vsw) -> vsw.getValue().getKey())
+          .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS) //
+          .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER) //
+          .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND).skipInvalidRows()
+          .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()));
+
+      PCollection<PubsubMessage> failedInserts = writeResult.getFailedInserts()
+          .apply(AsJsons.of(TableRow.class)) //
+          .apply(InputFileFormat.text.decode()) // TODO: add error_{type,message} fields
+          .output();
       PCollection<PubsubMessage> errorCollection = PCollectionList.of(tableRows.errors())
-          .and(writeResult.getFailedInserts().apply(encodeTableRow)
-              .apply(InputFileFormat.text.decode()) // TODO: add error_{type,message} fields
-              .output())
-          .apply("flatten writeBigQuery error collections", Flatten.pCollections());
+          .and(failedInserts).apply(Flatten.pCollections());
+
       return ResultWithErrors.of(writeResult, errorCollection);
     });
   }
