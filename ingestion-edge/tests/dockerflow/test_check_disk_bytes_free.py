@@ -4,60 +4,71 @@
 
 from dataclasses import dataclass
 from ingestion_edge.dockerflow import check_disk_bytes_free
-from typing import Any, Dict
+from typing import Optional
 from unittest.mock import patch
 import pytest
 
 
 @dataclass
-class MockStat:
-    f_bfree: int = 0
-    f_frsize: int = 0
+class Stat:
+    f_bfree: int = 1
+    f_frsize: int = 1
 
 
-class MockApp:
-    def __init__(self, minimum_disk_bytes_free: int = 1, queue_path: str = "queue"):
-        self.config: Dict[str, Any] = {}
-        if queue_path is not None:
-            self.config["QUEUE_PATH"] = queue_path
-        if minimum_disk_bytes_free is not None:
-            self.config["MINIMUM_DISK_FREE_BYTES"] = minimum_disk_bytes_free
+@dataclass
+class Queue:
+    path: Optional[str] = "path"
 
 
-@pytest.mark.parametrize("mock_app_args", [(None, None), (1, None), (None,)])
-def test_noop(mock_app_args):
-    app = MockApp(*mock_app_args)
+@dataclass
+class App:
+    threshold: Optional[int] = 1
+
+    @property
+    def config(self):
+        return (
+            {}
+            if self.threshold is None
+            else {"MINIMUM_DISK_FREE_BYTES": self.threshold}
+        )
+
+
+@pytest.mark.parametrize(
+    "app,q",
+    [
+        (app, q)
+        for app in (App(None), App())
+        for q in (None, Queue(None), Queue(":memory:"), Queue())
+    ][:-1],
+)
+def test_noop(app, q):
     statvfs_calls = []
 
     def statvfs(path):
         statvfs_calls.append(path)
-        return MockStat()
 
     with patch("os.statvfs", new=statvfs):
-        status = check_disk_bytes_free(app)
+        status = check_disk_bytes_free(app, q)
 
-    assert len(statvfs_calls) == 0
+    assert statvfs_calls == []
     assert status == []
 
 
-def test_heartbeat_ok():
-    app = MockApp()
+def test_ok():
     statvfs_calls = []
 
     def statvfs(path):
         statvfs_calls.append(path)
-        return MockStat(1, 1)
+        return Stat()
 
     with patch("os.statvfs", new=statvfs):
-        status = check_disk_bytes_free(app)
+        status = check_disk_bytes_free(App(), Queue())
 
-    assert len(statvfs_calls) == 1
-    assert statvfs_calls.pop() is app.config["QUEUE_PATH"]
+    assert statvfs_calls == ["path"]
     assert status == []
 
 
-def test_heartbeat_warn():
-    app = MockApp()
+def test_warn():
     statvfs_calls = []
 
     def statvfs(path):
@@ -65,10 +76,9 @@ def test_heartbeat_warn():
         raise FileNotFoundError()
 
     with patch("os.statvfs", new=statvfs):
-        status = check_disk_bytes_free(app)
+        status = check_disk_bytes_free(App(), Queue())
 
-    assert len(statvfs_calls) == 1
-    assert statvfs_calls.pop() is app.config["QUEUE_PATH"]
+    assert statvfs_calls == ["path"]
     assert len(status) == 1
     error = status.pop()
     assert error.id == "edge.checks.W001"
@@ -76,19 +86,17 @@ def test_heartbeat_warn():
     assert error.msg == "queue path does not exist"
 
 
-def test_heartbeat_error():
-    app = MockApp()
+def test_error():
     statvfs_calls = []
 
     def statvfs(path):
         statvfs_calls.append(path)
-        return MockStat()
+        return Stat(0, 0)
 
     with patch("os.statvfs", new=statvfs):
-        status = check_disk_bytes_free(app)
+        status = check_disk_bytes_free(App(), Queue())
 
-    assert len(statvfs_calls) == 1
-    assert statvfs_calls.pop() is app.config["QUEUE_PATH"]
+    assert statvfs_calls == ["path"]
     assert len(status) == 1
     error = status.pop()
     assert error.id == "edge.checks.E001"

@@ -10,26 +10,26 @@ See https://github.com/mozilla-services/Dockerflow
 from dockerflow import checks
 from dockerflow.sanic import Dockerflow
 from functools import partial
+from persistqueue.sqlackqueue import SQLiteAckQueue
 from sanic import Sanic
 import os
-import os.path
-
-dockerflow = Dockerflow()
 
 LOW_DISK_ERROR_ID = "edge.checks.E001"
+QUEUE_ERROR_ID = "edge.checks.E002"
 NO_QUEUE_WARNING_ID = "edge.checks.W001"
+QUEUE_PENDING_INFO_ID = "edge.checks.I001"
+QUEUE_UNACKED_INFO_ID = "edge.checks.I002"
 
 
-def check_disk_bytes_free(app):
+def check_disk_bytes_free(app: Sanic, q: SQLiteAckQueue):
     """Check disk for QUEUE_PATH has minimum amount of bytes free."""
-    path = app.config.get("QUEUE_PATH")
     threshold = app.config.get("MINIMUM_DISK_FREE_BYTES")
 
-    if None in (path, threshold):
+    if None in (q, threshold) or q.path in (None, ":memory:"):
         return []
 
     try:
-        status = os.statvfs(path)
+        status = os.statvfs(q.path)
     except FileNotFoundError:
         return [checks.Warning("queue path does not exist", id=NO_QUEUE_WARNING_ID)]
 
@@ -40,7 +40,33 @@ def check_disk_bytes_free(app):
         return []
 
 
-def init_app(app: Sanic):
+def check_queue_size(q: SQLiteAckQueue):
+    """Check queue size."""
+    try:
+        if q is not None:
+            if q.size > 0:
+                return [
+                    checks.Info(
+                        "queue contains pending messages", id=QUEUE_PENDING_INFO_ID
+                    )
+                ]
+            elif q.unack_count() > 0:
+                return [
+                    checks.Info(
+                        "queue contains unacked messages", id=QUEUE_UNACKED_INFO_ID
+                    )
+                ]
+    except Exception:
+        return [checks.Error("queue raised exception on access", id=QUEUE_ERROR_ID)]
+    else:
+        return []
+
+
+def init_app(app: Sanic, q: SQLiteAckQueue) -> Dockerflow:
     """Initialize Sanic app with dockerflow apis."""
-    dockerflow.check(name="check_disk_bytes_free")(partial(check_disk_bytes_free, app))
+    dockerflow = Dockerflow()
+    dockerflow.check(name="check_disk_bytes_free")(
+        partial(check_disk_bytes_free, app=app, q=q)
+    )
+    dockerflow.check(name="check_queue_size")(partial(check_queue_size, q=q))
     dockerflow.init_app(app)

@@ -4,21 +4,15 @@
 
 from ingestion_edge.create_app import create_app
 from sanic.request import Request
-from typing import Any, Dict, List
 import pytest
 import json
-
-
-class Config:
-    METADATA_HEADERS: Dict[str, str] = {}
-    ROUTE_TABLE: List[Any] = []
 
 
 @pytest.fixture
 def app(mocker):
     mocker.patch("ingestion_edge.publish.SQLiteAckQueue", dict)
-    mocker.patch("ingestion_edge.dockerflow.check_disk_bytes_free", lambda app: [])
-    mocker.patch("ingestion_edge.create_app.config", Config)
+    mocker.patch("ingestion_edge.dockerflow.check_disk_bytes_free", lambda app, q: [])
+    mocker.patch("ingestion_edge.dockerflow.check_queue_size", lambda q: [])
     app = create_app()
     return app
 
@@ -32,7 +26,7 @@ async def test_heartbeat(app):
     assert response.status == 200
     assert json.loads(response.body.decode()) == {
         "status": "ok",
-        "checks": {"check_disk_bytes_free": "ok"},
+        "checks": {"check_disk_bytes_free": "ok", "check_queue_size": "ok"},
         "details": {},
     }
 

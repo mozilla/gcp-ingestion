@@ -192,3 +192,4 @@ def init_app(app: Sanic):
             # must be a unique name for each handler
             name="submit_" + route.topic,
         )
+    return q

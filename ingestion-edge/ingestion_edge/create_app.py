@@ -13,6 +13,6 @@ def create_app(**kwargs) -> Sanic:
     app = Sanic(__name__)
     app.config.from_object(config)
     app.config.update(**kwargs)
-    dockerflow.init_app(app)
-    publish.init_app(app)
+    q = publish.init_app(app)
+    dockerflow.init_app(app, q)
     return app
