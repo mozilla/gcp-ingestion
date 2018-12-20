@@ -36,6 +36,7 @@ async def call_submit(q=None):
         datetime.utcnow(),
         await publish.submit(
             request=MockRequest(),
+            client=None,
             q=q,
             topic="topic",
             metadata_headers={"header": "header"},
@@ -70,7 +71,7 @@ def validate(start_time, response, q):
 async def test_ok():
     q = ListQueue([])
 
-    async def _publish(*args):
+    async def _publish(_, *args):
         q.put(args)
         return len(q)
 
@@ -81,7 +82,7 @@ async def test_ok():
 
 
 async def test_publish_error():
-    async def _publish(*args):
+    async def _publish(*_):
         raise PublishError(None)
 
     q = ListQueue([])
@@ -95,10 +96,10 @@ async def test_publish_error():
 
 
 async def test_database_error():
-    def put(*args):
+    def put(*_):
         raise DatabaseError
 
-    async def _publish(*args):
+    async def _publish(*_):
         raise TimeoutError
 
     q = ListQueue([])
@@ -125,7 +126,7 @@ TRANSIENT_ERRORS = (
 
 @pytest.mark.parametrize("error", TRANSIENT_ERRORS)
 async def test_transient_error(error):
-    async def _publish(*args):
+    async def _publish(*_):
         raise error
 
     q = ListQueue([])

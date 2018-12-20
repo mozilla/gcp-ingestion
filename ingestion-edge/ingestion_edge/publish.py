@@ -38,10 +38,10 @@ TRANSIENT_ERRORS = (
 DONE = "done"
 PENDING = "pending"
 
-client = PublisherClient()
 
-
-async def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
+async def _publish(
+    client: PublisherClient, topic: str, data: bytes, attrs: Dict[str, str]
+) -> str:
     """Publish one message to the topic.
 
     Use PublisherClient to publish the message in a batch.
@@ -68,7 +68,9 @@ async def _publish(topic: str, data: bytes, attrs: Dict[str, str]) -> str:
         return await async_wrap(future)
 
 
-async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
+async def flush(
+    client: PublisherClient, request: Request, q: SQLiteAckQueue
+) -> response.HTTPResponse:
     """Flush messages from the local queue to pubsub.
 
     Call periodically on each docker container to ensure reliable delivery.
@@ -87,7 +89,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
             # queue is empty or sqlite needs a retry
             continue
         try:
-            await _publish(*message)
+            await _publish(client, *message)
         except TRANSIENT_ERRORS:
             # message not delivered
             q.nack(message)
@@ -108,6 +110,7 @@ async def flush(request: Request, q: SQLiteAckQueue) -> response.HTTPResponse:
 
 async def submit(
     request: Request,
+    client: PublisherClient,
     q: SQLiteAckQueue,
     topic: str,
     metadata_headers: Dict[str, str],
@@ -136,7 +139,7 @@ async def submit(
         if value is not None
     }
     try:
-        await _publish(topic, data, attrs)
+        await _publish(client, topic, data, attrs)
     except TRANSIENT_ERRORS:
         # transient api call failure, write to queue
         try:
@@ -152,6 +155,8 @@ async def submit(
 
 def init_app(app: Sanic):
     """Initialize Sanic app with url rules."""
+    # Initialize PubSub client
+    client = PublisherClient()
     # Use a SQLiteAckQueue because:
     # * we use acks to ensure messages only removed on success
     # * persist-queue's SQLite*Queue is faster than its Queue
@@ -163,13 +168,17 @@ def init_app(app: Sanic):
     }
     q = SQLiteAckQueue(**queue_config)
     # route flush
-    app.add_route(partial(flush, q=q), "/__flush__", name="flush")
+    app.add_route(partial(flush, client=client, q=q), "/__flush__", name="flush")
     # get metadata_headers config
     metadata_headers = app.config["METADATA_HEADERS"]
     # generate one view_func per topic
     handlers = {
         route.topic: partial(
-            submit, q=q, topic=route.topic, metadata_headers=metadata_headers
+            submit,
+            client=client,
+            q=q,
+            topic=route.topic,
+            metadata_headers=metadata_headers,
         )
         for route in app.config["ROUTE_TABLE"]
     }
