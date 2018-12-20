@@ -62,9 +62,9 @@ public class Decoder extends Sink {
         .addErrorCollectionTo(errorCollections).output() //
         .apply("parseUri", new ParseUri()) //
         .addErrorCollectionTo(errorCollections).output() //
+        .apply("decompress", new GzipDecompress()) //
         .apply("parsePayload", new ParsePayload()) //
         .addErrorCollectionTo(errorCollections).output() //
-        .apply("decompress", new GzipDecompress()) //
         .apply("geoCityLookup",
             new GeoCityLookup(options.getGeoCityDatabase(), options.getGeoCityFilter()))
         .apply("parseUserAgent", new ParseUserAgent()) //
