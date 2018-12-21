@@ -59,7 +59,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   void setRedisUri(ValueProvider<String> value);
 
   @Description("Duration for which message ids should be stored for deduplication."
-      + " Allowed formats are: Ns (for seconds, example: 5s), "
+      + " Allowed formats are: Ns (for seconds, example: 5s),"
       + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h).")
   @Default.String("24h")
   ValueProvider<String> getDeduplicateExpireDuration();
