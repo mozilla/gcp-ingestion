@@ -68,3 +68,9 @@ METADATA_HEADERS = {
     for header in (raw.strip().lower(),)
     if header
 }
+
+FLUSH_CONCURRENT_BYTES = int(environ.get("FLUSH_CONCURRENT_BYTES", 1e7))
+
+FLUSH_CONCURRENT_MESSAGES = int(environ.get("FLUSH_CONCURRENT_MESSAGES", 1000))
+
+FLUSH_SLEEP_SECONDS = float(environ.get("FLUSH_SLEEP_SECONDS", 1))

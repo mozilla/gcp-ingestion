@@ -61,6 +61,19 @@ environment variables:
 - `METADATA_HEADERS`: a JSON list of headers to preserve as PubSub message
   attributes, defaults to `["Content-Length", "Date", "DNT", "User-Agent",
   "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy"]`
+- `FLUSH_CONCURRENT_MESSAGES`: an integer indicating the number of messages per
+  worker that may be read from the queue before waiting on publish results,
+  defaults to 1000 messages based on [publish request
+  limits](https://cloud.google.com/pubsub/quotas#resource_limits) and may
+  require tuning
+- `FLUSH_CONCURRENT_BYTES`: an integer indicating the number of bytes per
+  worker that may be read from the queue before waiting on publish results,
+  which may be exceeded by one message and measures data bytes rather than
+  serialized message size, defaults to 10MB based on [publish request
+  limits](https://cloud.google.com/pubsub/quotas#resource_limits) and may
+  require tuning
+- `FLUSH_SLEEP_SECONDS`: a float indicating the number of seconds waited
+  between flush attempts, defaults to 1 second and may require tuning
 
 ## Testing
 

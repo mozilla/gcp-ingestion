@@ -2,19 +2,17 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from ingestion_edge.create_app import create_app
+from ingestion_edge.dockerflow import init_app
 from sanic.request import Request
 import pytest
 import json
 
 
-@pytest.fixture
-def app(mocker):
-    mocker.patch("ingestion_edge.publish.SQLiteAckQueue", dict)
+@pytest.fixture(autouse=True)
+def init(app, mocker):
     mocker.patch("ingestion_edge.dockerflow.check_disk_bytes_free", lambda app, q: [])
     mocker.patch("ingestion_edge.dockerflow.check_queue_size", lambda q: [])
-    app = create_app()
-    return app
+    init_app(app, {})
 
 
 async def test_heartbeat(app):

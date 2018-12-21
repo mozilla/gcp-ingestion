@@ -5,7 +5,7 @@
 """Definition of our Sanic application."""
 
 from sanic import Sanic
-from . import config, publish, dockerflow
+from . import config, flush, publish, dockerflow
 
 
 def create_app(**kwargs) -> Sanic:
@@ -13,6 +13,7 @@ def create_app(**kwargs) -> Sanic:
     app = Sanic(__name__)
     app.config.from_object(config)
     app.config.update(**kwargs)
-    q = publish.init_app(app)
+    client, q = publish.init_app(app)
+    flush.init_app(app, client, q)
     dockerflow.init_app(app, q)
     return app
