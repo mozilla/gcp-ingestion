@@ -12,6 +12,9 @@ A simple service for delivering HTTP messages to Google Cloud PubSub
   - [Running](#running)
   - [Configuration](#configuration)
   - [Testing](#testing)
+    - [Style Checks](#style-checks)
+    - [Unit Tests](#unit-tests)
+    - [Integration Tests](#integration-tests)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -77,18 +80,60 @@ environment variables:
 
 ## Testing
 
-Run tests locally with `docker-compose` or
+Run all tests locally with `docker-compose` or
 [CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
 
 ```bash
 # only print test logs and leave other services running
 docker-compose run --rm test
 
-# print all logs and stop all services when done
-docker-compose up --force-recreate --exit-code-from test
+# rebuild images, recreate containers, stop all containers when one exits, use SIGKILL immediately
+docker-compose up --build --force-recreate --abort-on-container-exit --timeout=0
 
 # circleci
 (cd .. && circleci build --job ingestion-edge)
+```
+
+### Style Checks
+
+Update dependencies installed in the container as needed
+
+```bash
+docker-compose build
+```
+
+Run style checks
+
+```bash
+docker-compose run --rm --no-deps test --docstyle --flake8 --mypy --mypy-ignore-missing-imports ingestion_edge
+```
+
+### Unit Tests
+
+Update dependencies installed in the container as needed
+
+```bash
+docker-compose build
+```
+
+Run unit tests
+
+```bash
+docker-compose run --rm --no-deps test tests/unit
+```
+
+### Integration Tests
+
+Update dependencies installed in the container as needed
+
+```bash
+docker-compose build
+```
+
+Run integration tests locally
+
+```bash
+docker-compose run --rm test tests/integration --server http://web:8000
 ```
 
 Test a remote server (requires credentials to read PubSub)
