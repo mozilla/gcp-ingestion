@@ -7,11 +7,12 @@ from dateutil.parser import parse
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.pubsub import PublisherClient, SubscriberClient
 from ingestion_edge.config import Route, ROUTE_TABLE
+from typing import Set
 import requests
 import pytest
 
-created_topics = set()
-created_subscriptions = set()
+created_topics: Set[str] = set()
+created_subscriptions: Set[str] = set()
 publisher = PublisherClient()
 subscriber = SubscriberClient()
 
@@ -86,7 +87,7 @@ def test_publish(
 
         # submit request to edge
         uri = route.uri.replace("<suffix:path>", "test")
-        data = "test"
+        data = b"test"
         req_time = datetime.utcnow()
         r = requests_session.request(method, server + uri, data=data)
         r.raise_for_status()
