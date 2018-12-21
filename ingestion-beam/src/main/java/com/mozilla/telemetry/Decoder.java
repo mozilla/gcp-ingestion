@@ -41,11 +41,9 @@ public class Decoder extends Sink {
    * @param args command line arguments
    */
   public static PipelineResult run(String[] args) {
+    registerOptions(); // Defined in Sink.java
     final DecoderOptions.Parsed options = DecoderOptions.parseDecoderOptions(
         PipelineOptionsFactory.fromArgs(args).withValidation().as(DecoderOptions.class));
-    // register options class so that `--help=DecoderOptions` works
-    PipelineOptionsFactory.register(DecoderOptions.class);
-
     return run(options);
   }
 

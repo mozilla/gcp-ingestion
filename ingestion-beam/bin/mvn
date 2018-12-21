@@ -15,5 +15,6 @@ docker run -it --rm \
     -v ~/.m2:/root/.m2 \
     -v $PWD:/root/project \
     -w /root/project \
+    -e GOOGLE_APPLICATION_CREDENTIALS \
     maven \
     mvn "$@"
