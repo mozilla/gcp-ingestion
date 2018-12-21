@@ -105,7 +105,7 @@ docker-compose build
 Run style checks
 
 ```bash
-docker-compose run --rm --no-deps test --docstyle --flake8 --mypy --mypy-ignore-missing-imports ingestion_edge
+docker-compose run --rm --no-deps test --black --docstyle --flake8 --mypy --mypy-ignore-missing-imports ingestion_edge
 ```
 
 ### Unit Tests
