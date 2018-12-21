@@ -4,7 +4,9 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.util.Time;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -99,6 +101,9 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    */
   public static class MarkAsSeen extends Deduplicate {
 
+    // This needs to match the documented @Default annotation on getDeduplicateExpireDuration.
+    private static final int DEFAULT_TTL = Ints.checkedCast(Time.parseSeconds("24h"));
+
     final ValueProvider<Integer> ttlSeconds;
 
     private MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
@@ -106,8 +111,21 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
       this.ttlSeconds = ttlSeconds;
     }
 
+    /**
+     * Workaround for current lack of Beam support for Default on ValueProvider.
+     * If no value is specified at runtime or compile time, then the ValueProvider always reports
+     * as inaccessible, even after {@code pipeline.run()} is called.
+     */
+    private Integer getTtlSeconds() {
+      if (ttlSeconds.isAccessible()) {
+        return ttlSeconds.get();
+      } else {
+        return DEFAULT_TTL;
+      }
+    }
+
     private String setex(byte[] id) {
-      return getJedis().setex(id, ttlSeconds.get(), new byte[0]);
+      return getJedis().setex(id, getTtlSeconds(), new byte[0]);
     }
 
     @Override
