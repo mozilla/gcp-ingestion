@@ -50,9 +50,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
   static {
     try {
-      // Load all schemas from Java resources at classloading time so we can fail fast;
-      // this means we'll be serializing the full HashMap of schemas when this class is sent
-      // to workers, which isn't ideal, but it's also not so large that we need to be concerned.
+      // Load all schemas from Java resources at classloading time so we can fail fast in tests,
+      // but this pre-loaded state won't be available to workers since PTransforms are only
+      // pseudo-serializable and state outside the DoFn won't get sent.
       loadAllSchemas();
     } catch (Exception e) {
       throw new RuntimeException("Unexpected error while loading JSON schemas", e);
@@ -81,9 +81,10 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   }
 
   private static Schema getSchema(String name) throws SchemaNotFoundException {
-    final Schema schema = schemas.get(name);
+    Schema schema = schemas.get(name);
     if (schema == null) {
-      throw SchemaNotFoundException.forName(name);
+      loadSchema(name);
+      schema = schemas.get(name);
     }
     return schema;
   }
