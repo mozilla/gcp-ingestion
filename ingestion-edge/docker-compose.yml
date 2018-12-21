@@ -42,6 +42,7 @@ services:
     image: *image
     entrypoint: pytest
     command:
+    - --black
     - --flake8
     - --docstyle
     - --mypy
