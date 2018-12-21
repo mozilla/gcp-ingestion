@@ -194,6 +194,9 @@
                         </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                  <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
