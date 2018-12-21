@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.Field;
+import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.QueryJobConfiguration;
@@ -131,16 +132,16 @@ public class BigQueryIntegrationTest {
 
   @Test
   public void canRecoverFailedInserts() throws Exception {
-    String table = "mytable";
+    String table = "table_with_required_col";
     String tableSpec = String.format("%s.%s", dataset, table);
     TableId tableId = TableId.of(dataset, table);
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
 
-    // Create a table with missing column.
-    bigquery.create(TableInfo
-        .newBuilder(tableId,
-            StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING))))
+    bigquery.create(TableInfo.newBuilder(tableId,
+        StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+            Field.newBuilder("extra_required_field", LegacySQLTypeName.STRING)
+                .setMode(Mode.REQUIRED).build())))
         .build());
 
     String input = Resources.getResource("testdata/json-payload.ndjson").getPath();
@@ -148,8 +149,8 @@ public class BigQueryIntegrationTest {
     String errorOutput = outputPath + "/error/out";
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
-        "--input=" + input, "--outputFileFormat=text", "--outputType=bigquery",
-        "--output=" + output, "--errorOutputType=file", "--errorOutput=" + errorOutput });
+        "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
+        "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 
@@ -157,7 +158,7 @@ public class BigQueryIntegrationTest {
 
     List<String> expectedErrorLines = Lines.resources("testdata/json-payload-wrapped.ndjson");
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
-    assertThat(errorOutputLines, matchesInAnyOrder(expectedErrorLines));
+    assertThat(errorOutputLines, Matchers.hasSize(expectedErrorLines.size()));
   }
 
   private List<String> stringValuesQuery(String query) throws InterruptedException {

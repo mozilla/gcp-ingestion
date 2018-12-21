@@ -4,20 +4,23 @@
 
 package com.mozilla.telemetry.options;
 
+import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.ResultWithErrors;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.extensions.jackson.AsJsons;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.FileIO.Write;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.WriteFilesResult;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryInsertError;
 import org.apache.beam.sdk.io.gcp.bigquery.InsertRetryPolicy;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
@@ -29,6 +32,7 @@ import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
@@ -37,6 +41,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.beam.sdk.values.POutput;
+import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.ValueInSingleWindow;
 import org.joda.time.Duration;
 
@@ -157,12 +162,31 @@ public enum OutputType {
           .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS) //
           .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER) //
           .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND).skipInvalidRows()
+          .withExtendedErrorInfo().ignoreUnknownValues()
           .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()));
 
-      PCollection<PubsubMessage> failedInserts = writeResult.getFailedInserts()
-          .apply(AsJsons.of(TableRow.class)) //
-          .apply(InputFileFormat.text.decode()) // TODO: add error_{type,message} fields
-          .output();
+      PCollection<PubsubMessage> failedInserts = writeResult.getFailedInsertsWithErr()
+          .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+              .via((BigQueryInsertError bqie) -> {
+                Map<String, String> attributes = new HashMap<>();
+                attributes.put("error_type", "failed_insert");
+                attributes.put("error_table",
+                    String.format("%s:%s.%s", bqie.getTable().getProjectId(),
+                        bqie.getTable().getDatasetId(), bqie.getTable().getTableId()));
+                if (!bqie.getError().getErrors().isEmpty()) {
+                  // We pull out the first error to top-level attributes.
+                  ErrorProto errorProto = bqie.getError().getErrors().get(0);
+                  attributes.put("error_message", errorProto.getMessage());
+                  attributes.put("error_location", errorProto.getLocation());
+                  attributes.put("error_reason", errorProto.getReason());
+                }
+                if (bqie.getError().getErrors().size() > 1) {
+                  // If there are additional errors, we include the entire JSON response.
+                  attributes.put("insert_errors", bqie.getError().toString());
+                }
+                byte[] payload = bqie.getRow().toString().getBytes();
+                return new PubsubMessage(payload, attributes);
+              }));
       PCollection<PubsubMessage> errorCollection = PCollectionList.of(tableRows.errors())
           .and(failedInserts).apply(Flatten.pCollections());
 
