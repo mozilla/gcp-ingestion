@@ -24,7 +24,7 @@ import org.joda.time.Duration;
  */
 public interface SinkOptions extends PipelineOptions {
 
-  @Description("Type of --input; must be one of [pubsub, file]")
+  @Description("Type of source specified by --input")
   @Default.Enum("pubsub")
   InputType getInputType();
 
@@ -91,9 +91,9 @@ public interface SinkOptions extends PipelineOptions {
 
   void setIncludeStackTrace(Boolean value);
 
-  @Description("Fixed window duration. Defaults to 10m. Allowed formats are: "
-      + "Ns (for seconds, example: 5s), Nm (for minutes, example: 12m), "
-      + "Nh (for hours, example: 2h).")
+  @Description("Fixed window duration. Allowed formats are:"
+      + " Ns (for seconds, example: 5s), Nm (for minutes, example: 12m),"
+      + " Nh (for hours, example: 2h).")
   @Default.String("10m")
   String getWindowDuration();
 
