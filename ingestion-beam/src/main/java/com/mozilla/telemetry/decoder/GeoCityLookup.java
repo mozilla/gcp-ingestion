@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.maxmind.db.CHMCache;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
@@ -33,6 +34,7 @@ import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -43,10 +45,10 @@ public class GeoCityLookup
 
   private static final Pattern GEO_NAME_PATTERN = Pattern.compile("^(\\d+).*");
 
-  private final String geoCityDatabase;
-  private final String geoCityFilter;
+  private final ValueProvider<String> geoCityDatabase;
+  private final ValueProvider<String> geoCityFilter;
 
-  public GeoCityLookup(String geoCityDatabase, String geoCityFilter) {
+  public GeoCityLookup(ValueProvider<String> geoCityDatabase, ValueProvider<String> geoCityFilter) {
     this.geoCityDatabase = geoCityDatabase;
     this.geoCityFilter = geoCityFilter;
   }
@@ -71,10 +73,7 @@ public class GeoCityLookup
       try {
         if (geoIP2City == null) {
           // Throws IOException
-          loadGeoIp2City();
-          if (geoCityFilter != null) {
-            loadAllowedCities();
-          }
+          loadResourcesOnFirstMessage();
         }
 
         // copy attributes
@@ -151,10 +150,21 @@ public class GeoCityLookup
       }
     }
 
+    private void loadResourcesOnFirstMessage() throws IOException {
+      if (geoCityDatabase == null || !geoCityDatabase.isAccessible()) {
+        throw new IllegalArgumentException("--geoCityDatabase must be defined for GeoCityLookup!");
+      }
+      loadGeoIp2City();
+      if (geoCityFilter != null && geoCityFilter.isAccessible()
+          && !Strings.isNullOrEmpty(geoCityFilter.get())) {
+        loadAllowedCities();
+      }
+    }
+
     private void loadGeoIp2City() throws IOException {
       InputStream inputStream;
       try {
-        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityDatabase);
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityDatabase.get());
         ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
         inputStream = Channels.newInputStream(channel);
       } catch (IOException e) {
@@ -166,7 +176,7 @@ public class GeoCityLookup
     private void loadAllowedCities() throws IOException {
       InputStream inputStream;
       try {
-        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityFilter);
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityFilter.get());
         ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
         inputStream = Channels.newInputStream(channel);
       } catch (IOException e) {

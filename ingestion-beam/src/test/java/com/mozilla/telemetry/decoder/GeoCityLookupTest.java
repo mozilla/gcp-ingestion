@@ -51,7 +51,7 @@ public class GeoCityLookupTest {
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
         .apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb", null))
+        .apply("geoCityLookup", new GeoCityLookup(pipeline.newProvider("GeoLite2-City.mmdb"), null))
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
@@ -78,7 +78,8 @@ public class GeoCityLookupTest {
     final PCollection<String> output = pipeline.apply(Create.of(input))
         .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("geoCityLookup",
-            new GeoCityLookup("GeoLite2-City.mmdb", "src/test/resources/cityFilters/milton.txt"))
+            new GeoCityLookup(pipeline.newProvider("GeoLite2-City.mmdb"),
+                pipeline.newProvider("src/test/resources/cityFilters/milton.txt")))
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
@@ -97,8 +98,8 @@ public class GeoCityLookupTest {
     final PCollection<String> output = pipeline.apply(Create.of(input))
         .apply("decodeJson", InputFileFormat.json.decode()).output()
         .apply("geoCityLookup",
-            new GeoCityLookup("GeoLite2-City.mmdb",
-                "src/test/resources/cityFilters/sacramento.txt"))
+            new GeoCityLookup(pipeline.newProvider("GeoLite2-City.mmdb"),
+                pipeline.newProvider("src/test/resources/cityFilters/sacramento.txt")))
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
@@ -114,7 +115,7 @@ public class GeoCityLookupTest {
         .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
 
     pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("geoCityLookup", new GeoCityLookup("missing-file.mmdb", null));
+        .apply("geoCityLookup", new GeoCityLookup(pipeline.newProvider("missing-file.mmdb"), null));
 
     pipeline.run();
   }
@@ -127,7 +128,8 @@ public class GeoCityLookupTest {
         .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
 
     pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("geoCityLookup", new GeoCityLookup("GeoLite2-City.mmdb", "missing-file.txt"));
+        .apply("geoCityLookup", new GeoCityLookup(pipeline.newProvider("GeoLite2-City.mmdb"),
+            pipeline.newProvider("missing-file.txt")));
 
     pipeline.run();
   }
@@ -140,8 +142,8 @@ public class GeoCityLookupTest {
         .asList("{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}");
 
     pipeline.apply(Create.of(input)).apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("geoCityLookup",
-            new GeoCityLookup("GeoLite2-City.mmdb", "src/test/resources/cityFilters/invalid.txt"));
+        .apply("geoCityLookup", new GeoCityLookup(pipeline.newProvider("GeoLite2-City.mmdb"),
+            pipeline.newProvider("src/test/resources/cityFilters/invalid.txt")));
 
     pipeline.run();
   }
