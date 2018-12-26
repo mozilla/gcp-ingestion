@@ -173,10 +173,11 @@ Note that placeholders _must_ specify a default value so that a poorly formatted
 message doesn't cause a pipeline exception. A placeholder without a default will
 result in an `IllegalArgumentException` on pipeline startup.
 
-If you set the `--parseSubmissionTimestamp` option, additional attributes
-`"submission_date"` and `"submission_hour"` will be added to messages, which can be
-useful for making sure your output specification buckets messages into hourly
-directories.
+File-based outputs support the additional _derived_ attributes
+`"submission_date"` and `"submission_hour"` which will be parsed from the value
+of the `submission_timestamp` attribute if it exists.
+These can be useful for making sure your output specification buckets messages
+into hourly directories.
 
 The templating and default syntax used here is based on the
 [Apache commons-text `StringSubstitutor`](https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html),
