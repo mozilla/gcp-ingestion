@@ -128,22 +128,24 @@ public enum OutputType {
         DynamicPathTemplate::new);
     ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
         value -> value.staticPrefix);
-    return PTransform
-        .compose(
-            input -> input.apply("fixedWindows", Window.into(FixedWindows.of(windowDuration)))
-                .apply("writeFile", FileIO.<List<String>, PubsubMessage>writeDynamic()
-                    // We can't pass the attribute map to by() directly since MapCoder isn't
-                    // deterministic;
-                    // instead, we extract an ordered list of the needed placeholder values.
-                    // That list is later available to withNaming() to determine output location.
-                    .by(message -> pathTemplate.get()
-                        .extractValuesFrom(DerivedAttributesMap.of(message.getAttributeMap())))
-                    .withDestinationCoder(ListCoder.of(StringUtf8Coder.of()))
-                    .withNumShards(numShards)
-                    .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink()).to(staticPrefix)
-                    .withNaming(placeholderValues -> Write.defaultNaming(
-                        pathTemplate.get().replaceDynamicPart(placeholderValues),
-                        format.suffix()))));
+    return PTransform.compose(input -> input //
+        .apply(Window.<PubsubMessage>into(FixedWindows.of(windowDuration))
+            // We allow lateness up to the maximum Cloud Pub/Sub retention of 7 days documented in
+            // https://cloud.google.com/pubsub/docs/subscriber
+            .withAllowedLateness(Duration.standardDays(7)) //
+            .discardingFiredPanes())
+        .apply(FileIO.<List<String>, PubsubMessage>writeDynamic()
+            // We can't pass the attribute map to by() directly since MapCoder isn't deterministic;
+            // instead, we extract an ordered list of the needed placeholder values.
+            // That list is later available to withNaming() to determine output location.
+            .by(message -> pathTemplate.get()
+                .extractValuesFrom(DerivedAttributesMap.of(message.getAttributeMap())))
+            .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())) //
+            .withNumShards(numShards) //
+            .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink()) //
+            .to(staticPrefix) //
+            .withNaming(placeholderValues -> Write.defaultNaming(
+                pathTemplate.get().replaceDynamicPart(placeholderValues), format.suffix()))));
   }
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> writePubsub(
