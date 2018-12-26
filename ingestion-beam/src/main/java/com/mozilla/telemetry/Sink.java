@@ -6,7 +6,6 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.options.SinkOptions;
-import com.mozilla.telemetry.transforms.ParseSubmissionTimestamp;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -52,7 +51,6 @@ public class Sink {
     pipeline //
         .apply("input", options.getInputType().read(options)) //
         .addErrorCollectionTo(errorCollections).output() //
-        .apply(ParseSubmissionTimestamp.enabled(options.getParseSubmissionTimestamp())) //
         .apply("write main output", options.getOutputType().write(options)) //
         .addErrorCollectionTo(errorCollections).output();
 

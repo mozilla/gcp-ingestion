@@ -9,6 +9,7 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.ResultWithErrors;
+import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import java.util.HashMap;
 import java.util.List;
@@ -135,7 +136,8 @@ public enum OutputType {
                     // deterministic;
                     // instead, we extract an ordered list of the needed placeholder values.
                     // That list is later available to withNaming() to determine output location.
-                    .by(message -> pathTemplate.get().extractValuesFrom(message.getAttributeMap()))
+                    .by(message -> pathTemplate.get()
+                        .extractValuesFrom(DerivedAttributesMap.of(message.getAttributeMap())))
                     .withDestinationCoder(ListCoder.of(StringUtf8Coder.of()))
                     .withNumShards(numShards)
                     .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink()).to(staticPrefix)

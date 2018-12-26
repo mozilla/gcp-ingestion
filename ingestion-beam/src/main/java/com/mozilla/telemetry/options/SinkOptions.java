@@ -74,14 +74,6 @@ public interface SinkOptions extends PipelineOptions {
 
   void setErrorOutputNumShards(Integer value);
 
-  @Description("If true, any input message containing a 'submission_timestamp' will be enriched"
-      + " with 'submission_date' and 'submission_hour' attributes that can be used in the --output"
-      + " specification for file-type outputs")
-  @Default.Boolean(false)
-  Boolean getParseSubmissionTimestamp();
-
-  void setParseSubmissionTimestamp(Boolean value);
-
   @Hidden
   @Description("If true, include a 'stack_trace' attribute in error output messages;"
       + " this should always be enabled except for specific testing scenarios where we want to "

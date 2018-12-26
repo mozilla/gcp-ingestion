@@ -174,8 +174,7 @@ public class SinkMainTest {
     String output = outputPath + "/${submission_date:-NULL}/${submission_hour:-NULL}/out";
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--parseSubmissionTimestamp" });
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output });
 
     List<String> nullLines = Lines
         .resources("testdata/basic-messages-valid-null-attributes.ndjson");
