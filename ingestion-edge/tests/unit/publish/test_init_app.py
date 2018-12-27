@@ -58,7 +58,13 @@ async def test_endpoint(app, kwargs, method, mocker, uri_bytes):
     assert responses == [
         (
             request,
-            dict(client=None, q={"path": ":memory:"}, metadata_headers={}, **kwargs),
+            dict(
+                client=None,
+                timeout=None,
+                q={"path": ":memory:"},
+                metadata_headers={},
+                **kwargs
+            ),
         )
     ]
 

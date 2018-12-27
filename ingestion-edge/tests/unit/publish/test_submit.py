@@ -39,6 +39,7 @@ async def call_submit(q=None, **kwargs) -> HTTPResponse:
         await publish.submit(
             request=MockRequest(**kwargs),
             client=None,
+            timeout=None,
             q=q,
             topic="topic",
             metadata_headers={"header": "header"},
@@ -73,7 +74,7 @@ def validate(start_time: datetime, response: HTTPResponse, q: ListQueue):
 async def test_ok():
     q = ListQueue([])
 
-    async def _publish(_, *args):
+    async def _publish(client, timeout, *args):
         q.put(args)
         return len(q)
 
@@ -94,7 +95,7 @@ async def test_ok():
     ],
 )
 async def test_invalid(kwargs: Dict[str, Any]):
-    async def _publish(*args):
+    async def _publish(*_):
         raise Exception()
 
     q = ListQueue([])
