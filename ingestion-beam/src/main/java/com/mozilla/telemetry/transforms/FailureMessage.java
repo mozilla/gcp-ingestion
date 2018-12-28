@@ -16,6 +16,8 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
  */
 public class FailureMessage {
 
+  private static final int MAX_STACK_TRACE_CAUSE_ATTRIBUTES = 5;
+
   /**
    * Return a modified PubsubMessage with additional attributes describing the error.
    */
@@ -43,8 +45,33 @@ public class FailureMessage {
   }
 
   private static Map<String, String> errorAttributes(Object caller, Throwable e) {
-    return ImmutableMap.of("error_type", caller.toString(), "error_message", e.toString(),
-        "exception_class", e.getClass().getName(), "stack_trace",
-        Arrays.toString(e.getStackTrace()));
+    Map<String, String> attributes = stackTraceAttributes(e);
+    attributes.putAll(
+        ImmutableMap.of("error_type", PubsubConstraints.truncateAttributeValue(caller.toString()),
+            "error_message", PubsubConstraints.truncateAttributeValue(e.toString()),
+            "exception_class", PubsubConstraints.truncateAttributeValue(e.getClass().getName())));
+    return attributes;
   }
+
+  private static String truncatedStackTrace(Throwable e) {
+    if (e == null) {
+      return null;
+    } else {
+      return PubsubConstraints.truncateAttributeValue(Arrays.toString(e.getStackTrace()));
+    }
+  }
+
+  private static Map<String, String> stackTraceAttributes(Throwable e) {
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put("stack_trace", truncatedStackTrace(e));
+    for (int i = 1; i <= MAX_STACK_TRACE_CAUSE_ATTRIBUTES; i++) {
+      e = e.getCause();
+      if (e == null) {
+        return attributes;
+      }
+      attributes.put("stack_trace_cause_" + i, truncatedStackTrace(e));
+    }
+    return attributes;
+  }
+
 }

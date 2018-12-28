@@ -123,7 +123,7 @@ public class PubsubIntegrationTest {
 
   @Test(timeout = 30000)
   public void canSendPubsubOutput() throws Exception {
-    List<String> inputLines = Lines.resources("testdata/basic-messages-nonempty.ndjson");
+    final List<String> inputLines = Lines.resources("testdata/pubsub-integration/input.ndjson");
 
     pipeline.getOptions().as(DirectOptions.class).setBlockOnRun(false);
 
@@ -133,11 +133,12 @@ public class PubsubIntegrationTest {
     pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
         .apply(OutputType.pubsub.write(sinkOptions));
 
-    PipelineResult result = pipeline.run();
+    final PipelineResult result = pipeline.run();
 
     System.err.println("Waiting for subscriber to receive messages published in the pipeline...");
-    List<String> received = receiveLines(4);
-    assertThat(received, matchesInAnyOrder(inputLines));
+    List<String> received = receiveLines(6);
+    List<String> expectedLines = Lines.resources("testdata/pubsub-integration/truncated.ndjson");
+    assertThat(received, matchesInAnyOrder(expectedLines));
     result.cancel();
   }
 
