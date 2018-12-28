@@ -1,0 +1,113 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, you can obtain one at http://mozilla.org/MPL/2.0/.
+
+from .helpers import IntegrationTest
+from ingestion_edge.config import METADATA_HEADERS
+from itertools import cycle, chain
+from typing import Dict, Optional
+import gzip
+import pytest
+
+# avoid having long strings in parametrized test
+# names by outsourcing the actual values
+DATA = {
+    "GZIPPED": gzip.compress(b"data"),
+    "MAX_LENGTH": b"." * (8 * 1024 * 1024),  # max data length 8MB
+    "NON_UTF8": bytes(range(256)),
+    "TOO_LONG": b"." * (8 * 1024 * 1024 + 1),
+    # identity values
+    "": b"",
+    "data": b"data",
+}
+HEADER = {
+    "MAX_LENGTH": b"." * 1024,
+    "NON_UTF8": bytes(set(range(256)).difference(b"\r\n"))[::-1],
+    "TOO_LONG": b"." * 1025,
+    # identity values
+    None: None,
+    "": b"",
+    "header": b"header",
+}
+STRING = {
+    "MAX_LENGTH": "." * 1024,
+    "NON_UTF8": bytes(set(range(256)).difference(b"\r\n"))[::-1].decode("latin"),
+    "TOO_LONG": "." * 1025,
+    # identity values
+    "": "",
+    ".": ".",
+    "args": "args",
+    "p/a/t/h": "p/a/t/h",
+}
+
+# parameters for test_submit_success
+args = ["", "args", "MAX_LENGTH"]
+data = ["", "data", "GZIPPED", "NON_UTF8", "MAX_LENGTH"]
+headers = [
+    {key: value for key in METADATA_HEADERS if key != "content-length"}
+    for value in [None, "", "header", "NON_UTF8"]
+] + [{key: "MAX_LENGTH"} for key in METADATA_HEADERS if key != "content-length"]
+uri_suffix = [".", "p/a/t/h", "MAX_LENGTH"]
+
+
+@pytest.mark.parametrize(
+    "args,data,headers,uri_suffix",
+    [
+        case[:-1]  # drop the limiter value from the result
+        for case in zip(
+            # cycle over param lists to cover all values for each param
+            cycle(args),
+            cycle(data),
+            cycle(headers),
+            # args and uri_suffix will cycle in sync and that is okay
+            cycle(uri_suffix),
+            # limit zip to the length of the longest param list
+            [None] * max(len(data), len(headers)),
+        )
+    ],
+)
+def test_submit_success(
+    args: str,
+    data: str,
+    headers: Dict[str, Optional[str]],
+    uri_suffix: str,
+    integration_test: IntegrationTest,
+):
+    integration_test.args = STRING[args]
+    integration_test.data = DATA[data]
+    integration_test.headers = {key: HEADER[value] for key, value in headers.items()}
+    uri_suffix = STRING[uri_suffix]
+    if uri_suffix == STRING["MAX_LENGTH"]:
+        min_uri_len = len(integration_test.uri_template.replace("<suffix:path>", ""))
+        uri_suffix = uri_suffix[:-min_uri_len]
+    integration_test.uri_suffix = uri_suffix
+    integration_test.assert_accepted_and_delivered()
+
+
+@pytest.mark.parametrize(
+    "args,headers,uri_suffix",
+    chain(
+        [
+            ("", {}, STRING["TOO_LONG"]),  # uri too long
+            (STRING["TOO_LONG"], {}, "."),  # args too long
+        ],
+        [
+            ("", {key: HEADER["TOO_LONG"]}, ".")  # header too long
+            for key in METADATA_HEADERS
+            if key != "content-length"
+        ],
+    ),
+)
+def test_submit_invalid_header_too_long(
+    args: str,
+    headers: Dict[str, Optional[bytes]],
+    uri_suffix: str,
+    integration_test: IntegrationTest,
+):
+    if uri_suffix != "." and "<suffix:path>" not in integration_test.uri_template:
+        pytest.skip("requires suffix in uri_template")
+    integration_test.args = args
+    integration_test.headers = headers
+    integration_test.uri_suffix = uri_suffix
+    integration_test.assert_rejected(status=431)
+    integration_test.assert_not_delivered()

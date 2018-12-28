@@ -179,7 +179,13 @@ def create_server(
     port=int(os.environ.get("PORT", 0)),
 ):
     """Create and start a new grpc.Server configured with PubsubEmulator."""
-    server = grpc.server(concurrent.futures.ThreadPoolExecutor(max_workers=max_workers))
+    server = grpc.server(
+        concurrent.futures.ThreadPoolExecutor(max_workers=max_workers),
+        options=[
+            ("grpc.max_receive_message_length", 10 * 1000 * 1000),
+            ("grpc.max_send_message_length", 10 * 1000 * 1000),
+        ],
+    )
     port = server.add_insecure_port("0.0.0.0:%d" % port)
     emulator = PubsubEmulator(server)
     server.start()
