@@ -13,39 +13,50 @@ public class PubsubConstraintsTest {
 
   private static final String ASCII_250 = StringUtils.repeat("abcdefghij", 25);
   private static final String ASCII_1000 = StringUtils.repeat(ASCII_250, 4);
+  private static final String ASCII_1500 = StringUtils.repeat(ASCII_250, 6);
 
   // Euro is 3 bytes in UTF-8.
   private static final char EURO = '€';
 
   @Test
-  public void truncateAttributeKey() {
+  public void testTruncatePreservesShortAscii() {
     assertEquals("hi", PubsubConstraints.truncateAttributeKey("hi"));
+    assertEquals("hi", PubsubConstraints.truncateAttributeValue("hi"));
     assertEquals(ASCII_250, PubsubConstraints.truncateAttributeKey(ASCII_250));
-    assertEquals(ASCII_1000.substring(0, 253) + "...",
-        PubsubConstraints.truncateAttributeKey(ASCII_1000));
-
-    String unicode256Bytes = ASCII_250 + EURO + EURO;
-    assertEquals(unicode256Bytes, PubsubConstraints.truncateAttributeKey(unicode256Bytes));
-
-    String unicode259Bytes = ASCII_250 + EURO + EURO + EURO;
-    String unicode259Truncated = ASCII_250 + EURO + "...";
-    assertEquals(unicode259Truncated, PubsubConstraints.truncateAttributeKey(unicode259Bytes));
+    assertEquals(ASCII_1000, PubsubConstraints.truncateAttributeValue(ASCII_1000));
   }
 
   @Test
-  public void truncateAttributeValue() {
-    assertEquals("hi", PubsubConstraints.truncateAttributeValue("hi"));
-    assertEquals(ASCII_250, ASCII_250);
-    assertEquals(ASCII_1000, PubsubConstraints.truncateAttributeValue(ASCII_1000));
+  public void testTruncateAscii() {
+    assertEquals(ASCII_1500.substring(0, 253) + "...",
+        PubsubConstraints.truncateAttributeKey(ASCII_1500));
+    assertEquals(ASCII_1500.substring(0, 1021) + "...",
+        PubsubConstraints.truncateAttributeValue(ASCII_1500));
+  }
 
+  @Test
+  public void testTruncatePreservesShortUnicode() {
     String unicode256Bytes = ASCII_250 + EURO + EURO;
-    assertEquals(unicode256Bytes, PubsubConstraints.truncateAttributeValue(unicode256Bytes));
-
     String unicode259Bytes = ASCII_250 + EURO + EURO + EURO;
+    assertEquals(unicode256Bytes, PubsubConstraints.truncateAttributeKey(unicode256Bytes));
     assertEquals(unicode259Bytes, PubsubConstraints.truncateAttributeValue(unicode259Bytes));
+  }
 
-    String unicode1030Bytes = ASCII_1000 + StringUtils.repeat(EURO, 10);
-    String unicode1030Truncated = ASCII_1000 + StringUtils.repeat(EURO, 7) + "...";
-    assertEquals(unicode1030Truncated, PubsubConstraints.truncateAttributeValue(unicode1030Bytes));
+  @Test
+  public void testTruncateUnicodeAligned() {
+    // This string is 10 chars, but 30 bytes, so has 20 more bytes than chars.
+    String euros = StringUtils.repeat(EURO, 10);
+
+    String unicode1030Bytes = euros + StringUtils.repeat(ASCII_250, 4);
+    assertEquals(unicode1030Bytes.substring(0, 256 - 20 - 3) + "...",
+        PubsubConstraints.truncateAttributeKey(unicode1030Bytes));
+    assertEquals(unicode1030Bytes.substring(0, 1024 - 20 - 3) + "...",
+        PubsubConstraints.truncateAttributeValue(unicode1030Bytes));
+  }
+
+  @Test
+  public void testTruncateUnicodeUnaligned() {
+    String unicode257Bytes = ASCII_250 + "," + EURO + EURO;
+    assertEquals(ASCII_250 + ",...", PubsubConstraints.truncateAttributeKey(unicode257Bytes));
   }
 }
