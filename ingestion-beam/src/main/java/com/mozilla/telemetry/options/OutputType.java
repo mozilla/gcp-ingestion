@@ -7,6 +7,7 @@ package com.mozilla.telemetry.options;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.transforms.Println;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.ResultWithErrors;
 import com.mozilla.telemetry.util.DerivedAttributesMap;
@@ -149,8 +150,10 @@ public enum OutputType {
   }
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> writePubsub(
-      ValueProvider<String> location) {
-    return PubsubIO.writeMessages().to(location);
+      ValueProvider<String> topic) {
+    return PTransform.compose(input -> input //
+        .apply(PubsubConstraints.truncateAttributes()) //
+        .apply(PubsubIO.writeMessages().to(topic)));
   }
 
   protected static PTransform<PCollection<PubsubMessage>, ResultWithErrors<WriteResult>> writeBigQuery(

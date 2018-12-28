@@ -5,8 +5,9 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.transforms.Println;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -70,12 +71,13 @@ public enum ErrorOutputType {
       // No transformation to do for the failure messages.
       return writeFailures(options);
     } else {
-      // Remove stack_trace attribute before applying writeFailures()
-      return PTransform.compose(input -> input.apply("remove stack_trace attribute",
+      // Remove stack_trace attributes before applying writeFailures()
+      return PTransform.compose(input -> input.apply("remove stack_trace attributes",
           MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
-            Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-            attributes.remove("stack_trace");
-            return new PubsubMessage(message.getPayload(), attributes);
+            Map<String, String> filtered = message.getAttributeMap().entrySet().stream() //
+                .filter(e -> !e.getKey().startsWith("stack_trace")) //
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            return new PubsubMessage(message.getPayload(), filtered);
           })).setCoder(PubsubMessageWithAttributesCoder.of()).apply(writeFailures(options)));
     }
   }
