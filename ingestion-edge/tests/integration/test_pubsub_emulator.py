@@ -2,39 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 import google.api_core.exceptions
-import grpc
-import os
-import pubsub_emulator
 import pytest
 
 
-@pytest.fixture
-def clients():
-    channel = None
-    try:
-        if not os.environ.get("PUBSUB_EMULATOR_HOST"):
-            server, port, emulator = pubsub_emulator.create_server(
-                max_workers=1, port=0
-            )
-            channel = grpc.insecure_channel(target="localhost:%d" % port)
-        publisher = PublisherClient(channel=channel)
-        subscriber = SubscriberClient(channel=channel)
-        yield (publisher, subscriber)
-    finally:
-        if channel is not None:
-            server.stop(grace=None)
-
-
-@pytest.fixture
-def publisher(clients):
-    yield clients[0]
-
-
-@pytest.fixture
-def subscriber(clients):
-    yield clients[1]
+@pytest.fixture(autouse=True)
+def skipif(pubsub):
+    if pubsub == "google":
+        pytest.skip("requires pubsub emulator")
 
 
 def test_emulator(publisher, subscriber):

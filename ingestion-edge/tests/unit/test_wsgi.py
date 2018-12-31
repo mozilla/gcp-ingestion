@@ -6,8 +6,11 @@ from ingestion_edge import wsgi
 
 
 def test_wsgi(mocker):
-    runs = []
-    mocker.patch.object(wsgi.app, "run", lambda **kw: runs.append(kw))
+    socket = mocker.patch.object(wsgi, "socket")
+    run = mocker.patch.object(wsgi.app, "run")
     mocker.patch.object(wsgi, "__name__", "__main__")
+    mocker.patch.object(wsgi, "environ", {"HOST": "HOST", "PORT": "-1"})
     wsgi.main()
-    assert runs == [{"host": "0.0.0.0", "port": 8000}]
+    socket.assert_called_once()
+    socket.return_value.bind.assert_called_once_with(("HOST", -1))
+    run.assert_called_once_with(sock=socket.return_value)

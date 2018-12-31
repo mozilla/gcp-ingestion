@@ -28,14 +28,33 @@ class PubsubEmulator(
 ):
     """Pubsub gRPC emulator for testing."""
 
-    def __init__(self, server: grpc.Server):
+    def __init__(
+        self,
+        max_workers: int = int(os.environ.get("MAX_WORKERS", 1)),
+        port: int = int(os.environ.get("PORT", 0)),
+    ):
         """Initialize a new PubsubEmulator and add it to a gRPC server."""
         self.topics: Dict[str, Set[Subscription]] = {}
         self.subscriptions: Dict[str, Subscription] = {}
         self.status_codes: Dict[str, grpc.StatusCode] = {}
         self.sleep = None
-        pubsub_pb2_grpc.add_PublisherServicer_to_server(self, server)
-        pubsub_pb2_grpc.add_SubscriberServicer_to_server(self, server)
+        self.port = port
+        self.max_workers = max_workers
+        self.new_server()
+
+    def new_server(self):
+        """Create and start a new grpc.Server configured with PubsubEmulator."""
+        self.server = grpc.server(
+            concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers),
+            options=[
+                ("grpc.max_receive_message_length", -1),
+                ("grpc.max_send_message_length", -1),
+            ],
+        )
+        self.port = self.server.add_insecure_port("0.0.0.0:%d" % self.port)
+        pubsub_pb2_grpc.add_PublisherServicer_to_server(self, self.server)
+        pubsub_pb2_grpc.add_SubscriberServicer_to_server(self, self.server)
+        self.server.start()
 
     def CreateTopic(self, request, context):  # noqa: D403
         """CreateTopic implementation."""
@@ -174,27 +193,9 @@ class PubsubEmulator(
         return request.topic
 
 
-def create_server(
-    max_workers=int(os.environ.get("MAX_WORKERS", 1)),
-    port=int(os.environ.get("PORT", 0)),
-):
-    """Create and start a new grpc.Server configured with PubsubEmulator."""
-    server = grpc.server(
-        concurrent.futures.ThreadPoolExecutor(max_workers=max_workers),
-        options=[
-            ("grpc.max_receive_message_length", 10 * 1000 * 1000),
-            ("grpc.max_send_message_length", 10 * 1000 * 1000),
-        ],
-    )
-    port = server.add_insecure_port("0.0.0.0:%d" % port)
-    emulator = PubsubEmulator(server)
-    server.start()
-    return server, port, emulator
-
-
 def main():
     """Run PubsubEmulator gRPC server."""
-    server = create_server()[0]
+    server = PubsubEmulator().server
     try:
         while True:
             time.sleep(60)
