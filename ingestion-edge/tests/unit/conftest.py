@@ -4,6 +4,7 @@ from persistqueue import SQLiteAckQueue
 from sanic import Sanic
 import grpc
 import os
+import persistqueue.serializers.msgpack
 import pytest
 
 
@@ -34,4 +35,4 @@ def bad_pubsub():
 
 @pytest.fixture
 def q() -> SQLiteAckQueue:
-    return SQLiteAckQueue(":memory:")
+    return SQLiteAckQueue(path=":memory:", serializer=persistqueue.serializers.msgpack)

@@ -10,6 +10,7 @@ from logging.config import dictConfig
 from os import environ
 from typing import Tuple
 import json
+import persistqueue.serializers.msgpack
 
 log_level = environ.get("LOG_LEVEL", "DEBUG").upper()
 dictConfig(
@@ -49,6 +50,8 @@ class Route:
 ROUTE_TABLE = [Route(*route) for route in json.loads(environ.get("ROUTE_TABLE", "[]"))]
 
 QUEUE_PATH = environ.get("QUEUE_PATH", "queue")
+
+QUEUE_SERIALIZER = persistqueue.serializers.msgpack
 
 MINIMUM_DISK_FREE_BYTES = int(environ.get("MINIMUM_DISK_FREE_BYTES", 0)) or None
 
