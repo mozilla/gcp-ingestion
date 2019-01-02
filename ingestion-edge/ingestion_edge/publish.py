@@ -52,7 +52,9 @@ async def submit(
         if len(value.encode("utf8")) > 1024:
             # attribute exceeds value size limit of 1024 bytes
             # https://cloud.google.com/pubsub/quotas#resource_limits
-            return response.text("header too large\n", 431)
+            return response.text(
+                "header too large\n", HTTP_STATUS.REQUEST_HEADER_FIELDS_TOO_LARGE
+            )
     try:
         future = client.publish(topic, data, **attrs)
         await asyncio.wait_for(async_wrap(future), timeout)

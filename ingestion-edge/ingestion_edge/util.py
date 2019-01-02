@@ -39,7 +39,6 @@ class HTTP_STATUS:
     """HTTP Status Codes for responses."""
 
     OK = 200
-    NO_CONTENT = 204
     BAD_REQUEST = 400
-    GATEWAY_TIMEOUT = 504
+    REQUEST_HEADER_FIELDS_TOO_LARGE = 431
     INSUFFICIENT_STORAGE = 507
