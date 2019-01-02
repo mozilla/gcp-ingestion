@@ -45,7 +45,7 @@ class IntegrationTest:
     args: str = ""
     data: bytes = b""
     headers: Dict[str, Optional[bytes]] = field(default_factory=dict)
-    protocol: str = "http"
+    protocol: str = "HTTP/1.1"
     uri_suffix: str = "."  # may 404 on ""
 
     @property

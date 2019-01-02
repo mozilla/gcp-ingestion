@@ -92,7 +92,7 @@ async def submit(
         for key, value in dict(
             submission_timestamp=datetime.utcnow().isoformat() + "Z",
             uri=request.path,
-            protocol=request.scheme,
+            protocol="HTTP/" + request.version,
             method=request.method,
             args=request.query_string,
             remote_addr=request.ip,
