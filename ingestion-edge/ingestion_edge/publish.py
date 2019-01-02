@@ -12,8 +12,9 @@ from functools import partial
 from google.cloud.pubsub_v1 import PublisherClient
 from google.cloud.pubsub_v1.publisher.exceptions import PublishError
 from persistqueue import SQLiteAckQueue
-from typing import Dict, Tuple
+from typing import Dict, Optional, Tuple
 from .util import async_wrap, HTTP_STATUS
+import asyncio
 import google.api_core.exceptions
 
 # Errors where message should be queued locally after pubsub delivery fails
@@ -23,8 +24,10 @@ TRANSIENT_ERRORS = (
     google.api_core.exceptions.Aborted,
     # The API was interrupted when handling the request
     google.api_core.exceptions.Cancelled,
-    # The PublisherClient lacks permissions and may require manual intervention
+    # The PublisherClient lacks permissions and probably requires manual intervention
     google.api_core.exceptions.Forbidden,
+    # The topic does not exist and probably requires manual intervention
+    google.api_core.exceptions.NotFound,
     # API call ran out of retries
     google.api_core.exceptions.RetryError,
     # API outage or connection issue
@@ -37,7 +40,11 @@ TRANSIENT_ERRORS = (
 
 
 async def _publish(
-    client: PublisherClient, topic: str, data: bytes, attrs: Dict[str, str]
+    client: PublisherClient,
+    timeout: Optional[float],
+    topic: str,
+    data: bytes,
+    attrs: Dict[str, str],
 ) -> str:
     """Publish one message to the topic.
 
@@ -53,7 +60,8 @@ async def _publish(
     worker.
     """
     try:
-        return await async_wrap(client.publish(topic, data, **attrs))
+        future = client.publish(topic, data, **attrs)
+        return await asyncio.wait_for(async_wrap(future), timeout)
     except PublishError:
         # Batch failed because pubsub permanently rejected at least one message
         # retry this message alone to determine if it was rejected
@@ -62,7 +70,7 @@ async def _publish(
         )
         future = batch.publish({"data": data, "attributes": attrs})
         batch.commit()  # spawns thread to commit batch
-        return await async_wrap(future)
+        return await asyncio.wait_for(async_wrap(future), timeout)
 
 
 async def submit(
@@ -71,6 +79,7 @@ async def submit(
     q: SQLiteAckQueue,
     topic: str,
     metadata_headers: Dict[str, str],
+    timeout: Optional[float],
     **kwargs
 ) -> response.HTTPResponse:
     """Deliver request to the pubsub topic.
@@ -102,7 +111,7 @@ async def submit(
             # https://cloud.google.com/pubsub/quotas#resource_limits
             return response.text("header too large\n", 431)
     try:
-        await _publish(client, topic, data, attrs)
+        await _publish(client, timeout, topic, data, attrs)
     except TRANSIENT_ERRORS:
         # transient api call failure, write to queue
         try:
@@ -118,6 +127,8 @@ async def submit(
 
 def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
     """Initialize Sanic app with url rules."""
+    # Get PubSub timeout
+    timeout = app.config.get("PUBLISH_TIMEOUT_SECONDS")
     # Initialize PubSub client
     client = PublisherClient()
     # Use a SQLiteAckQueue because:
@@ -145,6 +156,7 @@ def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
             q=q,
             topic=route.topic,
             metadata_headers=metadata_headers,
+            timeout=timeout,
         )
         for route in app.config["ROUTE_TABLE"]
     }
