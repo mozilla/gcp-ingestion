@@ -25,6 +25,7 @@ class Flush:
     concurrent_bytes: int
     concurrent_messages: int
     sleep_seconds: float
+    publish_timeout_seconds: Optional[float] = None
     running: bool = False
     task: Optional[asyncio.Task] = None
     sleep_task: Optional[asyncio.Task] = None
@@ -75,6 +76,8 @@ class Flush:
                     future = async_wrap(self.client.publish(topic, data, **attrs))
                     # ack or nack by callback
                     future.add_done_callback(partial(self.set_status, message))
+                    # add timeout to future
+                    future = asyncio.wait_for(future, self.publish_timeout_seconds)
                     # wait for this later
                     pending.append(future)
                 except Exception:

@@ -64,6 +64,12 @@ environment variables:
 - `METADATA_HEADERS`: a JSON list of headers to preserve as PubSub message
   attributes, defaults to `["Content-Length", "Date", "DNT", "User-Agent",
   "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy"]`
+- `PUBLISH_TIMEOUT_SECONDS`: a float indicating the maximum number of seconds
+  to wait for the PubSub client to complete a publish operation during an HTTP
+  request, defaults to 1 second and may require tuning
+- `FLUSH_PUBLISH_TIMEOUT_SECONDS`: a float indicating the maximum number of
+  seconds to wait for the PubSub client to complete a publish operation when
+  flushing, defaults to `PUBLISH_TIMEOUT_SECONDS`
 - `FLUSH_CONCURRENT_MESSAGES`: an integer indicating the number of messages per
   worker that may be read from the queue before waiting on publish results,
   defaults to 1000 messages based on [publish request

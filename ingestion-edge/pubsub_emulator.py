@@ -152,6 +152,26 @@ class PubsubEmulator(
                     context.set_code(grpc.StatusCode.NOT_FOUND)
         return empty_pb2.Empty()
 
+    def ModifyAckDeadline(
+        self,
+        request: pubsub_pb2.ModifyAckDeadlineRequest,
+        context: grpc.ServicerContext,
+    ) -> empty_pb2.Empty:  # noqa: D403
+        """ModifyAckDeadline implementation."""
+        try:
+            subscription = self.subscriptions[request.subscription]
+        except KeyError:
+            context.abort(grpc.StatusCode.NOT_FOUND, "Subscription not found")
+        # deadline is not tracked so only handle expiration when set to 0
+        if request.ack_deadline_seconds == 0:
+            for ack_id in request.ack_ids:
+                try:
+                    # move message from pulled back to published
+                    subscription.published.append(subscription.pulled.pop(ack_id))
+                except KeyError:
+                    context.abort(grpc.StatusCode.NOT_FOUND, "Ack ID not found")
+        return empty_pb2.Empty()
+
     def UpdateTopic(self, request, context):
         """Repurpose UpdateTopic API for setting up test conditions.
 
@@ -177,7 +197,7 @@ class PubsubEmulator(
                 if key.lower() in ("status_code", "statuscode"):
                     if value:
                         self.status_codes[request.topic.name] = getattr(
-                            grpc.StatusCode, value
+                            grpc.StatusCode, value.upper()
                         )
                     else:
                         del self.status_codes[request.topic.name]

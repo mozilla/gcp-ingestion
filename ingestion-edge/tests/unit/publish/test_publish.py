@@ -19,7 +19,7 @@ async def test_ok(client: PublisherClient):
         return PublishResponse(message_ids=list(map(str, range(len(messages)))))
 
     with patch.object(client.api, "publish", new=api_publish):
-        message_id = await _publish(client, "topic", b"data", {"attr": "value"})
+        message_id = await _publish(client, None, "topic", b"data", {"attr": "value"})
 
     assert message_id == "0"
     assert len(calls) == 1
@@ -42,7 +42,7 @@ async def test_publish_error_and_recover(client: PublisherClient):
             return PublishResponse(message_ids=[])
 
     with patch.object(client.api, "publish", new=api_publish):
-        message_id = await _publish(client, "topic", b"data", {"attr": "value"})
+        message_id = await _publish(client, None, "topic", b"data", {"attr": "value"})
 
     assert message_id == "0"
     assert len(calls) == 2
@@ -63,7 +63,7 @@ async def test_publish_error_and_propagate(client: PublisherClient):
 
     with pytest.raises(PublishError):
         with patch.object(client.api, "publish", new=api_publish):
-            await _publish(client, "topic", b"data", {"attr": "value"})
+            await _publish(client, None, "topic", b"data", {"attr": "value"})
 
     assert len(calls) == 2
     for topic, messages in calls:
@@ -83,7 +83,7 @@ async def test_other_error(client: PublisherClient):
 
     with pytest.raises(ServerError):
         with patch.object(client.api, "publish", new=api_publish):
-            await _publish(client, "topic", b"data", {"attr": "value"})
+            await _publish(client, None, "topic", b"data", {"attr": "value"})
 
     assert len(calls) == 1
     for topic, messages in calls:
