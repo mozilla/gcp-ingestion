@@ -21,7 +21,7 @@ ROUTE_TABLE = [
 def app():
     app = Sanic()
     app.config.update(QUEUE_PATH=":memory:", METADATA_HEADERS={}, ROUTE_TABLE=[])
-    yield app
+    return app
 
 
 @pytest.mark.parametrize(
