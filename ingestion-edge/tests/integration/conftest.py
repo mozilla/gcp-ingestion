@@ -3,22 +3,25 @@
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
 from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
+from pubsub_emulator import PubsubEmulator
+from time import sleep
+from typing import Generator, Union
 
 # importing from private module _pytest for types only
 import _pytest.config.argparsing
 import _pytest.fixtures
 import grpc
 import os
+import psutil
 import pytest
 import requests
+import subprocess
+import sys
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser):
     parser.addoption(
-        "--server",
-        dest="server",
-        default="http://web:8000",
-        help="Server to run tests against",
+        "--server", dest="server", default=None, help="Server to run tests against"
     )
     parser.addoption(
         "--uses-cluster",
@@ -31,26 +34,35 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         "--no-verify",
         action="store_false",
         dest="verify",
-        default=None,
+        default=True,
         help="Don't verify SSL certs",
     )
 
 
-@pytest.fixture
-def pubsub() -> str:
+@pytest.fixture(scope="session")
+def pubsub(
+    request: _pytest.fixtures.SubRequest
+) -> Generator[Union[str, PubsubEmulator], None, None]:
     if "PUBSUB_EMULATOR_HOST" in os.environ:
-        return "remote"
+        yield "remote"
+    elif request.config.getoption("server") is None:
+        emulator = PubsubEmulator(max_workers=1, port=0)
+        try:
+            os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:%d" % emulator.port
+            yield emulator
+        finally:
+            emulator.server.stop(grace=None)
     else:
-        return "google"
+        yield "google"
 
 
 @pytest.fixture
-def publisher() -> PublisherClient:
+def publisher(pubsub: Union[str, PubsubEmulator]) -> PublisherClient:
     return PublisherClient()
 
 
 @pytest.fixture
-def subscriber() -> SubscriberClient:
+def subscriber(pubsub: Union[str, PubsubEmulator]) -> SubscriberClient:
     if "PUBSUB_EMULATOR_HOST" in os.environ:
         host = os.environ["PUBSUB_EMULATOR_HOST"]
         try:
@@ -69,9 +81,29 @@ def subscriber() -> SubscriberClient:
         return SubscriberClient()
 
 
-@pytest.fixture
-def server(request: _pytest.fixtures.SubRequest) -> str:
-    return request.config.getoption("server")
+@pytest.fixture(scope="session")
+def server(
+    pubsub: Union[str, PubsubEmulator], request: _pytest.fixtures.SubRequest
+) -> Generator[str, None, None]:
+    _server = request.config.getoption("server")
+    if _server is None:
+        process = subprocess.Popen([sys.executable, "-u", "-m", "ingestion_edge.wsgi"])
+        try:
+            while process.poll() is None:
+                ports = [
+                    conn.laddr.port
+                    for conn in psutil.Process(process.pid).connections()
+                ]
+                if ports:
+                    break
+                sleep(0.1)
+            assert process.poll() is None  # server still running
+            yield "http://localhost:%d" % ports.pop()
+        finally:
+            process.kill()
+            process.wait()
+    else:
+        yield _server
 
 
 @pytest.fixture
