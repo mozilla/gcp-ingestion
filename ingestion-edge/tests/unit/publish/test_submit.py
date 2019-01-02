@@ -25,7 +25,7 @@ class MockRequest:
     method: str = "method"
     path: str = "path"
     query_string: str = "query_string"
-    scheme: str = "scheme"
+    version: str = "version"
 
 
 class ListQueue(list):
@@ -65,7 +65,7 @@ def validate(start_time: datetime, response: HTTPResponse, q: ListQueue):
         "header": "header",
         "host": "host",
         "method": "method",
-        "protocol": "scheme",
+        "protocol": "HTTP/version",
         "remote_addr": "ip",
         "uri": "path",
     }
