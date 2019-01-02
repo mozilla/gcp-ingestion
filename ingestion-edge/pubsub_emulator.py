@@ -40,9 +40,9 @@ class PubsubEmulator(
         self.sleep = None
         self.port = port
         self.max_workers = max_workers
-        self.new_server()
+        self.create_server()
 
-    def new_server(self):
+    def create_server(self):
         """Create and start a new grpc.Server configured with PubsubEmulator."""
         self.server = grpc.server(
             concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers),
