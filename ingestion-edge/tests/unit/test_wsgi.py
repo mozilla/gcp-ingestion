@@ -7,6 +7,7 @@ from ingestion_edge import wsgi
 
 def test_wsgi(mocker):
     socket = mocker.patch.object(wsgi, "socket")
+    socket.return_value.getsockname.return_value = ("", 0)
     run = mocker.patch.object(wsgi.app, "run")
     mocker.patch.object(wsgi, "__name__", "__main__")
     mocker.patch.object(wsgi, "environ", {"HOST": "HOST", "PORT": "-1"})

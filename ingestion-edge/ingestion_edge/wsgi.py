@@ -7,6 +7,7 @@
 from .create_app import create_app
 from os import environ
 from socket import socket
+import logging
 
 app = create_app()
 
@@ -18,7 +19,10 @@ def main():
         port = int(environ.get("PORT", 8000))
         sock = socket()
         sock.bind((host, port))
-        print("Listening on port %s" % sock.getsockname()[1])
+        host, port = sock.getsockname()
+        logging.getLogger("ingestion-edge").info(
+            "Listening on %s:%d" % (host, port), extra={"host": host, "port": port}
+        )
         app.run(sock=sock)
 
 

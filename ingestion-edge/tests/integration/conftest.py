@@ -4,6 +4,7 @@
 
 from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from pubsub_emulator import PubsubEmulator
+from time import sleep
 from typing import Generator, Union
 
 # importing from private module _pytest for types only
@@ -11,8 +12,8 @@ import _pytest.config.argparsing
 import _pytest.fixtures
 import grpc
 import os
+import psutil
 import pytest
-import re
 import requests
 import subprocess
 import sys
@@ -86,16 +87,18 @@ def server(
 ) -> Generator[str, None, None]:
     _server = request.config.getoption("server")
     if _server is None:
-        process = subprocess.Popen(
-            [sys.executable, "-u", "-m", "ingestion_edge.wsgi"], stdout=subprocess.PIPE
-        )
+        process = subprocess.Popen([sys.executable, "-u", "-m", "ingestion_edge.wsgi"])
         try:
-            line = process.stdout.readline()
-            match = re.match(b"^Listening on port (\\d+)$", line)
-            assert match is not None  # found match
-            port = int(match.groups()[0])
+            while process.poll() is None:
+                ports = [
+                    conn.laddr.port
+                    for conn in psutil.Process(process.pid).connections()
+                ]
+                if ports:
+                    break
+                sleep(0.1)
             assert process.poll() is None  # server still running
-            yield "http://localhost:%d" % port
+            yield "http://localhost:%d" % ports.pop()
         finally:
             process.kill()
             process.wait()

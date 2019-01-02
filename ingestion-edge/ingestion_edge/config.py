@@ -30,7 +30,10 @@ dictConfig(
                 "formatter": "json",
             }
         },
-        "loggers": {"request.summary": {"handlers": ["console"], "level": "DEBUG"}},
+        "loggers": {
+            "request.summary": {"handlers": ["console"], "level": "DEBUG"},
+            "ingestion-edge": {"handlers": ["console"], "level": "DEBUG"},
+        },
     }
 )
 
