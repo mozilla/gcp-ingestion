@@ -56,7 +56,9 @@ class PubsubEmulator(
         pubsub_pb2_grpc.add_SubscriberServicer_to_server(self, self.server)
         self.server.start()
 
-    def CreateTopic(self, request, context):  # noqa: D403
+    def CreateTopic(
+        self, request: pubsub_pb2.Topic, context: grpc.ServicerContext
+    ):  # noqa: D403
         """CreateTopic implementation."""
         if request.name in self.topics:
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
@@ -64,7 +66,9 @@ class PubsubEmulator(
             self.topics[request.name] = set()
         return request
 
-    def DeleteTopic(self, request, context):  # noqa: D403
+    def DeleteTopic(
+        self, request: pubsub_pb2.DeleteTopicRequest, context: grpc.ServicerContext
+    ):  # noqa: D403
         """DeleteTopic implementation."""
         try:
             self.topics.pop(request.topic)
@@ -72,7 +76,9 @@ class PubsubEmulator(
             context.set_code(grpc.StatusCode.NOT_FOUND)
         return empty_pb2.Empty()
 
-    def CreateSubscription(self, request, context):  # noqa: D403
+    def CreateSubscription(
+        self, request: pubsub_pb2.Subscription, context: grpc.ServicerContext
+    ):  # noqa: D403
         """CreateSubscription implementation."""
         if request.name in self.subscriptions:
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
@@ -84,7 +90,11 @@ class PubsubEmulator(
             self.topics[request.topic].add(subscription)
         return request
 
-    def DeleteSubscription(self, request, context):  # noqa: D403
+    def DeleteSubscription(
+        self,
+        request: pubsub_pb2.DeleteSubscriptionRequest,
+        context: grpc.ServicerContext,
+    ):  # noqa: D403
         """DeleteSubscription implementation."""
         try:
             subscription = self.subscriptions.pop(request.subscription)
@@ -95,7 +105,9 @@ class PubsubEmulator(
                 subscriptions.discard(subscription)
         return empty_pb2.Empty()
 
-    def Publish(self, request, context):
+    def Publish(
+        self, request: pubsub_pb2.PublishRequest, context: grpc.ServicerContext
+    ):
         """Publish implementation."""
         if request.topic in self.status_codes:
             context.set_code(self.status_codes[request.topic])
@@ -115,7 +127,7 @@ class PubsubEmulator(
                 subscription.published.extend(request.messages)
         return pubsub_pb2.PublishResponse(message_ids=message_ids)
 
-    def Pull(self, request, context):
+    def Pull(self, request: pubsub_pb2.PullRequest, context: grpc.ServicerContext):
         """Pull implementation."""
         received_messages = []
         try:
@@ -138,7 +150,9 @@ class PubsubEmulator(
             ]
         return pubsub_pb2.PullResponse(received_messages=received_messages)
 
-    def Acknowledge(self, request, context):
+    def Acknowledge(
+        self, request: pubsub_pb2.AcknowledgeRequest, context: grpc.ServicerContext
+    ):
         """Acknowledge implementation."""
         try:
             subscription = self.subscriptions[request.subscription]
@@ -172,7 +186,9 @@ class PubsubEmulator(
                     context.abort(grpc.StatusCode.NOT_FOUND, "Ack ID not found")
         return empty_pb2.Empty()
 
-    def UpdateTopic(self, request, context):
+    def UpdateTopic(
+        self, request: pubsub_pb2.UpdateTopicRequest, context: grpc.ServicerContext
+    ):
         """Repurpose UpdateTopic API for setting up test conditions.
 
         :param request.topic.name: Name of the topic that needs overrides.
