@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+import grpc
 import google.api_core.exceptions
 import pytest
 
@@ -37,42 +38,12 @@ def test_emulator(publisher, subscriber):
 
 
 @pytest.mark.parametrize(
-    "status_code",
-    [
-        "CANCELLED",
-        "UNKNOWN",
-        "INVALID_ARGUMENT",
-        "DEADLINE_EXCEEDED",
-        "NOT_FOUND",
-        "ALREADY_EXISTS",
-        "PERMISSION_DENIED",
-        "RESOURCE_EXHAUSTED",
-        "FAILED_PRECONDITION",
-        "ABORTED",
-        "OUT_OF_RANGE",
-        "DATA_LOSS",
-        "UNAUTHENTICATED",
-    ],
+    "status_code", set(grpc.StatusCode).difference([grpc.StatusCode.OK])
 )
 def test_fake_status_code(publisher, status_code):
-    expect = getattr(
-        google.api_core.exceptions,
-        "".join(map(lambda x: x.capitalize(), status_code.split("_"))),
+    expect = type(google.api_core.exceptions.from_grpc_status(status_code, ""))
+    publisher.update_topic(
+        {"name": "topic"}, {"paths": ["status_code=" + status_code.name.lower()]}
     )
-    publisher.update_topic({"name": "topic"}, {"paths": ["status_code=" + status_code]})
-    with pytest.raises(expect):
-        publisher.api.publish("topic", [{"data": b""}], retry=None)
-
-
-@pytest.mark.parametrize(
-    "status_code,expect",
-    [
-        ("UNIMPLEMENTED", google.api_core.exceptions.MethodNotImplemented),
-        ("INTERNAL", google.api_core.exceptions.InternalServerError),
-        ("UNAVAILABLE", google.api_core.exceptions.ServiceUnavailable),
-    ],
-)
-def test_fake_status_code_renamed(publisher, status_code, expect):
-    publisher.update_topic({"name": "topic"}, {"paths": ["status_code=" + status_code]})
     with pytest.raises(expect):
         publisher.api.publish("topic", [{"data": b""}], retry=None)
