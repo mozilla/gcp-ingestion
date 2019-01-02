@@ -5,14 +5,13 @@
 from dataclasses import dataclass
 from datetime import datetime
 from dateutil.parser import parse
-from google.cloud.pubsub_v1.publisher.exceptions import PublishError
 from ingestion_edge import publish
 from multidict import CIMultiDict
 from sqlite3 import DatabaseError
-from unittest.mock import patch
+from unittest.mock import MagicMock
 from sanic.response import HTTPResponse
 from typing import Any, Dict
-import google.api_core.exceptions
+import google.cloud.pubsub_v1.futures
 import pytest
 
 
@@ -33,12 +32,12 @@ class ListQueue(list):
         self.append(item)
 
 
-async def call_submit(q=None, **kwargs) -> HTTPResponse:
+async def call_submit(client=None, q=None, **kwargs) -> HTTPResponse:
     return (
         datetime.utcnow(),
         await publish.submit(
             request=MockRequest(**kwargs),
-            client=None,
+            client=client,
             timeout=None,
             q=q,
             topic="topic",
@@ -71,16 +70,17 @@ def validate(start_time: datetime, response: HTTPResponse, q: ListQueue):
     }
 
 
-async def test_ok():
-    q = ListQueue([])
+@pytest.fixture
+def client() -> MagicMock:
+    client = MagicMock()
+    client.publish.return_value = google.cloud.pubsub_v1.futures.Future()
+    return client
 
-    async def _publish(client, timeout, *args):
-        q.put(args)
-        return len(q)
 
-    with patch.object(publish, "_publish", new=_publish):
-        start_time, response = await call_submit()
-
+async def test_ok(client: MagicMock):
+    client.publish.return_value.set_result(None)
+    start_time, response = await call_submit(client)
+    q = ListQueue([call[0] + (call[1],) for call in client.publish.call_args_list])
     validate(start_time, response, q)
 
 
@@ -95,70 +95,22 @@ async def test_ok():
     ],
 )
 async def test_invalid(kwargs: Dict[str, Any]):
-    async def _publish(*_):
-        raise Exception()
-
-    q = ListQueue([])
-
-    with patch.object(publish, "_publish", new=_publish):
-        _, response = await call_submit(q=q, **kwargs)
-
-    assert len(q) == 0
+    _, response = await call_submit(**kwargs)
     assert response.status == 431
     assert response.body == b"header too large\n"
 
 
-async def test_publish_error():
-    async def _publish(*_):
-        raise PublishError(None)
-
-    q = ListQueue([])
-
-    with patch.object(publish, "_publish", new=_publish):
-        _, response = await call_submit(q=q)
-
-    assert len(q) == 0
-    assert response.status == 400
-    assert response.body == b""
-
-
-async def test_database_error():
-    def put(*_):
-        raise DatabaseError
-
-    async def _publish(*_):
-        raise TimeoutError
-
-    q = ListQueue([])
-    q.put = put
-
-    with patch.object(publish, "_publish", new=_publish):
-        _, response = await call_submit(q=q)
-
-    assert len(q) == 0
+async def test_database_error(client: MagicMock):
+    q = MagicMock()
+    q.put.side_effect = DatabaseError()
+    client.publish.return_value.set_exception(TimeoutError())
+    _, response = await call_submit(client, q)
     assert response.status == 507
     assert response.body == b""
 
 
-TRANSIENT_ERRORS = (
-    google.api_core.exceptions.Aborted("test"),
-    google.api_core.exceptions.Cancelled("test"),
-    google.api_core.exceptions.Forbidden("test"),
-    google.api_core.exceptions.RetryError("test", None),
-    google.api_core.exceptions.ServerError("test"),
-    google.api_core.exceptions.TooManyRequests("test"),
-    TimeoutError("test"),
-)
-
-
-@pytest.mark.parametrize("error", TRANSIENT_ERRORS)
-async def test_transient_error(error: Exception):
-    async def _publish(*_):
-        raise error
-
+async def test_pubsub_error(client: MagicMock):
+    client.publish.return_value.set_exception(Exception())
     q = ListQueue([])
-
-    with patch.object(publish, "_publish", new=_publish):
-        start_time, response = await call_submit(q=q)
-
+    start_time, response = await call_submit(client, q)
     validate(start_time, response, q)
