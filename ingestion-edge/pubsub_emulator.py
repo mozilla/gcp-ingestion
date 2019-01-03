@@ -6,7 +6,7 @@
 
 from google.cloud.pubsub_v1.proto import pubsub_pb2_grpc, pubsub_pb2
 from google.protobuf import empty_pb2
-from typing import Dict, Set
+from typing import Dict, List, Optional, Set
 import concurrent.futures
 import grpc
 import os
@@ -37,7 +37,7 @@ class PubsubEmulator(
         self.topics: Dict[str, Set[Subscription]] = {}
         self.subscriptions: Dict[str, Subscription] = {}
         self.status_codes: Dict[str, grpc.StatusCode] = {}
-        self.sleep = None
+        self.sleep: Optional[float] = None
         self.port = port
         self.max_workers = max_workers
         self.create_server()
@@ -114,7 +114,7 @@ class PubsubEmulator(
             return pubsub_pb2.PublishResponse()
         if self.sleep is not None:
             time.sleep(self.sleep)
-        message_ids = []
+        message_ids: List[str] = []
         try:
             subscriptions = self.topics[request.topic]
         except KeyError:
@@ -129,7 +129,7 @@ class PubsubEmulator(
 
     def Pull(self, request: pubsub_pb2.PullRequest, context: grpc.ServicerContext):
         """Pull implementation."""
-        received_messages = []
+        received_messages: List[pubsub_pb2.ReceivedMessage] = []
         try:
             subscription = self.subscriptions[request.subscription]
         except KeyError:
