@@ -103,7 +103,7 @@ class PubsubEmulator(
             subscriptions = self.topics[request.topic]
         except KeyError:
             context.abort(grpc.StatusCode.NOT_FOUND, "Topic not found")
-        message_ids = [uuid.uuid4().hex for _ in range(len(request.messages))]
+        message_ids = [uuid.uuid4().hex for _ in request.messages]
         for _id, message in zip(message_ids, request.messages):
             message.message_id = _id
         for subscription in subscriptions:
