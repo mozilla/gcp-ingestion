@@ -81,16 +81,26 @@ public class GeoCityLookup
 
         // Determine client ip
         String ip;
-        if (attributes.containsKey("x_forwarded_for")) {
-          String[] ips = attributes.get("x_forwarded_for").split(" *, *");
+        String xff = attributes.get("x_forwarded_for");
+        if (xff != null) {
+          // Google's load balancer will append the immediate sending client IP and a global
+          // forwarding rule IP to any existing content in X-Forwarded-For as documented in:
+          // https://cloud.google.com/load-balancing/docs/https/#components
+          //
+          // If the request is forwarded from the old AWS infrastructure, X-Pipeline-Proxy will be
+          // set and we expect one or more IPs at the front of X-Forwarded-For. In practice, many
+          // of the "first" addresses are bogus or internal, so we target the "last" address
+          // before the GCP global forwarding rule IP and the tee proxy (if present).
+          String[] ips = xff.split("\\s*,\\s*");
+          int xffTargetIndex;
           if (attributes.containsKey("x_pipeline_proxy")) {
             // Use the ip reported by the proxy load balancer
-            ip = ips[ips.length - 2];
+            xffTargetIndex = ips.length - 3;
             countPipelineProxy.inc();
           } else {
-            // Use the ip reported by the ingestion-edge load balancer
-            ip = ips[ips.length - 1];
+            xffTargetIndex = ips.length - 2;
           }
+          ip = ips[Math.max(xffTargetIndex, 0)];
           countIpForwarded.inc();
         } else {
           ip = attributes.getOrDefault("remote_addr", "");

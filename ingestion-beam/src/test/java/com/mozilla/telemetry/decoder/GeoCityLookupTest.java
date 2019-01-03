@@ -38,16 +38,34 @@ public class GeoCityLookupTest {
   @Test
   public void testOutput() {
     final List<String> input = Arrays.asList(
-        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
-        "{\"attributeMap\":{\"remote_addr\":\"8.8.8.8\"},\"payload\":\"\"}",
-        "{\"attributeMap\":" + "{\"remote_addr\":\"10.0.0.2\""
-            + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195\"" + "},\"payload\":\"\"}");
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}", //
+        "{\"attributeMap\":{\"remote_addr\":\"8.8.8.8\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"remote_addr\":\"10.0.0.2\"" //
+            + ",\"test_name\":\"forwarded within gcp\"" //
+            + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195, 60.1.1.1\"" //
+            + "},\"payload\":\"\"}",
+        "{\"attributeMap\":" //
+            + "{\"remote_addr\":\"10.0.0.2\"" //
+            + ",\"x_pipeline_proxy\":1" //
+            + ",\"test_name\":\"forwarded from AWS\"" //
+            + ",\"x_forwarded_for\":\"63.245.208.195, 62.1.1.1, 60.1.1.1\"" //
+            + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(
-        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
-        "{\"attributeMap\":{\"geo_country\":\"US\"},\"payload\":\"\"}",
-        "{\"attributeMap\":" + "{\"geo_country\":\"US\"" + ",\"geo_city\":\"Sacramento\""
-            + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}", //
+        "{\"attributeMap\":{\"geo_country\":\"US\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"geo_country\":\"US\"" //
+            + ",\"geo_city\":\"Sacramento\"" //
+            + ",\"test_name\":\"forwarded within gcp\"" //
+            + ",\"geo_subdivision1\":\"CA\"" //
+            + "},\"payload\":\"\"}",
+        "{\"attributeMap\":" //
+            + "{\"geo_country\":\"US\",\"geo_city\":\"Sacramento\"" //
+            + ",\"test_name\":\"forwarded from AWS\"" //
+            + ",\"geo_subdivision1\":\"CA\"" //
+            + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
         .apply("decodeJson", InputFileFormat.json.decode()).output()
@@ -63,14 +81,14 @@ public class GeoCityLookupTest {
             .addNameFilter(MetricNameFilter.inNamespace(GeoCityLookup.Fn.class)).build())
         .getCounters());
 
-    assertEquals(counters.size(), 6);
+    assertEquals(7, counters.size());
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
   @Test
   public void testCityRejected() {
     final List<String> input = Arrays.asList("{\"attributeMap\":" + "{\"remote_addr\":\"10.0.0.2\""
-        + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195\"" + "},\"payload\":\"\"}");
+        + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195, 60.1.1.1\"" + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\""
         + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
@@ -90,7 +108,7 @@ public class GeoCityLookupTest {
   @Test
   public void testCityAllowed() {
     final List<String> input = Arrays.asList("{\"attributeMap\":" + "{\"remote_addr\":\"10.0.0.2\""
-        + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195\"" + "},\"payload\":\"\"}");
+        + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195, 60.1.1.1\"" + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\""
         + ",\"geo_city\":\"Sacramento\"" + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
