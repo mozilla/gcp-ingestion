@@ -5,13 +5,26 @@
 """Pubsub Emulator for testing."""
 
 from google.cloud.pubsub_v1.proto import pubsub_pb2_grpc, pubsub_pb2
-from google.protobuf import empty_pb2
+from google.protobuf import empty_pb2, json_format
 from typing import Dict, Set
 import concurrent.futures
 import grpc
+import logging
 import os
 import time
 import uuid
+
+
+class LazyFormat:
+    """Container class for lazily formatting logged protobuf."""
+
+    def __init__(self, value):
+        """Initialize new container."""
+        self.value = value
+
+    def __str__(self):
+        """Get str(dict(value)) without surrounding curly braces."""
+        return str(json_format.MessageToDict(self.value))[1:-1]
 
 
 class Subscription:
@@ -30,14 +43,17 @@ class PubsubEmulator(
 
     def __init__(
         self,
+        host: str = os.environ.get("HOST", "0.0.0.0"),
         max_workers: int = int(os.environ.get("MAX_WORKERS", 1)),
         port: int = int(os.environ.get("PORT", 0)),
     ):
         """Initialize a new PubsubEmulator and add it to a gRPC server."""
+        self.logger = logging.getLogger("pubsub_emulator")
         self.topics: Dict[str, Set[Subscription]] = {}
         self.subscriptions: Dict[str, Subscription] = {}
         self.status_codes: Dict[str, grpc.StatusCode] = {}
         self.sleep = None
+        self.host = host
         self.port = port
         self.max_workers = max_workers
         self.create_server()
@@ -51,13 +67,20 @@ class PubsubEmulator(
                 ("grpc.max_send_message_length", -1),
             ],
         )
-        self.port = self.server.add_insecure_port("0.0.0.0:%d" % self.port)
+        self.port = self.server.add_insecure_port("%s:%d" % (self.host, self.port))
         pubsub_pb2_grpc.add_PublisherServicer_to_server(self, self.server)
         pubsub_pb2_grpc.add_SubscriberServicer_to_server(self, self.server)
         self.server.start()
+        self.logger.info(
+            "Listening on %s:%d",
+            self.host,
+            self.port,
+            extra={"host": self.host, "port": self.port},
+        )
 
     def CreateTopic(self, request, context):  # noqa: D403
         """CreateTopic implementation."""
+        self.logger.debug("CreateTopic(%s)", LazyFormat(request))
         if request.name in self.topics:
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
         else:
@@ -66,6 +89,7 @@ class PubsubEmulator(
 
     def DeleteTopic(self, request, context):  # noqa: D403
         """DeleteTopic implementation."""
+        self.logger.debug("DeleteTopic(%s)", LazyFormat(request))
         try:
             self.topics.pop(request.topic)
         except KeyError:
@@ -74,6 +98,7 @@ class PubsubEmulator(
 
     def CreateSubscription(self, request, context):  # noqa: D403
         """CreateSubscription implementation."""
+        self.logger.debug("CreateSubscription(%s)", LazyFormat(request))
         if request.name in self.subscriptions:
             context.set_code(grpc.StatusCode.ALREADY_EXISTS)
         elif request.topic not in self.topics:
@@ -86,6 +111,7 @@ class PubsubEmulator(
 
     def DeleteSubscription(self, request, context):  # noqa: D403
         """DeleteSubscription implementation."""
+        self.logger.debug("DeleteSubscription(%s)", LazyFormat(request))
         try:
             subscription = self.subscriptions.pop(request.subscription)
         except KeyError:
@@ -97,6 +123,7 @@ class PubsubEmulator(
 
     def Publish(self, request, context):
         """Publish implementation."""
+        self.logger.debug("Publish(%.100s)", LazyFormat(request))
         if request.topic in self.status_codes:
             context.set_code(self.status_codes[request.topic])
             return pubsub_pb2.PublishResponse()
@@ -117,6 +144,7 @@ class PubsubEmulator(
 
     def Pull(self, request, context):
         """Pull implementation."""
+        self.logger.debug("Pull(%.100s)", LazyFormat(request))
         received_messages = []
         try:
             subscription = self.subscriptions[request.subscription]
@@ -140,6 +168,7 @@ class PubsubEmulator(
 
     def Acknowledge(self, request, context):
         """Acknowledge implementation."""
+        self.logger.debug("Acknowledge(%s)", LazyFormat(request))
         try:
             subscription = self.subscriptions[request.subscription]
         except KeyError:
@@ -158,6 +187,7 @@ class PubsubEmulator(
         context: grpc.ServicerContext,
     ) -> empty_pb2.Empty:  # noqa: D403
         """ModifyAckDeadline implementation."""
+        self.logger.debug("ModifyAckDeadline(%s)", LazyFormat(request))
         try:
             subscription = self.subscriptions[request.subscription]
         except KeyError:
@@ -191,6 +221,7 @@ class PubsubEmulator(
         seconds Publish requests should sleep before returning, and non-empty
         override values must be a valid float.
         """
+        self.logger.debug("UpdateTopic(%s)", LazyFormat(request))
         try:
             for override in request.update_mask.paths:
                 key, value = override.split("=", 1)
@@ -215,6 +246,11 @@ class PubsubEmulator(
 
 def main():
     """Run PubsubEmulator gRPC server."""
+    # configure logging
+    logger = logging.getLogger("pubsub_emulator")
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG)
+    # start server
     server = PubsubEmulator().server
     try:
         while True:
