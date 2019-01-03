@@ -84,9 +84,8 @@ class PubsubEmulator(
         """CreateTopic implementation."""
         self.logger.debug("CreateTopic(%s)", LazyFormat(request))
         if request.name in self.topics:
-            context.set_code(grpc.StatusCode.ALREADY_EXISTS)
-        else:
-            self.topics[request.name] = set()
+            context.abort(grpc.StatusCode.ALREADY_EXISTS, "Topic already exists")
+        self.topics[request.name] = set()
         return request
 
     def DeleteTopic(
@@ -97,7 +96,7 @@ class PubsubEmulator(
         try:
             self.topics.pop(request.topic)
         except KeyError:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.abort(grpc.StatusCode.NOT_FOUND, "Topic not found")
         return empty_pb2.Empty()
 
     def CreateSubscription(
@@ -106,13 +105,12 @@ class PubsubEmulator(
         """CreateSubscription implementation."""
         self.logger.debug("CreateSubscription(%s)", LazyFormat(request))
         if request.name in self.subscriptions:
-            context.set_code(grpc.StatusCode.ALREADY_EXISTS)
+            context.abort(grpc.StatusCode.ALREADY_EXISTS, "Subscription already exists")
         elif request.topic not in self.topics:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-        else:
-            subscription = Subscription()
-            self.subscriptions[request.name] = subscription
-            self.topics[request.topic].add(subscription)
+            context.abort(grpc.StatusCode.NOT_FOUND, "Topic not found")
+        subscription = Subscription()
+        self.subscriptions[request.name] = subscription
+        self.topics[request.topic].add(subscription)
         return request
 
     def DeleteSubscription(
@@ -125,10 +123,9 @@ class PubsubEmulator(
         try:
             subscription = self.subscriptions.pop(request.subscription)
         except KeyError:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-        else:
-            for subscriptions in self.topics.values():
-                subscriptions.discard(subscription)
+            context.abort(grpc.StatusCode.NOT_FOUND, "Subscription not found")
+        for subscriptions in self.topics.values():
+            subscriptions.discard(subscription)
         return empty_pb2.Empty()
 
     def Publish(
@@ -137,21 +134,19 @@ class PubsubEmulator(
         """Publish implementation."""
         self.logger.debug("Publish(%.100s)", LazyFormat(request))
         if request.topic in self.status_codes:
-            context.set_code(self.status_codes[request.topic])
-            return pubsub_pb2.PublishResponse()
+            context.abort(self.status_codes[request.topic], "Override")
         if self.sleep is not None:
             time.sleep(self.sleep)
         message_ids: List[str] = []
         try:
             subscriptions = self.topics[request.topic]
         except KeyError:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-        else:
-            message_ids = [uuid.uuid4().hex for _ in range(len(request.messages))]
-            for _id, message in zip(message_ids, request.messages):
-                message.message_id = _id
-            for subscription in subscriptions:
-                subscription.published.extend(request.messages)
+            context.abort(grpc.StatusCode.NOT_FOUND, "Topic not found")
+        message_ids = [uuid.uuid4().hex for _ in request.messages]
+        for _id, message in zip(message_ids, request.messages):
+            message.message_id = _id
+        for subscription in subscriptions:
+            subscription.published.extend(request.messages)
         return pubsub_pb2.PublishResponse(message_ids=message_ids)
 
     def Pull(self, request: pubsub_pb2.PullRequest, context: grpc.ServicerContext):
@@ -161,21 +156,20 @@ class PubsubEmulator(
         try:
             subscription = self.subscriptions[request.subscription]
         except KeyError:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-        else:
-            messages = subscription.published[: request.max_messages or 100]
-            subscription.pulled.update(
-                {message.message_id: message for message in messages}
-            )
-            for message in messages:
-                try:
-                    subscription.published.remove(message)
-                except ValueError:
-                    pass
-            received_messages = [
-                pubsub_pb2.ReceivedMessage(ack_id=message.message_id, message=message)
-                for message in messages
-            ]
+            context.abort(grpc.StatusCode.NOT_FOUND, "Subscription not found")
+        messages = subscription.published[: request.max_messages or 100]
+        subscription.pulled.update(
+            {message.message_id: message for message in messages}
+        )
+        for message in messages:
+            try:
+                subscription.published.remove(message)
+            except ValueError:
+                pass
+        received_messages = [
+            pubsub_pb2.ReceivedMessage(ack_id=message.message_id, message=message)
+            for message in messages
+        ]
         return pubsub_pb2.PullResponse(received_messages=received_messages)
 
     def Acknowledge(
@@ -186,13 +180,12 @@ class PubsubEmulator(
         try:
             subscription = self.subscriptions[request.subscription]
         except KeyError:
-            context.set_code(grpc.StatusCode.NOT_FOUND)
-        else:
-            for ack_id in request.ack_ids:
-                try:
-                    subscription.pulled.pop(ack_id)
-                except KeyError:
-                    context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.abort(grpc.StatusCode.NOT_FOUND, "Subscription not found")
+        for ack_id in request.ack_ids:
+            try:
+                subscription.pulled.pop(ack_id)
+            except KeyError:
+                context.abort(grpc.StatusCode.NOT_FOUND, "Ack ID not found")
         return empty_pb2.Empty()
 
     def ModifyAckDeadline(
@@ -238,25 +231,37 @@ class PubsubEmulator(
         override values must be a valid float.
         """
         self.logger.debug("UpdateTopic(%s)", LazyFormat(request))
-        try:
-            for override in request.update_mask.paths:
-                key, value = override.split("=", 1)
-                if key.lower() in ("status_code", "statuscode"):
-                    if value:
+        for override in request.update_mask.paths:
+            key, value = override.split("=", 1)
+            if key.lower() in ("status_code", "statuscode"):
+                if value:
+                    try:
                         self.status_codes[request.topic.name] = getattr(
                             grpc.StatusCode, value.upper()
                         )
-                    else:
-                        del self.status_codes[request.topic.name]
-                elif key.lower() == "sleep":
-                    if value:
-                        self.sleep = float(value)
-                    else:
-                        self.sleep = None
+                    except AttributeError:
+                        context.abort(
+                            grpc.StatusCode.INVALID_ARGUMENT, "Invalid status code"
+                        )
                 else:
-                    raise ValueError()
-        except (AttributeError, KeyError, ValueError):
-            context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
+                    try:
+                        del self.status_codes[request.topic.name]
+                    except KeyError:
+                        context.abort(
+                            grpc.StatusCode.NOT_FOUND, "Status code override not found"
+                        )
+            elif key.lower() == "sleep":
+                if value:
+                    try:
+                        self.sleep = float(value)
+                    except ValueError:
+                        context.abort(
+                            grpc.StatusCode.INVALID_ARGUMENT, "Invalid sleep time"
+                        )
+                else:
+                    self.sleep = None
+            else:
+                context.abort(grpc.StatusCode.Not_FOUND, "Path not found")
         return request.topic
 
 
