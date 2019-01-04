@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.FileIO.Write;
 import org.apache.beam.sdk.io.TextIO;
@@ -77,7 +78,8 @@ public enum OutputType {
     public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
       return new EmptyErrors(writeFile(options.getOutput(), options.getOutputFileFormat(),
-          options.getParsedWindowDuration(), options.getOutputNumShards()));
+          options.getParsedWindowDuration(), options.getOutputNumShards(),
+          options.getOutputFileCompression()));
     }
   },
 
@@ -124,7 +126,7 @@ public enum OutputType {
    */
   protected static PTransform<PCollection<PubsubMessage>, WriteFilesResult<List<String>>> writeFile(
       ValueProvider<String> outputPrefix, OutputFileFormat format, Duration windowDuration,
-      int numShards) {
+      int numShards, Compression compression) {
     ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
         DynamicPathTemplate::new);
     ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
@@ -143,6 +145,7 @@ public enum OutputType {
                 .extractValuesFrom(DerivedAttributesMap.of(message.getAttributeMap())))
             .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())) //
             .withNumShards(numShards) //
+            .withCompression(compression) //
             .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink()) //
             .to(staticPrefix) //
             .withNaming(placeholderValues -> Write.defaultNaming(
