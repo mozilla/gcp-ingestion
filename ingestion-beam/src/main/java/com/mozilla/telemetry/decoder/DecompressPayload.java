@@ -17,7 +17,7 @@ import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.commons.io.IOUtils;
 
-public class GzipDecompress
+public class DecompressPayload
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
   private class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {

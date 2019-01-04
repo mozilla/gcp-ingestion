@@ -15,7 +15,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class GzipDecompressTest {
+public class DecompressPayloadTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -34,7 +34,7 @@ public class GzipDecompressTest {
 
     final PCollection<String> output = pipeline.apply(Create.of(input))
         .apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("gzipDecompress", new GzipDecompress())
+        .apply("gzipDecompress", new DecompressPayload())
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
