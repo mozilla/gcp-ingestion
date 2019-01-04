@@ -16,6 +16,7 @@ import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.joda.time.Duration;
 
 /**
@@ -128,10 +129,19 @@ public interface SinkOptions extends PipelineOptions {
   void setErrorOutput(ValueProvider<String> value);
 
   @Description("Unless set to false, we will always attempt to decompress gzipped payloads")
-  @Default.Boolean(true)
   ValueProvider<Boolean> getDecompressInputPayloads();
 
   void setDecompressInputPayloads(ValueProvider<Boolean> value);
+
+  @Description("Compression format for payloads when --outputType=pubsub; defaults to GZIP")
+  ValueProvider<Compression> getOutputPubsubCompression();
+
+  void setOutputPubsubCompression(ValueProvider<Compression> value);
+
+  @Description("Compression format for payloads when --errorOutputType=pubsub; defaults to GZIP")
+  ValueProvider<Compression> getErrorOutputPubsubCompression();
+
+  void setErrorOutputPubsubCompression(ValueProvider<Compression> value);
 
   /*
    * Subinterface and static methods.
@@ -170,6 +180,10 @@ public interface SinkOptions extends PipelineOptions {
   static void enrichSinkOptions(Parsed options) {
     validateSinkOptions(options);
     options.setParsedWindowDuration(Time.parseDuration(options.getWindowDuration()));
+    options.setDecompressInputPayloads(
+        providerWithDefault(options.getDecompressInputPayloads(), true));
+    options.setOutputPubsubCompression(
+        providerWithDefault(options.getOutputPubsubCompression(), Compression.GZIP));
   }
 
   /** Detect invalid combinations of parameters and fail fast with helpful error messages. */
@@ -196,5 +210,9 @@ public interface SinkOptions extends PipelineOptions {
       throw new IllegalArgumentException(
           "Configuration errors found!\n* " + String.join("\n* ", errorMessages));
     }
+  }
+
+  static <T> ValueProvider<T> providerWithDefault(ValueProvider<T> inner, T defaultValue) {
+    return NestedValueProvider.of(inner, value -> value == null ? defaultValue : value);
   }
 }

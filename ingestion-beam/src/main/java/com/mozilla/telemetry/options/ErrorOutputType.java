@@ -54,7 +54,8 @@ public enum ErrorOutputType {
     /** Return a PTransform that writes to Google Pubsub. */
     public PTransform<PCollection<PubsubMessage>, ? extends POutput> writeFailures(
         SinkOptions.Parsed options) {
-      return OutputType.writePubsub(options.getErrorOutput());
+      return OutputType.writePubsub(options.getErrorOutput(),
+          options.getErrorOutputPubsubCompression());
     }
   };
 

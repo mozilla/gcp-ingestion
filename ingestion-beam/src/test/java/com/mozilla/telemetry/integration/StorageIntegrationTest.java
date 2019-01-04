@@ -99,6 +99,7 @@ public class StorageIntegrationTest {
 
     Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--geoCityDatabase=GeoLite2-City.mmdb", "--seenMessagesSource=none",
         "--redisUri=" + redis.uri });
