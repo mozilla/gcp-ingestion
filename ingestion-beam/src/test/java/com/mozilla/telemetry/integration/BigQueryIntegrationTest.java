@@ -118,7 +118,7 @@ public class BigQueryIntegrationTest {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
-        "--errorOutput=" + errorOutput });
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 
@@ -150,7 +150,7 @@ public class BigQueryIntegrationTest {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
-        "--errorOutput=" + errorOutput });
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 

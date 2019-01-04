@@ -26,6 +26,7 @@ import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.options.OutputType;
 import com.mozilla.telemetry.options.SinkOptions;
+import com.mozilla.telemetry.options.SinkOptions.Parsed;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -36,6 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.beam.runners.direct.DirectOptions;
 import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -129,6 +131,7 @@ public class PubsubIntegrationTest {
 
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
     sinkOptions.setOutput(pipeline.newProvider(topicName.toString()));
+    sinkOptions.setOutputPubsubCompression(pipeline.newProvider(Compression.UNCOMPRESSED));
 
     pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
         .apply(OutputType.pubsub.write(sinkOptions));
@@ -136,11 +139,38 @@ public class PubsubIntegrationTest {
     final PipelineResult result = pipeline.run();
 
     System.err.println("Waiting for subscriber to receive messages published in the pipeline...");
-    List<String> received = receiveLines(6);
     List<String> expectedLines = Lines.resources("testdata/pubsub-integration/truncated.ndjson");
+    List<String> received = receiveLines(expectedLines.size());
     assertThat(received, matchesInAnyOrder(expectedLines));
     result.cancel();
   }
+
+  @Test(timeout = 30000)
+  public void canSendGzippedPayloads() throws Exception {
+    final List<String> inputLines = Lines.resources("testdata/pubsub-integration/input.ndjson");
+
+    pipeline.getOptions().as(DirectOptions.class).setBlockOnRun(false);
+
+    SinkOptions sinkOptions = pipeline.getOptions().as(SinkOptions.class);
+    sinkOptions.setOutputType(OutputType.pubsub);
+    sinkOptions.setOutput(pipeline.newProvider(topicName.toString()));
+    Parsed options = SinkOptions.parseSinkOptions(sinkOptions);
+
+    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
+        .apply(options.getOutputType().write(options));
+
+    final PipelineResult result = pipeline.run();
+
+    System.err.println("Waiting for subscriber to receive messages published in the pipeline...");
+    List<String> expectedLines = Lines.resources("testdata/pubsub-integration/gzipped.ndjson");
+    List<String> received = receiveLines(expectedLines.size());
+    assertThat(received, matchesInAnyOrder(expectedLines));
+    result.cancel();
+  }
+
+  /*
+   * Helper methods
+   */
 
   private void publishLines(List<String> lines) throws Exception {
     Publisher publisher = Publisher.newBuilder(topicName).build();

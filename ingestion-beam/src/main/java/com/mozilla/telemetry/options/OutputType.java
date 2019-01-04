@@ -6,6 +6,7 @@ package com.mozilla.telemetry.options;
 
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.TableRow;
+import com.mozilla.telemetry.transforms.CompressPayload;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
@@ -88,7 +89,8 @@ public enum OutputType {
     /** Return a PTransform that writes to Google Pubsub. */
     public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
-      return new EmptyErrors(writePubsub(options.getOutput()));
+      return new EmptyErrors(
+          writePubsub(options.getOutput(), options.getOutputPubsubCompression()));
     }
   },
 
@@ -153,8 +155,9 @@ public enum OutputType {
   }
 
   protected static PTransform<PCollection<PubsubMessage>, PDone> writePubsub(
-      ValueProvider<String> topic) {
+      ValueProvider<String> topic, ValueProvider<Compression> compression) {
     return PTransform.compose(input -> input //
+        .apply(CompressPayload.of(compression)) //
         .apply(PubsubConstraints.truncateAttributes()) //
         .apply(PubsubIO.writeMessages().to(topic)));
   }
