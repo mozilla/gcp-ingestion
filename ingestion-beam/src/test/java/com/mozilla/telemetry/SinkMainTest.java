@@ -72,7 +72,8 @@ public class SinkMainTest {
     String output = outputPath + "/${host:-no_host}/${geo_city:-no_city}/out";
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=file", "--output=" + output });
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED" });
 
     assertThat(Lines.files(outputPath + "/**/out*.ndjson"),
         matchesInAnyOrder(Lines.files(inputPath + "/*.ndjson")));
@@ -96,7 +97,8 @@ public class SinkMainTest {
     String output = outputPath + "/out";
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=file", "--output=" + output });
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED" });
 
     List<String> inputLines = Lines.files(input);
     List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
@@ -113,7 +115,8 @@ public class SinkMainTest {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--errorOutputType=file", "--errorOutput=" + errorOutput });
+        "--errorOutputType=file", "--errorOutput=" + errorOutput,
+        "--errorOutputFileCompression=UNCOMPRESSED", "--outputFileCompression=UNCOMPRESSED" });
 
     List<String> validLines = Lines.resources("testdata/basic-messages-valid.ndjson");
     List<String> invalidLines = Lines.resources("testdata/basic-messages-invalid.ndjson");
@@ -131,7 +134,8 @@ public class SinkMainTest {
     String output = outputPath + "/out";
 
     Sink.main(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=file", "--output=" + output });
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED" });
 
     List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
     List<String> expected = Lines.resources("testdata/basic-messages-valid-null-attributes.ndjson");
@@ -145,7 +149,8 @@ public class SinkMainTest {
     String output = outputPath + "/out";
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=text", "--outputType=file", "--output=" + output });
+        "--outputFileFormat=text", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED" });
 
     List<String> outputLines = Lines.files(outputPath + "/out*.txt");
     List<String> expected = Lines.resources("testdata/basic-messages-payloads.txt");
@@ -174,7 +179,8 @@ public class SinkMainTest {
     String output = outputPath + "/${submission_date:-NULL}/${submission_hour:-NULL}/out";
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=file", "--output=" + output });
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED" });
 
     List<String> nullLines = Lines
         .resources("testdata/basic-messages-valid-null-attributes.ndjson");

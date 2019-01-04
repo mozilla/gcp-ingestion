@@ -8,10 +8,10 @@ import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
-import com.mozilla.telemetry.decoder.DecompressPayload;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
+import com.mozilla.telemetry.transforms.DecompressPayload;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -59,7 +59,7 @@ public class Decoder extends Sink {
         .addErrorCollectionTo(errorCollections).output() //
         .apply("parseUri", new ParseUri()) //
         .addErrorCollectionTo(errorCollections).output() //
-        .apply("decompress", new DecompressPayload()) //
+        .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply("parsePayload", new ParsePayload()) //
         .addErrorCollectionTo(errorCollections).output() //
         .apply("geoCityLookup",

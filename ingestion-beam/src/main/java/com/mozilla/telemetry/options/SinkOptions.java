@@ -9,6 +9,7 @@ import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
@@ -52,6 +53,12 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputFileFormat(OutputFileFormat value);
 
+  @Description("Compression format for --outputType=file")
+  @Default.Enum("GZIP")
+  Compression getOutputFileCompression();
+
+  void setOutputFileCompression(Compression value);
+
   @Description("Number of output shards for --outputType=file; defaults to 0 (automatic)"
       + " for batch running, but must be set to an explicit value for stream processing"
       + " (--inputType=pubsub)")
@@ -65,6 +72,12 @@ public interface SinkOptions extends PipelineOptions {
   ErrorOutputType getErrorOutputType();
 
   void setErrorOutputType(ErrorOutputType value);
+
+  @Description("Compression format for --errorOutputType=file")
+  @Default.Enum("GZIP")
+  Compression getErrorOutputFileCompression();
+
+  void setErrorOutputFileCompression(Compression value);
 
   @Description("Number of output shards for --errorOutputType=file; defaults to 0 (automatic)"
       + " for batch running, but must be set to an explicit value for stream processing"
@@ -113,6 +126,12 @@ public interface SinkOptions extends PipelineOptions {
   ValueProvider<String> getErrorOutput();
 
   void setErrorOutput(ValueProvider<String> value);
+
+  @Description("Unless set to false, we will always attempt to decompress gzipped payloads")
+  @Default.Boolean(true)
+  ValueProvider<Boolean> getDecompressInputPayloads();
+
+  void setDecompressInputPayloads(ValueProvider<Boolean> value);
 
   /*
    * Subinterface and static methods.
