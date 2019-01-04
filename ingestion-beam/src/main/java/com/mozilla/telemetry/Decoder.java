@@ -8,7 +8,7 @@ import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
-import com.mozilla.telemetry.decoder.GzipDecompress;
+import com.mozilla.telemetry.decoder.DecompressPayload;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
@@ -59,7 +59,7 @@ public class Decoder extends Sink {
         .addErrorCollectionTo(errorCollections).output() //
         .apply("parseUri", new ParseUri()) //
         .addErrorCollectionTo(errorCollections).output() //
-        .apply("decompress", new GzipDecompress()) //
+        .apply("decompress", new DecompressPayload()) //
         .apply("parsePayload", new ParsePayload()) //
         .addErrorCollectionTo(errorCollections).output() //
         .apply("geoCityLookup",
