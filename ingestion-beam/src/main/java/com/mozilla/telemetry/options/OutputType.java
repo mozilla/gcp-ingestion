@@ -222,8 +222,8 @@ public enum OutputType {
 
     @Override
     public ResultWithErrors<? extends POutput> expand(PCollection<PubsubMessage> input) {
-      return ResultWithErrors.of(input.apply(inner),
-          input.getPipeline().apply(Create.empty(PubsubMessageWithAttributesCoder.of())));
+      return ResultWithErrors.of(input.apply(inner), input.getPipeline()
+          .apply("Empty error collection", Create.empty(PubsubMessageWithAttributesCoder.of())));
     }
   }
 
