@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.transforms;
 
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 import java.util.HashMap;
@@ -22,5 +23,11 @@ public class CompressPayloadTest {
     PubsubMessage message = new PubsubMessage(text.getBytes(), new HashMap<>());
     byte[] compressedBytes = CompressPayload.compress(message, Compression.GZIP).getPayload();
     assertThat(ArrayUtils.toObject(compressedBytes), Matchers.arrayWithSize(68));
+  }
+
+  @Test
+  public void testCompressNullBytes() {
+    PubsubMessage message = new PubsubMessage(null, new HashMap<>());
+    assertNull(CompressPayload.compress(message, Compression.GZIP).getPayload());
   }
 }

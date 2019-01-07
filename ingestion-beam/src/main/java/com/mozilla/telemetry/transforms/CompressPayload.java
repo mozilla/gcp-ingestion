@@ -45,6 +45,9 @@ public class CompressPayload
 
   @VisibleForTesting
   static PubsubMessage compress(PubsubMessage message, Compression compression) {
+    if (message == null || message.getPayload() == null) {
+      return message;
+    }
     byte[] bytes = message.getPayload();
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     // We use a try-with-resources statement to ensure everything gets closed appropriately.
