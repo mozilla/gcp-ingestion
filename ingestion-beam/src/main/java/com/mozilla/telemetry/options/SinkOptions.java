@@ -184,6 +184,8 @@ public interface SinkOptions extends PipelineOptions {
         providerWithDefault(options.getDecompressInputPayloads(), true));
     options.setOutputPubsubCompression(
         providerWithDefault(options.getOutputPubsubCompression(), Compression.GZIP));
+    options.setErrorOutputPubsubCompression(
+        providerWithDefault(options.getErrorOutputPubsubCompression(), Compression.GZIP));
   }
 
   /** Detect invalid combinations of parameters and fail fast with helpful error messages. */
