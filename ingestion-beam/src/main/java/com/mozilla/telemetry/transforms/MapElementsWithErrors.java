@@ -39,9 +39,9 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
    *
    * @param element that should be processed.
    * @return an instance of {@code OutputT} that goes into {@code mainTag}.
-   * @throws Throwable if the element should go into the {@code errorTag}.
+   * @throws Exception if the element should go into the {@code errorTag}.
    */
-  protected abstract OutputT processElement(InputT element) throws Throwable;
+  protected abstract OutputT processElement(InputT element) throws Exception;
 
   /**
    * Method that returns one error PubsubMessage from an exception thrown by {@code processElement}.
@@ -52,26 +52,26 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
    * @param e exception thrown by {@code processElement}.
    * @return a {@link PubsubMessage} that holds {@code element} and {@code e}.
    */
-  protected abstract PubsubMessage processError(InputT element, Throwable e);
+  protected abstract PubsubMessage processError(InputT element, Exception e);
 
   /**
    * Default processError method for {@code InputT} == {@link PubsubMessage}.
    */
-  protected PubsubMessage processError(PubsubMessage element, Throwable e) {
+  protected PubsubMessage processError(PubsubMessage element, Exception e) {
     return FailureMessage.of(this, element, e);
   }
 
   /**
    * Default processError method for {@code InputT} == {@link String}.
    */
-  protected PubsubMessage processError(String element, Throwable e) {
+  protected PubsubMessage processError(String element, Exception e) {
     return FailureMessage.of(this, element, e);
   }
 
   /**
    * Default processError method for {@code InputT} == {@code byte[]}.
    */
-  protected PubsubMessage processError(byte[] element, Throwable e) {
+  protected PubsubMessage processError(byte[] element, Exception e) {
     return FailureMessage.of(this, element, e);
   }
 
@@ -84,7 +84,7 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
     public void processElementOrError(@Element InputT element, MultiOutputReceiver out) {
       try {
         out.get(successTag).output(processElement(element));
-      } catch (Throwable e) {
+      } catch (Exception e) {
         out.get(errorTag).output(processError(element, e));
       }
     }
