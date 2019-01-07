@@ -4,7 +4,6 @@
 
 package com.mozilla.telemetry.transforms;
 
-import com.google.common.primitives.Ints;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,39 +52,27 @@ public class DecompressPayload
     private final Counter uncompressedInput = Metrics.counter(Fn.class, "uncompressed-input");
 
     @Override
-    public PubsubMessage apply(PubsubMessage value) {
-      byte[] payload = value.getPayload();
+    public PubsubMessage apply(PubsubMessage message) {
       if (enabled.isAccessible() && !enabled.get()) {
         // Compression has been explicitly turned off in options, so return unchanged message.
-        return value;
-      } else if (!isGzip(payload)) {
-        uncompressedInput.inc();
-        return value;
+        return message;
       } else {
         try {
-          //
-          ByteArrayInputStream payloadStream = new ByteArrayInputStream(value.getPayload());
+          ByteArrayInputStream payloadStream = new ByteArrayInputStream(message.getPayload());
           GZIPInputStream gzipStream = new GZIPInputStream(payloadStream);
           ByteArrayOutputStream decompressedStream = new ByteArrayOutputStream();
           // Throws IOException
           IOUtils.copy(gzipStream, decompressedStream);
-          payload = decompressedStream.toByteArray();
           compressedInput.inc();
+          return new PubsubMessage(decompressedStream.toByteArray(), message.getAttributeMap());
         } catch (IOException ignore) {
           // payload wasn't valid gzip, assume it wasn't compressed
           uncompressedInput.inc();
+          return message;
         }
-        return new PubsubMessage(payload, value.getAttributeMap());
       }
     }
 
-    /**
-     * See implementation of {@link org.apache.beam.sdk.io.Compression#GZIP}.
-     */
-    private boolean isGzip(byte[] bytes) {
-      return bytes.length >= 2
-          && Ints.fromBytes(ZERO_BYTE, ZERO_BYTE, bytes[1], bytes[0]) == GZIPInputStream.GZIP_MAGIC;
-    }
   }
 
   private final Fn fn = new Fn();
