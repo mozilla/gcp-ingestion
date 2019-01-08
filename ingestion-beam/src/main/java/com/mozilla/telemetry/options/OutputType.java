@@ -7,6 +7,7 @@ package com.mozilla.telemetry.options;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.transforms.CompressPayload;
+import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
@@ -165,7 +166,14 @@ public enum OutputType {
   protected static PTransform<PCollection<PubsubMessage>, ResultWithErrors<WriteResult>> writeBigQuery(
       ValueProvider<String> tableSpecTemplate) {
     return PTransform.compose((PCollection<PubsubMessage> input) -> {
-      ResultWithErrors<PCollection<KV<TableDestination, TableRow>>> tableRows = input
+
+      // BigQueryIOImpl will definitely throw runtime exceptions on payloads larger than 10 MB,
+      // but streaming inserts are further limited to 1 MB per row, so we apply that lower limit.
+      // https://cloud.google.com/bigquery/quotas#streaming_inserts
+      ResultWithErrors<PCollection<PubsubMessage>> sizeLimited = input
+          .apply(LimitPayloadSize.toMB(1));
+
+      ResultWithErrors<PCollection<KV<TableDestination, TableRow>>> tableRows = sizeLimited.output()
           .apply(PubsubMessageToTableRow.of(tableSpecTemplate));
 
       WriteResult writeResult = tableRows.output().apply(BigQueryIO //
@@ -200,8 +208,11 @@ public enum OutputType {
                 byte[] payload = bqie.getRow().toString().getBytes();
                 return new PubsubMessage(payload, attributes);
               }));
-      PCollection<PubsubMessage> errorCollection = PCollectionList.of(tableRows.errors())
-          .and(failedInserts).apply(Flatten.pCollections());
+      PCollection<PubsubMessage> errorCollection = PCollectionList //
+          .of(sizeLimited.errors()) //
+          .and(tableRows.errors()) //
+          .and(failedInserts) //
+          .apply(Flatten.pCollections());
 
       return ResultWithErrors.of(writeResult, errorCollection);
     });

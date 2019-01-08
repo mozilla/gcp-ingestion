@@ -25,9 +25,11 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.matchers.Lines;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.PipelineResult;
+import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -132,9 +134,9 @@ public class BigQueryIntegrationTest {
 
   @Test
   public void canRecoverFailedInserts() throws Exception {
-    String table = "table_with_required_col";
-    String tableSpec = String.format("%s.%s", dataset, table);
-    TableId tableId = TableId.of(dataset, table);
+    final String table = "table_with_required_col";
+    final String tableSpec = String.format("%s.%s", dataset, table);
+    final TableId tableId = TableId.of(dataset, table);
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
 
@@ -144,9 +146,16 @@ public class BigQueryIntegrationTest {
                 .setMode(Mode.REQUIRED).build())))
         .build());
 
-    String input = Resources.getResource("testdata/json-payload.ndjson").getPath();
-    String output = String.format("%s:%s", projectId, tableSpec);
-    String errorOutput = outputPath + "/error/out";
+    final String input = outputPath + "/input.ndjson";
+
+    try (PrintWriter writer = new PrintWriter(input, "UTF-8")) {
+      writer.println("{\"clientId\":\"abc123\",\"type\":\"main\"}");
+      writer.println("{\"clientId\":\"abc123\",\"type\":\"main\",\"extra_required_field\":\"hi\""
+          + "\"huge_field\":\"" + StringUtils.repeat("abcdefghij", 103 * 1024) + "\"}");
+    }
+
+    final String output = String.format("%s:%s", projectId, tableSpec);
+    final String errorOutput = outputPath + "/error/out";
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
@@ -156,9 +165,8 @@ public class BigQueryIntegrationTest {
 
     assertTrue(stringValuesQuery("SELECT clientId FROM " + tableSpec).isEmpty());
 
-    List<String> expectedErrorLines = Lines.resources("testdata/json-payload-wrapped.ndjson");
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
-    assertThat(errorOutputLines, Matchers.hasSize(expectedErrorLines.size()));
+    assertThat(errorOutputLines, Matchers.hasSize(2));
   }
 
   private List<String> stringValuesQuery(String query) throws InterruptedException {
