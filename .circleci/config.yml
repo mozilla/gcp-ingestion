@@ -68,7 +68,8 @@ jobs:
 
   ingestion-beam:
     docker:
-    - image: maven
+    # Pin the maven image due to observed VM aborts on CircleCI 2018-01-08.
+    - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
     steps:
     - checkout
     - restore_cache: &restore_cache_beam
@@ -94,7 +95,8 @@ jobs:
 
   ingestion-beam-integration:
     docker:
-    - image: maven
+    # Pin the maven image due to observed VM aborts on CircleCI 2018-01-08.
+    - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
     steps:
     - run:
         name: Early return if this build is from a forked PR
