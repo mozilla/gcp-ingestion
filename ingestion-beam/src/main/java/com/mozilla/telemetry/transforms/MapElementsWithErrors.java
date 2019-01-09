@@ -82,10 +82,16 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
 
     @ProcessElement
     public void processElementOrError(@Element InputT element, MultiOutputReceiver out) {
+      OutputT processed = null;
+      boolean exceptionWasThrown = false;
       try {
-        out.get(successTag).output(processElement(element));
+        processed = processElement(element);
       } catch (Exception e) {
+        exceptionWasThrown = true;
         out.get(errorTag).output(processError(element, e));
+      }
+      if (!exceptionWasThrown) {
+        out.get(successTag).output(processed);
       }
     }
   }

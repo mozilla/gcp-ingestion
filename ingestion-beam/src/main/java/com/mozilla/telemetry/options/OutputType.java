@@ -182,12 +182,14 @@ public enum OutputType {
           .to((ValueInSingleWindow<KV<TableDestination, TableRow>> vsw) -> vsw.getValue().getKey())
           .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS) //
           .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER) //
-          .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND).skipInvalidRows()
-          .withExtendedErrorInfo().ignoreUnknownValues()
+          .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND) //
+          .skipInvalidRows() //
+          .ignoreUnknownValues() //
+          .withExtendedErrorInfo()
           .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()));
 
       PCollection<PubsubMessage> failedInserts = writeResult.getFailedInsertsWithErr()
-          .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+          .apply("Process failed inserts", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
               .via((BigQueryInsertError bqie) -> {
                 Map<String, String> attributes = new HashMap<>();
                 attributes.put("error_type", "failed_insert");
@@ -212,7 +214,7 @@ public enum OutputType {
           .of(sizeLimited.errors()) //
           .and(tableRows.errors()) //
           .and(failedInserts) //
-          .apply(Flatten.pCollections());
+          .apply("Flatten bigquery errors", Flatten.pCollections());
 
       return ResultWithErrors.of(writeResult, errorCollection);
     });
