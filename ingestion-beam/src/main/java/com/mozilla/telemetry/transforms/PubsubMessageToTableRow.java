@@ -34,6 +34,7 @@ public class PubsubMessageToTableRow
     this.tableSpecTemplate = tableSpecTemplate;
   }
 
+  @Override
   protected KV<TableDestination, TableRow> processElement(PubsubMessage element)
       throws IOException {
     Map<String, String> attributes = Optional.ofNullable(element.getAttributeMap()) //
