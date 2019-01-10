@@ -9,11 +9,23 @@ from sqlite3 import DatabaseError
 from sanic import Sanic, response
 from sanic.request import Request
 from functools import partial
+from google.api_core.retry import Retry, if_exception_type
 from google.cloud.pubsub_v1 import PublisherClient
 from persistqueue import SQLiteAckQueue
-from typing import Dict, Optional, Tuple
-from .util import async_wrap, HTTP_STATUS
-import asyncio
+from typing import Dict, Tuple
+from .util import AsyncioBatch, HTTP_STATUS
+import google.api_core.exceptions
+
+TRANSIENT_ERRORS = if_exception_type(
+    # Service initiated retry
+    google.api_core.exceptions.Aborted,
+    # Service interrupted when handling the request
+    google.api_core.exceptions.Cancelled,
+    # Service throttled the request
+    google.api_core.exceptions.TooManyRequests,
+    # Service outage or connection issue
+    google.api_core.exceptions.ServerError,
+)
 
 
 async def submit(
@@ -22,7 +34,6 @@ async def submit(
     q: SQLiteAckQueue,
     topic: str,
     metadata_headers: Dict[str, str],
-    timeout: Optional[float],
     **kwargs
 ) -> response.HTTPResponse:
     """Deliver request to the pubsub topic.
@@ -56,8 +67,9 @@ async def submit(
                 "header too large\n", HTTP_STATUS.REQUEST_HEADER_FIELDS_TOO_LARGE
             )
     try:
-        future = client.publish(topic, data, **attrs)
-        await asyncio.wait_for(async_wrap(future), timeout)
+        await client.publish(topic, data, **attrs)
+    except ValueError:
+        return response.text("payload too large\n", HTTP_STATUS.PAYLOAD_TOO_LARGE)
     except Exception:
         # api call failure, write to queue
         try:
@@ -70,10 +82,15 @@ async def submit(
 
 def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
     """Initialize Sanic app with url rules."""
-    # Get PubSub timeout
-    timeout = app.config.get("PUBLISH_TIMEOUT_SECONDS")
     # Initialize PubSub client
+    timeout = app.config.get("PUBLISH_TIMEOUT_SECONDS", None)
     client = PublisherClient()
+    client.api.publish = partial(
+        client.api.publish,
+        retry=Retry(TRANSIENT_ERRORS, deadline=timeout),
+        timeout=timeout,
+    )
+    client._batch_class = AsyncioBatch
     # Use a SQLiteAckQueue because:
     # * we use acks to ensure messages only removed on success
     # * persist-queue's SQLite*Queue is faster than its Queue
@@ -99,7 +116,6 @@ def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
             q=q,
             topic=route.topic,
             metadata_headers=metadata_headers,
-            timeout=timeout,
         )
         for route in app.config["ROUTE_TABLE"]
     }

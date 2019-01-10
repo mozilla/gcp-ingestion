@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+from ingestion_edge.util import AsyncioBatch
 from google.cloud.pubsub_v1 import PublisherClient
 from persistqueue import SQLiteAckQueue
 from sanic import Sanic
@@ -18,9 +19,11 @@ def app() -> Sanic:
 @pytest.fixture
 def client() -> PublisherClient:
     if "PUBSUB_EMULATOR_HOST" not in os.environ:
-        return PublisherClient(channel=grpc.insecure_channel(target=""))
+        client = PublisherClient(channel=grpc.insecure_channel(target=""))
     else:
-        return PublisherClient()
+        client = PublisherClient()
+    client._batch_class = AsyncioBatch
+    return client
 
 
 @pytest.fixture

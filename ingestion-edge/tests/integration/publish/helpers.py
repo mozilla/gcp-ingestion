@@ -5,28 +5,15 @@
 
 from dataclasses import dataclass, field
 from google.cloud.pubsub_v1 import SubscriberClient
-from ingestion_edge.config import FLUSH_SLEEP_SECONDS, METADATA_HEADERS
+from google.api_core.retry import Retry
+from ingestion_edge.config import (
+    FLUSH_SLEEP_SECONDS,
+    METADATA_HEADERS,
+    PUBLISH_TIMEOUT_SECONDS,
+)
 from typing import Dict, Optional
-from time import sleep
-import concurrent.futures
 import dateutil.parser
 import requests
-
-
-def wait_for_flush(subscriber, subscription, sleep_seconds):
-    """Wait for flush indefinitely."""
-    while True:
-        # detect flush by receiving one message from PubSub
-        received_messages = subscriber.pull(subscription, 1).received_messages
-        if received_messages:
-            # make the message available again
-            subscriber.modify_ack_deadline(
-                subscription, [received_messages[0].ack_id], 0
-            )
-            # flush detected
-            break
-        # flush not detected so sleep and try again
-        sleep(sleep_seconds)
 
 
 @dataclass
@@ -69,7 +56,6 @@ class IntegrationTest:
         """Assert queue is empty if server is not a cluster."""
         if not self.uses_cluster:
             status = self.requests_session.get(self.server + "/__heartbeat__").json()
-            print(status)
             # queue size goes up to info when not empty
             assert status["checks"]["check_queue_size"] == "info"
 
@@ -96,59 +82,63 @@ class IntegrationTest:
         assert response.status_code == status
 
     def assert_flushed(self):
-        """Wait for one queued message to reach PubSub."""
-        # use timeout via threadpool future to wait for flush
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            # pass kwargs to make wait_for_flush serializable
-            kwargs = dict(
-                subscriber=self.subscriber,
-                subscription=self.subscription,
-                sleep_seconds=FLUSH_SLEEP_SECONDS / 10,
-            )
-            # submit task and get result with timeout
-            executor.submit(wait_for_flush, **kwargs).result(
-                timeout=FLUSH_SLEEP_SECONDS + 1
-            )
+        """Wait for flush then assert queue empty and message delivered."""
+        retry = Retry(
+            lambda e: isinstance(e, AssertionError),
+            initial=PUBLISH_TIMEOUT_SECONDS,
+            multiplier=1,
+            # wait up to two flush cycles, with one second extra overhead per flush
+            deadline=(FLUSH_SLEEP_SECONDS + PUBLISH_TIMEOUT_SECONDS) * 2,
+        )
+        if self.uses_cluster:
+            # detect flush from delivered
+            retry(self.assert_delivered)()
+        else:
+            # detect flush from heartbeat and validate delivered
+            retry(self.assert_queue_empty)()
+            self.assert_delivered()
 
-    def assert_delivered(self):
+    def assert_delivered(self, count: int = 1):
         """Assert message delivered to PubSub matches message sent."""
         # receive up to two messages
-        received_messages = self.subscriber.pull(
-            self.subscription, 2, True, retry=None
+        messages = self.subscriber.pull(
+            self.subscription, count + 1, True
         ).received_messages
-        # assert exactly one message was pulled
-        assert len(received_messages) == 1
-        # ack the message
-        self.subscriber.acknowledge(self.subscription, [received_messages[0].ack_id])
-        # validate data
-        assert received_messages[0].message.data == self.data
-        # create dict of attributes
-        attributes = dict(received_messages[0].message.attributes)
-        # varies based on configuration
-        assert attributes.pop("remote_addr")
-        # determined on the server by stdlib so only validate that it parses
-        assert dateutil.parser.parse(attributes.pop("submission_timestamp")[:-1])
-        # content length if not overridden
-        if ("content-length" in METADATA_HEADERS) and (
-            (self.method.upper() != "GET") or self.data
-        ):
-            assert "content_length" in attributes
-            assert attributes.pop("content_length") == str(len(self.data))
-        # validate attributes
-        assert attributes == dict(
-            # required attributes
-            args=self.args,
-            host=self.host,
-            method=self.method.upper(),
-            protocol=self.protocol,
-            uri=self.uri,
-            # optional attributes
-            **{
-                METADATA_HEADERS.get(key, key): value.decode("latin")
-                for key, value in self.headers.items()
-                if value is not None
-            }
-        )
+        # assert exactly count message were pulled
+        assert len(messages) == count
+        # ack the messages
+        self.subscriber.acknowledge(self.subscription, [e.ack_id for e in messages])
+        # validate messages
+        for message in (e.message for e in messages):
+            # validate data
+            assert message.data == self.data
+            # create dict of attributes
+            attributes = dict(message.attributes)
+            # varies based on configuration
+            assert attributes.pop("remote_addr")
+            # determined on the server by stdlib so only validate that it parses
+            assert dateutil.parser.parse(attributes.pop("submission_timestamp")[:-1])
+            # content length if not overridden
+            if ("content-length" in METADATA_HEADERS) and (
+                (self.method.upper() != "GET") or self.data
+            ):
+                assert "content_length" in attributes
+                assert attributes.pop("content_length") == str(len(self.data))
+            # validate attributes
+            assert attributes == dict(
+                # required attributes
+                args=self.args,
+                host=self.host,
+                method=self.method.upper(),
+                protocol=self.protocol,
+                uri=self.uri,
+                # optional attributes
+                **{
+                    METADATA_HEADERS.get(key, key): value.decode("latin")
+                    for key, value in self.headers.items()
+                    if value is not None
+                }
+            )
 
     def assert_not_delivered(self):
         """Assert message not delivered to PubSub."""
@@ -166,9 +156,3 @@ class IntegrationTest:
         self.assert_accepted()
         self.assert_queue_not_empty()
         self.assert_not_delivered()
-
-    def assert_flushed_and_delivered(self):
-        """Wait for flush then assert queue empty and message delivered."""
-        self.assert_flushed()
-        self.assert_queue_empty()
-        self.assert_delivered()

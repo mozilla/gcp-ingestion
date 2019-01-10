@@ -48,24 +48,15 @@ def app():
 )
 async def test_endpoint(app, kwargs, method, mocker, uri_bytes):
     mocker.patch("ingestion_edge.publish.SQLiteAckQueue", dict)
-    mocker.patch("ingestion_edge.publish.PublisherClient", lambda: None)
-    mocker.patch("ingestion_edge.publish.submit", lambda req, **kw: (req, kw))
+    client = mocker.patch("ingestion_edge.publish.PublisherClient").return_value
+    mocker.patch("ingestion_edge.publish.submit", lambda _, **kw: kw)
     app.config["ROUTE_TABLE"] = ROUTE_TABLE
     publish.init_app(app)
     responses = []
     request = Request(uri_bytes, {}, "1.1", method, None)
     await app.handle_request(request, lambda r: responses.append(r), None)
     assert responses == [
-        (
-            request,
-            dict(
-                client=None,
-                timeout=None,
-                q={"path": ":memory:"},
-                metadata_headers={},
-                **kwargs
-            ),
-        )
+        dict(client=client, q={"path": ":memory:"}, metadata_headers={}, **kwargs)
     ]
 
 

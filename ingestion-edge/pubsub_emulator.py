@@ -135,14 +135,16 @@ class PubsubEmulator(
         self.logger.debug("Publish(%.100s)", LazyFormat(request))
         if request.topic in self.status_codes:
             context.abort(self.status_codes[request.topic], "Override")
-        if self.sleep is not None:
-            time.sleep(self.sleep)
         message_ids: List[str] = []
         try:
             subscriptions = self.topics[request.topic]
         except KeyError:
             context.abort(grpc.StatusCode.NOT_FOUND, "Topic not found")
         message_ids = [uuid.uuid4().hex for _ in request.messages]
+        if self.sleep is not None:
+            time.sleep(self.sleep)
+            # return a valid response without recording messages
+            return pubsub_pb2.PublishResponse(message_ids=message_ids)
         for _id, message in zip(message_ids, request.messages):
             message.message_id = _id
         for subscription in subscriptions:
@@ -228,7 +230,8 @@ class PubsubEmulator(
 
         For the override key "sleep" the override value indicates a number of
         seconds Publish requests should sleep before returning, and non-empty
-        override values must be a valid float.
+        override values must be a valid float. Publish requests will return
+        a valid response without recording messages.
         """
         self.logger.debug("UpdateTopic(%s)", LazyFormat(request))
         for override in request.update_mask.paths:
