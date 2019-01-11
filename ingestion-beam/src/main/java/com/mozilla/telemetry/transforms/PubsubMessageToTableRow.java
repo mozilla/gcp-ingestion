@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
@@ -21,6 +22,14 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.commons.text.StringSubstitutor;
 
+/**
+ * Parses JSON payloads using Google's JSON API model library, emitting a BigQuery-specific
+ * TableRow.
+ *
+ * <p>We also perform some light manipulation of the parsed JSON to match details of our table
+ * schemas in BigQuery. In particular, we pull out submission_timestamp to a top level field so we
+ * can use it as our partitioning field.
+ */
 public class PubsubMessageToTableRow
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, TableRow>> {
 
@@ -48,7 +57,7 @@ public class PubsubMessageToTableRow
           + tableSpecTemplate.get());
     }
     TableDestination tableDestination = new TableDestination(tableSpec, null);
-    TableRow tableRow = Json.readTableRow(element.getPayload());
+    TableRow tableRow = buildTableRow(element.getPayload());
     return KV.of(tableDestination, tableRow);
   }
 
@@ -58,5 +67,27 @@ public class PubsubMessageToTableRow
     ResultWithErrors<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
     result.output().setCoder(KvCoder.of(TableDestinationCoderV2.of(), TableRowJsonCoder.of()));
     return result;
+  }
+
+  @VisibleForTesting
+  static TableRow buildTableRow(byte[] payload) throws IOException {
+    TableRow tableRow = Json.readTableRow(payload);
+    promoteSubmissionTimestamp(tableRow);
+    return tableRow;
+  }
+
+  /**
+   * BigQuery cannot partition tables by a nested field, so we promote submission_timestamp out of
+   * metadata to a top-level field.
+   */
+  private static void promoteSubmissionTimestamp(TableRow tableRow) {
+    Optional<Map> metadata = Optional.ofNullable(tableRow).map(row -> tableRow.get("metadata"))
+        .filter(Map.class::isInstance).map(Map.class::cast);
+    if (metadata.isPresent()) {
+      Object submissionTimestamp = metadata.get().remove("submission_timestamp");
+      if (submissionTimestamp instanceof String) {
+        tableRow.putIfAbsent("submission_timestamp", submissionTimestamp);
+      }
+    }
   }
 }

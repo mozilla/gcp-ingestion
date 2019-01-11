@@ -12,6 +12,7 @@ import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Field.Mode;
+import com.google.cloud.bigquery.FieldValue;
 import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.QueryJobConfiguration;
@@ -85,10 +86,11 @@ public class BigQueryIntegrationTest {
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
     bigquery.create(TableInfo.newBuilder(tableId,
         StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
-            Field.of("type", LegacySQLTypeName.STRING))))
+            Field.of("type", LegacySQLTypeName.STRING),
+            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP))))
         .build());
 
-    String input = Resources.getResource("testdata/json-payload.ndjson").getPath();
+    String input = Resources.getResource("testdata/bigquery-integration/input.ndjson").getPath();
     String output = String.format("%s:%s", projectId, tableSpec);
 
     PipelineResult result = Sink
@@ -99,6 +101,8 @@ public class BigQueryIntegrationTest {
 
     assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123", "abc123", "def456")));
+    assertThat(stringValuesQuery("SELECT submission_timestamp FROM " + tableSpec),
+        matchesInAnyOrder(Lists.newArrayList(null, null, "1514808794.123456")));
   }
 
   @Test
@@ -162,11 +166,11 @@ public class BigQueryIntegrationTest {
   }
 
   private List<String> stringValuesQuery(String query) throws InterruptedException {
-    return Lists
-        .newArrayList(bigquery.create(JobInfo.of(QueryJobConfiguration.of(query))).getQueryResults()
-            .iterateAll().iterator())
-        .stream().map(fieldValues -> fieldValues.get(0).getStringValue())
-        .collect(Collectors.toList());
+    return Lists.newArrayList(bigquery.create(JobInfo.of(QueryJobConfiguration.of(query)))
+        .getQueryResults().iterateAll().iterator()).stream().map(fieldValues -> {
+          FieldValue field = fieldValues.get(0);
+          return field.isNull() ? null : field.getStringValue();
+        }).collect(Collectors.toList());
   }
 
 }
