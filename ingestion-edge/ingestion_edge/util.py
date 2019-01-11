@@ -14,7 +14,7 @@ import asyncio
 class AsyncioBatch:
     """Batch for google.cloud.pubsub_v1.PublisherClient in asyncio.
 
-    Work around for https://github.com/googleapis/google-cloud-python/issues/7104
+    Workaround for https://github.com/googleapis/google-cloud-python/issues/7104
     """
 
     def __init__(
