@@ -18,7 +18,6 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.commons.text.StringSubstitutor;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -128,13 +127,16 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // If no "document_version" attribute was parsed from the URI, this element must be from the
     // /submit/telemetry endpoint and we now need to grab version from the payload.
     if (!attributes.containsKey("document_version")) {
-      try {
+      if (json.has("version")) {
         String version = json.get("version").toString();
         attributes.put("document_version", version);
-      } catch (JSONException e) {
+      } else if (json.has("v")) {
+        String version = json.get("v").toString();
+        attributes.put("document_version", version);
+      } else {
         throw new SchemaNotFoundException("Element was assumed to be a telemetry message because"
             + " it contains no document_version attribute, but the payload does not include"
-            + " the top-level 'version' field expected for a telemetry document");
+            + " the top-level 'version' or 'v' field expected for a telemetry document");
       }
     }
 
