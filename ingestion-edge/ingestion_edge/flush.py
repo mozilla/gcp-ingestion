@@ -4,7 +4,6 @@
 
 """Fallback logic for retrying queued submit requests."""
 
-from .util import async_wrap
 from dataclasses import dataclass
 from functools import partial
 from google.cloud.pubsub_v1 import PublisherClient
@@ -25,7 +24,6 @@ class Flush:
     concurrent_bytes: int
     concurrent_messages: int
     sleep_seconds: float
-    publish_timeout_seconds: Optional[float] = None
     running: bool = False
     task: Optional[asyncio.Task] = None
     sleep_task: Optional[asyncio.Task] = None
@@ -40,8 +38,7 @@ class Flush:
         except:  # noqa: E722
             # message was not delivered
             self.q.nack(message)
-            # raise from bare except
-            raise
+            # do not raise in callback
         else:
             # message delivered
             self.q.ack(message)
@@ -73,11 +70,9 @@ class Flush:
                     # record size of message
                     total_bytes += len(data)
                     # publish message
-                    future = async_wrap(self.client.publish(topic, data, **attrs))
+                    future = self.client.publish(topic, data, **attrs)
                     # ack or nack by callback
                     future.add_done_callback(partial(self.set_status, message))
-                    # add timeout to future
-                    future = asyncio.wait_for(future, self.publish_timeout_seconds)
                     # wait for this later
                     pending.append(future)
                 except Exception:
@@ -130,7 +125,6 @@ class Flush:
             self.sleep_task.cancel()
         # wait for current flush to finish
         await self.task
-        self.running = True
         # flush until empty
         while await self._flush():
             pass

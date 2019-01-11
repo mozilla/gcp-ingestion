@@ -11,6 +11,7 @@ from typing import Generator, Union
 import _pytest.config.argparsing
 import _pytest.fixtures
 import grpc
+import logging
 import os
 import psutil
 import pytest
@@ -47,6 +48,7 @@ def pubsub(
         yield "remote"
     elif request.config.getoption("server") is None:
         emulator = PubsubEmulator(max_workers=1, port=0)
+        emulator.logger.setLevel(logging.DEBUG)
         try:
             os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:%d" % emulator.port
             yield emulator
@@ -100,8 +102,14 @@ def server(
             assert process.poll() is None  # server still running
             yield "http://localhost:%d" % ports.pop()
         finally:
-            process.kill()
-            process.wait()
+            try:
+                # allow one second for graceful termination
+                process.terminate()
+                process.wait(1)
+            except subprocess.TimeoutExpired:
+                # kill after one second
+                process.kill()
+                process.wait()
     else:
         yield _server
 

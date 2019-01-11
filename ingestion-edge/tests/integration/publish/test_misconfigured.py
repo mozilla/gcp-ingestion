@@ -24,7 +24,7 @@ def test_submit_pubsub_permission_denied(
         pytest.skip("not implemented")
     else:
         publisher.update_topic({"name": topic}, {"paths": ["status_code="]})
-    integration_test.assert_flushed_and_delivered()
+    integration_test.assert_flushed()
 
 
 def test_submit_pubsub_topic_not_found(
@@ -41,4 +41,4 @@ def test_submit_pubsub_topic_not_found(
         subscriber.delete_subscription(subscription)
         publisher.create_topic(topic)
         subscriber.create_subscription(subscription, topic)
-    integration_test.assert_flushed_and_delivered()
+    integration_test.assert_flushed()

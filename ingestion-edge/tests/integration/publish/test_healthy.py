@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
+from concurrent.futures import ThreadPoolExecutor
 from .helpers import IntegrationTest
 from ingestion_edge.config import METADATA_HEADERS
 from itertools import cycle, chain
@@ -13,9 +14,9 @@ import pytest
 # names by outsourcing the actual values
 DATA = {
     "GZIPPED": gzip.compress(b"data"),
-    "MAX_LENGTH": b"." * (8 * 1024 * 1024),  # max data length 8MB
+    "MAX_LENGTH": b"." * (8 * 1024 * 1024),  # nginx max data length 8MB
     "NON_UTF8": bytes(range(256)),
-    "TOO_LONG": b"." * (8 * 1024 * 1024 + 1),
+    "TOO_LONG": b"." * (10 * 1024 * 1024 + 1),  # over pubsub max length of 10MB
     # identity values
     "": b"",
     "data": b"data",
@@ -110,4 +111,20 @@ def test_submit_invalid_header_too_long(
     integration_test.headers = headers
     integration_test.uri_suffix = uri_suffix
     integration_test.assert_rejected(status=431)
+    integration_test.assert_not_delivered()
+
+
+def test_submit_success_concurrent_max_length_data(integration_test: IntegrationTest):
+    integration_test.data = DATA["MAX_LENGTH"]
+    with ThreadPoolExecutor(2) as executor:
+        first = executor.submit(integration_test.assert_accepted)
+        second = executor.submit(integration_test.assert_accepted)
+        first.result()
+        second.result()
+    integration_test.assert_delivered(2)
+
+
+def test_submit_invalid_payload_too_large(integration_test: IntegrationTest):
+    integration_test.data = DATA["TOO_LONG"]
+    integration_test.assert_rejected(status=413)
     integration_test.assert_not_delivered()

@@ -42,8 +42,13 @@ def test_emulator(publisher, subscriber):
 )
 def test_fake_status_code(publisher, status_code):
     expect = type(google.api_core.exceptions.from_grpc_status(status_code, ""))
+    publisher.create_topic("topic")
     publisher.update_topic(
         {"name": "topic"}, {"paths": ["status_code=" + status_code.name.lower()]}
     )
     with pytest.raises(expect):
         publisher.api.publish("topic", [{"data": b""}], retry=None)
+    # make sure recovery works too
+    publisher.update_topic({"name": "topic"}, {"paths": ["status_code="]})
+    publisher.api.publish("topic", [{"data": b""}], retry=None)
+    publisher.delete_topic("topic")

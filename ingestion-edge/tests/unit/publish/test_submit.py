@@ -11,7 +11,7 @@ from sqlite3 import DatabaseError
 from unittest.mock import MagicMock
 from sanic.response import HTTPResponse
 from typing import Any, Dict
-import google.cloud.pubsub_v1.futures
+import asyncio
 import pytest
 
 
@@ -73,7 +73,7 @@ def validate(start_time: datetime, response: HTTPResponse, q: ListQueue):
 @pytest.fixture
 def client() -> MagicMock:
     client = MagicMock()
-    client.publish.return_value = google.cloud.pubsub_v1.futures.Future()
+    client.publish.return_value = asyncio.Future()
     return client
 
 
