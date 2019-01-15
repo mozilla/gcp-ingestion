@@ -4,15 +4,25 @@
 
 package com.mozilla.telemetry.transforms;
 
+import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV2;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
@@ -38,6 +48,11 @@ public class PubsubMessageToTableRow
   }
 
   private final ValueProvider<String> tableSpecTemplate;
+  private final Cache<TableId, Boolean> tableExistenceCache = CacheBuilder.newBuilder()
+      .expireAfterWrite(Duration.ofMinutes(1)).build();
+
+  // BigQuery is not Serializable, so we mark it transient and instantiate on first use.
+  private transient BigQuery bigquery;
 
   private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate) {
     this.tableSpecTemplate = tableSpecTemplate;
@@ -51,12 +66,34 @@ public class PubsubMessageToTableRow
         // but some doc types and namespaces contain '-', so we convert to '_'.
         .map(m -> Maps.transformValues(m, v -> v.replaceAll("-", "_"))).orElse(new HashMap<>());
     String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
+
+    // Send to error collection if incomplete tableSpec; $ is not a valid char in tableSpecs.
     if (tableSpec.contains("$")) {
       throw new IllegalArgumentException("Element did not contain all the attributes needed to"
           + " fill out variables in the configured BigQuery output template: "
           + tableSpecTemplate.get());
     }
+
+    if (bigquery == null) {
+      bigquery = BigQueryOptions.getDefaultInstance().getService();
+    }
     TableDestination tableDestination = new TableDestination(tableSpec, null);
+    TableReference ref = BigQueryHelpers.parseTableSpec(tableDestination.getTableSpec());
+    TableId tableId = TableId.of(ref.getProjectId(), ref.getDatasetId(), ref.getTableId());
+
+    // Send to error collection if table doesn't exist so BigQueryIO doesn't throw a pipeline
+    // execution exception.
+    try {
+      // Get cached value if it exists, or call out to bigquery and cache the result.
+      Boolean exists = tableExistenceCache.get(tableId, () -> bigquery.getTable(tableId) != null);
+      if (!exists) {
+        throw new IllegalArgumentException(
+            "Resolved destination table does not exist: " + tableSpec);
+      }
+    } catch (ExecutionException e) {
+      throw new UncheckedExecutionException(e);
+    }
+
     TableRow tableRow = buildTableRow(element.getPayload());
     return KV.of(tableDestination, tableRow);
   }
@@ -90,4 +127,5 @@ public class PubsubMessageToTableRow
       }
     }
   }
+
 }
