@@ -118,7 +118,6 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          export MAVEN_OPTS="-Xms512m -Xmx1024m"
           cd ingestion-beam && mvn clean test -Dtest=*IntegrationTest
     - run:
         name: Report code coverage

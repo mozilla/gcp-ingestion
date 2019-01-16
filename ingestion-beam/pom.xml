@@ -11,8 +11,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <exec.mainClass>com.mozilla.telemetry.Sink</exec.mainClass>
-        <!-- Workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
-        <argLine>-Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+        <!-- MAVEN_OPTS environment variable configuration is not picked up by jacoco, so we configure memory here -->
+        <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
+        <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
         <!-- Keep these dependency versions in sync with those pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
