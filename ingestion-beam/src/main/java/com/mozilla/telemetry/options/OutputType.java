@@ -14,6 +14,7 @@ import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.ResultWithErrors;
 import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +101,8 @@ public enum OutputType {
     /** Return a PTransform that writes to a BigQuery table and collects failed inserts. */
     public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
-      return PTransform.compose(input -> input.apply(writeBigQuery(options.getOutput())));
+      return PTransform.compose(input -> input.apply(writeBigQuery(options.getOutput(),
+          options.getBigqueryWriteMethod(), options.getInputType())));
     }
   };
 
@@ -164,56 +166,66 @@ public enum OutputType {
   }
 
   protected static PTransform<PCollection<PubsubMessage>, ResultWithErrors<WriteResult>> writeBigQuery(
-      ValueProvider<String> tableSpecTemplate) {
+      ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
+      InputType inputType) {
     return PTransform.compose((PCollection<PubsubMessage> input) -> {
-
-      // BigQueryIOImpl will definitely throw runtime exceptions on payloads larger than 10 MB,
-      // but streaming inserts are further limited to 1 MB per row, so we apply that lower limit.
-      // https://cloud.google.com/bigquery/quotas#streaming_inserts
-      ResultWithErrors<PCollection<PubsubMessage>> sizeLimited = input
-          .apply(LimitPayloadSize.toMB(1));
-
-      ResultWithErrors<PCollection<KV<TableDestination, TableRow>>> tableRows = sizeLimited.output()
-          .apply(PubsubMessageToTableRow.of(tableSpecTemplate));
-
-      WriteResult writeResult = tableRows.output().apply(BigQueryIO //
+      BigQueryIO.Write<KV<TableDestination, TableRow>> writeTransform = BigQueryIO //
           .<KV<TableDestination, TableRow>>write() //
           .withFormatFunction(KV::getValue) //
           .to((ValueInSingleWindow<KV<TableDestination, TableRow>> vsw) -> vsw.getValue().getKey())
-          .withMethod(BigQueryIO.Write.Method.STREAMING_INSERTS) //
+          .withMethod(writeMethod.method)
           .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER) //
           .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND) //
-          .skipInvalidRows() //
-          .ignoreUnknownValues() //
-          .withExtendedErrorInfo()
-          .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()));
+          .ignoreUnknownValues();
 
-      PCollection<PubsubMessage> failedInserts = writeResult.getFailedInsertsWithErr()
-          .apply("Process failed inserts", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-              .via((BigQueryInsertError bqie) -> {
-                Map<String, String> attributes = new HashMap<>();
-                attributes.put("error_type", "failed_insert");
-                attributes.put("error_table",
-                    String.format("%s:%s.%s", bqie.getTable().getProjectId(),
-                        bqie.getTable().getDatasetId(), bqie.getTable().getTableId()));
-                if (!bqie.getError().getErrors().isEmpty()) {
-                  // We pull out the first error to top-level attributes.
-                  ErrorProto errorProto = bqie.getError().getErrors().get(0);
-                  attributes.put("error_message", errorProto.getMessage());
-                  attributes.put("error_location", errorProto.getLocation());
-                  attributes.put("error_reason", errorProto.getReason());
-                }
-                if (bqie.getError().getErrors().size() > 1) {
-                  // If there are additional errors, we include the entire JSON response.
-                  attributes.put("insert_errors", bqie.getError().toString());
-                }
-                byte[] payload = bqie.getRow().toString().getBytes();
-                return new PubsubMessage(payload, attributes);
-              }));
+      if (writeMethod == BigQueryWriteMethod.streaming) {
+        writeTransform = writeTransform
+            .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()).skipInvalidRows() //
+            .withExtendedErrorInfo();
+      } else if (writeMethod == BigQueryWriteMethod.file_loads) {
+        if (inputType == InputType.pubsub) {
+          // When using the file_loads method of inserting to BigQuery, BigQueryIO requires
+          // triggering frequency if the input PCollection is unbounded (which is the case for
+          // pubsub), but forbids the option if the input PCollection is bounded.
+          writeTransform = writeTransform.withTriggeringFrequency(Duration.standardMinutes(5));
+        }
+      }
+
+      final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+
+      WriteResult writeResult = input //
+          .apply(LimitPayloadSize.toMB(writeMethod.maxPayloadBytes))
+          .addErrorCollectionTo(errorCollections).output()
+          .apply(PubsubMessageToTableRow.of(tableSpecTemplate))
+          .addErrorCollectionTo(errorCollections).output().apply(writeTransform);
+
+      if (writeMethod == BigQueryWriteMethod.streaming) {
+        errorCollections
+            .add(writeResult.getFailedInsertsWithErr().apply("Process failed inserts", MapElements
+                .into(TypeDescriptor.of(PubsubMessage.class)).via((BigQueryInsertError bqie) -> {
+                  Map<String, String> attributes = new HashMap<>();
+                  attributes.put("error_type", "failed_insert");
+                  attributes.put("error_table",
+                      String.format("%s:%s.%s", bqie.getTable().getProjectId(),
+                          bqie.getTable().getDatasetId(), bqie.getTable().getTableId()));
+                  if (!bqie.getError().getErrors().isEmpty()) {
+                    // We pull out the first error to top-level attributes.
+                    ErrorProto errorProto = bqie.getError().getErrors().get(0);
+                    attributes.put("error_message", errorProto.getMessage());
+                    attributes.put("error_location", errorProto.getLocation());
+                    attributes.put("error_reason", errorProto.getReason());
+                  }
+                  if (bqie.getError().getErrors().size() > 1) {
+                    // If there are additional errors, we include the entire JSON response.
+                    attributes.put("insert_errors", bqie.getError().toString());
+                  }
+                  byte[] payload = bqie.getRow().toString().getBytes();
+                  return new PubsubMessage(payload, attributes);
+                })));
+      }
+
       PCollection<PubsubMessage> errorCollection = PCollectionList //
-          .of(sizeLimited.errors()) //
-          .and(tableRows.errors()) //
-          .and(failedInserts) //
+          .of(errorCollections) //
           .apply("Flatten bigquery errors", Flatten.pCollections());
 
       return ResultWithErrors.of(writeResult, errorCollection);

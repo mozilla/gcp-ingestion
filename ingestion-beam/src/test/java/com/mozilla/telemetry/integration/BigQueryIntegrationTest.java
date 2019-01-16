@@ -20,6 +20,8 @@ import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardTableDefinition;
 import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.TableInfo;
+import com.google.cloud.bigquery.TimePartitioning;
+import com.google.cloud.bigquery.TimePartitioning.Type;
 import com.google.cloud.bigquery.testing.RemoteBigQueryHelper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -77,6 +79,9 @@ public class BigQueryIntegrationTest {
     RemoteBigQueryHelper.forceDelete(bigquery, dataset);
   }
 
+  private static TimePartitioning submissionTimestampPartitioning = TimePartitioning
+      .newBuilder(Type.DAY).setField("submission_timestamp").build();
+
   @Test
   public void canWriteToBigQuery() throws Exception {
     String table = "mytable";
@@ -84,25 +89,30 @@ public class BigQueryIntegrationTest {
     TableId tableId = TableId.of(dataset, table);
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
-    bigquery.create(TableInfo.newBuilder(tableId,
-        StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
-            Field.of("type", LegacySQLTypeName.STRING),
-            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP))))
-        .build());
+    bigquery
+        .create(
+            TableInfo
+                .newBuilder(tableId,
+                    StandardTableDefinition
+                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                            Field.of("type", LegacySQLTypeName.STRING),
+                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
+                .build());
 
     String input = Resources.getResource("testdata/bigquery-integration/input.ndjson").getPath();
     String output = String.format("%s:%s", projectId, tableSpec);
 
-    PipelineResult result = Sink
-        .run(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
-            "--outputType=bigquery", "--output=" + output, "--errorOutputType=stderr" });
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
+        "--input=" + input, "--outputType=bigquery", "--bigqueryWriteMethod=streaming",
+        "--output=" + output, "--errorOutputType=stderr" });
 
     result.waitUntilFinish();
 
+    assertThat(stringValuesQuery("SELECT submission_timestamp FROM " + tableSpec),
+        matchesInAnyOrder(Lists.newArrayList(null, null, "1561983194.123456")));
     assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123", "abc123", "def456")));
-    assertThat(stringValuesQuery("SELECT submission_timestamp FROM " + tableSpec),
-        matchesInAnyOrder(Lists.newArrayList(null, null, "1514808794.123456")));
   }
 
   @Test
@@ -116,12 +126,14 @@ public class BigQueryIntegrationTest {
             Field.of("type", LegacySQLTypeName.STRING))))
         .build());
 
-    String input = Resources.getResource("testdata/json-payload-attributes.ndjson").getPath();
+    String input = Resources
+        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
     String output = String.format("%s:%s.%s", projectId, dataset, "${document_type}_table");
     String errorOutput = outputPath + "/error/out";
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
-        "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
+        "--input=" + input, "--outputType=bigquery", "--output=" + output,
+        "--bigqueryWriteMethod=streaming", "--errorOutputType=file",
         "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
@@ -135,7 +147,45 @@ public class BigQueryIntegrationTest {
   }
 
   @Test
-  public void canRecoverFailedInserts() throws Exception {
+  public void canWriteViaFileLoads() throws Exception {
+    String table = "my_test_table";
+    TableId tableId = TableId.of(dataset, table);
+
+    bigquery.create(DatasetInfo.newBuilder(dataset).build());
+    bigquery
+        .create(
+            TableInfo
+                .newBuilder(tableId,
+                    StandardTableDefinition
+                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                            Field.of("type", LegacySQLTypeName.STRING),
+                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
+                .build());
+
+    String input = Resources
+        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
+    String output = String.format("%s:%s.%s", projectId, dataset, "${document_type}_table");
+    String errorOutput = outputPath + "/error/out";
+
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputType=bigquery", "--output=" + output,
+        "--bigqueryWriteMethod=file_loads", "--errorOutputType=file",
+        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
+
+    result.waitUntilFinish();
+
+    String tableSpec = String.format("%s.%s", dataset, table);
+    assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
+        matchesInAnyOrder(ImmutableList.of("abc123")));
+
+    List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
+    assertThat(errorOutputLines, Matchers.hasSize(2));
+  }
+
+  @Test
+  public void canRecoverFailedInsertsInStreamingMode() throws Exception {
     String table = "table_with_required_col";
     String tableSpec = String.format("%s.%s", dataset, table);
     TableId tableId = TableId.of(dataset, table);
@@ -154,7 +204,8 @@ public class BigQueryIntegrationTest {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
-        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
+        "--bigqueryWriteMethod=streaming", "--errorOutputFileCompression=UNCOMPRESSED",
+        "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 

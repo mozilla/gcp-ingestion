@@ -7,6 +7,7 @@ package com.mozilla.telemetry.transforms;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Dataset;
@@ -50,6 +51,10 @@ public class PubsubMessageToTableRow
     return new PubsubMessageToTableRow(tableSpecTemplate);
   }
 
+  public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
+  public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
+      .setField(SUBMISSION_TIMESTAMP);
+
   private final ValueProvider<String> tableSpecTemplate;
 
   // We'll instantiate this on first use.
@@ -75,7 +80,8 @@ public class PubsubMessageToTableRow
           + tableSpecTemplate.get());
     }
 
-    final TableDestination tableDestination = new TableDestination(tableSpec, null);
+    final TableDestination tableDestination = new TableDestination(tableSpec, null,
+        TIME_PARTITIONING);
     final TableReference ref = BigQueryHelpers.parseTableSpec(tableSpec);
     final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
         .setDatasetId(ref.getDatasetId());
