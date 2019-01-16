@@ -46,6 +46,12 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputType(OutputType value);
 
+  @Description("Method of writing to BigQuery")
+  @Default.Enum("file_loads")
+  BigQueryWriteMethod getBigqueryWriteMethod();
+
+  void setBigqueryWriteMethod(BigQueryWriteMethod value);
+
   @Description("File format for --outputType=file|stdout; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"
       + " text (each line is payload)")
