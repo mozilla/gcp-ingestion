@@ -4,11 +4,12 @@
 
 package com.mozilla.telemetry.transforms;
 
+import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
-import com.google.cloud.bigquery.TableId;
+import com.google.cloud.bigquery.Dataset;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -18,8 +19,10 @@ import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
@@ -48,11 +51,9 @@ public class PubsubMessageToTableRow
   }
 
   private final ValueProvider<String> tableSpecTemplate;
-  private final Cache<TableId, Boolean> tableExistenceCache = CacheBuilder.newBuilder()
-      .expireAfterWrite(Duration.ofMinutes(1)).build();
 
-  // BigQuery is not Serializable, so we mark it transient and instantiate on first use.
-  private transient BigQuery bigquery;
+  // We'll instantiate this on first use.
+  private transient Cache<DatasetReference, Set<String>> tableListingCache;
 
   private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate) {
     this.tableSpecTemplate = tableSpecTemplate;
@@ -61,11 +62,11 @@ public class PubsubMessageToTableRow
   @Override
   protected KV<TableDestination, TableRow> processElement(PubsubMessage element)
       throws IOException {
-    Map<String, String> attributes = Optional.ofNullable(element.getAttributeMap()) //
+    final Map<String, String> attributes = Optional.ofNullable(element.getAttributeMap()) //
         // Only letters, numbers, and underscores are allowed in BigQuery dataset and table names,
         // but some doc types and namespaces contain '-', so we convert to '_'.
         .map(m -> Maps.transformValues(m, v -> v.replaceAll("-", "_"))).orElse(new HashMap<>());
-    String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
+    final String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
 
     // Send to error collection if incomplete tableSpec; $ is not a valid char in tableSpecs.
     if (tableSpec.contains("$")) {
@@ -74,24 +75,38 @@ public class PubsubMessageToTableRow
           + tableSpecTemplate.get());
     }
 
-    if (bigquery == null) {
-      bigquery = BigQueryOptions.getDefaultInstance().getService();
-    }
-    TableDestination tableDestination = new TableDestination(tableSpec, null);
-    TableReference ref = BigQueryHelpers.parseTableSpec(tableDestination.getTableSpec());
-    TableId tableId = TableId.of(ref.getProjectId(), ref.getDatasetId(), ref.getTableId());
+    final TableDestination tableDestination = new TableDestination(tableSpec, null);
+    final TableReference ref = BigQueryHelpers.parseTableSpec(tableSpec);
+    final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
+        .setDatasetId(ref.getDatasetId());
 
-    // Send to error collection if table doesn't exist so BigQueryIO doesn't throw a pipeline
-    // execution exception.
+    // Get and cache a listing of table names for this dataset.
+    Set<String> tablesInDataset;
+    if (tableListingCache == null) {
+      tableListingCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1)).build();
+    }
     try {
-      // Get cached value if it exists, or call out to bigquery and cache the result.
-      Boolean exists = tableExistenceCache.get(tableId, () -> bigquery.getTable(tableId) != null);
-      if (!exists) {
-        throw new IllegalArgumentException(
-            "Resolved destination table does not exist: " + tableSpec);
-      }
+      tablesInDataset = tableListingCache.get(datasetRef, () -> {
+        Set<String> tableSet = new HashSet<>();
+        BigQuery service = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId()).build()
+            .getService();
+        Dataset dataset = service.getDataset(ref.getDatasetId());
+        if (dataset != null) {
+          dataset.list().iterateAll().forEach(t -> tableSet.add(t.getTableId().getTable()));
+        }
+        return tableSet;
+      });
     } catch (ExecutionException e) {
       throw new UncheckedExecutionException(e);
+    }
+
+    // Send to error collection if dataset or table doesn't exist so BigQueryIO doesn't throw a
+    // pipeline execution exception.
+    if (tablesInDataset.isEmpty()) {
+      throw new IllegalArgumentException("Resolved destination dataset does not exist or has no "
+          + " tables for tableSpec " + tableSpec);
+    } else if (!tablesInDataset.contains(ref.getTableId())) {
+      throw new IllegalArgumentException("Resolved destination table does not exist: " + tableSpec);
     }
 
     TableRow tableRow = buildTableRow(element.getPayload());
