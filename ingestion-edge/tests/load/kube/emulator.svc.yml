@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: &name emulator
+  labels: &labels
+    name: *name
+spec:
+  ports:
+  - name: grpc
+    port: 8000
+    protocol: TCP
+    targetPort: grpc
+  selector: *labels

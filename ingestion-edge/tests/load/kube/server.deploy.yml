@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name server
+  labels: &labels
+    name: *name
+spec:
+  replicas: 48
+  selector:
+    matchLabels: *labels
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      containers:
+      - name: *name
+        image: '{image}'
+        command:
+        - python
+        - -m
+        - ingestion_edge.wsgi
+        env:
+        - name: ROUTE_TABLE
+          value: |-
+            [
+              [
+                "/submit/<suffix:path>",
+                "projects/{project}/topics/{topic}"
+              ]
+            ]
+        - name: QUEUE_PATH
+          value: ':memory:'
+        - name: PUBSUB_EMULATOR_HOST
+          value: '{emulator_host}'
+        - name: LOG_LEVEL
+          value: WARNING
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /__lbheartbeat__
+            port: http
+          initialDelaySeconds: 1
+          periodSeconds: 5
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /__heartbeat__
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 1
+          periodSeconds: 30
+          successThreshold: 2
+          timeoutSeconds: 30
+      nodeSelector: *labels

@@ -14,6 +14,7 @@ from os import environ
 from typing import Tuple
 import json
 
+log_level = environ.get("LOG_LEVEL", "DEBUG").upper()
 dictConfig(
     {
         "version": 1,
@@ -25,14 +26,14 @@ dictConfig(
         },
         "handlers": {
             "console": {
-                "level": "DEBUG",
+                "level": log_level,
                 "class": "logging.StreamHandler",
                 "formatter": "json",
             }
         },
         "loggers": {
-            "request.summary": {"handlers": ["console"], "level": "DEBUG"},
-            "ingestion-edge": {"handlers": ["console"], "level": "DEBUG"},
+            "request.summary": {"handlers": ["console"], "level": log_level},
+            "ingestion-edge": {"handlers": ["console"], "level": log_level},
         },
     }
 )
