@@ -15,8 +15,11 @@ import java.util.Map;
 import nl.basjes.shaded.org.springframework.core.io.Resource;
 import nl.basjes.shaded.org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Distribution;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.commons.text.StringSubstitutor;
 import org.everit.json.schema.Schema;
+import org.everit.json.schema.Validator;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 
@@ -28,6 +31,13 @@ import org.json.JSONObject;
  * incur the cost of parsing the JSON only once.
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+
+  private final Distribution parseTimer = Metrics.distribution(ParsePayload.class,
+      "json-parse-millis");
+  private final Distribution validateTimer = Metrics.distribution(ParsePayload.class,
+      "json-validate-millis");
+
+  private transient Validator validator;
 
   private static class SchemaNotFoundException extends Exception {
 
@@ -102,7 +112,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   protected PubsubMessage processElement(PubsubMessage element)
       throws SchemaNotFoundException, IOException {
     // Throws IOException if not a valid json object
-    final JSONObject json = Json.readJSONObject(element.getPayload());
+    final JSONObject json = parseTimed(element.getPayload());
 
     Map<String, String> attributes;
     if (element.getAttributeMap() == null) {
@@ -143,9 +153,29 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // Throws SchemaNotFoundException if there's no schema
     final Schema schema = getSchema(attributes);
     // Throws ValidationException if schema doesn't match
-    schema.validate(json);
+    validateTimed(schema, json);
 
     byte[] normalizedPayload = json.toString().getBytes();
     return new PubsubMessage(normalizedPayload, attributes);
+  }
+
+  private JSONObject parseTimed(byte[] bytes) throws IOException {
+    long startTime = System.currentTimeMillis();
+    final JSONObject json = Json.readJSONObject(bytes);
+    long endTime = System.currentTimeMillis();
+    parseTimer.update(endTime - startTime);
+    return json;
+  }
+
+  private void validateTimed(Schema schema, JSONObject json) {
+    if (validator == null) {
+      // Without failEarly(), a pathological payload may cause the validator to consume all memory;
+      // https://github.com/mozilla/gcp-ingestion/issues/374
+      validator = Validator.builder().failEarly().build();
+    }
+    long startTime = System.currentTimeMillis();
+    validator.performValidation(schema, json);
+    long endTime = System.currentTimeMillis();
+    validateTimer.update(endTime - startTime);
   }
 }
