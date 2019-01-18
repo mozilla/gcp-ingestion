@@ -48,9 +48,15 @@ public interface SinkOptions extends PipelineOptions {
 
   @Description("Method of writing to BigQuery")
   @Default.Enum("file_loads")
-  BigQueryWriteMethod getBigqueryWriteMethod();
+  BigQueryWriteMethod getBqWriteMethod();
 
-  void setBigqueryWriteMethod(BigQueryWriteMethod value);
+  void setBqWriteMethod(BigQueryWriteMethod value);
+
+  @Description("How often to load a batch of files to BigQuery when writing via file_loads")
+  @Default.String("5m")
+  String getBqTriggeringFrequency();
+
+  void setBqTriggeringFrequency(String value);
 
   @Description("File format for --outputType=file|stdout; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"
@@ -168,6 +174,12 @@ public interface SinkOptions extends PipelineOptions {
     Duration getParsedWindowDuration();
 
     void setParsedWindowDuration(Duration value);
+
+    @JsonIgnore
+    Duration getParsedBqTriggeringFrequency();
+
+    void setParsedBqTriggeringFrequency(Duration value);
+
   }
 
   /**
@@ -186,6 +198,7 @@ public interface SinkOptions extends PipelineOptions {
   static void enrichSinkOptions(Parsed options) {
     validateSinkOptions(options);
     options.setParsedWindowDuration(Time.parseDuration(options.getWindowDuration()));
+    options.setParsedBqTriggeringFrequency(Time.parseDuration(options.getBqTriggeringFrequency()));
     options.setDecompressInputPayloads(
         providerWithDefault(options.getDecompressInputPayloads(), true));
     options.setOutputPubsubCompression(
@@ -213,6 +226,14 @@ public interface SinkOptions extends PipelineOptions {
           + " --errorOutputType=file and the input is unbounded (--inputType=pubsub);"
           + " Dataflow recommends starting with twice the value of --maxWorkers or 10"
           + " (see https://github.com/apache/beam/pull/1952)");
+    }
+    if (options.getInputType() == InputType.pubsub && options.getOutputType() == OutputType.bigquery
+        && options.getBqWriteMethod() == BigQueryWriteMethod.file_loads
+        && options.getOutputNumShards() == 0) {
+      errorMessages.add("Missing required parameter: "
+          + " --outputNumShards must be set to an explicit non-zero value when"
+          + " --outputType=bigquery and --bqWriteMethod=file_loads and the input is unbounded"
+          + " (--inputType=pubsub)");
     }
     if (!errorMessages.isEmpty()) {
       throw new IllegalArgumentException(

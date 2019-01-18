@@ -104,7 +104,7 @@ public class BigQueryIntegrationTest {
     String output = String.format("%s:%s", projectId, tableSpec);
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
-        "--input=" + input, "--outputType=bigquery", "--bigqueryWriteMethod=streaming",
+        "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=streaming",
         "--output=" + output, "--errorOutputType=stderr" });
 
     result.waitUntilFinish();
@@ -133,7 +133,7 @@ public class BigQueryIntegrationTest {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output,
-        "--bigqueryWriteMethod=streaming", "--errorOutputType=file",
+        "--bqWriteMethod=streaming", "--errorOutputType=file",
         "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
@@ -170,7 +170,7 @@ public class BigQueryIntegrationTest {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output,
-        "--bigqueryWriteMethod=file_loads", "--errorOutputType=file",
+        "--bqWriteMethod=file_loads", "--errorOutputType=file",
         "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
         "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
@@ -204,7 +204,7 @@ public class BigQueryIntegrationTest {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
-        "--bigqueryWriteMethod=streaming", "--errorOutputFileCompression=UNCOMPRESSED",
+        "--bqWriteMethod=streaming", "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();

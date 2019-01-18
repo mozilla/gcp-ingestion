@@ -102,7 +102,8 @@ public enum OutputType {
     public PTransform<PCollection<PubsubMessage>, ResultWithErrors<? extends POutput>> write(
         SinkOptions.Parsed options) {
       return PTransform.compose(input -> input.apply(writeBigQuery(options.getOutput(),
-          options.getBigqueryWriteMethod(), options.getInputType())));
+          options.getBqWriteMethod(), options.getParsedBqTriggeringFrequency(),
+          options.getInputType(), options.getOutputNumShards())));
     }
   };
 
@@ -167,7 +168,7 @@ public enum OutputType {
 
   protected static PTransform<PCollection<PubsubMessage>, ResultWithErrors<WriteResult>> writeBigQuery(
       ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
-      InputType inputType) {
+      Duration triggeringFrequency, InputType inputType, int numShards) {
     return PTransform.compose((PCollection<PubsubMessage> input) -> {
       BigQueryIO.Write<KV<TableDestination, TableRow>> writeTransform = BigQueryIO //
           .<KV<TableDestination, TableRow>>write() //
@@ -180,14 +181,17 @@ public enum OutputType {
 
       if (writeMethod == BigQueryWriteMethod.streaming) {
         writeTransform = writeTransform
-            .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()).skipInvalidRows() //
+            .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()) //
+            .skipInvalidRows() //
             .withExtendedErrorInfo();
-      } else if (writeMethod == BigQueryWriteMethod.file_loads) {
+      } else {
         if (inputType == InputType.pubsub) {
           // When using the file_loads method of inserting to BigQuery, BigQueryIO requires
           // triggering frequency if the input PCollection is unbounded (which is the case for
           // pubsub), but forbids the option if the input PCollection is bounded.
-          writeTransform = writeTransform.withTriggeringFrequency(Duration.standardMinutes(5));
+          writeTransform = writeTransform //
+              .withTriggeringFrequency(triggeringFrequency) //
+              .withNumFileShards(numShards);
         }
       }
 
@@ -197,7 +201,8 @@ public enum OutputType {
           .apply(LimitPayloadSize.toMB(writeMethod.maxPayloadBytes))
           .addErrorCollectionTo(errorCollections).output()
           .apply(PubsubMessageToTableRow.of(tableSpecTemplate))
-          .addErrorCollectionTo(errorCollections).output().apply(writeTransform);
+          .addErrorCollectionTo(errorCollections).output() //
+          .apply(writeTransform);
 
       if (writeMethod == BigQueryWriteMethod.streaming) {
         errorCollections
@@ -224,8 +229,7 @@ public enum OutputType {
                 })));
       }
 
-      PCollection<PubsubMessage> errorCollection = PCollectionList //
-          .of(errorCollections) //
+      PCollection<PubsubMessage> errorCollection = PCollectionList.of(errorCollections)
           .apply("Flatten bigquery errors", Flatten.pCollections());
 
       return ResultWithErrors.of(writeResult, errorCollection);
