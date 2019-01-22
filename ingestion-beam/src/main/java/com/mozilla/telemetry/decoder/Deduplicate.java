@@ -6,6 +6,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.ResultWithErrors;
 import com.mozilla.telemetry.util.Time;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -13,7 +14,9 @@ import java.util.Optional;
 import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.values.PCollection;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -59,8 +62,22 @@ public abstract class Deduplicate extends MapElementsWithErrors.ToPubsubMessageF
    * Static factory methods.
    */
 
-  public static Deduplicate removeDuplicates(ValueProvider<URI> uri) {
-    return new RemoveDuplicates(uri);
+  /**
+   * Returns a {@link PTransform} that checks message IDs with Redis and discards any messages
+   * with IDs that have already been seen. The error collection contains messages with poorly-formed
+   * IDs or where Redis was not available.
+   */
+  public static //
+      PTransform<PCollection<PubsubMessage>, ResultWithErrors<PCollection<PubsubMessage>>> //
+      removeDuplicates(ValueProvider<URI> uri) {
+    return PTransform.compose((PCollection<PubsubMessage> input) -> {
+      ResultWithErrors<PCollection<PubsubMessage>> result = input.apply(new RemoveDuplicates(uri));
+      PCollection<PubsubMessage> errorsStrippedOfDuplicates = result.errors()
+          .apply(Filter.by((PubsubMessage message) -> !Optional
+              .ofNullable(message.getAttribute("exception_class"))
+              .filter(RemoveDuplicates.DuplicateIdException.class.getName()::equals).isPresent()));
+      return ResultWithErrors.of(result.output(), errorsStrippedOfDuplicates);
+    });
   }
 
   public static Deduplicate markAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
