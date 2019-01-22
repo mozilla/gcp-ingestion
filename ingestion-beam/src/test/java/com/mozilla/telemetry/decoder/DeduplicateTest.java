@@ -85,7 +85,7 @@ public class DeduplicateTest {
 
     // errorTag contains duplicate ids
     final PCollection<String> error = output.errors().apply("get duplicate ids", mapMessagesToId);
-    PAssert.that(error).containsInAnyOrder(duplicatedId, invalidId);
+    PAssert.that(error).containsInAnyOrder(invalidId);
 
     // run RemoveDuplicates
     pipeline.run();
