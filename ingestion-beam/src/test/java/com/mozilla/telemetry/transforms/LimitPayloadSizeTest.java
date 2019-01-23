@@ -30,7 +30,7 @@ public class LimitPayloadSizeTest {
         StringUtils.repeat("abcdefg", 50));
     List<String> failingPayloads = ImmutableList.of(StringUtils.repeat("abcdefghij", 51));
 
-    ResultWithErrors<PCollection<PubsubMessage>> result = pipeline //
+    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(Iterables.concat(passingPayloads, failingPayloads))) //
         .apply(InputFileFormat.text.decode()).output() //
         .apply(LimitPayloadSize.toBytes(500));

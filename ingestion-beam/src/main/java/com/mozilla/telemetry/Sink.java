@@ -50,14 +50,14 @@ public class Sink {
 
     // Trailing comments are used below to prevent rewrapping by google-java-format.
     pipeline //
-        .apply("input", options.getInputType().read(options)) //
-        .addErrorCollectionTo(errorCollections).output() //
+        .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply("write main output", options.getOutputType().write(options)) //
-        .addErrorCollectionTo(errorCollections).output();
+        .apply(options.getOutputType().write(options)).errorsTo(errorCollections);
 
-    PCollectionList.of(errorCollections).apply(Flatten.pCollections()).apply("write error output",
-        options.getErrorOutputType().write(options));
+    PCollectionList.of(errorCollections) //
+        .apply("FlattenErrorCollections", Flatten.pCollections()) //
+        .apply("WriteErrorOutput", options.getErrorOutputType().write(options)) //
+        .output();
 
     return pipeline.run();
   }

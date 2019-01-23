@@ -7,7 +7,7 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.ResultWithErrors;
+import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -28,11 +28,11 @@ public class AddMetadataTest {
   @Test
   public void testOutput() {
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
-    ResultWithErrors<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
-        .apply("decodeText", InputFileFormat.text.decode()).output()
-        .apply("addAttributes", MapElements.into(new TypeDescriptor<PubsubMessage>() {
-        }).via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of("meta", "data"))))
-        .apply("addMetadata", new AddMetadata());
+    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode()).output()
+        .apply("addAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(
+            element -> new PubsubMessage(element.getPayload(), ImmutableMap.of("meta", "data"))))
+        .apply(new AddMetadata());
 
     final List<String> expectedMain = Arrays.asList("{\"metadata\":{\"meta\":\"data\"}}",
         "{\"metadata\":{\"meta\":\"data\"},\"id\":null}");
