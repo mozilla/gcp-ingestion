@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.transforms;
 
+import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -24,7 +25,7 @@ import org.apache.beam.sdk.values.TupleTagList;
  * @param <OutputT> type of elements in the output {@link PCollection} for {@code mainTag}.
  */
 public abstract class MapElementsWithErrors<InputT, OutputT>
-    extends PTransform<PCollection<? extends InputT>, ResultWithErrors<PCollection<OutputT>>> {
+    extends PTransform<PCollection<InputT>, WithErrors.Result<PCollection<OutputT>>> {
 
   private final TupleTag<OutputT> successTag = new TupleTag<OutputT>() {
   };
@@ -102,10 +103,10 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
   private final DoFnWithErrors fn = new DoFnWithErrors();
 
   @Override
-  public ResultWithErrors<PCollection<OutputT>> expand(PCollection<? extends InputT> input) {
+  public WithErrors.Result<PCollection<OutputT>> expand(PCollection<InputT> input) {
     PCollectionTuple tuple = input
         .apply(ParDo.of(fn).withOutputTags(successTag, TupleTagList.of(errorTag)));
-    return ResultWithErrors.of(tuple.get(successTag), successTag, tuple.get(errorTag), errorTag);
+    return WithErrors.Result.of(tuple.get(successTag), successTag, tuple.get(errorTag), errorTag);
   }
 
   /**
@@ -115,9 +116,8 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       extends MapElementsWithErrors<InputT, PubsubMessage> {
 
     @Override
-    public ResultWithErrors<PCollection<PubsubMessage>> expand(
-        PCollection<? extends InputT> input) {
-      ResultWithErrors<PCollection<PubsubMessage>> result = super.expand(input);
+    public WithErrors.Result<PCollection<PubsubMessage>> expand(PCollection<InputT> input) {
+      WithErrors.Result<PCollection<PubsubMessage>> result = super.expand(input);
       result.output().setCoder(PubsubMessageWithAttributesCoder.of());
       return result;
     }

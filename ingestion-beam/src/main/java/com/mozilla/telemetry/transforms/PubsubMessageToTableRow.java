@@ -120,9 +120,9 @@ public class PubsubMessageToTableRow
   }
 
   @Override
-  public ResultWithErrors<PCollection<KV<TableDestination, TableRow>>> expand(
-      PCollection<? extends PubsubMessage> input) {
-    ResultWithErrors<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
+  public WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> expand(
+      PCollection<PubsubMessage> input) {
+    WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
     result.output().setCoder(KvCoder.of(TableDestinationCoderV2.of(), TableRowJsonCoder.of()));
     return result;
   }

@@ -7,7 +7,7 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.collect.Iterables;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.ResultWithErrors;
+import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -54,10 +54,9 @@ public class ParseUriTest {
             + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
             + ",\"document_type\":\"hgpush\"" + "},\"payload\":\"\"}");
 
-    ResultWithErrors<PCollection<PubsubMessage>> parsed = pipeline
+    WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline
         .apply(Create.of(Iterables.concat(validInput, invalidInput)))
-        .apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("parseUri", new ParseUri());
+        .apply(InputFileFormat.json.decode()).output().apply(new ParseUri());
 
     PCollection<String> output = parsed.output().apply("encodeJson",
         OutputFileFormat.json.encode());

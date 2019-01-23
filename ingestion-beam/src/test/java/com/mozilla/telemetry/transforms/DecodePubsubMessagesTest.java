@@ -25,7 +25,7 @@ public class DecodePubsubMessagesTest {
   public void testText() {
     List<String> inputLines = Lines.resources("testdata/decode-pubsub-messages/input-*");
 
-    ResultWithErrors<PCollection<PubsubMessage>> decoded = pipeline.apply(Create.of(inputLines))
+    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline.apply(Create.of(inputLines))
         .apply("decodeText", InputFileFormat.text.decode());
 
     PCollection<String> encoded = decoded.output().apply("encodeText",
@@ -45,7 +45,7 @@ public class DecodePubsubMessagesTest {
     List<String> invalidLines = Lines
         .resources("testdata/decode-pubsub-messages/input-invalid-json.txt");
 
-    ResultWithErrors<PCollection<PubsubMessage>> decoded = pipeline.apply(Create.of(inputLines))
+    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline.apply(Create.of(inputLines))
         .apply("decodeJson", InputFileFormat.json.decode());
 
     PCollection<String> encoded = decoded.output().apply("encodeJson",

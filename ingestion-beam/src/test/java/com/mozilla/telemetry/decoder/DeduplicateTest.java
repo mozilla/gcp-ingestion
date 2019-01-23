@@ -7,7 +7,7 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.decoder.DecoderOptions.Parsed;
 import com.mozilla.telemetry.rules.RedisServer;
-import com.mozilla.telemetry.transforms.ResultWithErrors;
+import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
 import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -58,7 +58,7 @@ public class DeduplicateTest {
     final String invalidId = "foo";
 
     // mark messages as delivered
-    ResultWithErrors<PCollection<PubsubMessage>> seen = pipeline
+    WithErrors.Result<PCollection<PubsubMessage>> seen = pipeline
         .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
         .apply("create seen messages", mapStringsToId).apply("record seen ids", Deduplicate
             .markAsSeen(options.getParsedRedisUri(), options.getDeduplicateExpireSeconds()));
@@ -74,10 +74,11 @@ public class DeduplicateTest {
     pipeline.run();
 
     // deduplicate messages
-    ResultWithErrors<PCollection<PubsubMessage>> output = pipeline
+    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline
         .apply("ids", Create.of(Arrays.asList(newId, duplicatedId, invalidId)))
         .apply("create messages", mapStringsToId)
-        .apply("deduplicate", Deduplicate.removeDuplicates(options.getParsedRedisUri()));
+        .apply("deduplicate", Deduplicate.removeDuplicates(options.getParsedRedisUri()))
+        .ignoreDuplicates();
 
     // mainTag contains new ids
     final PCollection<String> main = output.output().apply("get new ids", mapMessagesToId);
