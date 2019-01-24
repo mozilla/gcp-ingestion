@@ -23,6 +23,12 @@ import org.apache.beam.sdk.values.PCollection;
 public class ParseUserAgent
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
+  public static ParseUserAgent of() {
+    return INSTANCE;
+  }
+
+  ////////
+
   private static class Field implements Serializable {
 
     private final String attribute;
@@ -44,6 +50,9 @@ public class ParseUserAgent
   private static final Field USER_AGENT_OS = new Field("user_agent_os", "OperatingSystemName");
   private static final Field USER_AGENT_VERSION = new Field("user_agent_version", "AgentVersion");
   private static final Set<String> parseFailures = Sets.newHashSet("Unknown", "??");
+
+  private static final Fn FN = new Fn();
+  private static final ParseUserAgent INSTANCE = new ParseUserAgent();
 
   private static class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
 
@@ -78,10 +87,12 @@ public class ParseUserAgent
     }
   }
 
-  private static final Fn FN = new Fn();
-
   @Override
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> input) {
     return input.apply(MapElements.via(FN));
   }
+
+  private ParseUserAgent() {
+  }
+
 }

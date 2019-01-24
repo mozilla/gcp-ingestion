@@ -20,7 +20,9 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
  */
 public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
-  private static final byte[] METADATA_PREFIX = "{\"metadata\":".getBytes();
+  public static AddMetadata of() {
+    return INSTANCE;
+  }
 
   @Override
   protected PubsubMessage processElement(PubsubMessage element) throws IOException {
@@ -48,4 +50,13 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     payloadWithMetadata.write(payload, 1, payload.length - 1);
     return new PubsubMessage(payloadWithMetadata.toByteArray(), element.getAttributeMap());
   }
+
+  ////////
+
+  private static final AddMetadata INSTANCE = new AddMetadata();
+  private static final byte[] METADATA_PREFIX = "{\"metadata\":".getBytes();
+
+  private AddMetadata() {
+  }
+
 }

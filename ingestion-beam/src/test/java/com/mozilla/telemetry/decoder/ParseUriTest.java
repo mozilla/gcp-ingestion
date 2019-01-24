@@ -56,14 +56,16 @@ public class ParseUriTest {
 
     WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline
         .apply(Create.of(Iterables.concat(validInput, invalidInput)))
-        .apply(InputFileFormat.json.decode()).output().apply(new ParseUri());
+        .apply("DecodeJsonInput", InputFileFormat.json.decode()).output() //
+        .apply(ParseUri.of());
 
-    PCollection<String> output = parsed.output().apply("encodeJson",
-        OutputFileFormat.json.encode());
+    PCollection<String> output = parsed.output() //
+        .apply("EncodeJsonOutput", OutputFileFormat.json.encode());
     PAssert.that(output).containsInAnyOrder(expected);
 
-    PCollection<String> exceptions = parsed.errors().apply(MapElements
-        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+    PCollection<String> exceptions = parsed.errors() //
+        .apply(MapElements.into(TypeDescriptors.strings())
+            .via(message -> message.getAttribute("exception_class")));
     PAssert.that(exceptions)
         .containsInAnyOrder(Arrays.asList("com.mozilla.telemetry.decoder.ParseUri$NullUriException",
             "com.mozilla.telemetry.decoder.ParseUri$InvalidUriException",

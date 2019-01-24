@@ -55,12 +55,12 @@ public class Decoder extends Sink {
     // Trailing comments are used below to prevent rewrapping by google-java-format.
     PCollection<PubsubMessage> deduplicated = pipeline //
         .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
-        .apply(new ParseUri()).errorsTo(errorCollections) //
+        .apply(ParseUri.of()).errorsTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(new ParsePayload()).errorsTo(errorCollections) //
-        .apply(new GeoCityLookup(options.getGeoCityDatabase(), options.getGeoCityFilter()))
-        .apply(new ParseUserAgent()) //
-        .apply(new AddMetadata()).errorsTo(errorCollections) //
+        .apply(ParsePayload.of()).errorsTo(errorCollections) //
+        .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter()))
+        .apply(ParseUserAgent.of()) //
+        .apply(AddMetadata.of()).errorsTo(errorCollections) //
         .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri())).ignoreDuplicates() //
         .errorsTo(errorCollections);
 

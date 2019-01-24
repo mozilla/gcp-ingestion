@@ -14,7 +14,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -30,9 +29,8 @@ public class CompressPayload
 
   @Override
   public PCollection<PubsubMessage> expand(PCollection<? extends PubsubMessage> input) {
-    return input.apply(
-        MapElements.into(new TypeDescriptor<PubsubMessage>(PubsubMessageWithAttributesCoder.class) {
-        }).via(message -> compress(message, compression.get())));
+    return input.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+        .via(message -> compress(message, compression.get())));
   }
 
   ////////

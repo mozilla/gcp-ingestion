@@ -33,11 +33,11 @@ public class ParsePayloadTest {
   public void testOutput() {
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
-        .apply("decodeText", InputFileFormat.text.decode()).output()
-        .apply("addAttributes", MapElements.into(new TypeDescriptor<PubsubMessage>() {
-        }).via(element -> new PubsubMessage(element.getPayload(), ImmutableMap
-            .of("document_namespace", "test", "document_type", "test", "document_version", "1"))))
-        .apply("parsePayload", new ParsePayload());
+        .apply(InputFileFormat.text.decode()).output()
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of(
+                "document_namespace", "test", "document_type", "test", "document_version", "1"))))
+        .apply(ParsePayload.of());
 
     final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}");
     final PCollection<String> main = output.output().apply("encodeTextMain",
@@ -71,9 +71,10 @@ public class ParsePayloadTest {
         "{\"attributeMap\":{},\"payload\":\"e30K\"}",
         "{\"attributeMap\":null,\"payload\":\"e30K\"}");
 
-    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("parsePayload", new ParsePayload());
+    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()).output() //
+        .apply(ParsePayload.of());
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
@@ -96,7 +97,7 @@ public class ParsePayloadTest {
         + ",\"document_type\":\"main\"" + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.json.decode()).output().apply("parsePayload", new ParsePayload());
+        .apply(InputFileFormat.json.decode()).output().apply(ParsePayload.of());
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
@@ -115,9 +116,10 @@ public class ParsePayloadTest {
     String input = "{\"id\":null,\"metadata\":"
         + "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":1}}";
 
-    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
-        .apply("decodeText", InputFileFormat.text.decode()).output()
-        .apply("parsePayload", new ParsePayload());
+    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.text.decode()).output() //
+        .apply(ParsePayload.of());
 
     PAssert.that(output.errors()).empty();
 

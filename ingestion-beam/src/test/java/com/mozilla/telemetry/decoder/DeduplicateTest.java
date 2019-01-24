@@ -39,8 +39,8 @@ public class DeduplicateTest {
 
     // Create new PubsubMessage with element as document_id attribute
     final MapElements<String, PubsubMessage> mapStringsToId = MapElements
-        .into(new TypeDescriptor<PubsubMessage>() {
-        }).via(element -> new PubsubMessage(new byte[0], ImmutableMap.of("document_id", element)));
+        .into(TypeDescriptor.of(PubsubMessage.class))
+        .via(element -> new PubsubMessage(new byte[0], ImmutableMap.of("document_id", element)));
 
     // Extract document_id attribute from PubsubMessage
     final MapElements<PubsubMessage, String> mapMessagesToId = MapElements
