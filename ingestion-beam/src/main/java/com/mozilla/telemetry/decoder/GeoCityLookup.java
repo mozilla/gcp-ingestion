@@ -43,12 +43,20 @@ import org.apache.beam.sdk.values.PCollection;
 public class GeoCityLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
+  public static GeoCityLookup of(ValueProvider<String> geoCityDatabase,
+      ValueProvider<String> geoCityFilter) {
+    return new GeoCityLookup(geoCityDatabase, geoCityFilter);
+  }
+
+  /////////
+
   private static final Pattern GEO_NAME_PATTERN = Pattern.compile("^(\\d+).*");
 
   private final ValueProvider<String> geoCityDatabase;
   private final ValueProvider<String> geoCityFilter;
 
-  public GeoCityLookup(ValueProvider<String> geoCityDatabase, ValueProvider<String> geoCityFilter) {
+  private GeoCityLookup(ValueProvider<String> geoCityDatabase,
+      ValueProvider<String> geoCityFilter) {
     this.geoCityDatabase = geoCityDatabase;
     this.geoCityFilter = geoCityFilter;
   }

@@ -11,7 +11,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PInput;
@@ -85,7 +84,6 @@ public class WithErrors {
     @Override
     public void finishSpecifyingOutput(String transformName, PInput input,
         PTransform<?, ?> transform) {
-      errors().setCoder(PubsubMessageWithAttributesCoder.of());
     }
   }
 

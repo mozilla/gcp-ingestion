@@ -25,11 +25,11 @@ public class DecodePubsubMessagesTest {
   public void testText() {
     List<String> inputLines = Lines.resources("testdata/decode-pubsub-messages/input-*");
 
-    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline.apply(Create.of(inputLines))
-        .apply("decodeText", InputFileFormat.text.decode());
+    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline //
+        .apply(Create.of(inputLines)) //
+        .apply(InputFileFormat.text.decode());
 
-    PCollection<String> encoded = decoded.output().apply("encodeText",
-        OutputFileFormat.text.encode());
+    PCollection<String> encoded = decoded.output().apply(OutputFileFormat.text.encode());
 
     PAssert.that(encoded).containsInAnyOrder(inputLines);
     PAssert.that(decoded.errors()).empty();
@@ -45,14 +45,15 @@ public class DecodePubsubMessagesTest {
     List<String> invalidLines = Lines
         .resources("testdata/decode-pubsub-messages/input-invalid-json.txt");
 
-    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline.apply(Create.of(inputLines))
-        .apply("decodeJson", InputFileFormat.json.decode());
+    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline //
+        .apply(Create.of(inputLines)) //
+        .apply(InputFileFormat.json.decode());
 
-    PCollection<String> encoded = decoded.output().apply("encodeJson",
-        OutputFileFormat.json.encode());
+    PCollection<String> encoded = decoded.output() //
+        .apply("EncodeJsonOutput", OutputFileFormat.json.encode());
 
-    PCollection<String> encodedErrors = decoded.errors().apply("encodeText",
-        OutputFileFormat.text.encode());
+    PCollection<String> encodedErrors = decoded.errors() //
+        .apply("EncodeTextError", OutputFileFormat.text.encode());
 
     PAssert.that(encoded).containsInAnyOrder(validLines);
     PAssert.that(encodedErrors).containsInAnyOrder(invalidLines);

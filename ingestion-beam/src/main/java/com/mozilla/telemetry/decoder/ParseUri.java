@@ -11,6 +11,12 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
+  public static ParseUri of() {
+    return INSTANCE;
+  }
+
+  ////////
+
   private static class InvalidUriException extends Exception {
 
     InvalidUriException() {
@@ -24,6 +30,11 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
 
   private static class NullUriException extends InvalidUriException {
   }
+
+  private ParseUri() {
+  }
+
+  private static final ParseUri INSTANCE = new ParseUri();
 
   private static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
   private static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[] { "document_id",

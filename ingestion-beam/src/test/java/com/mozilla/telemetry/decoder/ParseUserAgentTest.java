@@ -36,10 +36,11 @@ public class ParseUserAgentTest {
             + ",\"user_agent_version\":\"63.0\"" + ",\"user_agent_os\":\"Macintosh\""
             + "},\"payload\":\"\"}");
 
-    final PCollection<String> output = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("parseUserAgent", new ParseUserAgent())
-        .apply("encodeJson", OutputFileFormat.json.encode());
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()).output() //
+        .apply(ParseUserAgent.of()) //
+        .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 

@@ -33,10 +33,11 @@ public class DecompressPayloadTest {
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
         "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}");
 
-    final PCollection<String> output = pipeline.apply(Create.of(input))
-        .apply("decodeJson", InputFileFormat.json.decode()).output()
-        .apply("gzipDecompress", DecompressPayload.enabled(pipeline.newProvider(true)))
-        .apply("encodeJson", OutputFileFormat.json.encode());
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()).output() //
+        .apply(DecompressPayload.enabled(pipeline.newProvider(true))) //
+        .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 

@@ -32,6 +32,12 @@ import org.json.JSONObject;
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
+  public static ParsePayload of() {
+    return INSTANCE;
+  }
+
+  ////////
+
   private final Distribution parseTimer = Metrics.distribution(ParsePayload.class,
       "json-parse-millis");
   private final Distribution validateTimer = Metrics.distribution(ParsePayload.class,
@@ -50,7 +56,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     }
   }
 
+  private static final ParsePayload INSTANCE = new ParsePayload();
   private static final Map<String, Schema> schemas = new HashMap<>();
+
+  private ParsePayload() {
+  }
 
   @VisibleForTesting
   public static int numLoadedSchemas() {

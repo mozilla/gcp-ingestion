@@ -10,11 +10,9 @@ import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.io.Write.PubsubOutput;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
@@ -79,13 +77,14 @@ public enum ErrorOutputType {
 
         @Override
         public Result<PDone> expand(PCollection<PubsubMessage> input) {
-          return input.apply("remove stack_trace attributes", MapElements
-              .into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
-                Map<String, String> filtered = message.getAttributeMap().entrySet().stream() //
-                    .filter(e -> !e.getKey().startsWith("stack_trace")) //
-                    .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-                return new PubsubMessage(message.getPayload(), filtered);
-              })).setCoder(PubsubMessageWithAttributesCoder.of()).apply(writeFailures(options));
+          return input
+              .apply("remove stack_trace attributes",
+                  MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+                      .via(message -> new PubsubMessage(message.getPayload(),
+                          message.getAttributeMap().entrySet().stream()
+                              .filter(e -> !e.getKey().startsWith("stack_trace"))
+                              .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))))
+              .apply(writeFailures(options));
         }
       };
     }

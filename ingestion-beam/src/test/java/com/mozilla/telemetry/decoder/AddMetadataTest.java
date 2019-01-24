@@ -28,21 +28,22 @@ public class AddMetadataTest {
   @Test
   public void testOutput() {
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
-    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.text.decode()).output()
-        .apply("addAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(
+    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply("DecodeTextInput", InputFileFormat.text.decode()).output() //
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(
             element -> new PubsubMessage(element.getPayload(), ImmutableMap.of("meta", "data"))))
-        .apply(new AddMetadata());
+        .apply(AddMetadata.of());
 
     final List<String> expectedMain = Arrays.asList("{\"metadata\":{\"meta\":\"data\"}}",
         "{\"metadata\":{\"meta\":\"data\"},\"id\":null}");
-    final PCollection<String> main = output.output().apply("encodeTextMain",
-        OutputFileFormat.text.encode());
+    final PCollection<String> main = output.output() //
+        .apply("EncodeTextMain", OutputFileFormat.text.encode());
     PAssert.that(main).containsInAnyOrder(expectedMain);
 
     final List<String> expectedError = Arrays.asList("{", "[]");
-    final PCollection<String> error = output.errors().apply("encodeTextError",
-        OutputFileFormat.text.encode());
+    final PCollection<String> error = output.errors() //
+        .apply("EncodeTextError", OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 
     pipeline.run();
