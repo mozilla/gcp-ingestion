@@ -26,7 +26,6 @@ import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.options.OutputType;
 import com.mozilla.telemetry.options.SinkOptions;
-import com.mozilla.telemetry.options.SinkOptions.Parsed;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -154,7 +153,7 @@ public class PubsubIntegrationTest {
     SinkOptions sinkOptions = pipeline.getOptions().as(SinkOptions.class);
     sinkOptions.setOutputType(OutputType.pubsub);
     sinkOptions.setOutput(pipeline.newProvider(topicName.toString()));
-    Parsed options = SinkOptions.parseSinkOptions(sinkOptions);
+    SinkOptions.Parsed options = SinkOptions.parseSinkOptions(sinkOptions);
 
     pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
         .apply(options.getOutputType().write(options));

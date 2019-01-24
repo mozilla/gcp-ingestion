@@ -61,7 +61,8 @@ public class Deduplicate {
   /**
    * Implementation of {@link #removeDuplicates(ValueProvider)}.
    */
-  public static class RemoveDuplicates extends PTransform<PCollection<PubsubMessage>, RemoveDuplicates.Result> {
+  public static class RemoveDuplicates
+      extends PTransform<PCollection<PubsubMessage>, RemoveDuplicates.Result> {
 
     private final RedisIdService redisIdService;
 
@@ -78,15 +79,19 @@ public class Deduplicate {
 
     @AutoValue
     public abstract static class Result implements PInput, POutput {
+
       public abstract PCollectionTuple tuple();
+
       public abstract TupleTag<PubsubMessage> outputTag();
+
       public abstract TupleTag<PubsubMessage> duplicateTag();
+
       public abstract TupleTag<PubsubMessage> errorTag();
 
-      public static Result of(PCollectionTuple tuple,
-          TupleTag<PubsubMessage> outputTag, TupleTag<PubsubMessage> duplicateTag,
-          TupleTag<PubsubMessage> errorTag) {
-        return new AutoValue_Deduplicate_RemoveDuplicates_Result(tuple, outputTag, duplicateTag, errorTag);
+      public static Result of(PCollectionTuple tuple, TupleTag<PubsubMessage> outputTag,
+          TupleTag<PubsubMessage> duplicateTag, TupleTag<PubsubMessage> errorTag) {
+        return new AutoValue_Deduplicate_RemoveDuplicates_Result(tuple, outputTag, duplicateTag,
+            errorTag);
       }
 
       /**
@@ -94,7 +99,8 @@ public class Deduplicate {
        * non-duplicate output and the errors.
        */
       public WithErrors.Result<PCollection<PubsubMessage>> ignoreDuplicates() {
-        return WithErrors.Result.of(tuple().get(outputTag()), outputTag(), tuple().get(errorTag()), errorTag());
+        return WithErrors.Result.of(tuple().get(outputTag()), outputTag(), tuple().get(errorTag()),
+            errorTag());
       }
 
       @Override
@@ -119,8 +125,8 @@ public class Deduplicate {
 
     @Override
     public Result expand(PCollection<PubsubMessage> input) {
-      PCollectionTuple tuple = input.apply(ParDo.of(new Fn())
-          .withOutputTags(outputTag, TupleTagList.of(duplicateTag).and(errorTag)));
+      PCollectionTuple tuple = input.apply(ParDo.of(new Fn()).withOutputTags(outputTag,
+          TupleTagList.of(duplicateTag).and(errorTag)));
       return Result.of(tuple, outputTag, duplicateTag, errorTag);
     }
 
@@ -143,8 +149,7 @@ public class Deduplicate {
         if (!exceptionWasThrown) {
           if (idExists) {
             out.get(duplicateTag).output(element);
-          }
-          else {
+          } else {
             out.get(outputTag).output(element);
           }
         }

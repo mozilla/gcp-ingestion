@@ -4,14 +4,14 @@
 
 package com.mozilla.telemetry.io;
 
-import com.mozilla.telemetry.options.SinkOptions;
-import com.mozilla.telemetry.options.SinkOptions.Parsed;
+import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
@@ -26,16 +26,16 @@ public abstract class Read
   /** Implementation of reading from Pub/Sub. */
   public static class PubsubInput extends Read {
 
-    private final SinkOptions.Parsed options;
+    private final ValueProvider<String> subscription;
 
-    public PubsubInput(Parsed options) {
-      this.options = options;
+    public PubsubInput(ValueProvider<String> subscription) {
+      this.subscription = subscription;
     }
 
     @Override
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
       return input //
-          .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(options.getInput()))
+          .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(subscription))
           .apply(ToPubsubMessageFrom.identity());
     }
   }
@@ -43,17 +43,17 @@ public abstract class Read
   /** Implementation of reading from local or remote files. */
   public static class FileInput extends Read {
 
-    private final SinkOptions.Parsed options;
+    private final ValueProvider<String> fileSpec;
+    private final InputFileFormat fileFormat;
 
-    public FileInput(Parsed options) {
-      this.options = options;
+    public FileInput(ValueProvider<String> fileSpec, InputFileFormat fileFormat) {
+      this.fileSpec = fileSpec;
+      this.fileFormat = fileFormat;
     }
 
     @Override
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
-      return input //
-          .apply(TextIO.read().from(options.getInput())) //
-          .apply(options.getInputFileFormat().decode());
+      return input.apply(TextIO.read().from(fileSpec)).apply(fileFormat.decode());
     }
   }
 }

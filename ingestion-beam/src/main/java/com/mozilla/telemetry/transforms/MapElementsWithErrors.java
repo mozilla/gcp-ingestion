@@ -4,7 +4,6 @@
 
 package com.mozilla.telemetry.transforms;
 
-import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.DoFn;
