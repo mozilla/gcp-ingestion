@@ -166,9 +166,8 @@ public abstract class Write
     private final int numShards;
 
     /** Public constructor. */
-    public BigQueryOutput(ValueProvider<String> tableSpecTemplate,
-        BigQueryWriteMethod writeMethod, Duration triggeringFrequency, InputType inputType,
-        int numShards) {
+    public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
+        Duration triggeringFrequency, InputType inputType, int numShards) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;

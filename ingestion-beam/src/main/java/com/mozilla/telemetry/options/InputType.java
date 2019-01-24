@@ -14,7 +14,7 @@ public enum InputType {
 
     /** Return a PTransform that reads from a Pubsub subscription. */
     public Read read(SinkOptions.Parsed options) {
-      return new PubsubInput(options);
+      return new PubsubInput(options.getInput());
     }
   },
 
@@ -22,7 +22,7 @@ public enum InputType {
 
     /** Return a PTransform that reads from local or remote files. */
     public Read read(SinkOptions.Parsed options) {
-      return new FileInput(options);
+      return new FileInput(options.getInput(), options.getInputFileFormat());
     }
   };
 

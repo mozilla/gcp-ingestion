@@ -5,9 +5,9 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.io.Write;
-import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.io.Write.BigQueryOutput;
 import com.mozilla.telemetry.io.Write.FileOutput;
+import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.io.Write.PubsubOutput;
 import com.mozilla.telemetry.transforms.Println;
 

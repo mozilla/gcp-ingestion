@@ -5,8 +5,8 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.io.Write;
-import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.io.Write.FileOutput;
+import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.io.Write.PubsubOutput;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
@@ -44,9 +44,8 @@ public enum ErrorOutputType {
 
     /** Return a PTransform that writes errors to local or remote files. */
     public Write writeFailures(SinkOptions.Parsed options) {
-      return new FileOutput(options.getErrorOutput(), FORMAT,
-          options.getParsedWindowDuration(), options.getErrorOutputNumShards(),
-          options.getErrorOutputFileCompression());
+      return new FileOutput(options.getErrorOutput(), FORMAT, options.getParsedWindowDuration(),
+          options.getErrorOutputNumShards(), options.getErrorOutputFileCompression());
     }
   },
 
@@ -54,8 +53,7 @@ public enum ErrorOutputType {
 
     /** Return a PTransform that writes to Google Pubsub. */
     public Write writeFailures(SinkOptions.Parsed options) {
-      return new PubsubOutput(options.getErrorOutput(),
-          options.getErrorOutputPubsubCompression());
+      return new PubsubOutput(options.getErrorOutput(), options.getErrorOutputPubsubCompression());
     }
   };
 
