@@ -67,14 +67,14 @@ public class GeoCityLookup
     private transient DatabaseReader geoIP2City;
     private transient Set<Integer> allowedCities;
 
-    private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip-from-x-forwarded-for");
-    private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip-from-remote-addr");
-    private final Counter countPipelineProxy = Metrics.counter(Fn.class, "count-pipeline-proxy");
-    private final Counter foundIp = Metrics.counter(Fn.class, "found-ip");
-    private final Counter foundCity = Metrics.counter(Fn.class, "found-city");
-    private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found-city-allowed");
-    private final Counter foundGeo1 = Metrics.counter(Fn.class, "found-geo-subdivision-1");
-    private final Counter foundGeo2 = Metrics.counter(Fn.class, "found-geo-subdivision-2");
+    private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip_from_x_forwarded_for");
+    private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip_from_remote_addr");
+    private final Counter countPipelineProxy = Metrics.counter(Fn.class, "count_pipeline_proxy");
+    private final Counter foundIp = Metrics.counter(Fn.class, "found_ip");
+    private final Counter foundCity = Metrics.counter(Fn.class, "found_city");
+    private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found_city_allowed");
+    private final Counter foundGeo1 = Metrics.counter(Fn.class, "found_geo_subdivision_1");
+    private final Counter foundGeo2 = Metrics.counter(Fn.class, "found_geo_subdivision_2");
 
     @Override
     public PubsubMessage apply(PubsubMessage value) {

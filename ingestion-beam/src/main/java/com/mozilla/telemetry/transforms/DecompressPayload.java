@@ -48,8 +48,8 @@ public class DecompressPayload
 
     private static final byte ZERO_BYTE = 0x00;
 
-    private final Counter compressedInput = Metrics.counter(Fn.class, "compressed-input");
-    private final Counter uncompressedInput = Metrics.counter(Fn.class, "uncompressed-input");
+    private final Counter compressedInput = Metrics.counter(Fn.class, "compressed_input");
+    private final Counter uncompressedInput = Metrics.counter(Fn.class, "uncompressed_input");
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {

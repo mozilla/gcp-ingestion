@@ -59,8 +59,8 @@ public class PubsubConstraints {
 
     private static class Fn extends DoFn<PubsubMessage, PubsubMessage> {
 
-      private final Counter countTruncatedKey = Metrics.counter(Fn.class, "truncated-key");
-      private final Counter countTruncatedValue = Metrics.counter(Fn.class, "truncated-value");
+      private final Counter countTruncatedKey = Metrics.counter(Fn.class, "truncated_key");
+      private final Counter countTruncatedValue = Metrics.counter(Fn.class, "truncated_value");
 
       @ProcessElement
       public void processElement(@Element PubsubMessage message,
