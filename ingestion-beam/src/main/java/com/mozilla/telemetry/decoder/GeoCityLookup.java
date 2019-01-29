@@ -67,6 +67,7 @@ public class GeoCityLookup
     private transient DatabaseReader geoIP2City;
     private transient Set<Integer> allowedCities;
 
+    private final Counter countGeoAlreadyApplied = Metrics.counter(Fn.class, "geo_already_applied");
     private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip_from_x_forwarded_for");
     private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip_from_remote_addr");
     private final Counter countPipelineProxy = Metrics.counter(Fn.class, "count_pipeline_proxy");
@@ -82,6 +83,13 @@ public class GeoCityLookup
         if (geoIP2City == null) {
           // Throws IOException
           loadResourcesOnFirstMessage();
+        }
+
+        if (value.getAttributeMap().containsKey("geo_country")) {
+          // Return early since geo has already been applied;
+          // we are likely reprocessing a message from error output.
+          countGeoAlreadyApplied.inc();
+          return value;
         }
 
         // copy attributes

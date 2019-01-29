@@ -48,11 +48,16 @@ public class ParseUriTest {
             + ",\"app_build_id\":\"20180328030202\"" + ",\"app_update_channel\":\"nightly\""
             + ",\"document_namespace\":\"telemetry\""
             + ",\"document_id\":\"ce39b608-f595-4c69-b6a6-f7a436604648\""
-            + ",\"document_type\":\"main\"" + "},\"payload\":\"\"}",
+            + ",\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
+            + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
+            + ",\"document_type\":\"main\"" //
+            + "},\"payload\":\"\"}",
         "{\"attributeMap\":" + "{\"document_namespace\":\"eng-workflow\""
             + ",\"document_version\":\"1\""
             + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
-            + ",\"document_type\":\"hgpush\"" + "},\"payload\":\"\"}");
+            + ",\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+            + ",\"document_type\":\"hgpush\"" //
+            + "},\"payload\":\"\"}");
 
     WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline
         .apply(Create.of(Iterables.concat(validInput, invalidInput)))

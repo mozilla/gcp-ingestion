@@ -78,7 +78,6 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     } else {
       throw new InvalidUriException("Unknown URI prefix");
     }
-    attributes.remove("uri");
     return new PubsubMessage(element.getPayload(), attributes);
   }
 }
