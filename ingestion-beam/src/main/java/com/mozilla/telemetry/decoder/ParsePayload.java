@@ -39,9 +39,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   ////////
 
   private final Distribution parseTimer = Metrics.distribution(ParsePayload.class,
-      "json-parse-millis");
+      "json_parse_millis");
   private final Distribution validateTimer = Metrics.distribution(ParsePayload.class,
-      "json-validate-millis");
+      "json_validate_millis");
 
   private transient Validator validator;
 

@@ -44,7 +44,7 @@ public class LimitPayloadSize extends MapElementsWithErrors.ToPubsubMessageFrom<
   private final int maxBytes;
 
   private final Counter countPayloadTooLarge = Metrics.counter(LimitPayloadSize.class,
-      "payload-too-large");
+      "payload_too_large");
 
   private LimitPayloadSize(int maxBytes) {
     this.maxBytes = maxBytes;
