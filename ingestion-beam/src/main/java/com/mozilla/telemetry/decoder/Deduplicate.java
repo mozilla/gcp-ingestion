@@ -6,6 +6,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.primitives.Ints;
+import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -150,6 +151,9 @@ public class Deduplicate {
         }
         if (!exceptionWasThrown) {
           if (idExists) {
+            PerDocTypeCounter.inc(element.getAttributeMap(), "duplicate_submission");
+            PerDocTypeCounter.inc(element.getAttributeMap(), "duplicate_submission_bytes",
+                element.getPayload().length);
             out.get(duplicateTag).output(element);
           } else {
             out.get(outputTag).output(element);
