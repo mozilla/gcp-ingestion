@@ -38,6 +38,13 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setGeoCityFilter(ValueProvider<String> value);
 
+  @Description("Path (local or gs://) to a .tar.gz file containing json schemas; the expected"
+      + " format is the output of GitHub's archive endpoint for mozilla-pipeline-schemas:"
+      + " https://github.com/mozilla-services/mozilla-pipeline-schemas/archive/dev.tar.gz")
+  ValueProvider<String> getSchemasLocation();
+
+  void setSchemasLocation(ValueProvider<String> value);
+
   @Description("Source of messages to mark as seen for deduplication. Allowed sources are:"
       + " pubsub (mark messages as seen from --deliveredMessagesSubscription),"
       + " immediate (mark messages as seen without waiting for delivery),"

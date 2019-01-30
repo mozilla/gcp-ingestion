@@ -7,4 +7,4 @@ derby.log
 .DS_Store
 tmp/
 GeoLite2-City.mmdb
-src/main/resources/schemas/
+schemas.tar.gz

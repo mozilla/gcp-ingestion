@@ -424,12 +424,14 @@ Example:
 mkdir -p tmp/
 echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > tmp/input.json
 
-# Download `GeoLite2-City.mmdb`
+# Download `GeoLite2-City.mmdb` and `schemas.tar.gz`
 ./bin/download-geolite2
+./bin/download-schemas
 
 # do geo lookup on messages to stdout
 ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
     --geoCityDatabase=GeoLite2-City.mmdb \
+    --schemasLocation=schemas.tar.gz \
     --inputType=file \
     --input=tmp/input.json \
     --outputType=stdout \

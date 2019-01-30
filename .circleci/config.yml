@@ -79,9 +79,11 @@ jobs:
           - maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
           - maven-repo-v1-{{ .Branch }}-
           - maven-repo-v1-
-    - run: &download_geolite2
-        name: Download Geolite2
-        command: ingestion-beam/bin/download-geolite2
+    - run: &download_beam_resources
+        name: Download Geolite2 and schemas
+        command: |
+          ingestion-beam/bin/download-geolite2
+          ingestion-beam/bin/download-schemas
     - run:
         name: Maven Test
         command: cd ingestion-beam && mvn clean test
@@ -109,7 +111,7 @@ jobs:
     - restore_cache:
         <<: *restore_cache_beam
     - run:
-        <<: *download_geolite2
+        <<: *download_beam_resources
     - run:
         name: Maven Test
         # Google's client libraries will check for GOOGLE_APPLICATION_CREDENTIALS
