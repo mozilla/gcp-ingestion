@@ -10,6 +10,7 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
+import java.io.UncheckedIOException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
@@ -90,12 +91,12 @@ public class SchemaStore implements Serializable {
   }
 
   @VisibleForTesting
-  public int numLoadedSchemas() {
+  int numLoadedSchemas() {
     ensureSchemasLoaded();
     return schemas.size();
   }
 
-  private void loadAllSchemas() throws SchemaNotFoundException, IOException {
+  private void loadAllSchemas() throws IOException {
     final Map<String, Schema> tempSchemas = new HashMap<>();
     final Set<String> tempDirs = new HashSet<>();
     InputStream inputStream;
@@ -120,7 +121,7 @@ public class SchemaStore implements Serializable {
           String name = String.join("/", Arrays.copyOfRange(components, 2, components.length));
           if (entry.isDirectory()) {
             tempDirs.add(name);
-          } else if (name.endsWith(".json")) {
+          } else if (name.endsWith(".schema.json")) {
             byte[] bytes = IOUtils.toByteArray(i);
             JSONObject json = Json.readJSONObject(bytes);
             tempSchemas.put(name, SchemaLoader.load(json));
@@ -136,8 +137,8 @@ public class SchemaStore implements Serializable {
     if (schemas == null) {
       try {
         loadAllSchemas();
-      } catch (SchemaNotFoundException | IOException e) {
-        throw new RuntimeException("Unexpected error while loading schemas", e);
+      } catch (IOException e) {
+        throw new UncheckedIOException("Unexpected error while loading schemas", e);
       }
     }
   }
