@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,11 +26,12 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   }
 
   @Override
-  protected PubsubMessage processElement(PubsubMessage element) throws IOException {
+  protected PubsubMessage processElement(PubsubMessage message) throws IOException {
+    message = PubsubConstraints.ensureNonNull(message);
     // Get payload
-    final byte[] payload = element.getPayload();
+    final byte[] payload = message.getPayload();
     // Get attributes as bytes, throws IOException
-    final byte[] metadata = Json.asBytes(element.getAttributeMap());
+    final byte[] metadata = Json.asBytes(message.getAttributeMap());
     // Ensure that we have a json object with no leading whitespace
     if (payload.length < 2 || payload[0] != '{') {
       throw new IOException("invalid json object: must start with {");
@@ -48,7 +50,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     }
     // Write payload without leading `{`
     payloadWithMetadata.write(payload, 1, payload.length - 1);
-    return new PubsubMessage(payloadWithMetadata.toByteArray(), element.getAttributeMap());
+    return new PubsubMessage(payloadWithMetadata.toByteArray(), message.getAttributeMap());
   }
 
   ////////

@@ -39,6 +39,19 @@ public class PubsubConstraints {
     return truncateToFitUtf8ByteLength(value, MAX_ATTRIBUTE_VALUE_BYTES);
   }
 
+  /** Fills out empty payload and attributes if the message itself or components are null. */
+  public static PubsubMessage ensureNonNull(PubsubMessage message) {
+    if (message == null) {
+      return new PubsubMessage(new byte[] {}, new HashMap<>());
+    } else if (message.getPayload() == null) {
+      return ensureNonNull(new PubsubMessage(new byte[] {}, message.getAttributeMap()));
+    } else if (message.getAttributeMap() == null) {
+      return ensureNonNull(new PubsubMessage(message.getPayload(), new HashMap<>()));
+    } else {
+      return message;
+    }
+  }
+
   /**
    * Return a {@link PTransform} that truncates attribute keys and values as needed to satisfy size
    * constraints.
