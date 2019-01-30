@@ -12,6 +12,7 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.City;
 import com.maxmind.geoip2.record.Subdivision;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,22 +79,23 @@ public class GeoCityLookup
     private final Counter foundGeo2 = Metrics.counter(Fn.class, "found_geo_subdivision_2");
 
     @Override
-    public PubsubMessage apply(PubsubMessage value) {
+    public PubsubMessage apply(PubsubMessage message) {
+      message = PubsubConstraints.ensureNonNull(message);
       try {
         if (geoIP2City == null) {
           // Throws IOException
           loadResourcesOnFirstMessage();
         }
 
-        if (value.getAttributeMap().containsKey("geo_country")) {
+        if (message.getAttributeMap().containsKey("geo_country")) {
           // Return early since geo has already been applied;
           // we are likely reprocessing a message from error output.
           countGeoAlreadyApplied.inc();
-          return value;
+          return message;
         }
 
         // copy attributes
-        Map<String, String> attributes = new HashMap<String, String>(value.getAttributeMap());
+        Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
 
         // Determine client ip
         String ip;
@@ -159,7 +161,7 @@ public class GeoCityLookup
         // remove null attributes because the coder can't handle them
         attributes.values().removeIf(Objects::isNull);
 
-        return new PubsubMessage(value.getPayload(), attributes);
+        return new PubsubMessage(message.getPayload(), attributes);
       } catch (IOException e) {
         // Re-throw unchecked, so that the pipeline will fail at run time if it occurs
         throw new UncheckedIOException(e);

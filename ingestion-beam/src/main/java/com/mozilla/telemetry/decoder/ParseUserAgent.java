@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.Sets;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
@@ -63,9 +64,11 @@ public class ParseUserAgent
         .dropDefaultResources().addResources("UserAgents/*.yaml").build();
 
     @Override
-    public PubsubMessage apply(PubsubMessage value) {
+    public PubsubMessage apply(PubsubMessage message) {
+      message = PubsubConstraints.ensureNonNull(message);
+
       // Copy attributes
-      Map<String, String> attributes = new HashMap<String, String>(value.getAttributeMap());
+      Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
 
       if (attributes.containsKey(USER_AGENT)) {
         // Extract user agent fields
@@ -83,7 +86,7 @@ public class ParseUserAgent
         attributes.remove(USER_AGENT);
       }
       // Return new message
-      return new PubsubMessage(value.getPayload(), attributes);
+      return new PubsubMessage(message.getPayload(), attributes);
     }
   }
 
