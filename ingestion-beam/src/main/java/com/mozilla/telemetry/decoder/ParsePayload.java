@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.schemas.SchemaStore;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
@@ -13,11 +14,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.everit.json.schema.Schema;
+import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.Validator;
 import org.json.JSONObject;
 
@@ -40,8 +41,6 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       "json_parse_millis");
   private final Distribution validateTimer = Metrics.distribution(ParsePayload.class,
       "json_validate_millis");
-  private final Counter invalidDocTypeCounter = Metrics.counter(ParsePayload.class,
-      "invalid_doc_type");
 
   private final ValueProvider<String> schemasLocation;
 
@@ -56,11 +55,25 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   protected PubsubMessage processElement(PubsubMessage message)
       throws SchemaNotFoundException, IOException {
     message = PubsubConstraints.ensureNonNull(message);
-
-    // Throws IOException if not a valid json object
-    final JSONObject json = parseTimed(message.getPayload());
-
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+
+    if (schemaStore == null) {
+      schemaStore = SchemaStore.of(schemasLocation);
+    }
+
+    final int submissionBytes = message.getPayload().length;
+
+    JSONObject json;
+    try {
+      json = parseTimed(message.getPayload());
+    } catch (IOException e) {
+      Map<String, String> attrs = schemaStore.docTypeExists(message.getAttributeMap())
+          ? message.getAttributeMap()
+          : null; // null attributes will cause docType to show up as "unknown_doc_type" in metrics
+      PerDocTypeCounter.inc(attrs, "error_json_parse");
+      PerDocTypeCounter.inc(attrs, "error_submission_bytes", submissionBytes);
+      throw e;
+    }
 
     // Remove any top-level "metadata" field if it exists, and attempt to parse it as a
     // key-value map of strings, adding all entries as attributes.
@@ -75,11 +88,10 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       }
     }
 
-    if (schemaStore == null) {
-      schemaStore = SchemaStore.of(schemasLocation);
-    }
-    if (!schemaStore.docTypeExists(attributes)) {
-      invalidDocTypeCounter.inc();
+    boolean validDocType = schemaStore.docTypeExists(attributes);
+    if (!validDocType) {
+      PerDocTypeCounter.inc(null, "error_invalid_doc_type");
+      PerDocTypeCounter.inc(null, "error_submission_bytes", submissionBytes);
       throw new SchemaNotFoundException(String.format("No such docType: %s/%s",
           attributes.get("document_namespace"), attributes.get("document_type")));
     }
@@ -94,6 +106,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
         String version = json.get("v").toString();
         attributes.put("document_version", version);
       } else {
+        PerDocTypeCounter.inc(attributes, "error_missing_version");
+        PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
         throw new SchemaNotFoundException("Element was assumed to be a telemetry message because"
             + " it contains no document_version attribute, but the payload does not include"
             + " the top-level 'version' or 'v' field expected for a telemetry document");
@@ -101,11 +115,28 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     }
 
     // Throws SchemaNotFoundException if there's no schema
-    final Schema schema = schemaStore.getSchema(attributes);
-    // Throws ValidationException if schema doesn't match
-    validateTimed(schema, json);
+    Schema schema;
+    try {
+      schema = schemaStore.getSchema(attributes);
+    } catch (SchemaNotFoundException e) {
+      PerDocTypeCounter.inc(attributes, "error_schema_not_found");
+      PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+      throw e;
+    }
+
+    try {
+      validateTimed(schema, json);
+    } catch (ValidationException e) {
+      PerDocTypeCounter.inc(attributes, "error_schema_validation");
+      PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+      throw e;
+    }
 
     byte[] normalizedPayload = json.toString().getBytes();
+
+    PerDocTypeCounter.inc(attributes, "valid_submission");
+    PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
+
     return new PubsubMessage(normalizedPayload, attributes);
   }
 

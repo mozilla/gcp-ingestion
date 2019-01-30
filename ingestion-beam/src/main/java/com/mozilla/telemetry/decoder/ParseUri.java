@@ -37,11 +37,11 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
 
   private static final ParseUri INSTANCE = new ParseUri();
 
-  private static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
-  private static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[] { "document_id",
+  public static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
+  public static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[] { "document_id",
       "document_type", "app_name", "app_version", "app_update_channel", "app_build_id" };
-  private static final String GENERIC_URI_PREFIX = "/submit/";
-  private static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { "document_namespace",
+  public static final String GENERIC_URI_PREFIX = "/submit/";
+  public static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { "document_namespace",
       "document_type", "document_version", "document_id" };
 
   private static Map<String, String> zip(String[] keys, String[] values)
