@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -58,9 +59,10 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
   }
 
   @Override
-  protected PubsubMessage processElement(PubsubMessage element) throws InvalidUriException {
+  protected PubsubMessage processElement(PubsubMessage message) throws InvalidUriException {
+    message = PubsubConstraints.ensureNonNull(message);
     // Copy attributes
-    final Map<String, String> attributes = new HashMap<>(element.getAttributeMap());
+    final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
     // parse uri based on prefix
     final String uri = attributes.get("uri");
@@ -78,6 +80,6 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     } else {
       throw new InvalidUriException("Unknown URI prefix");
     }
-    return new PubsubMessage(element.getPayload(), attributes);
+    return new PubsubMessage(message.getPayload(), attributes);
   }
 }

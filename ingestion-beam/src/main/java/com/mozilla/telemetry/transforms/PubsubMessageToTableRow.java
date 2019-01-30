@@ -19,7 +19,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -65,12 +64,13 @@ public class PubsubMessageToTableRow
   }
 
   @Override
-  protected KV<TableDestination, TableRow> processElement(PubsubMessage element)
+  protected KV<TableDestination, TableRow> processElement(PubsubMessage message)
       throws IOException {
-    final Map<String, String> attributes = Optional.ofNullable(element.getAttributeMap()) //
-        // Only letters, numbers, and underscores are allowed in BigQuery dataset and table names,
-        // but some doc types and namespaces contain '-', so we convert to '_'.
-        .map(m -> Maps.transformValues(m, v -> v.replaceAll("-", "_"))).orElse(new HashMap<>());
+    message = PubsubConstraints.ensureNonNull(message);
+    // Only letters, numbers, and underscores are allowed in BigQuery dataset and table names,
+    // but some doc types and namespaces contain '-', so we convert to '_'.
+    final Map<String, String> attributes = Maps.transformValues(message.getAttributeMap(),
+        v -> v.replaceAll("-", "_"));
     final String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
 
     // Send to error collection if incomplete tableSpec; $ is not a valid char in tableSpecs.
@@ -115,7 +115,7 @@ public class PubsubMessageToTableRow
       throw new IllegalArgumentException("Resolved destination table does not exist: " + tableSpec);
     }
 
-    TableRow tableRow = buildTableRow(element.getPayload());
+    TableRow tableRow = buildTableRow(message.getPayload());
     return KV.of(tableDestination, tableRow);
   }
 

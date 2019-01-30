@@ -8,6 +8,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Time;
 import java.io.Serializable;
@@ -134,6 +135,7 @@ public class Deduplicate {
 
       @ProcessElement
       public void processElement(@Element PubsubMessage element, MultiOutputReceiver out) {
+        element = PubsubConstraints.ensureNonNull(element);
         boolean idExists = false;
         boolean exceptionWasThrown = false;
         try {
@@ -193,6 +195,7 @@ public class Deduplicate {
 
     @Override
     protected PubsubMessage processElement(PubsubMessage element) {
+      element = PubsubConstraints.ensureNonNull(element);
       // Throws IllegalArgumentException if id is present and invalid
       getId(element)
           // Throws JedisConnectionException if redis can't be reached
@@ -229,8 +232,7 @@ public class Deduplicate {
    * @throws IllegalArgumentException if {@code document_id} is an invalid {@link UUID}.
    */
   private static Optional<byte[]> getId(PubsubMessage element) {
-    return Optional.ofNullable(element.getAttributeMap())
-        .flatMap(m -> Optional.ofNullable(m.get("document_id"))).map(UUID::fromString)
+    return Optional.ofNullable(element.getAttribute("document_id")).map(UUID::fromString)
         .map(id -> ByteBuffer.wrap(new byte[16]).putLong(id.getLeastSignificantBits())
             .putLong(id.getMostSignificantBits()).array());
   }

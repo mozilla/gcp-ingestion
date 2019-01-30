@@ -7,6 +7,7 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.net.URL;
@@ -119,17 +120,14 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   }
 
   @Override
-  protected PubsubMessage processElement(PubsubMessage element)
+  protected PubsubMessage processElement(PubsubMessage message)
       throws SchemaNotFoundException, IOException {
-    // Throws IOException if not a valid json object
-    final JSONObject json = parseTimed(element.getPayload());
+    message = PubsubConstraints.ensureNonNull(message);
 
-    Map<String, String> attributes;
-    if (element.getAttributeMap() == null) {
-      attributes = new HashMap<>();
-    } else {
-      attributes = new HashMap<>(element.getAttributeMap());
-    }
+    // Throws IOException if not a valid json object
+    final JSONObject json = parseTimed(message.getPayload());
+
+    Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
     // Remove any top-level "metadata" field if it exists, and attempt to parse it as a
     // key-value map of strings, adding all entries as attributes.

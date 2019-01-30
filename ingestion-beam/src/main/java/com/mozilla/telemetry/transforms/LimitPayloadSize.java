@@ -30,7 +30,8 @@ public class LimitPayloadSize extends MapElementsWithErrors.ToPubsubMessageFrom<
 
   @Override
   protected PubsubMessage processElement(PubsubMessage message) throws Exception {
-    int numBytes = message.getPayload() == null ? 0 : message.getPayload().length;
+    message = PubsubConstraints.ensureNonNull(message);
+    int numBytes = message.getPayload().length;
     if (numBytes > maxBytes) {
       countPayloadTooLarge.inc();
       throw new PayloadTooLargeException("Message payload is " + numBytes + "bytes, larger than the"
