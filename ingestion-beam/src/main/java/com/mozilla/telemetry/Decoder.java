@@ -57,8 +57,8 @@ public class Decoder extends Sink {
         .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
         .apply(ParseUri.of()).errorsTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParsePayload.of()).errorsTo(errorCollections) //
-        .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter()))
+        .apply(ParsePayload.of(options.getSchemasLocation())).errorsTo(errorCollections) //
+        .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
         .apply(ParseUserAgent.of()) //
         .apply(AddMetadata.of()).errorsTo(errorCollections) //
         .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri())).ignoreDuplicates() //

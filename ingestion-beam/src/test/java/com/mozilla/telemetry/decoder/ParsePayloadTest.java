@@ -4,9 +4,6 @@
 
 package com.mozilla.telemetry.decoder;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
-
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
@@ -14,6 +11,7 @@ import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -31,13 +29,14 @@ public class ParsePayloadTest {
 
   @Test
   public void testOutput() {
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode()).output()
         .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
             .via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of(
                 "document_namespace", "test", "document_type", "test", "document_version", "1"))))
-        .apply(ParsePayload.of());
+        .apply(ParsePayload.of(schemasLocation));
 
     final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}");
     final PCollection<String> main = output.output().apply("encodeTextMain",
@@ -49,16 +48,12 @@ public class ParsePayloadTest {
         OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 
-    // At time of writing this test, there were 47 schemas to load, but that number will
-    // likely increase over time.
-    assertThat("Instantiating ParsePayload caused all schemas to be loaded",
-        ParsePayload.numLoadedSchemas(), greaterThan(40));
-
     pipeline.run();
   }
 
   @Test
   public void testErrors() {
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     final List<String> input = Arrays.asList(
         // non-json payload
         "{\"attributeMap\":" + "{\"document_namespace\":\"eng-workflow\""
@@ -74,22 +69,23 @@ public class ParsePayloadTest {
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //
-        .apply(ParsePayload.of());
+        .apply(ParsePayload.of(schemasLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
 
     PAssert.that(result.output()).empty();
     PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
-        "com.mozilla.telemetry.decoder.ParsePayload$SchemaNotFoundException",
-        "com.mozilla.telemetry.decoder.ParsePayload$SchemaNotFoundException",
-        "com.mozilla.telemetry.decoder.ParsePayload$SchemaNotFoundException");
+        "com.mozilla.telemetry.schemas.SchemaNotFoundException",
+        "com.mozilla.telemetry.schemas.SchemaNotFoundException",
+        "com.mozilla.telemetry.schemas.SchemaNotFoundException");
 
     pipeline.run();
   }
 
   @Test
   public void testVersionInPayload() {
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
 
     // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
     String input = "{\"attributeMap\":" + "{\"document_namespace\":\"telemetry\""
@@ -97,7 +93,7 @@ public class ParsePayloadTest {
         + ",\"document_type\":\"main\"" + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.json.decode()).output().apply(ParsePayload.of());
+        .apply(InputFileFormat.json.decode()).output().apply(ParsePayload.of(schemasLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
@@ -113,21 +109,23 @@ public class ParsePayloadTest {
 
   @Test
   public void testMetadataInPayload() {
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+
     String input = "{\"id\":null,\"metadata\":"
         + "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":1}}";
 
-    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline //
+    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.text.decode()).output() //
-        .apply(ParsePayload.of());
+        .apply(ParsePayload.of(schemasLocation));
 
-    PAssert.that(output.errors()).empty();
+    PAssert.that(result.errors()).empty();
 
     final List<String> expectedMain = Arrays.asList("{\"id\":null}");
-    final PCollection<String> main = output.output().apply("encodeTextMain",
+    final PCollection<String> main = result.output().apply("encodeTextMain",
         OutputFileFormat.text.encode());
 
-    final PCollection<Integer> attributeCounts = output.output().apply(MapElements
+    final PCollection<Integer> attributeCounts = result.output().apply(MapElements
         .into(TypeDescriptors.integers()).via(message -> message.getAttributeMap().size()));
     PAssert.that(attributeCounts).containsInAnyOrder(Arrays.asList(3));
 

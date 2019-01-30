@@ -101,8 +101,8 @@ public class StorageIntegrationTest {
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
-        "--geoCityDatabase=GeoLite2-City.mmdb", "--seenMessagesSource=none",
-        "--redisUri=" + redis.uri });
+        "--geoCityDatabase=GeoLite2-City.mmdb", "--schemasLocation=schemas.tar.gz",
+        "--seenMessagesSource=none", "--redisUri=" + redis.uri });
 
     tempFolder.newFolder("out");
     tempFolder.newFolder("error");
@@ -130,7 +130,7 @@ public class StorageIntegrationTest {
         "--stagingLocation=" + gcsPath + "/temp/staging", "--inputFileFormat=json",
         "--inputType=file", "--outputFileFormat=json", "--outputType=file",
         "--errorOutputType=file", "--geoCityDatabase=GeoLite2-City.mmdb",
-        "--seenMessagesSource=none" });
+        "--schemasLocation=schemas.tar.gz", "--seenMessagesSource=none" });
 
   }
 

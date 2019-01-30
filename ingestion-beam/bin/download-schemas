@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Pulls down an archive of a test branch of mozilla-pipeline-schemas
+# for use in test suites.
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+BRANCH="gcp-ingestion-tests"
+TARFILE="$BRANCH.tar.gz"
+curl -sL https://github.com/jklukas/mozilla-pipeline-schemas/archive/$TARFILE > schemas.tar.gz

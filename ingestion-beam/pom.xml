@@ -183,16 +183,6 @@
                             <mainClass>${exec.mainClass}</mainClass>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>Copy in schema resources from mozilla-pipeline-schemas</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <configuration>
-                            <executable>${basedir}/bin/update-schemas</executable>
-                        </configuration>
-                    </execution>
                 </executions>
                 <configuration>
                   <cleanupDaemonThreads>false</cleanupDaemonThreads>

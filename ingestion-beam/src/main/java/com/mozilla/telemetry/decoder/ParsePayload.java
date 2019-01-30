@@ -4,24 +4,21 @@
 
 package com.mozilla.telemetry.decoder;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.io.Resources;
+import com.mozilla.telemetry.schemas.SchemaNotFoundException;
+import com.mozilla.telemetry.schemas.SchemaStore;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
-import nl.basjes.shaded.org.springframework.core.io.Resource;
-import nl.basjes.shaded.org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.commons.text.StringSubstitutor;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.Validator;
-import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 
 /**
@@ -33,8 +30,8 @@ import org.json.JSONObject;
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
-  public static ParsePayload of() {
-    return INSTANCE;
+  public static ParsePayload of(ValueProvider<String> schemasLocation) {
+    return new ParsePayload(schemasLocation);
   }
 
   ////////
@@ -43,80 +40,16 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       "json_parse_millis");
   private final Distribution validateTimer = Metrics.distribution(ParsePayload.class,
       "json_validate_millis");
+  private final Counter invalidDocTypeCounter = Metrics.counter(ParsePayload.class,
+      "invalid_doc_type");
+
+  private final ValueProvider<String> schemasLocation;
 
   private transient Validator validator;
+  private transient SchemaStore schemaStore;
 
-  private static class SchemaNotFoundException extends Exception {
-
-    SchemaNotFoundException(String message) {
-      super(message);
-    }
-
-    static SchemaNotFoundException forName(String name) {
-      return new SchemaNotFoundException("No schema with name: " + name);
-    }
-  }
-
-  private static final ParsePayload INSTANCE = new ParsePayload();
-  private static final Map<String, Schema> schemas = new HashMap<>();
-
-  private ParsePayload() {
-  }
-
-  @VisibleForTesting
-  public static int numLoadedSchemas() {
-    return schemas.size();
-  }
-
-  static {
-    try {
-      // Load all schemas from Java resources at classloading time so we can fail fast in tests,
-      // but this pre-loaded state won't be available to workers since PTransforms are only
-      // pseudo-serializable and state outside the DoFn won't get sent.
-      loadAllSchemas();
-    } catch (Exception e) {
-      throw new RuntimeException("Unexpected error while loading JSON schemas", e);
-    }
-  }
-
-  private static void loadAllSchemas() throws SchemaNotFoundException, IOException {
-    final Resource[] resources = new PathMatchingResourcePatternResolver()
-        .getResources("classpath*:schemas/**/*.schema.json");
-    for (Resource resource : resources) {
-      final String name = resource.getURL().getPath().replaceFirst("^.*/schemas/", "schemas/");
-      loadSchema(name);
-    }
-  }
-
-  private static void loadSchema(String name) throws SchemaNotFoundException {
-    try {
-      final URL url = Resources.getResource(name);
-      final byte[] schema = Resources.toByteArray(url);
-      // Throws IOException if not a valid json object
-      JSONObject rawSchema = Json.readJSONObject(schema);
-      schemas.put(name, SchemaLoader.load(rawSchema));
-    } catch (IOException e) {
-      throw SchemaNotFoundException.forName(name);
-    }
-  }
-
-  private static Schema getSchema(String name) throws SchemaNotFoundException {
-    Schema schema = schemas.get(name);
-    if (schema == null) {
-      loadSchema(name);
-      schema = schemas.get(name);
-    }
-    return schema;
-  }
-
-  private static Schema getSchema(Map<String, String> attributes) throws SchemaNotFoundException {
-    if (attributes == null) {
-      throw new SchemaNotFoundException("No schema for message with null attributeMap");
-    }
-    // This is the path provided by mozilla-pipeline-schemas
-    final String name = StringSubstitutor.replace("schemas/${document_namespace}/${document_type}/"
-        + "${document_type}.${document_version}.schema.json", attributes);
-    return getSchema(name);
+  private ParsePayload(ValueProvider<String> schemasLocation) {
+    this.schemasLocation = schemasLocation;
   }
 
   @Override
@@ -142,6 +75,15 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       }
     }
 
+    if (schemaStore == null) {
+      schemaStore = SchemaStore.of(schemasLocation);
+    }
+    if (!schemaStore.docTypeExists(attributes)) {
+      invalidDocTypeCounter.inc();
+      throw new SchemaNotFoundException(String.format("No such docType: %s/%s",
+          attributes.get("document_namespace"), attributes.get("document_type")));
+    }
+
     // If no "document_version" attribute was parsed from the URI, this element must be from the
     // /submit/telemetry endpoint and we now need to grab version from the payload.
     if (!attributes.containsKey("document_version")) {
@@ -159,7 +101,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     }
 
     // Throws SchemaNotFoundException if there's no schema
-    final Schema schema = getSchema(attributes);
+    final Schema schema = schemaStore.getSchema(attributes);
     // Throws ValidationException if schema doesn't match
     validateTimed(schema, json);
 
