@@ -9,6 +9,7 @@ from google.protobuf import empty_pb2, json_format
 from typing import Dict, List, Optional, Set
 import concurrent.futures
 import grpc
+import json
 import logging
 import os
 import time
@@ -46,10 +47,13 @@ class PubsubEmulator(
         host: str = os.environ.get("HOST", "0.0.0.0"),
         max_workers: int = int(os.environ.get("MAX_WORKERS", 1)),
         port: int = int(os.environ.get("PORT", 0)),
+        topics: Optional[str] = os.environ.get("TOPICS"),
     ):
         """Initialize a new PubsubEmulator and add it to a gRPC server."""
         self.logger = logging.getLogger("pubsub_emulator")
-        self.topics: Dict[str, Set[Subscription]] = {}
+        self.topics: Dict[str, Set[Subscription]] = {
+            topic: set() for topic in (json.loads(topics) if topics else [])
+        }
         self.subscriptions: Dict[str, Subscription] = {}
         self.status_codes: Dict[str, grpc.StatusCode] = {}
         self.sleep: Optional[float] = None
@@ -273,7 +277,7 @@ def main():
     # configure logging
     logger = logging.getLogger("pubsub_emulator")
     logger.addHandler(logging.StreamHandler())
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "DEBUG").upper()))
     # start server
     server = PubsubEmulator().server
     try:
