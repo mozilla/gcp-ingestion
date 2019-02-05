@@ -48,6 +48,7 @@ services:
     - --mypy
     - --mypy-ignore-missing-imports
     - --cov=./ingestion_edge/
+    - --ignore=tests/load
     depends_on:
     - pubsub
     - web
