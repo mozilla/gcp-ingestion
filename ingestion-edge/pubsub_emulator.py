@@ -47,12 +47,12 @@ class PubsubEmulator(
         host: str = os.environ.get("HOST", "0.0.0.0"),
         max_workers: int = int(os.environ.get("MAX_WORKERS", 1)),
         port: int = int(os.environ.get("PORT", 0)),
-        topics: Optional[List[str]] = json.loads(os.environ.get("TOPICS", "null")),
+        topics: Optional[str] = os.environ.get("TOPICS"),
     ):
         """Initialize a new PubsubEmulator and add it to a gRPC server."""
         self.logger = logging.getLogger("pubsub_emulator")
         self.topics: Dict[str, Set[Subscription]] = {
-            topic: set() for topic in topics or []
+            topic: set() for topic in (json.loads(topics) if topics else [])
         }
         self.subscriptions: Dict[str, Subscription] = {}
         self.status_codes: Dict[str, grpc.StatusCode] = {}

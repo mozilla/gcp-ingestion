@@ -4,10 +4,10 @@
 
 """Instantiated Sanic app for WSGI."""
 
+from .config import logger
 from .create_app import create_app
 from os import environ
 from socket import socket
-import logging
 
 app = create_app()
 
@@ -20,9 +20,7 @@ def main():
         sock = socket()
         sock.bind((host, port))
         host, port = sock.getsockname()
-        logging.getLogger("ingestion-edge").info(
-            "Listening on %s:%d" % (host, port), extra={"host": host, "port": port}
-        )
+        logger.info(f"Listening on {host}:{port}", extra={"host": host, "port": port})
         app.run(sock=sock)
 
 

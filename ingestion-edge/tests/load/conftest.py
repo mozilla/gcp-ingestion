@@ -67,8 +67,8 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         "--cluster",
         dest="cluster",
         default="load-test",
-        help="GKE cluster to create for test resources, default is 'load-test', "
-        "ignored when --load-balancer and --no-traffic-generator are both specified",
+        help="Name of GKE cluster to create for test resources, default is 'load-test',"
+        " ignored when --load-balancer and --no-traffic-generator are both specified",
     )
     parser.addoption(
         "--location",

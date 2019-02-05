@@ -162,7 +162,7 @@ docker-compose run --no-deps --rm test tests/load
 docker run --rm --tty --interactive mozilla/ingestion-edge:latest py.test tests/load
 ```
 
-Load test options
+Load test options (from `pytest -h`)
 
 ```
   --min-success-rate=MIN_SUCCESS_RATE
@@ -180,9 +180,9 @@ Load test options
   --warmup-timeout=WARMUP_TIMEOUT
                         Maximum number of seconds to wait for warmup to
                         complete, default is 600 (10 minutes)
-  --cluster=CLUSTER     GKE cluster to create for test resources, default is
-                        'load-test', ignored when --load-balancer and --no-
-                        traffic-generator are both specified
+  --cluster=CLUSTER     Name of GKE cluster to create for test resources,
+                        default is 'load-test', ignored when --load-balancer
+                        and --no-traffic-generator are both specified
   --location=LOCATION   Location to use for --cluster, default is us-west1
   --preemptible         Use preemptible instances for --cluster, default is
                         False

@@ -9,6 +9,7 @@ environment variables.
 """
 
 from dataclasses import dataclass
+from logging import getLogger
 from logging.config import dictConfig
 from os import environ
 from typing import Tuple
@@ -37,6 +38,7 @@ dictConfig(
         },
     }
 )
+logger = getLogger("ingestion-edge")
 
 
 @dataclass
