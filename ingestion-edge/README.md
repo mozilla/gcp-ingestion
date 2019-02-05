@@ -15,6 +15,7 @@ A simple service for delivering HTTP messages to Google Cloud PubSub
     - [Style Checks](#style-checks)
     - [Unit Tests](#unit-tests)
     - [Integration Tests](#integration-tests)
+    - [Load Tests](#load-tests)
 - [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -51,10 +52,10 @@ docker-compose down --timeout 0
 The ingestion-edge docker container accepts these configuration options from
 environment variables:
 
-- `ROUTE_TABLE`: a JSON list of mappings from `uri` to PubSub topic, defaults
-  to `[]`, each mapping is a list and may include an optional third element
-  that specifies a list of allowed methods instead of the default
-  `["POST","PUT"]`
+- `ROUTE_TABLE`: a JSON list of mappings from `uri` to PubSub topic, `uri`
+  matches are detected in order, defaults to `[]`, each mapping is a list and
+  may include an optional third element that specifies a list of allowed
+  methods instead of the default `["POST","PUT"]`
 - `QUEUE_PATH`: a filesystem path to a directory where a SQLite database will
   be created to store requests for when PubSub is unavailable, paths may be
   relative to the docker container `WORKDIR`, defaults to `queue`
@@ -143,10 +144,69 @@ Test a remote server (requires credentials to read PubSub)
 
 ```bash
 # define the same ROUTE_TABLE as your edge server
-docker-compose run --no-deps --rm --env ROUTE_TABLE=$ROUTE_TABLE test --server https://myedgeserver.example.com
+docker-compose run --no-deps --rm --env ROUTE_TABLE=$ROUTE_TABLE test tests/integration --server https://myedgeserver.example.com
 
 # or using the latest published version without a code checkout
-docker run --rm --tty --interactive --env ROUTE_TABLE=$ROUTE_TABLE mozilla/ingestion-edge:latest py.test --server https://myedgeserver.example.com
+docker run --rm --tty --interactive --env ROUTE_TABLE=$ROUTE_TABLE mozilla/ingestion-edge:latest py.test tests/integration --server https://myedgeserver.example.com
+```
+
+### Load Tests
+
+Run a load test
+
+```bash
+# defaults to a single GKE cluster and a pubsub emulator
+docker-compose run --no-deps --rm test tests/load
+
+# or using the latest published version without a code checkout
+docker run --rm --tty --interactive mozilla/ingestion-edge:latest py.test tests/load
+```
+
+Load test options (from `pytest -h`)
+
+```
+  --min-success-rate=MIN_SUCCESS_RATE
+                        Minimum 200 responses per non-200 response to require
+                        during --test-period, default is 1000 (0.1% errors)
+  --min-throughput=MIN_THROUGHPUT
+                        Minimum 200 responses per second to require during
+                        --test-period, default is 15000
+  --test-period=TEST_PERIOD
+                        Number of seconds to evaluate after warmup, default is
+                        1800 (30 minutes)
+  --warmup-threshold=WARMUP_THRESHOLD
+                        Minimum 200 responses per second that indicate warmup
+                        is complete, default is 15000
+  --warmup-timeout=WARMUP_TIMEOUT
+                        Maximum number of seconds to wait for warmup to
+                        complete, default is 600 (10 minutes)
+  --cluster=CLUSTER     Name of GKE cluster to create for test resources,
+                        default is 'load-test', ignored when --load-balancer
+                        and --no-traffic-generator are both specified
+  --location=LOCATION   Location to use for --cluster, default is us-west1
+  --preemptible         Use preemptible instances for --cluster, default is
+                        False
+  --project=PROJECT     Project to use for --cluster, default is from
+                        credentials
+  --load-balancer=LOAD_BALANCER
+                        Load Balancing url map to monitor, implies --no-
+                        generator when --server-uri is not specified, ignores
+                        --image and --no-emulator
+  --server-uri=SERVER_URI
+                        Server uri like 'https://edge.stage.domain.com/submit/
+                        telemetry/suffix', ignored when --no-generator is
+                        specified or --load-balancer is missing
+  --image=IMAGE         Docker image for server deployment, default is
+                        'mozilla/ingestion-edge:latest', ignored when --load-
+                        balancer is specified
+  --no-emulator         Don't use a PubSub emulator, ignored when --load-
+                        balancer is specified
+  --topic=TOPIC         PubSub topic name, default is 'topic', ignored when
+                        --load-balancer is specified
+  --no-generator        Don't deploy a traffic generator, ignore --script
+  --script=SCRIPT       Lua script to use for traffic generator deployment,
+                        default is 'tests/load/wrk/telemetry.lua', ignored
+                        when --no-generator is specified
 ```
 
 # License

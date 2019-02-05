@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: &name emulator
+  labels: &labels
+    name: *name
+spec:
+  replicas: 3
+  selector:
+    matchLabels: *labels
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      containers:
+      - name: *name
+        image: '{image}'
+        command:
+        - python
+        - -m
+        - pubsub_emulator
+        env:
+        - name: TOPICS
+          value: '["projects/{project}/topics/{topic}"]'
+        - name: LOG_LEVEL
+          value: INFO
+        ports:
+        - name: grpc
+          containerPort: 8000
+          protocol: TCP
+      nodeSelector: *labels
