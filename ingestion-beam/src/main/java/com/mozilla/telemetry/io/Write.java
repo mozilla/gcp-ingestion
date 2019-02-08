@@ -140,16 +140,25 @@ public abstract class Write
 
     private final ValueProvider<String> topic;
     private final ValueProvider<Compression> compression;
+    private final int maxCompressedBytes;
 
-    public PubsubOutput(ValueProvider<String> topic, ValueProvider<Compression> compression) {
+    /** Constructor. */
+    public PubsubOutput(ValueProvider<String> topic, ValueProvider<Compression> compression,
+        int maxCompressedBytes) {
       this.topic = topic;
       this.compression = compression;
+      this.maxCompressedBytes = maxCompressedBytes;
+    }
+
+    /** Constructor. */
+    public PubsubOutput(ValueProvider<String> topic, ValueProvider<Compression> compression) {
+      this(topic, compression, Integer.MAX_VALUE);
     }
 
     @Override
     public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
       PDone done = input //
-          .apply(CompressPayload.of(compression)) //
+          .apply(CompressPayload.of(compression).withMaxCompressedBytes(maxCompressedBytes)) //
           .apply(PubsubConstraints.truncateAttributes()) //
           .apply(PubsubIO.writeMessages().to(topic));
       return WithErrors.Result.of(done, EmptyErrors.in(input.getPipeline()));

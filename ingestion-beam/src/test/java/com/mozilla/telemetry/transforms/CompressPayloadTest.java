@@ -4,12 +4,12 @@
 
 package com.mozilla.telemetry.transforms;
 
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 import java.util.HashMap;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.Matchers;
@@ -20,14 +20,19 @@ public class CompressPayloadTest {
   @Test
   public void testGzipCompress() {
     String text = StringUtils.repeat("Lorem ipsum dolor sit amet ", 100);
-    PubsubMessage message = new PubsubMessage(text.getBytes(), new HashMap<>());
-    byte[] compressedBytes = CompressPayload.compress(message, Compression.GZIP).getPayload();
+    byte[] compressedBytes = CompressPayload.compress(text.getBytes(), Compression.GZIP);
     assertThat(ArrayUtils.toObject(compressedBytes), Matchers.arrayWithSize(68));
   }
 
   @Test
-  public void testCompressNullBytes() {
-    PubsubMessage message = new PubsubMessage(null, new HashMap<>());
-    assertNull(CompressPayload.compress(message, Compression.GZIP).getPayload());
+  public void testMaxCompressedBytes() {
+    String text = StringUtils.repeat("Lorem ipsum dolor sit amet ", 100);
+    int expectedCompressedSize = 68;
+    CompressPayload transform = CompressPayload.of(StaticValueProvider.of(Compression.GZIP))
+        .withMaxCompressedBytes(expectedCompressedSize - 1);
+    PubsubMessage truncated = transform
+        .compress(new PubsubMessage(text.getBytes(), new HashMap<>()));
+    assertThat(ArrayUtils.toObject(truncated.getPayload()), Matchers.arrayWithSize(50));
   }
+
 }

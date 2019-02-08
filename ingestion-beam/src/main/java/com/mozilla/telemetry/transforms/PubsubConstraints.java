@@ -28,6 +28,9 @@ public class PubsubConstraints {
   public static final int MAX_ATTRIBUTES_PER_MESSAGE = 100;
   public static final int MAX_ATTRIBUTE_KEY_BYTES = 256;
   public static final int MAX_ATTRIBUTE_VALUE_BYTES = 1024;
+  // base64 encoding leads to 4 bytes for every 3 of input, so we might get an error for
+  // messages any larger than 7 MB. To allow room for attributes, we set the limit at 6 MB.
+  public static final int MAX_ENCODABLE_MESSAGE_BYTES = 6 * 1024 * 1024;
 
   public static final String ELLIPSIS = "...";
 

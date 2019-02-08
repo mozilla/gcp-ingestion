@@ -9,6 +9,7 @@ import com.mozilla.telemetry.io.Write.FileOutput;
 import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.io.Write.PubsubOutput;
 import com.mozilla.telemetry.transforms.Println;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -51,7 +52,8 @@ public enum ErrorOutputType {
 
     /** Return a PTransform that writes to Google Pubsub. */
     public Write writeFailures(SinkOptions.Parsed options) {
-      return new PubsubOutput(options.getErrorOutput(), options.getErrorOutputPubsubCompression());
+      return new PubsubOutput(options.getErrorOutput(), options.getErrorOutputPubsubCompression(),
+          PubsubConstraints.MAX_ENCODABLE_MESSAGE_BYTES);
     }
   };
 
