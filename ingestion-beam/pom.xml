@@ -17,7 +17,7 @@
 
         <!-- Keep these dependency versions in sync with those pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
-        <beam.version>2.9.0</beam.version>
+        <beam.version>2.10.0</beam.version>
         <google-cloud.version>1.49.0</google-cloud.version>
         <jackson.version>2.9.5</jackson.version>
     </properties>
