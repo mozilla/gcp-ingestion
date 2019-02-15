@@ -58,6 +58,12 @@ public interface SinkOptions extends PipelineOptions {
 
   void setBqTriggeringFrequency(String value);
 
+  @Description("Number of file shards to stage for BigQuery when writing via file_loads")
+  @Default.Integer(100)
+  int getBqNumFileShards();
+
+  void setBqNumFileShards(int value);
+
   @Description("File format for --outputType=file|stdout; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"
       + " text (each line is payload)")
@@ -72,13 +78,11 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputFileCompression(Compression value);
 
-  @Description("Number of output shards for --outputType=file; defaults to 0 (automatic)"
-      + " for batch running, but must be set to an explicit value for stream processing"
-      + " (--inputType=pubsub)")
-  @Default.Integer(0)
-  Integer getOutputNumShards();
+  @Description("Number of output shards for --outputType=file; only relevant for stream"
+      + " processing (--inputType=pubsub); in batch mode, the runner determines sharding")
+  ValueProvider<Integer> getOutputNumShards();
 
-  void setOutputNumShards(Integer value);
+  void setOutputNumShards(ValueProvider<Integer> value);
 
   @Description("Type of --errorOutput; must be one of [pubsub, file]")
   @Default.Enum("pubsub")
@@ -92,13 +96,11 @@ public interface SinkOptions extends PipelineOptions {
 
   void setErrorOutputFileCompression(Compression value);
 
-  @Description("Number of output shards for --errorOutputType=file; defaults to 0 (automatic)"
-      + " for batch running, but must be set to an explicit value for stream processing"
-      + " (--inputType=pubsub)")
-  @Default.Integer(0)
-  Integer getErrorOutputNumShards();
+  @Description("Number of output shards for --errorOutputType=file; only relevant for stream"
+      + " processing (--inputType=pubsub); in batch mode, the runner determines sharding")
+  ValueProvider<Integer> getErrorOutputNumShards();
 
-  void setErrorOutputNumShards(Integer value);
+  void setErrorOutputNumShards(ValueProvider<Integer> value);
 
   @Hidden
   @Description("If true, include a 'stack_trace' attribute in error output messages;"
@@ -205,32 +207,17 @@ public interface SinkOptions extends PipelineOptions {
         providerWithDefault(options.getOutputPubsubCompression(), Compression.GZIP));
     options.setErrorOutputPubsubCompression(
         providerWithDefault(options.getErrorOutputPubsubCompression(), Compression.GZIP));
+    options.setOutputNumShards(providerWithDefault(options.getOutputNumShards(), 100));
+    options.setErrorOutputNumShards(providerWithDefault(options.getErrorOutputNumShards(), 100));
   }
 
   /** Detect invalid combinations of parameters and fail fast with helpful error messages. */
   static void validateSinkOptions(SinkOptions options) {
     List<String> errorMessages = new ArrayList<>();
-    if (options.getInputType() == InputType.pubsub && options.getOutputType() == OutputType.file
-        && options.getOutputNumShards() == 0) {
-      errorMessages.add("Missing required parameter: "
-          + " --outputNumShards must be set to an explicit non-zero value when"
-          + " --outputType=file and the input is unbounded (--inputType=pubsub);"
-          + " Dataflow recommends starting with twice the value of --maxWorkers or 10"
-          + " (see https://github.com/apache/beam/pull/1952)");
-    }
-    if (options.getInputType() == InputType.pubsub
-        && options.getErrorOutputType() == ErrorOutputType.file
-        && options.getErrorOutputNumShards() == 0) {
-      errorMessages.add("Missing required parameter: "
-          + " --errorOutputNumShards must be set to an explicit non-zero value when"
-          + " --errorOutputType=file and the input is unbounded (--inputType=pubsub);"
-          + " Dataflow recommends starting with twice the value of --maxWorkers or 10"
-          + " (see https://github.com/apache/beam/pull/1952)");
-    }
-    if (options.getInputType() == InputType.pubsub && options.getOutputType() == OutputType.bigquery
+    if (options.getOutputType() == OutputType.bigquery
         && options.getBqWriteMethod() == BigQueryWriteMethod.file_loads
-        && options.getOutputNumShards() == 0) {
-      errorMessages.add("Missing required parameter: "
+        && options.getInputType() == InputType.pubsub && options.getBqNumFileShards() == 0) {
+      errorMessages.add("Missing required parameter:"
           + " --outputNumShards must be set to an explicit non-zero value when"
           + " --outputType=bigquery and --bqWriteMethod=file_loads and the input is unbounded"
           + " (--inputType=pubsub)");

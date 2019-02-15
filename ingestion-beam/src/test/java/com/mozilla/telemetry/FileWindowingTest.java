@@ -65,7 +65,7 @@ public class FileWindowingTest implements Serializable {
     options.setOutputType(OutputType.file);
     options.setOutputFileFormat(OutputFileFormat.text);
     options.setOutputFileCompression(Compression.UNCOMPRESSED);
-    options.setOutputNumShards(1);
+    options.setOutputNumShards(pipeline.newProvider(1));
     options.setWindowDuration("10 minutes");
     options.setOutput(pipeline.newProvider(output));
 
