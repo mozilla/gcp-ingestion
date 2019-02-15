@@ -159,20 +159,6 @@ public class SinkMainTest {
   }
 
   @Test
-  public void testThrowsOnMissingNumShards() {
-    thrown.expectMessage(Matchers.startsWith("Configuration errors found"));
-    Sink.main(new String[] { "--inputType=pubsub", "--input=foo", "--outputType=file",
-        "--output=foo", "--errorOutputType=pubsub", "--errorOutput=bar" });
-  }
-
-  @Test
-  public void testThrowsOnMissingErrorNumShards() {
-    thrown.expectMessage(Matchers.startsWith("Configuration errors found"));
-    Sink.main(new String[] { "--inputType=pubsub", "--input=foo", "--outputType=pubsub",
-        "--output=foo", "--errorOutputType=file", "--errorOutput=bar" });
-  }
-
-  @Test
   public void testParseTimestamp() throws Exception {
     String inputPath = Resources.getResource("testdata").getPath();
     String input = inputPath + "/basic-messages-valid-*.ndjson";

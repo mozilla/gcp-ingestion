@@ -37,7 +37,7 @@ public enum OutputType {
     public Write write(SinkOptions.Parsed options) {
       return new FileOutput(options.getOutput(), options.getOutputFileFormat(),
           options.getParsedWindowDuration(), options.getOutputNumShards(),
-          options.getOutputFileCompression());
+          options.getOutputFileCompression(), options.getInputType());
     }
   },
 
@@ -55,7 +55,7 @@ public enum OutputType {
     public Write write(SinkOptions.Parsed options) {
       return new BigQueryOutput(options.getOutput(), options.getBqWriteMethod(),
           options.getParsedBqTriggeringFrequency(), options.getInputType(),
-          options.getOutputNumShards());
+          options.getBqNumFileShards());
     }
   };
 

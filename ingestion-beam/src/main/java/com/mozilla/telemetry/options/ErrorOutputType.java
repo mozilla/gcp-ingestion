@@ -44,7 +44,8 @@ public enum ErrorOutputType {
     /** Return a PTransform that writes errors to local or remote files. */
     public Write writeFailures(SinkOptions.Parsed options) {
       return new FileOutput(options.getErrorOutput(), FORMAT, options.getParsedWindowDuration(),
-          options.getErrorOutputNumShards(), options.getErrorOutputFileCompression());
+          options.getErrorOutputNumShards(), options.getErrorOutputFileCompression(),
+          options.getInputType());
     }
   },
 
