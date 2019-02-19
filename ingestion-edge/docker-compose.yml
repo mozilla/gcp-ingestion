@@ -6,7 +6,6 @@ services:
     build: .
     image: &image "${DOCKERHUB_REPO-ingestion-edge}:${CIRCLE_TAG-latest}"
     environment:
-    - &emulator_host PUBSUB_EMULATOR_HOST=pubsub:8085
     - &route_table >-
       ROUTE_TABLE=[
         [
@@ -49,9 +48,5 @@ services:
     - --mypy-ignore-missing-imports
     - --cov=./ingestion_edge/
     - --ignore=tests/load
-    depends_on:
-    - pubsub
-    - web
     environment:
-    - *emulator_host
     - *route_table

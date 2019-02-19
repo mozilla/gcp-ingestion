@@ -20,6 +20,44 @@ jobs:
 
   ingestion-edge:
     docker:
+    - image: python:3.7
+    steps:
+    - checkout
+    - restore_cache:
+        keys:
+          # when lock files change, use increasingly general patterns to restore cache
+          - python-packages-v1-{{ .Branch }}-{{ checksum "ingestion-edge/requirements.txt" }}-{{ checksum "ingestion-edge/constraints.txt" }}
+          - python-packages-v1-{{ .Branch }}-{{ checksum "ingestion-edge/requirements.txt" }}-
+          - python-packages-v1-{{ .Branch }}-
+          - python-packages-v1-
+    - run:
+        name: Update dependencies
+        command: |
+          pip install -r ingestion-edge/requirements.txt
+          pip install --no-index git+git://github.com/relud/python-dockerflow@master#egg=dockerflow[sanic]
+    - run:
+        name: PyTest
+        command: >-
+          cd ingestion-edge &&
+          python -m pytest
+          --black
+          --docstyle
+          --flake8
+          --mypy
+          --mypy-ignore-missing-imports
+          --cov=./ingestion_edge/
+          --cov-report=xml
+          --ignore=tests/load
+    - run:
+        name: Report code coverage
+        command: cd ingestion-edge && bash <(curl -s https://codecov.io/bash) -F ingestion_edge
+    - save_cache:
+        paths:
+        - /usr/local/lib/python3.7/site-packages
+        key: python-packages-v1-{{ .Branch }}-{{ checksum "ingestion-edge/requirements.txt" }}-{{ checksum "ingestion-edge/constraints.txt" }}
+
+  ingestion-edge-release:
+    docker:
     - image: docker/compose:1.22.0
     steps:
     - checkout
@@ -47,24 +85,15 @@ jobs:
           --abort-on-container-exit
           --force-recreate
           --quiet-pull
-        environment:
+        environment: &compose_env
           COMPOSE_FILE: ingestion-edge/docker-compose.yml:ingestion-edge/docker-compose.circleci.yml
           COMPOSE_PROJECT_NAME: circleci-ingestion-edge
-    - run:
-        name: Early return for no deploy
-        command: |
-          if [ -n "$CIRCLE_PR_NUMBER" ] || ([ "${CIRCLE_BRANCH}" != "master" ] && [ -z "${CIRCLE_TAG}" ]); then
-            echo "Nothing to deploy"
-            circleci step halt
-          fi
     - run:
         name: Deploy to Dockerhub
         command: |
           echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
           docker-compose push web
-        environment:
-          COMPOSE_FILE: ingestion-edge/docker-compose.yml
-          COMPOSE_PROJECT_NAME: circleci-ingestion-edge
+        environment: *compose_env
 
   ingestion-beam:
     docker:
@@ -133,5 +162,11 @@ workflows:
     - spelling
     - doctoc
     - ingestion-edge
+    - ingestion-edge-release:
+        filters:
+          branches:
+            only: master
+          tags:
+            only: /.*/
     - ingestion-beam
     - ingestion-beam-integration

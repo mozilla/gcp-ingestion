@@ -6,3 +6,6 @@
 .pytest_cache
 coverage.xml
 queue
+bin/
+include/
+lib/

@@ -1,8 +1,0 @@
-#!/bin/bash
-
-# Wrapper for pytest that also submits coverage data.
-
-set -eox pipefail
-
-pytest "$@"
-bash <(curl -s https://codecov.io/bash) -F ingestion_edge

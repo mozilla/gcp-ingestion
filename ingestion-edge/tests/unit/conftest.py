@@ -26,6 +26,16 @@ def client() -> PublisherClient:
     return client
 
 
+@pytest.fixture(autouse=True)
+def bad_pubsub():
+    if "PUBSUB_EMULATOR_HOST" not in os.environ:
+        os.environ["PUBSUB_EMULATOR_HOST"] = "."
+        yield
+        del os.environ["PUBSUB_EMULATOR_HOST"]
+    else:
+        yield
+
+
 @pytest.fixture
 def q() -> SQLiteAckQueue:
     return SQLiteAckQueue(":memory:")
