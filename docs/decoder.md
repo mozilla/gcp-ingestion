@@ -43,8 +43,10 @@ successful delivery to PubSub.
 ### Decoding Errors
 
 All messages that are rejected at any step of the Data Flow above will be
-forwarded to a PubSub error topic, for backfill and monitoring purposes.
-This includes duplicate messages based on `docId`.
+forwarded to a PubSub error topic for backfill and monitoring purposes
+except for duplicate messages. If we determine that a message has already
+been successfully processed based on `docId`, we increment a counter and drop
+the message.
 
 #### Error message schema
 
