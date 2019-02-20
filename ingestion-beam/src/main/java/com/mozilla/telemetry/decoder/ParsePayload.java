@@ -6,7 +6,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
-import com.mozilla.telemetry.schemas.SchemaStore;
+import com.mozilla.telemetry.schemas.JSONSchemaStore;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
@@ -45,7 +45,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   private final ValueProvider<String> schemasLocation;
 
   private transient Validator validator;
-  private transient SchemaStore schemaStore;
+  private transient JSONSchemaStore schemaStore;
 
   private ParsePayload(ValueProvider<String> schemasLocation) {
     this.schemasLocation = schemasLocation;
@@ -58,7 +58,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
     if (schemaStore == null) {
-      schemaStore = SchemaStore.of(schemasLocation);
+      schemaStore = JSONSchemaStore.of(schemasLocation);
     }
 
     final int submissionBytes = message.getPayload().length;
