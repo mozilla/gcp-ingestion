@@ -14,6 +14,7 @@ import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.junit.Test;
 
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class JSONSchemaStoreTest {
 
   private static final ValueProvider<String> LOCATION = StaticValueProvider.of("schemas.tar.gz");

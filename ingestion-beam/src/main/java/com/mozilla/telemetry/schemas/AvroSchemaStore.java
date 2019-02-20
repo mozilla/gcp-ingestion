@@ -5,9 +5,9 @@
 package com.mozilla.telemetry.schemas;
 
 import java.io.IOException;
+import org.apache.avro.Schema;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
-import org.apache.avro.Schema;
 
 public class AvroSchemaStore extends SchemaStore<Schema> {
 

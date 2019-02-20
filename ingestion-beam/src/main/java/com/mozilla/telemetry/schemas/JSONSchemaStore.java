@@ -13,6 +13,7 @@ import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class JSONSchemaStore extends SchemaStore<Schema> {
 
   /** Returns a SchemaStore based on the contents of the archive at schemasLocation. */

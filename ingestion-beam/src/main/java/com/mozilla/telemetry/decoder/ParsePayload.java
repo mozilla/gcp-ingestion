@@ -5,8 +5,8 @@
 package com.mozilla.telemetry.decoder;
 
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
-import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.schemas.JSONSchemaStore;
+import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
