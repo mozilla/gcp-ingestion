@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Adapted from https://github.com/mozilla/normandy/blob/cdcfb9e/bin/download_geolite2.sh
+
+# This script downloads and extracts the free cities over 15000 database
+# from geonames.org for use in development.
+BASE_DIR="$(dirname "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )")"
+DOWNLOAD_URL=http://download.geonames.org/export/dump/cities15000.zip
+LOCAL_ARCHIVE=/tmp/cities15000.zip
+LOCAL_EXTRACTED=cities15000.txt
+
+set -e
+
+test -f "$BASE_DIR/$LOCAL_EXTRACTED)" || (
+    curl -o "$LOCAL_ARCHIVE" "$DOWNLOAD_URL"
+    unzip "$LOCAL_ARCHIVE" -d "$BASE_DIR"
+)
