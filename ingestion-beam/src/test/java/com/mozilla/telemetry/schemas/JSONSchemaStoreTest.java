@@ -14,13 +14,14 @@ import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.junit.Test;
 
-public class SchemaStoreTest {
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+public class JSONSchemaStoreTest {
 
   private static final ValueProvider<String> LOCATION = StaticValueProvider.of("schemas.tar.gz");
 
   @Test
   public void testNumSchemas() {
-    SchemaStore store = SchemaStore.of(LOCATION);
+    JSONSchemaStore store = JSONSchemaStore.of(LOCATION);
     // At time of writing this test, there were 47 schemas to load, but that number will
     // likely increase over time.
     assertThat(store.numLoadedSchemas(), greaterThan(40));
@@ -28,14 +29,14 @@ public class SchemaStoreTest {
 
   @Test
   public void testDocTypeExists() {
-    SchemaStore store = SchemaStore.of(LOCATION);
+    JSONSchemaStore store = JSONSchemaStore.of(LOCATION);
     assertTrue(store.docTypeExists("telemetry", "main"));
     assertTrue(store.docTypeExists("telemetry", "update"));
   }
 
   @Test
   public void testDocTypeExistsViaAttributes() {
-    SchemaStore store = SchemaStore.of(LOCATION);
+    JSONSchemaStore store = JSONSchemaStore.of(LOCATION);
     Map<String, String> attributes = new HashMap<>();
     attributes.put("document_namespace", "telemetry");
     attributes.put("document_type", "main");
