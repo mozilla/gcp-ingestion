@@ -23,15 +23,19 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.PInput;
 import org.apache.beam.sdk.values.POutput;
 import org.apache.beam.sdk.values.PValue;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
+import org.apache.beam.sdk.values.TypeDescriptor;
 import redis.clients.jedis.Jedis;
 
 /**
@@ -103,6 +107,23 @@ public class Deduplicate {
       public WithErrors.Result<PCollection<PubsubMessage>> ignoreDuplicates() {
         return WithErrors.Result.of(tuple().get(outputTag()), outputTag(), tuple().get(errorTag()),
             errorTag());
+      }
+
+      /**
+       * Strip the payload from duplicate messages and add them to the error collection, returning
+       * a {@link Result} of the non-duplicate output and the error collection.
+       */
+      public WithErrors.Result<PCollection<PubsubMessage>> sendDuplicateMetadataToErrors() {
+        PCollection<PubsubMessage> duplicateMetadata = tuple().get(duplicateTag())
+            .apply("DropDuplicatePayloads", MapElements //
+                .into(TypeDescriptor.of(PubsubMessage.class))
+                .via(message -> FailureMessage.of("Duplicate",
+                    new PubsubMessage("".getBytes(), message.getAttributeMap()),
+                    new DuplicateIdException())));
+        PCollection<PubsubMessage> errors = PCollectionList.of(tuple().get(errorTag()))
+            .and(duplicateMetadata)
+            .apply("FlattenDuplicateMetadataAndErrors", Flatten.pCollections());
+        return WithErrors.Result.of(tuple().get(outputTag()), outputTag(), errors, errorTag());
       }
 
       @Override
@@ -209,6 +230,13 @@ public class Deduplicate {
   }
 
   ////////
+
+  private static class DuplicateIdException extends Exception {
+
+    DuplicateIdException() {
+      super("A message with this documentId has already been successfully processed.");
+    }
+  }
 
   private static class RedisIdService implements Serializable {
 

@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableMap;
+import com.mozilla.telemetry.decoder.Deduplicate.RemoveDuplicates.Result;
 import com.mozilla.telemetry.rules.RedisServer;
 import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
@@ -73,19 +74,28 @@ public class DeduplicateTest {
     pipeline.run();
 
     // deduplicate messages
-    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline
+    Deduplicate.RemoveDuplicates.Result result = pipeline
         .apply("ids", Create.of(Arrays.asList(newId, duplicatedId, invalidId)))
         .apply("create messages", mapStringsToId)
-        .apply("deduplicate", Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-        .ignoreDuplicates();
+        .apply("deduplicate", Deduplicate.removeDuplicates(options.getParsedRedisUri()));
+
+    WithErrors.Result<PCollection<PubsubMessage>> ignored = result.ignoreDuplicates();
+    WithErrors.Result<PCollection<PubsubMessage>> dupesAsErrors = result
+        .sendDuplicateMetadataToErrors();
 
     // mainTag contains new ids
-    final PCollection<String> main = output.output().apply("get new ids", mapMessagesToId);
+    final PCollection<String> main = ignored.output().apply("get new ids", mapMessagesToId);
     PAssert.that(main).containsInAnyOrder(newId);
 
-    // errorTag contains duplicate ids
-    final PCollection<String> error = output.errors().apply("get duplicate ids", mapMessagesToId);
-    PAssert.that(error).containsInAnyOrder(invalidId);
+    // errorTag contains only invalid ids when dupes are ignored
+    final PCollection<String> errorNoDupes = ignored.errors().apply("get invalid ids",
+        mapMessagesToId);
+    PAssert.that(errorNoDupes).containsInAnyOrder(invalidId);
+
+    // errorTag contains duplicate ids when dupes are sent to errors
+    final PCollection<String> errorWithDupes = dupesAsErrors.errors().apply("get error ids",
+        mapMessagesToId);
+    PAssert.that(errorWithDupes).containsInAnyOrder(invalidId, duplicatedId);
 
     // run RemoveDuplicates
     pipeline.run();
