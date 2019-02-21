@@ -61,7 +61,8 @@ public class Decoder extends Sink {
         .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
         .apply(ParseUserAgent.of()) //
         .apply(AddMetadata.of()).errorsTo(errorCollections) //
-        .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri())).ignoreDuplicates() //
+        .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
+        .sendDuplicateMetadataToErrors() //
         .errorsTo(errorCollections);
 
     // Write the main output collection.
