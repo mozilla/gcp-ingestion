@@ -24,7 +24,8 @@ in the Structured Ingestion pipeline.
 1. Consume messages from Google Cloud PubSub raw topic
 1. Decode the body from base64, optionally gzip, and JSON
 1. Validate the schema of the body
-1. Perform GeoIP lookup and drop `x_forwarded_for` and `remote_addr`
+1. Perform GeoIP lookup and drop `x_forwarded_for` and `remote_addr` and
+   optionally `geo_city` based on population
 1. Extract user agent information and drop `user_agent`
 1. Add metadata fields to message
 1. Deduplicate message by `docId`
