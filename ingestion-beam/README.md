@@ -398,7 +398,8 @@ unmodified.
     1. Parse `ip` using `InetAddress.getByName`
     1. Lookup `ip` in the configured `GeoIP2City.mmdb`
     1. Extract `country.iso_code` as `geo_country`
-    1. Extract `city.name` as `geo_city`
+    1. Extract `city.name` as `geo_city` if `cities15000.txt` is not configured
+       or `city.geo_name_id` is in the configured `cities15000.txt`
     1. Extract `subdivisions[0].iso_code` as `geo_subdivision1`
     1. Extract `subdivisions[1].iso_code` as `geo_subdivision2`
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
@@ -416,6 +417,7 @@ but with a few extra flags:
 
  * `-Dexec.mainClass=com.mozilla.telemetry.Decoder`
  * `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
+ * `--geoCityFilter=/path/to/cities15000.txt` (optional)
 
 Example:
 
@@ -424,13 +426,15 @@ Example:
 mkdir -p tmp/
 echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > tmp/input.json
 
-# Download `GeoLite2-City.mmdb` and `schemas.tar.gz`
+# Download `cities15000.txt`, `GeoLite2-City.mmdb`, and `schemas.tar.gz`
+./bin/download-cities15000
 ./bin/download-geolite2
 ./bin/download-schemas
 
 # do geo lookup on messages to stdout
 ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
     --geoCityDatabase=GeoLite2-City.mmdb \
+    --geoCityFilter=cities15000.txt \
     --schemasLocation=schemas.tar.gz \
     --inputType=file \
     --input=tmp/input.json \
