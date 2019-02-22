@@ -37,6 +37,7 @@ import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 /**
  * Collection of transforms that interact with a Redis instance for marking seen IDs and filtering
@@ -166,6 +167,10 @@ public class Deduplicate {
               getId(element)
                   // Throws JedisConnectionException if redis can't be reached
                   .filter(redisIdService.getJedis()::exists).isPresent();
+        } catch (JedisConnectionException e) {
+          // The connection is in a bad state, perhaps due to the Redis cluster failing over to
+          // a different node, so we reset the connection and allow this message to go through.
+          redisIdService.initializeNewClient();
         } catch (Exception e) {
           exceptionWasThrown = true;
           out.get(errorTag).output(FailureMessage.of(RemoveDuplicates.this, element, e));
@@ -252,9 +257,26 @@ public class Deduplicate {
      */
     Jedis getJedis() {
       if (jedis == null) {
-        jedis = new Jedis(uri.get());
+        initializeNewClient();
       }
       return jedis;
+    }
+
+    /**
+     * Attempt to close any existing Redis client and initializes a new client.
+     *
+     * <p>This is used to create the initial connection, but is also useful in cases like failover
+     * where the existing connection becomes broken and does not recover automatically.
+     */
+    void initializeNewClient() {
+      if (jedis != null) {
+        try {
+          jedis.close();
+        } catch (JedisConnectionException e) {
+          // pass
+        }
+      }
+      jedis = new Jedis(uri.get());
     }
   }
 
