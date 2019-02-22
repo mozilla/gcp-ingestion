@@ -162,15 +162,9 @@ public class Deduplicate {
         boolean idExists = false;
         boolean exceptionWasThrown = false;
         try {
-          idExists = //
+          idExists =
               // Throws IllegalArgumentException if id is present and invalid
-              getId(element)
-                  // Throws JedisConnectionException if redis can't be reached
-                  .filter(redisIdService.getJedis()::exists).isPresent();
-        } catch (JedisConnectionException e) {
-          // The connection is in a bad state, perhaps due to the Redis cluster failing over to
-          // a different node, so we reset the connection and allow this message to go through.
-          redisIdService.initializeNewClient();
+              getId(element).filter(redisIdService::exists).isPresent();
         } catch (Exception e) {
           exceptionWasThrown = true;
           out.get(errorTag).output(FailureMessage.of(RemoveDuplicates.this, element, e));
@@ -186,6 +180,7 @@ public class Deduplicate {
           }
         }
       }
+
     }
 
   }
@@ -219,17 +214,11 @@ public class Deduplicate {
       }
     }
 
-    private String setex(byte[] id) {
-      return redisIdService.getJedis().setex(id, getTtlSeconds(), new byte[0]);
-    }
-
     @Override
     protected PubsubMessage processElement(PubsubMessage element) {
       element = PubsubConstraints.ensureNonNull(element);
       // Throws IllegalArgumentException if id is present and invalid
-      getId(element)
-          // Throws JedisConnectionException if redis can't be reached
-          .map(this::setex);
+      getId(element).ifPresent(id -> redisIdService.setWithExpiration(id, getTtlSeconds()));
       return element;
     }
   }
@@ -252,10 +241,31 @@ public class Deduplicate {
       this.uri = uri;
     }
 
+    boolean exists(byte[] key) {
+      try {
+        return getJedis().exists(key);
+      } catch (JedisConnectionException e) {
+        // The connection is in a bad state, perhaps due to the Redis cluster failing over to
+        // a different node, so we reset the connection and assume the key doesn't exist.
+        initializeNewClient();
+        return false;
+      }
+    }
+
+    void setWithExpiration(byte[] key, int ttl) {
+      try {
+        getJedis().setex(key, ttl, new byte[0]);
+      } catch (JedisConnectionException e) {
+        // The connection is in a bad state, perhaps due to the Redis cluster failing over to
+        // a different node, so we reset the connection and ignore this key.
+        initializeNewClient();
+      }
+    }
+
     /**
      * Lazy get transient {@link Jedis} client.
      */
-    Jedis getJedis() {
+    private Jedis getJedis() {
       if (jedis == null) {
         initializeNewClient();
       }
@@ -268,7 +278,7 @@ public class Deduplicate {
      * <p>This is used to create the initial connection, but is also useful in cases like failover
      * where the existing connection becomes broken and does not recover automatically.
      */
-    void initializeNewClient() {
+    private void initializeNewClient() {
       if (jedis != null) {
         try {
           jedis.close();
