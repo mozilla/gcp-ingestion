@@ -109,9 +109,9 @@ public class BigQueryIntegrationTest {
 
     result.waitUntilFinish();
 
-    assertThat(stringValuesQuery("SELECT submission_timestamp FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT submission_timestamp FROM " + tableSpec),
         matchesInAnyOrder(Lists.newArrayList(null, null, "1561983194.123456")));
-    assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123", "abc123", "def456")));
   }
 
@@ -139,7 +139,7 @@ public class BigQueryIntegrationTest {
     result.waitUntilFinish();
 
     String tableSpec = String.format("%s.%s", dataset, table);
-    assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123")));
 
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
@@ -177,7 +177,7 @@ public class BigQueryIntegrationTest {
     result.waitUntilFinish();
 
     String tableSpec = String.format("%s.%s", dataset, table);
-    assertThat(stringValuesQuery("SELECT clientId FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123")));
 
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
@@ -222,6 +222,17 @@ public class BigQueryIntegrationTest {
           FieldValue field = fieldValues.get(0);
           return field.isNull() ? null : field.getStringValue();
         }).collect(Collectors.toList());
+  }
+
+  private List<String> stringValuesQueryWithRetries(String query) throws InterruptedException {
+    for (int i = 0; i < 5; i++) {
+      List<String> result = stringValuesQuery(query);
+      if (!result.isEmpty()) {
+        return result;
+      }
+      Thread.sleep(500);
+    }
+    throw new RuntimeException("Query returned unexpected empty result after 5 attempts");
   }
 
 }
