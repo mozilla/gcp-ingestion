@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+cd "$(dirname "$0")"/..
+
+ARGS=( )
+LINT=( --black --docstyle --flake8 --mypy-ignore-missing-imports )
+USAGE="usage: $(basename "$0") [options] [file_or_dir] [file_or_dir] [...]
+
+wrapper options:
+  --build               create or update virtualenv pytest
+  --lint                add lint options (${LINT[*]})
+  --lint-only           only run lint tests (-k 'not test_'), cover tests/load
+                        by default (-o 'testpaths='), add lint options (--lint)
+  --no-clean-relocates  do not remove .pyc files that appear to be relocated
+  --no-pytest           do not call pytest
+  --no-venv             do not use a venv to run tests"
+
+function argparse() {
+    while ! (exit $#); do
+        # handle arg
+        case "$1" in
+            -h | --help )
+                # print USAGE and pytest help
+                HELP=true ARGS=( "${ARGS[@]}" --help ) ;;
+            --build )
+                # create or update virtualenv
+                BUILD=true ;;
+            --lint )
+                # add lint options
+                ARGS=( "${ARGS[@]}" "${LINT[@]}" ) ;;
+            --lint-only )
+                # add lint options
+                argparse --lint
+                # only run plugin (lint) tests
+                ARGS=( "${ARGS[@]}" -k "not test_" )
+                # cover tests/load by default
+                ARGS=( "${ARGS[@]}" -o "testpaths=" ) ;;
+            --no-clean-relocates )
+                # do not remove .pyc files that appear to be relocated
+                CLEAN_RELOCATES=false ;;
+            --no-pytest )
+                # do not run pytest
+                PYTEST=false ;;
+            --no-venv )
+                # do not use venv
+                VENV=false ;;
+            -- )
+                # pass through remaining args and break
+                ARGS=( "${ARGS[@]}" "$@" )
+                break
+                ;;
+            * )
+                # pass through unmatched arg
+                ARGS=( "${ARGS[@]}" "$1" )
+        esac
+        # remove arg from $@
+        shift
+    done
+}
+
+# parse "$@" into "${ARGS[@]}" with default arg --lint
+argparse "${@:---lint}"
+
+# use venv unless disabled
+if ${VENV:-true}; then
+    VENV_DIR="$PWD/venv/$(uname)"
+    python3.7 -m venv "$VENV_DIR"
+    PATH="$VENV_DIR/bin:$PATH"
+fi
+
+# install or update dependencies if requested
+if ${BUILD:-false}; then
+    python3.7 -m pip install --upgrade --no-cache-dir -r requirements.txt
+    # remove after merge and release of https://github.com/mozilla-services/python-dockerflow/pull/27
+    python3.7 -m pip install --no-deps --no-index git+git://github.com/relud/python-dockerflow@master#egg=dockerflow[sanic]
+fi
+
+# remove .pyc files that appear to be relocated unless disabled
+if ${CLEAN_RELOCATES:-true}; then
+    # list .pyc files that do not match "$PWD/"
+    RELOCATES="$(grep -rL "$PWD/" --include '*.pyc' --exclude-dir venv . || true)"
+    # remove RELOCATES if found
+    test -z "$RELOCATES" || echo "$RELOCATES" | xargs rm
+fi
+
+# print USAGE on --help
+! ${HELP:-false} || echo "$USAGE"
+
+# exit early on --no-pytest
+${PYTEST:-true} || exit 0
+
+if ${HELP:-false}; then
+    python3.7 -m pytest "${ARGS[@]}" | sed 1d
+else
+    exec python3.7 -m pytest "${ARGS[@]}"
+fi

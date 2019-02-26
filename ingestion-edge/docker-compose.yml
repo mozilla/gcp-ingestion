@@ -39,14 +39,9 @@ services:
       PORT: 8085
   test:
     image: *image
-    entrypoint: pytest
+    entrypoint: bin/test
     command:
-    - --black
-    - --flake8
-    - --docstyle
-    - --mypy
-    - --mypy-ignore-missing-imports
+    - --lint
     - --cov=./ingestion_edge/
-    - --ignore=tests/load
     environment:
     - *route_table

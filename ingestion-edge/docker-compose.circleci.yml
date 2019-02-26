@@ -5,12 +5,7 @@ version: '3'
 services:
   test:
     command:
-    - --black
-    - --flake8
-    - --docstyle
-    - --mypy
-    - --mypy-ignore-missing-imports
-    - --ignore=tests/load
+    - --lint
     - .
     - tests/integration
     - --server=http://web:8000

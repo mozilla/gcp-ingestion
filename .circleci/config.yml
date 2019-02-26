@@ -31,29 +31,14 @@ jobs:
           - python-packages-v1-{{ .Branch }}-
           - python-packages-v1-
     - run:
-        name: Update dependencies
-        command: |
-          pip install -r ingestion-edge/requirements.txt
-          pip install --no-index git+git://github.com/relud/python-dockerflow@master#egg=dockerflow[sanic]
-    - run:
-        name: PyTest
-        command: >-
-          cd ingestion-edge &&
-          python -m pytest
-          --black
-          --docstyle
-          --flake8
-          --mypy
-          --mypy-ignore-missing-imports
-          --cov=./ingestion_edge/
-          --cov-report=xml
-          --ignore=tests/load
+        name: Test
+        command: ingestion-edge/bin/test --build --lint --cov=./ingestion_edge/ --cov-report=xml
     - run:
         name: Report code coverage
         command: cd ingestion-edge && bash <(curl -s https://codecov.io/bash) -F ingestion_edge
     - save_cache:
         paths:
-        - /usr/local/lib/python3.7/site-packages
+        - ingestion-edge/venv/
         key: python-packages-v1-{{ .Branch }}-{{ checksum "ingestion-edge/requirements.txt" }}-{{ checksum "ingestion-edge/constraints.txt" }}
 
   ingestion-edge-release:
