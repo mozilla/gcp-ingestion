@@ -11,9 +11,9 @@ This document specifies the architecture for GCP Ingestion as a whole.
   - [Ingestion Edge](#ingestion-edge)
   - [Landfill Sink](#landfill-sink)
   - [Decoder](#decoder)
+  - [Republisher](#republisher)
   - [BigQuery Sink](#bigquery-sink)
   - [Dataset Sink](#dataset-sink)
-  - [DocType Splitter](#doctype-splitter)
   - [Notes](#notes)
 - [Design Decisions](#design-decisions)
   - [Kubernetes Engine and PubSub](#kubernetes-engine-and-pubsub)
@@ -37,14 +37,16 @@ This document specifies the architecture for GCP Ingestion as a whole.
   `Cloud Storage`
 - The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
   PubSub `Decoded Topics`
-   - The Dataflow `Decoder` job uses `Cloud Memorystore` to deduplicate
-     messages
+   - The Dataflow `Decoder` job uses checks for existence of document IDs in
+     `Cloud Memorystore` in order to deduplicate messages
+- The Dataflow `Republisher` job reads messages from PubSub `Decoded Topics`,
+  marks them as seen in `Cloud Memorystore` and republishes to various
+  lower volume derived topics including `Monitoring Sample Topics` and
+  `Per DocType Topics`
 - The Dataflow `BigQuery Sink` job copies messages from PubSub `Decoded Topics`
   to `BigQuery`
 - The Dataflow `Dataset Sink` job copies messages from PubSub `Decoded Topics`
   to `Cloud Storage`
-- The Dataflow `DocType Splitter` job copies messages from PubSub `Decoded
-  Topics` to `Per DocType Topics`
 
 ## Architecture Components
 
@@ -81,12 +83,19 @@ This document specifies the architecture for GCP Ingestion as a whole.
       `geo_*` attributes
    1. Parse `agent` attribute into `user_agent_*` attributes
    1. Copy attributes to `metadata` top level key in `payload`
-   1. Remove duplicates based on `document_id` attribute using Cloud
-      Memorystore
+   1. Remove duplicates based on `document_id` attribute using `Cloud MemoryStore`
       - Must ensure at least once delivery
-      - May read from output PubSub topics to determine delivered messages
 - Must send messages rejected by transforms to a configurable error destination
    - Must allow error destinations in PubSub and Cloud Storage
+
+### Republisher
+
+- Must copy messages from PubSub topics to PubSub topics
+- Must publish the `document_id` of each consumed message to `Cloud MemoryStore`
+- Must not ack messages read from PubSub until they are delivered
+   - Must ack messages that should not be delivered
+- Must accept configuration mapping `document_type`s to PubSub topics
+   - Must only deliver messages with configured destinations
 
 ### BigQuery Sink
 
@@ -112,18 +121,6 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must store messages as newline delimited JSON
 - May compress Cloud Storage objects using gzip
 - Must accept configuration mapping PubSub topics to Cloud Storage locations
-- Should accept configuration mapping message attributes to Cloud Storage object
-  names
-- Should retry transient Cloud Storage errors indefinitely
-   - Should use exponential back-off to determine retry timing
-
-### DocType Splitter
-
-- Must copy messages from PubSub topics to PubSub topics
-- Must not ack messages read from PubSub until they are delivered
-   - Must ack messages that should not be delivered
-- Must accept configuration mapping `document_type`s to PubSub topics
-   - Must only deliver messages with configured destinations
 - Should accept configuration mapping message attributes to Cloud Storage object
   names
 - Should retry transient Cloud Storage errors indefinitely

@@ -73,6 +73,7 @@ required group attributes {
   optional string user_agent           // example: "pingsender/1.0"
   optional string x_forwarded_for      // example: "10.98.132.74, 103.3.237.12"
   optional string x_pingsender_version // example: "1.0"
+  optional string x_debug_id           // example: "my_debug_session_1"
 }
 ```
 
