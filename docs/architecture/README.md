@@ -37,7 +37,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
   `Cloud Storage`
 - The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
   PubSub `Decoded Topics`
-   - The Dataflow `Decoder` job uses checks for existence of document IDs in
+   - The Dataflow `Decoder` job checks for existence of `document_id`s in
      `Cloud Memorystore` in order to deduplicate messages
 - The Dataflow `Republisher` job reads messages from PubSub `Decoded Topics`,
   marks them as seen in `Cloud Memorystore` and republishes to various
