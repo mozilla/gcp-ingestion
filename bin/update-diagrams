@@ -1,0 +1,16 @@
+#!/bin/bash
+# Updates mermaid diagrams (.svg files produced from .mmd source)
+
+set -e
+cd "$(dirname "$0")/.."
+
+IMAGE=adoroszlai/mmdc
+
+for f in $(find . -name "*.mmd"); do
+    echo Updating $f 1>&2
+    docker run -it --rm \
+           --volume $PWD:/root/project \
+           --workdir /root/project \
+           $IMAGE \
+           -i ${f} -o ${f/.mmd/.svg}
+done
