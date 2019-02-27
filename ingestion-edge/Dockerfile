@@ -2,9 +2,10 @@ FROM python:3.7
 WORKDIR /app
 RUN apt-get update && apt-get install -y wrk
 COPY constraints.txt requirements.txt /app/
-COPY bin/test /app/bin/
+COPY bin/include/common.sh /app/bin/include/
+COPY bin/build /app/bin/
 ENV VENV=false
-RUN bin/test --build --no-pytest
+RUN bin/build
 COPY . /app
 ENV HOST=0.0.0.0 PORT=8000
 CMD exec gunicorn \
