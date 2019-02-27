@@ -2,10 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, you can obtain one at http://mozilla.org/MPL/2.0/.
 
-from ingestion_edge import wsgi
-
 
 def test_wsgi(mocker):
+    # late import to allow pubsub emulator configuration
+    from ingestion_edge import wsgi
+
     socket = mocker.patch.object(wsgi, "socket")
     socket.return_value.getsockname.return_value = ("", 0)
     run = mocker.patch.object(wsgi.app, "run")

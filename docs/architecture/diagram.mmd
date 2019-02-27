@@ -2,6 +2,8 @@
 %%   npm install -g mermaid.cli
 %% To update this file run:
 %%   mmdc -i diagram.mmd -o diagram.svg
+%% Or use the docker wrapper in this repo (from the top-level directory):
+%%   ./bin/update-diagrams
 
 graph TD
 
@@ -16,8 +18,10 @@ p2 --> d3(BigQuery Sink)
 d3 --> b1(BigQuery)
 p2 --> d4(Dataset Sink)
 d4 --> c2(Cloud Storage)
-p2 --> d5(DocType Splitter)
+p2 --> d5(Republisher)
+m1 --> d5
 d5 --> p5(Per DocType Topics)
+d5 --> p6(Monitoring Sample Topics)
 
 subgraph Colors
     d(Dataflow jobs are green)

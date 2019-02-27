@@ -64,6 +64,7 @@ DEFAULT_METADATA_HEADERS = [
     "X-Forwarded-For",
     "X-Pingsender-Version",
     "X-Pipeline-Proxy",
+    "X-Debug-ID",
 ]
 
 METADATA_HEADERS = {

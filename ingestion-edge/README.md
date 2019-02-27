@@ -22,8 +22,14 @@ A simple service for delivering HTTP messages to Google Cloud PubSub
 
 ## Building
 
+Install and update dependencies as-needed
+
 ```bash
+# docker-compose
 docker-compose build
+
+# pytest
+bin/build
 ```
 
 ## Running
@@ -31,7 +37,7 @@ docker-compose build
 Use `docker-compose` to run a local development server that auto-detects changes:
 
 ```bash
-# run the web server and pubsub emulator
+# run the web server and PubSub emulator
 docker-compose up --detach web
 
 # manually check the server
@@ -64,7 +70,7 @@ environment variables:
   will fail, defaults to `0` which disables the check
 - `METADATA_HEADERS`: a JSON list of headers to preserve as PubSub message
   attributes, defaults to `["Content-Length", "Date", "DNT", "User-Agent",
-  "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy"]`
+  "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID"]`
 - `PUBLISH_TIMEOUT_SECONDS`: a float indicating the maximum number of seconds
   to wait for the PubSub client to complete a publish operation, defaults to 1
   second and may require tuning
@@ -84,85 +90,98 @@ environment variables:
 
 ## Testing
 
-Run all tests locally with `docker-compose` or
-[CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
+Run tests with [CircleCI Local
+CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros),
+`docker-compose`, or `pytest` wrappers
 
 ```bash
-# only print test logs and leave other services running
-docker-compose run --rm test
-
-# rebuild images, recreate containers, stop all containers when one exits, use SIGKILL immediately
-docker-compose up --build --force-recreate --abort-on-container-exit --timeout=0
-
 # circleci
 (cd .. && circleci build --job ingestion-edge)
+
+# docker-compose
+docker-compose run --rm test
+
+# pytest wrapper (pytest-all calls lint and pytest)
+./bin/pytest-all
 ```
+
+The `pytest` wrappers add these options via the environment:
+
+- `CLEAN_RELOCATES` controls whether `bin/lint` and `bin/pytest` will remove
+  `.pyc` files not in `venv/` that do not contain `$PWD` to prevent errors when
+  switching between running in and out of docker, defaults to `true`
+- `VENV` controls whether to use a python `venv` in `venv/$(uname)` in
+  `bin/lint` and `bin/pytest`, and in `bin/build` to create and use that
+  `venv`, defaults to `false` in `Dockerfile` and `true` otherwise
 
 ### Style Checks
-
-Update dependencies installed in the container as needed
-
-```bash
-docker-compose build
-```
 
 Run style checks
 
 ```bash
-docker-compose run --rm --no-deps test --black --docstyle --flake8 --mypy --mypy-ignore-missing-imports ingestion_edge
+# docker-compose
+docker-compose run --rm test bin/lint
+
+# pytest wrapper
+./bin/lint
 ```
 
 ### Unit Tests
 
-Update dependencies installed in the container as needed
-
-```bash
-docker-compose build
-```
-
 Run unit tests
 
 ```bash
-docker-compose run --rm --no-deps test tests/unit
+# docker-compose
+docker-compose run --rm test bin/pytest tests/unit
+
+# pytest wrapper
+./bin/pytest tests/unit
 ```
 
 ### Integration Tests
 
-Update dependencies installed in the container as needed
-
-```bash
-docker-compose build
-```
-
 Run integration tests locally
 
 ```bash
-docker-compose run --rm test tests/integration --server http://web:8000
+# docker-compose
+docker-compose run --rm test bin/pytest tests/integration
+
+# pytest wrapper
+./bin/pytest tests/integration
 ```
 
 Test a remote server (requires credentials to read PubSub)
 
 ```bash
 # define the same ROUTE_TABLE as your edge server
-docker-compose run --no-deps --rm --env ROUTE_TABLE=$ROUTE_TABLE test tests/integration --server https://myedgeserver.example.com
+export ROUTE_TABLE='[["/submit/telemetry/<suffix:path>","projects/PROJECT/topics/TOPIC"]]'
 
-# or using the latest published version without a code checkout
-docker run --rm --tty --interactive --env ROUTE_TABLE=$ROUTE_TABLE mozilla/ingestion-edge:latest py.test tests/integration --server https://myedgeserver.example.com
+# docker using latest image and no git checkout
+docker run --rm --tty --interactive --env ROUTE_TABLE mozilla/ingestion-edge:latest bin/pytest tests/integration --server https://myedgeserver.example.com
+
+# docker-compose
+docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --server https://myedgeserver.example.com
+
+# pytest wrapper
+./bin/pytest tests/integration --server https://myedgeserver.example.com
 ```
 
 ### Load Tests
 
-Run a load test
+Run a load test (defaults to a single GKE cluster and a PubSub emulator)
 
 ```bash
-# defaults to a single GKE cluster and a pubsub emulator
-docker-compose run --no-deps --rm test tests/load
+# docker using latest image and no git checkout
+docker run --rm --tty --interactive mozilla/ingestion-edge:latest bin/pytest tests/load
 
-# or using the latest published version without a code checkout
-docker run --rm --tty --interactive mozilla/ingestion-edge:latest py.test tests/load
+# docker-compose
+docker-compose run --rm test bin/pytest tests/load
+
+# pytest
+./bin/pytest tests/load
 ```
 
-Load test options (from `pytest -h`)
+Load test options (from `./bin/test -h`)
 
 ```
   --min-success-rate=MIN_SUCCESS_RATE

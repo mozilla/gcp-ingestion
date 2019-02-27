@@ -11,9 +11,9 @@ This document specifies the architecture for GCP Ingestion as a whole.
   - [Ingestion Edge](#ingestion-edge)
   - [Landfill Sink](#landfill-sink)
   - [Decoder](#decoder)
+  - [Republisher (Not Yet Implemented)](#republisher-not-yet-implemented)
   - [BigQuery Sink](#bigquery-sink)
   - [Dataset Sink](#dataset-sink)
-  - [DocType Splitter](#doctype-splitter)
   - [Notes](#notes)
 - [Design Decisions](#design-decisions)
   - [Kubernetes Engine and PubSub](#kubernetes-engine-and-pubsub)
@@ -37,14 +37,16 @@ This document specifies the architecture for GCP Ingestion as a whole.
   `Cloud Storage`
 - The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
   PubSub `Decoded Topics`
-   - The Dataflow `Decoder` job uses `Cloud Memorystore` to deduplicate
-     messages
+   - The Dataflow `Decoder` job checks for existence of `document_id`s in
+     `Cloud Memorystore` in order to deduplicate messages
+- The Dataflow `Republisher` job reads messages from PubSub `Decoded Topics`,
+  marks them as seen in `Cloud Memorystore` and republishes them to various
+  lower volume derived topics including `Monitoring Sample Topics` and
+  `Per DocType Topics`
 - The Dataflow `BigQuery Sink` job copies messages from PubSub `Decoded Topics`
   to `BigQuery`
 - The Dataflow `Dataset Sink` job copies messages from PubSub `Decoded Topics`
   to `Cloud Storage`
-- The Dataflow `DocType Splitter` job copies messages from PubSub `Decoded
-  Topics` to `Per DocType Topics`
 
 ## Architecture Components
 
@@ -81,12 +83,37 @@ This document specifies the architecture for GCP Ingestion as a whole.
       `geo_*` attributes
    1. Parse `agent` attribute into `user_agent_*` attributes
    1. Copy attributes to `metadata` top level key in `payload`
-   1. Remove duplicates based on `document_id` attribute using Cloud
-      Memorystore
-      - Must ensure at least once delivery
-      - May read from output PubSub topics to determine delivered messages
+- Should deduplicate messages based on the `document_id` attribute using
+  `Cloud MemoryStore`
+  - Must ensure at least once delivery, so deduplication is only "best effort"
+  - Should delay deduplication to the latest possible stage of the pipeline
+    to minimize the time window between an ID being marked as seen in
+    `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
    - Must allow error destinations in PubSub and Cloud Storage
+
+### Republisher (Not Yet Implemented)
+
+- Must copy messages from PubSub topics to PubSub topics
+- Must attempt to publish the `document_id` of each consumed message to
+  `Cloud MemoryStore`
+  - ID publishing should be "best effort" but must not prevent the message
+    proceeding to further steps in case of errors reaching `Cloud MemoryStore`
+- Must ack messages read from PubSub after they are delivered to all
+  matching destinations
+- Must not ack messages read from PubSub before they are delivered to all
+  matching destinations
+- Must accept configuration mapping `document_type`s to PubSub topics
+   - Must accept a runtime parameter defining a topic pattern string
+   - Must accept a compile-time parameter defining which `document_type`s
+     to republish
+   - Must only deliver messages with configured destinations
+- Must accept optional configuration for sampling telemetry data
+  - Must accept a runtime parameter defining a topic pattern string
+  - Must accept compile-time parameters defining the sampling ratio for
+    each channel (nightly, beta, and release), with the default value of
+    `0` removing the channel from the built pipeline graph
+
 
 ### BigQuery Sink
 
@@ -112,18 +139,6 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must store messages as newline delimited JSON
 - May compress Cloud Storage objects using gzip
 - Must accept configuration mapping PubSub topics to Cloud Storage locations
-- Should accept configuration mapping message attributes to Cloud Storage object
-  names
-- Should retry transient Cloud Storage errors indefinitely
-   - Should use exponential back-off to determine retry timing
-
-### DocType Splitter
-
-- Must copy messages from PubSub topics to PubSub topics
-- Must not ack messages read from PubSub until they are delivered
-   - Must ack messages that should not be delivered
-- Must accept configuration mapping `document_type`s to PubSub topics
-   - Must only deliver messages with configured destinations
 - Should accept configuration mapping message attributes to Cloud Storage object
   names
 - Should retry transient Cloud Storage errors indefinitely

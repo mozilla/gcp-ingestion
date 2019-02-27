@@ -4,6 +4,14 @@ version: '3'
 
 services:
   test:
-    entrypoint: docker/pytest-upload-coverage
+    depends_on:
+    - pubsub
+    - web
     env_file:
     - circleci.env
+    environment:
+    - PYTEST_ADDOPTS=. tests/integration --ignore tests/load --server=http://web:8000
+    - &emulator_host PUBSUB_EMULATOR_HOST=pubsub:8085
+  web:
+    environment:
+    - *emulator_host
