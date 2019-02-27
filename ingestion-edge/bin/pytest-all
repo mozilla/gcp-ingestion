@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# error on command line options
+if [ "$#" -gt 0 ]; then
+    echo "This command does not allow options but got: $*" >&2
+    exit 1
+fi
+
+"$(dirname "$0")"/pytest --cov=./ingestion_edge/ && "$(dirname "$0")"/lint

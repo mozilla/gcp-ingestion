@@ -5,9 +5,13 @@
 from google.cloud.monitoring_v3 import MetricServiceClient
 from google.cloud.monitoring_v3.types import Aggregation, TimeInterval
 from typing import Any, Dict, Union
+import pytest
 import time
 
-stackdriver = MetricServiceClient()
+
+@pytest.fixture
+def stackdriver():
+    return MetricServiceClient()
 
 
 def get_interval(seconds: int = 120) -> TimeInterval:
@@ -17,7 +21,7 @@ def get_interval(seconds: int = 120) -> TimeInterval:
     return interval
 
 
-def get_metric_value(*args, **kwargs) -> Union[int, float]:
+def get_metric_value(stackdriver, *args, **kwargs) -> Union[int, float]:
     """Get the last value of the first time series returned by StackDriver"""
     for series in stackdriver.list_time_series(*args, **kwargs):
         sorted_points = sorted(series.points, key=lambda p: p.interval.end_time.seconds)
@@ -26,7 +30,12 @@ def get_metric_value(*args, **kwargs) -> Union[int, float]:
     return 0
 
 
-def test_throughput(load_balancer: str, generator: None, options: Dict[str, Any]):
+def test_throughput(
+    load_balancer: str,
+    generator: None,
+    options: Dict[str, Any],
+    stackdriver: MetricServiceClient,
+):
     # Initialize
     path = f"projects/{options['project']}"
     base = (
@@ -46,7 +55,9 @@ def test_throughput(load_balancer: str, generator: None, options: Dict[str, Any]
     assert options["warmup_timeout"] > 0
     start = int(time.time())
     while True:
-        throughput = get_metric_value(path, success, get_interval(), view, aggregation)
+        throughput = get_metric_value(
+            stackdriver, path, success, get_interval(), view, aggregation
+        )
         if throughput >= options["warmup_threshold"]:
             break
         if int(time.time()) - start > options["warmup_timeout"]:

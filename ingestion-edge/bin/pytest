@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+. "$(dirname "$0")"/include/common.sh
+
+# remove .pyc files that appear to be relocated unless disabled
+if ${CLEAN_RELOCATES:-true}; then . bin/include/clean_relocates.sh; fi
+
+exec python3.7 -m pytest "$@"

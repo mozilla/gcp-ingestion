@@ -4,6 +4,18 @@ version: '3'
 
 services:
   test:
-    entrypoint: docker/pytest-upload-coverage
+    command:
+    - --lint
+    - .
+    - tests/integration
+    - --server=http://web:8000
+    depends_on:
+    - pubsub
+    - web
     env_file:
     - circleci.env
+    environment:
+    - &emulator_host PUBSUB_EMULATOR_HOST=pubsub:8085
+  web:
+    environment:
+    - *emulator_host
