@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-. "$(dirname "$0")"/.common
+. "$(dirname "$0")"/include/common.sh
 
-! ${VENV:-true} || python3.7 -m venv "$VENV_DIR"
+if ${VENV:-true}; then python3.7 -m venv "$VENV_DIR"; fi
 
 python3.7 -m pip install --upgrade --no-cache-dir -r requirements.txt
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-. "$(dirname "$0")"/.common
+. "$(dirname "$0")"/include/common.sh
 
 # remove .pyc files that appear to be relocated unless disabled
-! ${CLEAN_RELOCATES:-true} || . bin/clean_relocates
+if ${CLEAN_RELOCATES:-true}; then . bin/include/clean_relocates.sh; fi
 
 # only run lint tests (-k "not test_")
 # cover tests/load because the actual test is disabled (-o "testpaths=")

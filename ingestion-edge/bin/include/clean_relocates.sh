@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-. "$(dirname "$0")"/.common
-
 # list .pyc files that do not match "$PWD/"
 RELOCATES="$(grep -rL "$PWD/" --include '*.pyc' --exclude-dir venv . || true)"
 

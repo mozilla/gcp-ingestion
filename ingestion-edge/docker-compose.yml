@@ -40,7 +40,6 @@ services:
   test:
     image: *image
     command:
-    - bin/pytest_with_lint
-    - --cov=./ingestion_edge/
+    - bin/pytest-all
     environment:
     - *route_table

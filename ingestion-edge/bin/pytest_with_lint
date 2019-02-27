@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-. "$(dirname "$0")"/.common
-
-# remove .pyc files that appear to be relocated unless disabled
-! ${CLEAN_RELOCATES:-true} || . bin/clean_relocates
-
-# run pytest with linters
-exec python3.7 -m pytest "${LINT_ARGS[@]}" "$@"

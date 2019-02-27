@@ -35,7 +35,9 @@ jobs:
         command: ingestion-edge/bin/build
     - run:
         name: PyTest with linters
-        command: ingestion-edge/bin/pytest_with_lint --cov=./ingestion_edge/ --cov-report=xml
+        command: ingestion-edge/bin/pytest-all
+        environment:
+          PYTEST_ADDOPTS: --cov-report=xml
     - run:
         name: Report code coverage
         command: cd ingestion-edge && bash <(curl -s https://codecov.io/bash) -F ingestion_edge

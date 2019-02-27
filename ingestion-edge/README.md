@@ -101,9 +101,18 @@ CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-
 # docker-compose
 docker-compose run --rm test
 
-# pytest wrapper
-./bin/pytest_with_lint
+# pytest wrapper (pytest-all calls lint and pytest)
+./bin/pytest-all
 ```
+
+The `pytest` wrappers add these options via the environment:
+
+- `CLEAN_RELOCATES` controls whether `bin/lint` and `bin/pytest` will remove
+  `.pyc` files not in `venv/` that do not contain `$PWD` to prevent errors when
+  switching between running in and out of docker, defaults to `true`
+- `VENV` controls whether to use a python `venv` in `venv/$(uname)` in
+  `bin/lint` and `bin/pytest`, and in `bin/build` to create and use that
+  `venv`, defaults to `false` in `Dockerfile` and `true` otherwise
 
 ### Style Checks
 
