@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+. "$(dirname "$0")"/.common
+
+! ${VENV:-true} || python3.7 -m venv "$VENV_DIR"
+
+python3.7 -m pip install --upgrade --no-cache-dir -r requirements.txt
+
+# remove after merge and release of https://github.com/mozilla-services/python-dockerflow/pull/27
+python3.7 -m pip install --no-deps --no-index git+git://github.com/relud/python-dockerflow@master#egg=dockerflow[sanic]

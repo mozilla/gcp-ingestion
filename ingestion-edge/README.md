@@ -28,8 +28,8 @@ Install and update dependencies as-needed
 # docker-compose
 docker-compose build
 
-# pytest wrapper
-bin/test --build --no-pytest
+# pytest
+bin/build
 ```
 
 ## Running
@@ -92,7 +92,7 @@ environment variables:
 
 Run tests with [CircleCI Local
 CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros),
-`docker-compose`, or `./bin/test`
+`docker-compose`, or `pytest` wrappers
 
 ```bash
 # circleci
@@ -102,7 +102,7 @@ CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-
 docker-compose run --rm test
 
 # pytest wrapper
-./bin/test
+./bin/pytest_with_lint
 ```
 
 ### Style Checks
@@ -111,10 +111,10 @@ Run style checks
 
 ```bash
 # docker-compose
-docker-compose run --rm test --lint-only
+docker-compose run --rm test bin/lint
 
 # pytest wrapper
-./bin/test --lint-only
+./bin/lint
 ```
 
 ### Unit Tests
@@ -123,10 +123,10 @@ Run unit tests
 
 ```bash
 # docker-compose
-docker-compose run --rm test tests/unit
+docker-compose run --rm test bin/pytest tests/unit
 
 # pytest wrapper
-./bin/test tests/unit
+./bin/pytest tests/unit
 ```
 
 ### Integration Tests
@@ -135,10 +135,10 @@ Run integration tests locally
 
 ```bash
 # docker-compose
-docker-compose run --rm test tests/integration
+docker-compose run --rm test bin/pytest tests/integration
 
 # pytest wrapper
-./bin/test tests/integration
+./bin/pytest tests/integration
 ```
 
 Test a remote server (requires credentials to read PubSub)
@@ -148,13 +148,13 @@ Test a remote server (requires credentials to read PubSub)
 export ROUTE_TABLE='[["/submit/telemetry/<suffix:path>","projects/PROJECT/topics/TOPIC"]]'
 
 # docker using latest image and no git checkout
-docker run --rm --tty --interactive --env ROUTE_TABLE mozilla/ingestion-edge:latest ./bin/test tests/integration --server https://myedgeserver.example.com
+docker run --rm --tty --interactive --env ROUTE_TABLE mozilla/ingestion-edge:latest bin/pytest tests/integration --server https://myedgeserver.example.com
 
 # docker-compose
-docker-compose run --rm -e ROUTE_TABLE test tests/integration --server https://myedgeserver.example.com
+docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --server https://myedgeserver.example.com
 
 # pytest wrapper
-./bin/test tests/integration --server https://myedgeserver.example.com
+./bin/pytest tests/integration --server https://myedgeserver.example.com
 ```
 
 ### Load Tests
@@ -163,13 +163,13 @@ Run a load test (defaults to a single GKE cluster and a PubSub emulator)
 
 ```bash
 # docker using latest image and no git checkout
-docker run --rm --tty --interactive mozilla/ingestion-edge:latest ./bin/test tests/load
+docker run --rm --tty --interactive mozilla/ingestion-edge:latest bin/pytest tests/load
 
 # docker-compose
-docker-compose run --rm test tests/load
+docker-compose run --rm test bin/pytest tests/load
 
 # pytest
-./bin/test tests/load
+./bin/pytest tests/load
 ```
 
 Load test options (from `./bin/test -h`)

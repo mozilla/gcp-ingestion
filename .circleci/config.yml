@@ -31,8 +31,11 @@ jobs:
           - python-packages-v1-{{ .Branch }}-
           - python-packages-v1-
     - run:
-        name: Test
-        command: ingestion-edge/bin/test --build --lint --cov=./ingestion_edge/ --cov-report=xml
+        name: Build
+        command: ingestion-edge/bin/build
+    - run:
+        name: PyTest with linters
+        command: ingestion-edge/bin/pytest_with_lint --cov=./ingestion_edge/ --cov-report=xml
     - run:
         name: Report code coverage
         command: cd ingestion-edge && bash <(curl -s https://codecov.io/bash) -F ingestion_edge

@@ -39,9 +39,8 @@ services:
       PORT: 8085
   test:
     image: *image
-    entrypoint: bin/test
     command:
-    - --lint
+    - bin/pytest_with_lint
     - --cov=./ingestion_edge/
     environment:
     - *route_table

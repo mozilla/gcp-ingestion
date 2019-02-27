@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+. "$(dirname "$0")"/.common
+
+# remove .pyc files that appear to be relocated unless disabled
+! ${CLEAN_RELOCATES:-true} || . bin/clean_relocates
+
+# only run lint tests (-k "not test_")
+# cover tests/load because the actual test is disabled (-o "testpaths=")
+# run linters ("${LINT_ARGS[@]}")
+exec python3.7 -m pytest -k "not test_" -o "testpaths=" "${LINT_ARGS[@]}" "$@"
