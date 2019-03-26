@@ -22,6 +22,19 @@ import org.junit.Test;
 public class PubsubMessageRecordFormatterTest {
 
   @Test
+  public void testFormatNull() {
+    byte[] data = new JSONObject().put("test_null", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields().name("test_null").type().nullType()
+        .noDefault().endRecord();
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(record.get("test_null"), null);
+  }
+
+  @Test
   public void testFormatFlatSchema() {
     byte[] data = new JSONObject() //
         .put("test_bool", true).put("test_long", -7).put("test_double", 0.99)
