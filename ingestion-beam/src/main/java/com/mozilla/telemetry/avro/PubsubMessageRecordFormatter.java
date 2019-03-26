@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.util;
+package com.mozilla.telemetry.avro;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -32,7 +32,7 @@ public class PubsubMessageRecordFormatter implements RecordFormatter<PubsubMessa
     try {
       InputStream in = new ByteArrayInputStream(element.getPayload());
       DatumReader<GenericRecord> reader = new GenericDatumReader<>(schema);
-      Decoder decoder = DecoderFactory.get().jsonDecoder(schema, in);
+      Decoder decoder = new GuidedJsonDecoder(schema, in);
       result = reader.read(null, decoder);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
