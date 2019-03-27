@@ -122,12 +122,14 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
         in = ctx.jp;
         ctx.jp = null;
       }
-    } else if (top == Symbol.RECORD_END) {
+    } else if (top == Symbol.RECORD_END || top == Symbol.UNION_END) {
       // Find the end of the object and return to the last saved context
       while (in.getCurrentToken() != JsonToken.END_OBJECT) {
         in.nextToken();
       }
-      recordStack.pop();
+      if (top == Symbol.RECORD_END) {
+        recordStack.pop();
+      }
       in.nextToken();
     } else {
       throw new AvroTypeException("Unknown action symbol " + top);
@@ -325,7 +327,30 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
 
   @Override
   public int readIndex() throws IOException {
-    return 0;
+    // The schema transpiler collapses all uses of unions that specify variant
+    // types. The remaining unions are used to distinguish required/nullable
+    // fields in records.
+    parser.advance(Symbol.UNION);
+    Symbol.Alternative top = (Symbol.Alternative) parser.popSymbol();
+
+    String label = null;
+    if (in.getCurrentToken() == JsonToken.VALUE_NULL) {
+      label = "null";
+    } else if (in.getCurrentToken() == JsonToken.START_OBJECT
+        && in.nextToken() == JsonToken.FIELD_NAME) {
+      label = in.getValueAsString();
+      in.nextToken();
+      parser.pushSymbol(Symbol.UNION_END);
+    } else {
+      error(in.getCurrentToken(), "start-union");
+    }
+
+    int index = top.findLabel(label);
+    if (index < 0) {
+      throw new AvroTypeException("Unknown union branch " + label);
+    }
+    parser.pushSymbol(top.getSymbol(index));
+    return index;
   }
 
 }
