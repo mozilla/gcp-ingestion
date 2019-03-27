@@ -258,12 +258,28 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
 
   @Override
   public long readArrayStart() throws IOException {
-    return 0;
+    parser.advance(Symbol.ARRAY_START);
+    assertCurrentToken(JsonToken.START_ARRAY, "array-start");
+    in.nextToken();
+
+    if (in.getCurrentToken() == JsonToken.END_ARRAY) {
+      parser.advance(Symbol.ARRAY_END);
+      in.nextToken();
+      return 0;
+    }
+    return 1;
   }
 
   @Override
   public long arrayNext() throws IOException {
-    return 0;
+    parser.advance(Symbol.ITEM_END);
+
+    if (in.getCurrentToken() == JsonToken.END_ARRAY) {
+      parser.advance(Symbol.ARRAY_END);
+      in.nextToken();
+      return 0;
+    }
+    return 1;
   }
 
   @Override
