@@ -6,11 +6,13 @@ package com.mozilla.telemetry.avro;
 
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
+import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
@@ -118,6 +120,46 @@ public class PubsubMessageRecordFormatterTest {
     GenericRecord shape = (GenericRecord) record.get("shape");
     Map<String, Boolean> quad = (Map<String, Boolean>) shape.get("quadrilateral");
     assertEquals(quad.size(), 6);
+  }
+
+  @Test
+  public void testFormatArray() {
+    byte[] data = new JSONObject() //
+        .put("test_array", new JSONArray().put(true).put(false).put(true)) //
+        .toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder //
+        .record("root").fields() //
+        .name("test_array").type().array().items().booleanType().noDefault() //
+        .endRecord();
+
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals((GenericArray<Boolean>) record.get("test_array"),
+        Arrays.asList(true, false, true));
+  }
+
+  @Test
+  public void testFormatNullableBoolean() {
+    byte[] data = new JSONObject() //
+        .put("test_none", JSONObject.NULL) //
+        .put("test_some", true) //
+        .toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder //
+        .record("root").fields() //
+        .name("test_none").type().unionOf().nullType().and().booleanType().endUnion().noDefault() //
+        .name("test_some").type().unionOf().nullType().and().booleanType().endUnion().noDefault() //
+        .endRecord();
+
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(record.get("test_none"), null);
+    assertEquals(record.get("test_some"), true);
   }
 
   @Test
