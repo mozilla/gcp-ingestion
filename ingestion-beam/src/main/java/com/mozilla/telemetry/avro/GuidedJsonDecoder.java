@@ -206,7 +206,12 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
   @Override
   public String readString() throws IOException {
     parser.advance(Symbol.STRING);
-    assertCurrentToken(JsonToken.VALUE_STRING, "string");
+    if (parser.topSymbol() == Symbol.MAP_KEY_MARKER) {
+      parser.advance(Symbol.MAP_KEY_MARKER);
+      assertCurrentToken(JsonToken.FIELD_NAME, "map-key");
+    } else {
+      assertCurrentToken(JsonToken.VALUE_STRING, "string");
+    }
 
     String result = in.getValueAsString();
     in.nextToken();
@@ -289,12 +294,28 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
 
   @Override
   public long readMapStart() throws IOException {
-    return 0;
+    parser.advance(Symbol.MAP_START);
+    assertCurrentToken(JsonToken.START_OBJECT, "map-start");
+    in.nextToken();
+
+    if (in.getCurrentToken() == JsonToken.END_OBJECT) {
+      parser.advance(Symbol.MAP_END);
+      in.nextToken();
+      return 0;
+    }
+    return 1;
   }
 
   @Override
   public long mapNext() throws IOException {
-    return 0;
+    parser.advance(Symbol.ITEM_END);
+
+    if (in.getCurrentToken() == JsonToken.END_OBJECT) {
+      parser.advance(Symbol.MAP_END);
+      in.nextToken();
+      return 0;
+    }
+    return 1;
   }
 
   @Override
