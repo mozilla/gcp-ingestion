@@ -28,6 +28,7 @@ public class PubsubMessageRecordFormatterTest {
 
     Schema schema = SchemaBuilder.record("root").fields().name("test_null").type().nullType()
         .noDefault().endRecord();
+
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
@@ -93,9 +94,10 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    // TODO: https://issues.apache.org/jira/browse/AVRO-1582
-    assertEquals(record.get("shape.quadrilateral.rhombus"), true);
-    assertEquals(record.get("shape.triangle"), null);
+    GenericRecord shape = (GenericRecord) record.get("shape");
+    GenericRecord quad = (GenericRecord) shape.get("quadrilateral");
+    assertEquals(quad.get("rhombus"), true);
+    assertEquals(shape.get("triangle"), null);
   }
 
   @Test
@@ -113,7 +115,8 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    Map<String, Boolean> quad = (Map<String, Boolean>) record.get("shape.quadrilateral");
+    GenericRecord shape = (GenericRecord) record.get("shape");
+    Map<String, Boolean> quad = (Map<String, Boolean>) shape.get("quadrilateral");
     assertEquals(quad.size(), 6);
   }
 

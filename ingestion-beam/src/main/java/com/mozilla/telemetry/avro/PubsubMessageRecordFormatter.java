@@ -17,7 +17,6 @@ import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.Decoder;
-import org.apache.avro.io.DecoderFactory;
 import org.apache.beam.sdk.io.AvroIO.RecordFormatter;
 
 /**
@@ -27,8 +26,7 @@ public class PubsubMessageRecordFormatter implements RecordFormatter<PubsubMessa
 
   @Override
   public GenericRecord formatRecord(PubsubMessage element, Schema schema) {
-    String message = "";
-    GenericRecord result;
+    GenericRecord result = null;
     try {
       InputStream in = new ByteArrayInputStream(element.getPayload());
       DatumReader<GenericRecord> reader = new GenericDatumReader<>(schema);
