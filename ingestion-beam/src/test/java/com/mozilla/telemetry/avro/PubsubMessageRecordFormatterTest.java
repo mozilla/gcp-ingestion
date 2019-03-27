@@ -34,7 +34,7 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    assertEquals(record.get("test_null"), null);
+    assertEquals(null, record.get("test_null"));
   }
 
   @Test
@@ -55,10 +55,10 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    assertEquals(record.get("test_bool"), true);
-    assertEquals(record.get("test_long"), -7l);
-    assertEquals(record.get("test_double"), 0.99);
-    assertEquals(record.get("test_string").toString(), "hello world");
+    assertEquals(true, record.get("test_bool"));
+    assertEquals(-7l, record.get("test_long"));
+    assertEquals(0.99, record.get("test_double"));
+    assertEquals("hello world", record.get("test_string").toString());
   }
 
   private byte[] generateNestedObject() {
@@ -98,8 +98,8 @@ public class PubsubMessageRecordFormatterTest {
 
     GenericRecord shape = (GenericRecord) record.get("shape");
     GenericRecord quad = (GenericRecord) shape.get("quadrilateral");
-    assertEquals(quad.get("rhombus"), true);
-    assertEquals(shape.get("triangle"), null);
+    assertEquals(true, quad.get("rhombus"));
+    assertEquals(null, shape.get("triangle"));
   }
 
   @Test
@@ -119,7 +119,7 @@ public class PubsubMessageRecordFormatterTest {
 
     GenericRecord shape = (GenericRecord) record.get("shape");
     Map<String, Boolean> quad = (Map<String, Boolean>) shape.get("quadrilateral");
-    assertEquals(quad.size(), 6);
+    assertEquals(6, quad.size());
   }
 
   @Test
@@ -137,8 +137,8 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    assertEquals((GenericArray<Boolean>) record.get("test_array"),
-        Arrays.asList(true, false, true));
+    assertEquals(Arrays.asList(true, false, true),
+        (GenericArray<Boolean>) record.get("test_array"));
   }
 
   @Test
@@ -158,8 +158,8 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    assertEquals(record.get("test_none"), null);
-    assertEquals(record.get("test_some"), true);
+    assertEquals(null, record.get("test_none"));
+    assertEquals(true, record.get("test_some"));
   }
 
   @Test
@@ -186,12 +186,12 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    assertEquals(record.get("test_bool").toString(), "true");
-    assertEquals(record.get("test_long").toString(), "-7");
-    assertEquals(record.get("test_double").toString(), "0.99");
-    assertEquals(record.get("test_string").toString(), "hello world");
-    assertEquals(record.get("test_object").toString(), "{\"test_field\": true}");
-    assertEquals(record.get("test_string").toString(), "[1, 2, 3]");
+    assertEquals("true", record.get("test_bool").toString());
+    assertEquals("-7", record.get("test_long").toString());
+    assertEquals("0.99", record.get("test_double").toString());
+    assertEquals("hello world", record.get("test_string").toString());
+    assertEquals("{\"test_field\":true}", record.get("test_object").toString());
+    assertEquals("[1,2,3]", record.get("test_string").toString());
   }
 
   @Test
@@ -217,11 +217,11 @@ public class PubsubMessageRecordFormatterTest {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    assertEquals(record.get("test"), true);
-    assertEquals(record.get("test_hyphen"), true);
-    assertEquals(record.get("test_dot"), true);
-    assertEquals(record.get("_test_prefix_hyphen"), true);
-    assertEquals(record.get("_0_test_prefix_number"), true);
-    assertEquals(record.get("$test_bad_symbol"), null);
+    assertEquals(true, record.get("test"));
+    assertEquals(true, record.get("test_hyphen"));
+    assertEquals(true, record.get("test_dot"));
+    assertEquals(true, record.get("_test_prefix_hyphen"));
+    assertEquals(true, record.get("_0_test_prefix_number"));
+    assertEquals(true, record.get("$test_bad_symbol"));
   }
 }
