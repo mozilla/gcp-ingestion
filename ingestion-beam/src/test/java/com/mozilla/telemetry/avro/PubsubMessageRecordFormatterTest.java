@@ -245,6 +245,6 @@ public class PubsubMessageRecordFormatterTest {
     assertEquals(true, record.get("test_dot"));
     assertEquals(true, record.get("_test_prefix_hyphen"));
     assertEquals(true, record.get("_0_test_prefix_number"));
-    assertEquals(true, record.get("$test_bad_symbol"));
+    assertEquals(null, record.get("$test_bad_symbol"));
   }
 }

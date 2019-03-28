@@ -79,6 +79,14 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     error(token, type);
   }
 
+  protected String renameField(String name) {
+    String result = name.replace('.', '_').replace('-', '_');
+    if (Character.isDigit(result.charAt(0))) {
+      result = '_' + result;
+    }
+    return result;
+  }
+
   @Override
   public Symbol doAction(Symbol input, Symbol top) throws IOException {
     if (top == Symbol.RECORD_START) {
@@ -102,9 +110,9 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
       // Keep streaming the document, caching fields that aren't relevant now
       if (in.getCurrentToken() == JsonToken.FIELD_NAME) {
         do {
-          String name = in.getValueAsString();
+          String name = renameField(in.getValueAsString());
           in.nextToken();
-          if (fa.fname == name) {
+          if (fa.fname.equals(name)) {
             return null;
           }
           // Make a copy of the current structure, which moves the current token
@@ -214,14 +222,15 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     }
 
     String result = null;
-    if (in.getCurrentToken() == JsonToken.VALUE_STRING || in.getCurrentToken() == JsonToken.FIELD_NAME) {
-        result = in.getValueAsString();
+    if (in.getCurrentToken() == JsonToken.VALUE_STRING
+        || in.getCurrentToken() == JsonToken.FIELD_NAME) {
+      result = in.getValueAsString();
     } else {
-        // Does this create excessive garbage collection?
-        TokenBuffer buffer = new TokenBuffer(in);
-        buffer.copyCurrentStructure(in);
-        result = mapper.readTree(buffer.asParser()).toString();
-        buffer.close();
+      // Does this create excessive garbage collection?
+      TokenBuffer buffer = new TokenBuffer(in);
+      buffer.copyCurrentStructure(in);
+      result = mapper.readTree(buffer.asParser()).toString();
+      buffer.close();
     }
     in.nextToken();
     return result;
