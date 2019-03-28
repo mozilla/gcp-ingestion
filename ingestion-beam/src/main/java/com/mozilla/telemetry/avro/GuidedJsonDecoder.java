@@ -1,4 +1,14 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 package com.mozilla.telemetry.avro;
+
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,12 +16,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
-
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.util.TokenBuffer;
 
 import org.apache.avro.AvroTypeException;
 import org.apache.avro.Schema;
@@ -21,6 +25,40 @@ import org.apache.avro.io.parsing.Parser;
 import org.apache.avro.io.parsing.Symbol;
 import org.apache.avro.util.Utf8;
 
+/**
+ * A custom JSON decoder based on the Parsing JsonDecoder in the
+ * `org.apache.avro.io.JsonDecoder` package.
+ *
+ * <p>The default JsonDecoder (as of Avro 1.8.2) does support ingestion of JSON
+ * documents where casting of values are inferred from the provided schema (see
+ * AVRO-1582 [1]). Instead, the decoder expects values that are emitted by the
+ * JsonEncoder in the form `{"NAME": {"TYPE": "VALUE"}}`. While this enables a
+ * lossless type-encoding when using JSON as a transport, it is inconvenient for
+ * ingesting data that are directly encoded into JSON i.e. values in the form
+ * `{"NAME": "VALUE"}`.
+ *
+ * <p>This decoder is designed as a companion to the jsonschema-transpiler [2],
+ * which emits valid Avro schemas from JSON Schema. These schemas are used to
+ * guide the serialization process. This is required to disambiguate floating
+ * points from integers and records from maps. To support BigQuery, the decoder
+ * uses unions to enforce required fields and will fail on variant-types.
+ * Additionally, field names are renamed to match the column-name rules for
+ * BigQuery tables. The source JSON schemas can be underspecified or overly
+ * complex. In such cases, the transpiler will cast fields into strings. This
+ * encoder supports encoding tree-nodes into strings when guided by the provided
+ * schema.
+ *
+ * <p>This class shares some code from the JsonDecoder class. The original class
+ * cannot be extended outside of the Avro package. The algorithm for buffering
+ * object fields in the streaming parser and general coding style is borrowed
+ * from the source in [4]. One significant improvement to readability is to use
+ * Jackson's TokenBuffer to replay the JSON parser when needed.
+ *
+ * <p>[1] https://issues.apache.org/jira/browse/AVRO-1582
+ * [2] https://github.com/acmiyaguchi/jsonschema-transpiler
+ * [3] https://cloud.google.com/bigquery/docs/loading-data-cloud-storage-avro
+ * [4] https://github.com/apache/avro/blob/branch-1.8/lang/java/avro/src/main/java/org/apache/avro/io/JsonDecoder.java
+ */
 public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHandler {
 
   private JsonParser in;
@@ -48,6 +86,9 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     this(new JsonGrammarGenerator().generate(schema), in);
   }
 
+  /**
+   * Create a GuidedJsonDecoder from an InputStream.
+   */
   public GuidedJsonDecoder configure(InputStream in) throws IOException {
     if (null == in) {
       throw new NullPointerException("InputStream to read cannot be null!");
@@ -349,19 +390,19 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     parser.advance(Symbol.UNION);
     Symbol.Alternative top = (Symbol.Alternative) parser.popSymbol();
 
-    int null_index = top.findLabel("null");
-    int type_index = null_index == 0 ? 1 : 0;
+    int nullIndex = top.findLabel("null");
+    int typeIndex = nullIndex == 0 ? 1 : 0;
 
     // Variants of concrete types (non-null) are invalid. We enforce this by
     // ensuring there are no more than 2 elements and that at least one of them
     // is null if there are 2. Unions are required to be non-empty.
     // Ok: [null], [type], [null, type]
     // Bad: [type, type], [null, type, type]
-    if ((null_index < 0 && top.size() == 2) || (top.size() > 2)) {
+    if ((nullIndex < 0 && top.size() == 2) || (top.size() > 2)) {
       throw new AvroTypeException("Variant types are not supported.");
     }
 
-    int index = in.getCurrentToken() == JsonToken.VALUE_NULL ? null_index : type_index;
+    int index = in.getCurrentToken() == JsonToken.VALUE_NULL ? nullIndex : typeIndex;
     parser.pushSymbol(top.getSymbol(index));
     return index;
   }

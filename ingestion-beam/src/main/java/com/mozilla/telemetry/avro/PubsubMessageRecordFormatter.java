@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-
 import org.apache.avro.AvroTypeException;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -18,6 +16,7 @@ import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.Decoder;
 import org.apache.beam.sdk.io.AvroIO.RecordFormatter;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 /**
  * Encodes an incoming message into a generic avro record.

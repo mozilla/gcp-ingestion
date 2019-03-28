@@ -4,17 +4,17 @@
 
 package com.mozilla.telemetry.avro;
 
-import org.apache.avro.Schema;
-import org.apache.avro.SchemaBuilder;
-import org.apache.avro.generic.GenericArray;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
+
+import org.apache.avro.Schema;
+import org.apache.avro.SchemaBuilder;
+import org.apache.avro.generic.GenericArray;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -56,7 +56,7 @@ public class PubsubMessageRecordFormatterTest {
     GenericRecord record = formatter.formatRecord(message, schema);
 
     assertEquals(true, record.get("test_bool"));
-    assertEquals(-7l, record.get("test_long"));
+    assertEquals(-7L, record.get("test_long"));
     assertEquals(0.99, record.get("test_double"));
     assertEquals("hello world", record.get("test_string").toString());
   }
@@ -174,8 +174,8 @@ public class PubsubMessageRecordFormatterTest {
         .booleanType().noDefault().endRecord();
     Schema schema = SchemaBuilder //
         .record("root").fields() //
-        .name("test_none").type().unionOf().nullType().and().type(subschema).endUnion().noDefault() //
-        .name("test_some").type().unionOf().nullType().and().type(subschema).endUnion().noDefault() //
+        .name("test_none").type().unionOf().nullType().and().type(subschema).endUnion().noDefault()
+        .name("test_some").type().unionOf().nullType().and().type(subschema).endUnion().noDefault()
         .endRecord();
 
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
@@ -186,7 +186,7 @@ public class PubsubMessageRecordFormatterTest {
   }
 
   @Test
-  public void testFormatCastsFieldsToJSONString() {
+  public void testFormatCastsFieldsToJsonString() {
     byte[] data = new JSONObject() //
         .put("test_bool", true) //
         .put("test_long", -7) //
