@@ -122,14 +122,12 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
         in = ctx.jp;
         ctx.jp = null;
       }
-    } else if (top == Symbol.RECORD_END || top == Symbol.UNION_END) {
+    } else if (top == Symbol.RECORD_END) {
       // Find the end of the object and return to the last saved context
       while (in.getCurrentToken() != JsonToken.END_OBJECT) {
         in.nextToken();
       }
-      if (top == Symbol.RECORD_END) {
-        recordStack.pop();
-      }
+      recordStack.pop();
       in.nextToken();
     } else {
       throw new AvroTypeException("Unknown action symbol " + top);
@@ -333,22 +331,19 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     parser.advance(Symbol.UNION);
     Symbol.Alternative top = (Symbol.Alternative) parser.popSymbol();
 
-    String label = null;
-    if (in.getCurrentToken() == JsonToken.VALUE_NULL) {
-      label = "null";
-    } else if (in.getCurrentToken() == JsonToken.START_OBJECT
-        && in.nextToken() == JsonToken.FIELD_NAME) {
-      label = in.getValueAsString();
-      in.nextToken();
-      parser.pushSymbol(Symbol.UNION_END);
-    } else {
-      error(in.getCurrentToken(), "start-union");
+    int null_index = top.findLabel("null");
+    int type_index = null_index == 0 ? 1 : 0;
+
+    // Variants of concrete types (non-null) are invalid. We enforce this by
+    // ensuring there are no more than 2 elements and that at least one of them
+    // is null if there are 2. Unions are required to be non-empty.
+    // Ok: [null], [type], [null, type]
+    // Bad: [type, type], [null, type, type]
+    if ((null_index < 0 && top.size() == 2) || (top.size() > 2)) {
+      throw new AvroTypeException("Variant types are not supported.");
     }
 
-    int index = top.findLabel(label);
-    if (index < 0) {
-      throw new AvroTypeException("Unknown union branch " + label);
-    }
+    int index = in.getCurrentToken() == JsonToken.VALUE_NULL ? null_index : type_index;
     parser.pushSymbol(top.getSymbol(index));
     return index;
   }

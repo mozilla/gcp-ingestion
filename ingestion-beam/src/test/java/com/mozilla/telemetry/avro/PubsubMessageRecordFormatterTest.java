@@ -163,6 +163,29 @@ public class PubsubMessageRecordFormatterTest {
   }
 
   @Test
+  public void testFormatNullableObject() {
+    byte[] data = new JSONObject() //
+        .put("test_none", JSONObject.NULL) //
+        .put("test_some", new JSONObject().put("test_field", true)) //
+        .toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema subschema = SchemaBuilder.record("test_object").fields().name("test_field").type()
+        .booleanType().noDefault().endRecord();
+    Schema schema = SchemaBuilder //
+        .record("root").fields() //
+        .name("test_none").type().unionOf().nullType().and().type(subschema).endUnion().noDefault() //
+        .name("test_some").type().unionOf().nullType().and().type(subschema).endUnion().noDefault() //
+        .endRecord();
+
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(null, record.get("test_none"));
+    assertEquals(true, ((GenericRecord) record.get("test_some")).get("test_field"));
+  }
+
+  @Test
   public void testFormatCastsFieldsToJSONString() {
     byte[] data = new JSONObject() //
         .put("test_bool", true) //
