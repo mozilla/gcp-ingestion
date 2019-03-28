@@ -55,10 +55,10 @@ import org.apache.avro.util.Utf8;
  * to code conciseness is to use Jackson's TokenBuffer to replay the JSON parser
  * when needed.
  *
- * <p>[1] https://issues.apache.org/jira/browse/AVRO-1582
- * [2] https://github.com/acmiyaguchi/jsonschema-transpiler
- * [3] https://cloud.google.com/bigquery/docs/loading-data-cloud-storage-avro
- * [4] https://github.com/apache/avro/blob/branch-1.8/lang/java/avro/src/main/java/org/apache/avro/io/JsonDecoder.java
+ * <li> [1] https://issues.apache.org/jira/browse/AVRO-1582
+ * <li> [2] https://github.com/acmiyaguchi/jsonschema-transpiler
+ * <li> [3] https://cloud.google.com/bigquery/docs/loading-data-cloud-storage-avro
+ * <li> [4] https://github.com/apache/avro/blob/branch-1.8/lang/java/avro/src/main/java/org/apache/avro/io/JsonDecoder.java
  */
 public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHandler {
 
@@ -141,13 +141,13 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
    * encoder to maintain state and provides an entrypoint for modifying the
    * underlying stack machine.
    *
-   * The generating grammar is LL(1), reading the schema in a top-down,
+   * <p>The generating grammar is LL(1), reading the schema in a top-down,
    * left-most order. The ordering of fields in JSON is arbitrary, so the fields
    * must be cached to provide random access when using the streaming JsonParser
    * API. The TokenBuffer stores JsonTokens for replaying, which is more
    * efficient than reparsing or using the ObjectMapper.
    *
-   * An example of behavior can be visualized using a binary-tree. `[[1, [2,
+   * <p>An example of behavior can be visualized using a binary-tree. `[[1, [2,
    * 3]], [4, [5, 6]]` generates the sequence `[1, 2, 3, 4, 5, 6]` when read
    * top-down, left to right. This is the order that the schema is read in as.
    * If the document is serialized in the same order, then there is no need for
@@ -156,7 +156,7 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
    * Tracing the behavior reveals that complexity is O(N) in cached tokens and
    * O(2N) in the total number of read tokens when the tree is binary.
    *
-   * The context stack could be used to generate a view of the residue fields
+   * <p>The context stack could be used to generate a view of the residue fields
    * given the right set of symbols and modification to the schema.
    */
   @Override
@@ -297,12 +297,12 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
   /**
    * Read a string from the current location in parser.
    *
-   * This method differs from the original JsonDecoder by serializing all
+   * <p>This method differs from the original JsonDecoder by serializing all
    * structures captured by the current token into a JSON string. This enables
    * consistent behavior for handling variant types (e.g. field that can be a
    * boolean and a string) and for under-specified schemas.
    *
-   * This encoding is lossy because JSON strings are conflated with standard
+   * <p>This encoding is lossy because JSON strings are conflated with standard
    * strings. Consider the case where a number is decoded into a string. To
    * convert this Avro file back into the original JSON document, the encoder
    * must parse all strings as JSON and inline them into the tree. Now, if the
@@ -310,7 +310,7 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
    * "{\"foo\":\"bar\"}"`), then the encoder will generate a new object that is
    * different from the original.
    *
-   * There are a few ways to avoid this if it is undesirable. One way is to use
+   * <p>There are a few ways to avoid this if it is undesirable. One way is to use
    * a binary encoding for the JSON data such as BSON or base64. A second is to
    * normalize documents to avoid nested JSON encodings and to specify a schema
    * explictly to guide the proper typing.
@@ -446,18 +446,18 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
   /**
    * Find the index in the union of the current variant.
    *
-   * This method only supports a single nullable type. Having more than a single
+   * <p>This method only supports a single nullable type. Having more than a single
    * type is invalid in this case and will cause the decoder to panic. This
    * behavior is by design, since BigQuery does not support variant types in
    * columns. It is also inefficient to match sub-documents against various
    * types, given the streaming interface and bias towards performance.
    *
-   * Variants of non-null types are invalid. We enforce this by ensuring there
+   * <p>Variants of non-null types are invalid. We enforce this by ensuring there
    * are no more than 2 elements and that at least one of them is null if there
    * are 2. Unions are required to be non-empty.
    *
-   * Ok: [null], [type], [null, type]
-   * Bad: [type, type], [null, type, type]
+   * <li> Ok: [null], [type], [null, type]
+   * <li> Bad: [type, type], [null, type, type]
    */
   @Override
   public int readIndex() throws IOException {
