@@ -214,7 +214,7 @@ public class PubsubMessageRecordFormatterTest {
     assertEquals("0.99", record.get("test_double").toString());
     assertEquals("hello world", record.get("test_string").toString());
     assertEquals("{\"test_field\":true}", record.get("test_object").toString());
-    assertEquals("[1,2,3]", record.get("test_string").toString());
+    assertEquals("[1,2,3]", record.get("test_array").toString());
   }
 
   @Test

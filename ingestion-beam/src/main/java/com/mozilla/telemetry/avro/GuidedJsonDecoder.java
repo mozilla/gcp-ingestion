@@ -10,6 +10,7 @@ import java.util.Stack;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.TokenBuffer;
 
 import org.apache.avro.AvroTypeException;
@@ -24,6 +25,7 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
 
   private JsonParser in;
   private static JsonFactory jsonFactory = new JsonFactory();
+  private static ObjectMapper mapper = new ObjectMapper(jsonFactory);
 
   // A helper data-structure for random access to various fields. The generating grammar
   // is LL(1), so we can expect to re-read the tree several times depending on the ordering
@@ -209,11 +211,18 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     if (parser.topSymbol() == Symbol.MAP_KEY_MARKER) {
       parser.advance(Symbol.MAP_KEY_MARKER);
       assertCurrentToken(JsonToken.FIELD_NAME, "map-key");
-    } else {
-      assertCurrentToken(JsonToken.VALUE_STRING, "string");
     }
 
-    String result = in.getValueAsString();
+    String result = null;
+    if (in.getCurrentToken() == JsonToken.VALUE_STRING || in.getCurrentToken() == JsonToken.FIELD_NAME) {
+        result = in.getValueAsString();
+    } else {
+        // Does this create excessive garbage collection?
+        TokenBuffer buffer = new TokenBuffer(in);
+        buffer.copyCurrentStructure(in);
+        result = mapper.readTree(buffer.asParser()).toString();
+        buffer.close();
+    }
     in.nextToken();
     return result;
   }
