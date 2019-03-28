@@ -29,7 +29,7 @@ import org.apache.avro.util.Utf8;
  * A custom JSON decoder based on the Parsing JsonDecoder in the
  * `org.apache.avro.io.JsonDecoder` package.
  *
- * <p>The default JsonDecoder (as of Avro 1.8.2) does support ingestion of JSON
+ * <p>The default JsonDecoder (as of Avro 1.8.2) doesn't support ingestion of JSON
  * documents where casting of values are inferred from the provided schema (see
  * AVRO-1582 [1]). Instead, the decoder expects values that are emitted by the
  * JsonEncoder in the form `{"NAME": {"TYPE": "VALUE"}}`. While this enables a
@@ -49,10 +49,11 @@ import org.apache.avro.util.Utf8;
  * schema.
  *
  * <p>This class shares some code from the JsonDecoder class. The original class
- * cannot be extended outside of the Avro package. The algorithm for buffering
- * object fields in the streaming parser and general coding style is borrowed
- * from the source in [4]. One significant improvement to readability is to use
- * Jackson's TokenBuffer to replay the JSON parser when needed.
+ * does not allow protected access to the parser that drives the decoder. The
+ * algorithm for buffering object fields in the streaming parser and general
+ * coding style is borrowed from the source in [4]. One significant improvement
+ * to code conciseness is to use Jackson's TokenBuffer to replay the JSON parser
+ * when needed.
  *
  * <p>[1] https://issues.apache.org/jira/browse/AVRO-1582
  * [2] https://github.com/acmiyaguchi/jsonschema-transpiler
@@ -65,10 +66,9 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
   private static JsonFactory jsonFactory = new JsonFactory();
   private static ObjectMapper mapper = new ObjectMapper(jsonFactory);
 
-  // A helper data-structure for random access to various fields. The generating grammar
-  // is LL(1), so we can expect to re-read the tree several times depending on the ordering
-  // of the document. We could also serialize the tree directly -- we would need to keep
-  // track of the current element in the tree however.
+  // A helper data-structure for random access to various fields. The generating
+  // grammar is LL(1), so we can expect to re-read the tree several times
+  // depending on the ordering of the document.
   Stack<Context> recordStack = new Stack<>();
 
   private static class Context {
@@ -120,6 +120,14 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     error(token, type);
   }
 
+  /**
+   * Rename a field to conform to match the regex `^[a-zA-Z_][a-ZA-Z0-9_]*`. In
+   * particular, replace periods and dashes with underscores and prefix names
+   * that start with numbers.
+   *
+   * @param name the original field name in the JSON document
+   * @return a formatted name
+   */
   protected String renameField(String name) {
     String result = name.replace('.', '_').replace('-', '_');
     if (Character.isDigit(result.charAt(0))) {
@@ -128,19 +136,47 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     return result;
   }
 
+  /**
+   * Implements the action handler for the Parser. Implicit actions allow the
+   * encoder to maintain state and provides an entrypoint for modifying the
+   * underlying stack machine.
+   *
+   * The generating grammar is LL(1), reading the schema in a top-down,
+   * left-most order. The ordering of fields in JSON is arbitrary, so the fields
+   * must be cached to provide random access when using the streaming JsonParser
+   * API. The TokenBuffer stores JsonTokens for replaying, which is more
+   * efficient than reparsing or using the ObjectMapper.
+   *
+   * An example of behavior can be visualized using a binary-tree. `[[1, [2,
+   * 3]], [4, [5, 6]]` generates the sequence `[1, 2, 3, 4, 5, 6]` when read
+   * top-down, left to right. This is the order that the schema is read in as.
+   * If the document is serialized in the same order, then there is no need for
+   * caching within the stack and the document is read in O(N) tokens. The
+   * worst-case behavior occurs with this tree: `[[2, [6, 5]], [1, [3, 2]]]`.
+   * Tracing the behavior reveals that complexity is O(N) in cached tokens and
+   * O(2N) in the total number of read tokens when the tree is binary.
+   *
+   * The context stack could be used to generate a view of the residue fields
+   * given the right set of symbols and modification to the schema.
+   */
   @Override
   public Symbol doAction(Symbol input, Symbol top) throws IOException {
     if (top == Symbol.RECORD_START) {
+      // Prepare for a new level of nesting by pushing onto the stack. The top
+      // of the stack is the current depth in the document that the JsonParser
+      // currently points to.
       assertCurrentToken(JsonToken.START_OBJECT, "record-start");
-      // Create a new layer of context
       recordStack.push(new Context());
       in.nextToken();
     } else if (top instanceof Symbol.FieldAdjustAction) {
+      // Action the starts the process of reading data into a field as specified
+      // by the DatumReader.
       Symbol.FieldAdjustAction fa = (Symbol.FieldAdjustAction) top;
       Context ctx = recordStack.peek();
 
+      // The decoder may have already parsed the field value of interest. It
+      // performs a context switch and replays the cached content.
       TokenBuffer buffer = ctx.record.get(fa.fname);
-      // We already read the field, context switch to it
       if (buffer != null) {
         ctx.record.remove(fa.fname);
         ctx.jp = in;
@@ -148,7 +184,8 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
         in.nextToken();
         return null;
       }
-      // Keep streaming the document, caching fields that aren't relevant now
+      // The parser continues to stream the document, caching the raw tokens into
+      // replayable buffers.
       if (in.getCurrentToken() == JsonToken.FIELD_NAME) {
         do {
           String name = renameField(in.getValueAsString());
@@ -156,8 +193,8 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
           if (fa.fname.equals(name)) {
             return null;
           }
-          // Make a copy of the current structure, which moves the current token
-          // stream to the last event that was copied. Then increment to the
+          // Make a copy of the current JSON structure, which moves the current
+          // parser to the last event that was copied. Then increment to the
           // next FIELD_NAME.
           buffer = new TokenBuffer(in);
           buffer.copyCurrentStructure(in);
@@ -167,14 +204,17 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
         throw new AvroTypeException("Expected field name not found: " + fa.fname);
       }
     } else if (top == Symbol.FIELD_END) {
-      // Context switch to the original json parser
+      // The decoder has reached the end of a field. We switch back into the
+      // original parser and continue.
       Context ctx = recordStack.peek();
       if (ctx.jp != null) {
         in = ctx.jp;
         ctx.jp = null;
       }
     } else if (top == Symbol.RECORD_END) {
-      // Find the end of the object and return to the last saved context
+      // The decoder has read all of the fields that are specified in the
+      // schema. It skips any remaining fields in the parser and then returns to
+      // the previous level of nesting.
       while (in.getCurrentToken() != JsonToken.END_OBJECT) {
         in.nextToken();
       }
@@ -254,6 +294,27 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     return new Utf8(readString());
   }
 
+  /**
+   * Read a string from the current location in parser.
+   *
+   * This method differs from the original JsonDecoder by serializing all
+   * structures captured by the current token into a JSON string. This enables
+   * consistent behavior for handling variant types (e.g. field that can be a
+   * boolean and a string) and for under-specified schemas.
+   *
+   * This encoding is lossy because JSON strings are conflated with standard
+   * strings. Consider the case where a number is decoded into a string. To
+   * convert this Avro file back into the original JSON document, the encoder
+   * must parse all strings as JSON and inline them into the tree. Now, if the
+   * original JSON represents a JSON object as a string (e.g. `{"payload":
+   * "{\"foo\":\"bar\"}"`), then the encoder will generate a new object that is
+   * different from the original.
+   *
+   * There are a few ways to avoid this if it is undesirable. One way is to use
+   * a binary encoding for the JSON data such as BSON or base64. A second is to
+   * normalize documents to avoid nested JSON encodings and to specify a schema
+   * explictly to guide the proper typing.
+   */
   @Override
   public String readString() throws IOException {
     parser.advance(Symbol.STRING);
@@ -382,22 +443,30 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
     throw new UnsupportedOperationException();
   }
 
+  /**
+   * Find the index in the union of the current variant.
+   *
+   * This method only supports a single nullable type. Having more than a single
+   * type is invalid in this case and will cause the decoder to panic. This
+   * behavior is by design, since BigQuery does not support variant types in
+   * columns. It is also inefficient to match sub-documents against various
+   * types, given the streaming interface and bias towards performance.
+   *
+   * Variants of non-null types are invalid. We enforce this by ensuring there
+   * are no more than 2 elements and that at least one of them is null if there
+   * are 2. Unions are required to be non-empty.
+   *
+   * Ok: [null], [type], [null, type]
+   * Bad: [type, type], [null, type, type]
+   */
   @Override
   public int readIndex() throws IOException {
-    // The schema transpiler collapses all uses of unions that specify variant
-    // types. The remaining unions are used to distinguish required/nullable
-    // fields in records.
     parser.advance(Symbol.UNION);
     Symbol.Alternative top = (Symbol.Alternative) parser.popSymbol();
 
     int nullIndex = top.findLabel("null");
     int typeIndex = nullIndex == 0 ? 1 : 0;
 
-    // Variants of concrete types (non-null) are invalid. We enforce this by
-    // ensuring there are no more than 2 elements and that at least one of them
-    // is null if there are 2. Unions are required to be non-empty.
-    // Ok: [null], [type], [null, type]
-    // Bad: [type, type], [null, type, type]
     if ((nullIndex < 0 && top.size() == 2) || (top.size() > 2)) {
       throw new AvroTypeException("Variant types are not supported.");
     }
