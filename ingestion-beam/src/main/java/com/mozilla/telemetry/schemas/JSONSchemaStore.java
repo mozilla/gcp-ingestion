@@ -16,13 +16,18 @@ import org.json.JSONObject;
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class JSONSchemaStore extends SchemaStore<Schema> {
 
-  /** Returns a SchemaStore based on the contents of the archive at schemasLocation. */
-  public static JSONSchemaStore of(ValueProvider<String> schemasLocation) {
-    return new JSONSchemaStore(schemasLocation);
+  /**
+   * Returns a SchemaStore based on the contents of the archive at schemasLocation
+   * with additional schemas aliased according to configuration.
+   */
+  public static JSONSchemaStore of(ValueProvider<String> schemasLocation,
+      ValueProvider<String> schemaAliasesLocation) {
+    return new JSONSchemaStore(schemasLocation, schemaAliasesLocation);
   }
 
-  protected JSONSchemaStore(ValueProvider<String> schemasLocation) {
-    super(schemasLocation);
+  protected JSONSchemaStore(ValueProvider<String> schemasLocation,
+      ValueProvider<String> schemaAliasesLocation) {
+    super(schemasLocation, schemaAliasesLocation);
   }
 
   @Override

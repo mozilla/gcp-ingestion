@@ -31,8 +31,9 @@ import org.json.JSONObject;
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
-  public static ParsePayload of(ValueProvider<String> schemasLocation) {
-    return new ParsePayload(schemasLocation);
+  public static ParsePayload of(ValueProvider<String> schemasLocation,
+      ValueProvider<String> schemaAliasesLocation) {
+    return new ParsePayload(schemasLocation, schemaAliasesLocation);
   }
 
   ////////
@@ -43,12 +44,15 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       "json_validate_millis");
 
   private final ValueProvider<String> schemasLocation;
+  private final ValueProvider<String> schemaAliasesLocation;
 
   private transient Validator validator;
   private transient JSONSchemaStore schemaStore;
 
-  private ParsePayload(ValueProvider<String> schemasLocation) {
+  private ParsePayload(ValueProvider<String> schemasLocation,
+      ValueProvider<String> schemaAliasesLocation) {
     this.schemasLocation = schemasLocation;
+    this.schemaAliasesLocation = schemaAliasesLocation;
   }
 
   @Override
@@ -58,7 +62,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
     if (schemaStore == null) {
-      schemaStore = JSONSchemaStore.of(schemasLocation);
+      schemaStore = JSONSchemaStore.of(schemasLocation, schemaAliasesLocation);
     }
 
     final int submissionBytes = message.getPayload().length;

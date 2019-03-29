@@ -30,13 +30,16 @@ public class ParsePayloadTest {
   @Test
   public void testOutput() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode()).output()
-        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-            .via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of(
-                "document_namespace", "test", "document_type", "test", "document_version", "1"))))
-        .apply(ParsePayload.of(schemasLocation));
+        .apply("AddAttributes",
+            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+                .via(element -> new PubsubMessage(element.getPayload(),
+                    ImmutableMap.of("document_namespace", "test", "document_type", "test",
+                        "document_version", "1"))))
+        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
     final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}");
     final PCollection<String> main = output.output().apply("encodeTextMain",
@@ -54,6 +57,7 @@ public class ParsePayloadTest {
   @Test
   public void testErrors() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
     final List<String> input = Arrays.asList(
         // non-json payload
         "{\"attributeMap\":" + "{\"document_namespace\":\"eng-workflow\""
@@ -69,7 +73,7 @@ public class ParsePayloadTest {
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //
-        .apply(ParsePayload.of(schemasLocation));
+        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
@@ -86,6 +90,7 @@ public class ParsePayloadTest {
   @Test
   public void testVersionInPayload() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
     // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
     String input = "{\"attributeMap\":" + "{\"document_namespace\":\"telemetry\""
@@ -93,7 +98,8 @@ public class ParsePayloadTest {
         + ",\"document_type\":\"main\"" + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.json.decode()).output().apply(ParsePayload.of(schemasLocation));
+        .apply(InputFileFormat.json.decode()).output()
+        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
@@ -110,6 +116,7 @@ public class ParsePayloadTest {
   @Test
   public void testMetadataInPayload() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
     String input = "{\"id\":null,\"metadata\":"
         + "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":1}}";
@@ -117,7 +124,7 @@ public class ParsePayloadTest {
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.text.decode()).output() //
-        .apply(ParsePayload.of(schemasLocation));
+        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
     PAssert.that(result.errors()).empty();
 

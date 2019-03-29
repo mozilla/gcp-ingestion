@@ -17,7 +17,7 @@ public class AvroSchemaStore extends SchemaStore<Schema> {
   }
 
   protected AvroSchemaStore(ValueProvider<String> schemasLocation) {
-    super(schemasLocation);
+    super(schemasLocation, null);
   }
 
   @Override

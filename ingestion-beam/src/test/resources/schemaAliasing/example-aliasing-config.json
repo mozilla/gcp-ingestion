@@ -1,0 +1,12 @@
+{
+  "aliases": [
+    {
+      "alias": "some-product/baseline",
+      "base": "glean/baseline"
+    },
+    {
+      "alias": "some-product/some-doctype",
+      "base": "glean/metrics"
+    }
+  ]
+}
