@@ -40,7 +40,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
   @VisibleForTesting
   public static class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
 
-    private final Counter countPipelineProxy = Metrics.counter(Fn.class, "count_pipeline_proxy");
+    private final Counter countPipelineProxy = Metrics.counter(Fn.class, "pipeline_proxy");
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
