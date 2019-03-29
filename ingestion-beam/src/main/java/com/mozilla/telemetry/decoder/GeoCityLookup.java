@@ -71,7 +71,6 @@ public class GeoCityLookup
     private final Counter countGeoAlreadyApplied = Metrics.counter(Fn.class, "geo_already_applied");
     private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip_from_x_forwarded_for");
     private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip_from_remote_addr");
-    private final Counter countPipelineProxy = Metrics.counter(Fn.class, "count_pipeline_proxy");
     private final Counter foundIp = Metrics.counter(Fn.class, "found_ip");
     private final Counter foundCity = Metrics.counter(Fn.class, "found_city");
     private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found_city_allowed");
@@ -105,20 +104,10 @@ public class GeoCityLookup
           // forwarding rule IP to any existing content in X-Forwarded-For as documented in:
           // https://cloud.google.com/load-balancing/docs/https/#components
           //
-          // If the request is forwarded from the old AWS infrastructure, X-Pipeline-Proxy will be
-          // set and we expect one or more IPs at the front of X-Forwarded-For. In practice, many
-          // of the "first" addresses are bogus or internal, so we target the "last" address
-          // before the GCP global forwarding rule IP and the tee proxy (if present).
+          // In practice, many of the "first" addresses are bogus or internal,
+          // so we target the immediate sending client IP.
           String[] ips = xff.split("\\s*,\\s*");
-          int xffTargetIndex;
-          if (attributes.containsKey("x_pipeline_proxy")) {
-            // Use the ip reported by the proxy load balancer
-            xffTargetIndex = ips.length - 3;
-            countPipelineProxy.inc();
-          } else {
-            xffTargetIndex = ips.length - 2;
-          }
-          ip = ips[Math.max(xffTargetIndex, 0)];
+          ip = ips[Math.max(ips.length - 2, 0)];
           countIpForwarded.inc();
         } else {
           ip = attributes.getOrDefault("remote_addr", "");
