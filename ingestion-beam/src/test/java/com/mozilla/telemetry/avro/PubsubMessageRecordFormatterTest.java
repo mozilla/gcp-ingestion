@@ -163,6 +163,49 @@ public class PubsubMessageRecordFormatterTest {
   }
 
   @Test
+  public void testFormatNullAsBooleanWithBooleanDefault() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("test", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().booleanType().booleanDefault(false) //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(false, record.get("test"));
+  }
+
+  @Test
+  public void testFormatMissingAsBooleanWithBooleanDefault() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().booleanType().and().nullType().endUnion()
+        .booleanDefault(true) //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(true, record.get("test"));
+  }
+
+  @Test
+  public void testFormatMissingAsBooleanWithNullDefault() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(null, record.get("test"));
+  }
+
+  @Test
   public void testFormatNullableObject() {
     byte[] data = new JSONObject() //
         .put("test_none", JSONObject.NULL) //
