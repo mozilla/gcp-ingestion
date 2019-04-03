@@ -6,8 +6,8 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -27,8 +27,6 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
 
   /////////
 
-  private static final SimpleDateFormat TIMESTAMP_FORMAT = new SimpleDateFormat(
-      "yyyy-MM-dd'T'hh:mm:ss.SSSSSS'Z'");
   private static final String PROXY_TIMESTAMP = "proxy_timestamp";
   private static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
   private static final String X_FORWARDED_FOR = "x_forwarded_for";
@@ -55,8 +53,8 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
         // Check if X-Pipeline-Proxy is a timestamp
         boolean proxyIsTimestamp = true;
         try {
-          TIMESTAMP_FORMAT.parse(xpp);
-        } catch (ParseException ignore) {
+          DateTimeFormatter.ISO_INSTANT.parse(xpp);
+        } catch (DateTimeParseException ignore) {
           proxyIsTimestamp = false;
         }
 
