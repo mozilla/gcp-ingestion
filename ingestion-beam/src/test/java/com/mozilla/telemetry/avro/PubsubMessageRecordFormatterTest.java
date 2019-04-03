@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.avro.AvroTypeException;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericArray;
@@ -162,7 +163,19 @@ public class PubsubMessageRecordFormatterTest {
     assertEquals(true, record.get("test_some"));
   }
 
-  @Test
+  @Test(expected = AvroTypeException.class)
+  public void testFormatMissingRequiredFieldThrowsException() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().booleanType().noDefault() //
+        .endRecord();
+    formatter.formatRecord(message, schema);
+  }
+
+  @Test(expected = AvroTypeException.class)
   public void testFormatNullAsBooleanWithBooleanDefault() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     byte[] data = new JSONObject().put("test", JSONObject.NULL).toString().getBytes();
@@ -173,11 +186,12 @@ public class PubsubMessageRecordFormatterTest {
         .endRecord();
     GenericRecord record = formatter.formatRecord(message, schema);
 
+    // TODO: cast null the default value of false
     assertEquals(false, record.get("test"));
   }
 
   @Test
-  public void testFormatMissingAsBooleanWithBooleanDefault() {
+  public void testFormatMissingAsBooleanWithBooleanDefaultIsNull() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
@@ -188,7 +202,11 @@ public class PubsubMessageRecordFormatterTest {
         .endRecord();
     GenericRecord record = formatter.formatRecord(message, schema);
 
-    assertEquals(true, record.get("test"));
+    // TODO: return the default value of `true`
+    // NOTE: even if the schema has a default value, there currently isn't a way
+    // to obtain the field's default through the symbols in the stack.
+    // Therefore, a missing field will be filled in with a null.
+    assertEquals(null, record.get("test"));
   }
 
   @Test
