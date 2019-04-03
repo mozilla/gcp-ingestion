@@ -7,6 +7,7 @@ package com.mozilla.telemetry;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.transforms.PublishBundleMetrics;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -52,6 +53,7 @@ public class Sink {
     pipeline //
         .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
+        .apply(PublishBundleMetrics.of()) //
         .apply(options.getOutputType().write(options)).errorsTo(errorCollections);
 
     PCollectionList.of(errorCollections) //
