@@ -224,6 +224,38 @@ public class PubsubMessageRecordFormatterTest {
   }
 
   @Test
+  public void testFormatMissingMultipleAsBooleanWithNull() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .name("test2").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(null, record.get("test"));
+    assertEquals(null, record.get("test2"));
+  }
+
+  @Test
+  public void testFormatEmptyObjectAsBooleanWithNull() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .name("test2").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(null, record.get("test"));
+    assertEquals(null, record.get("test2"));
+  }
+
+  @Test
   public void testFormatNullableObject() {
     byte[] data = new JSONObject() //
         .put("test_none", JSONObject.NULL) //
