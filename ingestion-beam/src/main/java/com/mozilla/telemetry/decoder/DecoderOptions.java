@@ -45,6 +45,13 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setSchemasLocation(ValueProvider<String> value);
 
+  @Description("Path (local or gs://) to a .json file containing list of json schema aliases."
+      + " Example file: schemaAliasing/example-aliasing-config.json"
+      + " If not specified, no schemas will be aliased.")
+  ValueProvider<String> getSchemaAliasesLocation();
+
+  void setSchemaAliasesLocation(ValueProvider<String> value);
+
   @Description("Source of messages to mark as seen for deduplication. Allowed sources are:"
       + " pubsub (mark messages as seen from --deliveredMessagesSubscription),"
       + " immediate (mark messages as seen without waiting for delivery),"

@@ -5,6 +5,10 @@
 package com.mozilla.telemetry.schemas;
 
 import avro.shaded.com.google.common.annotations.VisibleForTesting;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
 import org.apache.beam.sdk.options.ValueProvider;
@@ -70,8 +75,10 @@ public abstract class SchemaStore<T> implements Serializable {
 
   ////////
 
-  protected SchemaStore(ValueProvider<String> schemasLocation) {
+  protected SchemaStore(ValueProvider<String> schemasLocation,
+      ValueProvider<String> schemaAliasesLocation) {
     this.schemasLocation = schemasLocation;
+    this.schemaAliasesLocation = schemaAliasesLocation;
   }
 
   /* Returns true on a valid schema name e.g. `document.schema.json` */
@@ -85,6 +92,8 @@ public abstract class SchemaStore<T> implements Serializable {
   private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(SchemaStore.class);
 
   private final ValueProvider<String> schemasLocation;
+  @Nullable
+  private final ValueProvider<String> schemaAliasesLocation;
   private transient Map<String, T> schemas;
   private transient Set<String> dirs;
 
@@ -131,10 +140,66 @@ public abstract class SchemaStore<T> implements Serializable {
     dirs = tempDirs;
   }
 
+  private void loadSchemaAliases() throws IOException {
+    final Set<String> tempDirs = new HashSet<>();
+    final Map<String, T> tempSchemas = new HashMap<>();
+    Multimap<String, String> schemaAliasesMap;
+    try {
+      Multimap<String, String> aliases = ArrayListMultimap.create();
+      if (schemaAliasesLocation != null && schemaAliasesLocation.isAccessible()
+          && !Strings.isNullOrEmpty(schemaAliasesLocation.get())) {
+        Metadata metadata = FileSystems.matchSingleFileSpec(schemaAliasesLocation.get());
+        InputStream configInputStream = Channels
+            .newInputStream(FileSystems.open(metadata.resourceId()));
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        SchemaAliasingConfiguration aliasingConfig = objectMapper.readValue(configInputStream,
+            SchemaAliasingConfiguration.class);
+
+        aliasingConfig.aliases().forEach((e) -> {
+          aliases.put(e.base(), e.alias());
+        });
+      }
+      schemaAliasesMap = aliases;
+    } catch (IOException e) {
+      throw new IOException("Exception thrown while fetching from configured schemaAliasesLocation",
+          e);
+    }
+
+    dirs.forEach(dir -> {
+      tempDirs.add(dir);
+      tempDirs.addAll(schemaAliasesMap.get(dir));
+    });
+
+    schemas.forEach((schemaName, schema) -> {
+      tempSchemas.put(schemaName, schema);
+
+      String[] components = schemaName.split("/");
+      String namespaceWithDocType = components[0] + "/" + components[1];
+      // if aliases are defined for current `schemaName`, assemble new aliasing path and put it to
+      // the map with original schema
+      if (schemaAliasesMap.containsKey(namespaceWithDocType)) {
+        for (String namespaceWithDocTypeAlias : schemaAliasesMap.get(namespaceWithDocType)) {
+          String docTypeWithVersion = components[components.length - 1];
+          String versionAndSuffix = docTypeWithVersion.substring(docTypeWithVersion.indexOf("."));
+
+          String docTypeAlias = namespaceWithDocTypeAlias.split("/")[1];
+          String docTypeWithVersionAlias = docTypeAlias + versionAndSuffix;
+
+          tempSchemas.put(namespaceWithDocTypeAlias + "/" + docTypeWithVersionAlias, schema);
+        }
+      }
+    });
+
+    schemas = tempSchemas;
+    dirs = tempDirs;
+  }
+
   private void ensureSchemasLoaded() {
     if (schemas == null) {
       try {
         loadAllSchemas();
+        loadSchemaAliases();
       } catch (IOException e) {
         throw new UncheckedIOException("Unexpected error while loading schemas", e);
       }
