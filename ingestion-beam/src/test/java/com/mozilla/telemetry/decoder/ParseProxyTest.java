@@ -37,6 +37,9 @@ public class ParseProxyTest {
             + "{\"x_pipeline_proxy\":1" //
             + "},\"payload\":\"proxied+\"}",
         "{\"attributeMap\":" //
+            + "{\"x_pipeline_proxy\":\"\"" //
+            + "},\"payload\":\"emptyXPP\"}",
+        "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"3, 2, 1\"" //
             + "},\"payload\":\"notProxied++\"}",
@@ -54,6 +57,7 @@ public class ParseProxyTest {
     final List<String> expected = Arrays.asList(//
         "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":{},\"payload\":\"proxied+\"}", //
+        "{\"attributeMap\":{},\"payload\":\"emptyXPP\"}", //
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"3, 2, 1\"" //
