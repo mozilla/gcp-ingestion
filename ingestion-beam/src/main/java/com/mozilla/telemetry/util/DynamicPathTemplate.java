@@ -63,7 +63,7 @@ public class DynamicPathTemplate implements Serializable {
     return placeholderNames;
   }
 
-  /** Return a mapping of placeholders to their original values. */
+  /** Return a mapping of placeholder names to the passed values. */
   public Map<String, String> getPlaceholderAttributes(List<String> values) {
     if (values.size() != placeholderNames.size()) {
       throw new IllegalArgumentException(String.format(
