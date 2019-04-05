@@ -64,7 +64,7 @@ public class DecoderMainTest {
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
         "--errorOutputType=file", "--errorOutput=" + errorOutput,
         "--geoCityDatabase=GeoLite2-City.mmdb", "--schemasLocation=schemas.tar.gz",
-        "--seenMessagesSource=none", "--errorOutputFileCompression=UNCOMPRESSED" });
+        "--errorOutputFileCompression=UNCOMPRESSED" });
 
     List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
     assertThat(errorOutputLines, Matchers.hasSize(1));
@@ -83,7 +83,7 @@ public class DecoderMainTest {
         "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
         "--geoCityDatabase=GeoLite2-City.mmdb", "--schemasLocation=schemas.tar.gz",
-        "--seenMessagesSource=none", "--redisUri=" + redis.uri });
+        "--redisUri=" + redis.uri });
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
@@ -109,7 +109,7 @@ public class DecoderMainTest {
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
         "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--geoCityDatabase=GeoLite2-City.mmdb", "--schemasLocation=schemas.tar.gz",
-        "--seenMessagesSource=none", "--redisUri=" + redis.uri });
+        "--redisUri=" + redis.uri });
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");

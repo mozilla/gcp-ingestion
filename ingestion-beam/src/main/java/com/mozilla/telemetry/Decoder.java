@@ -54,7 +54,7 @@ public class Decoder extends Sink {
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
     // Trailing comments are used below to prevent rewrapping by google-java-format.
-    PCollection<PubsubMessage> deduplicated = pipeline //
+    pipeline //
         .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
         .apply(ParseUri.of()).errorsTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
@@ -65,18 +65,8 @@ public class Decoder extends Sink {
         .apply(ParseUserAgent.of()) //
         .apply(AddMetadata.of()).errorsTo(errorCollections) //
         .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-        .sendDuplicateMetadataToErrors() //
-        .errorsTo(errorCollections);
-
-    // Write the main output collection.
-    deduplicated.apply(options.getOutputType().write(options)).errorsTo(errorCollections);
-
-    // TODO: Remove after Republisher is deployed.
-    // Mark messages as seen in Redis.
-    options
-        .getSeenMessagesSource().read(options, deduplicated).apply(Deduplicate
-            .markAsSeen(options.getParsedRedisUri(), options.getDeduplicateExpireSeconds()))
-        .errorsTo(errorCollections);
+        .sendDuplicateMetadataToErrors().errorsTo(errorCollections) //
+        .apply(options.getOutputType().write(options)).errorsTo(errorCollections);
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //
