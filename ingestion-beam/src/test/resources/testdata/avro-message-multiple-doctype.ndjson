@@ -1,0 +1,3 @@
+{"attributeMap": {"document_namespace": "namespace_0", "document_type": "foo", "document_version": 1}, "payload": "eyJ0ZXN0X2ludCI6IDF9"}
+{"attributeMap": {"document_namespace": "namespace_0", "document_type": "bar", "document_version": 1}, "payload": "eyJ0ZXN0X2ludCI6IDEsICJ0ZXN0X2V4dHJhIjogImV4dHJhIn0="}
+{"attributeMap": {"document_namespace": "namespace_1", "document_type": "baz", "document_version": 1}, "payload": "eyJ0ZXN0X251bGwiOiBudWxsfQ=="}

@@ -87,6 +87,58 @@ def write_schema_tar_gz(tar_path, schemas):
     tf.close()
 
 
+def generate_document(namespace, doctype, docver, payload):
+    document = {
+        "attributeMap": {
+            "document_namespace": namespace,
+            "document_type": doctype,
+            "document_version": docver,
+        },
+        "payload": base64.b64encode(json.dumps(payload).encode("utf-8")).decode(),
+    }
+    return json.dumps(document)
+
+
+def test_single_doctype():
+    args = [
+        ("namespace_0", "foo", 1, {"test_int": 1}),
+        ("namespace_0", "foo", 1, {"test_int": 2}),
+        ("namespace_0", "foo", 1, {"test_int": 3}),
+    ]
+    return "\n".join([generate_document(*arg) for arg in args])
+
+
+def test_multiple_doctype():
+    args = [
+        ("namespace_0", "foo", 1, {"test_int": 1}),
+        # test extra fields in the document
+        ("namespace_0", "bar", 1, {"test_int": 1, "test_extra": "extra"}),
+        ("namespace_1", "baz", 1, {"test_null": None}),
+    ]
+    return "\n".join([generate_document(*arg) for arg in args])
+
+
+def test_invalid_doctype():
+    args = [
+        ("namespace_0", "foo", 1, {"test_int": "a string"}),
+        ("namespace_57", "???", 1, {"test_int": 1}),
+    ]
+    return "\n".join([generate_document(*arg) for arg in args])
+
+
+def write_test_data(path):
+    test_cases = [
+        ("avro-message-single-doctype.ndjson", test_single_doctype),
+        ("avro-message-multiple-doctype.ndjson", test_multiple_doctype),
+        ("avro-message-invalid-doctype.ndjson", test_invalid_doctype),
+    ]
+    for name, func in test_cases:
+        logging.info("Writing {}".format(name))
+        filename = os.path.join(path, name)
+        with open(filename, "w") as f:
+            f.write(func() + "\n")
+
+
 def main(output_path):
     tar_path = os.path.join(output_path, "avro/test-schema.tar.gz")
 
@@ -96,6 +148,8 @@ def main(output_path):
         logging.info("Avro schema file contents did not change")
     else:
         write_schema_tar_gz(tar_path, AVRO_SCHEMAS)
+
+    write_test_data(os.path.join(output_path, "testdata"))
 
     logging.info("Done!")
 
