@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.io.Write;
+import com.mozilla.telemetry.io.Write.AvroOutput;
 import com.mozilla.telemetry.io.Write.BigQueryOutput;
 import com.mozilla.telemetry.io.Write.FileOutput;
 import com.mozilla.telemetry.io.Write.PrintOutput;
@@ -38,6 +39,16 @@ public enum OutputType {
       return new FileOutput(options.getOutput(), options.getOutputFileFormat(),
           options.getParsedWindowDuration(), options.getOutputNumShards(),
           options.getOutputFileCompression(), options.getInputType());
+    }
+  },
+
+  avro {
+
+    /** Return a PTransform that writes to local or remote files. */
+    public Write write(SinkOptions.Parsed options) {
+      return new AvroOutput(options.getOutput(), options.getParsedWindowDuration(),
+          options.getOutputNumShards(), options.getOutputFileCompression(), options.getInputType(),
+          options.getSchemaLocation());
     }
   },
 

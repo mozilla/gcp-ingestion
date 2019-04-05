@@ -6,23 +6,34 @@ package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.TableRow;
+import com.mozilla.telemetry.avro.BinaryRecordFormatter;
+import com.mozilla.telemetry.avro.GenericRecordBinaryEncoder;
+import com.mozilla.telemetry.avro.PubsubMessageRecordFormatter;
 import com.mozilla.telemetry.options.BigQueryWriteMethod;
 import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.schemas.AvroSchemaStore;
+import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.CompressPayload;
+import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.io.AvroIO;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
@@ -38,16 +49,26 @@ import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.transforms.DoFn.ProcessContext;
+import org.apache.beam.sdk.transforms.DoFn.ProcessElement;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.Requirements;
+import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.PCollectionView;
 import org.apache.beam.sdk.values.PDone;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.ValueInSingleWindow;
 import org.joda.time.Duration;
@@ -145,6 +166,104 @@ public abstract class Write
           .apply(write);
       return WithErrors.Result.of(PDone.in(input.getPipeline()),
           EmptyErrors.in(input.getPipeline()));
+    }
+  }
+
+  /**
+   * Implementation of writing to local or remote files.
+   *
+   * <p>For details of the intended behavior for file paths, see:
+   * https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam#output-path-specification
+   */
+  public static class AvroOutput extends Write {
+
+    private final ValueProvider<String> outputPrefix;
+    private final Duration windowDuration;
+    private final ValueProvider<Integer> numShards;
+    private final Compression compression;
+    private final InputType inputType;
+    private final AvroSchemaStore schemaStore;
+    private final PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    private final GenericRecordBinaryEncoder binaryEncoder = new GenericRecordBinaryEncoder();
+    private final BinaryRecordFormatter binaryFormatter = new BinaryRecordFormatter();
+
+    /** Public constructor. */
+    public AvroOutput(ValueProvider<String> outputPrefix, Duration windowDuration,
+        ValueProvider<Integer> numShards, Compression compression, InputType inputType,
+        ValueProvider<String> schemasLocation) {
+      this.outputPrefix = outputPrefix;
+      this.windowDuration = windowDuration;
+      this.numShards = numShards;
+      this.compression = compression;
+      this.inputType = inputType;
+      this.schemaStore = AvroSchemaStore.of(schemasLocation);
+    }
+
+    @Override
+    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+      final PCollectionView<AvroSchemaStore> schemaSideInput = input.getPipeline()
+          .apply(Create.of(schemaStore)).apply(View.asSingleton());
+
+      final TupleTag<PubsubMessage> successTag = new TupleTag<PubsubMessage>() {
+      };
+      final TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>() {
+      };
+
+      ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
+          DynamicPathTemplate::new);
+      ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
+          value -> value.staticPrefix);
+
+      ParDo.MultiOutput<PubsubMessage, PubsubMessage> intoGenericRecord = ParDo
+          .of(new DoFn<PubsubMessage, PubsubMessage>() {
+
+            @ProcessElement
+            public void processElement(ProcessContext ctx) throws SchemaNotFoundException {
+              PubsubMessage message = ctx.element();
+              Map<String, String> attributes = message.getAttributeMap();
+              try {
+                Schema schema = ctx.sideInput(schemaSideInput).getSchema(attributes);
+                GenericRecord record = formatter.formatRecord(message, schema);
+                byte[] avroPayload = binaryEncoder.encodeRecord(record, schema);
+                ctx.output(successTag, new PubsubMessage(avroPayload, attributes));
+              } catch (Exception e) {
+                ctx.output(errorTag, FailureMessage.of(this, message, e));
+              }
+            }
+          }).withSideInputs(schemaSideInput).withOutputTags(successTag, TupleTagList.of(errorTag));
+
+      FileIO.Write<List<String>, PubsubMessage> write = FileIO
+          .<List<String>, PubsubMessage>writeDynamic() //
+          .by(message -> pathTemplate.get().extractValuesFrom(message.getAttributeMap()))
+          .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())) //
+          .withCompression(compression) //
+          .via(Contextful.fn((List<String> dest, Contextful.Fn.Context ctx) -> {
+            Map<String, String> attributes = pathTemplate.get().getPlaceholderAttributes(dest);
+            Schema schema = ctx.sideInput(schemaSideInput).getSchema(attributes);
+            return AvroIO.sinkViaGenericRecords(schema, binaryFormatter);
+          }, Requirements.requiresSideInputs(schemaSideInput))) //
+          .to(staticPrefix) //
+          .withNaming(placeholderValues -> FileIO.Write
+              .defaultNaming(pathTemplate.get().replaceDynamicPart(placeholderValues), ".avro"));
+
+      if (inputType == InputType.pubsub) {
+        // Passing a ValueProvider to withNumShards disables runner-determined sharding, so we
+        // need to be careful to pass this only for streaming input (where runner-determined
+        // sharding is not an option).
+        write = write.withNumShards(numShards);
+      }
+
+      // Without this, we may run into `Inputs to Flatten had incompatible window windowFns`
+      Window<PubsubMessage> window = Window.<PubsubMessage>into(FixedWindows.of(windowDuration))
+          // We allow lateness up to the maximum Cloud Pub/Sub retention of 7 days documented in
+          // https://cloud.google.com/pubsub/docs/subscriber
+          .withAllowedLateness(Duration.standardDays(7)) //
+          .discardingFiredPanes();
+
+      PCollectionTuple results = input.apply("PubsubMessageToGenericRecord", intoGenericRecord);
+      results.get(successTag).apply(window).apply(write);
+
+      return WithErrors.Result.of(PDone.in(input.getPipeline()), results.get(errorTag));
     }
   }
 
