@@ -94,4 +94,19 @@ public class DynamicPathTemplateTest {
     assertEquals("", path.replaceDynamicPart(ImmutableList.of()));
   }
 
+  @Test
+  public void testPlaceholderNamesGetter() {
+    final DynamicPathTemplate path = new DynamicPathTemplate("${foo:-f}/${bar:-b}/${baz:-bz}");
+    assertEquals(ImmutableList.of("foo", "bar", "baz"), path.getPlaceholderNames());
+  }
+
+  @Test
+  public void testGetPlaceholderAttributes() {
+    final DynamicPathTemplate path = new DynamicPathTemplate("${foo:-f}/${bar:-b}/${baz:-bz}");
+    final ImmutableList<String> values = ImmutableList.of("one", "two", "three");
+    final ImmutableMap<String, String> expect = ImmutableMap.of("foo", "one", "bar", "two", "baz",
+        "three");
+    assertEquals(expect, path.getPlaceholderAttributes(values));
+  }
+
 }
