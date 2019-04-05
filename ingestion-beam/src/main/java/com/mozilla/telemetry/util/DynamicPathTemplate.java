@@ -34,29 +34,13 @@ public class DynamicPathTemplate implements Serializable {
   final List<String> placeholderNames;
   final List<String> placeholderDefaults;
 
-  /** Construct a template from a rawPath as passed in --output. 
-   * 
-   * <p>If useQualifiedName is passed in, the first three elements of the extracted
-   * placeholder values will contain the document namespace, type, and version
-   * in the corresponding indices. These attributes form a fully qualified name
-   * for retrieving the document's schema.
-  */
-  public DynamicPathTemplate(String rawPath, boolean useQualifiedName) {
+  /** Construct a template from a rawPath as passed in --output. */
+  public DynamicPathTemplate(String rawPath) {
     final PathSplitter pathSplitter = new PathSplitter(rawPath);
     this.staticPrefix = pathSplitter.staticPrefix;
     this.dynamicPart = pathSplitter.dynamicPart;
     this.placeholderNames = new ArrayList<>();
     this.placeholderDefaults = new ArrayList<>();
-
-    if (useQualifiedName) {
-      placeholderNames.add("document_namespace");
-      placeholderNames.add("document_type");
-      placeholderNames.add("document_version");
-      for (int i = 0; i < 3; i++) {
-        // `$.$.$` does not match any schema in the store
-        placeholderDefaults.add("$");
-      }
-    }
 
     Matcher matcher = placeholdersPattern.matcher(rawPath);
     while (matcher.find()) {
@@ -72,10 +56,6 @@ public class DynamicPathTemplate implements Serializable {
       this.placeholderDefaults.add(placeholderDefault);
     }
 
-  }
-
-  public DynamicPathTemplate(String rawPath) {
-    this(rawPath, false);
   }
 
   /** Return the dynamic part of the output path with placeholders filled in. */

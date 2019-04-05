@@ -50,10 +50,6 @@ public class DynamicPathTemplateTest {
 
     assertThat(new DynamicPathTemplate("tmp/${foo:baz-baz:-mydefault:-hi}").placeholderNames,
         is(ImmutableList.of("foo:baz-baz")));
-
-    // With fully qualified name
-    assertThat(new DynamicPathTemplate("tmp/test", true).placeholderNames,
-        is(ImmutableList.of("document_namespace", "document_type", "document_version")));
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -90,20 +86,6 @@ public class DynamicPathTemplateTest {
         "unused", "blah");
     assertThat(path.extractValuesFrom(attributes), is(ImmutableList.of("hi", "there")));
     assertThat(path.extractValuesFrom(null), is(ImmutableList.of("b", "f")));
-  }
-
-  @Test
-  public void testExtractValuesFromWithQualifiedName() {
-    final DynamicPathTemplate path = new DynamicPathTemplate("tmp/${bar:-b}/test", true);
-    final ImmutableMap<String, String> attributes = ImmutableMap.of("bar", "hi", "unused", "blah",
-        "document_namespace", "x", "document_type", "y", "document_version", "z");
-    final ImmutableMap<String, String> partialQualifiedNameAttributes = ImmutableMap
-        .of("document_type", "z");
-
-    assertThat(path.extractValuesFrom(attributes), is(ImmutableList.of("x", "y", "z", "hi")));
-    assertThat(path.extractValuesFrom(null), is(ImmutableList.of("$", "$", "$", "b")));
-    assertThat(path.extractValuesFrom(partialQualifiedNameAttributes),
-        is(ImmutableList.of("$", "z", "$", "b")));
   }
 
   @Test
