@@ -72,6 +72,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setRedisUri(ValueProvider<String> value);
 
+  // TODO: Remove after Republisher is deployed.
   @Description("Duration for which message ids should be stored for deduplication."
       + " Allowed formats are: Ns (for seconds, example: 5s),"
       + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h).")
@@ -95,6 +96,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Hidden
   interface Parsed extends DecoderOptions, SinkOptions.Parsed {
 
+    // TODO: Remove after Republisher is deployed.
     @JsonIgnore
     ValueProvider<Integer> getDeduplicateExpireSeconds();
 
@@ -121,6 +123,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
+    // TODO: Remove after Republisher is deployed.
     options
         .setDeduplicateExpireSeconds(NestedValueProvider.of(options.getDeduplicateExpireDuration(),
             value -> Ints.checkedCast(Time.parseSeconds(value))));

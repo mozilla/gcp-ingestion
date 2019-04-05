@@ -71,6 +71,7 @@ public class Decoder extends Sink {
     // Write the main output collection.
     deduplicated.apply(options.getOutputType().write(options)).errorsTo(errorCollections);
 
+    // TODO: Remove after Republisher is deployed.
     // Mark messages as seen in Redis.
     options
         .getSeenMessagesSource().read(options, deduplicated).apply(Deduplicate
