@@ -11,7 +11,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
   - [Ingestion Edge](#ingestion-edge)
   - [Landfill Sink](#landfill-sink)
   - [Decoder](#decoder)
-  - [Republisher (Not Yet Implemented)](#republisher-not-yet-implemented)
+  - [Republisher](#republisher)
   - [BigQuery Sink](#bigquery-sink)
   - [Dataset Sink](#dataset-sink)
   - [Notes](#notes)
@@ -92,7 +92,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must send messages rejected by transforms to a configurable error destination
    - Must allow error destinations in PubSub and Cloud Storage
 
-### Republisher (Not Yet Implemented)
+### Republisher
 
 - Must copy messages from PubSub topics to PubSub topics
 - Must attempt to publish the `document_id` of each consumed message to
@@ -111,8 +111,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must accept optional configuration for sampling telemetry data
   - Must accept a runtime parameter defining a topic pattern string
   - Must accept compile-time parameters defining the sampling ratio for
-    each channel (nightly, beta, and release), with the default value of
-    `0` removing the channel from the built pipeline graph
+    each channel (nightly, beta, and release)
 
 
 ### BigQuery Sink
