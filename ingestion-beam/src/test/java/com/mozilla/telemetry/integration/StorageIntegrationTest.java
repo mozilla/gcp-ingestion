@@ -125,12 +125,15 @@ public class StorageIntegrationTest {
   public void testCompileDataflowTemplate() throws Exception {
     String gcsPath = "gs://" + bucket;
 
+    String aliases = "src/test/resources/schemaAliasing/example-aliasing-config.json";
+
     Decoder.main(new String[] { "--runner=Dataflow", "--project=" + projectId,
         "--templateLocation=" + gcsPath + "/templates/TestTemplate",
         "--stagingLocation=" + gcsPath + "/temp/staging", "--inputFileFormat=json",
         "--inputType=file", "--outputFileFormat=json", "--outputType=file",
         "--errorOutputType=file", "--geoCityDatabase=GeoLite2-City.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--seenMessagesSource=none" });
+        "--schemasLocation=schemas.tar.gz", "--schemaAliasesLocation=" + aliases,
+        "--seenMessagesSource=none" });
 
   }
 

@@ -58,7 +58,8 @@ public class Decoder extends Sink {
         .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
         .apply(ParseUri.of()).errorsTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParsePayload.of(options.getSchemasLocation())).errorsTo(errorCollections) //
+        .apply(ParsePayload.of(options.getSchemasLocation(), options.getSchemaAliasesLocation())) //
+        .errorsTo(errorCollections) //
         .apply(ParseProxy.of()) //
         .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
         .apply(ParseUserAgent.of()) //
@@ -70,6 +71,7 @@ public class Decoder extends Sink {
     // Write the main output collection.
     deduplicated.apply(options.getOutputType().write(options)).errorsTo(errorCollections);
 
+    // TODO: Remove after Republisher is deployed.
     // Mark messages as seen in Redis.
     options
         .getSeenMessagesSource().read(options, deduplicated).apply(Deduplicate

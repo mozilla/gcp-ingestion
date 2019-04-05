@@ -45,6 +45,13 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setSchemasLocation(ValueProvider<String> value);
 
+  @Description("Path (local or gs://) to a .json file containing list of json schema aliases."
+      + " Example file: schemaAliasing/example-aliasing-config.json"
+      + " If not specified, no schemas will be aliased.")
+  ValueProvider<String> getSchemaAliasesLocation();
+
+  void setSchemaAliasesLocation(ValueProvider<String> value);
+
   @Description("Source of messages to mark as seen for deduplication. Allowed sources are:"
       + " pubsub (mark messages as seen from --deliveredMessagesSubscription),"
       + " immediate (mark messages as seen without waiting for delivery),"
@@ -65,6 +72,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setRedisUri(ValueProvider<String> value);
 
+  // TODO: Remove after Republisher is deployed.
   @Description("Duration for which message ids should be stored for deduplication."
       + " Allowed formats are: Ns (for seconds, example: 5s),"
       + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h).")
@@ -88,6 +96,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Hidden
   interface Parsed extends DecoderOptions, SinkOptions.Parsed {
 
+    // TODO: Remove after Republisher is deployed.
     @JsonIgnore
     ValueProvider<Integer> getDeduplicateExpireSeconds();
 
@@ -114,6 +123,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
+    // TODO: Remove after Republisher is deployed.
     options
         .setDeduplicateExpireSeconds(NestedValueProvider.of(options.getDeduplicateExpireDuration(),
             value -> Ints.checkedCast(Time.parseSeconds(value))));
