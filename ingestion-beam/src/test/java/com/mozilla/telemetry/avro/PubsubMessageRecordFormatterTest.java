@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.avro.AvroTypeException;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericArray;
@@ -160,6 +161,98 @@ public class PubsubMessageRecordFormatterTest {
 
     assertEquals(null, record.get("test_none"));
     assertEquals(true, record.get("test_some"));
+  }
+
+  @Test(expected = AvroTypeException.class)
+  public void testFormatMissingRequiredFieldThrowsException() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().booleanType().noDefault() //
+        .endRecord();
+    formatter.formatRecord(message, schema);
+  }
+
+  @Test(expected = AvroTypeException.class)
+  public void testFormatNullAsBooleanWithBooleanDefault() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("test", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().booleanType().booleanDefault(false) //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    // TODO: cast null the default value of false
+    assertEquals(false, record.get("test"));
+  }
+
+  @Test
+  public void testFormatMissingAsBooleanWithBooleanDefaultIsNull() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().booleanType().and().nullType().endUnion()
+        .booleanDefault(true) //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    // TODO: return the default value of `true`
+    // NOTE: even if the schema has a default value, there currently isn't a way
+    // to obtain the field's default through the symbols in the stack.
+    // Therefore, a missing field will be filled in with a null.
+    assertEquals(null, record.get("test"));
+  }
+
+  @Test
+  public void testFormatMissingAsBooleanWithNullDefault() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(null, record.get("test"));
+  }
+
+  @Test
+  public void testFormatMissingMultipleAsBooleanWithNull() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .name("test2").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(null, record.get("test"));
+    assertEquals(null, record.get("test2"));
+  }
+
+  @Test
+  public void testFormatEmptyObjectAsBooleanWithNull() {
+    PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
+    byte[] data = new JSONObject().toString().getBytes();
+    PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
+
+    Schema schema = SchemaBuilder.record("root").fields() //
+        .name("test").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .name("test2").type().unionOf().nullType().and().booleanType().endUnion().nullDefault() //
+        .endRecord();
+    GenericRecord record = formatter.formatRecord(message, schema);
+
+    assertEquals(null, record.get("test"));
+    assertEquals(null, record.get("test2"));
   }
 
   @Test
