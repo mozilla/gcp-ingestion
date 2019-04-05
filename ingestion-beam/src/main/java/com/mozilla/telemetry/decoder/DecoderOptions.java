@@ -5,11 +5,8 @@
 package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.options.SinkOptions;
-import com.mozilla.telemetry.util.Time;
 import java.net.URI;
-import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
@@ -52,34 +49,11 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setSchemaAliasesLocation(ValueProvider<String> value);
 
-  @Description("Source of messages to mark as seen for deduplication. Allowed sources are:"
-      + " pubsub (mark messages as seen from --deliveredMessagesSubscription),"
-      + " immediate (mark messages as seen without waiting for delivery),"
-      + " none (don't mark messages as seen, only remove messages already in redis).")
-  @Default.Enum("pubsub")
-  SeenMessagesSource getSeenMessagesSource();
-
-  void setSeenMessagesSource(SeenMessagesSource value);
-
-  @Description("PubSub subscription for a topic that contains messages delivered to --output")
-  ValueProvider<String> getDeliveredMessagesSubscription();
-
-  void setDeliveredMessagesSubscription(ValueProvider<String> value);
-
   @Description("URI of a redis server that will be used for deduplication")
   @Validation.Required
   ValueProvider<String> getRedisUri();
 
   void setRedisUri(ValueProvider<String> value);
-
-  // TODO: Remove after Republisher is deployed.
-  @Description("Duration for which message ids should be stored for deduplication."
-      + " Allowed formats are: Ns (for seconds, example: 5s),"
-      + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h).")
-  @Default.String("24h")
-  ValueProvider<String> getDeduplicateExpireDuration();
-
-  void setDeduplicateExpireDuration(ValueProvider<String> value);
 
   /*
    * Subinterface and static methods.
@@ -95,12 +69,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   @Hidden
   interface Parsed extends DecoderOptions, SinkOptions.Parsed {
-
-    // TODO: Remove after Republisher is deployed.
-    @JsonIgnore
-    ValueProvider<Integer> getDeduplicateExpireSeconds();
-
-    void setDeduplicateExpireSeconds(ValueProvider<Integer> value);
 
     @JsonIgnore
     ValueProvider<URI> getParsedRedisUri();
@@ -123,10 +91,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    // TODO: Remove after Republisher is deployed.
-    options
-        .setDeduplicateExpireSeconds(NestedValueProvider.of(options.getDeduplicateExpireDuration(),
-            value -> Ints.checkedCast(Time.parseSeconds(value))));
     options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(), URI::create));
   }
 

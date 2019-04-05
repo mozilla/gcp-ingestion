@@ -5,7 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableMap;
-import com.mozilla.telemetry.decoder.Deduplicate.RemoveDuplicates.Result;
+import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.rules.RedisServer;
 import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
@@ -31,12 +31,13 @@ public class DeduplicateTest {
 
   @Test
   public void testOutput() {
-    DecoderOptions decoderOptions = pipeline.getOptions().as(DecoderOptions.class);
-    decoderOptions.setOutputNumShards(pipeline.newProvider(1));
-    decoderOptions.setErrorOutputNumShards(pipeline.newProvider(1));
-    decoderOptions.setDeduplicateExpireDuration(pipeline.newProvider("24h"));
-    decoderOptions.setRedisUri(pipeline.newProvider(redis.uri));
-    DecoderOptions.Parsed options = DecoderOptions.parseDecoderOptions(decoderOptions);
+    RepublisherOptions republisherOptions = pipeline.getOptions().as(RepublisherOptions.class);
+    republisherOptions.setOutputNumShards(pipeline.newProvider(1));
+    republisherOptions.setErrorOutputNumShards(pipeline.newProvider(1));
+    republisherOptions.setDeduplicateExpireDuration(pipeline.newProvider("24h"));
+    republisherOptions.setRedisUri(pipeline.newProvider(redis.uri));
+    RepublisherOptions.Parsed options = RepublisherOptions
+        .parseRepublisherOptions(republisherOptions);
 
     // Create new PubsubMessage with element as document_id attribute
     final MapElements<String, PubsubMessage> mapStringsToId = MapElements
