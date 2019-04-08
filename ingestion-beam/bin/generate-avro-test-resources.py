@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import tarfile
@@ -7,6 +7,7 @@ import os
 import json
 import logging
 import base64
+import hashlib
 
 INGESTION_BEAM_ROOT = os.path.realpath(
     os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
@@ -35,8 +36,25 @@ AVRO_SCHEMAS = {
 }
 
 
-def main(output_path):
-    tar_path = os.path.join(output_path, "avro-schema-test.tar.gz")
+def tarfile_checksum(path):
+    hash = hashlib.sha1()
+    with tarfile.open(path) as tf:
+        names = sorted([x for x in tf.getnames() if x.endswith(".json")])
+        for name in names:
+            schema = tf.extractfile(name).read()
+            hash.update(schema)
+    return hash.hexdigest()
+
+
+def schema_checksum(schemas):
+    hash = hashlib.sha1()
+    for key in sorted(schemas.keys()):
+        schema = json.dumps(schemas[key]).encode("utf-8")
+        hash.update(schema)
+    return hash.hexdigest()
+
+
+def write_schema_tar_gz(tar_path, schemas):
     logging.info("Writing tarfile to {}".format(tar_path))
     root = tempfile.mkdtemp()
 
@@ -53,10 +71,22 @@ def main(output_path):
             json.dump(schema, fp)
 
     tf = tarfile.open(tar_path, mode="w:gz")
-    # rename the temporary folder in the archive as the filename without the `.tar.gz` suffix
+    # rename the temporary folder in the archive as the filename without the
+    # `.tar.gz` suffix
     toplevel = os.path.basename(tar_path).split(".")[0]
     tf.add(root, arcname=toplevel)
     tf.close()
+
+
+def main(output_path):
+    tar_path = os.path.join(output_path, "avro-schema-test.tar.gz")
+
+    if os.path.exists(tar_path) and (
+        tarfile_checksum(tar_path) == schema_checksum(AVRO_SCHEMAS)
+    ):
+        logging.info("Avro schema file contents did not change")
+    else:
+        write_schema_tar_gz(tar_path, AVRO_SCHEMAS)
 
     logging.info("Done!")
 
