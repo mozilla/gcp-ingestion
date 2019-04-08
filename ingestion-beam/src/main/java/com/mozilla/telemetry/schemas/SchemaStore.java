@@ -52,8 +52,8 @@ public abstract class SchemaStore<T> implements Serializable {
     }
     // This is the path provided by mozilla-pipeline-schemas
     final String path = StringSubstitutor.replace(
-        "${document_namespace}/${document_type}/" + "${document_type}.${document_version}",
-        attributes) + schemaSuffix();
+        "${document_namespace}/${document_type}/${document_type}.${document_version}", attributes)
+        + schemaSuffix();
     return getSchema(path);
   }
 
