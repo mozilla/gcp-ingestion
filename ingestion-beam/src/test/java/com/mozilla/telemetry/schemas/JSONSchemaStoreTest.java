@@ -76,4 +76,23 @@ public class JSONSchemaStoreTest {
     Schema aliasedSchema = store.getSchema(aliasedAttributes);
     assertEquals(baseSchema, aliasedSchema);
   }
+
+  @Test
+  public void testGetSchemaViaAttributes() throws SchemaNotFoundException {
+    JSONSchemaStore store = JSONSchemaStore.of(SCHEMAS_LOCATION, ALIASING_CONFIG_LOCATION);
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put("document_namespace", "telemetry");
+    attributes.put("document_type", "main");
+    attributes.put("document_version", "4");
+    Schema schema = store.getSchema(attributes);
+    assertTrue(schema.definesProperty("clientId"));
+
+  }
+
+  @Test
+  public void testGetSchemaViaPath() throws SchemaNotFoundException {
+    JSONSchemaStore store = JSONSchemaStore.of(SCHEMAS_LOCATION, ALIASING_CONFIG_LOCATION);
+    Schema schema = store.getSchema("telemetry/main/main.4.schema.json");
+    assertTrue(schema.definesProperty("clientId"));
+  }
 }
