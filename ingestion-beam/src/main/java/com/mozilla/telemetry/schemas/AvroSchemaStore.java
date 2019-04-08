@@ -21,8 +21,8 @@ public class AvroSchemaStore extends SchemaStore<Schema> {
   }
 
   @Override
-  protected boolean containsSchemaSuffix(String name) {
-    return name.endsWith(".avro.json");
+  protected String schemaSuffix() {
+    return ".avro.json";
   }
 
   @Override
