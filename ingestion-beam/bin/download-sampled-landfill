@@ -40,17 +40,16 @@ def parse_schema_name_archive(path):
 
 def load_schemas(path):
     """Return a dictionary containing "{namespace}.{doctype}.{docver}" to validator"""
-    with tarfile.open(path, "r") as tf:
-        tf.extractall()
-        root = tf.getnames()[0]
     schemas = {}
-    for root, _, files in os.walk(root + "/schemas"):
-        for name in files:
-            if name.endswith(".schema.json"):
-                schemafile = os.path.join(root, name)
-                name = parse_schema_name_archive(schemafile)
-                with open(schemafile, "r") as f:
-                    schemas[name] = rapidjson.Validator(f.read())
+    with tarfile.open(path, "r") as tf:
+        paths = [
+            name
+            for name in tf.getnames()
+            if name.endswith(".schema.json") and name.split("/")[1] == "schemas"
+        ]
+        for path in paths:
+            name = parse_schema_name_archive(path)
+            schemas[name] = rapidjson.Validator(tf.extractfile(path).read())
     return schemas
 
 
@@ -123,6 +122,7 @@ def write_pubsub(fp, schemas, name, document):
             continue
         message = generate_pubsub_message(namespace, doctype, docver, content)
         fp.write(message + "\n")
+        success += 1
 
     logging.info(f"Wrote {success} documents, skipped {error}")
 
@@ -143,7 +143,7 @@ def main(args):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser("Download sampled data")
+    parser = argparse.ArgumentParser("download-sampled-landfill")
     parser.add_argument("--bucket", default="telemetry-parquet")
     parser.add_argument("--prefix", default="sanitized-landfill-sample/v3")
     parser.add_argument(
