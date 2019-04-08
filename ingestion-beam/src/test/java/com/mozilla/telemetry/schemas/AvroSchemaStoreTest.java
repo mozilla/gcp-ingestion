@@ -31,7 +31,7 @@ public class AvroSchemaStoreTest {
   6 directories, 4 files
   */
   private static final ValueProvider<String> LOCATION = StaticValueProvider
-      .of(Resources.getResource("testdata/avro-schema-test.tar.gz").getPath());
+      .of(Resources.getResource("avro/test-schema.tar.gz").getPath());
 
   @Test
   public void testNumSchemas() {

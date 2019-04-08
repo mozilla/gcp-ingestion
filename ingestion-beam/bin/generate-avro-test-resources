@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+"""A script for generating unit-testing resources for avro-related functionality.
+
+Testing resources for the avro schema store includes the schema artifact file.
+They are regenerated from the data within this file and checked into the
+repository under `src/test/resources/`.
+
+Re-run this script from any directory in the project when test-cases are
+modified.
+"""
 
 import argparse
 import tarfile
@@ -79,7 +88,7 @@ def write_schema_tar_gz(tar_path, schemas):
 
 
 def main(output_path):
-    tar_path = os.path.join(output_path, "avro-schema-test.tar.gz")
+    tar_path = os.path.join(output_path, "avro/test-schema.tar.gz")
 
     if os.path.exists(tar_path) and (
         tarfile_checksum(tar_path) == schema_checksum(AVRO_SCHEMAS)
@@ -97,7 +106,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output-path",
         type=str,
-        default=os.path.join(INGESTION_BEAM_ROOT, "src/test/resources/testdata"),
+        default=os.path.join(INGESTION_BEAM_ROOT, "src/test/resources/"),
     )
     args = parser.parse_args()
     main(args.output_path)
