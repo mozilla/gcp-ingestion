@@ -35,16 +35,18 @@ public class AvroSchemaStoreTest {
   */
   private static final ValueProvider<String> LOCATION = StaticValueProvider
       .of(Resources.getResource("avro/test-schema.tar.gz").getPath());
+  private static final ValueProvider<String> EMPTY_ALIASING_CONFIG_LOCATION = StaticValueProvider
+      .of(null);
 
   @Test
   public void testNumSchemas() {
-    AvroSchemaStore store = AvroSchemaStore.of(LOCATION);
+    AvroSchemaStore store = AvroSchemaStore.of(LOCATION, EMPTY_ALIASING_CONFIG_LOCATION);
     assertEquals(store.numLoadedSchemas(), 3);
   }
 
   @Test
   public void testDocTypeExists() {
-    AvroSchemaStore store = AvroSchemaStore.of(LOCATION);
+    AvroSchemaStore store = AvroSchemaStore.of(LOCATION, EMPTY_ALIASING_CONFIG_LOCATION);
     assertTrue(store.docTypeExists("namespace_0", "foo"));
     assertTrue(store.docTypeExists("namespace_0", "bar"));
     assertTrue(store.docTypeExists("namespace_1", "baz"));
@@ -52,7 +54,7 @@ public class AvroSchemaStoreTest {
 
   @Test
   public void testDocTypeExistsViaAttributes() {
-    AvroSchemaStore store = AvroSchemaStore.of(LOCATION);
+    AvroSchemaStore store = AvroSchemaStore.of(LOCATION, EMPTY_ALIASING_CONFIG_LOCATION);
     Map<String, String> attributes = new HashMap<>();
     attributes.put("document_namespace", "namespace_0");
     attributes.put("document_type", "foo");
@@ -61,7 +63,7 @@ public class AvroSchemaStoreTest {
 
   @Test
   public void testGetSchemaViaAttributes() throws SchemaNotFoundException {
-    AvroSchemaStore store = AvroSchemaStore.of(LOCATION);
+    AvroSchemaStore store = AvroSchemaStore.of(LOCATION, EMPTY_ALIASING_CONFIG_LOCATION);
     Map<String, String> attributes = new HashMap<>();
     attributes.put("document_namespace", "namespace_0");
     attributes.put("document_type", "foo");
@@ -73,7 +75,7 @@ public class AvroSchemaStoreTest {
 
   @Test
   public void testGetSchemaViaPath() throws SchemaNotFoundException {
-    AvroSchemaStore store = AvroSchemaStore.of(LOCATION);
+    AvroSchemaStore store = AvroSchemaStore.of(LOCATION, EMPTY_ALIASING_CONFIG_LOCATION);
     Schema schema = store.getSchema("namespace_0/foo/foo.1.avro.json");
     assertEquals(schema.getField("test_int").schema().getType(), Schema.Type.INT);
   }
