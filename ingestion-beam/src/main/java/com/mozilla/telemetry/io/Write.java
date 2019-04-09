@@ -24,6 +24,7 @@ import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -205,6 +206,13 @@ public abstract class Write
           DynamicPathTemplate::new);
       ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
           value -> value.staticPrefix);
+
+      List<String> placeholders = pathTemplate.get().getPlaceholderNames();
+      if (!placeholders
+          .containsAll(Arrays.asList("document_namespace", "document_type", "document_version"))) {
+        throw new RuntimeException(
+            "Path template must contain document namespace, type, and version");
+      }
 
       final PCollectionView<AvroSchemaStore> schemaSideInput = input.getPipeline()
           .apply(Create.of(schemaStore)).apply(View.asSingleton());
