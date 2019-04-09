@@ -190,13 +190,13 @@ public abstract class Write
     /** Public constructor. */
     public AvroOutput(ValueProvider<String> outputPrefix, Duration windowDuration,
         ValueProvider<Integer> numShards, Compression compression, InputType inputType,
-        ValueProvider<String> schemasLocation) {
+        ValueProvider<String> schemasLocation, ValueProvider<String> schemaAliasesLocation) {
       this.outputPrefix = outputPrefix;
       this.windowDuration = windowDuration;
       this.numShards = numShards;
       this.compression = compression;
       this.inputType = inputType;
-      this.schemaStore = AvroSchemaStore.of(schemasLocation);
+      this.schemaStore = AvroSchemaStore.of(schemasLocation, schemaAliasesLocation);
     }
 
     @Override
