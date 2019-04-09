@@ -201,6 +201,11 @@ public abstract class Write
 
     @Override
     public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+      ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
+          DynamicPathTemplate::new);
+      ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
+          value -> value.staticPrefix);
+
       final PCollectionView<AvroSchemaStore> schemaSideInput = input.getPipeline()
           .apply(Create.of(schemaStore)).apply(View.asSingleton());
 
@@ -209,12 +214,10 @@ public abstract class Write
       final TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>() {
       };
 
-      ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
-          DynamicPathTemplate::new);
-      ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
-          value -> value.staticPrefix);
-
-      ParDo.MultiOutput<PubsubMessage, PubsubMessage> intoGenericRecord = ParDo
+      // A ParDo is opted over a PTransform extending MapElementsWithErrors.
+      // While this leads to manual error handling with output-tags, this allows
+      // for side-input of the singleton SchemaStore PCollection.
+      ParDo.MultiOutput<PubsubMessage, PubsubMessage> encodePayloadAsAvro = ParDo
           .of(new DoFn<PubsubMessage, PubsubMessage>() {
 
             @ProcessElement
@@ -260,7 +263,7 @@ public abstract class Write
           .withAllowedLateness(Duration.standardDays(7)) //
           .discardingFiredPanes();
 
-      PCollectionTuple results = input.apply("PubsubMessageToGenericRecord", intoGenericRecord);
+      PCollectionTuple results = input.apply("encodePayloadAsAvro", encodePayloadAsAvro);
       results.get(successTag).apply(window).apply(write);
 
       return WithErrors.Result.of(PDone.in(input.getPipeline()), results.get(errorTag));
