@@ -54,10 +54,10 @@ elif [[ $JOB_TYPE == "decoder" ]] ; then
   OUTPUT_OPTS="--outputType=pubsub \
 --outputFileFormat=json"
   ERROR_OUTPUT_OPTS="--errorOutputType=pubsub"
-elif [[ $JOB_TYPE == "republisher" ]] ; then
+elif [[ $JOB_TYPE =~ ^republisher_(structured|telemetry)$ ]] ; then
   JOB_CLASS="com.mozilla.telemetry.Republisher"
   OUTPUT_OPTS="--outputType=pubsub \
---outputFileFormat=json"
+--outputFileFormat=json ${SINK_OPTS} ${REPUBLISHER_OPTS:?}"
   ERROR_OUTPUT_OPTS="--errorOutputType=file \
 --errorOutputNumShards=${ERROR_NUM_SHARDS}"
 else
