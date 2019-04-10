@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Generate a new archive with avro schemas from the mozilla-pipeline-schema
 # repository. This script is meant for integration testing of the avro file-sink
 # in conjunction to sampled landfill data. This will generate a new gzipped

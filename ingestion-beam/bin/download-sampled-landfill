@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """Download samples of raw data from the AWS ingestion pipeline into ndjson.
 
 The sanitized-landfill-sample.v3 dataset contain newline delimited json with the
