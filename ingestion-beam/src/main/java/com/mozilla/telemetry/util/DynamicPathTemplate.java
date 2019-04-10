@@ -58,6 +58,25 @@ public class DynamicPathTemplate implements Serializable {
 
   }
 
+  /** Return the placeholder names in the order of appearance in the original path. */
+  public List<String> getPlaceholderNames() {
+    return placeholderNames;
+  }
+
+  /** Return a mapping of placeholder names to the passed values. */
+  public Map<String, String> getPlaceholderAttributes(List<String> values) {
+    if (values.size() != placeholderNames.size()) {
+      throw new IllegalArgumentException(String.format(
+          "The number of passed values (%d) did not match the number of placeholders (%d)",
+          values.size(), placeholderNames.size()));
+    }
+    Map<String, String> attributes = new HashMap<>(values.size());
+    for (int i = 0; i < values.size(); i++) {
+      attributes.put(placeholderNames.get(i), values.get(i));
+    }
+    return attributes;
+  }
+
   /** Return the dynamic part of the output path with placeholders filled in. */
   private String replaceDynamicPart(Map<String, String> attributes) {
     return StringSubstitutor.replace(dynamicPart, attributes);
@@ -65,18 +84,11 @@ public class DynamicPathTemplate implements Serializable {
 
   /** Return the dynamic part of the output path with placeholders filled in. */
   public String replaceDynamicPart(List<String> values) {
-    if (values.size() != placeholderNames.size()) {
-      throw new IllegalArgumentException(String.format(
-          "The number of passed values (%d) did not match the number of placeholders (%d)",
-          values.size(), placeholderNames.size()));
-    } else if (dynamicPart.length() == 0) {
+    if (dynamicPart.length() == 0) {
       // Small optimization for the case of non-dynamic paths.
       return dynamicPart;
     } else {
-      Map<String, String> attributes = new HashMap<>(values.size());
-      for (int i = 0; i < values.size(); i++) {
-        attributes.put(placeholderNames.get(i), values.get(i));
-      }
+      Map<String, String> attributes = getPlaceholderAttributes(values);
       return replaceDynamicPart(attributes);
     }
   }

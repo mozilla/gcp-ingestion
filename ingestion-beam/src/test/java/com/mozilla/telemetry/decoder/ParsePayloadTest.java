@@ -4,6 +4,8 @@
 
 package com.mozilla.telemetry.decoder;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
@@ -26,6 +28,16 @@ public class ParsePayloadTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
+
+  @Test
+  public void testSampleId() {
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
+    ParsePayload transform = ParsePayload.of(schemasLocation, schemaAliasesLocation);
+    assertEquals(67L, transform.calculateSampleId("2907648d-711b-4e9f-94b5-52a2b40a44b1"));
+    assertEquals(17L, transform.calculateSampleId("90210716-99f8-0a4f-8119-9bfc16cd68a3"));
+    assertEquals(0L, transform.calculateSampleId(""));
+  }
 
   @Test
   public void testOutput() {

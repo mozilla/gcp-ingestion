@@ -31,8 +31,8 @@ public class JSONSchemaStore extends SchemaStore<Schema> {
   }
 
   @Override
-  protected boolean containsSchemaSuffix(String name) {
-    return name.endsWith(".schema.json");
+  protected String schemaSuffix() {
+    return ".schema.json";
   }
 
   @Override

@@ -51,8 +51,9 @@ public abstract class SchemaStore<T> implements Serializable {
       throw new SchemaNotFoundException("No schema for message with null attributeMap");
     }
     // This is the path provided by mozilla-pipeline-schemas
-    final String path = StringSubstitutor.replace("${document_namespace}/${document_type}/"
-        + "${document_type}.${document_version}.schema.json", attributes);
+    final String path = StringSubstitutor.replace(
+        "${document_namespace}/${document_type}/${document_type}.${document_version}", attributes)
+        + schemaSuffix();
     return getSchema(path);
   }
 
@@ -81,8 +82,8 @@ public abstract class SchemaStore<T> implements Serializable {
     this.schemaAliasesLocation = schemaAliasesLocation;
   }
 
-  /* Returns true on a valid schema name e.g. `document.schema.json` */
-  protected abstract boolean containsSchemaSuffix(String name);
+  /* Returns the expected suffix for a particular schema type e.g. `.schema.json` */
+  protected abstract String schemaSuffix();
 
   /* Returns a parsed schema from an archive input stream. */
   protected abstract T loadSchemaFromArchive(ArchiveInputStream archive) throws IOException;
@@ -130,7 +131,7 @@ public abstract class SchemaStore<T> implements Serializable {
             tempDirs.add(name);
             continue;
           }
-          if (containsSchemaSuffix(name)) {
+          if (name.endsWith(schemaSuffix())) {
             tempSchemas.put(name, loadSchemaFromArchive(i));
           }
         }
