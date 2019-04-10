@@ -130,21 +130,30 @@ public class PubsubMessageToTableRow
   @VisibleForTesting
   static TableRow buildTableRow(byte[] payload) throws IOException {
     TableRow tableRow = Json.readTableRow(payload);
-    promoteSubmissionTimestamp(tableRow);
+    promoteFields(tableRow);
     return tableRow;
   }
 
   /**
-   * BigQuery cannot partition tables by a nested field, so we promote submission_timestamp out of
-   * metadata to a top-level field.
+   * BigQuery cannot partition or cluster tables by a nested field, so we promote some important
+   * attributes out of metadata to top-level fields.
    */
-  private static void promoteSubmissionTimestamp(TableRow tableRow) {
+  private static void promoteFields(TableRow tableRow) {
     Optional<Map> metadata = Optional.ofNullable(tableRow).map(row -> tableRow.get("metadata"))
         .filter(Map.class::isInstance).map(Map.class::cast);
     if (metadata.isPresent()) {
       Object submissionTimestamp = metadata.get().remove("submission_timestamp");
       if (submissionTimestamp instanceof String) {
         tableRow.putIfAbsent("submission_timestamp", submissionTimestamp);
+      }
+      Object sampleId = metadata.get().remove("sample_id");
+      if (sampleId instanceof String) {
+        try {
+          Long asLong = Long.valueOf((String) sampleId);
+          tableRow.putIfAbsent("sample_id", asLong);
+        } catch (NumberFormatException ignore) {
+          // pass
+        }
       }
     }
   }

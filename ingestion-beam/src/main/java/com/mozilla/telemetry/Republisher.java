@@ -5,6 +5,7 @@
 package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.Deduplicate;
+import com.mozilla.telemetry.republisher.RandomSampler;
 import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.ArrayList;
@@ -13,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
@@ -126,8 +126,9 @@ public class Republisher extends Sink {
           .apply("RandomlySample" + StringUtils.capitalize(targetChannel), Filter.by(message -> {
             message = PubsubConstraints.ensureNonNull(message);
             String channel = message.getAttribute("app_update_channel");
+            String sampleId = message.getAttribute("sample_id");
             return targetChannel.equals(channel)
-                && ThreadLocalRandom.current().nextDouble() < ratio;
+                && RandomSampler.filterBySampleIdOrRandomNumber(sampleId, ratio);
           })) //
           .apply(opts.getOutputType().write(opts));
     }

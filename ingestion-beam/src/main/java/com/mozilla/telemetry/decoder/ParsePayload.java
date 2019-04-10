@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.schemas.JSONSchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
@@ -13,6 +14,7 @@ import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -48,6 +50,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
   private transient Validator validator;
   private transient JSONSchemaStore schemaStore;
+  private transient CRC32 crc32;
 
   private ParsePayload(ValueProvider<String> schemasLocation,
       ValueProvider<String> schemaAliasesLocation) {
@@ -118,6 +121,20 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       }
     }
 
+    // Extract client_id and sample_id from the payload.
+    final String clientId;
+    if (json.has("clientId")) {
+      clientId = json.getString("clientId");
+    } else if (json.has("client_id")) {
+      clientId = json.getString("client_id");
+    } else {
+      clientId = null;
+    }
+    if (clientId != null) {
+      attributes.put("client_id", clientId);
+      attributes.put("sample_id", Long.toString(calculateSampleId(clientId)));
+    }
+
     // Throws SchemaNotFoundException if there's no schema
     Schema schema;
     try {
@@ -142,6 +159,16 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
 
     return new PubsubMessage(normalizedPayload, attributes);
+  }
+
+  @VisibleForTesting
+  long calculateSampleId(String clientId) {
+    if (crc32 == null) {
+      crc32 = new CRC32();
+    }
+    crc32.reset();
+    crc32.update(clientId.getBytes());
+    return crc32.getValue() % 100;
   }
 
   private JSONObject parseTimed(byte[] bytes) throws IOException {

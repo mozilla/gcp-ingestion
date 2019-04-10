@@ -118,10 +118,10 @@ public class RepublisherMainTest {
     assertThat(outputLinesNightly, Matchers.hasSize(0));
 
     List<String> outputLinesRelease = Lines.files(outputPath + "/out-release*.ndjson");
-    assertThat("50% random sample of 20 should be greater than 5", outputLinesRelease.size(),
-        Matchers.greaterThan(5));
-    assertThat("50% random sample of 20 should be less than 15", outputLinesRelease.size(),
-        Matchers.lessThan(15));
+    assertThat("50% random sample of 20 elements should produce at least 2",
+        outputLinesRelease.size(), Matchers.greaterThanOrEqualTo(2));
+    assertThat("50% random sample of 20 elements should produce at most 18",
+        outputLinesRelease.size(), Matchers.lessThanOrEqualTo(18));
   }
 
 }
