@@ -64,9 +64,9 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
   @Description("A pattern for output topic names (assuming --outputType=pubsub) for per-channel"
       + " sampling; the pattern must contain a placeholder ${channel} that will be filled in"
       + " to give a distinct publisher per channel configured in --perChannelSampleRatios")
-  ValueProvider<String> getPerChannelDestination();
+  String getPerChannelDestination();
 
-  void setPerChannelDestination(ValueProvider<String> value);
+  void setPerChannelDestination(String value);
 
   @Description("A comma-separated list of docTypes that should be republished to individual"
       + " topics; you may use a slash in each entry to separate namespace from type;"
@@ -79,9 +79,9 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
       + " sampling; the pattern must contain a placeholder ${document_type} and may optionally"
       + " contain a placeholder ${document_namespace} that will be filled in"
       + " to give a distinct publisher per docType configured in --perDocTypeEnabledList")
-  ValueProvider<String> getPerDocTypeDestination();
+  String getPerDocTypeDestination();
 
-  void setPerDocTypeDestination(ValueProvider<String> value);
+  void setPerDocTypeDestination(String value);
 
   /*
    * Subinterface and static methods.
