@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Generate a new archive with avro schemas from the mozilla-pipeline-schema
+# repository. This script is meant for integration testing of the avro file-sink
+# in conjunction to sampled landfill data. This will generate a new gzipped
+# archive containing avro schemas at the beam project level named
+# avro-schema.tar.gz.
+
+cd "$(dirname "$0")/.." || exit
+
+if [ ! -x  "$(command -v jsonschema-transpiler)" ]; then
+    echo "jsonschema-transpiler is not installed"
+    echo "Run 'cargo install --git https://github.com/acmiyaguchi/jsonschema-transpiler.git --branch dev'"
+    exit 1
+fi
+
+if [[ ! -f schemas.tar.gz ]]; then
+    echo "Run 'bin/download-schemas'"
+    exit 1
+fi
+
+# Store the current directory
+finaldir=$(pwd)
+
+# Create a temporary directory for work
+workdir=$(mktemp -d -t tmp.XXXXXXXXXX)
+function cleanup {
+  rm -rf "$workdir"
+  echo "Running cleanup!"
+}
+trap cleanup EXIT
+cd "$workdir" || exit
+
+# Find all JSON schemas in the extracted archive. The toplevel directory is the
+# name of the repository branch in `bin/download-schemas`
+inschema="mozilla-pipeline-schemas-gcp-ingestion-tests"
+tar -xf "$finaldir/schemas.tar.gz" -C "$workdir"
+schemas=$(find $inschema/schemas -type file -name "*.schema.json")
+
+# From a relative path to a jsonschema, transpile an avro schema in a mirrored directory.
+# Requires: $outschema, $total, $failed
+outschema="mps-avro-ingestion-tests"
+total=0
+failed=0
+function generate_avro() {
+    orig_path=$1
+    # Relative path to the root of the archive, using shell parameter expansion to strip the root
+    relpath=$(dirname "${orig_path#*/}")
+    avroname="$(basename "$orig_path" .schema.json).avro.json"
+    outpath="$outschema/$relpath/$avroname"
+    
+    # Create the folder to the new schema
+    mkdir -p "$outschema/$relpath"
+
+    if ! jsonschema-transpiler --type avro "$orig_path" > "$outpath" 2> /dev/null; then
+        echo "Unable to convert $(basename "$orig_path")"
+        rm "$outpath"
+        ((failed++))
+    fi
+    ((total++))
+}
+
+for schema in $schemas; do
+    generate_avro "$schema"
+done
+echo "$((total-failed))/$total sucessfully converted"
+
+# Prune folders from failed conversions
+find "$outschema" -type d -empty -delete
+
+# Generate the final archive
+tar -zcf avro-schema.tar.gz "$outschema"
+cp avro-schema.tar.gz "$finaldir"
