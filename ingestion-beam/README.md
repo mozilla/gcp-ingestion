@@ -519,12 +519,12 @@ To enable debug republishing:
 To enable per-`docType` republishing:
 
  * `--perDocTypeEnabledList=event,heartbeat` (compile-time)
- * `--perDocTypeDestination=/some/pubsub/topic/path/per-doctype-${document_namespace}-${document_type}`
+ * `--perDocTypeDestination=/some/pubsub/topic/path/per-doctype-${document_namespace}-${document_type}` (compile-time)
 
 To enable per-channel sampled republishing:
 
  * `--perChannelSampleRatios='{"nightly":1.0,"beta":0.1,"release":0.01}'` (compile-time)
- * `--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}`
+ * `--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}` (compile-time)
 
 Example:
 
@@ -533,16 +533,16 @@ Example:
 mkdir -p tmp/
 echo '{"payload":"dGVzdA==","attributeMap":{"x_debug_id":"mysession"}}' > tmp/input.json
 
-# do geo lookup on messages to stdout
+# Republish only messages with x_debug_id attribute to stdout.
 ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Republisher -Dexec.args="\
     --inputType=file \
     --input=tmp/input.json \
     --outputType=stdout \
     --errorOutputType=stderr \
-    --enableDebugDestination \
+    --enableDebugDestination
 "
 
-# check the RepublisherOptions help page for options specific to Decoder
+# check the RepublisherOptions help page for options specific to Republisher
 ./bin/mvn compile exec:java -Dexec.args=--help=RepublisherOptions
 "
 ```

@@ -19,7 +19,6 @@ import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
@@ -97,10 +96,16 @@ public class Republisher extends Sink {
         targetNamespace = components[0];
         targetDocType = components[1];
       }
+
       RepublisherOptions.Parsed opts = options.as(RepublisherOptions.Parsed.class);
-      opts.setOutput(NestedValueProvider.of(options.getPerDocTypeDestination(),
-          pattern -> pattern.replace("${document_namespace}", targetNamespace)
-              .replace("${document_type}", targetDocType)));
+      // The destination pattern here must be compile-time due to a detail of Dataflow's
+      // streaming PubSub producer implementation; if that restriction is lifted in the future,
+      // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
+      String destination = options.getPerDocTypeDestination()
+          .replace("${document_namespace}", targetNamespace)
+          .replace("${document_type}", targetDocType);
+      opts.setOutput(StaticValueProvider.of(destination));
+
       decoded //
           .apply("DocType is " + targetDocType, Filter.by(message -> {
             message = PubsubConstraints.ensureNonNull(message);
@@ -119,8 +124,11 @@ public class Republisher extends Sink {
       Double ratio = entry.getValue();
 
       RepublisherOptions.Parsed opts = options.as(RepublisherOptions.Parsed.class);
-      opts.setOutput(NestedValueProvider.of(options.getPerChannelDestination(),
-          pattern -> pattern.replace("${channel}", targetChannel)));
+      // The destination pattern here must be compile-time due to a detail of Dataflow's
+      // streaming PubSub producer implementation; if that restriction is lifted in the future,
+      // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
+      String destination = options.getPerChannelDestination().replace("${channel}", targetChannel);
+      opts.setOutput(StaticValueProvider.of(destination));
 
       decoded //
           .apply("RandomlySample" + StringUtils.capitalize(targetChannel), Filter.by(message -> {
