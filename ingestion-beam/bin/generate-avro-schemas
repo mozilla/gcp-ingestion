@@ -6,6 +6,8 @@
 # archive containing avro schemas at the beam project level named
 # avro-schema.tar.gz.
 
+set -e
+
 cd "$(dirname "$0")/.." || exit
 
 if [ ! -x  "$(command -v jsonschema-transpiler)" ]; then
@@ -19,55 +21,68 @@ if [[ ! -f schemas.tar.gz ]]; then
     exit 1
 fi
 
-# Store the current directory
-finaldir=$(pwd)
-
-# Create a temporary directory for work
-workdir=$(mktemp -d -t tmp.XXXXXXXXXX)
-function cleanup {
-  rm -rf "$workdir"
-  echo "Running cleanup!"
+function init_working_directory() {
+    # Create a temporary directory for working. The current directory is stored
+    # into $rootdir and the working directory is stored into $workdir. The
+    # working directory will be removed on exit.
+    rootdir=$(pwd)
+    workdir=$(mktemp -d -t tmp.XXXXXXXXXX)
+    function cleanup {
+        rm -rf "$workdir"
+        echo "Running cleanup!"
+    }
+    trap cleanup EXIT
+    cd "$workdir" || exit
 }
-trap cleanup EXIT
-cd "$workdir" || exit
 
-# Find all JSON schemas in the extracted archive. The toplevel directory is the
-# name of the repository branch in `bin/download-schemas`
-inschema="mozilla-pipeline-schemas-gcp-ingestion-tests"
-tar -xf "$finaldir/schemas.tar.gz" -C "$workdir"
-schemas=$(find $inschema/schemas -type file -name "*.schema.json")
-
-# From a relative path to a jsonschema, transpile an avro schema in a mirrored directory.
-# Requires: $outschema, $total, $failed
-outschema="mps-avro-ingestion-tests"
 total=0
 failed=0
-function generate_avro() {
-    orig_path=$1
-    # Relative path to the root of the archive, using shell parameter expansion to strip the root
-    relpath=$(dirname "${orig_path#*/}")
-    avroname="$(basename "$orig_path" .schema.json).avro.json"
-    outpath="$outschema/$relpath/$avroname"
+function generate_avro_schema() {
+    # From a relative path to a jsonschema, transpile an avro schema in a
+    # mirrored directory. This function requires the following global variables:
+    # $total, $failed
+    local src=$1
+    local root=$2
+
+    # Relative path to the root of the archive, using shell parameter expansion
+    # to strip the root
+    local relpath
+    local name
+    relpath=$(dirname "${src#*/}")
+    name="$(basename "$src" .schema.json).avro.json"
+    local dst="$root/$relpath/$name"
     
     # Create the folder to the new schema
-    mkdir -p "$outschema/$relpath"
+    mkdir -p "$root/$relpath"
 
-    if ! jsonschema-transpiler --type avro "$orig_path" > "$outpath" 2> /dev/null; then
-        echo "Unable to convert $(basename "$orig_path")"
-        rm "$outpath"
+    if ! jsonschema-transpiler --type avro "$src" > "$dst" 2> /dev/null; then
+        echo "Unable to convert $(basename "$src")"
+        rm "$dst"
         ((failed++))
     fi
     ((total++))
+    return 0
 }
 
+init_working_directory
+
+src="mozilla-pipeline-schemas"
+dst="mps-avro-ingestion-tests"
+
+# Find all JSON schemas in the extracted archive. The top-level folder in the
+# archive is consistently named in `bin/download-schemas`
+tar -xf "$rootdir/schemas.tar.gz" -C "$workdir"
+schemas=$(find $src/schemas -type file -name "*.schema.json")
+
+# Transpile avro schema into a destination directory
 for schema in $schemas; do
-    generate_avro "$schema"
+    generate_avro_schema "$schema" $dst
 done
 echo "$((total-failed))/$total sucessfully converted"
 
 # Prune folders from failed conversions
-find "$outschema" -type d -empty -delete
+find "$dst" -type d -empty -delete
 
 # Generate the final archive
-tar -zcf avro-schema.tar.gz "$outschema"
-cp avro-schema.tar.gz "$finaldir"
+tar -zcf avro-schema.tar.gz "$src"
+cp avro-schema.tar.gz "$rootdir"
