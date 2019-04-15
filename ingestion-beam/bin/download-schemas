@@ -1,12 +1,49 @@
 #!/bin/bash
 
-# Pulls down an archive of a test branch of mozilla-pipeline-schemas
-# for use in test suites.
+# Pulls down an archive of mozilla-pipeline-schemas and inserts test schemas for
+# use in test suites.
 
 set -e
 
-cd "$(dirname "$0")/.."
+function init_working_directory() {
+    # Create a temporary directory for working. The current directory is stored
+    # into $rootdir and the working directory is stored into $workdir. The
+    # working directory will be removed on exit.
+    rootdir=$(pwd)
+    workdir=$(mktemp -d -t tmp.XXXXXXXXXX)
+    function cleanup {
+        rm -rf "$workdir"
+        echo "Running cleanup!"
+    }
+    trap cleanup EXIT
+    cd "$workdir" || exit
+}
 
-BRANCH="gcp-ingestion-tests"
+function insert_testing_schemas() {
+    # Patch the current schema archive with testing resources. This function
+    # should be called within the root directory of the extracted archive.
+    patch_url="https://github.com/jklukas/mozilla-pipeline-schemas/commit/9f8d4252a170ce9241a153b3b49eef235e1279a2.patch"
+    curl -sL ${patch_url} | patch -p1
+}
+
+cd "$(dirname "$0")/.."
+init_working_directory
+
+# Fetch schemas
+BRANCH="dev"
 TARFILE="$BRANCH.tar.gz"
-curl -sL https://github.com/jklukas/mozilla-pipeline-schemas/archive/$TARFILE > schemas.tar.gz
+curl -sL https://github.com/mozilla-services/mozilla-pipeline-schemas/archive/$TARFILE > schemas.tar.gz
+
+# Extract and rename the top-level folder
+mps="mozilla-pipeline-schemas"
+tar -xf schemas.tar.gz
+mv $mps-$BRANCH $mps
+
+# Insert the testing resources
+pushd "$(pwd)" > /dev/null
+cd $mps
+insert_testing_schemas
+popd > /dev/null
+
+# Save the schemas to the root directory relative to the script
+tar -zcf "$rootdir/schemas.tar.gz" $mps
