@@ -4,14 +4,31 @@
 
 package com.mozilla.telemetry;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.schemas.AvroSchemaStore;
+import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.apache.avro.Schema;
+import org.apache.avro.file.DataFileReader;
+import org.apache.avro.generic.GenericDatumReader;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.DatumReader;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,7 +45,7 @@ import org.junit.rules.TemporaryFolder;
    - document_version
 
    The documents will need to have a corresponding store. The schemas are
-   documented in `bin/generate-avro-test-resources.py`.
+   documented in `bin/generate-avro-test-resources`.
  */
 public class SinkAvroTest {
 
@@ -70,7 +87,7 @@ public class SinkAvroTest {
    * Test for a single doctype being written out to the correct location.
    */
   @Test
-  public void testSingleDocumentType() {
+  public void testSingleDocumentType() throws IOException, SchemaNotFoundException {
     String input = Resources.getResource("testdata/avro-message-single-doctype.ndjson").getPath();
     String schemas = Resources.getResource("avro/test-schema.tar.gz").getPath();
     String output = outputPath
@@ -83,13 +100,51 @@ public class SinkAvroTest {
 
     assertThat("output count", getPrefixFileCount(outputPath, "namespace_0"),
         Matchers.greaterThan(0L));
+
+    AvroSchemaStore store = AvroSchemaStore.of(StaticValueProvider.of(schemas),
+        StaticValueProvider.of(null));
+
+    List<Path> paths = Files.walk(Paths.get(outputPath)).filter(Files::isRegularFile)
+        .collect(Collectors.toList());
+
+    List<Integer> results = new ArrayList<>();
+    for (Path path : paths) {
+      Schema schema = store.getSchema("namespace_0/foo/foo.1.avro.json");
+      DatumReader<GenericRecord> reader = new GenericDatumReader<>(schema);
+      DataFileReader<GenericRecord> fileReader = new DataFileReader<>(path.toFile(), reader);
+      while (fileReader.hasNext()) {
+        GenericRecord record = (GenericRecord) fileReader.next();
+        results.add((Integer) record.get("test_int"));
+      }
+      fileReader.close();
+    }
+    results.sort(null);
+    assertEquals(results, Arrays.asList(1, 2, 3));
+  }
+
+  private Path getPath(String outputPath, String prefix) throws IOException {
+    return Files.walk(Paths.get(outputPath)).filter(Files::isRegularFile)
+        .filter(p -> p.toFile().getName().startsWith(prefix)).findFirst().get();
+  }
+
+  private GenericRecord readRecord(AvroSchemaStore store, String outputPath, String schemaPath)
+      throws IOException, SchemaNotFoundException {
+    Path path = getPath(outputPath, schemaPath);
+    String[] p = schemaPath.split("\\.");
+    String schemaStorePath = String.format("%s/%s/%s.%s.avro.json", p[0], p[1], p[1], p[2]);
+    Schema schema = store.getSchema(schemaStorePath);
+    DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(schema);
+    try (DataFileReader<GenericRecord> fileReader = new DataFileReader<>(path.toFile(),
+        datumReader)) {
+      return (GenericRecord) fileReader.next();
+    }
   }
 
   /**
    * Test that documents with existing schemas are being written out to the correct location.
    */
   @Test
-  public void testMultipleDocumentTypes() {
+  public void testMultipleDocumentTypes() throws IOException, SchemaNotFoundException {
     String input = Resources.getResource("testdata/avro-message-multiple-doctype.ndjson").getPath();
     String schemas = Resources.getResource("avro/test-schema.tar.gz").getPath();
     String output = outputPath
@@ -106,6 +161,12 @@ public class SinkAvroTest {
         Matchers.greaterThan(0L));
     assertThat("baz output count", getPrefixFileCount(outputPath, "namespace_1.baz"),
         Matchers.greaterThan(0L));
+
+    AvroSchemaStore store = AvroSchemaStore.of(StaticValueProvider.of(schemas),
+        StaticValueProvider.of(null));
+    assertEquals(1, readRecord(store, outputPath, "namespace_0.foo.1").get("test_int"));
+    assertEquals(1, readRecord(store, outputPath, "namespace_0.bar.1").get("test_int"));
+    assertEquals(null, readRecord(store, outputPath, "namespace_1.baz.1").get("test_null"));
   }
 
   /**
@@ -115,20 +176,38 @@ public class SinkAvroTest {
    * reprocessed.
    */
   @Test
-  public void testInvalidDocuments() {
+  public void testInvalidDocuments() throws IOException {
     String input = Resources.getResource("testdata/avro-message-invalid-doctype.ndjson").getPath();
     String schemas = Resources.getResource("avro/test-schema.tar.gz").getPath();
     String output = outputPath
         + "/${document_namespace:-NONE}.${document_type:-NONE}.${document_version:-0}";
-    String errorOutput = outputPath + "/err";
+    String errorOutput = outputPath + "/err/${document_namespace:-NONE}";
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputType=avro", "--output=" + output, "--outputFileCompression=UNCOMPRESSED",
         "--schemaLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=file", "--errorOutput=" + errorOutput, });
 
-    assertThat("error count", getPrefixFileCount(outputPath, "err"), Matchers.greaterThan(0L));
-    assertThat("foo output count", getPrefixFileCount(outputPath, "namespace_0.foo"),
-        Matchers.lessThanOrEqualTo(0L));
+    assertThat("error ns_0 count", getPrefixFileCount(outputPath + "/err", "namespace_0"),
+        Matchers.greaterThan(0L));
+    assertThat("error ns_57 count", getPrefixFileCount(outputPath + "/err", "namespace_57"),
+        Matchers.greaterThan(0L));
+
+    String data = null;
+    JSONObject obj = null;
+    String msg = null;
+
+    // Case where the schema is an integer but the value is a string
+    data = new String(Files.readAllBytes(getPath(outputPath + "/err", "namespace_0")));
+    obj = new JSONObject(data);
+    msg = obj.getJSONObject("attributeMap").getString("error_message");
+    assertThat(msg, CoreMatchers.containsString("org.apache.avro.AvroTypeException"));
+
+    // Case where the schema does not exist in the schema store
+    data = new String(Files.readAllBytes(getPath(outputPath + "/err", "namespace_57")));
+    obj = new JSONObject(data);
+    msg = obj.getJSONObject("attributeMap").getString("error_message");
+    assertThat(msg,
+        CoreMatchers.containsString("com.mozilla.telemetry.schemas.SchemaNotFoundException"));
   }
 }
