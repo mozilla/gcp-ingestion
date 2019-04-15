@@ -84,5 +84,5 @@ echo "$((total-failed))/$total sucessfully converted"
 find "$dst" -type d -empty -delete
 
 # Generate the final archive
-tar -zcf avro-schema.tar.gz "$src"
+tar -zcf avro-schema.tar.gz "$dst"
 cp avro-schema.tar.gz "$rootdir"
