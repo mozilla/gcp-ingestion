@@ -5,12 +5,14 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.schemas.JSONSchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.Normalize;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +24,7 @@ import org.apache.beam.sdk.options.ValueProvider;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.Validator;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -135,6 +138,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       attributes.put("sample_id", Long.toString(calculateSampleId(clientId)));
     }
 
+    // Extract and normalize OS information from the payload.
+    addOperatingSystemAttributes(attributes, json);
+
     // Throws SchemaNotFoundException if there's no schema
     Schema schema;
     try {
@@ -159,6 +165,47 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
 
     return new PubsubMessage(normalizedPayload, attributes);
+  }
+
+  private void addOperatingSystemAttributes(Map<String, String> attributes, JSONObject json) {
+    String osName = null;
+    String osVersion = null;
+
+    // Try to get "common ping"-style os fields.
+    JSONObject osObject = null;
+    try {
+      osObject = json.getJSONObject("environment").getJSONObject("system").getJSONObject("os");
+    } catch (JSONException ignore) {
+      // pass
+    }
+    if (osObject != null) {
+      Object name = osObject.opt("name");
+      if (name != null) {
+        osName = name.toString();
+      }
+      Object version = osObject.opt("version");
+      if (version != null) {
+        osVersion = version.toString();
+      }
+    }
+
+    if (Strings.isNullOrEmpty(osName)) {
+      // Try to get "core ping"-style "os" field.
+      osName = json.optString("os");
+    }
+    if (Strings.isNullOrEmpty(osVersion)) {
+      // Try to get "core ping"-style "osversion" field.
+      osVersion = json.optString("osversion");
+    }
+
+    if (!Strings.isNullOrEmpty(osName)) {
+      attributes.put("normalized_os", Normalize.os(osName));
+    }
+
+    String normalizedOsVersion = Normalize.osVersion(osVersion);
+    if (!Strings.isNullOrEmpty(normalizedOsVersion)) {
+      attributes.put("normalized_os_version", normalizedOsVersion);
+    }
   }
 
   @VisibleForTesting

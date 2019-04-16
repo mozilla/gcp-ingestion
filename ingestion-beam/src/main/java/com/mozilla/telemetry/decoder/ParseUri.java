@@ -75,6 +75,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
       attributes.put("document_namespace", "telemetry");
       attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
           uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
+      attributes.put("normalized_app_name", Normalize.appName(attributes.get("app_name")));
       attributes.put("normalized_channel", Normalize.channel(attributes.get("app_update_channel")));
     } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
       attributes.putAll(
