@@ -133,7 +133,7 @@ public class Republisher extends Sink {
       decoded //
           .apply("RandomlySample" + StringUtils.capitalize(targetChannel), Filter.by(message -> {
             message = PubsubConstraints.ensureNonNull(message);
-            String channel = message.getAttribute("app_update_channel");
+            String channel = message.getAttribute("normalized_channel");
             String sampleId = message.getAttribute("sample_id");
             return targetChannel.equals(channel)
                 && RandomSampler.filterBySampleIdOrRandomNumber(sampleId, ratio);
