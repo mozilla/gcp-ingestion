@@ -22,12 +22,18 @@ public class Normalize {
    */
   public static String channel(String name) {
     if (CHANNELS.contains(name)) {
+      // We could lowercase before doing this check, but don't to maintain historical practice.
       return name;
     } else if (name == null) {
       return OTHER;
     } else if (name.startsWith("nightly-cck-")) {
+      // The cck suffix was used for various deployments before Firefox Quantum;
+      // cck refers to the "Client Customization Wizard", see
+      // https://mike.kaply.com/2012/04/13/customizing-firefox-extensions-and-the-cck-wizard/
       return "nightly";
     } else if (name.startsWith(BETA)) {
+      // We have a very small tail of pings with channel set to beta with an arbitrary suffix;
+      // we maintain the behavior of normalizing these to "beta" to match historical practice.
       return BETA;
     } else {
       return OTHER;
