@@ -46,7 +46,7 @@ public class ParseUriTest {
     final List<String> expected = Arrays.asList(
         "{\"attributeMap\":" + "{\"app_name\":\"Firefox\"" + ",\"app_version\":\"61.0a1\""
             + ",\"app_build_id\":\"20180328030202\"" + ",\"app_update_channel\":\"nightly\""
-            + ",\"document_namespace\":\"telemetry\""
+            + ",\"document_namespace\":\"telemetry\"" + ",\"normalized_channel\":\"nightly\""
             + ",\"document_id\":\"ce39b608-f595-4c69-b6a6-f7a436604648\""
             + ",\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
             + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
