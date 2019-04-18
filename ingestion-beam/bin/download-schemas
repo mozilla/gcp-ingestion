@@ -22,8 +22,18 @@ function init_working_directory() {
 function insert_testing_schemas() {
     # Patch the current schema archive with testing resources. This function
     # should be called within the root directory of the extracted archive.
-    patch_url="https://github.com/jklukas/mozilla-pipeline-schemas/commit/9f8d4252a170ce9241a153b3b49eef235e1279a2.patch"
-    curl -sL ${patch_url} | git apply -v -p1
+    # See: https://github.com/jklukas/mozilla-pipeline-schemas/commit/9f8d4252a170ce9241a153b3b49eef235e1279a2.patch
+    mkdir -p schemas/test/test
+    cat > schemas/test/test/test.1.schema.json << 'EOF'
+{
+  "$schema" : "http://json-schema.org/draft-04/schema#",
+  "type" : "object",
+  "title" : "default_schema",
+  "properties" : {
+  },
+  "required" : []
+}
+EOF
 }
 
 cd "$(dirname "$0")/.."
