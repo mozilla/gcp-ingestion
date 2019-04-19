@@ -40,6 +40,7 @@ public class Normalize {
       "Firefox");
 
   private static final Pattern OS_VERSION_RE = Pattern.compile("([0-9]+(?:\\.[0-9]+){0,2}).*");
+  private static final Pattern COUNTRY_CODE_RE = Pattern.compile("[A-Z][A-Z]");
 
   /**
    * Normalize a channel string to one of the five canonical release channels or "Other".
@@ -122,6 +123,29 @@ public class Normalize {
       }
     }
     return OTHER;
+  }
+
+  /**
+   * Normalize a 2-letter country code value to uppercase, otherwise return "Other".
+   *
+   * <p>This function is intended to be used to normalize ISO 3166-1 alpha-2 codes, but we do not
+   * check that the code actually corresponds to an officially assigned country so that we don't
+   * need to worry about our list of codes drifting out of date. The space of two-letter codes
+   * (26 * 26 = 676) is sufficiently small that the impact of invalid codes would likely be small.
+   *
+   * <p>See https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+   *
+   * <p>Previous implementation with a fixed list of allowable codes:
+   * https://github.com/mozilla-services/lua_sandbox_extensions/blob/607b3c7b9def600ddbd373a14f67a55e1c69f7a1/moz_telemetry/modules/moz_telemetry/normalize.lua#L233-L268
+   */
+  public static String countryCode(String code) {
+    code = Strings.nullToEmpty(code).toUpperCase();
+    Matcher matcher = COUNTRY_CODE_RE.matcher(code);
+    if (matcher.matches()) {
+      return code;
+    } else {
+      return OTHER;
+    }
   }
 
 }

@@ -13,6 +13,7 @@ import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.City;
 import com.maxmind.geoip2.record.Subdivision;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.Normalize;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -123,7 +124,8 @@ public class GeoCityLookup
           CityResponse response = geoIP2City.city(ipAddress);
           foundCity.inc();
 
-          attributes.put("geo_country", response.getCountry().getIsoCode());
+          String countryCode = response.getCountry().getIsoCode();
+          attributes.put("geo_country", Normalize.countryCode(countryCode));
 
           City city = response.getCity();
           if (cityAllowed(city.getGeoNameId())) {
