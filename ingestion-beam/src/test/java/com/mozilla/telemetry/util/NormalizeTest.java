@@ -114,4 +114,13 @@ public class NormalizeTest {
     assertEquals("Other", Normalize.appName(null));
   }
 
+  @Test
+  public void countryCode() {
+    assertEquals("FI", Normalize.countryCode("FI"));
+    assertEquals("FI", Normalize.countryCode("fi"));
+    assertEquals("Other", Normalize.countryCode("FII"));
+    assertEquals("Other", Normalize.countryCode("asdf"));
+    assertEquals("Other", Normalize.countryCode(null));
+  }
+
 }
