@@ -12,10 +12,11 @@ import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.Normalize;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
@@ -24,7 +25,6 @@ import org.apache.beam.sdk.options.ValueProvider;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.Validator;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -35,6 +35,11 @@ import org.json.JSONObject;
  * incur the cost of parsing the JSON only once.
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+
+  public static final String CLIENT_ID = "client_id";
+  public static final String SAMPLE_ID = "sample_id";
+  public static final String OS = "os";
+  public static final String OS_VERSION = "os_version";
 
   public static ParsePayload of(ValueProvider<String> schemasLocation,
       ValueProvider<String> schemaAliasesLocation) {
@@ -102,10 +107,10 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     if (!attributes.containsKey("document_version")) {
       if (json.has("version")) {
         String version = json.get("version").toString();
-        attributes.put("document_version", version);
+        attributes.put(ParseUri.DOCUMENT_VERSION, version);
       } else if (json.has("v")) {
         String version = json.get("v").toString();
-        attributes.put("document_version", version);
+        attributes.put(ParseUri.DOCUMENT_VERSION, version);
       } else {
         PerDocTypeCounter.inc(attributes, "error_missing_version");
         PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
@@ -115,22 +120,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       }
     }
 
-    // Extract client_id and sample_id from the payload.
-    final String clientId;
-    if (json.has("clientId")) {
-      clientId = json.getString("clientId");
-    } else if (json.has("client_id")) {
-      clientId = json.getString("client_id");
-    } else {
-      clientId = null;
-    }
-    if (clientId != null) {
-      attributes.put("client_id", clientId);
-      attributes.put("sample_id", Long.toString(calculateSampleId(clientId)));
-    }
-
-    // Extract and normalize OS information from the payload.
-    addOperatingSystemAttributes(attributes, json);
+    addAttributesFromPayload(attributes, json);
 
     // Throws SchemaNotFoundException if there's no schema
     Schema schema;
@@ -158,44 +148,50 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     return new PubsubMessage(normalizedPayload, attributes);
   }
 
-  private void addOperatingSystemAttributes(Map<String, String> attributes, JSONObject json) {
-    String osName = null;
-    String osVersion = null;
+  private void addAttributesFromPayload(Map<String, String> attributes, JSONObject json) {
 
-    // Try to get "common ping"-style os fields.
-    JSONObject osObject = null;
-    try {
-      osObject = json.getJSONObject("environment").getJSONObject("system").getJSONObject("os");
-    } catch (JSONException ignore) {
-      // pass
-    }
-    if (osObject != null) {
-      Object name = osObject.opt("name");
-      if (name != null) {
-        osName = name.toString();
-      }
-      Object version = osObject.opt("version");
-      if (version != null) {
-        osVersion = version.toString();
-      }
-    }
+    // Try to get glean-style client_info object.
+    Optional<JSONObject> gleanClientInfo = Optional.of(json) //
+        .map(j -> j.optJSONObject("client_info"));
 
-    if (Strings.isNullOrEmpty(osName)) {
-      // Try to get "core ping"-style "os" field.
-      osName = json.optString("os");
-    }
-    if (Strings.isNullOrEmpty(osVersion)) {
-      // Try to get "core ping"-style "osversion" field.
-      osVersion = json.optString("osversion");
-    }
+    // Try to get "common ping"-style os object.
+    Optional<JSONObject> commonPingOs = Optional.of(json) //
+        .map(j -> j.optJSONObject("environment")) //
+        .map(j -> j.getJSONObject("system")) //
+        .map(j -> j.getJSONObject("os"));
 
-    if (!Strings.isNullOrEmpty(osName)) {
-      attributes.put("normalized_os", Normalize.os(osName));
+    if (gleanClientInfo.isPresent()) {
+      // See glean ping structure in:
+      // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/glean/baseline/baseline.1.schema.json
+      ifNonEmpty(gleanClientInfo.get().optString("app_channel"),
+          v -> attributes.put(ParseUri.APP_UPDATE_CHANNEL, v));
+      ifNonEmpty(gleanClientInfo.get().optString(OS), v -> attributes.put(OS, v));
+      ifNonEmpty(gleanClientInfo.get().optString(OS_VERSION), v -> attributes.put(OS_VERSION, v));
+      ifNonEmpty(gleanClientInfo.get().optString(CLIENT_ID), v -> attributes.put(CLIENT_ID, v));
+    } else if (commonPingOs.isPresent()) {
+      // See common ping structure in:
+      // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
+      ifNonEmpty(commonPingOs.get().optString("name"), v -> attributes.put(OS, v));
+      ifNonEmpty(commonPingOs.get().optString("version"), v -> attributes.put(OS_VERSION, v));
+    } else {
+      // Try to extract "core ping"-style values; see
+      // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/telemetry/core/core.10.schema.json
+      ifNonEmpty(json.optString("os"), v -> attributes.put(OS, v));
+      ifNonEmpty(json.optString("osversion"), v -> attributes.put(OS_VERSION, v));
     }
 
-    String normalizedOsVersion = Normalize.osVersion(osVersion);
-    if (!Strings.isNullOrEmpty(normalizedOsVersion)) {
-      attributes.put("normalized_os_version", normalizedOsVersion);
+    // Try extracting variants of top-level client id.
+    ifNonEmpty(json.optString(CLIENT_ID), v -> attributes.put(CLIENT_ID, v));
+    ifNonEmpty(json.optString("clientId"), v -> attributes.put(CLIENT_ID, v));
+
+    // Add sample id.
+    Optional.ofNullable(attributes.get(CLIENT_ID)) //
+        .ifPresent(v -> attributes.put(SAMPLE_ID, Long.toString(calculateSampleId(v))));
+  }
+
+  private static void ifNonEmpty(String value, Consumer<String> consumer) {
+    if (!Strings.isNullOrEmpty(value)) {
+      consumer.accept(value);
     }
   }
 

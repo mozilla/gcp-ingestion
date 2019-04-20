@@ -112,17 +112,14 @@ public class ParseProxyTest {
         "{\"attributeMap\":{\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
-            + ",\"normalized_country_code\":\"PH\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
-            + ",\"normalized_country_code\":\"PH\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
             + "},\"payload\":\"proxied+\"}",
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
-            + ",\"normalized_country_code\":\"PH\"" //
             + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}");

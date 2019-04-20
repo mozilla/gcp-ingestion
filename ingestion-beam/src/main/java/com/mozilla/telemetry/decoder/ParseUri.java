@@ -6,7 +6,6 @@ package com.mozilla.telemetry.decoder;
 
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.util.Normalize;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -38,12 +37,22 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
 
   private static final ParseUri INSTANCE = new ParseUri();
 
+  public static final String DOCUMENT_NAMESPACE = "document_namespace";
+  public static final String DOCUMENT_TYPE = "document_type";
+  public static final String DOCUMENT_VERSION = "document_version";
+  public static final String DOCUMENT_ID = "document_id";
+  public static final String APP_NAME = "app_name";
+  public static final String APP_VERSION = "app_version";
+  public static final String APP_UPDATE_CHANNEL = "app_update_channel";
+  public static final String APP_BUILD_ID = "app_build_id";
+  public static final String TELEMETRY = "telemetry";
+
   public static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
-  public static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[] { "document_id",
-      "document_type", "app_name", "app_version", "app_update_channel", "app_build_id" };
+  public static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[] { //
+      DOCUMENT_ID, DOCUMENT_TYPE, APP_NAME, APP_VERSION, APP_UPDATE_CHANNEL, APP_BUILD_ID };
   public static final String GENERIC_URI_PREFIX = "/submit/";
-  public static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { "document_namespace",
-      "document_type", "document_version", "document_id" };
+  public static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { //
+      DOCUMENT_NAMESPACE, DOCUMENT_TYPE, DOCUMENT_VERSION, DOCUMENT_ID };
 
   private static Map<String, String> zip(String[] keys, String[] values)
       throws InvalidUriException {
@@ -72,11 +81,9 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
       // We don't yet have access to the version field, so we delay populating the document_version
       // attribute until the ParsePayload step where we have map-like access to the JSON content.
-      attributes.put("document_namespace", "telemetry");
+      attributes.put(DOCUMENT_NAMESPACE, TELEMETRY);
       attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
           uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
-      attributes.put("normalized_app_name", Normalize.appName(attributes.get("app_name")));
-      attributes.put("normalized_channel", Normalize.channel(attributes.get("app_update_channel")));
     } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
       attributes.putAll(
           zip(GENERIC_URI_SUFFIX_ELEMENTS, uri.substring(GENERIC_URI_PREFIX.length()).split("/")));

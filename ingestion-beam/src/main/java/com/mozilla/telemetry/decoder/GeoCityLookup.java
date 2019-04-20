@@ -13,7 +13,6 @@ import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.City;
 import com.maxmind.geoip2.record.Subdivision;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.util.Normalize;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +45,8 @@ import org.apache.beam.sdk.values.PCollection;
 
 public class GeoCityLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+
+  public static final String GEO_COUNTRY = "geo_country";
 
   public static GeoCityLookup of(ValueProvider<String> geoCityDatabase,
       ValueProvider<String> geoCityFilter) {
@@ -131,11 +132,6 @@ public class GeoCityLookup
 
           String countryCode = response.getCountry().getIsoCode();
           attributes.put("geo_country", countryCode);
-
-          // We don't expect the geo db to return invalid country codes, but we apply
-          // this normalization anyway to produce a normalized_ attribute that will appear
-          // at the top level of payloads.
-          attributes.put("normalized_country_code", Normalize.countryCode(countryCode));
 
           City city = response.getCity();
           if (cityAllowed(city.getGeoNameId())) {

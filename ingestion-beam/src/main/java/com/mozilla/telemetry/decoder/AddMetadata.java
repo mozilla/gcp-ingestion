@@ -6,6 +6,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableList;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.ByteArrayOutputStream;
@@ -50,9 +51,9 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
 
   private static final List<String> TOP_LEVEL_STRING_FIELDS = ImmutableList.of(
       "submission_timestamp", "document_id", //
-      "normalized_app_name", "normalized_channel", //
-      "normalized_os", "normalized_os_version", //
-      "normalized_country_code");
+      NormalizeAttributes.NORMALIZED_APP_NAME, NormalizeAttributes.NORMALIZED_CHANNEL,
+      NormalizeAttributes.NORMALIZED_OS, NormalizeAttributes.NORMALIZED_OS_VERSION,
+      NormalizeAttributes.NORMALIZED_COUNTRY_CODE);
 
   private static final List<String> TOP_LEVEL_INT_FIELDS = ImmutableList.of("sample_id");
 

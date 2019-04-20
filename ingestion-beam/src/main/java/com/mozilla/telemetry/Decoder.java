@@ -13,6 +13,7 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -63,6 +64,7 @@ public class Decoder extends Sink {
         .apply(ParseProxy.of()) //
         .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
         .apply(ParseUserAgent.of()) //
+        .apply(NormalizeAttributes.of()) //
         .apply(AddMetadata.of()).errorsTo(errorCollections) //
         .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
         .sendDuplicateMetadataToErrors().errorsTo(errorCollections) //
