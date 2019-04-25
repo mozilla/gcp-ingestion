@@ -196,12 +196,12 @@ public class PubsubMessageToTableRow
   }
 
   /**
-   * Recursively descend into the fields of the passed map, comparing to the passed BQ schema,
-   * modifying the structure to avoid map types, nested arrays, etc.
+   * Recursively descend into the fields of the passed map and compare to the passed BQ schema,
+   * while modifying the structure to accommodate map types, nested arrays, etc.
    *
    * @param parent the map object to inspect and transform
-   * @param bqFields the list of BQ fields expected inside this object
-   * @param additionalProperties a map into which we place any fields absent from the BQ schema
+   * @param bqFields the list of expected BQ fields inside this object
+   * @param additionalProperties a map for storing fields absent in the BQ schema
    */
   public static void transformForBqSchema(Map<String, Object> parent, List<Field> bqFields,
       Map<String, Object> additionalProperties) {
