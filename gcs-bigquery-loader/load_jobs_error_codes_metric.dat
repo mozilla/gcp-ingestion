@@ -1,0 +1,15 @@
+filter: |-
+  resource.type="bigquery_resource"
+  protoPayload.methodName="jobservice.jobcompleted"
+  severity="ERROR"
+labelExtractors:
+  error_code: EXTRACT(protoPayload.serviceData.jobCompletedEvent.job.jobStatus.error.code)
+metricDescriptor:
+  labels:
+  - key: error_code
+  metricKind: DELTA
+  name: projects/dev-avro-bq-test-load/metricDescriptors/logging.googleapis.com/user/load_jobs_error_codes
+  type: logging.googleapis.com/user/load_jobs_error_codes
+  unit: '1'
+  valueType: INT64
+name: load_jobs_error_codes

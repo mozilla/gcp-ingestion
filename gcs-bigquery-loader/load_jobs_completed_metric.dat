@@ -1,0 +1,12 @@
+filter: |-
+  resource.type="bigquery_resource"
+  logName="projects/dev-avro-bq-test-load/logs/cloudaudit.googleapis.com%2Fdata_access"
+  protoPayload.methodName="jobservice.jobcompleted"
+  severity="INFO"
+metricDescriptor:
+  metricKind: DELTA
+  name: projects/dev-avro-bq-test-load/metricDescriptors/logging.googleapis.com/user/load_jobs_completed
+  type: logging.googleapis.com/user/load_jobs_completed
+  unit: '1'
+  valueType: INT64
+name: load_jobs_completed

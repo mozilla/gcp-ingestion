@@ -1,0 +1,9 @@
+.vscode
+
+.terraform
+terraform.tfstate
+terraform.tfstate.backup
+
+dist/
+
+dev-avro-bq-test-load-ca87beb49ed0.json
