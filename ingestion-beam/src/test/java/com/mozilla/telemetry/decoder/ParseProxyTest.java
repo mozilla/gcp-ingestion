@@ -112,13 +112,16 @@ public class ParseProxyTest {
         "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"US\"" //
+            + ",\"normalized_country_code\":\"US\"" //
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"US\"" //
+            + ",\"normalized_country_code\":\"US\"" //
             + "},\"payload\":\"proxied+\"}",
         "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"geo_country\":\"US\"" //
+            + "{\"geo_country\":\"US\"" //
+            + ",\"normalized_country_code\":\"US\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}");
 
     final PCollection<String> output = pipeline //

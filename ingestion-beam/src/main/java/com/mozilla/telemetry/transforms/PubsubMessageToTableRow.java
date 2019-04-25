@@ -16,7 +16,6 @@ import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Table;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -149,7 +148,7 @@ public class PubsubMessageToTableRow
       throw new UncheckedExecutionException(e);
     }
 
-    TableRow tableRow = buildTableRow(message.getPayload());
+    TableRow tableRow = Json.readTableRow(message.getPayload());
     Map<String, Object> additionalProperties = new HashMap<>();
     transformForBqSchema(tableRow, schema.getFields(), additionalProperties);
     tableRow.put("additional_properties", Json.asString(additionalProperties));
@@ -162,37 +161,6 @@ public class PubsubMessageToTableRow
     WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
     result.output().setCoder(KvCoder.of(TableDestinationCoderV2.of(), TableRowJsonCoder.of()));
     return result;
-  }
-
-  @VisibleForTesting
-  static TableRow buildTableRow(byte[] payload) throws IOException {
-    TableRow tableRow = Json.readTableRow(payload);
-    promoteFields(tableRow);
-    return tableRow;
-  }
-
-  /**
-   * BigQuery cannot partition or cluster tables by a nested field, so we promote some important
-   * attributes out of metadata to top-level fields.
-   */
-  private static void promoteFields(TableRow tableRow) {
-    Optional<Map> metadata = Optional.ofNullable(tableRow).map(row -> tableRow.get("metadata"))
-        .filter(Map.class::isInstance).map(Map.class::cast);
-    if (metadata.isPresent()) {
-      Object submissionTimestamp = metadata.get().remove("submission_timestamp");
-      if (submissionTimestamp instanceof String) {
-        tableRow.putIfAbsent("submission_timestamp", submissionTimestamp);
-      }
-      Object sampleId = metadata.get().remove("sample_id");
-      if (sampleId instanceof String) {
-        try {
-          Long asLong = Long.valueOf((String) sampleId);
-          tableRow.putIfAbsent("sample_id", asLong);
-        } catch (NumberFormatException ignore) {
-          // pass
-        }
-      }
-    }
   }
 
   /**

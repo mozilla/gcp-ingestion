@@ -125,7 +125,12 @@ public class GeoCityLookup
           foundCity.inc();
 
           String countryCode = response.getCountry().getIsoCode();
-          attributes.put("geo_country", Normalize.countryCode(countryCode));
+          attributes.put("geo_country", countryCode);
+
+          // We don't expect the geo db to return invalid country codes, but we apply
+          // this normalization anyway to produce a normalized_ attribute that will appear
+          // at the top level of payloads.
+          attributes.put("normalized_country_code", Normalize.countryCode(countryCode));
 
           City city = response.getCity();
           if (cityAllowed(city.getGeoNameId())) {
