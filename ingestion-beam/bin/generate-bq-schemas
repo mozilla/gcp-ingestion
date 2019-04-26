@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Generate BigQuery schemas from a schema archive fetched by
+# `bin/download=schemas`. This script will write to a flat directory called
+# `bq-schemas` containing BQ schemas that have been injected with partitioning
+# and metadata schemas.
+
+
 set -e
 
 cd "$(dirname "$0")/.." || exit
@@ -7,6 +13,11 @@ cd "$(dirname "$0")/.." || exit
 if [ ! -x  "$(command -v jsonschema-transpiler)" ]; then
     echo "jsonschema-transpiler is not installed"
     echo "Run 'cargo install --git https://github.com/acmiyaguchi/jsonschema-transpiler.git --branch dev'"
+    exit 1
+fi
+
+if [ ! -x  "$(command -v jq)" ]; then
+    echo "jq is not installed"
     exit 1
 fi
 
@@ -31,7 +42,7 @@ function init_working_directory() {
 
 total=0
 failed=0
-function generate_avro_schema() {
+function generate_bq_schema() {
     # From a relative path to a jsonschema, transpile an bigquery schema in a
     # flat directory. This function requires the following global variables:
     # $total, $failed
@@ -45,8 +56,8 @@ function generate_avro_schema() {
     name="$namespace.$(basename "$src" .schema.json).bigquery.json"
     local dst="$root/$name"
     
-    # Create the folder to the new schema
-    mkdir -p "$root/$relpath"
+    # Create the folder if not exists
+    mkdir -p "$root"
 
     if ! jsonschema-transpiler --type bigquery "$src" > "$dst" 2> /dev/null; then
         echo "Unable to convert $(basename "$src")"
@@ -60,16 +71,17 @@ function generate_avro_schema() {
     metadata=$(cat << EOM
 {
     "name": "metadata", 
-    "type": "RECORD", 
+    "type": "RECORD",
     "fields": [
         {"name": "key", "type": "STRING", "mode": "REQUIRED"},
         {"name": "value", "type": "STRING", "mode": "REQUIRED"}
-    ]
+    ],
+    "mode": "REPEATED"
 }
 EOM
 )
-    # ignore metadata for now
-    jq ".fields | . += [$submission]" $dst > $tmp
+    # Extract the top-level columns from the record and insert metadata
+    jq ".fields | . += [$submission, $metadata]" $dst > $tmp
     mv $tmp $dst
 
     ((total++))
@@ -88,7 +100,7 @@ schemas=$(find $src/schemas -type file -name "*.schema.json")
 
 # Transpile avro schema into a destination directory
 for schema in $schemas; do
-    generate_avro_schema "$schema" $dst
+    generate_bq_schema "$schema" $dst
 done
 echo "$((total-failed))/$total sucessfully converted"
 
