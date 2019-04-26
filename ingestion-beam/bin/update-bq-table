@@ -1,20 +1,35 @@
 #!/bin/bash
 
+# Update the BigQuery table schemas in the current project. Set the following
+# environment variables to modify the behavior of the update.
+#
+#   SKIP_EXISTING=1     - Skip table creation if the table already exists
+#   REPLACE_EXISTING=1  - Drop and create a table whether it exists or not
+#
+# The default behavior is to fail when encountering an existing table.
+
 cd "$(dirname "$0")/.." || exit
 
-if [[ ! -d bq-schemas ]]; then
+if [[ ! -d "bq-schemas" ]]; then
     echo "Run 'bin/generate-bq-schemas'"
     exit 1
 fi
 
-documents=$(find bq-schemas -type file)
-
 total=0
-error=0
 skip=0
+function update_table() {
+    # Arguments:
+    #   $1 - path to the document in format `{namespace}.{type}.{version}.bq.json`
+    #
+    # Options via envvar
+    #   $SKIP_EXISTING  - skip if exists
+    #   $REPLACE_EXISTING - remove and create if exists
+    #
+    # Counters:
+    #   $total - the total number of documents seen
+    #   $skip  - the number of documents that have been skipped
+    document=$1
 
-trap "exit" INT
-for document in ${documents}; do
     # downcase hyphens to underscores before generating names
     bq_document=$(echo $(basename $document) | sed 's/-/_/g')
     namespace=$(echo $bq_document | cut -d. -f1)
@@ -31,7 +46,7 @@ for document in ${documents}; do
     if [[ ! -z ${SKIP_EXISTING+x} ]] && [[ ! -z ${table_exists} ]]; then
         echo "skipping bq mk for ${document}"
         ((skip++))
-        continue
+        return
     fi
 
     if [[ ! -z ${REPLACE_EXISTING+x} ]] && [[ ! -z ${table_exists} ]]; then
@@ -43,4 +58,11 @@ for document in ${documents}; do
         --schema $document \
         --time_partitioning_field submission_timestamp \
         ${namespace}.${doctype}_v${docver}
+}
+
+documents=$(find bq-schemas -type file)
+trap "exit" INT
+for document in ${documents}; do
+    update_table $document
 done
+echo "$((total-skip))/$total sucessfully updated, ${skip} skipped."
