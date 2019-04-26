@@ -43,7 +43,7 @@ function init_working_directory() {
 total=0
 failed=0
 function generate_bq_schema() {
-    # From a relative path to a jsonschema, transpile an bigquery schema in a
+    # From a relative path to a jsonschema, transpile a bigquery schema in a
     # flat directory. This function requires the following global variables:
     # $total, $failed
     local src=$1
@@ -98,7 +98,7 @@ dst="bq-schemas"
 tar -xf "$rootdir/schemas.tar.gz" -C "$workdir"
 schemas=$(find $src/schemas -type file -name "*.schema.json")
 
-# Transpile avro schema into a destination directory
+# Transpile BigQuery schema into a destination directory
 for schema in $schemas; do
     generate_bq_schema "$schema" $dst
 done
