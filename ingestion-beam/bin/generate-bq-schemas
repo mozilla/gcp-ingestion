@@ -52,7 +52,7 @@ function generate_bq_schema() {
     local namespace
     local name
     # replace // with / and get the proper namespace
-    namespace=$(echo $src | sed 's/\/\//\//g' | cut -d/ -f3)
+    namespace=$(echo "$src" | sed 's/\/\//\//g' | cut -d/ -f3)
     name="$namespace.$(basename "$src" .schema.json).bigquery.json"
     local dst="$root/$name"
     
@@ -81,8 +81,8 @@ function generate_bq_schema() {
 EOM
 )
     # Extract the top-level columns from the record and insert metadata
-    jq ".fields | . += [$submission, $metadata]" $dst > $tmp
-    mv $tmp $dst
+    jq ".fields | . += [$submission, $metadata]" "$dst" > "$tmp"
+    mv "$tmp" "$dst"
 
     ((total++))
     return 0

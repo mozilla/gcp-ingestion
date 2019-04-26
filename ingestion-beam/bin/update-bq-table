@@ -31,38 +31,38 @@ function update_table() {
     document=$1
 
     # downcase hyphens to underscores before generating names
-    bq_document=$(echo $(basename $document) | sed 's/-/_/g')
-    namespace=$(echo $bq_document | cut -d. -f1)
-    doctype=$(echo $bq_document | cut -d. -f2)
-    docver=$(echo $bq_document | cut -d. -f3)
+    bq_document=$(basename "${document}" | sed 's/-/_/g')
+    namespace=$(echo "${bq_document}" | cut -d. -f1)
+    doctype=$(echo "${bq_document}" | cut -d. -f2)
+    docver=$(echo "${bq_document}" | cut -d. -f3)
 
-    if ! bq ls | grep ${namespace} >/dev/null ; then
+    if ! bq ls | grep "${namespace}" >/dev/null ; then
         echo "creating dataset: ${namespace}"
-        bq mk ${namespace}
+        bq mk "${namespace}"
     fi
 
-    table_exists=$(bq ls ${namespace} | grep ${doctype}_v${docver})
+    table_exists=$(bq ls "${namespace}" | grep "${doctype}_v${docver}")
 
-    if [[ ! -z ${SKIP_EXISTING+x} ]] && [[ ! -z ${table_exists} ]]; then
+    if [[ -n ${SKIP_EXISTING+x} ]] && [[ -n ${table_exists} ]]; then
         echo "skipping bq mk for ${document}"
         ((skip++))
         return
     fi
 
-    if [[ ! -z ${REPLACE_EXISTING+x} ]] && [[ ! -z ${table_exists} ]]; then
+    if [[ -n ${REPLACE_EXISTING+x} ]] && [[ -n ${table_exists} ]]; then
         echo "running bq rm for ${document}"
-        bq rm -f ${namespace}.${doctype}_v${docver}
+        bq rm -f "${namespace}.${doctype}_v${docver}"
     fi
 
     bq mk --table \
-        --schema $document \
+        --schema "${document}" \
         --time_partitioning_field submission_timestamp \
-        ${namespace}.${doctype}_v${docver}
+        "${namespace}.${doctype}_v${docver}"
 }
 
 documents=$(find bq-schemas -type file)
 trap "exit" INT
 for document in ${documents}; do
-    update_table $document
+    update_table "${document}"
 done
-echo "$((total-skip))/$total sucessfully updated, ${skip} skipped."
+echo "$((total-skip))/${total} sucessfully updated, ${skip} skipped."
