@@ -17,6 +17,7 @@ fi
 
 total=0
 skip=0
+error=0
 function update_table() {
     # Arguments:
     #   $1 - path to the document in format `{namespace}.{type}.{version}.bq.json`
@@ -28,7 +29,9 @@ function update_table() {
     # Counters:
     #   $total - the total number of documents seen
     #   $skip  - the number of documents that have been skipped
+    #   $error - the number of errors encountered
     document=$1
+    ((total++))
 
     # downcase hyphens to underscores before generating names
     bq_document=$(basename "${document}" | sed 's/-/_/g')
@@ -58,6 +61,9 @@ function update_table() {
         --schema "${document}" \
         --time_partitioning_field submission_timestamp \
         "${namespace}.${doctype}_v${docver}"
+    if [[ $? ]]; then
+        ((error++))
+    fi
 }
 
 documents=$(find bq-schemas -type file)
@@ -65,4 +71,5 @@ trap "exit" INT
 for document in ${documents}; do
     update_table "${document}"
 done
-echo "$((total-skip))/${total} sucessfully updated, ${skip} skipped."
+
+echo "$((total-skip-error))/${total} sucessfully updated, ${skip} skipped, ${error} errors."
