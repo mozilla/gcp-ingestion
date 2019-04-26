@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Generate BigQuery schemas from a schema archive fetched by
-# `bin/download=schemas`. This script will write to a flat directory called
-# `bq-schemas` containing BQ schemas that have been injected with partitioning
-# and metadata schemas.
+# Generate BigQuery schemas for integration testing and validation from a schema
+# archive fetched by `bin/download=schemas`. This script will write to a flat
+# directory called `bq-schemas` containing BQ schemas that have been injected
+# with partitioning and metadata schemas.
 
 
 set -e

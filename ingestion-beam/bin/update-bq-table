@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# Update the BigQuery table schemas in the current project. Set the following
+# Update the BigQuery table schemas in the current project for integration
+# testing and validation. This script generates the empty tables that are
+# suitable for ingesting data from decoded messages. Set the following
 # environment variables to modify the behavior of the update.
 #
 #   SKIP_EXISTING=1     - Skip table creation if the table already exists
