@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Update the BigQuery table schemas in the current project for integration
+# testing and validation. This script generates the empty tables that are
+# suitable for ingesting data from decoded messages. Set the following
+# environment variables to modify the behavior of the update.
+#
+#   SKIP_EXISTING=1     - Skip table creation if the table already exists
+#   REPLACE_EXISTING=1  - Drop and create a table whether it exists or not
+#
+# The default behavior is to fail when encountering an existing table.
+
+cd "$(dirname "$0")/.." || exit
+
+if [[ ! -d "bq-schemas" ]]; then
+    echo "Run 'bin/generate-bq-schemas'"
+    exit 1
+fi
+
+total=0
+skip=0
+error=0
+function update_table() {
+    # Arguments:
+    #   $1 - path to the document in format `{namespace}.{type}.{version}.bq.json`
+    #
+    # Options via envvar
+    #   $SKIP_EXISTING  - skip if exists
+    #   $REPLACE_EXISTING - remove and create if exists
+    #
+    # Counters:
+    #   $total - the total number of documents seen
+    #   $skip  - the number of documents that have been skipped
+    #   $error - the number of errors encountered
+    document=$1
+    ((total++))
+
+    # downcase hyphens to underscores before generating names
+    bq_document=$(basename "${document}" | sed 's/-/_/g')
+    namespace=$(echo "${bq_document}" | cut -d. -f1)
+    doctype=$(echo "${bq_document}" | cut -d. -f2)
+    docver=$(echo "${bq_document}" | cut -d. -f3)
+
+    if ! bq ls | grep "${namespace}" >/dev/null ; then
+        echo "creating dataset: ${namespace}"
+        bq mk "${namespace}"
+    fi
+
+    table_exists=$(bq ls "${namespace}" | grep "${doctype}_v${docver}")
+
+    if [[ -n ${SKIP_EXISTING+x} ]] && [[ -n ${table_exists} ]]; then
+        echo "skipping bq mk for ${document}"
+        ((skip++))
+        return
+    fi
+
+    if [[ -n ${REPLACE_EXISTING+x} ]] && [[ -n ${table_exists} ]]; then
+        echo "running bq rm for ${document}"
+        bq rm -f "${namespace}.${doctype}_v${docver}"
+    fi
+
+    bq mk --table \
+        --schema "${document}" \
+        --time_partitioning_field submission_timestamp \
+        "${namespace}.${doctype}_v${docver}"
+    if [[ $? ]]; then
+        ((error++))
+    fi
+}
+
+documents=$(find bq-schemas -type file)
+trap "exit" INT
+for document in ${documents}; do
+    update_table "${document}"
+done
+
+echo "$((total-skip-error))/${total} sucessfully updated, ${skip} skipped, ${error} errors."

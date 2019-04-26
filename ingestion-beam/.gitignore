@@ -8,3 +8,5 @@ derby.log
 tmp/
 GeoLite2-City.mmdb
 schemas.tar.gz
+avro-schema.tar.gz
+bq-schemas/

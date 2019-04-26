@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# Generate BigQuery schemas for integration testing and validation from a schema
+# archive fetched by `bin/download=schemas`. This script will write to a flat
+# directory called `bq-schemas` containing BQ schemas that have been injected
+# with partitioning and metadata schemas.
+
+
+set -e
+
+cd "$(dirname "$0")/.." || exit
+
+if [ ! -x  "$(command -v jsonschema-transpiler)" ]; then
+    echo "jsonschema-transpiler is not installed"
+    echo "Run 'cargo install --git https://github.com/acmiyaguchi/jsonschema-transpiler.git --branch dev'"
+    exit 1
+fi
+
+if [ ! -x  "$(command -v jq)" ]; then
+    echo "jq is not installed"
+    exit 1
+fi
+
+if [[ ! -f schemas.tar.gz ]]; then
+    echo "Run 'bin/download-schemas'"
+    exit 1
+fi
+
+function init_working_directory() {
+    # Create a temporary directory for working. The current directory is stored
+    # into $rootdir and the working directory is stored into $workdir. The
+    # working directory will be removed on exit.
+    rootdir=$(pwd)
+    workdir=$(mktemp -d -t tmp.XXXXXXXXXX)
+    function cleanup {
+        rm -rf "$workdir"
+        echo "Running cleanup!"
+    }
+    trap cleanup EXIT
+    cd "$workdir" || exit
+}
+
+total=0
+failed=0
+function generate_bq_schema() {
+    # From a relative path to a jsonschema, transpile a bigquery schema in a
+    # flat directory. This function requires the following global variables:
+    # $total, $failed
+    local src=$1
+    local root=$2
+    
+    local namespace
+    local name
+    # replace // with / and get the proper namespace
+    namespace=$(echo "$src" | sed 's/\/\//\//g' | cut -d/ -f3)
+    name="$namespace.$(basename "$src" .schema.json).bigquery.json"
+    local dst="$root/$name"
+    
+    # Create the folder if not exists
+    mkdir -p "$root"
+
+    if ! jsonschema-transpiler --type bigquery "$src" > "$dst" 2> /dev/null; then
+        echo "Unable to convert $(basename "$src")"
+        rm "$dst"
+        ((failed++))
+    fi
+    tmp="$dst.tmp"
+    
+    # remove top-level record and insert metadata and timestamp
+    submission='{"name": "submission_timestamp", "type": "TIMESTAMP", "mode": "REQUIRED"}'
+    metadata=$(cat << EOM
+{
+    "name": "metadata", 
+    "type": "RECORD",
+    "fields": [
+        {"name": "key", "type": "STRING", "mode": "REQUIRED"},
+        {"name": "value", "type": "STRING", "mode": "REQUIRED"}
+    ],
+    "mode": "REPEATED"
+}
+EOM
+)
+    # Extract the top-level columns from the record and insert metadata
+    jq ".fields | . += [$submission, $metadata]" "$dst" > "$tmp"
+    mv "$tmp" "$dst"
+
+    ((total++))
+    return 0
+}
+
+init_working_directory
+
+src="mozilla-pipeline-schemas"
+dst="bq-schemas"
+
+# Find all JSON schemas in the extracted archive. The top-level folder in the
+# archive is consistently named in `bin/download-schemas`
+tar -xf "$rootdir/schemas.tar.gz" -C "$workdir"
+schemas=$(find $src/schemas -type file -name "*.schema.json")
+
+# Transpile BigQuery schema into a destination directory
+for schema in $schemas; do
+    generate_bq_schema "$schema" $dst
+done
+echo "$((total-failed))/$total sucessfully converted"
+
+# Generate the final archive
+cp -r "$dst" "$rootdir"
