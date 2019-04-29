@@ -12,6 +12,6 @@ for f in $(find . -name "*.mmd"); do
            --volume $PWD:/root/project \
            --workdir /root/project \
            $IMAGE \
-           -c docs/mermaid-config.json \
+           -c .mermaid \
            -i ${f} -o ${f/.mmd/.svg}
 done
