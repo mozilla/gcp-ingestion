@@ -26,9 +26,19 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
  */
 public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
+  private static final String METADATA = "metadata";
+
+  private static final String GEO = "geo";
+  private static final String GEO_PREFIX = GEO + "_";
+
+  private static final String USER_AGENT = "user_agent";
+  private static final String USER_AGENT_PREFIX = USER_AGENT + "_";
+
+  private static final String HEADER = "header";
   private static final List<String> HEADER_ATTRIBUTES = ImmutableList //
       .of("date", "dnt", "x_pingsender_version", "x_debug_id");
 
+  private static final String URI = "uri";
   private static final List<String> URI_ATTRIBUTES = ImmutableList //
       .of("app_name", "app_version", "app_update_channel", "app_build_id");
 
@@ -46,15 +56,18 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
 
   static Map<String, Object> attributesToMetadataPayload(Map<String, String> attributes) {
     final String namespace = attributes.get("document_namespace");
+    // Currently, every entry in metadata is a Map<String, String>, but we keep Object as the
+    // value type to support future evolution of the metadata structure to include fields that
+    // are not specifically Map<String, String>.
     Map<String, Object> metadata = new HashMap<>();
-    metadata.put("geo", geoFromAttributes(attributes));
-    metadata.put("user_agent", userAgentFromAttributes(attributes));
-    metadata.put("header", headersFromAttributes(attributes));
+    metadata.put(GEO, geoFromAttributes(attributes));
+    metadata.put(USER_AGENT, userAgentFromAttributes(attributes));
+    metadata.put(HEADER, headersFromAttributes(attributes));
     if ("telemetry".equals(namespace)) {
-      metadata.put("uri", uriFromAttributes(attributes));
+      metadata.put(URI, uriFromAttributes(attributes));
     }
     Map<String, Object> payload = new HashMap<>();
-    payload.put("metadata", metadata);
+    payload.put(METADATA, metadata);
     TOP_LEVEL_STRING_FIELDS.forEach(name -> Optional //
         .ofNullable(attributes.get(name)) //
         .ifPresent(value -> payload.put(name, value)));
@@ -74,7 +87,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   static void stripPayloadMetadataToAttributes(Map<String, String> attributes,
       Map<String, Object> payload) {
     Optional.ofNullable(payload) //
-        .map(p -> p.remove("metadata")).filter(Map.class::isInstance) //
+        .map(p -> p.remove(METADATA)).filter(Map.class::isInstance) //
         .ifPresent(m -> {
           Map<String, Object> metadata = (Map<String, Object>) m;
           putGeoAttributes(attributes, metadata);
@@ -83,44 +96,48 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
           putUriAttributes(attributes, metadata);
         });
     TOP_LEVEL_STRING_FIELDS.forEach(name -> Optional //
-        .ofNullable(payload).map(p -> p.remove(name))
+        .ofNullable(payload) //
+        .map(p -> p.remove(name)) //
+        .filter(String.class::isInstance) //
         .ifPresent(value -> attributes.put(name, value.toString())));
     TOP_LEVEL_INT_FIELDS.forEach(name -> Optional //
-        .ofNullable(payload).map(p -> p.remove(name))
+        .ofNullable(payload) //
+        .map(p -> p.remove(name)) //
+        .filter(Integer.class::isInstance) //
         .ifPresent(value -> attributes.put(name, value.toString())));
   }
 
   static Map<String, Object> geoFromAttributes(Map<String, String> attributes) {
     HashMap<String, Object> geo = new HashMap<>();
     attributes.keySet().stream() //
-        .filter(k -> k.startsWith("geo_")) //
-        .forEach(k -> geo.put(k.replaceFirst("geo_", ""), attributes.get(k)));
+        .filter(k -> k.startsWith(GEO_PREFIX)) //
+        .forEach(k -> geo.put(k.substring(4), attributes.get(k)));
     return geo;
   }
 
   static void putGeoAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get("geo")) //
+    Optional.ofNullable(metadata).map(m -> m.get(GEO)) //
         .filter(Map.class::isInstance) //
         .map(m -> ((Map<String, Object>) m).entrySet()) //
         .orElse(ImmutableSet.of()) //
-        .forEach(entry -> attributes.put("geo_" + entry.getKey(), entry.getValue().toString()));
+        .forEach(entry -> attributes.put(GEO_PREFIX + entry.getKey(), entry.getValue().toString()));
   }
 
   static Map<String, Object> userAgentFromAttributes(Map<String, String> attributes) {
     HashMap<String, Object> userAgent = new HashMap<>();
     attributes.keySet().stream() //
-        .filter(k -> k.startsWith("user_agent_")) //
-        .forEach(k -> userAgent.put(k.replaceFirst("user_agent_", ""), attributes.get(k)));
+        .filter(k -> k.startsWith(USER_AGENT_PREFIX)) //
+        .forEach(k -> userAgent.put(k.substring(11), attributes.get(k)));
     return userAgent;
   }
 
   static void putUserAgentAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get("user_agent")) //
+    Optional.ofNullable(metadata).map(m -> m.get(USER_AGENT)) //
         .filter(Map.class::isInstance) //
         .map(m -> ((Map<String, Object>) m).entrySet()) //
         .orElse(ImmutableSet.of()) //
-        .forEach(
-            entry -> attributes.put("user_agent_" + entry.getKey(), entry.getValue().toString()));
+        .forEach(entry -> attributes.put(USER_AGENT_PREFIX + entry.getKey(),
+            entry.getValue().toString()));
   }
 
   static Map<String, Object> headersFromAttributes(Map<String, String> attributes) {
@@ -132,7 +149,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   }
 
   static void putHeaderAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get("header")) //
+    Optional.ofNullable(metadata).map(m -> m.get(HEADER)) //
         .filter(Map.class::isInstance) //
         .map(m -> ((Map<String, Object>) m).entrySet()) //
         .orElse(ImmutableSet.of()) //
@@ -148,7 +165,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   }
 
   static void putUriAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get("uri")) //
+    Optional.ofNullable(metadata).map(m -> m.get(URI)) //
         .filter(Map.class::isInstance) //
         .map(m -> ((Map<String, Object>) m).entrySet()) //
         .orElse(ImmutableSet.of()) //
