@@ -562,6 +562,9 @@ use the `bin/mvn` executable to run maven in docker:
 ./bin/mvn clean test
 ```
 
+To run the project in a sandbox against production data, see this document on
+![configuring an integration testing workflow](../docs/ingestion_testing_workflow.md).
+
 # License
 
 This Source Code Form is subject to the terms of the Mozilla Public

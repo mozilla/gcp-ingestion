@@ -29,6 +29,7 @@ failsafe
 featureful
 filesystem
 GCP
+GCS
 GeoIP
 GKE
 GroupByKey
@@ -58,11 +59,13 @@ protobuf
 PubSub
 PubsubMessage
 Q4
+readme
 Redis
 Republisher
 runtime
 S3
 schemas
+SDK
 sharding
 SQLite
 stderr

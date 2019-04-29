@@ -1,0 +1,27 @@
+graph TD
+
+subgraph dataops/sandbox/my-project
+    dataflow
+    bigquery
+    pubsub
+    subscription
+
+    pubsub --> |gcloud pubsub subscriptions| subscription
+    subscription --> dataflow
+    dataflow --> bigquery
+end
+
+subgraph mozilla-pipeline-schemas
+    mps[repository archive]
+end
+
+subgraph ingestion-beam
+    src[src/]
+    schemas[schemas.tar.gz]
+    bq-schemas[bq-schemas/]
+
+    src --> |mvn compile| dataflow
+    mps --> |download-schemas| schemas
+    schemas --> |generate-bq-schemas| bq-schemas
+    bq-schemas --> |update-bq-table| bigquery
+end
