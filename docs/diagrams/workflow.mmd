@@ -6,7 +6,7 @@ subgraph dataops/sandbox/my-project
     pubsub
     subscription
 
-    pubsub --> |gcloud pubsub subscriptions create| subscription
+    pubsub --> |gcloud pubsub subscriptions| subscription
     subscription --> dataflow
     dataflow --> bigquery
 end
@@ -20,7 +20,7 @@ subgraph ingestion-beam
     schemas[schemas.tar.gz]
     bq-schemas[bq-schemas/]
 
-    src --> |mvn compile exec:java| dataflow
+    src --> |mvn compile| dataflow
     mps --> |download-schemas| schemas
     schemas --> |generate-bq-schemas| bq-schemas
     bq-schemas --> |update-bq-table| bigquery
