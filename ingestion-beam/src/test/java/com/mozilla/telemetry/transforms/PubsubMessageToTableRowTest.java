@@ -6,9 +6,6 @@ package com.mozilla.telemetry.transforms;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
@@ -23,24 +20,11 @@ import org.junit.Test;
 
 public class PubsubMessageToTableRowTest {
 
-  static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-
   static final Field MAP_FIELD = Field //
       .newBuilder("mapfield", LegacySQLTypeName.RECORD, //
           Field.of("key", LegacySQLTypeName.STRING), //
           Field.of("value", LegacySQLTypeName.INTEGER)) //
       .setMode(Mode.REPEATED).build();
-
-  @Test
-  public void testBuildTableRow() throws Exception {
-    String input = "{\"metadata\":{\"somenum\":3,\"submission_timestamp\":\"2018-01-01T12:13:14\"}"
-        + ",\"otherkey\":\"hi\"}";
-    String expected = "{\"metadata\":{\"somenum\":3}"
-        + ",\"otherkey\":\"hi\",\"submission_timestamp\":\"2018-01-01T12:13:14\"}";
-    TableRow tableRow = PubsubMessageToTableRow.buildTableRow(input.getBytes());
-    tableRow.setFactory(new JacksonFactory());
-    assertEquals(expected, tableRow.toString());
-  }
 
   @Test
   public void testCoerceNestedArrayToJsonString() throws Exception {
@@ -77,7 +61,7 @@ public class PubsubMessageToTableRowTest {
   public void testCoerceMapValueToString() throws Exception {
     String mainPing = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
         + "{\"timestamps.first_paint\":5405}}}}}";
-    Map<String, Object> parent = JSON_FACTORY.fromString(mainPing, Map.class);
+    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes());
     Map<String, Object> additionalProperties = new HashMap<>();
     parent.put("64bit", true);
     parent.put("hi-fi", true);

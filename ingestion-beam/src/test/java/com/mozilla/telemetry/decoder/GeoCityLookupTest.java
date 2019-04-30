@@ -47,9 +47,13 @@ public class GeoCityLookupTest {
 
     final List<String> expected = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}", //
-        "{\"attributeMap\":{\"geo_country\":\"US\"},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"US\"" //
+            + ",\"normalized_country_code\":\"US\"" //
+            + "},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"geo_country\":\"US\"" //
+            + ",\"normalized_country_code\":\"US\"" //
             + ",\"geo_city\":\"Sacramento\"" //
             + ",\"geo_subdivision1\":\"CA\"" //
             + "},\"payload\":\"\"}");
@@ -78,8 +82,9 @@ public class GeoCityLookupTest {
     final List<String> input = Arrays.asList("{\"attributeMap\":" + "{\"remote_addr\":\"10.0.0.2\""
         + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195, 60.1.1.1\"" + "},\"payload\":\"\"}");
 
-    final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\""
-        + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
+    final List<String> expected = Arrays.asList(
+        "{\"attributeMap\":" + "{\"geo_country\":\"US\"" + ",\"normalized_country_code\":\"US\"" //
+            + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
@@ -99,6 +104,7 @@ public class GeoCityLookupTest {
         + ",\"x_forwarded_for\":\"192.168.1.2, 63.245.208.195, 60.1.1.1\"" + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\""
+        + ",\"normalized_country_code\":\"US\"" //
         + ",\"geo_city\":\"Sacramento\"" + ",\"geo_subdivision1\":\"CA\"" + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline //
