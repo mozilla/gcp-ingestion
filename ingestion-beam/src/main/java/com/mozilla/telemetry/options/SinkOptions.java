@@ -46,12 +46,16 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputType(OutputType value);
 
-  @Description("Location of schemas")
-  ValueProvider<String> getSchemaLocation();
+  @Description("Path (local or gs://) to a .tar.gz file containing json schemas; the expected"
+      + " format is the output of GitHub's archive endpoint for mozilla-pipeline-schemas:"
+      + " https://github.com/mozilla-services/mozilla-pipeline-schemas/archive/dev.tar.gz")
+  ValueProvider<String> getSchemasLocation();
 
-  void setSchemaLocation(ValueProvider<String> value);
+  void setSchemasLocation(ValueProvider<String> value);
 
-  @Description("Location of schema aliases")
+  @Description("Path (local or gs://) to a .json file containing list of json schema aliases."
+      + " Example file: schemaAliasing/example-aliasing-config.json"
+      + " If not specified, no schemas will be aliased.")
   ValueProvider<String> getSchemaAliasesLocation();
 
   void setSchemaAliasesLocation(ValueProvider<String> value);
