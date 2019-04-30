@@ -50,7 +50,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       message = PubsubConstraints.ensureNonNull(message);
 
       // Copy attributes
-      Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
+      Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
       String xpp = attributes.get(X_PIPELINE_PROXY);
       if (xpp != null) {

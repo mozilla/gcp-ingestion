@@ -99,9 +99,8 @@ jobs:
           - maven-repo-v1-{{ .Branch }}-
           - maven-repo-v1-
     - run: &download_beam_resources
-        name: Download Geolite2 and schemas
+        name: Download resources needed for Beam tests
         command: |
-          ingestion-beam/bin/download-geolite2
           ingestion-beam/bin/download-schemas
     - run:
         name: Maven Test

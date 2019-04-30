@@ -1,4 +1,4 @@
 {}
-{"attributeMap":{"host":"test","remote_addr":"8.8.8.8","uri":"/submit/telemetry/main/Firefox/61.0a1/nightly/20180328030202"},"payload":""}
-{"attributeMap":{"host":"test","remote_addr":"8.8.8.8","uri":"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049"},"payload":"e30="}
-{"attributeMap":{"host":"test","remote_addr":"8.8.8.8","uri":"/submit/test/test/1/invalid_id"},"payload":"e30="}
+{"attributeMap":{"host":"test","remote_addr":"202.196.224.0","uri":"/submit/telemetry/main/Firefox/61.0a1/nightly/20180328030202"},"payload":""}
+{"attributeMap":{"host":"test","remote_addr":"202.196.224.0","uri":"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049"},"payload":"e30="}
+{"attributeMap":{"host":"test","remote_addr":"202.196.224.0","uri":"/submit/test/test/1/invalid_id"},"payload":"e30="}

@@ -23,6 +23,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -116,6 +118,9 @@ public class GeoCityLookup
         }
 
         try {
+          attributes.put("geo_db_version", DateTimeFormatter.ISO_INSTANT
+              .format(Instant.ofEpochMilli(geoIP2City.getMetadata().getBuildDate().getTime())));
+
           // Throws UnknownHostException
           InetAddress ipAddress = InetAddress.getByName(ip);
           foundIp.inc();
