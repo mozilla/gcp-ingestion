@@ -6,6 +6,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -39,6 +41,8 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
   public static class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
 
     private final Counter countPipelineProxy = Metrics.counter(Fn.class, "pipeline_proxy");
+    private final Distribution teeLatencyTimer = Metrics.distribution(Fn.class,
+        "tee_latency_millis");
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
@@ -50,18 +54,18 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
 
       String xpp = attributes.get(X_PIPELINE_PROXY);
       if (xpp != null) {
+
         // Check if X-Pipeline-Proxy is a timestamp
-        boolean proxyIsTimestamp = true;
-        try {
-          DateTimeFormatter.ISO_INSTANT.parse(xpp);
-        } catch (DateTimeParseException ignore) {
-          proxyIsTimestamp = false;
-        }
-
-        if (proxyIsTimestamp) {
+        final Instant proxyInstant = parseAsInstantOrNull(xpp);
+        if (proxyInstant != null) {
+          // Record the difference between submission and proxy times as tee latency.
+          final String submissionTimestamp = attributes.get(SUBMISSION_TIMESTAMP);
+          final Instant submissionInstant = parseAsInstantOrNull(submissionTimestamp);
+          if (submissionInstant != null) {
+            teeLatencyTimer.update(submissionInstant.toEpochMilli() - proxyInstant.toEpochMilli());
+          }
           // Rename submission timestamp to proxy timestamp
-          attributes.put(PROXY_TIMESTAMP, attributes.get(SUBMISSION_TIMESTAMP));
-
+          attributes.put(PROXY_TIMESTAMP, submissionTimestamp);
           // Use submission timestamp from X-Pipeline-Proxy
           attributes.put(SUBMISSION_TIMESTAMP, xpp);
         }
@@ -93,5 +97,13 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
   }
 
   private ParseProxy() {
+  }
+
+  private static Instant parseAsInstantOrNull(String timestamp) {
+    try {
+      return Instant.from(DateTimeFormatter.ISO_INSTANT.parse(timestamp));
+    } catch (DateTimeParseException | NullPointerException ignore) {
+      return null;
+    }
   }
 }
