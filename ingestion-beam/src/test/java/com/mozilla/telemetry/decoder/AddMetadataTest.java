@@ -138,12 +138,15 @@ public class AddMetadataTest {
 
   @Test
   public void testUriFromAttributes() {
-    Map<String, String> attributes = ImmutableMap.of("app_name", "Firefox", //
-        "sample_id", "18", //
-        "app_update_channel", "release");
+    Map<String, String> attributes = ImmutableMap //
+        .of("uri", "/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049", //
+            "app_name", "Firefox", //
+            "sample_id", "18", //
+            "app_update_channel", "release");
     Map<String, Object> uri = AddMetadata.uriFromAttributes(attributes);
     Map<String, Object> expected = ImmutableMap //
-        .of("app_name", "Firefox", "app_update_channel", "release");
+        .of("uri", "/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049", //
+            "app_name", "Firefox", "app_update_channel", "release");
     assertEquals(expected, uri);
   }
 
