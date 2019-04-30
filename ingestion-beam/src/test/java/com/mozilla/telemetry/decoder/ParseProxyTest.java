@@ -97,38 +97,42 @@ public class ParseProxyTest {
     final List<String> input = Arrays.asList(//
         "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
-            + "{\"x_forwarded_for\":\"_, 8.8.8.8, _\"" //
+            + "{\"x_forwarded_for\":\"_, 202.196.224.0, _\"" //
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
             + "{\"x_pipeline_proxy\":1" //
-            + ",\"x_forwarded_for\":\"_, 8.8.8.8, _, _\"" //
+            + ",\"x_forwarded_for\":\"_, 202.196.224.0, _, _\"" //
             + "},\"payload\":\"proxied+\"}",
         "{\"attributeMap\":" //
             + "{\"x_pipeline_proxy\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"_, 8.8.8.8, _, _\"" //
+            + ",\"x_forwarded_for\":\"_, 202.196.224.0, _, _\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}");
 
     final List<String> expected = Arrays.asList(//
-        "{\"attributeMap\":{},\"payload\":\"\"}", //
+        "{\"attributeMap\":{\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
-            + "{\"geo_country\":\"US\"" //
-            + ",\"normalized_country_code\":\"US\"" //
+            + "{\"geo_country\":\"PH\"" //
+            + ",\"normalized_country_code\":\"PH\"" //
+            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
-            + "{\"geo_country\":\"US\"" //
-            + ",\"normalized_country_code\":\"US\"" //
+            + "{\"geo_country\":\"PH\"" //
+            + ",\"normalized_country_code\":\"PH\"" //
+            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
             + "},\"payload\":\"proxied+\"}",
         "{\"attributeMap\":" //
-            + "{\"geo_country\":\"US\"" //
-            + ",\"normalized_country_code\":\"US\"" //
+            + "{\"geo_country\":\"PH\"" //
+            + ",\"normalized_country_code\":\"PH\"" //
             + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //
         .apply(ParseProxy.of()) //
-        .apply(GeoCityLookup.of(pipeline.newProvider("GeoLite2-City.mmdb"), null))
+        .apply(GeoCityLookup
+            .of(pipeline.newProvider("src/test/resources/cityDB/GeoIP2-City-Test.mmdb"), null))
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
