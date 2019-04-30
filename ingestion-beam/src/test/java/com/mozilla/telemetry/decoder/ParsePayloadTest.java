@@ -130,8 +130,9 @@ public class ParsePayloadTest {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
-    String input = "{\"id\":null,\"metadata\":"
-        + "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":1}}";
+    String input = "{\"id\":null,\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+        + ",\"metadata\":{\"document_namespace\":\"test\",\"document_type\":\"test\""
+        + ",\"document_version\":\"1\",\"geo\":{\"country\":\"FI\"}}}";
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
@@ -140,13 +141,14 @@ public class ParsePayloadTest {
 
     PAssert.that(result.errors()).empty();
 
-    final List<String> expectedMain = Arrays.asList("{\"id\":null}");
-    final PCollection<String> main = result.output().apply("encodeTextMain",
-        OutputFileFormat.text.encode());
-
     final PCollection<Integer> attributeCounts = result.output().apply(MapElements
         .into(TypeDescriptors.integers()).via(message -> message.getAttributeMap().size()));
-    PAssert.that(attributeCounts).containsInAnyOrder(Arrays.asList(3));
+    PAssert.thatSingleton(attributeCounts).isEqualTo(5);
+
+    final String expectedMain = "{\"id\":null}";
+    final PCollection<String> main = result.output() //
+        .apply("encodeTextMain", OutputFileFormat.text.encode());
+    PAssert.thatSingleton(main).isEqualTo(expectedMain);
 
     pipeline.run();
   }

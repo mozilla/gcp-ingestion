@@ -5,7 +5,6 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
@@ -16,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.json.JSONObject;
 
 /**
  * A {@code PTransform} that adds metadata from attributes into the JSON payload.
@@ -26,7 +26,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
  */
 public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
-  private static final String METADATA = "metadata";
+  public static final String METADATA = "metadata";
 
   private static final String GEO = "geo";
   private static final String GEO_PREFIX = GEO + "_";
@@ -42,6 +42,12 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   private static final List<String> URI_ATTRIBUTES = ImmutableList //
       .of("app_name", "app_version", "app_update_channel", "app_build_id");
 
+  // These are identifying fields that we want to include in the payload so that the payload
+  // can be replayed through Beam jobs even if PubSub attributes are lost; this stripping of
+  // attributes occurs for BQ streaming insert errors.
+  public static final List<String> IDENTIFYING_FIELDS = ImmutableList //
+      .of("uri", "document_namespace", "document_type", "document_version");
+
   private static final List<String> TOP_LEVEL_STRING_FIELDS = ImmutableList.of(
       "submission_timestamp", "document_id", //
       "normalized_app_name", "normalized_channel", //
@@ -54,6 +60,13 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     return INSTANCE;
   }
 
+  /**
+   * Return a map that includes a nested "metadata" map and various top-level metadata fields.
+   *
+   * <p>The structure of the metadata here should conform to the metadata/telemetry-ingestion or
+   * metadata/structured-ingestion JSON schemas.
+   * See https://github.com/mozilla-services/mozilla-pipeline-schemas
+   */
   static Map<String, Object> attributesToMetadataPayload(Map<String, String> attributes) {
     final String namespace = attributes.get("document_namespace");
     // Currently, every entry in metadata is a Map<String, String>, but we keep Object as the
@@ -66,6 +79,9 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     if ("telemetry".equals(namespace)) {
       metadata.put(URI, uriFromAttributes(attributes));
     }
+    IDENTIFYING_FIELDS.forEach(name -> Optional //
+        .ofNullable(attributes.get(name)) //
+        .ifPresent(value -> metadata.put(name, value)));
     Map<String, Object> payload = new HashMap<>();
     payload.put(METADATA, metadata);
     TOP_LEVEL_STRING_FIELDS.forEach(name -> Optional //
@@ -84,16 +100,29 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     return payload;
   }
 
-  static void stripPayloadMetadataToAttributes(Map<String, String> attributes,
-      Map<String, Object> payload) {
-    Optional.ofNullable(payload) //
-        .map(p -> p.remove(METADATA)).filter(Map.class::isInstance) //
-        .ifPresent(m -> {
-          Map<String, Object> metadata = (Map<String, Object>) m;
+  /**
+   * Called from {@link ParsePayload} where we have parsed the payload as {@link JSONObject}
+   * for validation, we strip out any existing metadata fields (which might be present if this
+   * message went to error output and is now being reprocessed) to recover the original payload,
+   * storing the metadata as PubSubMessage attributes.
+   *
+   * @param attributes the map into which we insert attributes
+   * @param payload the json object from which we are stripping metadata fields
+   */
+  static void stripPayloadMetadataToAttributes(Map<String, String> attributes, JSONObject payload) {
+    Optional //
+        .ofNullable(payload) //
+        .map(p -> p.remove(METADATA)) //
+        .filter(JSONObject.class::isInstance).map(JSONObject.class::cast) //
+        .ifPresent(metadata -> {
           putGeoAttributes(attributes, metadata);
           putUserAgentAttributes(attributes, metadata);
           putHeaderAttributes(attributes, metadata);
           putUriAttributes(attributes, metadata);
+          IDENTIFYING_FIELDS
+              .forEach(name -> Optional.ofNullable(metadata).map(p -> metadata.remove(name)) //
+                  .filter(String.class::isInstance) //
+                  .ifPresent(value -> attributes.put(name, value.toString())));
         });
     TOP_LEVEL_STRING_FIELDS.forEach(name -> Optional //
         .ofNullable(payload) //
@@ -115,12 +144,12 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     return geo;
   }
 
-  static void putGeoAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get(GEO)) //
-        .filter(Map.class::isInstance) //
-        .map(m -> ((Map<String, Object>) m).entrySet()) //
-        .orElse(ImmutableSet.of()) //
-        .forEach(entry -> attributes.put(GEO_PREFIX + entry.getKey(), entry.getValue().toString()));
+  static void putGeoAttributes(Map<String, String> attributes, JSONObject metadata) {
+    Optional //
+        .ofNullable(metadata) //
+        .map(m -> m.optJSONObject(GEO)) //
+        .ifPresent(geo -> geo.keySet()
+            .forEach(key -> attributes.put(GEO_PREFIX + key, geo.opt(key).toString())));
   }
 
   static Map<String, Object> userAgentFromAttributes(Map<String, String> attributes) {
@@ -131,13 +160,12 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     return userAgent;
   }
 
-  static void putUserAgentAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get(USER_AGENT)) //
-        .filter(Map.class::isInstance) //
-        .map(m -> ((Map<String, Object>) m).entrySet()) //
-        .orElse(ImmutableSet.of()) //
-        .forEach(entry -> attributes.put(USER_AGENT_PREFIX + entry.getKey(),
-            entry.getValue().toString()));
+  static void putUserAgentAttributes(Map<String, String> attributes, JSONObject metadata) {
+    Optional //
+        .ofNullable(metadata) //
+        .map(m -> m.optJSONObject(USER_AGENT)) //
+        .ifPresent(userAgent -> userAgent.keySet().forEach(
+            key -> attributes.put(USER_AGENT_PREFIX + key, userAgent.opt(key).toString())));
   }
 
   static Map<String, Object> headersFromAttributes(Map<String, String> attributes) {
@@ -148,12 +176,12 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     return header;
   }
 
-  static void putHeaderAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get(HEADER)) //
-        .filter(Map.class::isInstance) //
-        .map(m -> ((Map<String, Object>) m).entrySet()) //
-        .orElse(ImmutableSet.of()) //
-        .forEach(entry -> attributes.put(entry.getKey(), entry.getValue().toString()));
+  static void putHeaderAttributes(Map<String, String> attributes, JSONObject metadata) {
+    Optional //
+        .ofNullable(metadata) //
+        .map(m -> m.optJSONObject(HEADER)) //
+        .ifPresent(headers -> headers.keySet()
+            .forEach(key -> attributes.put(key, headers.opt(key).toString())));
   }
 
   static Map<String, Object> uriFromAttributes(Map<String, String> attributes) {
@@ -164,12 +192,12 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     return uri;
   }
 
-  static void putUriAttributes(Map<String, String> attributes, Map<String, Object> metadata) {
-    Optional.ofNullable(metadata).map(m -> m.get(URI)) //
-        .filter(Map.class::isInstance) //
-        .map(m -> ((Map<String, Object>) m).entrySet()) //
-        .orElse(ImmutableSet.of()) //
-        .forEach(entry -> attributes.put(entry.getKey(), entry.getValue().toString()));
+  static void putUriAttributes(Map<String, String> attributes, JSONObject metadata) {
+    Optional //
+        .ofNullable(metadata) //
+        .map(m -> m.optJSONObject(URI)) //
+        .ifPresent(
+            uri -> uri.keySet().forEach(key -> attributes.put(key, uri.opt(key).toString())));
   }
 
   @Override

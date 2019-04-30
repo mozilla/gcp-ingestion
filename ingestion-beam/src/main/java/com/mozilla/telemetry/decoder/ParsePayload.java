@@ -85,18 +85,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       throw e;
     }
 
-    // Remove any top-level "metadata" field if it exists, and attempt to parse it as a
-    // key-value map of strings, adding all entries as attributes.
-    Object untypedMetadata = json.remove("metadata");
-    if (untypedMetadata instanceof JSONObject) {
-      JSONObject metadata = (JSONObject) untypedMetadata;
-      for (String key : metadata.keySet()) {
-        Object value = metadata.get(key);
-        if (value != null) {
-          attributes.put(key, metadata.get(key).toString());
-        }
-      }
-    }
+    // In case this message is being replayed from an error output where AddMetadata has already
+    // been applied, we strip out any existing metadata fields and put them into attributes.
+    AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {

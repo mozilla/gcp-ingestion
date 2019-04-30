@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.time.Duration;
@@ -61,6 +62,7 @@ public class PubsubMessageToTableRow
   }
 
   public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
+  public static final String ADDITIONAL_PROPERTIES = "additional_properties";
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
       .setField(SUBMISSION_TIMESTAMP);
 
@@ -149,9 +151,16 @@ public class PubsubMessageToTableRow
     }
 
     TableRow tableRow = Json.readTableRow(message.getPayload());
+
+    // Strip metadata so that it's not subject to transformation.
+    Object metadata = tableRow.remove(AddMetadata.METADATA);
+
+    // Make BQ-specific transformations to the payload structure.
     Map<String, Object> additionalProperties = new HashMap<>();
     transformForBqSchema(tableRow, schema.getFields(), additionalProperties);
-    tableRow.put("additional_properties", Json.asString(additionalProperties));
+
+    tableRow.put(AddMetadata.METADATA, metadata);
+    tableRow.put(ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
     return KV.of(tableDestination, tableRow);
   }
 

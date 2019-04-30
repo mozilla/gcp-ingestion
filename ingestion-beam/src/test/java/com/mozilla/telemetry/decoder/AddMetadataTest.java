@@ -22,6 +22,7 @@ import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -82,7 +83,7 @@ public class AddMetadataTest {
     Map<String, Object> metadata = ImmutableMap.of("geo",
         ImmutableMap.of("country", "CA", "city", "Whistler"));
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putGeoAttributes(attributes, metadata);
+    AddMetadata.putGeoAttributes(attributes, new JSONObject(metadata));
     Map<String, String> expected = ImmutableMap.of("geo_country", "CA", "geo_city", "Whistler");
     assertEquals(expected, attributes);
   }
@@ -110,7 +111,7 @@ public class AddMetadataTest {
         "user_agent_version", "63.0", //
         "user_agent_os", "Macintosh");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putUserAgentAttributes(attributes, metadata);
+    AddMetadata.putUserAgentAttributes(attributes, new JSONObject(metadata));
     assertEquals(expected, attributes);
   }
 
@@ -131,7 +132,7 @@ public class AddMetadataTest {
     Map<String, String> expected = ImmutableMap.of("dnt", "1", //
         "x_debug_id", "mysession");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putHeaderAttributes(attributes, metadata);
+    AddMetadata.putHeaderAttributes(attributes, new JSONObject(metadata));
     assertEquals(expected, attributes);
   }
 
@@ -153,19 +154,25 @@ public class AddMetadataTest {
     Map<String, String> expected = ImmutableMap.of("app_name", "Firefox", //
         "app_update_channel", "release");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putUriAttributes(attributes, metadata);
+    AddMetadata.putUriAttributes(attributes, new JSONObject(metadata));
     assertEquals(expected, attributes);
   }
 
   @Test
   public void testAttributesToMetadataPayload() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put("document_namespace", "telemetry").put("app_name", "Firefox").put("sample_id", "18")
-        .put("geo_country", "CA").put("x_debug_id", "mysession")
-        .put("normalized_channel", "release").put("x_forwarded_for", "??").build();
+        .put("document_namespace", "telemetry") //
+        .put("app_name", "Firefox") //
+        .put("sample_id", "18") //
+        .put("geo_country", "CA") //
+        .put("x_debug_id", "mysession") //
+        .put("normalized_channel", "release") //
+        .put("x_forwarded_for", "??") //
+        .build();
     Map<String, Object> payload = AddMetadata.attributesToMetadataPayload(attributes);
     Map<String, Object> expected = ImmutableMap.<String, Object>builder() //
         .put("metadata", ImmutableMap.<String, Object>builder() //
+            .put("document_namespace", "telemetry") //
             .put("uri", ImmutableMap.of("app_name", "Firefox")) //
             .put("header", ImmutableMap.of("x_debug_id", "mysession")) //
             .put("geo", ImmutableMap.of("country", "CA")) //
@@ -183,7 +190,7 @@ public class AddMetadataTest {
         .put("uri", ImmutableMap.of("app_name", "Firefox"))
         .put("header", ImmutableMap.of("x_debug_id", "mysession"))
         .put("geo", ImmutableMap.of("country", "CA")).put("user_agent", ImmutableMap.of()).build();
-    Map<String, Object> payload = new HashMap<>();
+    JSONObject payload = new JSONObject();
     payload.put("metadata", metadata);
     payload.put("field1", 99);
     payload.put("normalized_channel", "release");
@@ -194,7 +201,7 @@ public class AddMetadataTest {
     Map<String, String> attributes = new HashMap<>();
     AddMetadata.stripPayloadMetadataToAttributes(attributes, payload);
     assertEquals(expected, attributes);
-    assertEquals(ImmutableMap.of("field1", 99), payload);
+    assertEquals(ImmutableMap.of("field1", 99), payload.toMap());
   }
 
 }

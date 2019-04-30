@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.io;
 
+import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.avro.BinaryRecordFormatter;
@@ -22,13 +23,11 @@ import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.Pipeline;
@@ -51,8 +50,6 @@ import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.DoFn.ProcessContext;
-import org.apache.beam.sdk.transforms.DoFn.ProcessElement;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -381,7 +378,9 @@ public abstract class Write
                     // If there are additional errors, we include the entire JSON response.
                     attributes.put("insert_errors", bqie.getError().toString());
                   }
-                  byte[] payload = bqie.getRow().toString().getBytes();
+                  TableRow row = bqie.getRow();
+                  row.setFactory(JacksonFactory.getDefaultInstance());
+                  byte[] payload = row.toString().getBytes();
                   return new PubsubMessage(payload, attributes);
                 })));
       }
