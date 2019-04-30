@@ -35,20 +35,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setGeoCityFilter(ValueProvider<String> value);
 
-  @Description("Path (local or gs://) to a .tar.gz file containing json schemas; the expected"
-      + " format is the output of GitHub's archive endpoint for mozilla-pipeline-schemas:"
-      + " https://github.com/mozilla-services/mozilla-pipeline-schemas/archive/dev.tar.gz")
-  ValueProvider<String> getSchemasLocation();
-
-  void setSchemasLocation(ValueProvider<String> value);
-
-  @Description("Path (local or gs://) to a .json file containing list of json schema aliases."
-      + " Example file: schemaAliasing/example-aliasing-config.json"
-      + " If not specified, no schemas will be aliased.")
-  ValueProvider<String> getSchemaAliasesLocation();
-
-  void setSchemaAliasesLocation(ValueProvider<String> value);
-
   @Description("URI of a redis server that will be used for deduplication")
   @Validation.Required
   ValueProvider<String> getRedisUri();

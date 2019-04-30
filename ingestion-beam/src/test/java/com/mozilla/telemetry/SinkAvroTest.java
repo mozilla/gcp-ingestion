@@ -79,7 +79,7 @@ public class SinkAvroTest {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputType=avro", "--output=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--schemaLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
+        "--schemasLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=stdout" });
   }
 
@@ -95,7 +95,7 @@ public class SinkAvroTest {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputType=avro", "--output=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--schemaLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
+        "--schemasLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=stdout" });
 
     assertThat("output count", getPrefixFileCount(outputPath, "namespace_0"),
@@ -152,7 +152,7 @@ public class SinkAvroTest {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputType=avro", "--output=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--schemaLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
+        "--schemasLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=stdout" });
 
     assertThat("foo output count", getPrefixFileCount(outputPath, "namespace_0.foo"),
@@ -185,7 +185,7 @@ public class SinkAvroTest {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputType=avro", "--output=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--schemaLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
+        "--schemasLocation=" + schemas, "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=file", "--errorOutput=" + errorOutput, });
 
     assertThat("error ns_0 count", getPrefixFileCount(outputPath + "/err", "namespace_0"),

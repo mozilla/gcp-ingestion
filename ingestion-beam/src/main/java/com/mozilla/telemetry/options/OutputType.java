@@ -48,7 +48,7 @@ public enum OutputType {
     public Write write(SinkOptions.Parsed options) {
       return new AvroOutput(options.getOutput(), options.getParsedWindowDuration(),
           options.getOutputNumShards(), options.getOutputFileCompression(), options.getInputType(),
-          options.getSchemaLocation(), options.getSchemaAliasesLocation());
+          options.getSchemasLocation(), options.getSchemaAliasesLocation());
     }
   },
 
