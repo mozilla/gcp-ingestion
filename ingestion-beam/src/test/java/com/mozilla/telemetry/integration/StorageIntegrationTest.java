@@ -101,8 +101,8 @@ public class StorageIntegrationTest {
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
-        "--geoCityDatabase=GeoLite2-City.mmdb", "--schemasLocation=schemas.tar.gz",
-        "--redisUri=" + redis.uri });
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
 
     tempFolder.newFolder("out");
     tempFolder.newFolder("error");
@@ -131,7 +131,8 @@ public class StorageIntegrationTest {
         "--templateLocation=" + gcsPath + "/templates/TestTemplate",
         "--stagingLocation=" + gcsPath + "/temp/staging", "--inputFileFormat=json",
         "--inputType=file", "--outputFileFormat=json", "--outputType=file",
-        "--errorOutputType=file", "--geoCityDatabase=GeoLite2-City.mmdb",
+        "--errorOutputType=file",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
         "--schemasLocation=schemas.tar.gz", "--schemaAliasesLocation=" + aliases });
 
   }

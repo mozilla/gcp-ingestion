@@ -122,6 +122,19 @@ public class PubsubMessageToTableRowTest {
   }
 
   @Test
+  public void testAdditionalPropertiesStripsEmpty() throws Exception {
+    Map<String, Object> parent = new HashMap<>();
+    Map<String, Object> additionalProperties = new HashMap<>();
+    parent.put("outer", new HashMap<>(ImmutableMap.of(//
+        "mapfield", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
+    List<Field> bqFields = ImmutableList.of(Field.of("outer", LegacySQLTypeName.RECORD, //
+        MAP_FIELD));
+    String expectedAdditional = "{}";
+    PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
   public void testPropertyRename() throws Exception {
     Map<String, Object> parent = new HashMap<>();
     Map<String, Object> additionalProperties = new HashMap<>();

@@ -17,7 +17,7 @@
 
         <!-- Keep these dependency versions in sync with those pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
-        <beam.version>2.11.0</beam.version>
+        <beam.version>2.12.0</beam.version>
         <google-cloud.version>1.49.0</google-cloud.version>
         <jackson.version>2.9.8</jackson.version>
     </properties>
@@ -80,7 +80,7 @@
         <dependency>
             <groupId>nl.basjes.parse.useragent</groupId>
             <artifactId>yauaa</artifactId>
-            <version>5.8</version>
+            <version>5.9</version>
         </dependency>
         <dependency>
             <groupId>com.github.everit-org.json-schema</groupId>
@@ -110,7 +110,7 @@
         <dependency>
             <groupId>com.google.auto.value</groupId>
             <artifactId>auto-value</artifactId>
-            <version>1.6.3</version>
+            <version>1.6.5</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -206,7 +206,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.18</version>
+                        <version>8.20</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -237,7 +237,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>1.19.0</version>
+                <version>1.23.0</version>
                 <configuration>
                     <java>
                         <eclipse>
