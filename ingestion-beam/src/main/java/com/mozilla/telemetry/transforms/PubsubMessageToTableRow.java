@@ -228,8 +228,10 @@ public class PubsubMessageToTableRow
           Field valueField = field.getSubFields().get(1);
           if (valueField.getType() == LegacySQLTypeName.RECORD) {
             Map<String, Object> props = new HashMap<>();
-            additionalProperties.put(name, props);
             transformForBqSchema(map, valueField.getSubFields(), props);
+            if (!props.isEmpty()) {
+              additionalProperties.put(name, props);
+            }
           }
           List<Map<String, Object>> unmapped = map.entrySet().stream()
               .map(entry -> ImmutableMap.of("key", entry.getKey(), "value",
@@ -242,8 +244,10 @@ public class PubsubMessageToTableRow
       } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
         value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
           Map<String, Object> props = new HashMap<>();
-          additionalProperties.put(name, props);
           transformForBqSchema(m, field.getSubFields(), props);
+          if (!props.isEmpty()) {
+            additionalProperties.put(name, props);
+          }
         });
 
         // Likewise, we need to recursively call transformForBqSchema on repeated record types.
@@ -252,8 +256,10 @@ public class PubsubMessageToTableRow
             .orElse(ImmutableList.of());
         records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
           Map<String, Object> props = new HashMap<>();
-          additionalProperties.put(name, props);
           transformForBqSchema(record, field.getSubFields(), props);
+          if (!props.isEmpty()) {
+            additionalProperties.put(name, props);
+          }
         });
       }
     });
