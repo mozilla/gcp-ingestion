@@ -116,4 +116,39 @@ public class DecoderMainTest {
     assertThat("Main output differed from expectation", outputLines,
         matchesInAnyOrder(expectedOutputLines));
   }
+
+  @Test
+  public void testIdempotence() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = "src/test/resources/testdata/decoder-integration";
+    String input = resourceDir + "/*-input.ndjson";
+    String intermediateOutput = outputPath + "/out1/out1";
+    String output = outputPath + "/out2/out2";
+    String errorOutput = outputPath + "/error/error";
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", //
+        "--input=" + input, //
+        "--output=" + intermediateOutput, //
+        "--errorOutput=" + errorOutput, //
+        "--outputFileFormat=json", "--outputType=file", "--errorOutputType=file",
+        "--includeStackTrace=false", "--outputFileCompression=UNCOMPRESSED",
+        "--errorOutputFileCompression=UNCOMPRESSED",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", //
+        "--input=" + intermediateOutput + "*.ndjson", //
+        "--output=" + output, //
+        "--errorOutput=" + errorOutput, //
+        "--outputFileFormat=json", "--outputType=file", "--errorOutputType=file",
+        "--includeStackTrace=false", "--outputFileCompression=UNCOMPRESSED",
+        "--errorOutputFileCompression=UNCOMPRESSED",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
+
+    List<String> outputLines = Lines.files(output + "*.ndjson");
+    List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
+    assertThat("Main output differed from expectation", outputLines,
+        matchesInAnyOrder(expectedOutputLines));
+  }
 }
