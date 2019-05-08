@@ -66,7 +66,7 @@ public enum OutputType {
     public Write write(SinkOptions.Parsed options) {
       return new BigQueryOutput(options.getOutput(), options.getBqWriteMethod(),
           options.getParsedBqTriggeringFrequency(), options.getInputType(),
-          options.getBqNumFileShards());
+          options.getBqNumFileShards(), options.getBqStreamingDocTypes());
     }
   };
 
