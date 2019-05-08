@@ -185,6 +185,44 @@ public class BigQueryIntegrationTest {
   }
 
   @Test
+  public void canWriteWithMixedMethod() throws Exception {
+    String table = "my_test_table";
+    TableId tableId = TableId.of(dataset, table);
+
+    bigquery.create(DatasetInfo.newBuilder(dataset).build());
+    bigquery
+        .create(
+            TableInfo
+                .newBuilder(tableId,
+                    StandardTableDefinition
+                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                            Field.of("type", LegacySQLTypeName.STRING),
+                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
+                .build());
+
+    String input = Resources
+        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
+    String output = String.format("%s:%s.%s", projectId, dataset, "${document_type}_table");
+    String errorOutput = outputPath + "/error/out";
+
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputType=bigquery", "--output=" + output, "--bqWriteMethod=mixed",
+        "--bqStreamingDocTypes=my-namespace/my-test", "--errorOutputType=file",
+        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
+
+    result.waitUntilFinish();
+
+    String tableSpec = String.format("%s.%s", dataset, table);
+    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
+        matchesInAnyOrder(ImmutableList.of("abc123")));
+
+    List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
+    assertThat(errorOutputLines, Matchers.hasSize(2));
+  }
+
+  @Test
   public void canRecoverFailedInsertsInStreamingMode() throws Exception {
     String table = "table_with_required_col";
     String tableSpec = String.format("%s.%s", dataset, table);

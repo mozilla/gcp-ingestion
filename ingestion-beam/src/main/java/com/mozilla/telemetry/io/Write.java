@@ -25,9 +25,11 @@ import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.Pipeline;
@@ -54,6 +56,7 @@ import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.Partition;
 import org.apache.beam.sdk.transforms.Requirements;
 import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
@@ -313,52 +316,79 @@ public abstract class Write
     private final Duration triggeringFrequency;
     private final InputType inputType;
     private final int numShards;
+    private final ValueProvider<List<String>> streamingDocTypes;
 
     /** Public constructor. */
     public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
-        Duration triggeringFrequency, InputType inputType, int numShards) {
+        Duration triggeringFrequency, InputType inputType, int numShards,
+        ValueProvider<List<String>> streamingDocTypes) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
       this.inputType = inputType;
       this.numShards = numShards;
+      this.streamingDocTypes = NestedValueProvider.of(streamingDocTypes,
+          value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
     }
 
     @Override
     public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
-      BigQueryIO.Write<KV<TableDestination, TableRow>> writeTransform = BigQueryIO //
+      final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+
+      input = input //
+          .apply(LimitPayloadSize.toBytes(writeMethod.maxPayloadBytes)).errorsTo(errorCollections);
+
+      final BigQueryIO.Write<KV<TableDestination, TableRow>> baseWriteTransform = BigQueryIO //
           .<KV<TableDestination, TableRow>>write() //
           .withFormatFunction(KV::getValue) //
           .to((ValueInSingleWindow<KV<TableDestination, TableRow>> vsw) -> vsw.getValue().getKey())
-          .withMethod(writeMethod.method)
           .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER) //
           .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND) //
           .ignoreUnknownValues();
 
+      final Optional<PCollection<PubsubMessage>> streamingInput;
+      final Optional<PCollection<PubsubMessage>> fileLoadsInput;
       if (writeMethod == BigQueryWriteMethod.streaming) {
-        writeTransform = writeTransform
-            .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()) //
-            .skipInvalidRows() //
-            .withExtendedErrorInfo();
+        streamingInput = Optional.of(input);
+        fileLoadsInput = Optional.empty();
+      } else if (writeMethod == BigQueryWriteMethod.file_loads) {
+        streamingInput = Optional.empty();
+        fileLoadsInput = Optional.of(input);
       } else {
-        if (inputType == InputType.pubsub) {
-          // When using the file_loads method of inserting to BigQuery, BigQueryIO requires
-          // triggering frequency if the input PCollection is unbounded (which is the case for
-          // pubsub), but forbids the option if the input PCollection is bounded.
-          writeTransform = writeTransform //
-              .withTriggeringFrequency(triggeringFrequency) //
-              .withNumFileShards(numShards);
-        }
+        // writeMethod is mixed.
+        final PCollectionList<PubsubMessage> partitioned = input //
+            .apply("PartitionStreamingVsFileLoads", Partition.of(2, //
+                (message, numPartitions) -> {
+                  message = PubsubConstraints.ensureNonNull(message);
+                  final String namespace = message.getAttribute("document_namespace");
+                  final String docType = message.getAttribute("document_type");
+                  final boolean shouldStream;
+                  if (namespace == null || docType == null) {
+                    shouldStream = false;
+                  } else if ("telemetry".equals(namespace)) {
+                    shouldStream = streamingDocTypes.get().contains(docType);
+                  } else {
+                    shouldStream = streamingDocTypes.get().contains(namespace + "/" + docType);
+                  }
+                  if (shouldStream && message
+                      .getPayload().length < BigQueryWriteMethod.streaming.maxPayloadBytes) {
+                    return 0;
+                  } else {
+                    return 1;
+                  }
+                }));
+        streamingInput = Optional.of(partitioned.get(0));
+        fileLoadsInput = Optional.of(partitioned.get(1));
       }
 
-      final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
-
-      WriteResult writeResult = input //
-          .apply(LimitPayloadSize.toMB(writeMethod.maxPayloadBytes)).errorsTo(errorCollections)
-          .apply(PubsubMessageToTableRow.of(tableSpecTemplate)).errorsTo(errorCollections)
-          .apply(writeTransform);
-
-      if (writeMethod == BigQueryWriteMethod.streaming) {
+      streamingInput.ifPresent(messages -> {
+        WriteResult writeResult = messages //
+            .apply(PubsubMessageToTableRow.of(tableSpecTemplate)).errorsTo(errorCollections)
+            .apply(baseWriteTransform //
+                .withMethod(BigQueryWriteMethod.streaming.method)
+                .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()) //
+                .skipInvalidRows() //
+                .withExtendedErrorInfo());
         errorCollections
             .add(writeResult.getFailedInsertsWithErr().apply("Process failed inserts", MapElements
                 .into(TypeDescriptor.of(PubsubMessage.class)).via((BigQueryInsertError bqie) -> {
@@ -383,12 +413,27 @@ public abstract class Write
                   byte[] payload = row.toString().getBytes();
                   return new PubsubMessage(payload, attributes);
                 })));
-      }
+      });
+
+      fileLoadsInput.ifPresent(messages -> {
+        BigQueryIO.Write<KV<TableDestination, TableRow>> fileLoadsWrite = baseWriteTransform
+            .withMethod(BigQueryWriteMethod.file_loads.method);
+        if (inputType == InputType.pubsub) {
+          // When using the file_loads method of inserting to BigQuery, BigQueryIO requires
+          // triggering frequency if the input PCollection is unbounded (which is the case for
+          // pubsub), but forbids the option if the input PCollection is bounded.
+          fileLoadsWrite = fileLoadsWrite.withTriggeringFrequency(triggeringFrequency) //
+              .withNumFileShards(numShards);
+        }
+        messages //
+            .apply(PubsubMessageToTableRow.of(tableSpecTemplate)).errorsTo(errorCollections)
+            .apply(fileLoadsWrite);
+      });
 
       PCollection<PubsubMessage> errorCollection = PCollectionList.of(errorCollections)
           .apply("Flatten bigquery errors", Flatten.pCollections());
 
-      return WithErrors.Result.of(PDone.in(writeResult.getPipeline()), errorCollection);
+      return WithErrors.Result.of(PDone.in(input.getPipeline()), errorCollection);
     }
   }
 
