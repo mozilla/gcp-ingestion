@@ -23,6 +23,20 @@ jobs:
     - image: python:3.7
     steps:
     - checkout
+    - run: &skip_unmodified
+        name: Early return when dir not modified
+        command: |
+          if [ "$CIRCLE_BRANCH" = master ]; then
+              echo "Run tests because branch is master"
+          elif git log --format=%B --no-merges -n 1 | grep -qF '[run-tests]'; then
+              echo "Run tests because [run-tests] in commit message"
+          elif ! git diff --quiet origin/master... -- .; then
+              echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off master"
+          else
+              echo "Skipping tests because $(git rev-parse --show-prefix) was not modified"
+              circleci step halt
+          fi
+        working_directory: ingestion-edge
     - restore_cache:
         keys:
           # when lock files change, use increasingly general patterns to restore cache
@@ -91,6 +105,9 @@ jobs:
     - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
     steps:
     - checkout
+    - run: &beam_unmodified
+        <<: *skip_unmodified
+        working_directory: ingestion-beam
     - restore_cache: &restore_cache_beam
         keys:
           # when lock file changes, use increasingly general patterns to restore cache
@@ -126,6 +143,7 @@ jobs:
             circleci step halt
           fi
     - checkout
+    - run: *beam_unmodified
     - restore_cache:
         <<: *restore_cache_beam
     - run:
