@@ -37,12 +37,22 @@ Crashes the pipeline when the destination table does not exist.
 
 ## `FileIO.Write`
 
-Acknowledges messages in PubSub before they are written due to a required
-`GroupByKey` transform. This also effects `BigQueryIO.Write` in batch mode.
+Acknowledges messages in PubSub before they are written to accumulate data
+across multiple [bundles] and produce reasonably sized files. Possible
+workaround being investigated in [#380]. This also effects `BigQueryIO.Write`
+in batch mode.
+
+[bundles]: https://beam.apache.org/documentation/execution-model/#bundling-and-persistence
+[#380]: https://github.com/mozilla/gcp-ingestion/issues/380
 
 ## `PubsubIO.Write`
 
 Does not support dynamic destinations.
+
+Does not support [`NestedValueProvider`] for destinations, which is needed to
+create templates that accept a mapping of document type to a predetermined
+number of destinations. Current workaround is to specify mapping at template
+creation time.
 
 Does not use standard client library.
 
@@ -53,6 +63,8 @@ messages from a subscription to the output PubSub topic.
 Uses HTTPS JSON API, which increases message payload size vs protobuf by 25%
 for base64 encoding and causes some messages to exceed the 10MB request size
 limit that otherwise would not.
+
+[`NestedValueProvider`]: https://beam.apache.org/releases/javadoc/2.0.0/org/apache/beam/sdk/options/ValueProvider.NestedValueProvider.html
 
 # PubSub
 
