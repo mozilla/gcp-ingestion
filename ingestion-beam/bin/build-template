@@ -39,7 +39,7 @@ INPUT_OPTS="--inputFileFormat=json \
 
 if [[ $JOB_TYPE == "bqsink" ]]; then
   JOB_CLASS="com.mozilla.telemetry.Sink"
-  OUTPUT_OPTS="--outputType=bigquery ${SINK_OPTS}"
+  OUTPUT_OPTS="--outputType=bigquery --bqWriteMethod=mixed ${BQ_SINK_OPTS:?} ${SINK_OPTS}"
   ERROR_OUTPUT_OPTS="--errorOutputType=file \
 --errorOutputNumShards=${ERROR_NUM_SHARDS}"
 elif [[ $JOB_TYPE == "gcssink" ]] ; then
