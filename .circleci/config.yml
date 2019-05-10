@@ -30,6 +30,8 @@ jobs:
               echo "Run tests because branch is master"
           elif git log --format=%B --no-merges -n 1 | grep -qF '[run-tests]'; then
               echo "Run tests because [run-tests] in commit message"
+          elif ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/.circleci; then
+              echo "Run tests because .circleci/ was modified since branching off master"
           elif ! git diff --quiet origin/master... -- .; then
               echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off master"
           else
