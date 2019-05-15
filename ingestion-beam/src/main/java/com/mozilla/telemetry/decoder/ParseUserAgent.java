@@ -4,14 +4,16 @@
 
 package com.mozilla.telemetry.decoder;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import nl.basjes.parse.useragent.UserAgent;
-import nl.basjes.parse.useragent.UserAgentAnalyzer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -30,60 +32,215 @@ public class ParseUserAgent
 
   ////////
 
-  private static class Field implements Serializable {
+  private enum Os {
+    // Define os's in descending order of best match
+    IPOD("iPod"), //
+    IPAD("iPad"), //
+    IPHONE("iPhone"), //
+    ANDROID("Android"), //
+    BLACKBERRY("BlackBerry"), //
+    LINUX("Linux"), //
+    MACINTOSH("Macintosh"), //
+    FIREFOXOS("FirefoxOS", "Mozilla/5\\.0 \\(Mobile;"), //
+    WINDOWS_10("Windows 10", "Windows NT 10\\.0"), //
+    WINDOWS_8_1("Windows 8.1", "Windows NT 6\\.3"), //
+    WINDOWS_8("Windows 8", "Windows NT 6\\.2"), //
+    WINDOWS_7("Windows 7", "Windows NT 6\\.1"), //
+    WINDOWS_VISTA("Windows Vista", "Windows NT 6\\.0"), //
+    WINDOWS_XP("Windows XP", "Windows NT 5\\.1"), //
+    WINDOWS_2000("Windows 2000", "Windows NT 5\\.0");
 
-    private final String attribute;
-    private final String field;
+    final String pattern; // pattern is the regex that indicates a match
+    final String value; // value is what gets set in attributes
 
-    private Field(String attribute, String field) {
-      this.attribute = attribute;
-      this.field = field;
+    Os(String value) {
+      this.value = value;
+      this.pattern = value;
     }
 
-    private void put(Map<String, String> attributes, UserAgent agent) {
-      // Value may be null if not found
-      attributes.put(this.attribute, agent.getValue(this.field));
+    Os(String value, String pattern) {
+      this.value = value;
+      this.pattern = pattern;
+    }
+
+    static Map<String, Os> asMap() {
+      ImmutableMap.Builder<String, Os> builder = new ImmutableMap.Builder<>();
+      for (Os os : Os.values()) {
+        builder = builder.put(os.pattern.replace("\\", ""), os);
+      }
+      return builder.build();
     }
   }
 
+  private enum Browser {
+    // Define browsers in descending order of best match
+    EDGE("Edge", "/"), //
+    CHROME("Chrome", "/"), //
+    OPERA_MINI("Opera Mini", LAST_SLASH), //
+    OPERA_MOBI("Opera Mobi", LAST_SLASH), //
+    OPERA("Opera", ".*/"), //
+    MSIE("MSIE", " "), //
+    TRIDENT_7(Browser.MSIE.value, "Trident/7\\.0", "11"), //
+    SAFARI("Safari", LAST_SLASH), //
+    FX_ANDROID_SYNC("FxSync", " ", "Firefox AndroidSync", Os.ANDROID.value), //
+    FX_IOS_SYNC(Browser.FX_ANDROID_SYNC.value, "/", "Firefox-iOS-Sync", "iOS"), //
+    FIREFOX("Firefox", "/");
+
+    final String pattern; // pattern is the regex that indicates a match
+    final String value; // value is what gets set in attributes
+    final String separator; // regex that separates browser from version
+    final String os; // override for os when pattern is matched
+    final String version; // override for version when pattern is matched
+
+    Browser(String value, String separator) {
+      this.value = value;
+      this.separator = separator;
+      this.pattern = value;
+      this.os = null;
+      this.version = null;
+    }
+
+    Browser(String value, String pattern, String version) {
+      this.value = value;
+      this.separator = null;
+      this.pattern = pattern;
+      this.os = null;
+      this.version = version;
+    }
+
+    Browser(String value, String separator, String pattern, String os) {
+      this.value = value;
+      this.separator = separator;
+      this.pattern = pattern;
+      this.os = os;
+      this.version = null;
+    }
+
+    static Map<String, Browser> asMap() {
+      ImmutableMap.Builder<String, Browser> builder = new ImmutableMap.Builder<>();
+      for (Browser browser : Browser.values()) {
+        builder = builder.put(browser.pattern.replace("\\", ""), browser);
+      }
+      return builder.build();
+    }
+  }
+
+  private static Pattern compileRegex() {
+    // Extract lists of patterns by separator from Browser.values()
+    Map<String, List<String>> versionLookbacks = new HashMap<>();
+    for (Browser browser : Browser.values()) {
+      // browser.separator is null when the pattern
+      if (browser.separator != null && browser.separator != LAST_SLASH) {
+        // initialize list for separator
+        versionLookbacks.putIfAbsent(browser.separator, new ArrayList<>());
+        // add pattern to list for separator
+        versionLookbacks.get(browser.separator).add(browser.pattern);
+      }
+    }
+    // Combine all browser patterns
+    String browserPattern = String.join("|",
+        Arrays.stream(Browser.values()).map(m -> m.pattern).collect(Collectors.toList()));
+    // Combine all version lookback patterns
+    String versionLookbackPattern = String.join("|",
+        versionLookbacks.entrySet().stream()
+            .map(e -> "(?<=" + String.join("|", e.getValue()) + ")" + e.getKey())
+            .collect(Collectors.toList()));
+    // Combine all os patterns
+    String osPattern = String.join("|",
+        Arrays.stream(Os.values()).map(os -> os.pattern).collect(Collectors.toList()));
+    // Combine the above into a pattern that matches browser and optional version OR os
+    return Pattern.compile("(?<browser>" + browserPattern + ")((" + versionLookbackPattern
+        + ")(?<version>\\d+))?|(?<os>" + osPattern + ")");
+  }
+
+  private static final Pattern SEARCH = compileRegex();
+  private static final Pattern LAST_SLASH_VERSION = Pattern.compile(".*/(?<version>\\d+)");
+
+  private static final Map<String, Os> OS_MAP = Os.asMap();
+  private static final Map<String, Browser> BROWSER_MAP = Browser.asMap();
+
+  private static final String LAST_SLASH = ".*/";
   private static final String USER_AGENT = "user_agent";
-  private static final Field USER_AGENT_BROWSER = new Field("user_agent_browser", "AgentName");
-  private static final Field USER_AGENT_OS = new Field("user_agent_os", "OperatingSystemName");
-  private static final Field USER_AGENT_VERSION = new Field("user_agent_version", "AgentVersion");
-  private static final Set<String> parseFailures = Sets.newHashSet("Unknown", "??");
+  private static final String USER_AGENT_BROWSER = "user_agent_browser";
+  private static final String USER_AGENT_OS = "user_agent_os";
+  private static final String USER_AGENT_VERSION = "user_agent_version";
 
   private static final Fn FN = new Fn();
   private static final ParseUserAgent INSTANCE = new ParseUserAgent();
 
   private static class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
 
-    static final UserAgentAnalyzer analyzer = UserAgentAnalyzer.newBuilder()
-        .withField(USER_AGENT_BROWSER.field).withField(USER_AGENT_OS.field)
-        .withField(USER_AGENT_VERSION.field)
-        // Only use our matchers
-        .dropDefaultResources().addResources("UserAgents/*.yaml").build();
-
     @Override
     public PubsubMessage apply(PubsubMessage message) {
+      // Prevent null pointer exception
       message = PubsubConstraints.ensureNonNull(message);
 
       // Copy attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
 
-      if (attributes.containsKey(USER_AGENT)) {
-        // Extract user agent fields
-        UserAgent agent = analyzer.parse(attributes.get(USER_AGENT));
+      // Remove and record user agent if present
+      String agent = attributes.remove(USER_AGENT);
 
-        // Copy agent field to attributes
-        USER_AGENT_BROWSER.put(attributes, agent);
-        USER_AGENT_OS.put(attributes, agent);
-        USER_AGENT_VERSION.put(attributes, agent);
+      // Parse user agent
+      if (agent != null) {
+        // Search agent for matches using regular expressions
+        Matcher search = SEARCH.matcher(agent);
+        // initialize state
+        Browser browser = null;
+        String version = null;
+        String slashVersion = null;
+        Os os = null;
+        // Loop until we haven't found any matches
+        while (search.find()) {
+          if (search.group("browser") != null) {
+            // Get Browser for detected browser
+            Browser value = BROWSER_MAP.get(search.group("browser"));
+            if (browser == null || value.ordinal() < browser.ordinal()) {
+              // Update browser with better match
+              browser = value;
+              // Update version or set null
+              version = search.group("version");
+            } else if (value == browser && version == null) {
+              // Add missing version from repeat match
+              version = search.group("version");
+            }
+          }
+          if (search.group("os") != null) {
+            // Get Os for detected os
+            Os value = OS_MAP.get(search.group("os"));
+            if (os == null || value.ordinal() < os.ordinal()) {
+              // Update os with better match
+              os = value;
+            }
+          }
+        }
 
-        // Remove null attributes because the coder can't handle them
-        attributes.values().removeIf(parseFailures::contains);
+        if (browser != null) {
+          // put browser attribute
+          attributes.put(USER_AGENT_BROWSER, browser.value);
+          if (browser.version != null) {
+            // put version attribute from browser
+            attributes.put(USER_AGENT_VERSION, browser.version);
+          } else if (browser.separator == LAST_SLASH) {
+            // search for this pattern as late as possible because it's slow
+            search = LAST_SLASH_VERSION.matcher(agent);
+            if (search.find()) {
+              // put version attribute from search
+              attributes.put(USER_AGENT_VERSION, search.group("version"));
+            }
+          } else if (version != null) {
+            // put version attribute
+            attributes.put(USER_AGENT_VERSION, version);
+          }
+        }
 
-        // Remove the original attribute
-        attributes.remove(USER_AGENT);
+        if (browser != null && browser.os != null) {
+          // put os attribute from browser
+          attributes.put(USER_AGENT_OS, browser.os);
+        } else if (os != null) {
+          // put os attribute
+          attributes.put(USER_AGENT_OS, os.value);
+        }
       }
       // Return new message
       return new PubsubMessage(message.getPayload(), attributes);
