@@ -33,7 +33,8 @@ public class ParseUserAgentTest {
       .Builder<String, Map<String, String>>()
           .put("Firefox AndroidSync", ImmutableMap.of(BROWSER, "FxSync", OS, "Android"))
           .put("Firefox-iOS-Sync", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS"))
-          .put("iPod", ImmutableMap.of(OS, "iPod")).put("iPad", ImmutableMap.of(OS, "iPad"))
+          .put("iPod", ImmutableMap.of(OS, "iPod")) //
+          .put("iPad", ImmutableMap.of(OS, "iPad")) //
           .put("iPhone", ImmutableMap.of(OS, "iPhone"))
           .put("Android", ImmutableMap.of(OS, "Android"))
           .put("BlackBerry", ImmutableMap.of(OS, "BlackBerry"))
