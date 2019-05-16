@@ -80,7 +80,7 @@ public class ParseUserAgent
     OPERA_MOBI("Opera Mobi", LAST_SLASH), //
     OPERA("Opera", ".*/"), //
     MSIE("MSIE", " "), //
-    TRIDENT_7(Browser.MSIE.valuem, null, "Trident/7\\.0", null, "11"), //
+    TRIDENT_7(Browser.MSIE.value, null, "Trident/7\\.0", null, "11"), //
     SAFARI("Safari", LAST_SLASH), //
     FX_ANDROID_SYNC("FxSync", " ", "Firefox AndroidSync", Os.ANDROID.value), //
     FX_IOS_SYNC(Browser.FX_ANDROID_SYNC.value, "/", "Firefox-iOS-Sync", "iOS"), //
