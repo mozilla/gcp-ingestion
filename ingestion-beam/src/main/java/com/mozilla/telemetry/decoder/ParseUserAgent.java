@@ -153,7 +153,7 @@ public class ParseUserAgent
         + ")(?<version>\\d+))?|(?<os>" + osPattern + ")");
   }
 
-  private static final String LAST_SLASH = ".*/";  // Special case value for browser.separator
+  private static final String LAST_SLASH = ".*/"; // Special case value for browser.separator
   private static final String USER_AGENT = "user_agent";
   private static final String USER_AGENT_BROWSER = "user_agent_browser";
   private static final String USER_AGENT_OS = "user_agent_os";
