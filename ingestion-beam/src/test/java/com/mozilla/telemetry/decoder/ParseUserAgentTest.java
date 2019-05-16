@@ -116,7 +116,7 @@ public class ParseUserAgentTest {
   }
 
   @Test
-  public void testBrowserBestMatcFirst() {
+  public void testBrowserBestMatchFirst() {
     test(browserBestMatch.stream().map(v -> String.join("", v)).collect(Collectors.toList()),
         browserSingleMatch.entrySet().stream().map(e -> {
           switch (e.getKey()) {
