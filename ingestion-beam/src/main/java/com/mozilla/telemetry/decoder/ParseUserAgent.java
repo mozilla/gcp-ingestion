@@ -80,17 +80,17 @@ public class ParseUserAgent
     OPERA_MOBI("Opera Mobi", LAST_SLASH), //
     OPERA("Opera", ".*/"), //
     MSIE("MSIE", " "), //
-    TRIDENT_7(Browser.MSIE.value, "Trident/7\\.0", "11"), //
+    TRIDENT_7(Browser.MSIE.valuem, null, "Trident/7\\.0", null, "11"), //
     SAFARI("Safari", LAST_SLASH), //
     FX_ANDROID_SYNC("FxSync", " ", "Firefox AndroidSync", Os.ANDROID.value), //
     FX_IOS_SYNC(Browser.FX_ANDROID_SYNC.value, "/", "Firefox-iOS-Sync", "iOS"), //
     FIREFOX("Firefox", "/");
 
-    final String pattern; // pattern is the regex that indicates a match
-    final String value; // value is what gets set in attributes
+    final String value; // string to set in attributes
     final String separator; // regex that separates browser from version
-    final String os; // override for os when pattern is matched
-    final String version; // override for version when pattern is matched
+    final String pattern; // regex that indicates a match
+    final String os; // override for os
+    final String version; // override for version
 
     Browser(String value, String separator) {
       this.value = value;
@@ -100,20 +100,20 @@ public class ParseUserAgent
       this.version = null;
     }
 
-    Browser(String value, String pattern, String version) {
-      this.value = value;
-      this.separator = null;
-      this.pattern = pattern;
-      this.os = null;
-      this.version = version;
-    }
-
     Browser(String value, String separator, String pattern, String os) {
       this.value = value;
       this.separator = separator;
       this.pattern = pattern;
       this.os = os;
       this.version = null;
+    }
+
+    Browser(String value, String separator, String pattern, String os, String version) {
+      this.value = value;
+      this.separator = separator;
+      this.pattern = pattern;
+      this.os = os;
+      this.version = version;
     }
 
     static Map<String, Browser> asMap() {
@@ -153,17 +153,17 @@ public class ParseUserAgent
         + ")(?<version>\\d+))?|(?<os>" + osPattern + ")");
   }
 
-  private static final Pattern SEARCH = compileRegex();
-  private static final Pattern LAST_SLASH_VERSION = Pattern.compile(".*/(?<version>\\d+)");
-
-  private static final Map<String, Os> OS_MAP = Os.asMap();
-  private static final Map<String, Browser> BROWSER_MAP = Browser.asMap();
-
-  private static final String LAST_SLASH = ".*/";
+  private static final String LAST_SLASH = ".*/";  // Special case value for browser.separator
   private static final String USER_AGENT = "user_agent";
   private static final String USER_AGENT_BROWSER = "user_agent_browser";
   private static final String USER_AGENT_OS = "user_agent_os";
   private static final String USER_AGENT_VERSION = "user_agent_version";
+
+  private static final Map<String, Os> OS_MAP = Os.asMap();
+  private static final Map<String, Browser> BROWSER_MAP = Browser.asMap();
+
+  private static final Pattern LAST_SLASH_VERSION = Pattern.compile(".*/(?<version>\\d+)");
+  private static final Pattern SEARCH = compileRegex();
 
   private static final Fn FN = new Fn();
   private static final ParseUserAgent INSTANCE = new ParseUserAgent();
