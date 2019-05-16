@@ -46,7 +46,8 @@ public class ParseUserAgentTest {
           .put("Windows NT 6.1", ImmutableMap.of(OS, "Windows 7"))
           .put("Windows NT 6.0", ImmutableMap.of(OS, "Windows Vista"))
           .put("Windows NT 5.1", ImmutableMap.of(OS, "Windows XP"))
-          .put("Windows NT 5.0", ImmutableMap.of(OS, "Windows 2000")).build();
+          .put("Windows NT 5.0", ImmutableMap.of(OS, "Windows 2000")) //
+          .build();
 
   private static final List<String> osPriority = new ArrayList<>(osSingleMatch.keySet());
   private static final List<List<String>> osBestMatch = IntStream.range(0, osPriority.size() - 1)
