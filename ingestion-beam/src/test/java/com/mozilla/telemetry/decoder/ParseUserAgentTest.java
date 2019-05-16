@@ -71,7 +71,8 @@ public class ParseUserAgentTest {
           .put("Firefox-iOS-Sync/5", ImmutableMap.of(BROWSER, "FxSync", VERSION, "5", OS, "iOS"))
           .put("Firefox-iOS-Sync", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS"))
           .put("Firefox/6", ImmutableMap.of(BROWSER, "Firefox", VERSION, "6"))
-          .put("Firefox", ImmutableMap.of(BROWSER, "Firefox")).build();
+          .put("Firefox", ImmutableMap.of(BROWSER, "Firefox")) //
+          .build();
 
   private static final List<String> browserPriority = new ArrayList<>(browserSingleMatch.keySet());
   private static final List<List<String>> browserBestMatch = IntStream
