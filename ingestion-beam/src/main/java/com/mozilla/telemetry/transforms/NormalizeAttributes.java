@@ -4,7 +4,6 @@
 
 package com.mozilla.telemetry.transforms;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.ParsePayload;
@@ -45,7 +44,6 @@ public class NormalizeAttributes
    * <p>Reimplementation of https://github.com/mozilla-services/lua_sandbox_extensions/blob/607b3c7b9def600ddbd373a14f67a55e1c69f7a1/moz_telemetry/modules/moz_telemetry/normalize.lua#L167-L178
    */
   public static String normalizeChannel(String name) {
-    name = Strings.nullToEmpty(name);
     if (CHANNELS.contains(name)) {
       // We could lowercase before doing this check, but don't to maintain historical practice.
       return name;
@@ -71,7 +69,6 @@ public class NormalizeAttributes
    * https://github.com/mozilla-services/lua_sandbox_extensions/blob/607b3c7b9def600ddbd373a14f67a55e1c69f7a1/moz_telemetry/modules/moz_telemetry/normalize.lua#L184-L215
    */
   public static String normalizeOs(String name) {
-    name = Strings.nullToEmpty(name);
     if (name.startsWith("Windows") || name.startsWith("WINNT")) {
       return WINDOWS;
     } else if (name.startsWith("Darwin")) {
@@ -96,7 +93,6 @@ public class NormalizeAttributes
    * <p>Reimplementation of https://github.com/mozilla-services/lua_sandbox_extensions/blob/607b3c7b9def600ddbd373a14f67a55e1c69f7a1/moz_telemetry/modules/moz_telemetry/normalize.lua#L196-L204
    */
   public static String normalizeOsVersion(String v) {
-    v = Strings.nullToEmpty(v);
     Matcher matcher = OS_VERSION_RE.matcher(v);
     if (matcher.matches() && matcher.groupCount() == 1) {
       return matcher.group(1);
@@ -113,7 +109,6 @@ public class NormalizeAttributes
    * and adds a case for "Firefox" desktop app.
    */
   public static String normalizeAppName(String name) {
-    name = Strings.nullToEmpty(name);
     for (String app : APP_NAMES) {
       if (name.startsWith(app)) {
         return app;
@@ -136,7 +131,7 @@ public class NormalizeAttributes
    * https://github.com/mozilla-services/lua_sandbox_extensions/blob/607b3c7b9def600ddbd373a14f67a55e1c69f7a1/moz_telemetry/modules/moz_telemetry/normalize.lua#L233-L268
    */
   public static String normalizeCountryCode(String code) {
-    code = Strings.nullToEmpty(code).toUpperCase();
+    code = code.toUpperCase();
     Matcher matcher = COUNTRY_CODE_RE.matcher(code);
     if (matcher.matches()) {
       return code;

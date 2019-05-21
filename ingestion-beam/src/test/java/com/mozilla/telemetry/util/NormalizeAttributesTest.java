@@ -40,7 +40,6 @@ public class NormalizeAttributesTest {
     assertEquals("Other", NormalizeAttributes.normalizeChannel("Release"));
     assertEquals("Other", NormalizeAttributes.normalizeChannel("Prefeitura Municipal de Santos"));
     assertEquals("Other", NormalizeAttributes.normalizeChannel("no"));
-    assertEquals("Other", NormalizeAttributes.normalizeChannel(null));
 
     assertEquals("beta", NormalizeAttributes.normalizeChannel("beta-cdntest"));
     assertEquals("beta", NormalizeAttributes.normalizeChannel("betastop"));
@@ -73,7 +72,6 @@ public class NormalizeAttributesTest {
     assertEquals("Other", NormalizeAttributes.normalizeOs("All the Androids"));
 
     // Other.
-    assertEquals("Other", NormalizeAttributes.normalizeOs(null));
     assertEquals("Other", NormalizeAttributes.normalizeOs("asdf"));
   }
 
@@ -99,7 +97,6 @@ public class NormalizeAttributesTest {
     assertEquals("3.13.0", NormalizeAttributes.normalizeOsVersion("3.13.0-168-lowlatency"));
     assertEquals("", NormalizeAttributes.normalizeOsVersion("hi"));
     assertEquals("", NormalizeAttributes.normalizeOsVersion("hi-13.1.3"));
-    assertEquals("", NormalizeAttributes.normalizeOsVersion(null));
   }
 
   @Test
@@ -112,7 +109,6 @@ public class NormalizeAttributesTest {
     assertEquals("Zerda_cn", NormalizeAttributes.normalizeAppName("Zerda_cn"));
     assertEquals("Zerda", NormalizeAttributes.normalizeAppName("Zerda"));
     assertEquals("Other", NormalizeAttributes.normalizeAppName("asdf"));
-    assertEquals("Other", NormalizeAttributes.normalizeAppName(null));
   }
 
   @Test
@@ -121,7 +117,6 @@ public class NormalizeAttributesTest {
     assertEquals("FI", NormalizeAttributes.normalizeCountryCode("fi"));
     assertEquals("Other", NormalizeAttributes.normalizeCountryCode("FII"));
     assertEquals("Other", NormalizeAttributes.normalizeCountryCode("asdf"));
-    assertEquals("Other", NormalizeAttributes.normalizeCountryCode(null));
   }
 
 }

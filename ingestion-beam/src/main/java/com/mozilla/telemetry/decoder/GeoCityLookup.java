@@ -131,7 +131,7 @@ public class GeoCityLookup
           foundCity.inc();
 
           String countryCode = response.getCountry().getIsoCode();
-          attributes.put("geo_country", countryCode);
+          attributes.put(GEO_COUNTRY, countryCode);
 
           City city = response.getCity();
           if (cityAllowed(city.getGeoNameId())) {

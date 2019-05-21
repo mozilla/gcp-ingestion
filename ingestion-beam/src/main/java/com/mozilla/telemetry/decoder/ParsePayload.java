@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
@@ -120,8 +119,6 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       }
     }
 
-    addAttributesFromPayload(attributes, json);
-
     // Throws SchemaNotFoundException if there's no schema
     Schema schema;
     try {
@@ -140,6 +137,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       throw e;
     }
 
+    addAttributesFromPayload(attributes, json);
+
     byte[] normalizedPayload = json.toString().getBytes();
 
     PerDocTypeCounter.inc(attributes, "valid_submission");
@@ -157,42 +156,46 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // Try to get "common ping"-style os object.
     Optional<JSONObject> commonPingOs = Optional.of(json) //
         .map(j -> j.optJSONObject("environment")) //
-        .map(j -> j.getJSONObject("system")) //
-        .map(j -> j.getJSONObject("os"));
+        .map(j -> j.optJSONObject("system")) //
+        .map(j -> j.optJSONObject("os"));
 
     if (gleanClientInfo.isPresent()) {
       // See glean ping structure in:
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/glean/baseline/baseline.1.schema.json
-      ifNonEmpty(gleanClientInfo.get().optString("app_channel"),
-          v -> attributes.put(ParseUri.APP_UPDATE_CHANNEL, v));
-      ifNonEmpty(gleanClientInfo.get().optString(OS), v -> attributes.put(OS, v));
-      ifNonEmpty(gleanClientInfo.get().optString(OS_VERSION), v -> attributes.put(OS_VERSION, v));
-      ifNonEmpty(gleanClientInfo.get().optString(CLIENT_ID), v -> attributes.put(CLIENT_ID, v));
+      Optional.ofNullable(gleanClientInfo.get().optString("app_channel"))
+          .filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(ParseUri.APP_UPDATE_CHANNEL, v));
+      Optional.ofNullable(gleanClientInfo.get().optString(OS))
+          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS, v));
+      Optional.ofNullable(gleanClientInfo.get().optString(OS_VERSION))
+          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS_VERSION, v));
+      Optional.ofNullable(gleanClientInfo.get().optString(CLIENT_ID))
+          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(CLIENT_ID, v));
     } else if (commonPingOs.isPresent()) {
       // See common ping structure in:
       // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
-      ifNonEmpty(commonPingOs.get().optString("name"), v -> attributes.put(OS, v));
-      ifNonEmpty(commonPingOs.get().optString("version"), v -> attributes.put(OS_VERSION, v));
+      Optional.ofNullable(commonPingOs.get().optString("name"))
+          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS, v));
+      Optional.ofNullable(commonPingOs.get().optString("version"))
+          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS_VERSION, v));
     } else {
       // Try to extract "core ping"-style values; see
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/telemetry/core/core.10.schema.json
-      ifNonEmpty(json.optString("os"), v -> attributes.put(OS, v));
-      ifNonEmpty(json.optString("osversion"), v -> attributes.put(OS_VERSION, v));
+      Optional.ofNullable(json.optString(OS)).filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(OS, v));
+      Optional.ofNullable(json.optString("osversion")).filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(OS_VERSION, v));
     }
 
     // Try extracting variants of top-level client id.
-    ifNonEmpty(json.optString(CLIENT_ID), v -> attributes.put(CLIENT_ID, v));
-    ifNonEmpty(json.optString("clientId"), v -> attributes.put(CLIENT_ID, v));
+    Optional.ofNullable(json.optString(CLIENT_ID)).filter(v -> !Strings.isNullOrEmpty(v))
+        .ifPresent(v -> attributes.put(CLIENT_ID, v));
+    Optional.ofNullable(json.optString("clientId")).filter(v -> !Strings.isNullOrEmpty(v))
+        .ifPresent(v -> attributes.put(CLIENT_ID, v));
 
     // Add sample id.
     Optional.ofNullable(attributes.get(CLIENT_ID)) //
         .ifPresent(v -> attributes.put(SAMPLE_ID, Long.toString(calculateSampleId(v))));
-  }
-
-  private static void ifNonEmpty(String value, Consumer<String> consumer) {
-    if (!Strings.isNullOrEmpty(value)) {
-      consumer.accept(value);
-    }
   }
 
   @VisibleForTesting
