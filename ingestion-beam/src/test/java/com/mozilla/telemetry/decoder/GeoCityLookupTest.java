@@ -55,11 +55,9 @@ public class GeoCityLookupTest {
             + "},\"payload\":\"dGVzdA==\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
-            + ",\"normalized_country_code\":\"PH\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" + "},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"US\"" //
-            + ",\"normalized_country_code\":\"US\"" //
             + ",\"geo_city\":\"Milton\"" //
             + ",\"geo_subdivision1\":\"WA\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" + "},\"payload\":\"\"}");
@@ -90,10 +88,9 @@ public class GeoCityLookupTest {
         + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
         + "},\"payload\":\"\"}");
 
-    final List<String> expected = Arrays.asList(
-        "{\"attributeMap\":" + "{\"geo_country\":\"US\"" + ",\"normalized_country_code\":\"US\"" //
-            + ",\"geo_subdivision1\":\"WA\"" //
-            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}");
+    final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\"" //
+        + ",\"geo_subdivision1\":\"WA\"" //
+        + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
@@ -114,10 +111,9 @@ public class GeoCityLookupTest {
         + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
         + "},\"payload\":\"\"}");
 
-    final List<String> expected = Arrays.asList(
-        "{\"attributeMap\":" + "{\"geo_country\":\"US\"" + ",\"normalized_country_code\":\"US\"" //
-            + ",\"geo_city\":\"Milton\",\"geo_subdivision1\":\"WA\""
-            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}");
+    final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\"" //
+        + ",\"geo_city\":\"Milton\",\"geo_subdivision1\":\"WA\""
+        + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}");
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //
