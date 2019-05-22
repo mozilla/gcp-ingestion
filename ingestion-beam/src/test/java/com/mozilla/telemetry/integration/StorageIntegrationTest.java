@@ -7,8 +7,6 @@ package com.mozilla.telemetry.integration;
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
 import static org.junit.Assert.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -20,22 +18,19 @@ import com.google.cloud.storage.testing.RemoteStorageHelper;
 import com.mozilla.telemetry.Decoder;
 import com.mozilla.telemetry.matchers.Lines;
 import com.mozilla.telemetry.rules.RedisServer;
-import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class StorageIntegrationTest {
+public class StorageIntegrationTest extends TestWithDeterministicJson {
 
   private Storage storage;
   private String projectId;
@@ -61,24 +56,6 @@ public class StorageIntegrationTest {
   @After
   public void deleteBucket() throws Exception {
     RemoteStorageHelper.forceDelete(storage, bucket, 5, TimeUnit.SECONDS);
-  }
-
-  /** Make serialization of attributes map deterministic for these tests. */
-  @BeforeClass
-  public static void setUp() throws Exception {
-    Field mapperField = Json.class.getDeclaredField("MAPPER");
-    mapperField.setAccessible(true);
-    ObjectMapper mapper = (ObjectMapper) mapperField.get(null);
-    mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
-  }
-
-  /** Reset the ObjectMapper configurations we changed. */
-  @AfterClass
-  public static void tearDown() throws Exception {
-    Field mapperField = Json.class.getDeclaredField("MAPPER");
-    mapperField.setAccessible(true);
-    ObjectMapper mapper = (ObjectMapper) mapperField.get(null);
-    mapper.disable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
   }
 
   /**

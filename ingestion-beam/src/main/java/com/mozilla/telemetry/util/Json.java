@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -25,7 +26,8 @@ public class Json {
    *
    * <p>Registers {@link JsonOrgModule} for decoding to json.org types.
    */
-  private static final ObjectMapper MAPPER = new ObjectMapper()
+  @VisibleForTesting
+  static final ObjectMapper MAPPER = new ObjectMapper()
       .addMixIn(PubsubMessage.class, PubsubMessageMixin.class).registerModule(new JsonOrgModule());
 
   /**
