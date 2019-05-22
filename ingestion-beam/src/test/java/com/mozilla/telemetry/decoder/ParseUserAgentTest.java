@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +21,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ParseUserAgentTest {
+public class ParseUserAgentTest extends TestWithDeterministicJson {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -67,9 +68,9 @@ public class ParseUserAgentTest {
           .put("Trident/7.0", ImmutableMap.of(BROWSER, "MSIE", VERSION, "11"))
           .put("Safari", ImmutableMap.of(BROWSER, "Safari"))
           .put("Firefox AndroidSync 4",
-              ImmutableMap.of(BROWSER, "FxSync", VERSION, "4", OS, "Android"))
+              ImmutableMap.of(BROWSER, "FxSync", OS, "Android", VERSION, "4"))
           .put("Firefox AndroidSync", ImmutableMap.of(BROWSER, "FxSync", OS, "Android"))
-          .put("Firefox-iOS-Sync/5", ImmutableMap.of(BROWSER, "FxSync", VERSION, "5", OS, "iOS"))
+          .put("Firefox-iOS-Sync/5", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS", VERSION, "5"))
           .put("Firefox-iOS-Sync", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS"))
           .put("Firefox/6", ImmutableMap.of(BROWSER, "Firefox", VERSION, "6"))
           .put("Firefox", ImmutableMap.of(BROWSER, "Firefox")) //

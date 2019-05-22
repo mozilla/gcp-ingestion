@@ -1,2 +1,2 @@
-{"attributeMap":{"host":"hostA","geo_city":"cityB"},"payload":"dGVzdA=="}
-{"attributeMap":{"host":"hostA","geo_city":"cityB"},"payload":"dGVzdA=="}
+{"attributeMap":{"geo_city":"cityB","host":"hostA"},"payload":"dGVzdA=="}
+{"attributeMap":{"geo_city":"cityB","host":"hostA"},"payload":"dGVzdA=="}

@@ -8,6 +8,7 @@ import com.google.common.collect.Iterables;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -20,43 +21,54 @@ import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ParseUriTest {
+public class ParseUriTest extends TestWithDeterministicJson {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   @Test
   public void testOutput() {
-    final List<String> validInput = Arrays.asList(
-        "{\"attributeMap\":" + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
-            + "/main/Firefox/61.0a1/nightly/20180328030202\"" + "},\"payload\":\"\"}",
+    final List<String> validInput = Arrays.asList(//
+        "{\"attributeMap\":" //
+            + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
+            + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
+            + "},\"payload\":\"\"}",
         "{\"attributeMap\":"
             + "{\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
             + "},\"payload\":\"\"}");
 
-    final List<String> invalidInput = Arrays.asList("{\"attributeMap\":{},\"payload\":\"\"}",
-        "{\"attributeMap\":" + "{\"uri\":\"/nonexistent_prefix/ce39b608-f595-4c69-b6a6-f7a436604648"
-            + "/main/Firefox/61.0a1/nightly/20180328030202\"" + "},\"payload\":\"\"}",
-        "{\"attributeMap\":" + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
-            + "/Firefox/61.0a1/nightly/20180328030202\"" + "},\"payload\":\"\"}",
-        "{\"attributeMap\":"
-            + "{\"uri\":\"/submit/eng-workflow/hgpush/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+    final List<String> invalidInput = Arrays.asList(//
+        "{\"attributeMap\":{},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"uri\":\"/nonexistent_prefix/ce39b608-f595-4c69-b6a6-f7a436604648" //
+            + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
+            + "},\"payload\":\"\"}",
+        "{\"attributeMap\":" //
+            + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
+            + "/Firefox/61.0a1/nightly/20180328030202\"" //
+            + "},\"payload\":\"\"}",
+        "{\"attributeMap\":" //
+            + "{\"uri\":\"/submit/eng-workflow/hgpush/2c3a0767-d84a-4d02-8a92-fa54a3376049\"" //
             + "},\"payload\":\"\"}");
 
-    final List<String> expected = Arrays.asList(
-        "{\"attributeMap\":" + "{\"app_name\":\"Firefox\"" + ",\"app_version\":\"61.0a1\""
-            + ",\"app_build_id\":\"20180328030202\"" + ",\"app_update_channel\":\"nightly\""
-            + ",\"document_namespace\":\"telemetry\""
-            + ",\"document_id\":\"ce39b608-f595-4c69-b6a6-f7a436604648\""
-            + ",\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
-            + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
+    final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":" //
+            + "{\"app_build_id\":\"20180328030202\"" //
+            + ",\"app_name\":\"Firefox\"" //
+            + ",\"app_update_channel\":\"nightly\"" //
+            + ",\"app_version\":\"61.0a1\"" //
+            + ",\"document_id\":\"ce39b608-f595-4c69-b6a6-f7a436604648\"" //
+            + ",\"document_namespace\":\"telemetry\"" //
             + ",\"document_type\":\"main\"" //
+            + ",\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648" //
+            + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
             + "},\"payload\":\"\"}",
-        "{\"attributeMap\":" + "{\"document_namespace\":\"eng-workflow\""
-            + ",\"document_version\":\"1\""
-            + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
-            + ",\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
+        "{\"attributeMap\":" //
+            + "{\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\"" //
+            + ",\"document_namespace\":\"eng-workflow\"" //
             + ",\"document_type\":\"hgpush\"" //
+            + ",\"document_version\":\"1\"" //
+            + ",\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\"" //
             + "},\"payload\":\"\"}");
 
     WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline

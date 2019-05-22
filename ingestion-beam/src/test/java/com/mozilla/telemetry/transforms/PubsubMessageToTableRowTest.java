@@ -12,13 +12,14 @@ import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
-public class PubsubMessageToTableRowTest {
+public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
 
   static final Field MAP_FIELD = Field //
       .newBuilder("mapfield", LegacySQLTypeName.RECORD, //
@@ -99,8 +100,9 @@ public class PubsubMessageToTableRowTest {
     List<Field> bqFields = ImmutableList.of(Field.of("outer", LegacySQLTypeName.RECORD, //
         Field.of("otherfield", LegacySQLTypeName.INTEGER), //
         MAP_FIELD));
-    String expected = "{\"outer\":{\"otherfield\":3"
-        + ",\"mapfield\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
+    String expected = "{\"outer\":{"
+        + "\"mapfield\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}],"
+        + "\"otherfield\":3}}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
   }
@@ -142,7 +144,7 @@ public class PubsubMessageToTableRowTest {
     parent.put("hi-fi", true);
     List<Field> bqFields = ImmutableList.of(Field.of("_64bit", LegacySQLTypeName.BOOLEAN), //
         Field.of("hi_fi", LegacySQLTypeName.BOOLEAN));
-    String expected = "{\"hi_fi\":true,\"_64bit\":true}";
+    String expected = "{\"_64bit\":true,\"hi_fi\":true}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
   }
