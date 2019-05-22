@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +27,7 @@ import org.json.JSONObject;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class AddMetadataTest {
+public class AddMetadataTest extends TestWithDeterministicJson {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -45,18 +46,18 @@ public class AddMetadataTest {
                 .via(element -> new PubsubMessage(element.getPayload(), attributes)))
         .apply(AddMetadata.of());
 
-    final List<String> expectedMain = ImmutableList //
-        .of("{\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
+    final List<String> expectedMain = ImmutableList.of(//
+        "{\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
             + ",\"header\":{\"x_debug_id\":\"mysession\"}" //
             + ",\"user_agent\":{}}" //
+            + ",\"normalized_channel\":\"release\"" //
+            + ",\"sample_id\":18}", //
+        "{\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
+            + ",\"header\":{\"x_debug_id\":\"mysession\"}" //
+            + ",\"user_agent\":{}}" //
+            + ",\"normalized_channel\":\"release\"" //
             + ",\"sample_id\":18" //
-            + ",\"normalized_channel\":\"release\"}", //
-            "{\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
-                + ",\"header\":{\"x_debug_id\":\"mysession\"}" //
-                + ",\"user_agent\":{}}" //
-                + ",\"sample_id\":18" //
-                + ",\"normalized_channel\":\"release\"" //
-                + ",\"id\":null}");
+            + ",\"id\":null}");
     final List<String> expectedError = Arrays.asList("{", "[]");
     final PCollection<String> error = output.errors() //
         .apply("EncodeTextError", OutputFileFormat.text.encode());

@@ -11,6 +11,7 @@ import static org.junit.Assert.assertThat;
 import com.google.common.collect.Lists;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.PipelineResult;
@@ -24,7 +25,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ParseProxyTest {
+public class ParseProxyTest extends TestWithDeterministicJson {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -63,13 +64,13 @@ public class ParseProxyTest {
             + ",\"x_forwarded_for\":\"3, 2, 1\"" //
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
+            + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2\"" //
-            + ",\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}",
         "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
-            + ",\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2\"" //
             + "},\"payload\":\"retried+\"}");
 
@@ -120,8 +121,8 @@ public class ParseProxyTest {
             + "},\"payload\":\"proxied+\"}",
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
-            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}");
 
     final PCollection<String> output = pipeline //

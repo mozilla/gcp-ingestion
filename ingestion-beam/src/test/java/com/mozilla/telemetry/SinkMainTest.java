@@ -9,6 +9,7 @@ import static org.junit.Assert.assertThat;
 
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.matchers.Lines;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Collections;
 import java.util.List;
 import org.hamcrest.Matchers;
@@ -18,7 +19,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
-public class SinkMainTest {
+public class SinkMainTest extends TestWithDeterministicJson {
 
   @Rule
   public TemporaryFolder outputFolder = new TemporaryFolder();

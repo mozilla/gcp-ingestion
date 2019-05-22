@@ -11,6 +11,7 @@ import static org.junit.Assert.assertThat;
 import com.google.common.collect.Lists;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
@@ -27,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-public class GeoCityLookupTest {
+public class GeoCityLookupTest extends TestWithDeterministicJson {
 
   private static final String MMDB = "src/test/resources/cityDB/GeoIP2-City-Test.mmdb";
 
@@ -50,17 +51,21 @@ public class GeoCityLookupTest {
             + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
             + "},\"payload\":\"\"}");
 
-    final List<String> expected = Arrays.asList(
-        "{\"attributeMap\":{\"host\":\"test\"" + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\""
+    final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":" //
+            + "{\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
+            + ",\"host\":\"test\"" //
             + "},\"payload\":\"dGVzdA==\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
-            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" + "},\"payload\":\"\"}", //
+            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
+            + "},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
-            + "{\"geo_country\":\"US\"" //
-            + ",\"geo_city\":\"Milton\"" //
+            + "{\"geo_city\":\"Milton\"" //
+            + ",\"geo_country\":\"US\"" //
+            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
             + ",\"geo_subdivision1\":\"WA\"" //
-            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" + "},\"payload\":\"\"}");
+            + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
@@ -88,9 +93,11 @@ public class GeoCityLookupTest {
         + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
         + "},\"payload\":\"\"}");
 
-    final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\"" //
+    final List<String> expected = Arrays.asList("{\"attributeMap\":" //
+        + "{\"geo_country\":\"US\"" //
+        + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
         + ",\"geo_subdivision1\":\"WA\"" //
-        + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}");
+        + "},\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
@@ -111,9 +118,13 @@ public class GeoCityLookupTest {
         + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
         + "},\"payload\":\"\"}");
 
-    final List<String> expected = Arrays.asList("{\"attributeMap\":" + "{\"geo_country\":\"US\"" //
-        + ",\"geo_city\":\"Milton\",\"geo_subdivision1\":\"WA\""
-        + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}");
+    final List<String> expected = Arrays.asList("{\"attributeMap\":" //
+        + "{\"geo_city\":\"Milton\"" //
+        + ",\"geo_country\":\"US\"" //
+        + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
+        + ",\"geo_subdivision1\":\"WA\"" //
+        + "},\"payload\":\"\"}");
+
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //

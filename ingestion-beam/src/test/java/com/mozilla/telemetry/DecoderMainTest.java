@@ -7,22 +7,17 @@ package com.mozilla.telemetry;
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
 import static org.junit.Assert.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.matchers.Lines;
 import com.mozilla.telemetry.rules.RedisServer;
-import com.mozilla.telemetry.util.Json;
-import java.lang.reflect.Field;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.List;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class DecoderMainTest {
+public class DecoderMainTest extends TestWithDeterministicJson {
 
   @Rule
   public TemporaryFolder outputFolder = new TemporaryFolder();
@@ -33,24 +28,6 @@ public class DecoderMainTest {
   @Test
   public void instantiateDecoderForCodeCoverage() {
     new Decoder();
-  }
-
-  /** Make serialization of attributes map deterministic for these tests. */
-  @BeforeClass
-  public static void setUp() throws Exception {
-    Field mapperField = Json.class.getDeclaredField("MAPPER");
-    mapperField.setAccessible(true);
-    ObjectMapper mapper = (ObjectMapper) mapperField.get(null);
-    mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
-  }
-
-  /** Reset the ObjectMapper configurations we changed. */
-  @AfterClass
-  public static void tearDown() throws Exception {
-    Field mapperField = Json.class.getDeclaredField("MAPPER");
-    mapperField.setAccessible(true);
-    ObjectMapper mapper = (ObjectMapper) mapperField.get(null);
-    mapper.disable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
   }
 
   @Test
