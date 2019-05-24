@@ -57,7 +57,7 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputFileFormat=json", "--outputType=file",
         "--perDocTypeDestination=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--perDocTypeEnabledList=event,bar/foo", "--redisUri=" + redis.uri });
+        "--perDocTypeEnabledList=event,bar/foo,mynamespace/*", "--redisUri=" + redis.uri });
 
     List<String> inputLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
@@ -73,6 +73,11 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     List<String> outputLinesFoo = Lines.files(outputPath + "/out-bar-foo*.ndjson");
     assertThat("All docType=foo messages are published", outputLinesFoo,
         matchesInAnyOrder(inputLinesFoo));
+
+    List<String> inputLinesNamespace = Lines.files(inputPath + "/per-doctype-mynamespace.ndjson");
+    List<String> outputLinesNamespace = Lines.files(outputPath + "/out-mynamespace-all*.ndjson");
+    assertThat("All namespace=mynamespace messages are published", outputLinesNamespace,
+        matchesInAnyOrder(inputLinesNamespace));
   }
 
   @Test

@@ -5,15 +5,12 @@
 package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.Deduplicate;
-import com.mozilla.telemetry.republisher.RandomSampler;
+import com.mozilla.telemetry.republisher.RepublishPerChannel;
+import com.mozilla.telemetry.republisher.RepublishPerDocType;
 import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
@@ -24,7 +21,6 @@ import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
-import org.apache.commons.lang3.StringUtils;
 
 public class Republisher extends Sink {
 
@@ -78,67 +74,17 @@ public class Republisher extends Sink {
             message = PubsubConstraints.ensureNonNull(message);
             return message.getAttribute("x_debug_id") != null;
           })) //
-          .apply(opts.getOutputType().write(opts));
+          .apply("WriteDebugOutput", opts.getOutputType().write(opts));
     }
 
     // Republish to per-docType destinations.
-    final List<String> enabledDocTypes = Optional //
-        .ofNullable(options.getPerDocTypeEnabledList()) //
-        .orElse(Collections.emptyList());
-    for (String entry : enabledDocTypes) {
-      final String[] components = entry.split("/");
-      final String targetNamespace;
-      final String targetDocType;
-      if (components.length == 1) {
-        targetNamespace = "telemetry";
-        targetDocType = components[0];
-      } else {
-        targetNamespace = components[0];
-        targetDocType = components[1];
-      }
-
-      RepublisherOptions.Parsed opts = options.as(RepublisherOptions.Parsed.class);
-      // The destination pattern here must be compile-time due to a detail of Dataflow's
-      // streaming PubSub producer implementation; if that restriction is lifted in the future,
-      // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
-      String destination = options.getPerDocTypeDestination()
-          .replace("${document_namespace}", targetNamespace)
-          .replace("${document_type}", targetDocType);
-      opts.setOutput(StaticValueProvider.of(destination));
-
-      decoded //
-          .apply("DocType is " + targetDocType, Filter.by(message -> {
-            message = PubsubConstraints.ensureNonNull(message);
-            return targetNamespace.equals(message.getAttribute("document_namespace"))
-                && targetDocType.equals(message.getAttribute("document_type"));
-          })) //
-          .apply(opts.getOutputType().write(opts));
+    if (options.getPerDocTypeEnabledList() != null) {
+      decoded.apply(RepublishPerDocType.of(options));
     }
 
     // Republish to sampled per-channel destinations.
-    final Map<String, Double> ratioMap = Optional //
-        .ofNullable(options.getPerChannelSampleRatios()) //
-        .orElse(new HashMap<>());
-    for (Map.Entry<String, Double> entry : ratioMap.entrySet()) {
-      String targetChannel = entry.getKey();
-      Double ratio = entry.getValue();
-
-      RepublisherOptions.Parsed opts = options.as(RepublisherOptions.Parsed.class);
-      // The destination pattern here must be compile-time due to a detail of Dataflow's
-      // streaming PubSub producer implementation; if that restriction is lifted in the future,
-      // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
-      String destination = options.getPerChannelDestination().replace("${channel}", targetChannel);
-      opts.setOutput(StaticValueProvider.of(destination));
-
-      decoded //
-          .apply("RandomlySample" + StringUtils.capitalize(targetChannel), Filter.by(message -> {
-            message = PubsubConstraints.ensureNonNull(message);
-            String channel = message.getAttribute("normalized_channel");
-            String sampleId = message.getAttribute("sample_id");
-            return targetChannel.equals(channel)
-                && RandomSampler.filterBySampleIdOrRandomNumber(sampleId, ratio);
-          })) //
-          .apply(opts.getOutputType().write(opts));
+    if (options.getPerChannelSampleRatios() != null) {
+      decoded.apply(RepublishPerChannel.of(options));
     }
 
     // Write error output collections.

@@ -70,7 +70,9 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   @Description("A comma-separated list of docTypes that should be republished to individual"
       + " topics; you may use a slash in each entry to separate namespace from type;"
-      + " the telemetry namespace is assumed for entries that do not contain a slash")
+      + " the telemetry namespace is assumed for entries that do not contain a slash"
+      + " while '*' can be used in place of docType to create an output topic for an entire"
+      + " namespace")
   List<String> getPerDocTypeEnabledList();
 
   void setPerDocTypeEnabledList(List<String> value);
@@ -78,7 +80,8 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
   @Description("A pattern for output topic names (assuming --outputType=pubsub) for per-docType"
       + " sampling; the pattern must contain a placeholder ${document_type} and may optionally"
       + " contain a placeholder ${document_namespace} that will be filled in"
-      + " to give a distinct publisher per docType configured in --perDocTypeEnabledList")
+      + " to give a distinct publisher per docType configured in --perDocTypeEnabledList;"
+      + " for per-namespace topics, the ${document_type} placeholder will contain 'all'")
   String getPerDocTypeDestination();
 
   void setPerDocTypeDestination(String value);
