@@ -42,8 +42,8 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
       // streaming PubSub producer implementation; if that restriction is lifted in the future,
       // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
       opts.setOutput(StaticValueProvider.of(baseOptions.getPerDocTypeDestination()
-          .replace("${document_namespace}", destination.namespace)
-          .replace("${document_type}", destination.docType)));
+          .replace("${document_namespace}", destination.namespace.replace("-", "_"))
+          .replace("${document_type}", destination.docType.replace("-", "_"))));
 
       String name = String.join("_", "republish", destination.namespace, destination.docType);
       partitioned.get(i).apply(name, opts.getOutputType().write(opts));
