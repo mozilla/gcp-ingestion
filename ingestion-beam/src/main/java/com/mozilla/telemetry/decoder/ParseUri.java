@@ -72,6 +72,61 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
   public static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { //
       DOCUMENT_NAMESPACE, DOCUMENT_TYPE, DOCUMENT_VERSION, DOCUMENT_ID };
 
+  private static Map<String, String> zip(String[] keys, String[] values)
+      throws InvalidUriException {
+    Map<String, String> map = new HashMap<>();
+    if (keys.length != values.length) {
+      throw new UnexpectedPathElementsException(values.length - keys.length);
+    }
+    for (int i = 0; i < keys.length; i++) {
+      map.put(keys[i], values[i]);
+    }
+    return map;
+  }
+
+  @Override
+  protected PubsubMessage processElement(PubsubMessage message) throws InvalidUriException {
+    message = PubsubConstraints.ensureNonNull(message);
+    // Copy attributes
+    final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+    byte[] payload = message.getPayload();
+
+    // parse uri based on prefix
+    final String uri = attributes.get("uri");
+    if (uri == null) {
+      throw new NullUriException();
+    } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
+      // We don't yet have access to the version field, so we delay populating the document_version
+      // attribute until the ParsePayload step where we have map-like access to the JSON content.
+      attributes.put(DOCUMENT_NAMESPACE, TELEMETRY);
+      attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
+          uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
+    } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
+      attributes.putAll(
+          zip(GENERIC_URI_SUFFIX_ELEMENTS, uri.substring(GENERIC_URI_PREFIX.length()).split("/")));
+    } else if (uri.startsWith(StubUri.PREFIX)) {
+      payload = StubUri.parse(uri, attributes);
+    } else {
+      throw new InvalidUriException("Unknown URI prefix");
+    }
+    return new PubsubMessage(payload, attributes);
+  }
+
+  /**
+   * Class for parsing stub installer pings.
+   *
+   * <p>Support for stub installer pings as per
+   * https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#legacy-systems
+   *
+   * <p>Reimplementation of
+   * https://github.com/whd/dsmo_load/blob/master/heka/usr/share/heka/lua_filters/nginx_redshift.lua#L71-L194
+   *
+   * <p>Note that some fields have been renamed or modified from the lua implementation
+   * to match the firefox-installer.install.1 schema
+   * https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/dev/schemas/firefox-installer/install/install.1.schema.json
+   *
+   * <p>For info about funnelcake see https://wiki.mozilla.org/Funnelcake
+   */
   public static class StubUri {
 
     private StubUri() {
@@ -194,7 +249,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
       if (unexpectedElements != 0) {
         throw new UnexpectedPathElementsException(unexpectedElements);
       }
-      // Initialize new payload with ping version and funnelcake
+      // Initialize new payload with ping version and funnelcake ID
       JSONObject payload = new JSONObject();
       payload.put("installer_type", "stub");
       payload.put("installer_version", ""); // it's required but stub pings don't have it
@@ -225,45 +280,5 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
       // Serialize new payload as json
       return payload.toString().getBytes();
     }
-  }
-
-  private static Map<String, String> zip(String[] keys, String[] values)
-      throws InvalidUriException {
-    Map<String, String> map = new HashMap<>();
-    if (keys.length != values.length) {
-      throw new UnexpectedPathElementsException(values.length - keys.length);
-    }
-    for (int i = 0; i < keys.length; i++) {
-      map.put(keys[i], values[i]);
-    }
-    return map;
-  }
-
-  @Override
-  protected PubsubMessage processElement(PubsubMessage message) throws InvalidUriException {
-    message = PubsubConstraints.ensureNonNull(message);
-    // Copy attributes
-    final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-    byte[] payload = message.getPayload();
-
-    // parse uri based on prefix
-    final String uri = attributes.get("uri");
-    if (uri == null) {
-      throw new NullUriException();
-    } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
-      // We don't yet have access to the version field, so we delay populating the document_version
-      // attribute until the ParsePayload step where we have map-like access to the JSON content.
-      attributes.put(DOCUMENT_NAMESPACE, TELEMETRY);
-      attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
-          uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
-    } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
-      attributes.putAll(
-          zip(GENERIC_URI_SUFFIX_ELEMENTS, uri.substring(GENERIC_URI_PREFIX.length()).split("/")));
-    } else if (uri.startsWith(StubUri.PREFIX)) {
-      payload = StubUri.parse(uri, attributes);
-    } else {
-      throw new InvalidUriException("Unknown URI prefix");
-    }
-    return new PubsubMessage(payload, attributes);
   }
 }
