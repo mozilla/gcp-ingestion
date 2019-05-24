@@ -16,22 +16,22 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PDone;
 
-public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, PDone> {
+public class RepublishPerNamespace extends PTransform<PCollection<PubsubMessage>, PDone> {
 
   private RepublisherOptions baseOptions;
 
-  public static RepublishPerDocType of(RepublisherOptions baseOptions) {
-    return new RepublishPerDocType(baseOptions);
+  public static RepublishPerNamespace of(RepublisherOptions baseOptions) {
+    return new RepublishPerNamespace(baseOptions);
   }
 
   @Override
   public PDone expand(PCollection<PubsubMessage> input) {
-    List<Destination> destinations = baseOptions.getPerDocTypeEnabledList().stream()//
+    List<Destination> destinations = baseOptions.getPerNamespaceEnabledList().stream()//
         .map(Destination::new) //
         .collect(Collectors.toList());
     int numDestinations = destinations.size();
     int numPartitions = numDestinations + 1;
-    PCollectionList<PubsubMessage> partitioned = input.apply("PartitionByDocType",
+    PCollectionList<PubsubMessage> partitioned = input.apply("PartitionByNamespace",
         Partition.of(numPartitions, new PartitionFn(destinations)));
 
     for (int i = 0; i < numDestinations; i++) {
@@ -41,18 +41,17 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
       // The destination pattern here must be compile-time due to a detail of Dataflow's
       // streaming PubSub producer implementation; if that restriction is lifted in the future,
       // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
-      opts.setOutput(StaticValueProvider.of(baseOptions.getPerDocTypeDestination()
-          .replace("${document_namespace}", destination.namespace)
-          .replace("${document_type}", destination.docType)));
+      opts.setOutput(StaticValueProvider.of(baseOptions.getPerNamespaceDestination()
+          .replace("${document_namespace}", destination.namespace)));
 
-      String name = String.join("_", "republish", destination.namespace, destination.docType);
+      String name = String.join("_", "republish", destination.namespace);
       partitioned.get(i).apply(name, opts.getOutputType().write(opts));
     }
 
     return PDone.in(input.getPipeline());
   }
 
-  private RepublishPerDocType(RepublisherOptions baseOptions) {
+  private RepublishPerNamespace(RepublisherOptions baseOptions) {
     this.baseOptions = baseOptions;
   }
 
@@ -64,10 +63,8 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
     public int partitionFor(PubsubMessage message, int numPartitions) {
       message = PubsubConstraints.ensureNonNull(message);
       String namespace = message.getAttribute("document_namespace");
-      String docType = message.getAttribute("document_type");
-      System.out.println("Partitioning per DocType: " + namespace + docType);
       for (int i = 0; i < destinations.size(); i++) {
-        if (destinations.get(i).matches(namespace, docType)) {
+        if (destinations.get(i).matches(namespace)) {
           return i;
         }
       }
@@ -84,21 +81,13 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
   private static class Destination implements Serializable {
 
     final String namespace;
-    final String docType;
 
-    public Destination(String entry) {
-      final String[] components = entry.split("/");
-      if (components.length == 1) {
-        this.namespace = "telemetry";
-        this.docType = components[0];
-      } else {
-        this.namespace = components[0];
-        this.docType = components[1];
-      }
+    public Destination(String namespace) {
+      this.namespace = namespace;
     }
 
-    public boolean matches(String namespaceToMatch, String docTypeToMatch) {
-      return namespace.equals(namespaceToMatch) && docType.equals(docTypeToMatch);
+    public boolean matches(String namespaceToMatch) {
+      return namespace.equals(namespaceToMatch);
     }
 
   }

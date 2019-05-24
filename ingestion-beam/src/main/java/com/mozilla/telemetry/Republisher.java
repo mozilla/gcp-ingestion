@@ -7,6 +7,7 @@ package com.mozilla.telemetry;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.republisher.RepublishPerChannel;
 import com.mozilla.telemetry.republisher.RepublishPerDocType;
+import com.mozilla.telemetry.republisher.RepublishPerNamespace;
 import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.ArrayList;
@@ -80,6 +81,11 @@ public class Republisher extends Sink {
     // Republish to per-docType destinations.
     if (options.getPerDocTypeEnabledList() != null) {
       decoded.apply(RepublishPerDocType.of(options));
+    }
+
+    // Republish to per-namespace destinations.
+    if (options.getPerNamespaceEnabledList() != null) {
+      decoded.apply(RepublishPerNamespace.of(options));
     }
 
     // Republish to sampled per-channel destinations.
