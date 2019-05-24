@@ -52,27 +52,52 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
     String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
     String input = inputPath + "/*.ndjson";
-    String output = outputPath + "/out-${document_namespace}-${document_type}";
+    String output = outputPath + "/out_${document_namespace}_${document_type}";
 
     Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputFileFormat=json", "--outputType=file",
-        "--perDocTypeDestination=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--perDocTypeEnabledList=event,bar/foo", "--redisUri=" + redis.uri });
+        "--perDocTypeDestination=" + output, "--perDocTypeEnabledList=event,bar/foo",
+        "--outputFileCompression=UNCOMPRESSED", "--redisUri=" + redis.uri });
 
-    List<String> inputLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
-    List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
+    List<String> expectedLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
+    List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
     assertThat("Only specified docTypes should be published", outputLines,
-        matchesInAnyOrder(inputLines));
+        matchesInAnyOrder(expectedLines));
 
-    List<String> inputLinesEvent = Lines.files(inputPath + "/per-doctype-event.ndjson");
-    List<String> outputLinesEvent = Lines.files(outputPath + "/out-telemetry-event*.ndjson");
+    List<String> expectedLinesEvent = Lines.files(inputPath + "/per-doctype-event.ndjson");
+    List<String> outputLinesEvent = Lines.files(outputPath + "/out_telemetry_event*.ndjson");
     assertThat("All docType=event messages are published", outputLinesEvent,
-        matchesInAnyOrder(inputLinesEvent));
+        matchesInAnyOrder(expectedLinesEvent));
 
-    List<String> inputLinesFoo = Lines.files(inputPath + "/per-doctype-foo.ndjson");
-    List<String> outputLinesFoo = Lines.files(outputPath + "/out-bar-foo*.ndjson");
+    List<String> expectedLinesFoo = Lines.files(inputPath + "/per-doctype-foo.ndjson");
+    List<String> outputLinesFoo = Lines.files(outputPath + "/out_bar_foo*.ndjson");
     assertThat("All docType=foo messages are published", outputLinesFoo,
-        matchesInAnyOrder(inputLinesFoo));
+        matchesInAnyOrder(expectedLinesFoo));
+  }
+
+  @Test
+  public void testPerNamespace() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/*.ndjson";
+    String output = outputPath + "/per-namespace_${document_namespace}";
+
+    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
+        "--perNamespaceDestination=" + output, "--perNamespaceEnabledList=mynamespace",
+        "--outputFileCompression=UNCOMPRESSED", "--redisUri=" + redis.uri });
+
+    List<String> expectedLines = Lines.files(inputPath + "/per-namespace-*.ndjson");
+    List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
+    assertThat("Only specified namespaces should be published", outputLines,
+        matchesInAnyOrder(expectedLines));
+
+    List<String> expectedLinesMyNamespace = Lines
+        .files(inputPath + "/per-namespace-mynamespace.ndjson");
+    List<String> outputLinesMyNamespace = Lines
+        .files(outputPath + "/per-namespace_mynamespace*.ndjson");
+    assertThat("All namespace=mynamespace messages are published", outputLinesMyNamespace,
+        matchesInAnyOrder(expectedLinesMyNamespace));
   }
 
   @Test
