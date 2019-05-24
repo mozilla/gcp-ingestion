@@ -114,6 +114,13 @@ This document specifies the architecture for GCP Ingestion as a whole.
   - Must accept a compile-time parameter defining which `document_type`s
     to republish
   - Must only deliver messages with configured destinations
+- Must accept configuration mapping `document_namespace`s to PubSub topics
+  - Must accept a compile-time parameter defining a topic pattern string
+    (may be promoted to runtime if Dataflow adds support for PubSub topic
+    names defined via `NestedValueProvider`)
+  - Must accept a compile-time parameter defining which `document_namespace`s
+    to republish
+  - Must only deliver messages with configured destinations
 - Must accept optional configuration for sampling telemetry data
   - Must accept a compile-time parameter defining a topic pattern string
     (may be promoted to runtime if Dataflow adds support for PubSub topic
