@@ -5,6 +5,8 @@
 package com.mozilla.telemetry.util;
 
 import com.fasterxml.jackson.databind.SerializationFeature;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -20,5 +22,17 @@ public abstract class TestWithDeterministicJson {
   @AfterClass
   public static void tearDown() {
     Json.MAPPER.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+  }
+
+  /**
+   * Reserialize {@code data} to make json deterministic.
+   */
+  @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+  public static String sortJSON(String data) {
+    try {
+      return Json.readJSONObject(data.getBytes()).toString();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 }
