@@ -31,15 +31,13 @@ in the Structured Ingestion pipeline.
 1. Deduplicate message by `docId`
    * Generate `docId` for submission types that don't have one
 1. Write message to PubSub decoded topic based on `namespace` and `docType`
-1. Mark `docId` as seen in deduplication storage
 
 ### Implementation
 
 The above steps will be executed as a single Apache Beam job that can accept
 either a streaming input from PubSub or a batch input from Cloud Storage.
 Message deduplication will be done by checking for the presence of ids as keys
-in Cloud Memory Store (managed Redis), and adding ids to Memory Store after
-successful delivery to PubSub.
+in Cloud Memory Store (managed Redis).
 
 ### Decoding Errors
 
@@ -51,7 +49,7 @@ to the error topic.
 
 #### Error message schema
 
-The message that failed decoding, with two additional attributes:
+The message that failed decoding, with several additional attributes:
 
 ```
 ...
@@ -59,6 +57,13 @@ required group attributes {
   ...
   required string error_type    // example: "schema"
   required string error_message // example: "message did not match json schema for <namespace>/<docVersion>/<docType>"
+  required string exception_class // example: "java.lang.RuntimeException"
+  required string stack_trace
+  optional string stack_trace_cause_1
+  optional string stack_trace_cause_2
+  optional string stack_trace_cause_3
+  optional string stack_trace_cause_4
+  optional string stack_trace_cause_5
 }
 ```
 
@@ -68,26 +73,34 @@ See [Edge Server PubSub Message Schema](edge.md#edge-server-pubsub-message-schem
 
 ### Decoded message metadata schema
 
-Schema of the metadata object that is added to the message:
+Decoded messages published to Pub/Sub will contain the following attributes:
 
 ```
-required group metadata {
-  required string document_version           // from uri for non-Telemetry, from message for Telemetry
-  required string document_id                // from uri
-  required string geo_country                // from geoip lookup
-  required string geo_subdivision1           // from geoip lookup
-  required string geo_subdivision2           // from geoip lookup
-  required string geo_city                   // from geoip lookup
-  required string submission_timestamp       // from edge metadata
-  optional string date                       // header from client
-  optional string dnt                        // header from client
-  optional string x_pingsender_version       // header from client
-  optional string user_agent_browser         // from user_agent
-  optional string user_agent_browser_version // from user_agent
-  optional string user_agent_os              // from user_agent
-  optional string user_agent_os_version      // from user_agent
-}
+document_version           // from uri for non-Telemetry, from message for Telemetry
+document_id                // from uri
+geo_country                // from geoip lookup
+geo_subdivision1           // from geoip lookup
+geo_subdivision2           // from geoip lookup
+geo_city                   // from geoip lookup
+submission_timestamp       // from edge metadata
+date                       // header from client
+dnt                        // header from client
+x_pingsender_version       // header from client
+user_agent_browser         // from user_agent
+user_agent_browser_version // from user_agent
+user_agent_os              // from user_agent
+user_agent_os_version      // from user_agent
+normalized_app_name        // based on parsed json payload
+normalized_channel         // based on parsed json payload or URI
+normalized_country_code    // from geoip lookup
+normalized_os              // based on parsed json payload
+normalized_os_version      // based on parsed json payload
+sample_id                  // based on parsed json payload
 ```
+
+Many of these fields are also injected into the JSON payload either at the top
+level or nested inside a `metadata` object. The schema for injected metadata
+is maintained under the [`metadata` namespace in `mozilla-pipeline-schemas`](https://github.com/mozilla-services/mozilla-pipeline-schemas/tree/dev/schemas/metadata).
 
 ## Other Considerations
 

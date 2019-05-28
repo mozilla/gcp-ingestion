@@ -39,35 +39,48 @@ Require configuration for:
 Accept optional configuration for:
 
  * The fallback output PubSub topic for messages with no route
- * The output mode for BigQuery, default to `STREAMING_INSERTS`
+ * The output mode for BigQuery, default to `mixed`
+ * List of document types to opt-in for streaming when running in `mixed`
+   output mode
  * The triggering frequency for writing to BigQuery, when output mode is
    `FILE_LOADS`
 
-### Routing
+### Coerce Types
 
-Send messages to the fallback PubSub topic if they have no route configured.
-and add the additional attributes specified in [Decoded Error Message Schema
-](decoder.md#error-message-schema). If no fallback PubSub topic has been
-specified, drop the message.
+In some cases, we can not perfectly represent a given ping's schema in BigQuery
+and we must make adjustments. The adjustments are codified in
+[jsonschema-transpiler](https://github.com/mozilla/jsonschema-transpiler)
+and we will preprocess the JSON payload in each message to match the schemas
+found in BigQuery. Some of the supported logical transformations are:
 
-### Ignore Unknown Values
+- Map types will be transformed to arrays of key/value structs
+- Complex types will be transformed to JSON strings when the destination field
+  in BigQuery expects a string
 
-Specify `BigQueryIO.Write.ignoreUnknownValues()` when writing to BigQuery. This
-option makes it so that fields present in a message but not in the BigQuery
-schema are automatically dropped by BigQuery on insert, rather than causing the
-message to fail insertion.
+### Accumulate Unknown Values As `additional_properties`
+
+While traversing the payload in order to coerce types, we also remove any
+fields from the payload that have no corresponding field in BigQuery.
+We accumulate all those removed values, convert them to a JSON string, and
+add them back to the payload as `additional_properties`.
+This should make it possible to backfill a new column by using JSON operators
+in the case that a new field was added to a ping in the client before being
+added to the relvant JSON schema.
+
+Unexpected fields should never cause the message to fail insertion.
 
 ### Errors
 
 Send all messages that trigger an error described below to the error output.
 
 Handle any exceptions when routing and decoding messages by returning them in a
-separate `PCollection`.
+separate `PCollection`. We detect messages that are too large to send to
+BigQuery and route them to error output by raising a `PayloadTooLarge` exception.
 
-Errors when writing to BigQuery are returned as a `PCollection`
-via the `getFailedInserts` method. Use `InsertRetryPolicy.retryTransientErrors`
-when writing to BigQuery so that retries are handled automatically and all
-errors returned are non-transient.
+Errors when writing to BigQuery via streaming inserts are returned as a
+`PCollection` via the `getFailedInserts` method.
+Use `InsertRetryPolicy.retryTransientErrors` when writing to BigQuery so that
+retries are handled automatically and all errors returned are non-transient.
 
 #### Error Message Schema
 

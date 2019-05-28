@@ -82,7 +82,9 @@ This document specifies the architecture for GCP Ingestion as a whole.
    1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
       `geo_*` attributes
    1. Parse `agent` attribute into `user_agent_*` attributes
-   1. Copy attributes to `metadata` top level key in `payload`
+   1. Produced `normalized_` variants of select attributes
+   1. Inject `normalized_` attributes at the top level and other select
+      attributes into a nested `metadata` top level key in `payload`
 - Should deduplicate messages based on the `document_id` attribute using
   `Cloud MemoryStore`
   - Must ensure at least once delivery, so deduplication is only "best effort"
