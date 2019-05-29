@@ -48,7 +48,7 @@ Accept optional configuration for:
 ### Coerce Types
 
 Reprocess the JSON payload in each message to match the schema of the
-destination table found in BigQuery as determined codified by the
+destination table found in BigQuery as codified by the
 [`jsonschema-transpiler`](https://github.com/mozilla/jsonschema-transpiler).
 
 Support the following logical transformations:
