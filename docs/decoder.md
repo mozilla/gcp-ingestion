@@ -76,26 +76,36 @@ See [Edge Server PubSub Message Schema](edge.md#edge-server-pubsub-message-schem
 Decoded messages published to Pub/Sub will contain the following attributes:
 
 ```
-document_version           // from uri for non-Telemetry, from message for Telemetry
-document_id                // from uri
-geo_country                // from geoip lookup
-geo_subdivision1           // from geoip lookup
-geo_subdivision2           // from geoip lookup
-geo_city                   // from geoip lookup
-submission_timestamp       // from edge metadata
-date                       // header from client
-dnt                        // header from client
-x_pingsender_version       // header from client
-user_agent_browser         // from user_agent
-user_agent_browser_version // from user_agent
-user_agent_os              // from user_agent
-user_agent_os_version      // from user_agent
-normalized_app_name        // based on parsed json payload
-normalized_channel         // based on parsed json payload or URI
-normalized_country_code    // from geoip lookup
-normalized_os              // based on parsed json payload
-normalized_os_version      // based on parsed json payload
-sample_id                  // based on parsed json payload
+required group attributes {
+  ...
+  required string document_version           // from uri for non-Telemetry, from message for Telemetry
+  required string document_id                // from uri
+  required string document_namespace         // from uri
+  required string document_type              // from uri
+  optional string app_name                   // from uri for Telemetry
+  optional string app_version                // from uri for Telemetry
+  optional string app_update_channel         // from uri for Telemetry
+  optional string app_build_id               // from uri for Telemetry
+  optional string geo_country                // from geoip lookup
+  optional string geo_subdivision1           // from geoip lookup
+  optional string geo_subdivision2           // from geoip lookup
+  optional string geo_city                   // from geoip lookup
+  required string submission_timestamp       // from edge metadata
+  optional string date                       // header from client
+  optional string dnt                        // header from client
+  optional string x_pingsender_version       // header from client
+  optional string x_debug_id                 // header from client
+  optional string user_agent_browser         // from user_agent
+  optional string user_agent_browser_version // from user_agent
+  optional string user_agent_os              // from user_agent
+  optional string user_agent_os_version      // from user_agent
+  optional string normalized_app_name        // based on parsed json payload
+  optional string normalized_channel         // based on parsed json payload or URI
+  required string normalized_country_code    // from geoip lookup
+  optional string normalized_os              // based on parsed json payload
+  optional string normalized_os_version      // based on parsed json payload
+  optional string sample_id                  // based on parsed json payload
+}
 ```
 
 Many of these fields are also injected into the JSON payload either at the top

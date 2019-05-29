@@ -10,8 +10,8 @@ messages into BigQuery.
 - [Data Flow](#data-flow)
   - [Implementation](#implementation)
   - [Configuration](#configuration)
-  - [Routing](#routing)
-  - [Ignore Unknown Values](#ignore-unknown-values)
+  - [Coerce Types](#coerce-types)
+  - [Accumulate Unknown Values As `additional_properties`](#accumulate-unknown-values-as-additional_properties)
   - [Errors](#errors)
     - [Error Message Schema](#error-message-schema)
 - [Other Considerations](#other-considerations)
@@ -43,29 +43,30 @@ Accept optional configuration for:
  * List of document types to opt-in for streaming when running in `mixed`
    output mode
  * The triggering frequency for writing to BigQuery, when output mode is
-   `FILE_LOADS`
+   `file_loads`
 
 ### Coerce Types
 
-In some cases, we can not perfectly represent a given ping's schema in BigQuery
-and we must make adjustments. The adjustments are codified in
-[jsonschema-transpiler](https://github.com/mozilla/jsonschema-transpiler)
-and we will preprocess the JSON payload in each message to match the schemas
-found in BigQuery. Some of the supported logical transformations are:
+Reprocess the JSON payload in each message to match the schema of the
+destination table found in BigQuery as determined codified by the
+[`jsonschema-transpiler`](https://github.com/mozilla/jsonschema-transpiler).
 
-- Map types will be transformed to arrays of key/value structs
-- Complex types will be transformed to JSON strings when the destination field
-  in BigQuery expects a string
+Support the following logical transformations:
+
+  * Transform key names to replace `-` and `.` with `_`
+  * Transform key names beginning with a number by prefixing with `_`
+  * Transform map types to arrays of key/value maps when the destination
+    field is a repeated `STRUCT<key, value>`
+  * Transform complex types to JSON strings when the destination field
+    in BigQuery expects a string
 
 ### Accumulate Unknown Values As `additional_properties`
 
-While traversing the payload in order to coerce types, we also remove any
-fields from the payload that have no corresponding field in BigQuery.
-We accumulate all those removed values, convert them to a JSON string, and
-add them back to the payload as `additional_properties`.
+Accumulate values that are not present in the destination BigQuery table
+schema and inject as a JSON string into the payload as `additional_properties`.
 This should make it possible to backfill a new column by using JSON operators
 in the case that a new field was added to a ping in the client before being
-added to the relvant JSON schema.
+added to the relevant JSON schema.
 
 Unexpected fields should never cause the message to fail insertion.
 
