@@ -10,8 +10,8 @@ messages into BigQuery.
 - [Data Flow](#data-flow)
   - [Implementation](#implementation)
   - [Configuration](#configuration)
-  - [Routing](#routing)
-  - [Ignore Unknown Values](#ignore-unknown-values)
+  - [Coerce Types](#coerce-types)
+  - [Accumulate Unknown Values As `additional_properties`](#accumulate-unknown-values-as-additional_properties)
   - [Errors](#errors)
     - [Error Message Schema](#error-message-schema)
 - [Other Considerations](#other-considerations)
@@ -39,35 +39,49 @@ Require configuration for:
 Accept optional configuration for:
 
  * The fallback output PubSub topic for messages with no route
- * The output mode for BigQuery, default to `STREAMING_INSERTS`
+ * The output mode for BigQuery, default to `mixed`
+ * List of document types to opt-in for streaming when running in `mixed`
+   output mode
  * The triggering frequency for writing to BigQuery, when output mode is
-   `FILE_LOADS`
+   `file_loads`
 
-### Routing
+### Coerce Types
 
-Send messages to the fallback PubSub topic if they have no route configured.
-and add the additional attributes specified in [Decoded Error Message Schema
-](decoder.md#error-message-schema). If no fallback PubSub topic has been
-specified, drop the message.
+Reprocess the JSON payload in each message to match the schema of the
+destination table found in BigQuery as codified by the
+[`jsonschema-transpiler`](https://github.com/mozilla/jsonschema-transpiler).
 
-### Ignore Unknown Values
+Support the following logical transformations:
 
-Specify `BigQueryIO.Write.ignoreUnknownValues()` when writing to BigQuery. This
-option makes it so that fields present in a message but not in the BigQuery
-schema are automatically dropped by BigQuery on insert, rather than causing the
-message to fail insertion.
+  * Transform key names to replace `-` and `.` with `_`
+  * Transform key names beginning with a number by prefixing with `_`
+  * Transform map types to arrays of key/value maps when the destination
+    field is a repeated `STRUCT<key, value>`
+  * Transform complex types to JSON strings when the destination field
+    in BigQuery expects a string
+
+### Accumulate Unknown Values As `additional_properties`
+
+Accumulate values that are not present in the destination BigQuery table
+schema and inject as a JSON string into the payload as `additional_properties`.
+This should make it possible to backfill a new column by using JSON operators
+in the case that a new field was added to a ping in the client before being
+added to the relevant JSON schema.
+
+Unexpected fields should never cause the message to fail insertion.
 
 ### Errors
 
 Send all messages that trigger an error described below to the error output.
 
 Handle any exceptions when routing and decoding messages by returning them in a
-separate `PCollection`.
+separate `PCollection`. We detect messages that are too large to send to
+BigQuery and route them to error output by raising a `PayloadTooLarge` exception.
 
-Errors when writing to BigQuery are returned as a `PCollection`
-via the `getFailedInserts` method. Use `InsertRetryPolicy.retryTransientErrors`
-when writing to BigQuery so that retries are handled automatically and all
-errors returned are non-transient.
+Errors when writing to BigQuery via streaming inserts are returned as a
+`PCollection` via the `getFailedInserts` method.
+Use `InsertRetryPolicy.retryTransientErrors` when writing to BigQuery so that
+retries are handled automatically and all errors returned are non-transient.
 
 #### Error Message Schema
 
