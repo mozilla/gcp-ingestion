@@ -61,8 +61,6 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must accept configuration mapping `uri` to PubSub Topic
    - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
 - Must accept configuration defining HTTP headers to capture
-   - Must store configured headers as PubSub message attributes
-   - Must name attributes as the header name in lowercase with `-` converted to `_`
 
 ### Landfill Sink
 

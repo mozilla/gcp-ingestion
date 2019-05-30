@@ -70,7 +70,9 @@ environment variables:
   will fail, defaults to `0` which disables the check
 - `METADATA_HEADERS`: a JSON list of headers to preserve as PubSub message
   attributes, defaults to `["Content-Length", "Date", "DNT", "User-Agent",
-  "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID"]`
+  "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID"]`;
+  the message attribute name will be the header name in lowercase and with `-`
+  converted to `_`
 - `PUBLISH_TIMEOUT_SECONDS`: a float indicating the maximum number of seconds
   to wait for the PubSub client to complete a publish operation, defaults to 1
   second and may require tuning
