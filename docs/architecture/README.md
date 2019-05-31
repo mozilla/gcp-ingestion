@@ -60,6 +60,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
    - Must use a 5XX error error code
 - Must accept configuration mapping `uri` to PubSub Topic
    - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
+- Must accept configuration defining HTTP headers to capture
 
 ### Landfill Sink
 
@@ -79,6 +80,10 @@ This document specifies the architecture for GCP Ingestion as a whole.
    1. Parse `uri` attribute into multiple attributes
    1. Gzip decompress `payload` if gzip compressed
    1. Validate `payload` using a JSON Schema determined by attributes
+   1. Parse `x_pipeline_proxy` attribute; if present with a valid value in
+      [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format),
+      archive the value of `submission_timestamp` to `proxy_timestamp` and
+      replace with the `x_pipeline_proxy` value
    1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
       `geo_*` attributes
    1. Parse `agent` attribute into `user_agent_*` attributes
