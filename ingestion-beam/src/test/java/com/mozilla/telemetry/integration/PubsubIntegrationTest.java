@@ -37,6 +37,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.beam.runners.direct.DirectOptions;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -130,7 +131,10 @@ public class PubsubIntegrationTest {
 
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
     sinkOptions.setOutput(pipeline.newProvider(topicName.toString()));
-    sinkOptions.setOutputPubsubCompression(pipeline.newProvider(Compression.UNCOMPRESSED));
+    // We would normally use pipeline.newProvider instead of StaticValueProvider in tests,
+    // but something about this configuration causes the pipeline to stall when CompressPayload
+    // accesses a method on the underlying enum value when defined via pipeline.newProvider.
+    sinkOptions.setOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
 
     pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
         .apply(OutputType.pubsub.write(sinkOptions));
