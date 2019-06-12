@@ -4,10 +4,12 @@
 
 package com.mozilla.telemetry.transforms;
 
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TimePartitioning;
+import com.google.cloud.ServiceOptions;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Dataset;
@@ -66,11 +68,20 @@ public class PubsubMessageToTableRow
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
       .setField(SUBMISSION_TIMESTAMP);
 
+  // We have hit rate limiting issues that have sent valid data to error output, so we make the
+  // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
+  private static final RetrySettings RETRY_SETTINGS = ServiceOptions //
+      .getDefaultRetrySettings().toBuilder() //
+      .setMaxAttempts(12) // Defaults to 6
+      .setTotalTimeout(org.threeten.bp.Duration.ofSeconds(120)) // Defaults to 50 seconds
+      .build();
+
   private final ValueProvider<String> tableSpecTemplate;
 
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
   private transient Cache<TableReference, Schema> tableSchemaCache;
+  private transient BigQuery bqService;
 
   private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate) {
     this.tableSpecTemplate = tableSpecTemplate;
@@ -99,6 +110,11 @@ public class PubsubMessageToTableRow
     final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
         .setDatasetId(ref.getDatasetId());
 
+    if (bqService == null) {
+      bqService = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId())
+          .setRetrySettings(RETRY_SETTINGS).build().getService();
+    }
+
     // Get and cache a listing of table names for this dataset.
     Set<String> tablesInDataset;
     if (tableListingCache == null) {
@@ -107,9 +123,7 @@ public class PubsubMessageToTableRow
     try {
       tablesInDataset = tableListingCache.get(datasetRef, () -> {
         Set<String> tableSet = new HashSet<>();
-        BigQuery service = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId()).build()
-            .getService();
-        Dataset dataset = service.getDataset(ref.getDatasetId());
+        Dataset dataset = bqService.getDataset(ref.getDatasetId());
         if (dataset != null) {
           dataset.list().iterateAll().forEach(t -> {
             tableSet.add(t.getTableId().getTable());
@@ -137,9 +151,7 @@ public class PubsubMessageToTableRow
     }
     try {
       schema = tableSchemaCache.get(ref, () -> {
-        BigQuery service = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId()).build()
-            .getService();
-        Table table = service.getTable(ref.getDatasetId(), ref.getTableId());
+        Table table = bqService.getTable(ref.getDatasetId(), ref.getTableId());
         if (table != null) {
           return table.getDefinition().getSchema();
         } else {
