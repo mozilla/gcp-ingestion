@@ -87,6 +87,16 @@ public interface SinkOptions extends PipelineOptions {
 
   void setBqStreamingDocTypes(ValueProvider<List<String>> value);
 
+  @Description("A comma-separated list of docTypes for which we will not accumulate an"
+      + " additional_properties field before publishing to BigQuery;"
+      + " this is especially useful for the telemetry main ping where we expect to send the"
+      + " same payload to multiple tables, each with only a subset of the overall schema"
+      + " you may use a slash in each entry to separate namespace from type;"
+      + " the telemetry namespace is assumed for entries that do not contain a slash")
+  ValueProvider<List<String>> getBqStrictSchemaDocTypes();
+
+  void setBqStrictSchemaDocTypes(ValueProvider<List<String>> value);
+
   @Description("File format for --outputType=file|stdout; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"
       + " text (each line is payload)")

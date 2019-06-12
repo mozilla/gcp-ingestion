@@ -317,17 +317,21 @@ public abstract class Write
     private final InputType inputType;
     private final int numShards;
     private final ValueProvider<List<String>> streamingDocTypes;
+    private final ValueProvider<List<String>> strictSchemaDocTypes;
 
     /** Public constructor. */
     public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
         Duration triggeringFrequency, InputType inputType, int numShards,
-        ValueProvider<List<String>> streamingDocTypes) {
+        ValueProvider<List<String>> streamingDocTypes,
+        ValueProvider<List<String>> strictSchemaDocTypes) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
       this.inputType = inputType;
       this.numShards = numShards;
       this.streamingDocTypes = NestedValueProvider.of(streamingDocTypes,
+          value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
+      this.strictSchemaDocTypes = NestedValueProvider.of(strictSchemaDocTypes,
           value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
     }
 
@@ -383,8 +387,8 @@ public abstract class Write
 
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
-            .apply(PubsubMessageToTableRow.of(tableSpecTemplate)).errorsTo(errorCollections)
-            .apply(baseWriteTransform //
+            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes))
+            .errorsTo(errorCollections).apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
                 .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()) //
                 .skipInvalidRows() //
@@ -426,8 +430,8 @@ public abstract class Write
               .withNumFileShards(numShards);
         }
         messages //
-            .apply(PubsubMessageToTableRow.of(tableSpecTemplate)).errorsTo(errorCollections)
-            .apply(fileLoadsWrite);
+            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes))
+            .errorsTo(errorCollections).apply(fileLoadsWrite);
       });
 
       PCollection<PubsubMessage> errorCollection = PCollectionList.of(errorCollections)

@@ -27,6 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
+import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.time.Duration;
@@ -59,8 +60,9 @@ import org.apache.commons.text.StringSubstitutor;
 public class PubsubMessageToTableRow
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, TableRow>> {
 
-  public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate) {
-    return new PubsubMessageToTableRow(tableSpecTemplate);
+  public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate,
+      ValueProvider<List<String>> strictSchemaDocTypes) {
+    return new PubsubMessageToTableRow(tableSpecTemplate, strictSchemaDocTypes);
   }
 
   public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
@@ -77,14 +79,17 @@ public class PubsubMessageToTableRow
       .build();
 
   private final ValueProvider<String> tableSpecTemplate;
+  private final ValueProvider<List<String>> strictSchemaDocTypes;
 
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
   private transient Cache<TableReference, Schema> tableSchemaCache;
   private transient BigQuery bqService;
 
-  private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate) {
+  private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate,
+      ValueProvider<List<String>> strictSchemaDocTypes) {
     this.tableSpecTemplate = tableSpecTemplate;
+    this.strictSchemaDocTypes = strictSchemaDocTypes;
   }
 
   @Override
@@ -167,12 +172,20 @@ public class PubsubMessageToTableRow
     // Strip metadata so that it's not subject to transformation.
     Object metadata = tableRow.remove(AddMetadata.METADATA);
 
+    String namespace = message.getAttribute(ParseUri.DOCUMENT_NAMESPACE);
+    String docType = message.getAttribute(ParseUri.DOCUMENT_TYPE);
+    final boolean strictSchema = (strictSchemaDocTypes.isAccessible()
+        && (("telemetry".equals(namespace) && strictSchemaDocTypes.get().contains(docType))
+            || (strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)))));
+
     // Make BQ-specific transformations to the payload structure.
-    Map<String, Object> additionalProperties = new HashMap<>();
+    Map<String, Object> additionalProperties = strictSchema ? null : new HashMap<>();
     transformForBqSchema(tableRow, schema.getFields(), additionalProperties);
 
     tableRow.put(AddMetadata.METADATA, metadata);
-    tableRow.put(ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
+    if (additionalProperties != null) {
+      tableRow.put(ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
+    }
     return KV.of(tableDestination, tableRow);
   }
 
@@ -190,7 +203,8 @@ public class PubsubMessageToTableRow
    *
    * @param parent the map object to inspect and transform
    * @param bqFields the list of expected BQ fields inside this object
-   * @param additionalProperties a map for storing fields absent in the BQ schema
+   * @param additionalProperties a map for storing fields absent in the BQ schema; if null, this is
+   *                             "strict schema" mode and additional properties will be dropped
    */
   public static void transformForBqSchema(Map<String, Object> parent, List<Field> bqFields,
       Map<String, Object> additionalProperties) {
@@ -207,10 +221,14 @@ public class PubsubMessageToTableRow
       parent.put(key, parent.remove(rawKey));
     });
 
-    // Populate additionalProperties.
+    // Strip out fields that do not appear in the BQ schema.
     Set<String> fieldNames = bqFields.stream().map(Field::getName).collect(Collectors.toSet());
-    ImmutableSet.copyOf(Sets.difference(parent.keySet(), fieldNames))
-        .forEach(k -> additionalProperties.put(k, parent.remove(k)));
+    ImmutableSet.copyOf(Sets.difference(parent.keySet(), fieldNames)).forEach(k -> {
+      Object value = parent.remove(k);
+      if (additionalProperties != null) {
+        additionalProperties.put(k, value);
+      }
+    });
 
     // Special transformations for structures disallowed in BigQuery.
     bqFields.forEach(field -> {
@@ -239,9 +257,9 @@ public class PubsubMessageToTableRow
           Map<String, Object> map = m;
           Field valueField = field.getSubFields().get(1);
           if (valueField.getType() == LegacySQLTypeName.RECORD) {
-            Map<String, Object> props = new HashMap<>();
+            Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
             transformForBqSchema(map, valueField.getSubFields(), props);
-            if (!props.isEmpty()) {
+            if (props != null && !props.isEmpty()) {
               additionalProperties.put(name, props);
             }
           }
@@ -255,9 +273,9 @@ public class PubsubMessageToTableRow
         // We need to recursively call transformForBqSchema on any normal record type.
       } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
         value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
-          Map<String, Object> props = new HashMap<>();
+          Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
           transformForBqSchema(m, field.getSubFields(), props);
-          if (!props.isEmpty()) {
+          if (props != null && !props.isEmpty()) {
             additionalProperties.put(name, props);
           }
         });
@@ -267,9 +285,9 @@ public class PubsubMessageToTableRow
         List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
             .orElse(ImmutableList.of());
         records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
-          Map<String, Object> props = new HashMap<>();
+          Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
           transformForBqSchema(record, field.getSubFields(), props);
-          if (!props.isEmpty()) {
+          if (props != null && !props.isEmpty()) {
             additionalProperties.put(name, props);
           }
         });
