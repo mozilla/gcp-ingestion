@@ -388,7 +388,8 @@ public abstract class Write
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
             .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes))
-            .errorsTo(errorCollections).apply(baseWriteTransform //
+            .errorsTo(errorCollections) //
+            .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
                 .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()) //
                 .skipInvalidRows() //
@@ -431,7 +432,8 @@ public abstract class Write
         }
         messages //
             .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes))
-            .errorsTo(errorCollections).apply(fileLoadsWrite);
+            .errorsTo(errorCollections) //
+            .apply(fileLoadsWrite);
       });
 
       PCollection<PubsubMessage> errorCollection = PCollectionList.of(errorCollections)
