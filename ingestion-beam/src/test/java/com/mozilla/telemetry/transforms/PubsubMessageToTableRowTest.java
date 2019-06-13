@@ -124,6 +124,19 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   }
 
   @Test
+  public void testStrictSchema() throws Exception {
+    Map<String, Object> parent = new HashMap<>();
+    parent.put("outer", new HashMap<>(ImmutableMap.of("otherfield", 3, //
+        "mapfield", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
+    List<Field> bqFields = ImmutableList.of(Field.of("outer", LegacySQLTypeName.RECORD, //
+        MAP_FIELD));
+    String expected = "{\"outer\":{"
+        + "\"mapfield\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
+    PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, null);
+    assertEquals(expected, Json.asString(parent));
+  }
+
+  @Test
   public void testAdditionalPropertiesStripsEmpty() throws Exception {
     Map<String, Object> parent = new HashMap<>();
     Map<String, Object> additionalProperties = new HashMap<>();

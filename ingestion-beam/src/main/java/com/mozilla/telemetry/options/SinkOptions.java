@@ -81,11 +81,19 @@ public interface SinkOptions extends PipelineOptions {
   @Description("A comma-separated list of docTypes that should be published to BigQuery via the"
       + " streaming InsertAll endpoint rather than via file loads;"
       + " only relevant if --bqWriteMethod=mixed;"
-      + " you may use a slash in each entry to separate namespace from type;"
-      + " the telemetry namespace is assumed for entries that do not contain a slash")
+      + " each docType must be qualified with a namespace like 'telemetry/event'")
   ValueProvider<List<String>> getBqStreamingDocTypes();
 
   void setBqStreamingDocTypes(ValueProvider<List<String>> value);
+
+  @Description("A comma-separated list of docTypes for which we will not accumulate an"
+      + " additional_properties field before publishing to BigQuery;"
+      + " this is especially useful for telemetry/main where we expect to send the"
+      + " same payload to multiple tables, each with only a subset of the overall schema;"
+      + " each docType must be qualified with a namespace like 'telemetry/main'")
+  ValueProvider<List<String>> getBqStrictSchemaDocTypes();
+
+  void setBqStrictSchemaDocTypes(ValueProvider<List<String>> value);
 
   @Description("File format for --outputType=file|stdout; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"

@@ -54,11 +54,11 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     String input = inputPath + "/*.ndjson";
     String output = outputPath + "/out_${document_namespace}_${document_type}";
 
-    Republisher
-        .main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-            "--outputFileFormat=json", "--outputType=file", "--perDocTypeDestination=" + output,
-            "--perDocTypeEnabledList=event,bar/foo", "--outputFileCompression=UNCOMPRESSED",
-            "--redisUri=" + redis.uri, "--errorOutputType=stderr" });
+    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
+        "--perDocTypeDestination=" + output, "--perDocTypeEnabledList=telemetry/event,bar/foo",
+        "--outputFileCompression=UNCOMPRESSED", "--redisUri=" + redis.uri,
+        "--errorOutputType=stderr" });
 
     List<String> expectedLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
