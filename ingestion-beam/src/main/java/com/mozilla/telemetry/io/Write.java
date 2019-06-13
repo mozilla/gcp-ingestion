@@ -369,8 +369,6 @@ public abstract class Write
                   final boolean shouldStream;
                   if (namespace == null || docType == null) {
                     shouldStream = false;
-                  } else if ("telemetry".equals(namespace)) {
-                    shouldStream = streamingDocTypes.get().contains(docType);
                   } else {
                     shouldStream = streamingDocTypes.get().contains(namespace + "/" + docType);
                   }
