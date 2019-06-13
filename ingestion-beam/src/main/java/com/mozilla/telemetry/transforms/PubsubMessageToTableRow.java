@@ -175,8 +175,7 @@ public class PubsubMessageToTableRow
     String namespace = message.getAttribute(ParseUri.DOCUMENT_NAMESPACE);
     String docType = message.getAttribute(ParseUri.DOCUMENT_TYPE);
     final boolean strictSchema = (strictSchemaDocTypes.isAccessible()
-        && (("telemetry".equals(namespace) && strictSchemaDocTypes.get().contains(docType))
-            || (strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)))));
+        && strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)));
 
     // Make BQ-specific transformations to the payload structure.
     Map<String, Object> additionalProperties = strictSchema ? null : new HashMap<>();
