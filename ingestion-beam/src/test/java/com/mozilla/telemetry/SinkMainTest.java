@@ -45,7 +45,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
 
     // We are simply making sure this runs without throwing an exception.
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=stdout" });
+        "--outputFileFormat=json", "--outputType=stdout", "--errorOutputType=stderr" });
   }
 
   @Test
@@ -54,7 +54,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
 
     // We are simply making sure this runs without throwing an exception.
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=stderr" });
+        "--outputFileFormat=json", "--outputType=stderr", "--errorOutputType=stderr" });
   }
 
   @Test
@@ -63,7 +63,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
     thrown.expectMessage(Matchers.containsString("defaultless placeholder"));
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file",
-        "--output=tmp/${some_nonexistent_attribute}/out" });
+        "--output=tmp/${some_nonexistent_attribute}/out", "--errorOutputType=stderr" });
   }
 
   @Test
@@ -74,7 +74,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--outputFileCompression=UNCOMPRESSED" });
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     assertThat(Lines.files(outputPath + "/**/out*.ndjson"),
         matchesInAnyOrder(Lines.files(inputPath + "/*.ndjson")));
@@ -99,7 +99,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--outputFileCompression=UNCOMPRESSED" });
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     List<String> inputLines = Lines.files(input);
     List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
@@ -136,7 +136,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
 
     Sink.main(new String[] { "--inputFileFormat=text", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--outputFileCompression=UNCOMPRESSED" });
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
     List<String> expected = Lines.resources("testdata/basic-messages-valid-null-attributes.ndjson");
@@ -151,7 +151,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=text", "--outputType=file", "--output=" + output,
-        "--outputFileCompression=UNCOMPRESSED" });
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     List<String> outputLines = Lines.files(outputPath + "/out*.txt");
     List<String> expected = Lines.resources("testdata/basic-messages-payloads.txt");
@@ -167,7 +167,7 @@ public class SinkMainTest extends TestWithDeterministicJson {
 
     Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--outputFileCompression=UNCOMPRESSED" });
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     List<String> nullLines = Lines
         .resources("testdata/basic-messages-valid-null-attributes.ndjson");

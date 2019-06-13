@@ -65,7 +65,6 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
       message = PubsubConstraints.ensureNonNull(message);
       String namespace = message.getAttribute("document_namespace");
       String docType = message.getAttribute("document_type");
-      System.out.println("Partitioning per DocType: " + namespace + docType);
       for (int i = 0; i < destinations.size(); i++) {
         if (destinations.get(i).matches(namespace, docType)) {
           return i;
@@ -88,13 +87,12 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
 
     public Destination(String entry) {
       final String[] components = entry.split("/");
-      if (components.length == 1) {
-        this.namespace = "telemetry";
-        this.docType = components[0];
-      } else {
-        this.namespace = components[0];
-        this.docType = components[1];
+      if (components.length != 2) {
+        throw new IllegalArgumentException("Each entry of perDocTypeEnabledList must be in the"
+            + " form namespace/doctype, but found " + entry);
       }
+      this.namespace = components[0];
+      this.docType = components[1];
     }
 
     public boolean matches(String namespaceToMatch, String docTypeToMatch) {

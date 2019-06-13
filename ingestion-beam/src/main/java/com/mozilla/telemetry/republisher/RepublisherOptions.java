@@ -69,8 +69,7 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
   void setPerChannelDestination(String value);
 
   @Description("A comma-separated list of docTypes that should be republished to individual"
-      + " topics; you may use a slash in each entry to separate namespace from type;"
-      + " the telemetry namespace is assumed for entries that do not contain a slash")
+      + " topics; each docType must be qualified with a namespace like 'telemetry/event'")
   List<String> getPerDocTypeEnabledList();
 
   void setPerDocTypeEnabledList(List<String> value);
