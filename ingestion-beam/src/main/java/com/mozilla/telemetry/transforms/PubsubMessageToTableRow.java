@@ -21,7 +21,6 @@ import com.google.cloud.bigquery.Table;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -230,67 +229,90 @@ public class PubsubMessageToTableRow
     });
 
     // Special transformations for structures disallowed in BigQuery.
-    bqFields.forEach(field -> {
-      String name = field.getName();
-      Optional<Object> value = Optional.ofNullable(parent.get(name));
+    bqFields.forEach(field -> processField(field.getName(), field, parent.get(field.getName()), parent, additionalProperties));
+  }
 
-      // A repeated string field might need us to JSON-ify a list or map.
-      if (field.getType() == LegacySQLTypeName.STRING && field.getMode() == Mode.REPEATED) {
+  /**
+   * Return true if this field is a repeated struct of key/value, indicating a JSON map.
+   */
+  private static boolean isMapType(Field field) {
+    return field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED //
+        && field.getSubFields().size() == 2 //
+        && field.getSubFields().get(0).getName().equals("key") //
+        && field.getSubFields().get(1).getName().equals("value");
+  }
 
-        value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
-          List<Object> jsonified = ((List<Object>) list).stream().map(o -> coerceToString(o))
-              .collect(Collectors.toList());
-          parent.put(name, jsonified);
-        });
 
-        // A string field might need us to JSON-ify an object coerce a value to string.
-      } else if (field.getType() == LegacySQLTypeName.STRING && field.getMode() != Mode.REPEATED) {
-        value.ifPresent(o -> parent.put(name, coerceToString(o)));
+  private static void processField(String jsonFieldName, Field field, Object val, Map<String, Object> parent,
+      Map<String, Object> additionalProperties) {
+    String name = field.getName();
+    Optional<Object> value = Optional.ofNullable(val);
 
-        // A record of key and value indicates we need to transformForBqSchema a map to an array.
-      } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED //
-          && field.getSubFields().size() == 2 //
-          && field.getSubFields().get(0).getName().equals("key") //
-          && field.getSubFields().get(1).getName().equals("value")) {
-        value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
-          Map<String, Object> map = m;
-          Field valueField = field.getSubFields().get(1);
-          if (valueField.getType() == LegacySQLTypeName.RECORD) {
-            Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
-            transformForBqSchema(map, valueField.getSubFields(), props);
-            if (props != null && !props.isEmpty()) {
-              additionalProperties.put(name, props);
-            }
-          }
-          List<Map<String, Object>> unmapped = map.entrySet().stream()
-              .map(entry -> ImmutableMap.of("key", entry.getKey(), "value",
-                  coerceIfStringExpected(entry.getValue(), valueField.getType())))
-              .collect(Collectors.toList());
-          parent.put(name, unmapped);
-        });
+    // A repeated string field might need us to JSON-ify a list or map.
+    if (field.getType() == LegacySQLTypeName.STRING && field.getMode() == Mode.REPEATED) {
 
-        // We need to recursively call transformForBqSchema on any normal record type.
-      } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
-        value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
-          Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
-          transformForBqSchema(m, field.getSubFields(), props);
-          if (props != null && !props.isEmpty()) {
-            additionalProperties.put(name, props);
-          }
-        });
+      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
+        List<Object> jsonified = ((List<Object>) list).stream().map(o -> coerceToString(o))
+            .collect(Collectors.toList());
+        parent.put(name, jsonified);
+      });
 
-        // Likewise, we need to recursively call transformForBqSchema on repeated record types.
-      } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED) {
-        List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
-            .orElse(ImmutableList.of());
-        records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
-          Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
-          transformForBqSchema(record, field.getSubFields(), props);
-          if (props != null && !props.isEmpty()) {
-            additionalProperties.put(name, props);
-          }
-        });
-      }
+      // A string field might need us to JSON-ify an object coerce a value to string.
+    } else if (field.getType() == LegacySQLTypeName.STRING && field.getMode() != Mode.REPEATED) {
+      value.ifPresent(o -> parent.put(name, coerceToString(o)));
+
+      // A record of key and value indicates we need to transformForBqSchema a map to an array.
+    } else if (isMapType(field)) {
+      expandMapType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
+
+      // We need to recursively call transformForBqSchema on any normal record type.
+    } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
+      value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
+        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+        transformForBqSchema(m, field.getSubFields(), props);
+        if (props != null && !props.isEmpty()) {
+          additionalProperties.put(jsonFieldName, props);
+        }
+        parent.put(name, m);
+      });
+
+      // Likewise, we need to recursively call transformForBqSchema on repeated record types.
+    } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED) {
+      List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
+          .orElse(ImmutableList.of());
+      records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
+        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+        transformForBqSchema(record, field.getSubFields(), props);
+        if (props != null && !props.isEmpty()) {
+          additionalProperties.put(name, props);
+        }
+      });
+    } else {
+      value.ifPresent(v -> parent.put(name, v));
+    }
+  }
+
+  /**
+   * Recursively descend into a map type field, expanding to the key/value struct required in
+   * BigQuery schemas.
+   */
+  private static void expandMapType(String jsonFieldName, Object val, Field field, Map<String, Object> parent,
+      Map<String, Object> additionalProperties) {
+    Optional<Object> value = Optional.ofNullable(val);
+    value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
+      Map<String, Object> map = m;
+      Field valueField = field.getSubFields().get(1);
+      Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+      List<Map<String, Object>> unmapped = map.entrySet().stream().map(entry -> {
+        Map<String, Object> kv = new HashMap<>(2);
+        kv.put("key", entry.getKey());
+        processField(entry.getKey(), valueField, entry.getValue(), kv, props);
+        if (props != null && !props.isEmpty()) {
+          additionalProperties.put(jsonFieldName, props);
+        }
+        return kv;
+      }).collect(Collectors.toList());
+      parent.put(field.getName(), unmapped);
     });
   }
 
