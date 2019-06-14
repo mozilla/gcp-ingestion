@@ -114,6 +114,10 @@ This document specifies the architecture for GCP Ingestion as a whole.
   topic if they contain an `x_debug_id` attribute
   - Must accept a compile-time parameter enabling or disabling debug republishing
   - Must accept a runtime parameter defining the destination topic
+- Must accept configuration enabling republishing of a random sample of the
+  input stream
+  - Must accept a compile-time parameter setting the sample ratio
+  - Must accept a runtime parameter defining the destination topic
 - Must accept configuration mapping `document_type`s to PubSub topics
   - Must accept a compile-time parameter defining a topic pattern string
     (may be promoted to runtime if Dataflow adds support for PubSub topic
