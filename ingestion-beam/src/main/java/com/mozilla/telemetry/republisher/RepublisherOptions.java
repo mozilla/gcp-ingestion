@@ -53,11 +53,22 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   void setDebugDestination(ValueProvider<String> value);
 
-  Map<String, Double> getPerChannelSampleRatios();
+  @Description("An output topic name (assuming --outputType=pubsub) for a random sample of"
+      + " incoming messages; messages are chosen based on sample_id if present or by a number"
+      + " generated via ThreadLocalRandom; requires that --randomSampleRatio is set")
+  ValueProvider<String> getRandomSampleDestination();
+
+  void setRandomSampleDestination(ValueProvider<String> value);
+
+  @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
+  Double getRandomSampleRatio();
+
+  void setRandomSampleRatio(Double value);
 
   @Description("A JSON-formatted map of channel name to sampling ratio; for example,"
       + " {\"nightly\":1.0,\"release\":0.01} would republish 100% of nightly pings to the"
       + " sampled nightly topic and 1% of release pings to the sampled release topic")
+  Map<String, Double> getPerChannelSampleRatios();
 
   void setPerChannelSampleRatios(Map<String, Double> value);
 
