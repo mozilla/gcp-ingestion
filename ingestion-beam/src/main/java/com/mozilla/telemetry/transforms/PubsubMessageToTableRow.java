@@ -229,7 +229,8 @@ public class PubsubMessageToTableRow
     });
 
     // Special transformations for structures disallowed in BigQuery.
-    bqFields.forEach(field -> processField(field.getName(), field, parent.get(field.getName()), parent, additionalProperties));
+    bqFields.forEach(field -> processField(field.getName(), field, parent.get(field.getName()),
+        parent, additionalProperties));
   }
 
   /**
@@ -242,9 +243,8 @@ public class PubsubMessageToTableRow
         && field.getSubFields().get(1).getName().equals("value");
   }
 
-
-  private static void processField(String jsonFieldName, Field field, Object val, Map<String, Object> parent,
-      Map<String, Object> additionalProperties) {
+  private static void processField(String jsonFieldName, Field field, Object val,
+      Map<String, Object> parent, Map<String, Object> additionalProperties) {
     String name = field.getName();
     Optional<Object> value = Optional.ofNullable(val);
 
@@ -296,8 +296,8 @@ public class PubsubMessageToTableRow
    * Recursively descend into a map type field, expanding to the key/value struct required in
    * BigQuery schemas.
    */
-  private static void expandMapType(String jsonFieldName, Object val, Field field, Map<String, Object> parent,
-      Map<String, Object> additionalProperties) {
+  private static void expandMapType(String jsonFieldName, Object val, Field field,
+      Map<String, Object> parent, Map<String, Object> additionalProperties) {
     Optional<Object> value = Optional.ofNullable(val);
     value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
       Map<String, Object> map = m;
