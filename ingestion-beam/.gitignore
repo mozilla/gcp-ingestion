@@ -1,10 +1,6 @@
-target/
 lib_managed/
 metastore_db/
-.idea/
 derby.log
-*.iml
-.DS_Store
 tmp/
 GeoLite2-City.mmdb
 cities15000.txt
