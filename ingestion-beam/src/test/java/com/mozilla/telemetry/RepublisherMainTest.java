@@ -48,6 +48,23 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
   }
 
   @Test
+  public void testRandomSampleDestination() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/*.ndjson";
+    String output = outputPath + "/out";
+
+    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
+        "--randomSampleRatio=0.5", "--randomSampleDestination=" + output,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
+
+    List<String> inputLines = Lines.files(inputPath + "/*.ndjson");
+    List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
+    assertThat(outputLines.size() * 1.0, Matchers.closeTo(inputLines.size() / 2.0, 10.0));
+  }
+
+  @Test
   public void testPerDocType() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
     String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
