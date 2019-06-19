@@ -18,12 +18,16 @@ jobs:
           name: Ensure markdown tables of contents are up to date
           command: ./.circleci/doctoc-check.sh
 
-  ingestion-edge:
+  ingestion-edge: &ingestion-edge
+    working_directory: /root/project/ingestion-edge
     docker:
     - image: python:3.7
     steps:
-    - checkout
-    - run: &skip_unmodified
+    - &checkout
+      checkout:
+        path: /root/project
+    - &skip_unmodified
+      run:
         name: Early return when dir not modified
         command: |
           if [ "$CIRCLE_BRANCH" = master ]; then
@@ -38,35 +42,37 @@ jobs:
               echo "Skipping tests because $(git rev-parse --show-prefix) was not modified"
               circleci step halt
           fi
-        working_directory: ingestion-edge
     - restore_cache:
         keys:
           # when lock files change, use increasingly general patterns to restore cache
-          - python-packages-v1-{{ .Branch }}-{{ checksum "ingestion-edge/requirements.txt" }}-{{ checksum "ingestion-edge/constraints.txt" }}
-          - python-packages-v1-{{ .Branch }}-{{ checksum "ingestion-edge/requirements.txt" }}-
+          - &cache_key_edge
+            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.txt" }}-{{ checksum "constraints.txt" }}
+          - python-packages-v1-{{ .Branch }}-{{ checksum "requirements.txt" }}-
           - python-packages-v1-{{ .Branch }}-
           - python-packages-v1-
     - run:
         name: Build
-        command: ingestion-edge/bin/build
+        command: bin/build
     - run:
         name: PyTest with linters
-        command: ingestion-edge/bin/pytest-all
+        command: bin/pytest-all
         environment:
           PYTEST_ADDOPTS: --cov-report=xml
-    - run:
+    - &report_code_coverage
+      run:
         name: Report code coverage
-        command: cd ingestion-edge && bash <(curl -s https://codecov.io/bash) -F ingestion_edge
+        command: bash <(curl -s https://codecov.io/bash) -F "$(basename $PWD | sed s/[^a-z]/_/g)"
     - save_cache:
         paths:
         - ingestion-edge/venv/
-        key: python-packages-v1-{{ .Branch }}-{{ checksum "ingestion-edge/requirements.txt" }}-{{ checksum "ingestion-edge/constraints.txt" }}
+        key: *cache_key_edge
 
   ingestion-edge-release:
+    working_directory: /root/project/ingestion-edge
     docker:
     - image: docker/compose:1.22.0
     steps:
-    - checkout
+    - *checkout
     - setup_remote_docker:
         docker_layer_caching: true
     - run:
@@ -78,10 +84,10 @@ jobs:
           "$CIRCLE_PROJECT_USERNAME"
           "$CIRCLE_PROJECT_REPONAME"
           "$CIRCLE_BUILD_URL"
-          > ingestion-edge/version.json
+          > version.json
     - run:
         name: Persist CI environment file for passing into docker containers
-        command: env | grep '^CI' > ingestion-edge/circleci.env
+        command: env | grep '^CI' > circleci.env
     - run:
         name: Docker Compose Test
         command: >-
@@ -92,7 +98,7 @@ jobs:
           --force-recreate
           --quiet-pull
         environment: &compose_env
-          COMPOSE_FILE: ingestion-edge/docker-compose.yml:ingestion-edge/docker-compose.circleci.yml
+          COMPOSE_FILE: docker-compose.yml:docker-compose.circleci.yml
           COMPOSE_PROJECT_NAME: circleci-ingestion-edge
     - run:
         name: Deploy to Dockerhub
@@ -101,42 +107,45 @@ jobs:
           docker-compose push web
         environment: *compose_env
 
-  ingestion-beam:
+  ingestion-beam: &ingestion_beam
+    working_directory: /root/project/ingestion-beam
     docker:
     # Pin the maven image due to observed VM aborts on CircleCI 2018-01-08.
     - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
     steps:
-    - checkout
-    - run: &beam_unmodified
-        <<: *skip_unmodified
-        working_directory: ingestion-beam
-    - restore_cache: &restore_cache_beam
+    - *checkout
+    - *skip_unmodified
+    - &restore_cache_beam
+      restore_cache:
         keys:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
-          - maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
-          - maven-repo-v1-{{ .Branch }}-
+          - &cache_key_beam
+            maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "pom.xml" }}
+          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}
+          - maven-repo-v1-beam-{{ .Branch }}-
+          - maven-repo-v1-beam-
           - maven-repo-v1-
-    - run: &download_beam_resources
+    - &download_beam_resources
+      run:
         name: Download resources needed for Beam tests
         command: |
-          ingestion-beam/bin/download-schemas
+          bin/download-schemas
     - run:
         name: Maven Test
-        command: cd ingestion-beam && mvn clean test
-    - run:
-        name: Report code coverage
-        command: bash <(curl -s https://codecov.io/bash) -F ingestion_beam
+        command: mvn clean test
+    - *report_code_coverage
     - save_cache:
         paths:
           - ~/.m2
-        key: maven-repo-v1-{{ .Branch }}-{{ checksum "ingestion-beam/pom.xml" }}
+        key: *cache_key_beam
 
   ingestion-beam-integration:
-    docker:
-    # Pin the maven image due to observed VM aborts on CircleCI 2018-01-08.
-    - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
+    <<: *ingestion_beam
     steps:
+    # Checkout would fail if it were not the first step
+    # because checkout path would contain working dir
+    - *checkout
     - run:
         name: Early return if this build is from a forked PR
         command: |
@@ -144,12 +153,9 @@ jobs:
             echo "Nothing to upload for forked PRs, so marking this step successful"
             circleci step halt
           fi
-    - checkout
-    - run: *beam_unmodified
-    - restore_cache:
-        <<: *restore_cache_beam
-    - run:
-        <<: *download_beam_resources
+    - *skip_unmodified
+    - *restore_cache_beam
+    - *download_beam_resources
     - run:
         name: Maven Test
         # Google's client libraries will check for GOOGLE_APPLICATION_CREDENTIALS
@@ -158,10 +164,8 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          cd ingestion-beam && mvn clean test -Dtest=*IntegrationTest
-    - run:
-        name: Report code coverage
-        command: bash <(curl -s https://codecov.io/bash) -F ingestion_beam
+          mvn clean test -Dtest=*IntegrationTest
+    - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
 
 workflows:
