@@ -9,14 +9,16 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
 import java.util.Map;
 import org.junit.Test;
 
-public class PubsubMessageToMapTest {
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+public class PubsubMessageToJSONObjectTest {
 
-  private static final PubsubMessageToMap RAW_TRANSFORM = new PubsubMessageToMap(Format.raw);
-  private static final PubsubMessageToMap DECODED_TRANSFORM = new PubsubMessageToMap(
+  private static final PubsubMessageToJSONObject RAW_TRANSFORM = new PubsubMessageToJSONObject(
+      Format.raw);
+  private static final PubsubMessageToJSONObject DECODED_TRANSFORM = new PubsubMessageToJSONObject(
       Format.decoded);
   private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
 
@@ -25,19 +27,20 @@ public class PubsubMessageToMapTest {
     final Map<String, Object> actual = RAW_TRANSFORM
         .apply(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
             .putAttributes("document_id", "id").putAttributes("document_namespace", "telemetry")
-            .putAttributes("document_type", "main").putAttributes("document_version", "4").build());
+            .putAttributes("document_type", "main").putAttributes("document_version", "4").build())
+        .toMap();
     assertEquals(ImmutableMap.of("document_id", "id", "document_namespace", "telemetry",
         "document_type", "main", "document_version", "4", "payload", "dGVzdA=="), actual);
   }
 
   @Test
   public void canFormatAsRawWithEmptyValues() {
-    assertEquals(ImmutableMap.of(), RAW_TRANSFORM.apply(EMPTY_MESSAGE));
+    assertEquals(ImmutableMap.of(), RAW_TRANSFORM.apply(EMPTY_MESSAGE).toMap());
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnUnimplementedFormat() {
-    new PubsubMessageToMap(Format.payload).apply(EMPTY_MESSAGE);
+    new PubsubMessageToJSONObject(Format.payload).apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = NullPointerException.class)
@@ -52,30 +55,32 @@ public class PubsubMessageToMapTest {
 
   @Test
   public void canFormatTelemetryAsDecoded() {
-    final Map<String, Object> actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
-        .setData(ByteString.copyFrom("test".getBytes())).putAttributes("geo_city", "geo_city")
-        .putAttributes("geo_country", "geo_country")
-        .putAttributes("geo_subdivision1", "geo_subdivision1")
-        .putAttributes("geo_subdivision2", "geo_subdivision2")
-        .putAttributes("user_agent_browser", "user_agent_browser")
-        .putAttributes("user_agent_os", "user_agent_os")
-        .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
-        .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
-        .putAttributes("x_pingsender_version", "x_pingsender_version").putAttributes("uri", "uri")
-        .putAttributes("app_build_id", "app_build_id").putAttributes("app_name", "app_name")
-        .putAttributes("app_update_channel", "app_update_channel")
-        .putAttributes("app_version", "app_version")
-        .putAttributes("document_namespace", "telemetry")
-        .putAttributes("document_type", "document_type")
-        .putAttributes("document_version", "document_version")
-        .putAttributes("submission_timestamp", "submission_timestamp")
-        .putAttributes("document_id", "document_id")
-        .putAttributes("normalized_app_name", "normalized_app_name")
-        .putAttributes("normalized_channel", "normalized_channel")
-        .putAttributes("normalized_country_code", "normalized_country_code")
-        .putAttributes("normalized_os", "normalized_os")
-        .putAttributes("normalized_os_version", "normalized_os_version")
-        .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build());
+    final Map<String, Object> actual = DECODED_TRANSFORM
+        .apply(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
+            .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
+            .putAttributes("geo_subdivision1", "geo_subdivision1")
+            .putAttributes("geo_subdivision2", "geo_subdivision2")
+            .putAttributes("user_agent_browser", "user_agent_browser")
+            .putAttributes("user_agent_os", "user_agent_os")
+            .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
+            .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
+            .putAttributes("x_pingsender_version", "x_pingsender_version")
+            .putAttributes("uri", "uri").putAttributes("app_build_id", "app_build_id")
+            .putAttributes("app_name", "app_name")
+            .putAttributes("app_update_channel", "app_update_channel")
+            .putAttributes("app_version", "app_version")
+            .putAttributes("document_namespace", "telemetry")
+            .putAttributes("document_type", "document_type")
+            .putAttributes("document_version", "document_version")
+            .putAttributes("submission_timestamp", "submission_timestamp")
+            .putAttributes("document_id", "document_id")
+            .putAttributes("normalized_app_name", "normalized_app_name")
+            .putAttributes("normalized_channel", "normalized_channel")
+            .putAttributes("normalized_country_code", "normalized_country_code")
+            .putAttributes("normalized_os", "normalized_os")
+            .putAttributes("normalized_os_version", "normalized_os_version")
+            .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build())
+        .toMap();
 
     assertEquals(
         ImmutableMap.builder()
@@ -109,30 +114,32 @@ public class PubsubMessageToMapTest {
 
   @Test
   public void canFormatNonTelemetryAsDecoded() {
-    final Map<String, Object> actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
-        .setData(ByteString.copyFrom("test".getBytes())).putAttributes("geo_city", "geo_city")
-        .putAttributes("geo_country", "geo_country")
-        .putAttributes("geo_subdivision1", "geo_subdivision1")
-        .putAttributes("geo_subdivision2", "geo_subdivision2")
-        .putAttributes("user_agent_browser", "user_agent_browser")
-        .putAttributes("user_agent_os", "user_agent_os")
-        .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
-        .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
-        .putAttributes("x_pingsender_version", "x_pingsender_version").putAttributes("uri", "uri")
-        .putAttributes("app_build_id", "app_build_id").putAttributes("app_name", "app_name")
-        .putAttributes("app_update_channel", "app_update_channel")
-        .putAttributes("app_version", "app_version")
-        .putAttributes("document_namespace", "document_namespace")
-        .putAttributes("document_type", "document_type")
-        .putAttributes("document_version", "document_version")
-        .putAttributes("submission_timestamp", "submission_timestamp")
-        .putAttributes("document_id", "document_id")
-        .putAttributes("normalized_app_name", "normalized_app_name")
-        .putAttributes("normalized_channel", "normalized_channel")
-        .putAttributes("normalized_country_code", "normalized_country_code")
-        .putAttributes("normalized_os", "normalized_os")
-        .putAttributes("normalized_os_version", "normalized_os_version")
-        .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build());
+    final Map<String, Object> actual = DECODED_TRANSFORM
+        .apply(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
+            .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
+            .putAttributes("geo_subdivision1", "geo_subdivision1")
+            .putAttributes("geo_subdivision2", "geo_subdivision2")
+            .putAttributes("user_agent_browser", "user_agent_browser")
+            .putAttributes("user_agent_os", "user_agent_os")
+            .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
+            .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
+            .putAttributes("x_pingsender_version", "x_pingsender_version")
+            .putAttributes("uri", "uri").putAttributes("app_build_id", "app_build_id")
+            .putAttributes("app_name", "app_name")
+            .putAttributes("app_update_channel", "app_update_channel")
+            .putAttributes("app_version", "app_version")
+            .putAttributes("document_namespace", "document_namespace")
+            .putAttributes("document_type", "document_type")
+            .putAttributes("document_version", "document_version")
+            .putAttributes("submission_timestamp", "submission_timestamp")
+            .putAttributes("document_id", "document_id")
+            .putAttributes("normalized_app_name", "normalized_app_name")
+            .putAttributes("normalized_channel", "normalized_channel")
+            .putAttributes("normalized_country_code", "normalized_country_code")
+            .putAttributes("normalized_os", "normalized_os")
+            .putAttributes("normalized_os_version", "normalized_os_version")
+            .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build())
+        .toMap();
 
     assertEquals(
         ImmutableMap.builder()
@@ -164,7 +171,8 @@ public class PubsubMessageToMapTest {
   @Test
   public void canFormatTelemetryAsDecodedWithEmptyValues() {
     final Map<String, Object> actual = DECODED_TRANSFORM
-        .apply(PubsubMessage.newBuilder().putAttributes("document_namespace", "telemetry").build());
+        .apply(PubsubMessage.newBuilder().putAttributes("document_namespace", "telemetry").build())
+        .toMap();
 
     assertEquals(ImmutableMap.builder()
         .put("metadata",
@@ -180,6 +188,6 @@ public class PubsubMessageToMapTest {
         .put("metadata",
             ImmutableMap.builder().put("geo", ImmutableMap.of()).put("header", ImmutableMap.of())
                 .put("user_agent", ImmutableMap.of()).build())
-        .build(), DECODED_TRANSFORM.apply(EMPTY_MESSAGE));
+        .build(), DECODED_TRANSFORM.apply(EMPTY_MESSAGE).toMap());
   }
 }

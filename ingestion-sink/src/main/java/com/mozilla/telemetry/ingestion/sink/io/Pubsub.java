@@ -23,7 +23,7 @@ public class Pubsub {
     private static final Logger LOG = LoggerFactory.getLogger(Read.class);
 
     @VisibleForTesting
-    Subscriber subscriber;
+    public Subscriber subscriber;
 
     public Read(String subscriptionName, Function<PubsubMessage, CompletableFuture<?>> output,
         Function<Subscriber.Builder, Subscriber.Builder> config) {

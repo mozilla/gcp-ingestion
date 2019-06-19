@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.apache.commons.text.StringSubstitutor;
 
-public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
+public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     implements Function<InputT, CompletableFuture<Void>> {
 
   protected final String batchKeyTemplate;
@@ -38,15 +38,15 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
   @Override
   public CompletableFuture<Void> apply(InputT input) {
     AtomicReference<CompletableFuture<Void>> output = new AtomicReference<>();
-
+    EncodedT encodedInput = encodeInput(input);
     batches.compute(getBatchKey(input), (batchKey, batch) -> {
       if (batch != null) {
-        batch.add(input).ifPresent(output::set);
+        batch.add(encodedInput).ifPresent(output::set);
       }
       if (output.get() == null) {
         batch = getBatch(batchKey);
         // add first input before allowing batch
-        batch.add(input).ifPresent(output::set);
+        batch.add(encodedInput).ifPresent(output::set);
         // allow batch to complete by timeout now that we have attempted to add the first item
         batch.init.complete(null);
       }
@@ -57,7 +57,7 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
         .orElseThrow(() -> new IllegalArgumentException("Empty batch rejected input"));
   }
 
-  protected String batchKeyTemplate(PubsubMessage input) {
+  protected String applyBatchKeyTemplate(PubsubMessage input) {
     String batchKey = StringSubstitutor.replace(batchKeyTemplate,
         DerivedAttributesMap.of(input.getAttributesMap()));
     if (batchKey.contains("$")) {
@@ -96,19 +96,19 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
       }
     }
 
-    private synchronized Optional<CompletableFuture<Void>> add(InputT input) {
+    private synchronized Optional<CompletableFuture<Void>> add(EncodedT encodedInput) {
       if (full.isDone()) {
         return Optional.empty();
       }
       int newSize = size + 1;
-      long newByteSize = byteSize + getByteSize(input);
+      long newByteSize = byteSize + getByteSize(encodedInput);
       if (newSize > maxMessages || newByteSize > maxBytes) {
         this.full.complete(null);
         return Optional.empty();
       }
       size = newSize;
       byteSize = newByteSize;
-      write(input);
+      write(encodedInput);
       return Optional
           .of(result.thenAcceptAsync(result -> this.checkResultFor(result, newSize - 1)));
     }
@@ -118,12 +118,14 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
 
     protected abstract BatchResultT close(Void ignoreVoid, Throwable ignoreThrowable);
 
-    protected abstract void write(InputT input);
+    protected abstract void write(EncodedT encodedInput);
 
-    protected abstract long getByteSize(InputT input);
+    protected abstract long getByteSize(EncodedT encodedInput);
   }
 
   protected abstract BatchKeyT getBatchKey(InputT input);
+
+  protected abstract EncodedT encodeInput(InputT input);
 
   protected abstract Batch getBatch(BatchKeyT batchKey);
 }

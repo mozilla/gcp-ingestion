@@ -11,8 +11,8 @@ import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.time.Duration;
 import java.util.List;
@@ -36,23 +36,24 @@ public class BigQuery {
     }
   }
 
-  public static class Write extends BatchWrite<PubsubMessage, TableId, InsertAllResponse> {
+  public static class Write
+      extends BatchWrite<PubsubMessage, PubsubMessage, TableId, InsertAllResponse> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Write.class);
 
     private final com.google.cloud.bigquery.BigQuery bigQuery;
-    private final PubsubMessageToMap encoder;
+    private final PubsubMessageToJSONObject encoder;
 
     public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
         Duration maxDelay, String batchKeyTemplate, Format format) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
       this.bigQuery = bigQuery;
-      this.encoder = new PubsubMessageToMap(format);
+      this.encoder = new PubsubMessageToJSONObject(format);
     }
 
     @Override
     protected TableId getBatchKey(PubsubMessage input) {
-      String batchKey = batchKeyTemplate(input).replaceAll(":", ".");
+      String batchKey = applyBatchKeyTemplate(input).replaceAll(":", ".");
       final String[] tableSpecParts = batchKey.split("\\.", 3);
       if (tableSpecParts.length == 3) {
         return TableId.of(tableSpecParts[0], tableSpecParts[1], tableSpecParts[2]);
@@ -65,19 +66,24 @@ public class BigQuery {
     }
 
     @Override
-    protected Batch getBatch(TableId batchKey) {
-      return new Batch(batchKey);
+    protected PubsubMessage encodeInput(PubsubMessage input) {
+      return input;
+    }
+
+    @Override
+    protected Batch getBatch(TableId tableId) {
+      return new Batch(tableId);
     }
 
     @VisibleForTesting
-    class Batch extends BatchWrite<PubsubMessage, TableId, InsertAllResponse>.Batch {
+    class Batch extends BatchWrite<PubsubMessage, PubsubMessage, TableId, InsertAllResponse>.Batch {
 
       @VisibleForTesting
       final InsertAllRequest.Builder builder;
 
-      private Batch(TableId batchKey) {
+      private Batch(TableId tableId) {
         super();
-        builder = InsertAllRequest.newBuilder(batchKey)
+        builder = InsertAllRequest.newBuilder(tableId)
             // ignore row values for columns not present in the table
             .setIgnoreUnknownValues(true)
             // insert all valid rows when invalid rows are present in the request
@@ -91,7 +97,7 @@ public class BigQuery {
 
       @Override
       protected synchronized void write(PubsubMessage input) {
-        Map<String, Object> content = encoder.apply(input);
+        Map<String, Object> content = encoder.apply(input).toMap();
         Optional.ofNullable(input.getAttributesOrDefault(Attribute.DOCUMENT_ID, null))
             .map(id -> builder.addRow(id, content)).orElseGet(() -> builder.addRow(content));
       }
