@@ -4,79 +4,90 @@
 
 package com.mozilla.telemetry.ingestion.sink.io;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.cloud.bigquery.BigQueryError;
+import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap.Format;
 import java.time.Duration;
-import java.util.Optional;
+import java.util.List;
 import java.util.concurrent.CompletionException;
 import org.junit.Before;
 import org.junit.Test;
 
 public class BigQueryTest {
 
-  private com.google.cloud.bigquery.BigQuery bigquery;
+  private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
+  private static final int MAX_BYTES = 100;
+  private static final int MAX_MESSAGES = 10;
+  private static final Duration MAX_DELAY = Duration.ofMillis(100);
+  private static final Duration NO_DELAY = Duration.ofMillis(0);
+  private static final String BATCH_KEY_TEMPLATE = "_._";
+  private static final TableId BATCH_KEY = TableId.of("_", "_");
+
+  private com.google.cloud.bigquery.BigQuery bigQuery;
   private BigQuery.Write output;
   private InsertAllResponse response;
 
   @Before
   public void mockBigQueryResponse() {
-    bigquery = mock(com.google.cloud.bigquery.BigQuery.class);
+    bigQuery = mock(com.google.cloud.bigquery.BigQuery.class);
     response = mock(InsertAllResponse.class);
-    when(bigquery.insertAll(any())).thenReturn(response);
+    when(bigQuery.insertAll(any())).thenReturn(response);
     when(response.getErrorsFor(anyLong())).thenReturn(ImmutableList.of());
-    output = new BigQuery.Write(bigquery, 10, 10, Duration.ofMillis(100));
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
+        Format.raw);
   }
 
   @Test
   public void canReturnSuccess() {
-    BigQuery.Write.TableRow row = new BigQuery.Write.TableRow(TableId.of("", ""), 0,
-        Optional.empty(), ImmutableMap.of("", ""));
-    assertEquals(row, output.apply(row).join());
+    output.apply(EMPTY_MESSAGE).join();
   }
 
   @Test
   public void canSendWithNoDelay() {
-    output = new BigQuery.Write(bigquery, 1, 1, Duration.ofMillis(0));
-    output.apply(
-        new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(), ImmutableMap.of()));
-    assertEquals(1, output.batches.get(TableId.of("", "")).builder.build().getRows().size());
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
+        BATCH_KEY_TEMPLATE, Format.raw);
+    output.apply(EMPTY_MESSAGE);
+    assertEquals(1, output.batches.get(BATCH_KEY).size);
   }
 
   @Test
   public void canBatchMessages() {
     for (int i = 0; i < 2; i++) {
-      output.apply(
-          new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(), ImmutableMap.of()));
+      output.apply(EMPTY_MESSAGE);
     }
-    assertEquals(2, output.batches.get(TableId.of("", "")).builder.build().getRows().size());
+    assertEquals(2, output.batches.get(BATCH_KEY).size);
   }
 
   @Test
   public void canLimitBatchMessageCount() {
-    for (int i = 0; i < 11; i++) {
-      output.apply(
-          new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(), ImmutableMap.of()));
+    for (int i = 0; i < (MAX_MESSAGES + 1); i++) {
+      output.apply(EMPTY_MESSAGE);
     }
-    assertTrue(output.batches.get(TableId.of("", "")).builder.build().getRows().size() < 10);
+    assertThat(output.batches.get(BATCH_KEY).size, lessThanOrEqualTo(MAX_MESSAGES));
   }
 
   @Test
   public void canLimitBatchByteSize() {
-    for (int i = 0; i < 2; i++) {
-      output.apply(
-          new BigQuery.Write.TableRow(TableId.of("", ""), 6, Optional.empty(), ImmutableMap.of()));
+    PubsubMessage input = PubsubMessage.newBuilder().putAttributes("meta", "data").build();
+    for (int i = 0; i < Math.ceil((MAX_BYTES + 1) / input.getSerializedSize()); i++) {
+      output.apply(input);
     }
-    assertTrue(output.batches.get(TableId.of("", "")).builder.build().getRows().size() < 2);
+    assertThat((int) output.batches.get(BATCH_KEY).byteSize, lessThanOrEqualTo(MAX_BYTES));
   }
 
   @Test(expected = BigQuery.WriteErrors.class)
@@ -84,8 +95,7 @@ public class BigQueryTest {
     when(response.getErrorsFor(0)).thenReturn(ImmutableList.of(new BigQueryError("", "", "")));
 
     try {
-      output.apply(new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(),
-          ImmutableMap.of("", ""))).join();
+      output.apply(EMPTY_MESSAGE).join();
     } catch (CompletionException e) {
       throw e.getCause();
     }
@@ -93,6 +103,78 @@ public class BigQueryTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnOversizedMessage() {
-    output.apply(new BigQuery.Write.TableRow(TableId.of("", ""), 11, Optional.empty(), null));
+    output.apply(
+        PubsubMessage.newBuilder().putAttributes("error", Strings.repeat(".", MAX_BYTES)).build());
+  }
+
+  @Test
+  public void canHandleProjectInTableId() {
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
+        "project.dataset.table", Format.raw);
+    output.apply(EMPTY_MESSAGE).join();
+    assertNotNull(output.batches.get(TableId.of("project", "dataset", "table")));
+  }
+
+  @Test
+  public void canHandleDocumentId() {
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, BATCH_KEY_TEMPLATE,
+        Format.raw);
+    output.apply(PubsubMessage.newBuilder().putAttributes("document_id", "id").build()).join();
+    List<InsertAllRequest.RowToInsert> rows = ((BigQuery.Write.Batch) output.batches
+        .get(BATCH_KEY)).builder.build().getRows();
+
+    assertEquals("id", rows.get(0).getId());
+    assertEquals(ImmutableMap.of("document_id", "id"), rows.get(0).getContent());
+    assertEquals(20, output.batches.get(BATCH_KEY).byteSize);
+  }
+
+  @Test
+  public void canHandleDynamicTableId() {
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, "${dataset}.${table}",
+        Format.raw);
+    output.apply(PubsubMessage.newBuilder().putAttributes("dataset", "dataset")
+        .putAttributes("table", "table").build()).join();
+    assertNotNull(output.batches.get(TableId.of("dataset", "table")));
+  }
+
+  @Test
+  public void canHandleDynamicTableIdWithEmptyValues() {
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
+        "${dataset}_.${table}_", Format.raw);
+    output.apply(
+        PubsubMessage.newBuilder().putAttributes("dataset", "").putAttributes("table", "").build())
+        .join();
+    assertNotNull(output.batches.get(BATCH_KEY));
+  }
+
+  @Test
+  public void canHandleDynamicTableIdWithDefaults() {
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
+        "${dataset:-dataset}.${table:-table}", Format.raw);
+    output.apply(EMPTY_MESSAGE).join();
+    assertNotNull(output.batches.get(TableId.of("dataset", "table")));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void failsOnMissingAttributes() {
+    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, "${dataset}.${table}",
+        Format.raw).apply(EMPTY_MESSAGE);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void failsOnInvalidTable() {
+    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, "", Format.raw)
+        .apply(EMPTY_MESSAGE);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void failsOnUnimplementedFormat() {
+    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, BATCH_KEY_TEMPLATE,
+        Format.payload).apply(EMPTY_MESSAGE);
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void failsOnNullMessage() {
+    output.apply(null);
   }
 }
