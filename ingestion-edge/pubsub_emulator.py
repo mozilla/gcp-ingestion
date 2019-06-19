@@ -6,7 +6,7 @@
 
 from google.cloud.pubsub_v1.proto import pubsub_pb2_grpc, pubsub_pb2
 from google.protobuf import empty_pb2, json_format
-from typing import Dict, List, Optional, Set
+from typing import Dict, Iterator, List, Optional, Set
 import concurrent.futures
 import grpc
 import json
@@ -214,6 +214,42 @@ class PubsubEmulator(
                 except KeyError:
                     context.abort(grpc.StatusCode.NOT_FOUND, "Ack ID not found")
         return empty_pb2.Empty()
+
+    def StreamingPull(
+        self,
+        request_iterator: Iterator[pubsub_pb2.StreamingPullRequest],
+        context: grpc.ServicerContext,
+    ):  # noqa: D403
+        """StreamingPull implementation."""
+        for request in request_iterator:
+            self.logger.debug("StreamingPull(%.100s)", LazyFormat(request))
+            if request.ack_ids:
+                self.Acknowledge(
+                    pubsub_pb2.AcknowledgeRequest(
+                        subscription=request.subscription, ack_ids=request.ack_ids
+                    ),
+                    context,
+                )
+            if request.modify_deadline_seconds:
+                for ack_id, seconds in zip(
+                    request.modify_deadline_ack_ids, request.modify_deadline_seconds
+                ):
+                    self.ModifyAckDeadline(
+                        pubsub_pb2.ModifyAckDeadlineRequest(
+                            subscription=request.subscription,
+                            ack_ids=[ack_id],
+                            seconds=seconds,
+                        ),
+                        context,
+                    )
+            yield pubsub_pb2.StreamingPullResponse(
+                received_messages=self.Pull(
+                    pubsub_pb2.PullRequest(
+                        subscription=request.subscription, max_messages=100
+                    ),
+                    context,
+                ).received_messages
+            )
 
     def UpdateTopic(
         self, request: pubsub_pb2.UpdateTopicRequest, context: grpc.ServicerContext
