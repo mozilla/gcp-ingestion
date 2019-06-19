@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.ingestion.util;
 
+import java.time.Duration;
 import java.util.Optional;
 
 public class Env {
@@ -21,5 +22,17 @@ public class Env {
 
   public static String getString(String key, String defaultValue) {
     return Optional.ofNullable(System.getenv(key)).orElse(defaultValue);
+  }
+
+  public static Optional<String> optString(String key) {
+    return Optional.ofNullable(System.getenv(key));
+  }
+
+  public static Integer getInteger(String key, Integer defaultValue) {
+    return optString(key).map(Integer::parseInt).orElse(defaultValue);
+  }
+
+  public static Duration getDuration(String key, String defaultValue) {
+    return Duration.parse(getString(key, defaultValue));
   }
 }
