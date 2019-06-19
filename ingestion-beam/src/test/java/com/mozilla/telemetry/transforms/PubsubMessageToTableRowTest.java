@@ -6,6 +6,7 @@ package com.mozilla.telemetry.transforms;
 
 import static org.junit.Assert.assertEquals;
 
+import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
@@ -160,6 +161,53 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     String expected = "{\"_64bit\":true,\"hi_fi\":true}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
+  }
+
+  @Test
+  public void testNestedRepeatedStructs() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"metrics\": {\n" //
+        + "    \"engine\": {\n" //
+        + "      \"keyedHistograms\": {\n" //
+        + "        \"TELEMETRY_TEST_KEYED_HISTOGRAM\":{\n" //
+        + "          \"key1\": {\n" //
+        + "            \"sum\": 1,\n" //
+        + "            \"values\": {\"1\": 1}\n" //
+        + "          },\n" //
+        + "          \"key2\": {\n" //
+        + "            \"sum\": 0,\n" //
+        + "            \"values\": {}\n" //
+        + "          }\n" //
+        + "        }\n" //
+        + "      }\n" //
+        + "    }\n" //
+        + "  }\n" //
+        + "}\n").getBytes());
+    List<Field> bqFields = ImmutableList.of(Field
+        .newBuilder("metrics", LegacySQLTypeName.RECORD, Field.of("key", LegacySQLTypeName.STRING),
+            Field.of("value", LegacySQLTypeName.RECORD,
+                Field.newBuilder("keyedHistograms", LegacySQLTypeName.RECORD,
+                    Field.of("key", LegacySQLTypeName.STRING),
+                    Field
+                        .newBuilder("value", LegacySQLTypeName.RECORD,
+                            Field.of("key", LegacySQLTypeName.STRING),
+                            Field.of("value", LegacySQLTypeName.RECORD,
+                                Field.of("sum", LegacySQLTypeName.INTEGER)))
+                        .setMode(Mode.REPEATED).build())
+                    .setMode(Mode.REPEATED).build()))
+        .setMode(Mode.REPEATED).build());
+    String expected = "{\"metrics\":[{\"key\":\"engine\",\"value\":{\"keyedHistograms\":"
+        + "[{\"key\":\"TELEMETRY_TEST_KEYED_HISTOGRAM\",\"value\":"
+        + "[{\"key\":\"key1\",\"value\":{\"sum\":1}}"
+        + ",{\"key\":\"key2\",\"value\":{\"sum\":0}}]}]}}]}";
+    PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"metrics\":{\"engine\":{\"keyedHistograms\":"
+        + "{\"TELEMETRY_TEST_KEYED_HISTOGRAM\":"
+        + "{\"key1\":{\"values\":{\"1\":1}},\"key2\":{\"values\":{}}}}}}}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
   }
 
 }
