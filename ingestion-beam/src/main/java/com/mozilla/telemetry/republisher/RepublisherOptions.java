@@ -53,11 +53,22 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   void setDebugDestination(ValueProvider<String> value);
 
-  Map<String, Double> getPerChannelSampleRatios();
+  @Description("An output topic name (assuming --outputType=pubsub) for a random sample of"
+      + " incoming messages; messages are chosen based on sample_id if present or by a number"
+      + " generated via ThreadLocalRandom; requires that --randomSampleRatio is set")
+  ValueProvider<String> getRandomSampleDestination();
+
+  void setRandomSampleDestination(ValueProvider<String> value);
+
+  @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
+  Double getRandomSampleRatio();
+
+  void setRandomSampleRatio(Double value);
 
   @Description("A JSON-formatted map of channel name to sampling ratio; for example,"
       + " {\"nightly\":1.0,\"release\":0.01} would republish 100% of nightly pings to the"
       + " sampled nightly topic and 1% of release pings to the sampled release topic")
+  Map<String, Double> getPerChannelSampleRatios();
 
   void setPerChannelSampleRatios(Map<String, Double> value);
 
@@ -69,8 +80,7 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
   void setPerChannelDestination(String value);
 
   @Description("A comma-separated list of docTypes that should be republished to individual"
-      + " topics; you may use a slash in each entry to separate namespace from type;"
-      + " the telemetry namespace is assumed for entries that do not contain a slash")
+      + " topics; each docType must be qualified with a namespace like 'telemetry/event'")
   List<String> getPerDocTypeEnabledList();
 
   void setPerDocTypeEnabledList(List<String> value);

@@ -5,6 +5,7 @@
 package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.Deduplicate;
+import com.mozilla.telemetry.republisher.RandomSampler;
 import com.mozilla.telemetry.republisher.RepublishPerChannel;
 import com.mozilla.telemetry.republisher.RepublishPerDocType;
 import com.mozilla.telemetry.republisher.RepublishPerNamespace;
@@ -76,6 +77,19 @@ public class Republisher extends Sink {
             return message.getAttribute("x_debug_id") != null;
           })) //
           .apply("WriteDebugOutput", opts.getOutputType().write(opts));
+    }
+
+    // Republish a random sample.
+    if (options.getRandomSampleRatio() != null) {
+      final Double ratio = options.getRandomSampleRatio();
+      RepublisherOptions.Parsed opts = options.as(RepublisherOptions.Parsed.class);
+      opts.setOutput(options.getRandomSampleDestination());
+      decoded //
+          .apply("SampleBySampleIdOrRandomNumber", Filter.by(message -> {
+            message = PubsubConstraints.ensureNonNull(message);
+            String sampleId = message.getAttribute("sample_id");
+            return RandomSampler.filterBySampleIdOrRandomNumber(sampleId, ratio);
+          })).apply("RepublishRandomSample", opts.getOutputType().write(opts));
     }
 
     // Republish to per-docType destinations.

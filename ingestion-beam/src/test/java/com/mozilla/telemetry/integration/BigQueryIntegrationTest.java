@@ -254,6 +254,39 @@ public class BigQueryIntegrationTest {
     assertThat(errorOutputLines, Matchers.hasSize(expectedErrorLines.size()));
   }
 
+  @Test
+  public void canSetStrictSchemaMode() throws Exception {
+    String table = "mytable";
+    String tableSpec = String.format("%s.%s", dataset, table);
+    TableId tableId = TableId.of(dataset, table);
+
+    bigquery.create(DatasetInfo.newBuilder(dataset).build());
+    bigquery
+        .create(
+            TableInfo
+                .newBuilder(tableId,
+                    StandardTableDefinition
+                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                            Field.of("additional_properties", LegacySQLTypeName.STRING),
+                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
+                .build());
+
+    String input = Resources
+        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
+    String output = String.format("%s:%s", projectId, tableSpec);
+
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=streaming",
+        "--bqStrictSchemaDocTypes=my-namespace/my-test", "--output=" + output,
+        "--errorOutputType=stderr" });
+
+    result.waitUntilFinish();
+
+    assertThat(stringValuesQueryWithRetries("SELECT additional_properties FROM " + tableSpec),
+        matchesInAnyOrder(Lists.newArrayList("{\"type\":\"main\"}", null, "{\"type\":\"main\"}")));
+  }
+
   private List<String> stringValuesQuery(String query) throws InterruptedException {
     return Lists.newArrayList(bigquery.create(JobInfo.of(QueryJobConfiguration.of(query)))
         .getQueryResults().iterateAll().iterator()).stream().map(fieldValues -> {

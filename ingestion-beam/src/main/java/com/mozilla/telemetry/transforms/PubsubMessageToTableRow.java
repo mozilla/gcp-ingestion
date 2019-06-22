@@ -4,10 +4,12 @@
 
 package com.mozilla.telemetry.transforms;
 
+import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TimePartitioning;
+import com.google.cloud.ServiceOptions;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Dataset;
@@ -19,12 +21,12 @@ import com.google.cloud.bigquery.Table;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
+import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.time.Duration;
@@ -57,8 +59,9 @@ import org.apache.commons.text.StringSubstitutor;
 public class PubsubMessageToTableRow
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, TableRow>> {
 
-  public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate) {
-    return new PubsubMessageToTableRow(tableSpecTemplate);
+  public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate,
+      ValueProvider<List<String>> strictSchemaDocTypes) {
+    return new PubsubMessageToTableRow(tableSpecTemplate, strictSchemaDocTypes);
   }
 
   public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
@@ -66,14 +69,26 @@ public class PubsubMessageToTableRow
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
       .setField(SUBMISSION_TIMESTAMP);
 
+  // We have hit rate limiting issues that have sent valid data to error output, so we make the
+  // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
+  private static final RetrySettings RETRY_SETTINGS = ServiceOptions //
+      .getDefaultRetrySettings().toBuilder() //
+      .setMaxAttempts(12) // Defaults to 6
+      .setTotalTimeout(org.threeten.bp.Duration.ofSeconds(120)) // Defaults to 50 seconds
+      .build();
+
   private final ValueProvider<String> tableSpecTemplate;
+  private final ValueProvider<List<String>> strictSchemaDocTypes;
 
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
   private transient Cache<TableReference, Schema> tableSchemaCache;
+  private transient BigQuery bqService;
 
-  private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate) {
+  private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate,
+      ValueProvider<List<String>> strictSchemaDocTypes) {
     this.tableSpecTemplate = tableSpecTemplate;
+    this.strictSchemaDocTypes = strictSchemaDocTypes;
   }
 
   @Override
@@ -99,6 +114,11 @@ public class PubsubMessageToTableRow
     final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
         .setDatasetId(ref.getDatasetId());
 
+    if (bqService == null) {
+      bqService = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId())
+          .setRetrySettings(RETRY_SETTINGS).build().getService();
+    }
+
     // Get and cache a listing of table names for this dataset.
     Set<String> tablesInDataset;
     if (tableListingCache == null) {
@@ -107,9 +127,7 @@ public class PubsubMessageToTableRow
     try {
       tablesInDataset = tableListingCache.get(datasetRef, () -> {
         Set<String> tableSet = new HashSet<>();
-        BigQuery service = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId()).build()
-            .getService();
-        Dataset dataset = service.getDataset(ref.getDatasetId());
+        Dataset dataset = bqService.getDataset(ref.getDatasetId());
         if (dataset != null) {
           dataset.list().iterateAll().forEach(t -> {
             tableSet.add(t.getTableId().getTable());
@@ -137,9 +155,7 @@ public class PubsubMessageToTableRow
     }
     try {
       schema = tableSchemaCache.get(ref, () -> {
-        BigQuery service = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId()).build()
-            .getService();
-        Table table = service.getTable(ref.getDatasetId(), ref.getTableId());
+        Table table = bqService.getTable(ref.getDatasetId(), ref.getTableId());
         if (table != null) {
           return table.getDefinition().getSchema();
         } else {
@@ -155,12 +171,19 @@ public class PubsubMessageToTableRow
     // Strip metadata so that it's not subject to transformation.
     Object metadata = tableRow.remove(AddMetadata.METADATA);
 
+    String namespace = message.getAttribute(ParseUri.DOCUMENT_NAMESPACE);
+    String docType = message.getAttribute(ParseUri.DOCUMENT_TYPE);
+    final boolean strictSchema = (strictSchemaDocTypes.isAccessible()
+        && strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)));
+
     // Make BQ-specific transformations to the payload structure.
-    Map<String, Object> additionalProperties = new HashMap<>();
+    Map<String, Object> additionalProperties = strictSchema ? null : new HashMap<>();
     transformForBqSchema(tableRow, schema.getFields(), additionalProperties);
 
     tableRow.put(AddMetadata.METADATA, metadata);
-    tableRow.put(ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
+    if (additionalProperties != null) {
+      tableRow.put(ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
+    }
     return KV.of(tableDestination, tableRow);
   }
 
@@ -178,7 +201,8 @@ public class PubsubMessageToTableRow
    *
    * @param parent the map object to inspect and transform
    * @param bqFields the list of expected BQ fields inside this object
-   * @param additionalProperties a map for storing fields absent in the BQ schema
+   * @param additionalProperties a map for storing fields absent in the BQ schema; if null, this is
+   *                             "strict schema" mode and additional properties will be dropped
    */
   public static void transformForBqSchema(Map<String, Object> parent, List<Field> bqFields,
       Map<String, Object> additionalProperties) {
@@ -195,73 +219,100 @@ public class PubsubMessageToTableRow
       parent.put(key, parent.remove(rawKey));
     });
 
-    // Populate additionalProperties.
+    // Strip out fields that do not appear in the BQ schema.
     Set<String> fieldNames = bqFields.stream().map(Field::getName).collect(Collectors.toSet());
-    ImmutableSet.copyOf(Sets.difference(parent.keySet(), fieldNames))
-        .forEach(k -> additionalProperties.put(k, parent.remove(k)));
+    ImmutableSet.copyOf(Sets.difference(parent.keySet(), fieldNames)).forEach(k -> {
+      Object value = parent.remove(k);
+      if (additionalProperties != null) {
+        additionalProperties.put(k, value);
+      }
+    });
 
     // Special transformations for structures disallowed in BigQuery.
-    bqFields.forEach(field -> {
-      String name = field.getName();
-      Optional<Object> value = Optional.ofNullable(parent.get(name));
+    bqFields.forEach(field -> processField(field.getName(), field, parent.get(field.getName()),
+        parent, additionalProperties));
+  }
 
-      // A repeated string field might need us to JSON-ify a list or map.
-      if (field.getType() == LegacySQLTypeName.STRING && field.getMode() == Mode.REPEATED) {
+  /**
+   * Return true if this field is a repeated struct of key/value, indicating a JSON map.
+   */
+  private static boolean isMapType(Field field) {
+    return field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED //
+        && field.getSubFields().size() == 2 //
+        && field.getSubFields().get(0).getName().equals("key") //
+        && field.getSubFields().get(1).getName().equals("value");
+  }
 
-        value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
-          List<Object> jsonified = ((List<Object>) list).stream().map(o -> coerceToString(o))
-              .collect(Collectors.toList());
-          parent.put(name, jsonified);
-        });
+  private static void processField(String jsonFieldName, Field field, Object val,
+      Map<String, Object> parent, Map<String, Object> additionalProperties) {
+    String name = field.getName();
+    Optional<Object> value = Optional.ofNullable(val);
 
-        // A string field might need us to JSON-ify an object coerce a value to string.
-      } else if (field.getType() == LegacySQLTypeName.STRING && field.getMode() != Mode.REPEATED) {
-        value.ifPresent(o -> parent.put(name, coerceToString(o)));
+    // A repeated string field might need us to JSON-ify a list or map.
+    if (field.getType() == LegacySQLTypeName.STRING && field.getMode() == Mode.REPEATED) {
 
-        // A record of key and value indicates we need to transformForBqSchema a map to an array.
-      } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED //
-          && field.getSubFields().size() == 2 //
-          && field.getSubFields().get(0).getName().equals("key") //
-          && field.getSubFields().get(1).getName().equals("value")) {
-        value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
-          Map<String, Object> map = m;
-          Field valueField = field.getSubFields().get(1);
-          if (valueField.getType() == LegacySQLTypeName.RECORD) {
-            Map<String, Object> props = new HashMap<>();
-            transformForBqSchema(map, valueField.getSubFields(), props);
-            if (!props.isEmpty()) {
-              additionalProperties.put(name, props);
-            }
-          }
-          List<Map<String, Object>> unmapped = map.entrySet().stream()
-              .map(entry -> ImmutableMap.of("key", entry.getKey(), "value",
-                  coerceIfStringExpected(entry.getValue(), valueField.getType())))
-              .collect(Collectors.toList());
-          parent.put(name, unmapped);
-        });
+      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
+        List<Object> jsonified = ((List<Object>) list).stream().map(o -> coerceToString(o))
+            .collect(Collectors.toList());
+        parent.put(name, jsonified);
+      });
 
-        // We need to recursively call transformForBqSchema on any normal record type.
-      } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
-        value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
-          Map<String, Object> props = new HashMap<>();
-          transformForBqSchema(m, field.getSubFields(), props);
-          if (!props.isEmpty()) {
-            additionalProperties.put(name, props);
-          }
-        });
+      // A string field might need us to JSON-ify an object coerce a value to string.
+    } else if (field.getType() == LegacySQLTypeName.STRING && field.getMode() != Mode.REPEATED) {
+      value.ifPresent(o -> parent.put(name, coerceToString(o)));
 
-        // Likewise, we need to recursively call transformForBqSchema on repeated record types.
-      } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED) {
-        List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
-            .orElse(ImmutableList.of());
-        records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
-          Map<String, Object> props = new HashMap<>();
-          transformForBqSchema(record, field.getSubFields(), props);
-          if (!props.isEmpty()) {
-            additionalProperties.put(name, props);
-          }
-        });
-      }
+      // A record of key and value indicates we need to transformForBqSchema a map to an array.
+    } else if (isMapType(field)) {
+      expandMapType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
+
+      // We need to recursively call transformForBqSchema on any normal record type.
+    } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
+      value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
+        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+        transformForBqSchema(m, field.getSubFields(), props);
+        if (props != null && !props.isEmpty()) {
+          additionalProperties.put(jsonFieldName, props);
+        }
+        parent.put(name, m);
+      });
+
+      // Likewise, we need to recursively call transformForBqSchema on repeated record types.
+    } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED) {
+      List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
+          .orElse(ImmutableList.of());
+      records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
+        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+        transformForBqSchema(record, field.getSubFields(), props);
+        if (props != null && !props.isEmpty()) {
+          additionalProperties.put(name, props);
+        }
+      });
+    } else {
+      value.ifPresent(v -> parent.put(name, v));
+    }
+  }
+
+  /**
+   * Recursively descend into a map type field, expanding to the key/value struct required in
+   * BigQuery schemas.
+   */
+  private static void expandMapType(String jsonFieldName, Object val, Field field,
+      Map<String, Object> parent, Map<String, Object> additionalProperties) {
+    Optional<Object> value = Optional.ofNullable(val);
+    value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
+      Map<String, Object> map = m;
+      Field valueField = field.getSubFields().get(1);
+      Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+      List<Map<String, Object>> unmapped = map.entrySet().stream().map(entry -> {
+        Map<String, Object> kv = new HashMap<>(2);
+        kv.put("key", entry.getKey());
+        processField(entry.getKey(), valueField, entry.getValue(), kv, props);
+        if (props != null && !props.isEmpty()) {
+          additionalProperties.put(jsonFieldName, props);
+        }
+        return kv;
+      }).collect(Collectors.toList());
+      parent.put(field.getName(), unmapped);
     });
   }
 

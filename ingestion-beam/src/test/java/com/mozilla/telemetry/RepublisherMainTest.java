@@ -37,14 +37,31 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     String input = inputPath + "/*.ndjson";
     String output = outputPath + "/out";
 
-    Republisher
-        .main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-            "--outputFileFormat=json", "--outputType=file", "--enableDebugDestination",
-            "--debugDestination=" + output, "--outputFileCompression=UNCOMPRESSED" });
+    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
+        "--enableDebugDestination", "--debugDestination=" + output,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     List<String> inputLines = Lines.files(inputPath + "/debug-messages.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
     assertThat(outputLines, matchesInAnyOrder(inputLines));
+  }
+
+  @Test
+  public void testRandomSampleDestination() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/*.ndjson";
+    String output = outputPath + "/out";
+
+    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
+        "--randomSampleRatio=0.5", "--randomSampleDestination=" + output,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
+
+    List<String> inputLines = Lines.files(inputPath + "/*.ndjson");
+    List<String> outputLines = Lines.files(outputPath + "/out*.ndjson");
+    assertThat(outputLines.size() * 1.0, Matchers.closeTo(inputLines.size() / 2.0, 10.0));
   }
 
   @Test
@@ -56,8 +73,9 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
 
     Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputFileFormat=json", "--outputType=file",
-        "--perDocTypeDestination=" + output, "--perDocTypeEnabledList=event,bar/foo",
-        "--outputFileCompression=UNCOMPRESSED", "--redisUri=" + redis.uri });
+        "--perDocTypeDestination=" + output, "--perDocTypeEnabledList=telemetry/event,bar/foo",
+        "--outputFileCompression=UNCOMPRESSED", "--redisUri=" + redis.uri,
+        "--errorOutputType=stderr" });
 
     List<String> expectedLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
@@ -82,10 +100,11 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     String input = inputPath + "/*.ndjson";
     String output = outputPath + "/per-namespace_${document_namespace}";
 
-    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
-        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
-        "--perNamespaceDestination=" + output, "--perNamespaceEnabledList=mynamespace",
-        "--outputFileCompression=UNCOMPRESSED", "--redisUri=" + redis.uri });
+    Republisher
+        .main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+            "--outputFileFormat=json", "--outputType=file", "--perNamespaceDestination=" + output,
+            "--perNamespaceEnabledList=mynamespace", "--outputFileCompression=UNCOMPRESSED",
+            "--redisUri=" + redis.uri, "--errorOutputType=stderr" });
 
     List<String> expectedLines = Lines.files(inputPath + "/per-namespace-*.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
@@ -110,7 +129,8 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputFileFormat=json", "--outputType=file",
         "--perChannelDestination=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--perChannelSampleRatios={\"beta\":1.0,\"release\":0.5}", "--redisUri=" + redis.uri });
+        "--perChannelSampleRatios={\"beta\":1.0,\"release\":0.5}", "--redisUri=" + redis.uri,
+        "--errorOutputType=stderr" });
 
     List<String> inputLinesBeta = Lines.files(inputPath + "/per-channel-beta.ndjson");
     List<String> outputLinesBeta = Lines.files(outputPath + "/out-beta*.ndjson");
