@@ -9,6 +9,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.bigquery.Clustering;
 import com.google.cloud.bigquery.DatasetInfo;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Field.Mode;
@@ -79,8 +80,11 @@ public class BigQueryIntegrationTest {
     RemoteBigQueryHelper.forceDelete(bigquery, dataset);
   }
 
-  private static TimePartitioning submissionTimestampPartitioning = TimePartitioning
-      .newBuilder(Type.DAY).setField("submission_timestamp").build();
+  private static final TimePartitioning TIME_PARTITIONING = TimePartitioning.newBuilder(Type.DAY)
+      .setField("submission_timestamp").build();
+
+  private static final Clustering CLUSTERING = Clustering.newBuilder()
+      .setFields(ImmutableList.of("submission_timestamp")).build();
 
   @Test
   public void canWriteToBigQuery() throws Exception {
@@ -90,15 +94,15 @@ public class BigQueryIntegrationTest {
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
     bigquery
-        .create(
-            TableInfo
-                .newBuilder(tableId,
-                    StandardTableDefinition
-                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
-                            Field.of("type", LegacySQLTypeName.STRING),
-                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
-                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
-                .build());
+        .create(TableInfo
+            .newBuilder(tableId,
+                StandardTableDefinition
+                    .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
+                        Field.of("type", LegacySQLTypeName.STRING),
+                        Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                    .toBuilder().setTimePartitioning(TIME_PARTITIONING).setClustering(CLUSTERING)
+                    .build())
+            .build());
 
     String input = Resources
         .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
@@ -154,15 +158,15 @@ public class BigQueryIntegrationTest {
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
     bigquery
-        .create(
-            TableInfo
-                .newBuilder(tableId,
-                    StandardTableDefinition
-                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
-                            Field.of("type", LegacySQLTypeName.STRING),
-                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
-                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
-                .build());
+        .create(TableInfo
+            .newBuilder(tableId,
+                StandardTableDefinition
+                    .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
+                        Field.of("type", LegacySQLTypeName.STRING),
+                        Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                    .toBuilder().setTimePartitioning(TIME_PARTITIONING).setClustering(CLUSTERING)
+                    .build())
+            .build());
 
     String input = Resources
         .getResource("testdata/bigquery-integration/input-varied-doctypes.ndjson").getPath();
@@ -193,15 +197,15 @@ public class BigQueryIntegrationTest {
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
     bigquery
-        .create(
-            TableInfo
-                .newBuilder(tableId,
-                    StandardTableDefinition
-                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
-                            Field.of("type", LegacySQLTypeName.STRING),
-                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
-                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
-                .build());
+        .create(TableInfo
+            .newBuilder(tableId,
+                StandardTableDefinition
+                    .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
+                        Field.of("type", LegacySQLTypeName.STRING),
+                        Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                    .toBuilder().setTimePartitioning(TIME_PARTITIONING).setClustering(CLUSTERING)
+                    .build())
+            .build());
 
     String input = Resources
         .getResource("testdata/bigquery-integration/input-varied-doctypes.ndjson").getPath();
@@ -265,15 +269,15 @@ public class BigQueryIntegrationTest {
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
     bigquery
-        .create(
-            TableInfo
-                .newBuilder(tableId,
-                    StandardTableDefinition
-                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
-                            Field.of("additional_properties", LegacySQLTypeName.STRING),
-                            Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
-                        .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
-                .build());
+        .create(TableInfo
+            .newBuilder(tableId,
+                StandardTableDefinition
+                    .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
+                        Field.of("additional_properties", LegacySQLTypeName.STRING),
+                        Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
+                    .toBuilder().setTimePartitioning(TIME_PARTITIONING).setClustering(CLUSTERING)
+                    .build())
+            .build());
 
     String input = Resources
         .getResource("testdata/bigquery-integration/input-varied-doctypes.ndjson").getPath();
