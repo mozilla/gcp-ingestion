@@ -98,7 +98,7 @@ public class Republisher extends Sink {
     }
 
     // Republish to per-namespace destinations.
-    if (options.getPerNamespaceEnabledList() != null) {
+    if (options.getPerNamespaceDestinations() != null) {
       decoded.apply(RepublishPerNamespace.of(options));
     }
 
