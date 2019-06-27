@@ -98,13 +98,12 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
     String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
     String input = inputPath + "/*.ndjson";
-    String output = outputPath + "/per-namespace_${document_namespace}";
+    String output = "{\"mynamespace\":\"" + outputPath + "/per-namespace_mynamespace" + "\"}";
 
-    Republisher
-        .main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-            "--outputFileFormat=json", "--outputType=file", "--perNamespaceDestination=" + output,
-            "--perNamespaceEnabledList=mynamespace", "--outputFileCompression=UNCOMPRESSED",
-            "--redisUri=" + redis.uri, "--errorOutputType=stderr" });
+    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
+        "--perNamespaceDestinations=" + output, "--outputFileCompression=UNCOMPRESSED",
+        "--redisUri=" + redis.uri, "--errorOutputType=stderr" });
 
     List<String> expectedLines = Lines.files(inputPath + "/per-namespace-*.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/*.ndjson");

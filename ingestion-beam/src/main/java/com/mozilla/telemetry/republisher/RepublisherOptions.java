@@ -93,19 +93,13 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   void setPerDocTypeDestination(String value);
 
-  @Description("A comma-separated list of namespaces that should be republished to individual"
-      + " topics")
-  List<String> getPerNamespaceEnabledList();
+  @Description("A JSON-formatted map of document namespaces to output topic names (assuming"
+      + " --outputType=pubsub) for per-namespace sampling; the verbose map representation is used"
+      + " here to support cases where the destination topics are heterogeneous and may live in"
+      + " different projects")
+  Map<String, String> getPerNamespaceDestinations();
 
-  void setPerNamespaceEnabledList(List<String> value);
-
-  @Description("A pattern for output topic names (assuming --outputType=pubsub) for per-namespace"
-      + " sampling; the pattern must contain a placeholder ${document_namespace} that will be "
-      + " filled in to give a distinct publisher per namespace configured in"
-      + " --perNamespaceEnabledList")
-  String getPerNamespaceDestination();
-
-  void setPerNamespaceDestination(String value);
+  void setPerNamespaceDestinations(Map<String, String> value);
 
   /*
    * Subinterface and static methods.
