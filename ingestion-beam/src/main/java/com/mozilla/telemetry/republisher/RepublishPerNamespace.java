@@ -26,8 +26,8 @@ public class RepublishPerNamespace extends PTransform<PCollection<PubsubMessage>
 
   @Override
   public PDone expand(PCollection<PubsubMessage> input) {
-    List<Destination> destinations = baseOptions.getPerNamespaceEnabledList().stream()//
-        .map(Destination::new) //
+    List<Destination> destinations = baseOptions.getPerNamespaceDestinations().entrySet().stream()
+        .map(entry -> new Destination(entry.getKey(), entry.getValue()))
         .collect(Collectors.toList());
     int numDestinations = destinations.size();
     int numPartitions = numDestinations + 1;
@@ -37,13 +37,7 @@ public class RepublishPerNamespace extends PTransform<PCollection<PubsubMessage>
     for (int i = 0; i < numDestinations; i++) {
       Destination destination = destinations.get(i);
       RepublisherOptions.Parsed opts = baseOptions.as(RepublisherOptions.Parsed.class);
-
-      // The destination pattern here must be compile-time due to a detail of Dataflow's
-      // streaming PubSub producer implementation; if that restriction is lifted in the future,
-      // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
-      opts.setOutput(StaticValueProvider.of(baseOptions.getPerNamespaceDestination()
-          .replace("${document_namespace}", destination.namespace.replace("-", "_"))));
-
+      opts.setOutput(StaticValueProvider.of(destination.dest));
       String name = String.join("_", "republish", destination.namespace);
       partitioned.get(i).apply(name, opts.getOutputType().write(opts));
     }
@@ -81,9 +75,11 @@ public class RepublishPerNamespace extends PTransform<PCollection<PubsubMessage>
   private static class Destination implements Serializable {
 
     final String namespace;
+    final String dest;
 
-    public Destination(String namespace) {
+    public Destination(String namespace, String dest) {
       this.namespace = namespace;
+      this.dest = dest;
     }
 
     public boolean matches(String namespaceToMatch) {
