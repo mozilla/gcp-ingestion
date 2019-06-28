@@ -84,7 +84,7 @@ public class BigQueryIntegrationTest {
 
   @Test
   public void canWriteToBigQuery() throws Exception {
-    String table = "mytable";
+    String table = "my_test_table";
     String tableSpec = String.format("%s.%s", dataset, table);
     TableId tableId = TableId.of(dataset, table);
 
@@ -100,12 +100,13 @@ public class BigQueryIntegrationTest {
                         .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
                 .build());
 
-    String input = Resources.getResource("testdata/bigquery-integration/input.ndjson").getPath();
+    String input = Resources
+        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
     String output = String.format("%s:%s", projectId, tableSpec);
 
-    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=streaming",
-        "--output=" + output, "--errorOutputType=stderr" });
+        "--schemasLocation=schemas.tar.gz", "--output=" + output, "--errorOutputType=stderr" });
 
     result.waitUntilFinish();
 
@@ -127,13 +128,13 @@ public class BigQueryIntegrationTest {
         .build());
 
     String input = Resources
-        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
+        .getResource("testdata/bigquery-integration/input-varied-doctypes.ndjson").getPath();
     String output = String.format("%s:%s.%s", projectId, dataset, "${document_type}_table");
     String errorOutput = outputPath + "/error/out";
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output,
-        "--bqWriteMethod=streaming", "--errorOutputType=file",
+        "--bqWriteMethod=streaming", "--errorOutputType=file", "--schemasLocation=schemas.tar.gz",
         "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
@@ -164,7 +165,7 @@ public class BigQueryIntegrationTest {
                 .build());
 
     String input = Resources
-        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
+        .getResource("testdata/bigquery-integration/input-varied-doctypes.ndjson").getPath();
     String output = String.format("%s:%s.%s", projectId, dataset, "${document_type}_table");
     String errorOutput = outputPath + "/error/out";
 
@@ -172,7 +173,8 @@ public class BigQueryIntegrationTest {
         "--input=" + input, "--outputType=bigquery", "--output=" + output,
         "--bqWriteMethod=file_loads", "--errorOutputType=file",
         "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
-        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
+        "--schemasLocation=schemas.tar.gz", "--errorOutputFileCompression=UNCOMPRESSED",
+        "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 
@@ -202,7 +204,7 @@ public class BigQueryIntegrationTest {
                 .build());
 
     String input = Resources
-        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
+        .getResource("testdata/bigquery-integration/input-varied-doctypes.ndjson").getPath();
     String output = String.format("%s:%s.%s", projectId, dataset, "${document_type}_table");
     String errorOutput = outputPath + "/error/out";
 
@@ -210,7 +212,8 @@ public class BigQueryIntegrationTest {
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--bqWriteMethod=mixed",
         "--bqStreamingDocTypes=my-namespace/my-test", "--errorOutputType=file",
         "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
-        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
+        "--schemasLocation=schemas.tar.gz", "--errorOutputFileCompression=UNCOMPRESSED",
+        "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 
@@ -224,7 +227,7 @@ public class BigQueryIntegrationTest {
 
   @Test
   public void canRecoverFailedInsertsInStreamingMode() throws Exception {
-    String table = "table_with_required_col";
+    String table = "my_test_table";
     String tableSpec = String.format("%s.%s", dataset, table);
     TableId tableId = TableId.of(dataset, table);
 
@@ -243,7 +246,7 @@ public class BigQueryIntegrationTest {
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
         "--bqWriteMethod=streaming", "--errorOutputFileCompression=UNCOMPRESSED",
-        "--errorOutput=" + errorOutput });
+        "--schemasLocation=schemas.tar.gz", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 
@@ -256,7 +259,7 @@ public class BigQueryIntegrationTest {
 
   @Test
   public void canSetStrictSchemaMode() throws Exception {
-    String table = "mytable";
+    String table = "my_test_table";
     String tableSpec = String.format("%s.%s", dataset, table);
     TableId tableId = TableId.of(dataset, table);
 
@@ -273,7 +276,7 @@ public class BigQueryIntegrationTest {
                 .build());
 
     String input = Resources
-        .getResource("testdata/bigquery-integration/input-with-attributes.ndjson").getPath();
+        .getResource("testdata/bigquery-integration/input-varied-doctypes.ndjson").getPath();
     String output = String.format("%s:%s", projectId, tableSpec);
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
@@ -296,12 +299,13 @@ public class BigQueryIntegrationTest {
   }
 
   private List<String> stringValuesQueryWithRetries(String query) throws InterruptedException {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 2; i++) {
       List<String> result = stringValuesQuery(query);
       if (!result.isEmpty()) {
+        System.out.println("Result is: " + result);
         return result;
       }
-      Thread.sleep(500);
+      Thread.sleep(100);
     }
     throw new RuntimeException("Query returned unexpected empty result after 5 attempts");
   }

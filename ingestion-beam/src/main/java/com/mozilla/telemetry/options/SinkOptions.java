@@ -46,16 +46,21 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputType(OutputType value);
 
-  @Description("Path (local or gs://) to a .tar.gz file containing json schemas; the expected"
-      + " format is the output of GitHub's archive endpoint for mozilla-pipeline-schemas:"
-      + " https://github.com/mozilla-services/mozilla-pipeline-schemas/archive/dev.tar.gz")
+  @Description("Path (local or gs://) to a .tar.gz file containing json schemas and bq schemas"
+      + " per docType; the json schemas are used by the Decoder to validate payload structure and"
+      + " the bq schemas are used by the BigQuery sink to coerce the payload types to fit the "
+      + " destination table; the BigQuery sink will fall back to using the BigQuery API to fetch"
+      + " schemas if this option is not configured; the expected format is the output of GitHub's"
+      + " archive endpoint for the generated-schemas branch of mozilla-pipeline-schemas:"
+      + " https://github.com/"
+      + "mozilla-services/mozilla-pipeline-schemas/archive/generated-schemas.tar.gz")
   ValueProvider<String> getSchemasLocation();
 
   void setSchemasLocation(ValueProvider<String> value);
 
-  @Description("Path (local or gs://) to a .json file containing list of json schema aliases."
-      + " Example file: schemaAliasing/example-aliasing-config.json"
-      + " If not specified, no schemas will be aliased.")
+  @Description("Path (local or gs://) to a .json file containing list of schema aliases;"
+      + " see example in schemaAliasing/example-aliasing-config.json;"
+      + " if not specified, no schemas will be aliased")
   ValueProvider<String> getSchemaAliasesLocation();
 
   void setSchemaAliasesLocation(ValueProvider<String> value);

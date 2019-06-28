@@ -4,6 +4,10 @@
 
 package com.mozilla.telemetry.util;
 
+import static org.junit.Assert.assertEquals;
+
+import com.google.cloud.bigquery.LegacySQLTypeName;
+import com.google.cloud.bigquery.Schema;
 import java.io.IOException;
 import org.junit.Test;
 
@@ -32,6 +36,13 @@ public class JsonTest {
   @Test(expected = IOException.class)
   public void testReadTableRowThrowsOnNullJson() throws Exception {
     Json.readTableRow("null".getBytes());
+  }
+
+  @Test
+  public void testReadBigQuerySchema() throws Exception {
+    Schema schema = Json.readBigQuerySchema(
+        "[{\"mode\":\"NULLABLE\",\"name\":\"document_id\",\"type\": \"STRING\"}]".getBytes());
+    assertEquals(LegacySQLTypeName.STRING, schema.getFields().get(0).getType());
   }
 
 }

@@ -27,6 +27,8 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.ParseUri;
+import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
+import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.time.Duration;
@@ -60,8 +62,10 @@ public class PubsubMessageToTableRow
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, TableRow>> {
 
   public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<List<String>> strictSchemaDocTypes) {
-    return new PubsubMessageToTableRow(tableSpecTemplate, strictSchemaDocTypes);
+      ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
+      ValueProvider<String> schemasAliasesLocation) {
+    return new PubsubMessageToTableRow(tableSpecTemplate, strictSchemaDocTypes, schemasLocation,
+        schemasAliasesLocation);
   }
 
   public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
@@ -79,16 +83,22 @@ public class PubsubMessageToTableRow
 
   private final ValueProvider<String> tableSpecTemplate;
   private final ValueProvider<List<String>> strictSchemaDocTypes;
+  private final ValueProvider<String> schemasLocation;
+  private final ValueProvider<String> schemaAliasesLocation;
 
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
   private transient Cache<TableReference, Schema> tableSchemaCache;
+  private transient BigQuerySchemaStore schemaStore;
   private transient BigQuery bqService;
 
   private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<List<String>> strictSchemaDocTypes) {
+      ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
+      ValueProvider<String> schemaAliasesLocation) {
     this.tableSpecTemplate = tableSpecTemplate;
     this.strictSchemaDocTypes = strictSchemaDocTypes;
+    this.schemasLocation = schemasLocation;
+    this.schemaAliasesLocation = schemaAliasesLocation;
   }
 
   @Override
@@ -148,22 +158,39 @@ public class PubsubMessageToTableRow
       throw new IllegalArgumentException("Resolved destination table does not exist: " + tableSpec);
     }
 
-    // Get and cache the BQ schema for this table.
-    Schema schema = null;
+    if (schemaStore == null && schemasLocation != null && schemasLocation.isAccessible()
+        && schemasLocation.get() != null) {
+      schemaStore = BigQuerySchemaStore.of(schemasLocation, schemaAliasesLocation);
+    }
+
     if (tableSchemaCache == null) {
       tableSchemaCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1)).build();
     }
-    try {
-      schema = tableSchemaCache.get(ref, () -> {
-        Table table = bqService.getTable(ref.getDatasetId(), ref.getTableId());
-        if (table != null) {
-          return table.getDefinition().getSchema();
-        } else {
-          return null;
-        }
-      });
-    } catch (ExecutionException e) {
-      throw new UncheckedExecutionException(e);
+
+    // If a schemasLocation is configured, we pull the table schema from there;
+    // otherwise, we hit the BigQuery API to fetch the schema.
+    Schema schema;
+    if (schemaStore != null) {
+      try {
+        schema = schemaStore.getSchema(message.getAttributeMap());
+      } catch (SchemaNotFoundException e) {
+        throw new IllegalArgumentException(
+            "The schema store does not contain a BigQuery schema" + " for this table: " + tableSpec,
+            e);
+      }
+    } else {
+      try {
+        schema = tableSchemaCache.get(ref, () -> {
+          Table table = bqService.getTable(ref.getDatasetId(), ref.getTableId());
+          if (table != null) {
+            return table.getDefinition().getSchema();
+          } else {
+            return null;
+          }
+        });
+      } catch (ExecutionException e) {
+        throw new UncheckedExecutionException(e);
+      }
     }
 
     TableRow tableRow = Json.readTableRow(message.getPayload());

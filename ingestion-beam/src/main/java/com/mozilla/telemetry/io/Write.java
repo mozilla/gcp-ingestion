@@ -318,12 +318,15 @@ public abstract class Write
     private final int numShards;
     private final ValueProvider<List<String>> streamingDocTypes;
     private final ValueProvider<List<String>> strictSchemaDocTypes;
+    private final ValueProvider<String> schemasLocation;
+    private final ValueProvider<String> schemasAliasesLocation;
 
     /** Public constructor. */
     public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
         Duration triggeringFrequency, InputType inputType, int numShards,
         ValueProvider<List<String>> streamingDocTypes,
-        ValueProvider<List<String>> strictSchemaDocTypes) {
+        ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
+        ValueProvider<String> schemasAliasesLocation) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
@@ -333,6 +336,8 @@ public abstract class Write
           value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
       this.strictSchemaDocTypes = NestedValueProvider.of(strictSchemaDocTypes,
           value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
+      this.schemasLocation = schemasLocation;
+      this.schemasAliasesLocation = schemasAliasesLocation;
     }
 
     @Override
@@ -385,7 +390,8 @@ public abstract class Write
 
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
-            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes))
+            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes,
+                schemasLocation, schemasAliasesLocation))
             .errorsTo(errorCollections) //
             .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
@@ -429,7 +435,8 @@ public abstract class Write
               .withNumFileShards(numShards);
         }
         messages //
-            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes))
+            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes,
+                schemasLocation, schemasAliasesLocation))
             .errorsTo(errorCollections) //
             .apply(fileLoadsWrite);
       });
