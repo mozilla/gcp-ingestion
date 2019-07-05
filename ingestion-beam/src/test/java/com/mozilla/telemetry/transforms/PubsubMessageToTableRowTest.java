@@ -23,7 +23,7 @@ import org.junit.Test;
 public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
 
   static final Field MAP_FIELD = Field //
-      .newBuilder("mapfield", LegacySQLTypeName.RECORD, //
+      .newBuilder("map_field", LegacySQLTypeName.RECORD, //
           Field.of("key", LegacySQLTypeName.STRING), //
           Field.of("value", LegacySQLTypeName.INTEGER)) //
       .setMode(Mode.REPEATED).build();
@@ -84,9 +84,9 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   public void testUnmap() throws Exception {
     Map<String, Object> parent = new HashMap<>();
     Map<String, Object> additionalProperties = new HashMap<>();
-    parent.put("mapfield", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)));
+    parent.put("mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)));
     List<Field> bqFields = ImmutableList.of(MAP_FIELD);
-    String expected = "{\"mapfield\":"
+    String expected = "{\"map_field\":"
         + "[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
@@ -97,12 +97,12 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     Map<String, Object> parent = new HashMap<>();
     Map<String, Object> additionalProperties = new HashMap<>();
     parent.put("outer", new HashMap<>(ImmutableMap.of("otherfield", 3, //
-        "mapfield", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
+        "mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
     List<Field> bqFields = ImmutableList.of(Field.of("outer", LegacySQLTypeName.RECORD, //
         Field.of("otherfield", LegacySQLTypeName.INTEGER), //
         MAP_FIELD));
     String expected = "{\"outer\":{"
-        + "\"mapfield\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}],"
+        + "\"map_field\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}],"
         + "\"otherfield\":3}}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
@@ -111,14 +111,17 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   @Test
   public void testAdditionalProperties() throws Exception {
     Map<String, Object> parent = new HashMap<>();
+    parent.put("outer", new HashMap<>(ImmutableMap.of("otherField", 3, //
+        "mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
+    parent.put("clientId", "abc123");
+    parent.put("otherStrangeIdField", 3);
+    List<Field> bqFields = ImmutableList.of(Field.of("client_id", LegacySQLTypeName.STRING), //
+        Field.of("outer", LegacySQLTypeName.RECORD, //
+            MAP_FIELD));
+    String expected = "{\"client_id\":\"abc123\",\"outer\":{"
+        + "\"map_field\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
+    String expectedAdditional = "{\"other_strange_id_field\":3,\"outer\":{\"other_field\":3}}";
     Map<String, Object> additionalProperties = new HashMap<>();
-    parent.put("outer", new HashMap<>(ImmutableMap.of("otherfield", 3, //
-        "mapfield", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
-    List<Field> bqFields = ImmutableList.of(Field.of("outer", LegacySQLTypeName.RECORD, //
-        MAP_FIELD));
-    String expected = "{\"outer\":{"
-        + "\"mapfield\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
-    String expectedAdditional = "{\"outer\":{\"otherfield\":3}}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
     assertEquals(expectedAdditional, Json.asString(additionalProperties));
@@ -128,11 +131,11 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   public void testStrictSchema() throws Exception {
     Map<String, Object> parent = new HashMap<>();
     parent.put("outer", new HashMap<>(ImmutableMap.of("otherfield", 3, //
-        "mapfield", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
+        "mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
     List<Field> bqFields = ImmutableList.of(Field.of("outer", LegacySQLTypeName.RECORD, //
         MAP_FIELD));
     String expected = "{\"outer\":{"
-        + "\"mapfield\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
+        + "\"map_field\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, null);
     assertEquals(expected, Json.asString(parent));
   }
@@ -142,7 +145,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     Map<String, Object> parent = new HashMap<>();
     Map<String, Object> additionalProperties = new HashMap<>();
     parent.put("outer", new HashMap<>(ImmutableMap.of(//
-        "mapfield", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
+        "mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)))));
     List<Field> bqFields = ImmutableList.of(Field.of("outer", LegacySQLTypeName.RECORD, //
         MAP_FIELD));
     String expectedAdditional = "{}";
@@ -187,7 +190,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     List<Field> bqFields = ImmutableList.of(Field
         .newBuilder("metrics", LegacySQLTypeName.RECORD, Field.of("key", LegacySQLTypeName.STRING),
             Field.of("value", LegacySQLTypeName.RECORD,
-                Field.newBuilder("keyedHistograms", LegacySQLTypeName.RECORD,
+                Field.newBuilder("keyed_histograms", LegacySQLTypeName.RECORD,
                     Field.of("key", LegacySQLTypeName.STRING),
                     Field
                         .newBuilder("value", LegacySQLTypeName.RECORD,
@@ -197,14 +200,14 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
                         .setMode(Mode.REPEATED).build())
                     .setMode(Mode.REPEATED).build()))
         .setMode(Mode.REPEATED).build());
-    String expected = "{\"metrics\":[{\"key\":\"engine\",\"value\":{\"keyedHistograms\":"
+    String expected = "{\"metrics\":[{\"key\":\"engine\",\"value\":{\"keyed_histograms\":"
         + "[{\"key\":\"TELEMETRY_TEST_KEYED_HISTOGRAM\",\"value\":"
         + "[{\"key\":\"key1\",\"value\":{\"sum\":1}}"
         + ",{\"key\":\"key2\",\"value\":{\"sum\":0}}]}]}}]}";
     PubsubMessageToTableRow.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
 
-    String expectedAdditional = "{\"metrics\":{\"engine\":{\"keyedHistograms\":"
+    String expectedAdditional = "{\"metrics\":{\"engine\":{\"keyed_histograms\":"
         + "{\"TELEMETRY_TEST_KEYED_HISTOGRAM\":"
         + "{\"key1\":{\"values\":{\"1\":1}},\"key2\":{\"values\":{}}}}}}}";
     assertEquals(expectedAdditional, Json.asString(additionalProperties));

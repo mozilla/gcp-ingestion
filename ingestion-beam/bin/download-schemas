@@ -39,7 +39,7 @@ EOF
 [
   {
     "mode": "NULLABLE",
-    "name": "clientId",
+    "name": "client_id",
     "type": "STRING"
   },
   {

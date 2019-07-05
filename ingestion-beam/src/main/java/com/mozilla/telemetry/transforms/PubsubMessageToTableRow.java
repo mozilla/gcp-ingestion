@@ -18,6 +18,7 @@ import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Table;
+import com.google.common.base.CaseFormat;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -237,12 +238,16 @@ public class PubsubMessageToTableRow
     // Clean the key names.
     ImmutableSet.copyOf(parent.keySet()).forEach(rawKey -> {
       String key = rawKey;
+      // BigQuery does not support periods in field names.
       if (key.contains(".") || key.contains("-")) {
         key = key.replace(".", "_").replace("-", "_");
       }
+      // BigQuery does not support field names that start with a number.
       if (Character.isDigit(key.charAt(0))) {
         key = "_" + key;
       }
+      // Coerce camelCase field names to snake_case.
+      key = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, key);
       parent.put(key, parent.remove(rawKey));
     });
 

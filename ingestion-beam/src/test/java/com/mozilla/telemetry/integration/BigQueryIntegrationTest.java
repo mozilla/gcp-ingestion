@@ -94,7 +94,7 @@ public class BigQueryIntegrationTest {
             TableInfo
                 .newBuilder(tableId,
                     StandardTableDefinition
-                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
                             Field.of("type", LegacySQLTypeName.STRING),
                             Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
                         .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
@@ -112,7 +112,7 @@ public class BigQueryIntegrationTest {
 
     assertThat(stringValuesQueryWithRetries("SELECT submission_timestamp FROM " + tableSpec),
         matchesInAnyOrder(Lists.newArrayList(null, null, "1561983194.123456")));
-    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT client_id FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123", "abc123", "def456")));
   }
 
@@ -123,7 +123,7 @@ public class BigQueryIntegrationTest {
 
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
     bigquery.create(TableInfo.newBuilder(tableId,
-        StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+        StandardTableDefinition.of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
             Field.of("type", LegacySQLTypeName.STRING))))
         .build());
 
@@ -140,7 +140,7 @@ public class BigQueryIntegrationTest {
     result.waitUntilFinish();
 
     String tableSpec = String.format("%s.%s", dataset, table);
-    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT client_id FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123")));
 
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
@@ -158,7 +158,7 @@ public class BigQueryIntegrationTest {
             TableInfo
                 .newBuilder(tableId,
                     StandardTableDefinition
-                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
                             Field.of("type", LegacySQLTypeName.STRING),
                             Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
                         .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
@@ -179,7 +179,7 @@ public class BigQueryIntegrationTest {
     result.waitUntilFinish();
 
     String tableSpec = String.format("%s.%s", dataset, table);
-    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT client_id FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123")));
 
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
@@ -197,7 +197,7 @@ public class BigQueryIntegrationTest {
             TableInfo
                 .newBuilder(tableId,
                     StandardTableDefinition
-                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
                             Field.of("type", LegacySQLTypeName.STRING),
                             Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
                         .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
@@ -218,7 +218,7 @@ public class BigQueryIntegrationTest {
     result.waitUntilFinish();
 
     String tableSpec = String.format("%s.%s", dataset, table);
-    assertThat(stringValuesQueryWithRetries("SELECT clientId FROM " + tableSpec),
+    assertThat(stringValuesQueryWithRetries("SELECT client_id FROM " + tableSpec),
         matchesInAnyOrder(ImmutableList.of("abc123")));
 
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
@@ -234,7 +234,7 @@ public class BigQueryIntegrationTest {
     bigquery.create(DatasetInfo.newBuilder(dataset).build());
 
     bigquery.create(TableInfo.newBuilder(tableId,
-        StandardTableDefinition.of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+        StandardTableDefinition.of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
             Field.newBuilder("extra_required_field", LegacySQLTypeName.STRING)
                 .setMode(Mode.REQUIRED).build())))
         .build());
@@ -250,7 +250,7 @@ public class BigQueryIntegrationTest {
 
     result.waitUntilFinish();
 
-    assertTrue(stringValuesQuery("SELECT clientId FROM " + tableSpec).isEmpty());
+    assertTrue(stringValuesQuery("SELECT client_id FROM " + tableSpec).isEmpty());
 
     List<String> expectedErrorLines = Lines.resources("testdata/json-payload-wrapped.ndjson");
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
@@ -269,7 +269,7 @@ public class BigQueryIntegrationTest {
             TableInfo
                 .newBuilder(tableId,
                     StandardTableDefinition
-                        .of(Schema.of(Field.of("clientId", LegacySQLTypeName.STRING),
+                        .of(Schema.of(Field.of("client_id", LegacySQLTypeName.STRING),
                             Field.of("additional_properties", LegacySQLTypeName.STRING),
                             Field.of("submission_timestamp", LegacySQLTypeName.TIMESTAMP)))
                         .toBuilder().setTimePartitioning(submissionTimestampPartitioning).build())
@@ -302,7 +302,6 @@ public class BigQueryIntegrationTest {
     for (int i = 0; i < 2; i++) {
       List<String> result = stringValuesQuery(query);
       if (!result.isEmpty()) {
-        System.out.println("Result is: " + result);
         return result;
       }
       Thread.sleep(100);
