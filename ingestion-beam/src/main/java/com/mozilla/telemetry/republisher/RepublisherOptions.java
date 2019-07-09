@@ -26,15 +26,17 @@ import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
  */
 public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
-  @Description("URI of a redis server that will be used for deduplication")
+  @Description("URI of a redis server that will be contacted to mark document IDs as seen for"
+      + " deduplication purposes; if left unspecified, this step of the pipeline is skipped")
   @Validation.Required
   ValueProvider<String> getRedisUri();
 
   void setRedisUri(ValueProvider<String> value);
 
-  @Description("Duration for which message ids should be stored for deduplication."
+  @Description("Duration for which document IDs should be stored for deduplication."
       + " Allowed formats are: Ns (for seconds, example: 5s),"
-      + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h).")
+      + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h)."
+      + " Can be omitted if --redisUri is unset.")
   @Default.String("24h")
   ValueProvider<String> getDeduplicateExpireDuration();
 

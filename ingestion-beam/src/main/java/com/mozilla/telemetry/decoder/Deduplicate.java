@@ -194,9 +194,11 @@ public class Deduplicate {
     private static final int DEFAULT_TTL = Ints.checkedCast(Time.parseSeconds("24h"));
 
     final ValueProvider<Integer> ttlSeconds;
+    final ValueProvider<URI> uri;
     private final RedisIdService redisIdService;
 
     MarkAsSeen(ValueProvider<URI> uri, ValueProvider<Integer> ttlSeconds) {
+      this.uri = uri;
       this.ttlSeconds = ttlSeconds;
       this.redisIdService = new RedisIdService(uri);
     }
@@ -217,8 +219,10 @@ public class Deduplicate {
     @Override
     protected PubsubMessage processElement(PubsubMessage element) {
       element = PubsubConstraints.ensureNonNull(element);
-      // Throws IllegalArgumentException if id is present and invalid
-      getId(element).ifPresent(id -> redisIdService.setWithExpiration(id, getTtlSeconds()));
+      if (uri != null && uri.isAccessible() && uri.get() != null) {
+        // Throws IllegalArgumentException if ID is present and invalid.
+        getId(element).ifPresent(id -> redisIdService.setWithExpiration(id, getTtlSeconds()));
+      }
       return element;
     }
   }
