@@ -23,6 +23,7 @@ import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
+import com.mozilla.telemetry.util.NoColonFileNaming;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -148,7 +149,7 @@ public abstract class Write
           .withCompression(compression) //
           .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink()) //
           .to(staticPrefix) //
-          .withNaming(placeholderValues -> FileIO.Write.defaultNaming(
+          .withNaming(placeholderValues -> NoColonFileNaming.defaultNaming(
               pathTemplate.get().replaceDynamicPart(placeholderValues), format.suffix()));
 
       if (inputType == InputType.pubsub) {
@@ -254,7 +255,7 @@ public abstract class Write
             return AvroIO.sinkViaGenericRecords(schema, binaryFormatter);
           }, Requirements.requiresSideInputs(schemaSideInput))) //
           .to(staticPrefix) //
-          .withNaming(placeholderValues -> FileIO.Write
+          .withNaming(placeholderValues -> NoColonFileNaming
               .defaultNaming(pathTemplate.get().replaceDynamicPart(placeholderValues), ".avro"));
 
       if (inputType == InputType.pubsub) {

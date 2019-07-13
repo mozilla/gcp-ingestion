@@ -35,6 +35,7 @@ GKE
 GroupByKey
 gzip
 gzipped
+Hadoop
 Heka
 HTTPS
 hyperloglog
