@@ -18,7 +18,6 @@ import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Table;
-import com.google.common.base.CaseFormat;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -31,6 +30,7 @@ import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.SnakeCase;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -247,7 +247,7 @@ public class PubsubMessageToTableRow
         key = "_" + key;
       }
       // Coerce camelCase field names to snake_case.
-      key = CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, key);
+      key = SnakeCase.format(key);
       parent.put(key, parent.remove(rawKey));
     });
 
