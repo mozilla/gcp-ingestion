@@ -98,10 +98,10 @@ public class FileWindowingTest implements Serializable {
     pipeline.run().waitUntilFinish();
 
     List<String> expectedFileNames = ImmutableList.of(
-        "out-1970-01-01T00:00:00.000Z-1970-01-01T00:10:00.000Z-0-00000-of-00001.txt",
-        "out-1970-01-01T00:00:00.000Z-1970-01-01T00:10:00.000Z-1-00000-of-00001.txt",
-        "out-1970-01-01T00:00:00.000Z-1970-01-01T00:10:00.000Z-2-00000-of-00001.txt",
-        "out-1970-01-01T00:10:00.000Z-1970-01-01T00:20:00.000Z-0-00000-of-00001.txt");
+        "out-1970-01-01T00-00-00.000Z-1970-01-01T00-10-00.000Z-0-00000-of-00001.txt",
+        "out-1970-01-01T00-00-00.000Z-1970-01-01T00-10-00.000Z-1-00000-of-00001.txt",
+        "out-1970-01-01T00-00-00.000Z-1970-01-01T00-10-00.000Z-2-00000-of-00001.txt",
+        "out-1970-01-01T00-10-00.000Z-1970-01-01T00-20-00.000Z-0-00000-of-00001.txt");
 
     assertThat(Lines.files(outputPath + "/out*.txt"), Matchers.hasSize(9));
     assertThat(fileNames(outputPath + "/out*.txt"), matchesInAnyOrder(expectedFileNames));
