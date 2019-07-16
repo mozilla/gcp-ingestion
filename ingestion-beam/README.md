@@ -206,7 +206,7 @@ on attribute names and default values used in placeholders:
 
 ### File prefix
 
-Individual files are named using the default format discussed in
+Individual files are named by replacing `:` with `-` in the default format discussed in
 the "File naming" section of Beam's
 [`FileIO` Javadoc](https://beam.apache.org/documentation/sdks/javadoc/2.6.0/org/apache/beam/sdk/io/FileIO.html):
 
@@ -215,7 +215,8 @@ the "File naming" section of Beam's
 In our case, `$prefix` is determined from the last `/`-delimited piece of the `--output`
 path. If you specify a path ending in `/`, you'll end up with an empty prefix
 and your file names will begin with `-`. This is probably not what you want, 
-so it's recommended to end your output path with a non-empty file prefix.
+so it's recommended to end your output path with a non-empty file prefix. We replace `:`
+with `-` because [Hadoop can't handle `:` in file names](https://stackoverflow.com/q/48909921).
 
 For example, given:
 
@@ -223,7 +224,7 @@ For example, given:
 
 An output file might be:
 
-    /tmp/output/out--290308-12-21T20:00:00.000Z--290308-12-21T20:10:00.000Z-00000-of-00001.ndjson
+    /tmp/output/out--290308-12-21T20-00-00.000Z--290308-12-21T20-10-00.000Z-00000-of-00001.ndjson
 
 ## Executing Jobs
 
