@@ -6,13 +6,12 @@ package com.mozilla.telemetry.util;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Test;
-
 import com.google.common.io.Resources;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
+import org.junit.Test;
 
 public class SnakeCaseTest {
 
@@ -60,7 +59,7 @@ public class SnakeCaseTest {
   }
 
   @Test
-  public void testSnakeCaseFormatMPSDiffIntegration() {
+  public void testSnakeCaseFormatMpsDiffIntegration() {
     // all column names from mozilla-pipeline-schemas affected by snake_casing
     runFileTest("casing/mps-diff-integration.csv");
   }
