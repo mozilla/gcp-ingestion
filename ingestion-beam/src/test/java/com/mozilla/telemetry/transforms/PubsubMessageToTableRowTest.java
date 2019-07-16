@@ -47,6 +47,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     assertEquals("untrusted_modules", PubsubMessageToTableRow.convertNameForBq("untrustedModules"));
     assertEquals("xul_load_duration_ms",
         PubsubMessageToTableRow.convertNameForBq("xulLoadDurationMS"));
+    assertEquals("a11y_consumers", PubsubMessageToTableRow.convertNameForBq("A11Y_CONSUMERS"));
   }
 
   @Test

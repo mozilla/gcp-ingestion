@@ -108,12 +108,26 @@ public class PubsubMessageToTableRow
   protected KV<TableDestination, TableRow> processElement(PubsubMessage message)
       throws IOException {
     message = PubsubConstraints.ensureNonNull(message);
+    Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
     // We coerce all docType and namespace names to be snake_case and to remove invalid
     // characters; these transformations MUST match with the transformations applied by the
     // jsonschema-transpiler and mozilla-schema-generator when creating table schemas in BigQuery.
-    Map<String, String> attributes = Maps.transformValues(message.getAttributeMap(),
-        this::getAndCacheBqName);
+    final String namespace = attributes.get(ParseUri.DOCUMENT_NAMESPACE);
+    final String docType = attributes.get(ParseUri.DOCUMENT_TYPE);
+    if (namespace != null) {
+      attributes.put(ParseUri.DOCUMENT_NAMESPACE, getAndCacheBqName(namespace));
+    }
+    if (docType != null) {
+      attributes.put(ParseUri.DOCUMENT_TYPE, getAndCacheBqName(docType));
+    }
+
+    // Only letters, numbers, and underscores are allowed in BigQuery dataset and table names,
+    // but some doc types and namespaces contain '-', so we convert to '_'; we don't pass all
+    // values through getAndCacheBqName to avoid expensive regex operations and polluting the
+    // cache of transformed field names.
+    attributes = Maps.transformValues(message.getAttributeMap(), v -> v.replaceAll("-", "_"));
+
     final String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
 
     // Send to error collection if incomplete tableSpec; $ is not a valid char in tableSpecs.
@@ -203,8 +217,6 @@ public class PubsubMessageToTableRow
     // Strip metadata so that it's not subject to transformation.
     Object metadata = tableRow.remove(AddMetadata.METADATA);
 
-    String namespace = message.getAttribute(ParseUri.DOCUMENT_NAMESPACE);
-    String docType = message.getAttribute(ParseUri.DOCUMENT_TYPE);
     final boolean strictSchema = (strictSchemaDocTypes.isAccessible()
         && strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)));
 
@@ -362,7 +374,7 @@ public class PubsubMessageToTableRow
 
   private String getAndCacheBqName(String name) {
     if (normalizedNameCache == null) {
-      normalizedNameCache = CacheBuilder.newBuilder().maximumSize(10_000).build();
+      normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
     }
     try {
       return normalizedNameCache.get(name, () -> convertNameForBq(name));

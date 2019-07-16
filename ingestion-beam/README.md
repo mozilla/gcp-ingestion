@@ -135,7 +135,10 @@ document namespace and table name to the document type, specify:
     --output='${document_namespace}.${document_type}'
 
 All `-` characters in the attributes will be converted to `_` per BigQuery
-naming restrictions.
+naming restrictions. Additionally, document namespace and type values will
+be processed to ensure they are in snake case format (`untrustedModules`
+becomes `untrusted_modules`).
+
 Defaults for the placeholders using `${attribute_name:-default_value}`
 are supported, but likely don't make much sense since it's unlikely that
 there is a default table whose schema is compatible with all potential
