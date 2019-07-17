@@ -18,6 +18,7 @@ import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Table;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
@@ -30,6 +31,7 @@ import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.SnakeCase;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -89,6 +91,7 @@ public class PubsubMessageToTableRow
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
   private transient Cache<TableReference, Schema> tableSchemaCache;
+  private transient Cache<String, String> normalizedNameCache;
   private transient BigQuerySchemaStore schemaStore;
   private transient BigQuery bqService;
 
@@ -105,10 +108,26 @@ public class PubsubMessageToTableRow
   protected KV<TableDestination, TableRow> processElement(PubsubMessage message)
       throws IOException {
     message = PubsubConstraints.ensureNonNull(message);
+    Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+
+    // We coerce all docType and namespace names to be snake_case and to remove invalid
+    // characters; these transformations MUST match with the transformations applied by the
+    // jsonschema-transpiler and mozilla-schema-generator when creating table schemas in BigQuery.
+    final String namespace = attributes.get(ParseUri.DOCUMENT_NAMESPACE);
+    final String docType = attributes.get(ParseUri.DOCUMENT_TYPE);
+    if (namespace != null) {
+      attributes.put(ParseUri.DOCUMENT_NAMESPACE, getAndCacheBqName(namespace));
+    }
+    if (docType != null) {
+      attributes.put(ParseUri.DOCUMENT_TYPE, getAndCacheBqName(docType));
+    }
+
     // Only letters, numbers, and underscores are allowed in BigQuery dataset and table names,
-    // but some doc types and namespaces contain '-', so we convert to '_'.
-    final Map<String, String> attributes = Maps.transformValues(message.getAttributeMap(),
-        v -> v.replaceAll("-", "_"));
+    // but some doc types and namespaces contain '-', so we convert to '_'; we don't pass all
+    // values through getAndCacheBqName to avoid expensive regex operations and polluting the
+    // cache of transformed field names.
+    attributes = Maps.transformValues(message.getAttributeMap(), v -> v.replaceAll("-", "_"));
+
     final String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
 
     // Send to error collection if incomplete tableSpec; $ is not a valid char in tableSpecs.
@@ -198,8 +217,6 @@ public class PubsubMessageToTableRow
     // Strip metadata so that it's not subject to transformation.
     Object metadata = tableRow.remove(AddMetadata.METADATA);
 
-    String namespace = message.getAttribute(ParseUri.DOCUMENT_NAMESPACE);
-    String docType = message.getAttribute(ParseUri.DOCUMENT_TYPE);
     final boolean strictSchema = (strictSchemaDocTypes.isAccessible()
         && strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)));
 
@@ -231,20 +248,12 @@ public class PubsubMessageToTableRow
    * @param additionalProperties a map for storing fields absent in the BQ schema; if null, this is
    *                             "strict schema" mode and additional properties will be dropped
    */
-  public static void transformForBqSchema(Map<String, Object> parent, List<Field> bqFields,
+  public void transformForBqSchema(Map<String, Object> parent, List<Field> bqFields,
       Map<String, Object> additionalProperties) {
 
     // Clean the key names.
-    ImmutableSet.copyOf(parent.keySet()).forEach(rawKey -> {
-      String key = rawKey;
-      if (key.contains(".") || key.contains("-")) {
-        key = key.replace(".", "_").replace("-", "_");
-      }
-      if (Character.isDigit(key.charAt(0))) {
-        key = "_" + key;
-      }
-      parent.put(key, parent.remove(rawKey));
-    });
+    ImmutableSet.copyOf(parent.keySet())
+        .forEach(key -> parent.put(getAndCacheBqName(key), parent.remove(key)));
 
     // Strip out fields that do not appear in the BQ schema.
     Set<String> fieldNames = bqFields.stream().map(Field::getName).collect(Collectors.toSet());
@@ -270,7 +279,7 @@ public class PubsubMessageToTableRow
         && field.getSubFields().get(1).getName().equals("value");
   }
 
-  private static void processField(String jsonFieldName, Field field, Object val,
+  private void processField(String jsonFieldName, Field field, Object val,
       Map<String, Object> parent, Map<String, Object> additionalProperties) {
     String name = field.getName();
     Optional<Object> value = Optional.ofNullable(val);
@@ -323,7 +332,7 @@ public class PubsubMessageToTableRow
    * Recursively descend into a map type field, expanding to the key/value struct required in
    * BigQuery schemas.
    */
-  private static void expandMapType(String jsonFieldName, Object val, Field field,
+  private void expandMapType(String jsonFieldName, Object val, Field field,
       Map<String, Object> parent, Map<String, Object> additionalProperties) {
     Optional<Object> value = Optional.ofNullable(val);
     value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
@@ -361,6 +370,35 @@ public class PubsubMessageToTableRow
     } else {
       return o;
     }
+  }
+
+  private String getAndCacheBqName(String name) {
+    if (normalizedNameCache == null) {
+      normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
+    }
+    try {
+      return normalizedNameCache.get(name, () -> convertNameForBq(name));
+    } catch (ExecutionException e) {
+      throw new UncheckedExecutionException(e.getCause());
+    }
+  }
+
+  /**
+   * Converts a name to a BigQuery-friendly format.
+   *
+   * <p>The format must match exactly with the transformations made by jsonschema-transpiler
+   * and mozilla-pipeline-schemas. In general, this format requires converting camelCase to
+   * snake_case, replacing incompatible characters like '-' with underscores, and prepending
+   * and underscore to names that begin with a digit.
+   */
+  @VisibleForTesting
+  static String convertNameForBq(String name) {
+    StringBuilder sb = new StringBuilder();
+    if (name.length() > 0 && Character.isDigit(name.charAt(0))) {
+      sb.append('_');
+    }
+    sb.append(SnakeCase.format(name));
+    return sb.toString();
   }
 
 }

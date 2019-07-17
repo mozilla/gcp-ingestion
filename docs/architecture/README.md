@@ -143,6 +143,9 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must not ack messages read from PubSub until they are delivered
 - Must accept configuration mapping PubSub topics to BigQuery tables
 - Must accept configuration for using streaming or batch loads
+- Must transform all field names to lowercase with underscores (`snake_case`)
+  and perform other field name cleaning to match the transformations
+  expected by the [`jsonschema-transpiler`](https://github.com/mozilla/jsonschema-transpiler)
 - Must set [`ignoreUnknownValues`](https://beam.apache.org/releases/javadoc/2.7.0/org/apache/beam/sdk/io/gcp/bigquery/BigQueryIO.Write.html#ignoreUnknownValues--)
   to `true`
 - Should retry transient BigQuery errors indefinitely
