@@ -67,7 +67,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
   @Override
   protected PubsubMessage processElement(PubsubMessage message)
-      throws SchemaNotFoundException, IOException {
+      throws SchemaNotFoundException, IOException, MessageShouldBeDroppedException {
     message = PubsubConstraints.ensureNonNull(message);
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
@@ -87,6 +87,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       PerDocTypeCounter.inc(attrs, "error_json_parse");
       PerDocTypeCounter.inc(attrs, "error_submission_bytes", submissionBytes);
       throw e;
+    }
+
+    if (MessageScrubber.shouldScrub(attributes, json)) {
+      // Prevent the message from going to success or error output.
+      throw new MessageShouldBeDroppedException();
     }
 
     // In case this message is being replayed from an error output where AddMetadata has already

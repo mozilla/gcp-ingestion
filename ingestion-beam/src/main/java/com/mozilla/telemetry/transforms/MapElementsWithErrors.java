@@ -86,6 +86,9 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       boolean exceptionWasThrown = false;
       try {
         processed = processElement(element);
+      } catch (MessageShouldBeDroppedException e) {
+        // Don't emit the message to any output.
+        exceptionWasThrown = true;
       } catch (Exception e) {
         exceptionWasThrown = true;
         out.get(errorTag).output(processError(element, e));
@@ -140,4 +143,12 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       }
     }
   }
+
+  /**
+   * Special exception class that implementations of {@link MapElementsWithErrors} can throw to
+   * signal that a given message should not be sent downstream to either success or error output.
+   */
+  public static class MessageShouldBeDroppedException extends Exception {
+  }
+
 }
