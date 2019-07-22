@@ -6,9 +6,14 @@ package com.mozilla.telemetry.decoder;
 
 import java.util.Map;
 import java.util.Optional;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.json.JSONObject;
 
 public class MessageScrubber {
+
+  private static final Counter countScrubbedBug1567596 = Metrics.counter(MessageScrubber.class,
+      "bug_1567596");
 
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
@@ -27,6 +32,7 @@ public class MessageScrubber {
             .map(j -> j.optJSONObject("metadata")) //
             .map(j -> j.optString("MozCrashReason"))
             .filter(s -> s.contains("do not use eval with system privileges")).isPresent()) {
+      countScrubbedBug1567596.inc();
       return true;
     } else {
       return false;
