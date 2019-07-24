@@ -54,7 +54,6 @@ public class MessageScrubber {
       return true;
     } else if ("telemetry".equals(attributes.get(ParseUri.DOCUMENT_NAMESPACE))
         && "bhr".equals(attributes.get(ParseUri.DOCUMENT_TYPE))
-        && "nightly".equals(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
         && (attributes.get(ParseUri.APP_VERSION).startsWith("68")
             || attributes.get(ParseUri.APP_VERSION).startsWith("69"))
         && Optional.of(json) // payload.hangs[].remoteType
@@ -66,6 +65,7 @@ public class MessageScrubber {
                 String s = arr.optJSONObject(i).optString("remoteType");
                 if (s != null && s.startsWith("webIsolated=")) {
                   isPresent = true;
+                  break;
                 }
               }
               return isPresent;
