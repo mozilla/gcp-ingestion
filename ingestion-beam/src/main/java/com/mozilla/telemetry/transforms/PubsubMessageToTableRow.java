@@ -252,21 +252,25 @@ public class PubsubMessageToTableRow
       Map<String, Object> additionalProperties) {
 
     // Clean the key names.
-    ImmutableSet.copyOf(parent.keySet())
-        .forEach(key -> parent.put(getAndCacheBqName(key), parent.remove(key)));
+    final Map<String, String> jsonFieldNames = new HashMap<>();
+    ImmutableSet.copyOf(parent.keySet()).forEach(key -> {
+      String transformedKey = getAndCacheBqName(key);
+      jsonFieldNames.put(transformedKey, key);
+      parent.put(transformedKey, parent.remove(key));
+    });
 
     // Strip out fields that do not appear in the BQ schema.
     Set<String> fieldNames = bqFields.stream().map(Field::getName).collect(Collectors.toSet());
     ImmutableSet.copyOf(Sets.difference(parent.keySet(), fieldNames)).forEach(k -> {
       Object value = parent.remove(k);
       if (additionalProperties != null) {
-        additionalProperties.put(k, value);
+        additionalProperties.put(jsonFieldNames.get(k), value);
       }
     });
 
     // Special transformations for structures disallowed in BigQuery.
-    bqFields.forEach(field -> processField(field.getName(), field, parent.get(field.getName()),
-        parent, additionalProperties));
+    bqFields.forEach(field -> processField(jsonFieldNames.get(field.getName()), field,
+        parent.get(field.getName()), parent, additionalProperties));
   }
 
   /**
