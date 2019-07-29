@@ -22,9 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -41,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
@@ -250,27 +249,33 @@ public class PubsubMessageToTableRow
    */
   public void transformForBqSchema(Map<String, Object> parent, List<Field> bqFields,
       Map<String, Object> additionalProperties) {
+    Map<String, Field> bqFieldMap = bqFields.stream()
+        .collect(Collectors.toMap(Field::getName, Function.identity()));
 
-    // Clean the key names.
-    final Map<String, String> jsonFieldNames = new HashMap<>();
-    ImmutableSet.copyOf(parent.keySet()).forEach(key -> {
-      String transformedKey = getAndCacheBqName(key);
-      jsonFieldNames.put(transformedKey, key);
-      parent.put(transformedKey, parent.remove(key));
-    });
+    HashSet<String> jsonFieldNames = new HashSet<>(parent.keySet());
+    jsonFieldNames.forEach(jsonFieldName -> {
+      final String bqFieldName;
+      if (bqFieldMap.containsKey(jsonFieldName)) {
+        // The JSON field name already matches a BQ field.
+        bqFieldName = jsonFieldName;
+      } else {
+        // Try cleaning the name to match our BQ conventions.
+        bqFieldName = getAndCacheBqName(jsonFieldName);
 
-    // Strip out fields that do not appear in the BQ schema.
-    Set<String> fieldNames = bqFields.stream().map(Field::getName).collect(Collectors.toSet());
-    ImmutableSet.copyOf(Sets.difference(parent.keySet(), fieldNames)).forEach(k -> {
-      Object value = parent.remove(k);
-      if (additionalProperties != null) {
-        additionalProperties.put(jsonFieldNames.get(k), value);
+        // If the field name now matches a BQ field name, we rename the field within the payload,
+        // otherwise we move it to additionalProperties without renaming.
+        Object value = parent.remove(jsonFieldName);
+        if (bqFieldMap.containsKey(bqFieldName)) {
+          parent.put(bqFieldName, value);
+        } else if (additionalProperties != null) {
+          additionalProperties.put(jsonFieldName, value);
+        }
       }
-    });
 
-    // Special transformations for structures disallowed in BigQuery.
-    bqFields.forEach(field -> processField(jsonFieldNames.get(field.getName()), field,
-        parent.get(field.getName()), parent, additionalProperties));
+      Optional.ofNullable(bqFieldMap.get(bqFieldName))
+          .ifPresent(field -> processField(jsonFieldName, field, parent.get(bqFieldName), parent,
+              additionalProperties));
+    });
   }
 
   /**
