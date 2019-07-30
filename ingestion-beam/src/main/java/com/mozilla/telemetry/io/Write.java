@@ -20,6 +20,7 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
+import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
@@ -321,13 +322,15 @@ public abstract class Write
     private final ValueProvider<List<String>> strictSchemaDocTypes;
     private final ValueProvider<String> schemasLocation;
     private final ValueProvider<String> schemasAliasesLocation;
+    private final ValueProvider<TableRowFormat> tableRowFormat;
 
     /** Public constructor. */
     public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
         Duration triggeringFrequency, InputType inputType, int numShards,
         ValueProvider<List<String>> streamingDocTypes,
         ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-        ValueProvider<String> schemasAliasesLocation) {
+        ValueProvider<String> schemasAliasesLocation,
+        ValueProvider<TableRowFormat> tableRowFormat) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
@@ -339,6 +342,7 @@ public abstract class Write
           value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
       this.schemasLocation = schemasLocation;
       this.schemasAliasesLocation = schemasAliasesLocation;
+      this.tableRowFormat = tableRowFormat;
     }
 
     @Override
@@ -392,7 +396,7 @@ public abstract class Write
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
             .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes,
-                schemasLocation, schemasAliasesLocation))
+                schemasLocation, schemasAliasesLocation, tableRowFormat))
             .errorsTo(errorCollections) //
             .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
@@ -437,7 +441,7 @@ public abstract class Write
         }
         messages //
             .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes,
-                schemasLocation, schemasAliasesLocation))
+                schemasLocation, schemasAliasesLocation, tableRowFormat))
             .errorsTo(errorCollections) //
             .apply(fileLoadsWrite);
       });

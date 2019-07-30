@@ -6,6 +6,7 @@ package com.mozilla.telemetry.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mozilla.telemetry.Sink;
+import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,6 +108,14 @@ public interface SinkOptions extends PipelineOptions {
   OutputFileFormat getOutputFileFormat();
 
   void setOutputFileFormat(OutputFileFormat value);
+
+  @Description("Row format for --outputType=bigquery; must be one of"
+      + " raw (each row contains payload[Bytes] and attributes as top level fields) or"
+      + " decoded (each row contains payload[Bytes] and attributes as nested metadata fields) or"
+      + " payload (each row is extracted from payload); defaults to payload")
+  ValueProvider<TableRowFormat> getOutputTableRowFormat();
+
+  void setOutputTableRowFormat(ValueProvider<TableRowFormat> value);
 
   @Description("Compression format for --outputType=file")
   @Default.Enum("GZIP")
@@ -239,6 +248,8 @@ public interface SinkOptions extends PipelineOptions {
     options.setParsedBqTriggeringFrequency(Time.parseDuration(options.getBqTriggeringFrequency()));
     options.setDecompressInputPayloads(
         providerWithDefault(options.getDecompressInputPayloads(), true));
+    options.setOutputTableRowFormat(
+        providerWithDefault(options.getOutputTableRowFormat(), TableRowFormat.payload));
     options.setOutputPubsubCompression(
         providerWithDefault(options.getOutputPubsubCompression(), Compression.GZIP));
     options.setErrorOutputPubsubCompression(

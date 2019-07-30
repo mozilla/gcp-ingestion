@@ -65,9 +65,13 @@ public class PubsubMessageToTableRow
 
   public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate,
       ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemasAliasesLocation) {
+      ValueProvider<String> schemasAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat) {
     return new PubsubMessageToTableRow(tableSpecTemplate, strictSchemaDocTypes, schemasLocation,
-        schemasAliasesLocation);
+        schemasAliasesLocation, tableRowFormat);
+  }
+
+  public enum TableRowFormat {
+    raw, decoded, payload
   }
 
   public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
@@ -87,6 +91,7 @@ public class PubsubMessageToTableRow
   private final ValueProvider<List<String>> strictSchemaDocTypes;
   private final ValueProvider<String> schemasLocation;
   private final ValueProvider<String> schemaAliasesLocation;
+  private final ValueProvider<TableRowFormat> tableRowFormat;
 
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
@@ -97,11 +102,12 @@ public class PubsubMessageToTableRow
 
   private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate,
       ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
+      ValueProvider<String> schemaAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat) {
     this.tableSpecTemplate = tableSpecTemplate;
     this.strictSchemaDocTypes = strictSchemaDocTypes;
     this.schemasLocation = schemasLocation;
     this.schemaAliasesLocation = schemaAliasesLocation;
+    this.tableRowFormat = tableRowFormat;
   }
 
   @Override
@@ -177,13 +183,52 @@ public class PubsubMessageToTableRow
       throw new IllegalArgumentException("Resolved destination table does not exist: " + tableSpec);
     }
 
+    TableRow tableRow;
+    switch (tableRowFormat.get()) {
+      case raw:
+        tableRow = rawTableRow(message);
+        break;
+      case decoded:
+        tableRow = decodedTableRow(message);
+        break;
+      case payload:
+      default:
+        tableRow = payloadTableRow(message, ref, tableSpec, namespace, docType);
+        break;
+    }
+    return KV.of(tableDestination, tableRow);
+  }
+
+  @Override
+  public WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> expand(
+      PCollection<PubsubMessage> input) {
+    WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
+    result.output().setCoder(KvCoder.of(TableDestinationCoderV2.of(), TableRowJsonCoder.of()));
+    return result;
+  }
+
+  @VisibleForTesting
+  static TableRow rawTableRow(PubsubMessage message) {
+    TableRow tableRow = new TableRow();
+    message.getAttributeMap().forEach(tableRow::set);
+    tableRow.set("payload", message.getPayload());
+    return tableRow;
+  }
+
+  @VisibleForTesting
+  static TableRow decodedTableRow(PubsubMessage message) {
+    TableRow tableRow = new TableRow();
+    AddMetadata.attributesToMetadataPayload(message.getAttributeMap()).forEach(tableRow::set);
+    tableRow.set("payload", message.getPayload());
+    return tableRow;
+  }
+
+  private TableRow payloadTableRow(PubsubMessage message, TableReference ref, String tableSpec,
+      String namespace, String docType) throws IOException {
+
     if (schemaStore == null && schemasLocation != null && schemasLocation.isAccessible()
         && schemasLocation.get() != null) {
       schemaStore = BigQuerySchemaStore.of(schemasLocation, schemaAliasesLocation);
-    }
-
-    if (tableSchemaCache == null) {
-      tableSchemaCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1)).build();
     }
 
     // If a schemasLocation is configured, we pull the table schema from there;
@@ -194,10 +239,13 @@ public class PubsubMessageToTableRow
         schema = schemaStore.getSchema(message.getAttributeMap());
       } catch (SchemaNotFoundException e) {
         throw new IllegalArgumentException(
-            "The schema store does not contain a BigQuery schema" + " for this table: " + tableSpec,
-            e);
+            "The schema store does not contain a BigQuery schema for this table: " + tableSpec, e);
       }
     } else {
+      if (tableSchemaCache == null) {
+        tableSchemaCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1))
+            .build();
+      }
       try {
         schema = tableSchemaCache.get(ref, () -> {
           Table table = bqService.getTable(ref.getDatasetId(), ref.getTableId());
@@ -228,15 +276,7 @@ public class PubsubMessageToTableRow
     if (additionalProperties != null) {
       tableRow.put(ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
     }
-    return KV.of(tableDestination, tableRow);
-  }
-
-  @Override
-  public WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> expand(
-      PCollection<PubsubMessage> input) {
-    WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
-    result.output().setCoder(KvCoder.of(TableDestinationCoderV2.of(), TableRowJsonCoder.of()));
-    return result;
+    return tableRow;
   }
 
   /**
