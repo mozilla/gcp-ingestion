@@ -126,7 +126,7 @@ public class PubsubMessageToTableRow
     // but some doc types and namespaces contain '-', so we convert to '_'; we don't pass all
     // values through getAndCacheBqName to avoid expensive regex operations and polluting the
     // cache of transformed field names.
-    attributes = Maps.transformValues(message.getAttributeMap(), v -> v.replaceAll("-", "_"));
+    attributes = Maps.transformValues(attributes, v -> v.replaceAll("-", "_"));
 
     final String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
 
@@ -191,7 +191,7 @@ public class PubsubMessageToTableRow
     Schema schema;
     if (schemaStore != null) {
       try {
-        schema = schemaStore.getSchema(message.getAttributeMap());
+        schema = schemaStore.getSchema(attributes);
       } catch (SchemaNotFoundException e) {
         throw new IllegalArgumentException(
             "The schema store does not contain a BigQuery schema" + " for this table: " + tableSpec,
