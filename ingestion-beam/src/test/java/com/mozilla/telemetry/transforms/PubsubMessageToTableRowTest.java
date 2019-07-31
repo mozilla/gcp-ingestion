@@ -142,7 +142,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
             MAP_FIELD));
     String expected = "{\"client_id\":\"abc123\",\"outer\":{"
         + "\"map_field\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
-    String expectedAdditional = "{\"other_strange_id_field\":3,\"outer\":{\"other_field\":3}}";
+    String expectedAdditional = "{\"otherStrangeIdField\":3,\"outer\":{\"otherField\":3}}";
     Map<String, Object> additionalProperties = new HashMap<>();
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
@@ -229,7 +229,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
 
-    String expectedAdditional = "{\"metrics\":{\"engine\":{\"keyed_histograms\":"
+    String expectedAdditional = "{\"metrics\":{\"engine\":{\"keyedHistograms\":"
         + "{\"TELEMETRY_TEST_KEYED_HISTOGRAM\":"
         + "{\"key1\":{\"values\":{\"1\":1}},\"key2\":{\"values\":{}}}}}}}";
     assertEquals(expectedAdditional, Json.asString(additionalProperties));
