@@ -68,7 +68,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
    * metadata/structured-ingestion JSON schemas.
    * See https://github.com/mozilla-services/mozilla-pipeline-schemas
    */
-  static Map<String, Object> attributesToMetadataPayload(Map<String, String> attributes) {
+  public static Map<String, Object> attributesToMetadataPayload(Map<String, String> attributes) {
     final String namespace = attributes.get("document_namespace");
     // Currently, every entry in metadata is a Map<String, String>, but we keep Object as the
     // value type to support future evolution of the metadata structure to include fields that
