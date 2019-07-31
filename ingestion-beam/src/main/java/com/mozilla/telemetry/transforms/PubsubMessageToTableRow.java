@@ -183,7 +183,7 @@ public class PubsubMessageToTableRow
       throw new IllegalArgumentException("Resolved destination table does not exist: " + tableSpec);
     }
 
-    TableRow tableRow;
+    final TableRow tableRow;
     switch (tableRowFormat.get()) {
       case raw:
         tableRow = rawTableRow(message);
