@@ -192,7 +192,7 @@ public class PubsubMessageToTableRow
         break;
       case payload:
       default:
-        tableRow = payloadTableRow(message, ref, tableSpec, namespace, docType);
+        tableRow = payloadTableRow(message, ref, tableSpec, namespace, docType, attributes);
         break;
     }
     return KV.of(tableDestination, tableRow);
@@ -223,7 +223,7 @@ public class PubsubMessageToTableRow
   }
 
   private TableRow payloadTableRow(PubsubMessage message, TableReference ref, String tableSpec,
-      String namespace, String docType) throws IOException {
+      String namespace, String docType, Map<String, String> attributes) throws IOException {
 
     if (schemaStore == null && schemasLocation != null && schemasLocation.isAccessible()
         && schemasLocation.get() != null) {
