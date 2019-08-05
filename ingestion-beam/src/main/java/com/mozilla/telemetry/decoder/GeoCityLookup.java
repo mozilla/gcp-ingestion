@@ -152,7 +152,6 @@ public class GeoCityLookup
 
         // remove client ip from attributes
         attributes.remove("x_forwarded_for");
-        attributes.remove("x_pipeline_proxy");
         attributes.remove("remote_addr");
 
         // remove null attributes because the coder can't handle them
