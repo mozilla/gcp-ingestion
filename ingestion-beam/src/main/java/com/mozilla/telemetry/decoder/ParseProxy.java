@@ -29,8 +29,8 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
 
   /////////
 
+  public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
   private static final String PROXY_TIMESTAMP = "proxy_timestamp";
-  private static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
   private static final String X_FORWARDED_FOR = "x_forwarded_for";
   private static final String X_PIPELINE_PROXY = "x_pipeline_proxy";
 
