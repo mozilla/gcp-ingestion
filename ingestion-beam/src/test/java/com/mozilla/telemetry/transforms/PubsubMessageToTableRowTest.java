@@ -267,7 +267,8 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     PubsubMessage message = new PubsubMessage("test".getBytes(),
         // Ensure sure we preserve all attributes present in the spec:
         // https://github.com/mozilla/gcp-ingestion/blob/master/docs/decoder.md#decoded-message-metadata-schema
-        ImmutableMap.<String, String>builder().put("document_version", "4")
+        ImmutableMap.<String, String>builder()
+            .put("client_id", "5c49ec73-4350-45a0-9c8a-6c8f5aded0da").put("document_version", "4")
             .put("document_id", "6c49ec73-4350-45a0-9c8a-6c8f5aded0cf")
             .put("document_namespace", "telemetry").put("document_type", "main")
             .put("app_name", "Firefox").put("app_version", "58.0.2")
@@ -282,14 +283,15 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
             .put("normalized_country_code", "US").put("normalized_os", "Windows")
             .put("normalized_os_version", "10").put("sample_id", "42").build());
     String expected = Json.asString(ImmutableMap.<String, Object>builder()
+        .put("client_id", "5c49ec73-4350-45a0-9c8a-6c8f5aded0da")
         .put("document_id", "6c49ec73-4350-45a0-9c8a-6c8f5aded0cf")
         .put("metadata", ImmutableMap.<String, Object>builder()
             .put("document_namespace", "telemetry").put("document_version", "4")
             .put("document_type", "main")
             .put("geo",
-                ImmutableMap
-                    .<String, String>builder().put("country", "US").put("subdivision1", "WA")
-                    .put("subdivision2", "Clark").put("city", "Vancouver").build())
+                ImmutableMap.<String, String>builder().put("country", "US")
+                    .put("subdivision1", "WA").put("subdivision2", "Clark").put("city", "Vancouver")
+                    .build())
             .put("header",
                 ImmutableMap.<String, String>builder().put("date", "Mon, 12 Mar 2018 21:02:18 GMT")
                     .put("dnt", "1").put("x_pingsender_version", "1.0")
