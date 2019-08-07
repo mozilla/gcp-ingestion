@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
+import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
@@ -73,10 +74,9 @@ public class PubsubMessageToTableRow
     raw, decoded, payload
   }
 
-  public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
   public static final String ADDITIONAL_PROPERTIES = "additional_properties";
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
-      .setField(SUBMISSION_TIMESTAMP);
+      .setField(ParseProxy.SUBMISSION_TIMESTAMP);
 
   // We have hit rate limiting issues that have sent valid data to error output, so we make the
   // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
