@@ -194,8 +194,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
     assertThat(errorOutputLines, Matchers.hasSize(2));
   }
 
-  @Test
-  public void canWriteWithMixedMethod() throws Exception {
+  private void canWriteWithMixedMethod(String streamingDocTypes) throws Exception {
     String table = "my_test_table";
     TableId tableId = TableId.of(dataset, table);
 
@@ -218,7 +217,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--bqWriteMethod=mixed",
-        "--bqStreamingDocTypes=my-namespace/my-test", "--errorOutputType=file",
+        "--bqStreamingDocTypes=" + streamingDocTypes, "--errorOutputType=file",
         "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
         "--schemasLocation=schemas.tar.gz", "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutput=" + errorOutput });
@@ -231,6 +230,16 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
     List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
     assertThat(errorOutputLines, Matchers.hasSize(2));
+  }
+
+  @Test
+  public void canWriteWithMixedMethodStreamingOneDocType() throws Exception {
+    canWriteWithMixedMethod("my-namespace/my-test");
+  }
+
+  @Test
+  public void canWriteWithMixedMethodStreamingAllDocTypes() throws Exception {
+    canWriteWithMixedMethod("*");
   }
 
   @Test
