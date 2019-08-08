@@ -41,16 +41,18 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
 
   private static final String URI = "uri";
   private static final List<String> URI_ATTRIBUTES = ImmutableList //
-      .of("uri", "app_name", "app_version", "app_update_channel", "app_build_id");
+      .of("uri", ParseUri.APP_NAME, ParseUri.APP_VERSION, ParseUri.APP_UPDATE_CHANNEL,
+          ParseUri.APP_BUILD_ID);
 
   // These are identifying fields that we want to include in the payload so that the payload
   // can be replayed through Beam jobs even if PubSub attributes are lost; this stripping of
-  // attributes occurs for BQ streaming insert errors.
+  // attributes occurs for BQ streaming insert errors. These fields are also useful when emitting
+  // payload bytes to BQ.
   public static final List<String> IDENTIFYING_FIELDS = ImmutableList //
-      .of("document_namespace", "document_type", "document_version");
+      .of(ParseUri.DOCUMENT_NAMESPACE, ParseUri.DOCUMENT_TYPE, ParseUri.DOCUMENT_VERSION);
 
   private static final List<String> TOP_LEVEL_STRING_FIELDS = ImmutableList.of(
-      "submission_timestamp", "document_id", //
+      ParseProxy.SUBMISSION_TIMESTAMP, ParseUri.DOCUMENT_ID, //
       NormalizeAttributes.NORMALIZED_APP_NAME, NormalizeAttributes.NORMALIZED_CHANNEL,
       NormalizeAttributes.NORMALIZED_OS, NormalizeAttributes.NORMALIZED_OS_VERSION,
       NormalizeAttributes.NORMALIZED_COUNTRY_CODE);

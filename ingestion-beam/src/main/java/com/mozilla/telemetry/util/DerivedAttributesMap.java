@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.util;
 
 import com.google.common.collect.ForwardingMap;
+import com.mozilla.telemetry.decoder.ParseProxy;
 import java.util.Map;
 import java.util.Optional;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -68,7 +69,8 @@ public class DerivedAttributesMap extends ForwardingMap<String, String> {
   }
 
   private String submissionTimestampSubstring(int beginIndex, int endIndex) {
-    String timestamp = Optional.ofNullable(attributes.get("submission_timestamp")).orElse("");
+    String timestamp = Optional.ofNullable(attributes.get(ParseProxy.SUBMISSION_TIMESTAMP))
+        .orElse("");
     if (timestamp.length() >= endIndex) {
       return timestamp.substring(beginIndex, endIndex);
     } else {

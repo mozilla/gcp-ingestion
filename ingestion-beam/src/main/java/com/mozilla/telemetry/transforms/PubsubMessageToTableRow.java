@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
+import com.mozilla.telemetry.decoder.ParsePayload;
+import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
@@ -73,10 +75,10 @@ public class PubsubMessageToTableRow
     raw, decoded, payload
   }
 
-  public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
+  public static final String PAYLOAD = "payload";
   public static final String ADDITIONAL_PROPERTIES = "additional_properties";
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
-      .setField(SUBMISSION_TIMESTAMP);
+      .setField(ParseProxy.SUBMISSION_TIMESTAMP);
 
   // We have hit rate limiting issues that have sent valid data to error output, so we make the
   // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
@@ -206,19 +208,34 @@ public class PubsubMessageToTableRow
     return result;
   }
 
+  /**
+   * Turn the message into a TableRow that contains (likely gzipped) bytes as a "payload" field,
+   * which is the format suitable for the "raw payload" tables in BigQuery that we use for
+   * errors and recovery from pipeline failures.
+   *
+   * <p>We include all attributes as fields. It is up to the configured schema for the destination
+   * table to determine which of those actually appear as fields; some of the attributes will be
+   * thrown away.
+   */
   @VisibleForTesting
   static TableRow rawTableRow(PubsubMessage message) {
     TableRow tableRow = new TableRow();
     message.getAttributeMap().forEach(tableRow::set);
-    tableRow.set("payload", message.getPayload());
+    tableRow.set(PAYLOAD, message.getPayload());
     return tableRow;
   }
 
+  /**
+   * Like {@link #rawTableRow(PubsubMessage)}, but uses the nested metadata format of decoded pings.
+   */
   @VisibleForTesting
   static TableRow decodedTableRow(PubsubMessage message) {
     TableRow tableRow = new TableRow();
     AddMetadata.attributesToMetadataPayload(message.getAttributeMap()).forEach(tableRow::set);
-    tableRow.set("payload", message.getPayload());
+    // Also include client_id if present.
+    Optional.ofNullable(message.getAttribute(ParsePayload.CLIENT_ID))
+        .ifPresent(clientId -> tableRow.set(ParsePayload.CLIENT_ID, clientId));
+    tableRow.set(PAYLOAD, message.getPayload());
     return tableRow;
   }
 
