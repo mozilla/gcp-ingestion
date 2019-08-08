@@ -20,15 +20,6 @@
         <!-- MAVEN_OPTS environment variable configuration is not picked up by jacoco, so we configure memory here -->
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
-
-        <!-- We are patching WriteFiles.java from Beam by including it in this repository;
-             be sure to check for updates to WriteFiles.java when bumping the beam version. -->
-        <beam.version>2.13.0</beam.version>
-
-        <!-- Keep these dependency versions in sync with those pulled in by beam;
-             check https://mvnrepository.com/artifact/org.apache.beam -->
-        <google-cloud.version>1.49.0</google-cloud.version>
-        <jackson.version>2.9.9</jackson.version>
     </properties>
 
     <repositories>
