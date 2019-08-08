@@ -374,13 +374,17 @@ public abstract class Write
             .apply("PartitionStreamingVsFileLoads", Partition.of(2, //
                 (message, numPartitions) -> {
                   message = PubsubConstraints.ensureNonNull(message);
-                  final String namespace = message.getAttribute("document_namespace");
-                  final String docType = message.getAttribute("document_type");
                   final boolean shouldStream;
-                  if (namespace == null || docType == null) {
-                    shouldStream = false;
+                  if (streamingDocTypes.get().contains("*")) {
+                    shouldStream = true;
                   } else {
-                    shouldStream = streamingDocTypes.get().contains(namespace + "/" + docType);
+                    final String namespace = message.getAttribute("document_namespace");
+                    final String docType = message.getAttribute("document_type");
+                    if (namespace == null || docType == null) {
+                      shouldStream = false;
+                    } else {
+                      shouldStream = streamingDocTypes.get().contains(namespace + "/" + docType);
+                    }
                   }
                   if (shouldStream && message
                       .getPayload().length < BigQueryWriteMethod.streaming.maxPayloadBytes) {
