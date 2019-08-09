@@ -535,7 +535,7 @@ Use spotless to automatically reformat code:
 mvn spotless:apply
 ```
 
-or use just check what changes it requires:
+or just check what changes it requires:
 
 ```bash
 mvn spotless:check
