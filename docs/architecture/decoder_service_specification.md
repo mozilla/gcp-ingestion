@@ -3,22 +3,6 @@
 This document specifies the behavior of the service that decodes messages
 in the Structured Ingestion pipeline.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [Data Flow](#data-flow)
-  - [Implementation](#implementation)
-  - [Decoding Errors](#decoding-errors)
-    - [Error message schema](#error-message-schema)
-  - [Raw message schema](#raw-message-schema)
-  - [Decoded message metadata schema](#decoded-message-metadata-schema)
-- [Other Considerations](#other-considerations)
-  - [Message Acks](#message-acks)
-  - [Deduplication](#deduplication)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 ## Data Flow
 
 1. Consume messages from Google Cloud PubSub raw topic
@@ -69,7 +53,7 @@ required group attributes {
 
 ### Raw message schema
 
-See [Edge Server PubSub Message Schema](edge.md#edge-server-pubsub-message-schema).
+See [Edge Server PubSub Message Schema](edge_server_specification.md#edge-server-pubsub-message-schema).
 
 ### Decoded message metadata schema
 

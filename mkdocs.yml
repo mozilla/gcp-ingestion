@@ -1,0 +1,18 @@
+site_name: GCP Ingestion
+nav:
+  - Home: index.md
+  - Edge Ingestion: ingestion-edge/index.md
+  - Beam Ingestion:
+    - Overview: ingestion-beam/index.md
+    - Ingestion testing workflow: ingestion-beam/ingestion_testing_workflow.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Differences from AWS: architecture/differences_from_aws.md
+    - Pain Points: architecture/pain_points.md
+    - Edge Migration Plan: architecture/edge_migration_plan.md
+    - Reliability: architecture/reliability.md
+    - Test requirements: architecture/test_requirements.md
+    - Landfill Service Specification: architecture/landfill_service_specification.md
+    - Edge Server Specification: architecture/edge_server_specification.md
+    - BigQuery Sink Specification: architecture/bigquery_sink_specification.md
+    - Decoder Service Specification: architecture/decoder_service_specification.md

@@ -2,19 +2,7 @@
 
 This document specifies the testing required for GCP Ingestion components.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
-- [Exceptions](#exceptions)
-- [Test Phases](#test-phases)
-- [Test Categories](#test-categories)
-  - [Unit Tests](#unit-tests)
-  - [Integration Tests](#integration-tests)
-  - [Load Tests](#load-tests)
-  - [Slow Load Tests](#slow-load-tests)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Exceptions
 

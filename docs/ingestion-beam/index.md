@@ -1,67 +1,17 @@
-[![CircleCI](https://circleci.com/gh/mozilla/gcp-ingestion.svg?style=svg&circle-token=d98a470269580907d5c6d74d0e67612834a21be7)](https://circleci.com/gh/mozilla/gcp-ingestion)
-
 # Apache Beam Jobs for Ingestion
 
-This java module contains our Apache Beam jobs for use in Ingestion.
+This ingestion-beam java module contains our [Apache Beam](https://beam.apache.org/) jobs for use in Ingestion.
 Google Cloud Dataflow is a Google Cloud Platform service that natively runs
 Apache Beam jobs.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+The source code lives in the [ingestion-beam](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam)
+subdirectory of the gcp-ingestion repository.
 
-
-- [Code Formatting](#code-formatting)
-- [Sink Job](#sink-job)
-  - [Supported Input and Outputs](#supported-input-and-outputs)
-  - [Encoding](#encoding)
-  - [Output Path Specification](#output-path-specification)
-    - [BigQuery](#bigquery)
-    - [Protocol](#protocol)
-    - [Attribute placeholders](#attribute-placeholders)
-    - [File prefix](#file-prefix)
-  - [Executing Jobs](#executing-jobs)
-    - [Locally](#locally)
-    - [On Dataflow](#on-dataflow)
-    - [On Dataflow with templates](#on-dataflow-with-templates)
-    - [In streaming mode](#in-streaming-mode)
-- [Decoder Job](#decoder-job)
-  - [Transforms](#transforms)
-    - [Parse URI](#parse-uri)
-    - [Decompress](#decompress)
-    - [GeoIP Lookup](#geoip-lookup)
-    - [Parse User Agent](#parse-user-agent)
-  - [Executing Decoder Jobs](#executing-decoder-jobs)
-- [Republisher Job](#republisher-job)
-  - [Capabilities](#capabilities)
-    - [Marking Messages As Seen](#marking-messages-as-seen)
-    - [Debug Republishing](#debug-republishing)
-    - [Per-`docType` Republishing](#per-doctype-republishing)
-    - [Per-Channel Sampled Republishing](#per-channel-sampled-republishing)
-  - [Executing Republisher Jobs](#executing-republisher-jobs)
-- [Testing](#testing)
-- [License](#license)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Code Formatting
-
-Use spotless to automatically reformat code:
-
-```bash
-mvn spotless:apply
-```
-
-or use just check what changes it requires:
-
-```bash
-mvn spotless:check
-```
-
-# Sink Job
+## Sink Job
 
 A job for delivering messages between Google Cloud services.
 
-## Supported Input and Outputs
+### Supported Input and Outputs
 
 Supported inputs:
 
@@ -83,7 +33,7 @@ Supported error outputs, must include attributes and must not validate messages:
  * stdout with JSON encoding
  * stderr with JSON encoding
 
-## Encoding
+### Encoding
 
 Internally messages are stored and transported as
 [PubsubMessage](https://beam.apache.org/documentation/sdks/javadoc/2.6.0/org/apache/beam/sdk/io/gcp/pubsub/PubsubMessage.html).
@@ -120,12 +70,12 @@ The above file when stored in the `text` format:
 Note that the newline embedded at the end of the second JSON message results in
 two text messages, one of which is blank.
 
-## Output Path Specification
+### Output Path Specification
 
 Depending on the specified output type, the `--output` path that you provide controls
 several aspects of the behavior.
 
-### BigQuery
+#### BigQuery
 
 When `--outputType=bigquery`, `--output` is a `tableSpec` of form `dataset.tablename`
 or the more verbose `projectId:dataset.tablename`. The values can contain
@@ -146,7 +96,7 @@ payloads.
 Instead, records missing an attribute required by a placeholder
 will be redirected to error output if no default is provided.
 
-### Protocol
+#### Protocol
 
 When `--outputType=file`, `--output` may be prefixed by a protocol specifier 
 to determine the
@@ -156,7 +106,7 @@ Cloud Storage, use a `gs://` path like:
 
     --output=gs://mybucket/somdir/myfileprefix
 
-### Attribute placeholders
+#### Attribute placeholders
 
 We support `FileIO`'s "Dynamic destinations" feature (`FileIO.writeDynamic`) where
 it's possible to route individual messages to different output locations based
@@ -204,7 +154,7 @@ on attribute names and default values used in placeholders:
 - attribute names may not contain curly braces (`{` or `}`)
 - default values may not contain curly braces (`{` or `}`)
 
-### File prefix
+#### File prefix
 
 Individual files are named by replacing `:` with `-` in the default format discussed in
 the "File naming" section of Beam's
@@ -226,12 +176,12 @@ An output file might be:
 
     /tmp/output/out--290308-12-21T20-00-00.000Z--290308-12-21T20-10-00.000Z-00000-of-00001.ndjson
 
-## Executing Jobs
+### Executing Jobs
 
 Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove
 `\` escaped newlines in `"`s.
 
-### Locally
+#### Locally
 
 If you install Java and maven, you can invoke `mvn` directly in the following commands;
 be aware, though, that Java 8 is the target JVM and some reflection warnings may be thrown on
@@ -277,7 +227,7 @@ cat tmp/output/*
 ./bin/mvn compile exec:java -Dexec.args=--help=SinkOptions
 ```
 
-### On Dataflow
+#### On Dataflow
 
 ```bash
 # Pick a bucket to store files in
@@ -309,7 +259,7 @@ gcloud dataflow jobs list
 gsutil cat $BUCKET/output/*
 ```
 
-### On Dataflow with templates
+#### On Dataflow with templates
 
 Dataflow templates make a distinction between
 [runtime parameters that implement the `ValueProvider` interface](https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface)
@@ -358,7 +308,7 @@ gcloud dataflow jobs show "$JOB_ID"
 gsutil cat $BUCKET/output/*
 ```
 
-### In streaming mode
+#### In streaming mode
 
 If `--inputType=pubsub`, Beam will execute in streaming mode, requiring some
 extra configuration for file-based outputs. You will need to specify sharding like:
@@ -378,25 +328,25 @@ As codified in [apache/beam/pull/1952](https://github.com/apache/beam/pull/1952)
 the Dataflow runner suggests a reasonable starting point `numShards` is `2 * maxWorkers`
 or 10 if `--maxWorkers` is unspecified.
 
-# Decoder Job
+## Decoder Job
 
 A job for normalizing ingestion messages.
 
-## Transforms
+### Transforms
 
 These transforms are currently executed against each message in order.
 
-### Parse URI
+#### Parse URI
 
 Attempt to extract attributes from `uri`, on failure send messages to the
 configured error output.
 
-### Decompress
+#### Decompress
 
 Attempt to decompress payload with gzip, on failure pass the message through
 unmodified.
 
-### GeoIP Lookup
+#### GeoIP Lookup
 
 1. Extract `ip` from the `x_forwarded_for` attribute
    * when the `x_pipeline_proxy` attribute is not present, use the
@@ -416,12 +366,12 @@ unmodified.
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
 1. Remove any `null` values added to attributes
 
-### Parse User Agent
+#### Parse User Agent
 
 Attempt to extract browser, browser version, and os from the `user_agent`
 attribute, drop any nulls, and remove `user_agent` from attributes.
 
-## Executing Decoder Jobs
+### Executing Decoder Jobs
 
 Decoder jobs are executed the same way as [executing sink jobs](#executing-jobs)
 but with a few extra flags:
@@ -458,7 +408,7 @@ echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > 
 "
 ```
 
-# Republisher Job
+## Republisher Job
 
 A job for republishing subsets of decoded messages to new destinations.
 
@@ -471,28 +421,28 @@ in `Cloud MemoryStore` for deduplication purposes. That functionality exists
 here to avoid the expense of an additional separate consumer of the full
 decoded topic.
 
-## Capabilities
+### Capabilities
 
-### Marking Messages As Seen
+#### Marking Messages As Seen
 
 The job needs to connect to Redis in order to mark `document_id`s of consumed
 messages as seen. The Decoder is able to use that information to drop duplicate
 messages flowing through the pipeline.
 
-### Debug Republishing
+#### Debug Republishing
 
 If `--enableDebugDestination` is set, messages containing an `x_debug_id`
 attribute will be republished to a destination that's configurable at runtime.
 This is currently expected to be a feature specific to structured ingestion,
 so should not be set for `telemetry-decoded` input.
 
-### Per-`docType` Republishing
+#### Per-`docType` Republishing
 
 If `--perDocTypeEnabledList` is provided, a separate producer will be created
 for each `docType` specified in the given comma-separated list.
 See the `--help` output for details on format.
 
-### Per-Channel Sampled Republishing
+#### Per-Channel Sampled Republishing
 
 If `--perChannelSampleRatios` is provided, a separate producer will be created
 for each specified release channel. The messages will be randomly sampled
@@ -501,7 +451,7 @@ This is currently intended as a feature only for telemetry data, so should
 not be set for `structured-decoded` input.
 See the `--help` output for details on format.
 
-## Executing Republisher Jobs
+### Executing Republisher Jobs
 
 Republisher jobs are executed the same way as [executing sink jobs](#executing-jobs)
 but with a few differences in flags. You'll need to set the `mainClass`:
@@ -551,7 +501,7 @@ echo '{"payload":"dGVzdA==","attributeMap":{"x_debug_id":"mysession"}}' > tmp/in
 "
 ```
 
-# Testing
+## Testing
 
 Before anything else, be sure to download the test data:
 
@@ -575,10 +525,18 @@ use the `bin/mvn` executable to run maven in docker:
 ```
 
 To run the project in a sandbox against production data, see this document on
-![configuring an integration testing workflow](../docs/ingestion_testing_workflow.md).
+[configuring an integration testing workflow](./ingestion_testing_workflow.md).
 
-# License
+## Code Formatting
 
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/.
+Use spotless to automatically reformat code:
+
+```bash
+mvn spotless:apply
+```
+
+or use just check what changes it requires:
+
+```bash
+mvn spotless:check
+```

@@ -3,31 +3,6 @@
 This document specifies the behavior of the server that accepts submissions
 from HTTP clients e.g. Firefox telemetry.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [General Data Flow](#general-data-flow)
-  - [Namespaces](#namespaces)
-  - [Forwarding to the pipeline](#forwarding-to-the-pipeline)
-  - [Edge Server PubSub Message Schema](#edge-server-pubsub-message-schema)
-- [Server Request/Response](#server-requestresponse)
-  - [GET Request](#get-request)
-  - [GET Response codes](#get-response-codes)
-  - [POST/PUT Request](#postput-request)
-    - [Legacy Systems](#legacy-systems)
-  - [POST/PUT Response codes](#postput-response-codes)
-  - [Other Response codes](#other-response-codes)
-- [Other Considerations](#other-considerations)
-  - [Compression](#compression)
-  - [Bad Messages](#bad-messages)
-  - [PubSub Topics](#pubsub-topics)
-  - [GeoIP Lookups](#geoip-lookups)
-  - [Data Retention](#data-retention)
-  - [Submission Timestamp Format](#submission-timestamp-format)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 ## General Data Flow
 
 HTTP submissions come in from the wild, hit a load balancer, then optionally an

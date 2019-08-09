@@ -3,17 +3,7 @@
 This document specifies the behavior of the service that batches raw messages
 into long term storage.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
-- [Data Flow](#data-flow)
-  - [Implementation](#implementation)
-  - [Latency](#latency)
-- [Other Considerations](#other-considerations)
-  - [Message Acks](#message-acks)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Data Flow
 

@@ -3,21 +3,7 @@
 This document specifies the behavior of the service that delivers decoded
 messages into BigQuery.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
-- [Data Flow](#data-flow)
-  - [Implementation](#implementation)
-  - [Configuration](#configuration)
-  - [Coerce Types](#coerce-types)
-  - [Accumulate Unknown Values As `additional_properties`](#accumulate-unknown-values-as-additional_properties)
-  - [Errors](#errors)
-    - [Error Message Schema](#error-message-schema)
-- [Other Considerations](#other-considerations)
-  - [Message Acks](#message-acks)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Data Flow
 
@@ -86,7 +72,7 @@ retries are handled automatically and all errors returned are non-transient.
 #### Error Message Schema
 
 Always include the error attributes specified in the [Decoded Error Message
-Schema](decoder.md#error-message-schema).
+Schema](decoder_service_specification.md#error-message-schema).
 
 Encode errors received as type `TableRow` as JSON in the payload of a
 `PubsubMessage`, and add error attributes.
