@@ -188,6 +188,8 @@
                         <excludes>
                             <!-- exclude beam patch from formatting -->
                             <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/WriteTables.java</exclude>
+                            <!-- exclude auto-generated protocol buffer file from formatting -->
+                            <exclude>src/main/java/com/mozilla/telemetry/heka/Heka.java</exclude>
                         </excludes>
                         <licenseHeader>
                             <!-- end license header with extra trailing newline to separate from package statement -->

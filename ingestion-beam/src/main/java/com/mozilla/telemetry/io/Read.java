@@ -6,6 +6,7 @@ package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.storage.v1beta1.ReadOptions.TableReadOptions;
+import com.mozilla.telemetry.heka.HekaTransform;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
@@ -17,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.beam.sdk.coders.ListCoder;
+import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
@@ -24,6 +27,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
@@ -52,7 +56,7 @@ public abstract class Read
     }
   }
 
-  /** Implementation of reading from local or remote files. */
+  /** Implementation of reading from line-delimited local or remote files. */
   public static class FileInput extends Read {
 
     private final ValueProvider<String> fileSpec;
@@ -69,7 +73,27 @@ public abstract class Read
     }
   }
 
-  /** Implementation of reading from local or remote files. */
+  /** Implementation of reading from heka blobs stored as files. */
+  public static class HekaInput extends Read {
+
+    private final ValueProvider<String> fileSpec;
+
+    public HekaInput(ValueProvider<String> fileSpec) {
+      this.fileSpec = fileSpec;
+    }
+
+    @Override
+    public Result<PCollection<PubsubMessage>> expand(PBegin input) {
+      Result<PCollection<List<PubsubMessage>>> result = input
+          .apply(FileIO.match().filepattern(fileSpec)).apply(FileIO.readMatches())
+          .apply(new HekaTransform());
+      result.output().setCoder(ListCoder.of(PubsubMessageWithAttributesCoder.of()));
+      return Result.of(result.output().apply(Flatten.iterables()), result.errors());
+    }
+
+  }
+
+  /** Implementation of reading from BigQuery. */
   public static class BigQueryInput extends Read {
 
     private final ValueProvider<String> tableSpec;
