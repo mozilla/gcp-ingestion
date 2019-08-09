@@ -1,8 +1,8 @@
 site_name: GCP Ingestion
 nav:
   - Home: index.md
-  - Edge Ingestion: ingestion-edge/index.md
-  - Beam Ingestion:
+  - ingestion-edge: ingestion-edge/index.md
+  - ingestion-beam:
     - Overview: ingestion-beam/index.md
     - Ingestion testing workflow: ingestion-beam/ingestion_testing_workflow.md
   - Architecture:

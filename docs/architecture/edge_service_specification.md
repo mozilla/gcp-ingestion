@@ -29,7 +29,7 @@ configuration options.
 The message is written to PubSub. If the message cannot be written to PubSub it
 is written to a disk queue that will periodically retry writing to PubSub.
 
-### Edge Server PubSub Message Schema
+### PubSub Message Schema
 
 ```
 required string data                   // base64 encoded body

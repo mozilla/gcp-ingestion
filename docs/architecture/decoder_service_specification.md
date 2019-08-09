@@ -53,7 +53,7 @@ required group attributes {
 
 ### Raw message schema
 
-See [Edge Server PubSub Message Schema](edge_server_specification.md#edge-server-pubsub-message-schema).
+See [Edge Service PubSub Message Schema](edge_service_specification.md#pubsub-message-schema).
 
 ### Decoded message metadata schema
 

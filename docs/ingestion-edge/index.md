@@ -2,9 +2,15 @@
 
 A simple service for delivering HTTP messages to Google Cloud PubSub
 
+The source code lives in the [ingestion-edge](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam)
+subdirectory of the gcp-ingestion repository.
+
 ## Building
 
-Install and update dependencies as-needed
+We assume that you have [docker-compose](https://docs.docker.com/compose/)
+installed.
+
+From inside the `ingestion-edge` subdirectory:
 
 ```bash
 # docker-compose
