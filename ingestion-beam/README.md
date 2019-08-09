@@ -553,6 +553,14 @@ echo '{"payload":"dGVzdA==","attributeMap":{"x_debug_id":"mysession"}}' > tmp/in
 
 # Testing
 
+Before anything else, be sure to download the test data:
+
+```bash
+./bin/download-cities15000
+./bin/download-geolite2
+./bin/download-schemas
+```
+
 Run tests locally with [CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
 
 ```bash
