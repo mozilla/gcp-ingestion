@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 /**
@@ -43,6 +44,15 @@ public class FailureMessage {
    */
   public static PubsubMessage of(Object caller, byte[] payload, Throwable e) {
     return new PubsubMessage(payload, errorAttributes(caller, e));
+  }
+
+  /**
+   * Return a PubsubMessage corresponding to an error reading from a file.
+   */
+  public static PubsubMessage of(Object caller, ReadableFile readableFile, Throwable e) {
+    Map<String, String> attributes = errorAttributes(caller, e);
+    attributes.put("readable_file", readableFile.toString());
+    return new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes);
   }
 
   private static Map<String, String> errorAttributes(Object caller, Throwable e) {
