@@ -179,7 +179,12 @@ workflows:
   build:
     jobs:
     - spelling
-    - docs
+    - docs:
+        filters:
+          branches:
+            only: master
+          tags:
+            only: /.*/
     - ingestion-edge
     - ingestion-edge-release:
         filters:
