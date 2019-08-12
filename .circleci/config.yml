@@ -22,7 +22,10 @@ jobs:
           "84:b0:66:dd:ec:68:b1:45:9d:5d:66:fd:4a:4f:1b:57"
     - run:
         name: Build and deploy docs
-        command: mkdocs gh-deploy
+        command: |
+          if [ $CIRCLE_BRANCH == "master" ]; then
+            mkdocs gh-deploy
+          fi
 
   ingestion-edge: &ingestion-edge
     working_directory: /root/project/ingestion-edge
@@ -181,8 +184,6 @@ workflows:
     - spelling
     - docs:
         filters:
-          branches:
-            only: master
           tags:
             only: /.*/
     - ingestion-edge
