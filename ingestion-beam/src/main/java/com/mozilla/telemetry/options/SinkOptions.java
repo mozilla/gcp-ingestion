@@ -78,8 +78,7 @@ public interface SinkOptions extends PipelineOptions {
       + " but this option can take a SQL text filtering statement, similar to a WHERE clause;"
       + " currently, only a single predicate that is a comparison between a column and a constant"
       + " value is supported; a likely choice to limit partitions would be something like"
-      + " \"CAST(submission_timestamp AS DATE)"
-      + " BETWEEN CAST('2020-01-10' AS DATE) AND CAST('2020-01-14' AS DATE)\"; see"
+      + " \"CAST(submission_timestamp AS DATE) BETWEEN '2020-01-10' AND '2020-01-14'\"; see"
       + " https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1beta1#tablereadoptions")
   String getBqRowRestriction();
 
