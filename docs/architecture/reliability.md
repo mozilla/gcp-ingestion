@@ -5,18 +5,6 @@ Percentage determined by the Reliability Target below. If a component does
 not meet that then a Stability Work Period should be assigned
 to each software engineer supporting the component.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [Disclaimer and Purpose](#disclaimer-and-purpose)
-- [Reliability Target](#reliability-target)
-- [Definitions](#definitions)
-- [Exclusions](#exclusions)
-- [Additional Information](#additional-information)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 ## Disclaimer and Purpose
 
 **This document is intended solely for those directly running, writing, and

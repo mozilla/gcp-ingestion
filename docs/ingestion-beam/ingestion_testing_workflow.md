@@ -1,21 +1,10 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [Ingestion Testing Workflow](#ingestion-testing-workflow)
-  - [Setting up the GCS project](#setting-up-the-gcs-project)
-  - [Bootstrapping schemas from `mozilla-pipeline-schemas`](#bootstrapping-schemas-from-mozilla-pipeline-schemas)
-  - [Building the project](#building-the-project)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Ingestion Testing Workflow
 
 The ingestion-beam handles data flow of documents from the edge into various
 sinks. You may be interested in standing up a small testing instance to validate
 the integration of the various components.
 
-![diagrams/workflow.mmd](diagrams/workflow.svg)
+![diagrams/workflow.mmd](../diagrams/workflow.svg)
 __Figure__: _An overview of the various components necessary to query BigQuery
 against data from a PubSub subscription._
 

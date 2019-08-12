@@ -1,20 +1,6 @@
-# Overview
+# Pain points
 
 A running list of things that are suboptimal in GCP.
-
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [App Engine](#app-engine)
-- [Dataflow](#dataflow)
-  - [`BigQueryIO.Write`](#bigqueryiowrite)
-  - [`FileIO.Write`](#fileiowrite)
-  - [`PubsubIO.Write`](#pubsubiowrite)
-  - [Templates](#templates)
-- [PubSub](#pubsub)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # App Engine
 
