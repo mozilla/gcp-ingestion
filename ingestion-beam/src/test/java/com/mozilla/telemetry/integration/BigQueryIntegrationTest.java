@@ -368,7 +368,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void canLoadDecodedFormat() throws Exception {
+  public void canLoadAndReadDecodedFormat() throws Exception {
     String table = "my_test_table";
     String tableSpec = String.format("%s.%s", dataset, table);
     TableId tableId = TableId.of(dataset, table);
@@ -410,12 +410,13 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
     String input = Resources
         .getResource("testdata/bigquery-integration/input-decoded-format.ndjson").getPath();
-    String output = String.format("%s:%s", projectId, tableSpec);
+    String fullyQualifiedTableSpec = String.format("%s:%s", projectId, tableSpec);
 
-    PipelineResult result = Sink
-        .run(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-            "--outputType=bigquery", "--bqWriteMethod=streaming", "--decompressInputPayloads=false",
-            "--outputTableRowFormat=decoded", "--output=" + output, "--errorOutputType=stderr" });
+    PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
+        "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=file_loads",
+        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
+        "--decompressInputPayloads=false", "--outputTableRowFormat=decoded",
+        "--output=" + fullyQualifiedTableSpec, "--errorOutputType=stderr" });
 
     result.waitUntilFinish();
 
@@ -450,6 +451,21 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
             .build()),
         String.join("\n",
             stringValuesQueryWithRetries("SELECT TO_JSON_STRING(t) FROM " + tableSpec + " AS t")));
+
+    String fileOutput = outputPath + "/out";
+    PipelineResult readResult = Sink.run(new String[] { "--inputType=bigquery_table",
+        "--input=" + fullyQualifiedTableSpec, "--project=" + projectId, "--bqReadMethod=storageapi",
+        "--outputFileCompression=UNCOMPRESSED", "--bqSelectedFields=payload",
+        "--bqRowRestriction=CAST(submission_timestamp AS DATE)"
+            + " BETWEEN CAST('2020-01-10' AS DATE) AND CAST('2020-01-14' AS DATE)",
+        "--outputType=file", "--outputFileFormat=json", "--output=" + fileOutput,
+        "--errorOutputType=stderr" });
+
+    List<String> outputLines = Lines.files(fileOutput + "*.ndjson");
+    assertEquals(1, outputLines.size());
+    assertEquals("Output read from BigQuery differed from expectation",
+        Json.asString(ImmutableMap.of("attributeMap", ImmutableMap.of(), "payload", "dGVzdA==")),
+        outputLines.get(0));
   }
 
   private List<String> stringValuesQuery(String query) throws InterruptedException {
