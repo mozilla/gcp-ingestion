@@ -457,7 +457,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
         "--input=" + fullyQualifiedTableSpec, "--project=" + projectId, "--bqReadMethod=storageapi",
         "--outputFileCompression=UNCOMPRESSED", "--bqSelectedFields=payload",
         "--bqRowRestriction=CAST(submission_timestamp AS DATE)"
-            + " BETWEEN CAST('2020-01-10' AS DATE) AND CAST('2020-01-14' AS DATE)",
+            + " BETWEEN '2020-01-10' AND '2020-01-14'",
         "--outputType=file", "--outputFileFormat=json", "--output=" + fileOutput,
         "--errorOutputType=stderr" });
 
