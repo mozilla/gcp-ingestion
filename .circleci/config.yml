@@ -176,6 +176,7 @@ workflows:
   build:
     jobs:
     - spelling
+    - docs
     - ingestion-edge
     - ingestion-edge-release:
         filters:
