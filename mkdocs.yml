@@ -13,6 +13,6 @@ nav:
     - Reliability: architecture/reliability.md
     - Test requirements: architecture/test_requirements.md
     - Landfill Service Specification: architecture/landfill_service_specification.md
-    - Edge Server Specification: architecture/edge_server_specification.md
+    - Edge Server Specification: architecture/edge_service_specification.md
     - BigQuery Sink Specification: architecture/bigquery_sink_specification.md
     - Decoder Service Specification: architecture/decoder_service_specification.md
