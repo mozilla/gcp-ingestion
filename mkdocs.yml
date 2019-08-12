@@ -1,4 +1,6 @@
 site_name: GCP Ingestion
+site_description: Mozilla Telemetry ingestion on Google Cloud Platform
+site_author: Mozilla Data Platform Team
 nav:
   - Home: index.md
   - ingestion-edge: ingestion-edge/index.md
