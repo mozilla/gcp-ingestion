@@ -13,4 +13,4 @@ There are currently two components:
   [Apache Beam](https://beam.apache.org/) jobs for streaming and batch
   transformations of ingested messages
 
-For more information, see [mozilla.github.io/gcp-ingestion](the documentation).
+For more information, see [the documentation](https://mozilla.github.io/gcp-ingestion).
