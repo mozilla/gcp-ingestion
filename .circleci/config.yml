@@ -13,13 +13,13 @@ jobs:
     docker:
     - image: circleci/python:3.7
     steps:
-      - checkout
-      - run:
-          name: Install dependencies
-          command: sudo pip install mkdocs markdown-include
-      - run:
-          name: Build and deploy docs
-          command: mkdocs gh-deploy
+    - checkout
+    - run:
+        name: Install dependencies
+        command: sudo pip install mkdocs markdown-include
+    - run:
+        name: Build and deploy docs
+        command: mkdocs gh-deploy
 
   ingestion-edge: &ingestion-edge
     working_directory: /root/project/ingestion-edge
