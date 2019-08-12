@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Overview - GCP Ingestion</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">GCP Ingestion</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li >
+                                <a href="../../ingestion-edge/">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../ingestion-beam/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../../ingestion-beam/ingestion_testing_workflow/">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li class="active">
+    <a href="./">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../differences_from_aws/">Differences from AWS</a>
+</li>
+                                    
+<li >
+    <a href="../pain_points/">Pain Points</a>
+</li>
+                                    
+<li >
+    <a href="../edge_migration_plan/">Edge Migration Plan</a>
+</li>
+                                    
+<li >
+    <a href="../reliability/">Reliability</a>
+</li>
+                                    
+<li >
+    <a href="../test_requirements/">Test requirements</a>
+</li>
+                                    
+<li >
+    <a href="../landfill_service_specification/">Landfill Service Specification</a>
+</li>
+                                    
+<li >
+    <a href="../edge_server_specification.md">Edge Server Specification</a>
+</li>
+                                    
+<li >
+    <a href="../bigquery_sink_specification/">BigQuery Sink Specification</a>
+</li>
+                                    
+<li >
+    <a href="../decoder_service_specification/">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../../ingestion-beam/ingestion_testing_workflow/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../differences_from_aws/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#gcp-ingestion-architecture">GCP Ingestion Architecture</a></li>
+            <li><a href="#architecture-diagram">Architecture Diagram</a></li>
+            <li><a href="#architecture-components">Architecture Components</a></li>
+            <li><a href="#design-decisions">Design Decisions</a></li>
+            <li><a href="#known-issues">Known Issues</a></li>
+            <li><a href="#further-reading">Further Reading</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="gcp-ingestion-architecture">GCP Ingestion Architecture</h1>
+<p>This document specifies the architecture for GCP Ingestion as a whole.</p>
+<h2 id="architecture-diagram">Architecture Diagram</h2>
+<p><img alt="diagram.mmd" src="../diagram.svg" title="Architecture Diagram" /></p>
+<ul>
+<li>The Kubernetes <code>Ingestion Edge</code> sends messages from <code>Producers</code> (e.g.
+  Firefox) to PubSub <code>Raw Topics</code></li>
+<li>The Dataflow <code>Landfill Sink</code> job copies messages from PubSub <code>Raw Topics</code> to
+  <code>Cloud Storage</code></li>
+<li>The Dataflow <code>Decoder</code> job decodes messages from PubSub <code>Raw Topics</code> to
+  PubSub <code>Decoded Topics</code></li>
+<li>The Dataflow <code>Decoder</code> job checks for existence of <code>document_id</code>s in
+     <code>Cloud Memorystore</code> in order to deduplicate messages</li>
+<li>The Dataflow <code>Republisher</code> job reads messages from PubSub <code>Decoded Topics</code>,
+  marks them as seen in <code>Cloud Memorystore</code> and republishes them to various
+  lower volume derived topics including <code>Monitoring Sample Topics</code> and
+  <code>Per DocType Topics</code></li>
+<li>The Dataflow <code>BigQuery Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
+  to <code>BigQuery</code></li>
+<li>The Dataflow <code>Dataset Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
+  to <code>Cloud Storage</code></li>
+</ul>
+<h2 id="architecture-components">Architecture Components</h2>
+<h3 id="ingestion-edge">Ingestion Edge</h3>
+<ul>
+<li>Must send messages from producers to PubSub topics</li>
+<li>Must store messages on disk when PubSub is unavailable</li>
+<li>Must attempt to deliver all new messages to PubSub before storing on disk</li>
+<li>Must not be scaled down when there are messages on disk</li>
+<li>Must respond server error if PubSub and disk are both unavailable</li>
+<li>Must use a 5XX error error code</li>
+<li>Must accept configuration mapping <code>uri</code> to PubSub Topic</li>
+<li>Expected initial topics are Structured Ingestion, Telemetry, and Pioneer</li>
+<li>Must accept configuration defining HTTP headers to capture</li>
+</ul>
+<h3 id="landfill-sink">Landfill Sink</h3>
+<ul>
+<li>Must copy messages from PubSub topics to Cloud Storage</li>
+<li>This copy may be for backfill, recovery, or testing</li>
+<li>Must not ack messages read from PubSub until they are delivered</li>
+<li>Must accept configuration mapping PubSub topics to Cloud Storage locations</li>
+<li>Should retry transient Cloud Storage errors indefinitely</li>
+<li>Should use exponential back-off to determine retry timing</li>
+</ul>
+<h3 id="decoder">Decoder</h3>
+<ul>
+<li>Must decode messages from PubSub topics to PubSub topics</li>
+<li>Must not ack messages read from PubSub until they are delivered</li>
+<li>Must apply the following transforms in order
+  (<a href="../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/">implementations here</a>)</li>
+<li>Parse <code>uri</code> attribute into multiple attributes</li>
+<li>Gzip decompress <code>payload</code> if gzip compressed</li>
+<li>Validate <code>payload</code> using a JSON Schema determined by attributes</li>
+<li>Parse <code>x_pipeline_proxy</code> attribute; if present with a valid value in
+      <a href="https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format">the edge submission timestamp format</a>,
+      archive the value of <code>submission_timestamp</code> to <code>proxy_timestamp</code> and
+      replace with the <code>x_pipeline_proxy</code> value</li>
+<li>Resolve GeoIP from <code>remote_addr</code> or <code>x_forwarded_for</code> attribute into
+      <code>geo_*</code> attributes</li>
+<li>Parse <code>agent</code> attribute into <code>user_agent_*</code> attributes</li>
+<li>Produce <code>normalized_</code> variants of select attributes</li>
+<li>Inject <code>normalized_</code> attributes at the top level and other select
+      attributes into a nested <code>metadata</code> top level key in <code>payload</code></li>
+<li>Should deduplicate messages based on the <code>document_id</code> attribute using
+  <code>Cloud MemoryStore</code></li>
+<li>Must ensure at least once delivery, so deduplication is only "best effort"</li>
+<li>Should delay deduplication to the latest possible stage of the pipeline
+    to minimize the time window between an ID being marked as seen in
+    <code>Republisher</code> and it being checked in <code>Decoder</code></li>
+<li>Must send messages rejected by transforms to a configurable error destination</li>
+<li>Must allow error destinations in PubSub and Cloud Storage</li>
+</ul>
+<h3 id="republisher">Republisher</h3>
+<ul>
+<li>Must copy messages from PubSub topics to PubSub topics</li>
+<li>Must attempt to publish the <code>document_id</code> of each consumed message to
+  <code>Cloud MemoryStore</code></li>
+<li>ID publishing should be "best effort" but must not prevent the message
+    proceeding to further steps in case of errors reaching <code>Cloud MemoryStore</code></li>
+<li>Must ack messages read from PubSub after they are delivered to all
+  matching destinations</li>
+<li>Must not ack messages read from PubSub before they are delivered to all
+  matching destinations</li>
+<li>Must accept configuration enabling republishing of messages to a debug
+  topic if they contain an <code>x_debug_id</code> attribute</li>
+<li>Must accept a compile-time parameter enabling or disabling debug republishing</li>
+<li>Must accept a runtime parameter defining the destination topic</li>
+<li>Must accept configuration enabling republishing of a random sample of the
+  input stream</li>
+<li>Must accept a compile-time parameter setting the sample ratio</li>
+<li>Must accept a runtime parameter defining the destination topic</li>
+<li>Must accept configuration mapping <code>document_type</code>s to PubSub topics</li>
+<li>Must accept a compile-time parameter defining a topic pattern string
+    (may be promoted to runtime if Dataflow adds support for PubSub topic
+    names defined via <code>NestedValueProvider</code>)</li>
+<li>Must accept a compile-time parameter defining which <code>document_type</code>s
+    to republish</li>
+<li>Must only deliver messages with configured destinations</li>
+<li>Must accept configuration mapping <code>document_namespace</code>s to PubSub topics</li>
+<li>Must accept a compile-time parameter defining a map from document
+    namespaces to topics</li>
+<li>Must only deliver messages with configured destinations</li>
+<li>Must accept optional configuration for sampling telemetry data</li>
+<li>Must accept a compile-time parameter defining a topic pattern string
+    (may be promoted to runtime if Dataflow adds support for PubSub topic
+    names defined via <code>NestedValueProvider</code>)</li>
+<li>Must accept compile-time parameters defining the sampling ratio for
+    each channel (nightly, beta, and release)</li>
+</ul>
+<h3 id="bigquery-sink">BigQuery Sink</h3>
+<ul>
+<li>Must copy messages from PubSub topics to BigQuery</li>
+<li>Must not ack messages read from PubSub until they are delivered</li>
+<li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
+<li>Must accept configuration for using streaming or batch loads</li>
+<li>Must transform all field names to lowercase with underscores (<code>snake_case</code>)
+  and perform other field name cleaning to match the transformations
+  expected by the <a href="https://github.com/mozilla/jsonschema-transpiler"><code>jsonschema-transpiler</code></a></li>
+<li>Must set <a href="https://beam.apache.org/releases/javadoc/2.7.0/org/apache/beam/sdk/io/gcp/bigquery/BigQueryIO.Write.html#ignoreUnknownValues--"><code>ignoreUnknownValues</code></a>
+  to <code>true</code></li>
+<li>Should retry transient BigQuery errors indefinitely</li>
+<li>Should use exponential back-off to determine retry timing</li>
+<li>Must send messages rejected by BigQuery to a configurable error destination</li>
+<li>Must allow error destinations in PubSub and Cloud Storage</li>
+</ul>
+<h3 id="dataset-sink">Dataset Sink</h3>
+<ul>
+<li>Must copy messages from PubSub topics to Cloud Storage</li>
+<li>May be used to backfill BigQuery columns previously unspecified in the
+     table schema</li>
+<li>May be used by BigQuery, Spark, and Dataflow to access columns missing
+     from BigQuery Tables</li>
+<li>Must not ack messages read from PubSub until they are delivered</li>
+<li>Must store messages as newline delimited JSON</li>
+<li>May compress Cloud Storage objects using gzip</li>
+<li>Must accept configuration mapping PubSub topics to Cloud Storage locations</li>
+<li>Should accept configuration mapping message attributes to Cloud Storage object
+  names</li>
+<li>Should retry transient Cloud Storage errors indefinitely</li>
+<li>Should use exponential back-off to determine retry timing</li>
+</ul>
+<h3 id="notes">Notes</h3>
+<p>PubSub stores unacknowledged messages for 7 days. Any PubSub subscription more
+than 7 days behind requires a backfill.</p>
+<p>Dataflow will extend ack deadlines indefinitely when consuming messages, and
+will not ack messages until they are processed by an output or GroupByKey
+transform.</p>
+<p>Dataflow jobs achieve at least once delivery by <em>not</em> using GroupByKey
+transforms and <em>not</em> falling more than 7 days behind in processing.</p>
+<h2 id="design-decisions">Design Decisions</h2>
+<h3 id="kubernetes-engine-and-pubsub">Kubernetes Engine and PubSub</h3>
+<p>Kubernetes Engine is a scalable, managed service based on an industry standard.
+PubSub is a simple, scalable, managed service. By comparison a compute instance
+group instead of Kubernetes Engine and Kafka instead of PubSub would require
+more operational overhead and engineering effort for maintenance.</p>
+<h3 id="different-topics-for-raw-and-validated-data">Different topics for "raw" and "validated" data</h3>
+<p>We don't want to have to repeat the validation logic in the case where we have
+multiple consumers of the data. Raw data can be sent to a single topic to
+simplify the edge service and then validated data can be sent to topics split
+by <code>docType</code> and other attributes, in order to allow consumers for specific
+sets of data.</p>
+<h3 id="bigquery">BigQuery</h3>
+<p>BigQuery provides a simple, scalable, managed service for executing SQL queries
+over arbitrarily large or small amounts of data, with built-in schema
+validation, hyperloglog functions, UDF support, and destination tables
+(sometimes called materialized views) for minimizing cost and latency of
+derived tables. Alternatives (such as Presto) would have more operational
+overhead and engineering effort for maintenance, while generally being less
+featureful.</p>
+<h3 id="save-messages-as-newline-delimited-json">Save messages as newline delimited JSON</h3>
+<p>One of the primary challenges of building a real-world data pipeline is
+anticipating and adapting to changes in the schemas of messages flowing through
+the system. Strong schemas and structured data give us many usability and
+performance benefits, but changes to the schema at one point in the pipeline
+can lead to processing errors or dropped data further down the pipeline.</p>
+<p>Saving messages as newline delimited JSON allows us to gracefully handle new
+fields added upstream without needing to specify those fields completely before
+they are stored. New columns can be added to a table's schema and then restored
+via a BigQuery load operation.</p>
+<h3 id="use-destination-tables">Use destination tables</h3>
+<p>For complex queries that are calculated over time-based windows of data, using
+destination tables allows us to save time and cost by only querying each new
+window of data once.</p>
+<h3 id="use-views-for-user-facing-data">Use views for user-facing data</h3>
+<p>Views we create in BigQuery can be a stable interface for users while we
+potentially change versions or implementations of a pipeline behind the scenes.
+If we wanted to rewrite a materialized view, for example, we might run the new
+and old definitions in parallel, writing to separate tables; when we’re
+comfortable that the new implementation is stable, we could cut users over to
+the new implementation by simply changing the definition of the user-facing
+view.</p>
+<h2 id="known-issues">Known Issues</h2>
+<ul>
+<li>Hard limit of 10,000 columns per table in BigQuery</li>
+<li>Max of 100,000 streaming inserts per second per BigQuery table</li>
+<li>A PubSub topic without any subscriptions drops all messages until a subscription is created</li>
+<li>API Rate Limit: 20 req/sec</li>
+</ul>
+<h2 id="further-reading">Further Reading</h2>
+<p><a href="../differences_from_aws/">Differences from AWS</a></p></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Edge Server Specification - GCP Ingestion</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">GCP Ingestion</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li >
+                                <a href="../../ingestion-edge/">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../ingestion-beam/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../../ingestion-beam/ingestion_testing_workflow/">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../overview/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../differences_from_aws/">Differences from AWS</a>
+</li>
+                                    
+<li >
+    <a href="../pain_points/">Pain Points</a>
+</li>
+                                    
+<li >
+    <a href="../edge_migration_plan/">Edge Migration Plan</a>
+</li>
+                                    
+<li >
+    <a href="../reliability/">Reliability</a>
+</li>
+                                    
+<li >
+    <a href="../test_requirements/">Test requirements</a>
+</li>
+                                    
+<li >
+    <a href="../landfill_service_specification/">Landfill Service Specification</a>
+</li>
+                                    
+<li >
+    <a href="../edge_server_specification.md">Edge Server Specification</a>
+</li>
+                                    
+<li >
+    <a href="../bigquery_sink_specification/">BigQuery Sink Specification</a>
+</li>
+                                    
+<li >
+    <a href="../decoder_service_specification/">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#edge-server-specification">Edge Server Specification</a></li>
+            <li><a href="#general-data-flow">General Data Flow</a></li>
+            <li><a href="#server-requestresponse">Server Request/Response</a></li>
+            <li><a href="#other-considerations">Other Considerations</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="edge-server-specification">Edge Server Specification</h1>
+<p>This document specifies the behavior of the server that accepts submissions
+from HTTP clients e.g. Firefox telemetry.</p>
+<h2 id="general-data-flow">General Data Flow</h2>
+<p>HTTP submissions come in from the wild, hit a load balancer, then optionally an
+nginx proxy, then the HTTP edge server described in this document. Data is
+accepted via a POST/PUT request from clients, which the server will wrap in a
+<a href="https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage">PubSub message</a>
+and forward to Google Cloud PubSub, where any further processing, analysis, and storage will
+be handled.</p>
+<h3 id="namespaces">Namespaces</h3>
+<p>Namespaces are used to control the processing of data from different types of
+clients, from the metadata that is collected to the destinations where the data
+is written, processed and accessible. Data sent to a namespace that is not
+specifically configured is assumed to be in the
+<a href="https://docs.telemetry.mozilla.org/cookbooks/new_ping.html">non-Telemetry JSON format described here</a>.
+To request a new namespace configuration file a bug against the
+<a href="https://bugzilla.mozilla.org/enter_bug.cgi?product=Data%20Platform%20and%20Tools&amp;component=Pipeline%20Ingestion">Data Platform Team</a>
+with a short description of what the namespace will be used for and the desired
+configuration options.</p>
+<h3 id="forwarding-to-the-pipeline">Forwarding to the pipeline</h3>
+<p>The message is written to PubSub. If the message cannot be written to PubSub it
+is written to a disk queue that will periodically retry writing to PubSub.</p>
+<h3 id="pubsub-message-schema">PubSub Message Schema</h3>
+<pre><code>required string data                   // base64 encoded body
+required group attributes {
+  required string submission_timestamp // server time, ISO 8601 with microseconds and timezone &quot;Z&quot;, example: &quot;2018-03-12T21:02:18.123456Z&quot;
+  required string uri                  // example: &quot;/submit/telemetry/6c49ec73-4350-45a0-9c8a-6c8f5aded0cf/main/Firefox/58.0.2/release/20180206200532&quot;
+  required string protocol             // example: &quot;HTTP/1.1&quot;
+  required string method               // example: &quot;POST&quot;
+  optional string args                 // query parameters, example: &quot;v=4&quot;
+  // Headers
+  optional string remote_addr          // usually a load balancer, example: &quot;172.31.32.5&quot;
+  optional string content_length       // example: &quot;4722&quot;
+  optional string date                 // example: &quot;Mon, 12 Mar 2018 21:02:18 GMT&quot;
+  optional string dnt                  // example: &quot;1&quot;
+  optional string host                 // example: &quot;incoming.telemetry.mozilla.org&quot;
+  optional string user_agent           // example: &quot;pingsender/1.0&quot;
+  optional string x_forwarded_for      // example: &quot;10.98.132.74, 103.3.237.12&quot;
+  optional string x_pingsender_version // example: &quot;1.0&quot;
+  optional string x_debug_id           // example: &quot;my_debug_session_1&quot;
+  optional string x_pipeline_proxy     // time that the AWS-&gt;GCP tee received the message, example: &quot;2018-03-12T21:02:18.123456Z&quot;
+}
+</code></pre>
+
+<h2 id="server-requestresponse">Server Request/Response</h2>
+<h3 id="get-request">GET Request</h3>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/__heartbeat__</code></td>
+<td>check if service is healthy, and can reach PubSub or has space to store requests on disk</td>
+</tr>
+<tr>
+<td><code>/__lbheartbeat__</code></td>
+<td>check if service is running</td>
+</tr>
+<tr>
+<td><code>/__version__</code></td>
+<td>return Dockerflow <a href="https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md">version object</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="get-response-codes">GET Response codes</h3>
+<ul>
+<li><em>200</em> - ok, check succeeded</li>
+<li><em>204</em> - ok, check succeeded, no response body</li>
+<li><em>404</em> - not found, check doesn't exist</li>
+<li><em>500</em> - all is not well</li>
+<li><em>507</em> - insufficient storage, should occur at some configurable limit before disk is full</li>
+</ul>
+<h3 id="postput-request">POST/PUT Request</h3>
+<p>Treat POST and PUT the same. Accept POST or PUT to URLs of the form</p>
+<p><code>^/submit/namespace/[/dimensions]$</code></p>
+<p>Example Telemetry format:</p>
+<p><code>/submit/telemetry/docId/docType/appName/appVersion/appUpdateChannel/appBuildID</code></p>
+<p>Specific Telemetry example:</p>
+<p><code>/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648/main/Firefox/61.0a1/nightly/20180328030202</code></p>
+<p>Example non-Telemetry format:</p>
+<p><code>/submit/namespace/docType/docVersion/docId</code></p>
+<p>Specific non-Telemetry example:</p>
+<p><code>/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049</code></p>
+<p>Note that <code>docId</code> above is a unique document ID, which is used for de-duping
+submissions. This is <em>not</em> intended to be the <code>clientId</code> field from Telemetry.
+<code>docId</code> is required and must be a <a href="https://en.wikipedia.org/wiki/Universally_unique_identifier">UUID</a>.</p>
+<h4 id="legacy-systems">Legacy Systems</h4>
+<p>Accept <a href="https://wiki.mozilla.org/SecurityEngineering/TLS_Error_Reports">TLS Error Reports</a>
+as POST or PUT to <code>/submit/sslreports</code> with no <code>docType</code>, <code>docVersion</code>, or
+<code>docId</code>.</p>
+<p>Accept <a href="https://firefox-source-docs.mozilla.org/browser/installer/windows/installer/StubPing.html">Stub Installer pings</a>
+as GET to <code>/stub/[docVersion]/[dimensions]</code>, with no <code>docType</code> or <code>docId</code>, and
+over both HTTP and HTTPS. Use <a href="#postput-response-codes">POST/PUT Response codes</a>,
+even though this endpoint is for GET requests.</p>
+<h3 id="postput-response-codes">POST/PUT Response codes</h3>
+<ul>
+<li><em>200</em> - ok, request accepted into the pipeline</li>
+<li><em>400</em> - bad request, for example an unencoded space in the URL</li>
+<li><em>404</em> - not found, for example using a telemetry format URL in a non-telemetry namespace or vice-versa</li>
+<li><em>411</em> - missing content-length header</li>
+<li><em>413</em> - request body too large (note that if we have badly-behaved clients that retry on <code>4XX</code>, we should send back 202 on body/path too long).</li>
+<li><em>414</em> - request path too long (see above)</li>
+<li><em>500</em> - internal error</li>
+<li><em>507</em> - insufficient storage, request failed because disk is full</li>
+</ul>
+<h3 id="other-response-codes">Other Response codes</h3>
+<ul>
+<li><em>405</em> - wrong request type (anything other than GET|POST|PUT)</li>
+</ul>
+<h2 id="other-considerations">Other Considerations</h2>
+<h3 id="compression">Compression</h3>
+<p>It is not desirable to do decompression on the edge node. We want to pass along
+messages from the HTTP Edge node without "cracking the egg" of the payload.</p>
+<p>We may also receive badly formed payloads, and we will want to track the
+incidence of such things.</p>
+<h3 id="bad-messages">Bad Messages</h3>
+<p>Since the actual message is not examined by the edge server the only failures
+that occur are defined by the response status codes above. Messages are only
+forwarded to the pipeline when a response code of 200 is returned to the
+client.</p>
+<h3 id="pubsub-topics">PubSub Topics</h3>
+<p>All messages that sent a response code of 200 are forwarded to a single PubSub
+topic for decoding and landfill.</p>
+<h3 id="geoip-lookups">GeoIP Lookups</h3>
+<p>No GeoIP lookup is performed by the edge server. If a client IP is available
+then the PubSub consumer performs the lookup and then discards the IP before
+the message is forwarded to a decoded PubSub topic.</p>
+<h3 id="data-retention">Data Retention</h3>
+<p>The edge server only stores data when PubSub cannot be reached, and removes
+data after it is successfully written to PubSub. Down scaling will be disabled
+for the Kubernetes pod and cluster when data is being stored, so that data is
+not lost.</p>
+<h3 id="submission-timestamp-format">Submission Timestamp Format</h3>
+<p><code>submission_timestamp</code> is formatted as ISO 8601 with microseconds and timezone,
+because it is compatible with BigQuery's
+<a href="https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp-type">Timestamp Type</a>,
+so that the field doesn't need transformation.</p></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

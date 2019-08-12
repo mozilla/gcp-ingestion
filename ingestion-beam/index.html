@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Overview - GCP Ingestion</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">GCP Ingestion</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li >
+                                <a href="../ingestion-edge/">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li class="active">
+    <a href="./">Overview</a>
+</li>
+                                    
+<li >
+    <a href="ingestion_testing_workflow/">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../architecture/overview/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/differences_from_aws/">Differences from AWS</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/pain_points/">Pain Points</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/edge_migration_plan/">Edge Migration Plan</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/reliability/">Reliability</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/test_requirements/">Test requirements</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/landfill_service_specification/">Landfill Service Specification</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/edge_server_specification.md">Edge Server Specification</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/decoder_service_specification/">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../ingestion-edge/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="ingestion_testing_workflow/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#apache-beam-jobs-for-ingestion">Apache Beam Jobs for Ingestion</a></li>
+            <li><a href="#sink-job">Sink Job</a></li>
+            <li><a href="#decoder-job">Decoder Job</a></li>
+            <li><a href="#republisher-job">Republisher Job</a></li>
+            <li><a href="#testing">Testing</a></li>
+            <li><a href="#code-formatting">Code Formatting</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="apache-beam-jobs-for-ingestion">Apache Beam Jobs for Ingestion</h1>
+<p>This ingestion-beam java module contains our <a href="https://beam.apache.org/">Apache Beam</a> jobs for use in Ingestion.
+Google Cloud Dataflow is a Google Cloud Platform service that natively runs
+Apache Beam jobs.</p>
+<p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam">ingestion-beam</a>
+subdirectory of the gcp-ingestion repository.</p>
+<h2 id="sink-job">Sink Job</h2>
+<p>A job for delivering messages between Google Cloud services.</p>
+<h3 id="supported-input-and-outputs">Supported Input and Outputs</h3>
+<p>Supported inputs:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+<li>Google Cloud Storage</li>
+</ul>
+<p>Supported outputs:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+<li>Google Cloud Storage</li>
+<li>Google Cloud BigQuery</li>
+<li>stdout</li>
+<li>stderr</li>
+</ul>
+<p>Supported error outputs, must include attributes and must not validate messages:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+<li>Google Cloud Storage with JSON encoding</li>
+<li>stdout with JSON encoding</li>
+<li>stderr with JSON encoding</li>
+</ul>
+<h3 id="encoding">Encoding</h3>
+<p>Internally messages are stored and transported as
+<a href="https://beam.apache.org/documentation/sdks/javadoc/2.6.0/org/apache/beam/sdk/io/gcp/pubsub/PubsubMessage.html">PubsubMessage</a>.</p>
+<p>Supported file formats for Cloud Storage are <code>json</code> or <code>text</code>. The <code>json</code> file
+format stores newline delimited JSON, encoding the field <code>payload</code> as a base64
+string, and <code>attributeMap</code> as an optional object with string keys and values.
+The <code>text</code> file format stores newline delimited strings, encoding the field
+<code>payload</code> as <code>UTF-8</code>.</p>
+<p>We'll construct example inputs based on the following two values and their base64 encodings:</p>
+<pre><code>$ echo -en &quot;test&quot; | base64
+dGVzdA==
+
+$ echo -en &quot;test\n&quot; | base64
+dGVzdAo=
+</code></pre>
+
+<p>Example <code>json</code> file:</p>
+<pre><code>{"payload":"dGVzdA==","attributeMap":{"meta":"data"}}
+{"payload":"dGVzdAo=","attributeMap":null}
+{"payload":"dGVzdA=="}
+</code></pre>
+<p>The above file when stored in the <code>text</code> format:</p>
+<pre><code>test
+test
+
+test
+</code></pre>
+<p>Note that the newline embedded at the end of the second JSON message results in
+two text messages, one of which is blank.</p>
+<h3 id="output-path-specification">Output Path Specification</h3>
+<p>Depending on the specified output type, the <code>--output</code> path that you provide controls
+several aspects of the behavior.</p>
+<h4 id="bigquery">BigQuery</h4>
+<p>When <code>--outputType=bigquery</code>, <code>--output</code> is a <code>tableSpec</code> of form <code>dataset.tablename</code>
+or the more verbose <code>projectId:dataset.tablename</code>. The values can contain
+attribute placeholders of form <code>${attribute_name}</code>. To set dataset to the
+document namespace and table name to the document type, specify:</p>
+<pre><code>--output='${document_namespace}.${document_type}'
+</code></pre>
+<p>All <code>-</code> characters in the attributes will be converted to <code>_</code> per BigQuery
+naming restrictions. Additionally, document namespace and type values will
+be processed to ensure they are in snake case format (<code>untrustedModules</code>
+becomes <code>untrusted_modules</code>).</p>
+<p>Defaults for the placeholders using <code>${attribute_name:-default_value}</code>
+are supported, but likely don't make much sense since it's unlikely that
+there is a default table whose schema is compatible with all potential
+payloads.
+Instead, records missing an attribute required by a placeholder
+will be redirected to error output if no default is provided.</p>
+<h4 id="protocol">Protocol</h4>
+<p>When <code>--outputType=file</code>, <code>--output</code> may be prefixed by a protocol specifier 
+to determine the
+target data store. Without a protocol prefix, the output path is assumed
+to be a relative or absolute path on the filesystem. To write to Google
+Cloud Storage, use a <code>gs://</code> path like:</p>
+<pre><code>--output=gs://mybucket/somdir/myfileprefix
+</code></pre>
+<h4 id="attribute-placeholders">Attribute placeholders</h4>
+<p>We support <code>FileIO</code>'s "Dynamic destinations" feature (<code>FileIO.writeDynamic</code>) where
+it's possible to route individual messages to different output locations based
+on properties of the message.
+In our case, we allow routing messages based on the <code>PubsubMessage</code> attribute map.
+Routing is accomplished by adding placeholders of form <code>${attribute_name:-default_value}</code>
+to the path.</p>
+<p>For example, to route based on a <code>document_type</code> attribute, your path might look like:</p>
+<pre><code>--output=gs://mybucket/mydocs/${document_type:-UNSPECIFIED}/myfileprefix
+</code></pre>
+<p>Messages with <code>document_type</code> of "main" would be grouped together and end up in
+the following directory:</p>
+<pre><code>gs://mybucket/mydocs/main/
+</code></pre>
+<p>Messages with <code>document_type</code> set to <code>null</code> or missing that attribute completely
+would be grouped together and end up in directory:</p>
+<pre><code>gs://mybucket/mydocs/UNSPECIFIED/
+</code></pre>
+<p>Note that placeholders <em>must</em> specify a default value so that a poorly formatted
+message doesn't cause a pipeline exception. A placeholder without a default will
+result in an <code>IllegalArgumentException</code> on pipeline startup.</p>
+<p>File-based outputs support the additional <em>derived</em> attributes
+<code>"submission_date"</code> and <code>"submission_hour"</code> which will be parsed from the value
+of the <code>submission_timestamp</code> attribute if it exists.
+These can be useful for making sure your output specification buckets messages
+into hourly directories.</p>
+<p>The templating and default syntax used here is based on the
+<a href="https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html">Apache commons-text <code>StringSubstitutor</code></a>,
+which in turn bases its syntax on common practice in bash and other Unix/Linux shells.
+Beware the need for proper escaping on the command line (use <code>\$</code> in place of <code>$</code>),
+as your shell may try to substitute in values
+for your placeholders before they're passed to <code>Sink</code>.</p>
+<p><a href="https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage">Google's PubsubMessage format</a>
+allows arbitrary strings for attribute names and values. We place the following restrictions
+on attribute names and default values used in placeholders:</p>
+<ul>
+<li>attribute names may not contain the string <code>:-</code></li>
+<li>attribute names may not contain curly braces (<code>{</code> or <code>}</code>)</li>
+<li>default values may not contain curly braces (<code>{</code> or <code>}</code>)</li>
+</ul>
+<h4 id="file-prefix">File prefix</h4>
+<p>Individual files are named by replacing <code>:</code> with <code>-</code> in the default format discussed in
+the "File naming" section of Beam's
+<a href="https://beam.apache.org/documentation/sdks/javadoc/2.6.0/org/apache/beam/sdk/io/FileIO.html"><code>FileIO</code> Javadoc</a>:</p>
+<pre><code>$prefix-$start-$end-$pane-$shard-of-$numShards$suffix$compressionSuffix
+</code></pre>
+<p>In our case, <code>$prefix</code> is determined from the last <code>/</code>-delimited piece of the <code>--output</code>
+path. If you specify a path ending in <code>/</code>, you'll end up with an empty prefix
+and your file names will begin with <code>-</code>. This is probably not what you want, 
+so it's recommended to end your output path with a non-empty file prefix. We replace <code>:</code>
+with <code>-</code> because <a href="https://stackoverflow.com/q/48909921">Hadoop can't handle <code>:</code> in file names</a>.</p>
+<p>For example, given:</p>
+<pre><code>--output=/tmp/output/out
+</code></pre>
+<p>An output file might be:</p>
+<pre><code>/tmp/output/out--290308-12-21T20-00-00.000Z--290308-12-21T20-10-00.000Z-00000-of-00001.ndjson
+</code></pre>
+<h3 id="executing-jobs">Executing Jobs</h3>
+<p>Note: <code>-Dexec.args</code> does not handle newlines gracefully, but bash will remove
+<code>\</code> escaped newlines in <code>"</code>s.</p>
+<h4 id="locally">Locally</h4>
+<p>If you install Java and maven, you can invoke <code>mvn</code> directly in the following commands;
+be aware, though, that Java 8 is the target JVM and some reflection warnings may be thrown on
+newer versions, though these are generally harmless.</p>
+<p>The provided <code>bin/mvn</code> script downloads and runs maven via docker so that less
+setup is needed on the local machine.</p>
+<pre><code class="bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' &gt; tmp/input.json
+
+# consume messages from the test file, decode and re-encode them, and write to a directory
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=tmp/output/out \
+    --errorOutputType=file \
+    --errorOutput=tmp/error \
+&quot;
+
+# check that the message was delivered
+cat tmp/output/*
+
+# write message payload straight to stdout
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputFileFormat=text \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+&quot;
+
+# check the help page to see types of options
+./bin/mvn compile exec:java -Dexec.args=--help
+
+# check the SinkOptions help page for options specific to Sink
+./bin/mvn compile exec:java -Dexec.args=--help=SinkOptions
+</code></pre>
+
+<h4 id="on-dataflow">On Dataflow</h4>
+<pre><code class="bash"># Pick a bucket to store files in
+BUCKET=&quot;gs://$(gcloud config get-value project)&quot;
+
+# create a test input file
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' | gsutil cp - $BUCKET/input.json
+
+# Set credentials; beam is not able to use gcloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS=&quot;path/to/your/creds.json&quot;
+
+# consume messages from the test file, decode and re-encode them, and write to a bucket
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --runner=Dataflow \
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=$BUCKET/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=$BUCKET/output \
+    --errorOutputType=file \
+    --errorOutput=$BUCKET/error \
+&quot;
+
+# wait for the job to finish
+gcloud dataflow jobs list
+
+# check that the message was delivered
+gsutil cat $BUCKET/output/*
+</code></pre>
+
+<h4 id="on-dataflow-with-templates">On Dataflow with templates</h4>
+<p>Dataflow templates make a distinction between
+<a href="https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface">runtime parameters that implement the <code>ValueProvider</code> interface</a>
+and compile-time parameters which do not.
+All option can be specified at template compile time by passing command line flags,
+but runtime parameters can also be overridden when
+<a href="https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud">executing the template</a>
+via the <code>--parameters</code> flag.
+In the output of <code>--help=SinkOptions</code>, runtime parameters are those 
+with type <code>ValueProvider</code>.</p>
+<pre><code class="bash"># Pick a bucket to store files in
+BUCKET=&quot;gs://$(gcloud config get-value project)&quot;
+
+# Set credentials; beam is not able to use gcloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS=&quot;path/to/your/creds.json&quot;
+
+# create a template
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --runner=Dataflow \
+    --project=$(gcloud config get-value project) \
+    --inputFileFormat=json \
+    --inputType=file \
+    --outputFileFormat=json \
+    --outputType=file \
+    --errorOutputType=file \
+    --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile \
+    --stagingLocation=$BUCKET/sink/staging \
+&quot;
+
+# create a test input file
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' | gsutil cp - $BUCKET/input.json
+
+# run the dataflow template with gcloud
+JOBNAME=FileToFile1
+gcloud dataflow jobs run $JOBNAME --gcs-location=$BUCKET/sink/templates/JsonFileToJsonFile --parameters &quot;input=$BUCKET/input.json,output=$BUCKET/output/,errorOutput=$BUCKET/error&quot;
+
+# get the job id
+JOB_ID=&quot;$(gcloud dataflow jobs list --filter name=fileToStdout1 | tail -1 | cut -d' ' -f1)&quot;
+
+# wait for the job to finish
+gcloud dataflow jobs show &quot;$JOB_ID&quot;
+
+# check that the message was delivered
+gsutil cat $BUCKET/output/*
+</code></pre>
+
+<h4 id="in-streaming-mode">In streaming mode</h4>
+<p>If <code>--inputType=pubsub</code>, Beam will execute in streaming mode, requiring some
+extra configuration for file-based outputs. You will need to specify sharding like:</p>
+<pre><code>    --outputNumShards=10
+    --errorOutputNumShards=10
+</code></pre>
+
+<p>As discussed in the
+<a href="https://beam.apache.org/releases/javadoc/2.8.0/org/apache/beam/sdk/io/FileIO.Write.html#withNumShards-int-">Beam documentation for <code>FileIO.Write#withNumShards</code></a>,
+batch mode is most efficient when the runner is left to determine sharding,
+so <code>numShards</code> options should normally be left to their default of <code>0</code>, but
+streaming mode can't perform the same optimizations thus an exception will be thrown
+during pipeline construction if sharding is not specified.
+As codified in <a href="https://github.com/apache/beam/pull/1952">apache/beam/pull/1952</a>,
+the Dataflow runner suggests a reasonable starting point <code>numShards</code> is <code>2 * maxWorkers</code>
+or 10 if <code>--maxWorkers</code> is unspecified.</p>
+<h2 id="decoder-job">Decoder Job</h2>
+<p>A job for normalizing ingestion messages.</p>
+<h3 id="transforms">Transforms</h3>
+<p>These transforms are currently executed against each message in order.</p>
+<h4 id="parse-uri">Parse URI</h4>
+<p>Attempt to extract attributes from <code>uri</code>, on failure send messages to the
+configured error output.</p>
+<h4 id="decompress">Decompress</h4>
+<p>Attempt to decompress payload with gzip, on failure pass the message through
+unmodified.</p>
+<h4 id="geoip-lookup">GeoIP Lookup</h4>
+<ol>
+<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute</li>
+<li>when the <code>x_pipeline_proxy</code> attribute is not present, use the
+     second-to-last value (since the last value is a forwarding rule IP
+     added by Google load balancer)</li>
+<li>when the <code>x_pipeline_proxy</code> attribute is present, use the third-to-last
+     value (since the tee introduces an additional proxy IP)</li>
+<li>fall back to the <code>remote_addr</code> attribute, then to an empty string</li>
+<li>Execute the following steps until one fails and ignore the exception<ol>
+<li>Parse <code>ip</code> using <code>InetAddress.getByName</code></li>
+<li>Lookup <code>ip</code> in the configured <code>GeoIP2City.mmdb</code></li>
+<li>Extract <code>country.iso_code</code> as <code>geo_country</code></li>
+<li>Extract <code>city.name</code> as <code>geo_city</code> if <code>cities15000.txt</code> is not configured
+   or <code>city.geo_name_id</code> is in the configured <code>cities15000.txt</code></li>
+<li>Extract <code>subdivisions[0].iso_code</code> as <code>geo_subdivision1</code></li>
+<li>Extract <code>subdivisions[1].iso_code</code> as <code>geo_subdivision2</code></li>
+</ol>
+</li>
+<li>Remove the <code>x_forwarded_for</code> and <code>remote_addr</code> attributes</li>
+<li>Remove any <code>null</code> values added to attributes</li>
+</ol>
+<h4 id="parse-user-agent">Parse User Agent</h4>
+<p>Attempt to extract browser, browser version, and os from the <code>user_agent</code>
+attribute, drop any nulls, and remove <code>user_agent</code> from attributes.</p>
+<h3 id="executing-decoder-jobs">Executing Decoder Jobs</h3>
+<p>Decoder jobs are executed the same way as <a href="#executing-jobs">executing sink jobs</a>
+but with a few extra flags:</p>
+<ul>
+<li><code>-Dexec.mainClass=com.mozilla.telemetry.Decoder</code></li>
+<li><code>--geoCityDatabase=/path/to/GeoIP2-City.mmdb</code></li>
+<li><code>--geoCityFilter=/path/to/cities15000.txt</code> (optional)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;remote_addr&quot;:&quot;63.245.208.195&quot;}}' &gt; tmp/input.json
+
+# Download `cities15000.txt`, `GeoLite2-City.mmdb`, and `schemas.tar.gz`
+./bin/download-cities15000
+./bin/download-geolite2
+./bin/download-schemas
+
+# do geo lookup on messages to stdout
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args=&quot;\
+    --geoCityDatabase=GeoLite2-City.mmdb \
+    --geoCityFilter=cities15000.txt \
+    --schemasLocation=schemas.tar.gz \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+&quot;
+
+# check the DecoderOptions help page for options specific to Decoder
+./bin/mvn compile exec:java -Dexec.args=--help=DecoderOptions
+&quot;
+</code></pre>
+
+<h2 id="republisher-job">Republisher Job</h2>
+<p>A job for republishing subsets of decoded messages to new destinations.</p>
+<p>The primary intention is to produce smaller derived Pub/Sub topics so
+that consumers that only need a specific subset of messages don't incur
+the cost of reading the entire stream of decoded messages.</p>
+<p>The Republisher has the additional responsibility of marking messages as seen
+in <code>Cloud MemoryStore</code> for deduplication purposes. That functionality exists
+here to avoid the expense of an additional separate consumer of the full
+decoded topic.</p>
+<h3 id="capabilities">Capabilities</h3>
+<h4 id="marking-messages-as-seen">Marking Messages As Seen</h4>
+<p>The job needs to connect to Redis in order to mark <code>document_id</code>s of consumed
+messages as seen. The Decoder is able to use that information to drop duplicate
+messages flowing through the pipeline.</p>
+<h4 id="debug-republishing">Debug Republishing</h4>
+<p>If <code>--enableDebugDestination</code> is set, messages containing an <code>x_debug_id</code>
+attribute will be republished to a destination that's configurable at runtime.
+This is currently expected to be a feature specific to structured ingestion,
+so should not be set for <code>telemetry-decoded</code> input.</p>
+<h4 id="per-doctype-republishing">Per-<code>docType</code> Republishing</h4>
+<p>If <code>--perDocTypeEnabledList</code> is provided, a separate producer will be created
+for each <code>docType</code> specified in the given comma-separated list.
+See the <code>--help</code> output for details on format.</p>
+<h4 id="per-channel-sampled-republishing">Per-Channel Sampled Republishing</h4>
+<p>If <code>--perChannelSampleRatios</code> is provided, a separate producer will be created
+for each specified release channel. The messages will be randomly sampled
+according to the ratios provided per channel.
+This is currently intended as a feature only for telemetry data, so should
+not be set for <code>structured-decoded</code> input.
+See the <code>--help</code> output for details on format.</p>
+<h3 id="executing-republisher-jobs">Executing Republisher Jobs</h3>
+<p>Republisher jobs are executed the same way as <a href="#executing-jobs">executing sink jobs</a>
+but with a few differences in flags. You'll need to set the <code>mainClass</code>:</p>
+<ul>
+<li><code>-Dexec.mainClass=com.mozilla.telemetry.Republisher</code></li>
+</ul>
+<p>The <code>--outputType</code> flag is still required as in the sink, but the <code>--output</code>
+configuration is ignored for the Republisher. Instead, there is a separate
+destination configuration flag for each of the three republishing types.
+For each type, there is an compile-time option that affects what publishers
+are generated in the graph for the Dataflow job along with a runtime option
+that determines the specific location (usually a topic name) for each publisher.</p>
+<p>To enable debug republishing:</p>
+<ul>
+<li><code>--enableDebugDestination</code> (compile-time)</li>
+<li><code>--debugDestination=/some/pubsub/topic/path</code></li>
+</ul>
+<p>To enable per-<code>docType</code> republishing:</p>
+<ul>
+<li><code>--perDocTypeEnabledList=event,heartbeat</code> (compile-time)</li>
+<li><code>--perDocTypeDestination=/some/pubsub/topic/path/per-doctype-${document_namespace}-${document_type}</code> (compile-time)</li>
+</ul>
+<p>To enable per-channel sampled republishing:</p>
+<ul>
+<li><code>--perChannelSampleRatios='{"nightly":1.0,"beta":0.1,"release":0.01}'</code> (compile-time)</li>
+<li><code>--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}</code> (compile-time)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;x_debug_id&quot;:&quot;mysession&quot;}}' &gt; tmp/input.json
+
+# Republish only messages with x_debug_id attribute to stdout.
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Republisher -Dexec.args=&quot;\
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+    --enableDebugDestination
+&quot;
+
+# check the RepublisherOptions help page for options specific to Republisher
+./bin/mvn compile exec:java -Dexec.args=--help=RepublisherOptions
+&quot;
+</code></pre>
+
+<h2 id="testing">Testing</h2>
+<p>Before anything else, be sure to download the test data:</p>
+<pre><code class="bash">./bin/download-cities15000
+./bin/download-geolite2
+./bin/download-schemas
+</code></pre>
+
+<p>Run tests locally with <a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros">CircleCI Local CLI</a></p>
+<pre><code class="bash">(cd .. &amp;&amp; circleci build --job ingestion-beam)
+</code></pre>
+
+<p>To make more targeted test invocations, you can install Java and maven locally or
+use the <code>bin/mvn</code> executable to run maven in docker:</p>
+<pre><code class="bash">./bin/mvn clean test
+</code></pre>
+
+<p>To run the project in a sandbox against production data, see this document on
+<a href="ingestion_testing_workflow/">configuring an integration testing workflow</a>.</p>
+<h2 id="code-formatting">Code Formatting</h2>
+<p>Use spotless to automatically reformat code:</p>
+<pre><code class="bash">mvn spotless:apply
+</code></pre>
+
+<p>or just check what changes it requires:</p>
+<pre><code class="bash">mvn spotless:check
+</code></pre></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

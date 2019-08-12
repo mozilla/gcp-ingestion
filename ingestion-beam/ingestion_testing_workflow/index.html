@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Ingestion testing workflow - GCP Ingestion</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">GCP Ingestion</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li >
+                                <a href="../../ingestion-edge/">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../">Overview</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../architecture/overview/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/differences_from_aws/">Differences from AWS</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/pain_points/">Pain Points</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/edge_migration_plan/">Edge Migration Plan</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/reliability/">Reliability</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/test_requirements/">Test requirements</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/landfill_service_specification/">Landfill Service Specification</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/edge_server_specification.md">Edge Server Specification</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/decoder_service_specification/">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../../architecture/overview/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#ingestion-testing-workflow">Ingestion Testing Workflow</a></li>
+            <li><a href="#setting-up-the-gcs-project">Setting up the GCS project</a></li>
+            <li><a href="#bootstrapping-schemas-from-mozilla-pipeline-schemas">Bootstrapping schemas from mozilla-pipeline-schemas</a></li>
+            <li><a href="#building-the-project">Building the project</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="ingestion-testing-workflow">Ingestion Testing Workflow</h1>
+<p>The ingestion-beam handles data flow of documents from the edge into various
+sinks. You may be interested in standing up a small testing instance to validate
+the integration of the various components.</p>
+<p><img alt="diagrams/workflow.mmd" src="../../diagrams/workflow.svg" />
+<strong>Figure</strong>: <em>An overview of the various components necessary to query BigQuery
+against data from a PubSub subscription.</em></p>
+<h2 id="setting-up-the-gcs-project">Setting up the GCS project</h2>
+<p>Read through <a href="https://github.com/whd/gcp-quickstart"><code>whd/gcp-quickstart</code></a> for details
+about the sandbox environment that is provided by data operations.</p>
+<ul>
+<li>Install the <a href="https://cloud.google.com/sdk/">Google Cloud SDK</a></li>
+<li>Navigate to the <a href="https://cloud.google.com/sdk/">Google Cloud Console</a></li>
+<li>Create a new project under <code>firefox.gcp.mozilla.com/dataops/sandbox</code><ul>
+<li><code>gcloud config set project &lt;PROJECT&gt;</code></li>
+</ul>
+</li>
+<li>Create a PubSub subscription (see <code>gcp-quickstart/pubsub.sh</code>)</li>
+<li>Create a GCS bucket<ul>
+<li><code>gsutil mb gs://&lt;PROJECT&gt;</code></li>
+</ul>
+</li>
+<li>Enable the <a href="https://console.cloud.google.com/marketplace/details/google/dataflow.googleapis.com">Dataflow API</a></li>
+<li>Create a service account and store the key locally</li>
+</ul>
+<h2 id="bootstrapping-schemas-from-mozilla-pipeline-schemas">Bootstrapping schemas from <code>mozilla-pipeline-schemas</code></h2>
+<ul>
+<li>Download the latest schemas from <code>mozilla-pipeline-schemas</code> using <code>bin/download-schemas</code>.<ul>
+<li>This script may also inject testing resources into the resulting archive.</li>
+<li>A <code>schemas.tar.gz</code> will appear at the project root.</li>
+</ul>
+</li>
+<li>Generate BigQuery schemas using <code>bin/generate-bq-schemas</code>.<ul>
+<li>Schemas will be written to <code>bq-schemas/</code>.
+<code>bq-schemas/
+├── activity-stream.impression-stats.1.bigquery.json
+├── coverage.coverage.1.bigquery.json
+├── edge-validator.error-report.1.bigquery.json
+├── eng-workflow.bmobugs.1.bigquery.json
+....</code></li>
+</ul>
+</li>
+<li>Update the BigQuery table in the current project using <code>bin/update-bq-table</code>.<ul>
+<li>This may take several minutes. Read the script for usage information.</li>
+</ul>
+</li>
+<li>Verify that tables have been updated by viewing the BigQuery console.</li>
+</ul>
+<h2 id="building-the-project">Building the project</h2>
+<p>Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.</p>
+<pre><code class="bash">export GOOGLE_APPLICATION_CREDENTIALS=keys.json
+PROJECT=$(gcloud config get-value project)
+BUCKET=&quot;gs://$PROJECT&quot;
+
+path=&quot;$BUCKET/data/*.ndjson&quot;
+mvn compile exec:java -Dexec.args=&quot;\
+    --runner=Dataflow \
+    --project=$PROJECT \
+    --autoscalingAlgorithm=NONE \
+    --workerMachineType=n1-standard-1 \
+    --numWorkers=1 \
+    --gcpTempLocation=$BUCKET/tmp \
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=$path\
+    --outputType=bigquery \
+    --output=$PROJECT:\${document_namespace}.\${document_type}_v\${document_version} \
+    --bqWriteMethod=file_loads \
+    --tempLocation=$BUCKET/temp/bq-loads \
+    --errorOutputType=file \
+    --errorOutput=$BUCKET/error/ \
+&quot;
+</code></pre></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

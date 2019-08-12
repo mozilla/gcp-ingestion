@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="None">
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>GCP Ingestion</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body class="homepage">
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="..">GCP Ingestion</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="..">Home</a>
+                            </li>
+                            <li class="active">
+                                <a href="./">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../ingestion-beam/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../ingestion-beam/ingestion_testing_workflow/">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../architecture/overview/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/differences_from_aws/">Differences from AWS</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/pain_points/">Pain Points</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/edge_migration_plan/">Edge Migration Plan</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/reliability/">Reliability</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/test_requirements/">Test requirements</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/landfill_service_specification/">Landfill Service Specification</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/edge_server_specification.md">Edge Server Specification</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
+</li>
+                                    
+<li >
+    <a href="../architecture/decoder_service_specification/">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="..">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../ingestion-beam/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#ingestion-edge-server">Ingestion Edge Server</a></li>
+            <li><a href="#building">Building</a></li>
+            <li><a href="#running">Running</a></li>
+            <li><a href="#configuration">Configuration</a></li>
+            <li><a href="#testing">Testing</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="ingestion-edge-server">Ingestion Edge Server</h1>
+<p>A simple service for delivering HTTP messages to Google Cloud PubSub</p>
+<p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam">ingestion-edge</a>
+subdirectory of the gcp-ingestion repository.</p>
+<h2 id="building">Building</h2>
+<p>We assume that you have <a href="https://docs.docker.com/compose/">docker-compose</a>
+installed.</p>
+<p>From inside the <code>ingestion-edge</code> subdirectory:</p>
+<pre><code class="bash"># docker-compose
+docker-compose build
+
+# pytest
+bin/build
+</code></pre>
+
+<h2 id="running">Running</h2>
+<p>Use <code>docker-compose</code> to run a local development server that auto-detects changes:</p>
+<pre><code class="bash"># run the web server and PubSub emulator
+docker-compose up --detach web
+
+# manually check the server
+curl http://localhost:8000/__version__
+curl http://localhost:8000/__heartbeat__
+curl http://localhost:8000/__lbheartbeat__
+curl http://localhost:8000/submit/test -d &quot;test&quot;
+
+# check web logs
+docker-compose logs web
+
+# clean up docker-compose environment
+docker-compose down --timeout 0
+</code></pre>
+
+<h2 id="configuration">Configuration</h2>
+<p>The ingestion-edge docker container accepts these configuration options from
+environment variables:</p>
+<ul>
+<li><code>ROUTE_TABLE</code>: a JSON list of mappings from <code>uri</code> to PubSub topic, <code>uri</code>
+  matches are detected in order, defaults to <code>[]</code>, each mapping is a list and
+  may include an optional third element that specifies a list of allowed
+  methods instead of the default <code>["POST","PUT"]</code></li>
+<li><code>QUEUE_PATH</code>: a filesystem path to a directory where a SQLite database will
+  be created to store requests for when PubSub is unavailable, paths may be
+  relative to the docker container <code>WORKDIR</code>, defaults to <code>queue</code></li>
+<li><code>MINIMUM_DISK_FREE_BYTES</code>: an integer indicating the threshold of free bytes
+  on the filesystem where <code>QUEUE_PATH</code> is mounted below which <code>/__heartbeat__</code>
+  will fail, defaults to <code>0</code> which disables the check</li>
+<li><code>METADATA_HEADERS</code>: a JSON list of headers to preserve as PubSub message
+  attributes, defaults to <code>["Content-Length", "Date", "DNT", "User-Agent",
+  "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID"]</code>;
+  the message attribute name will be the header name in lowercase and with <code>-</code>
+  converted to <code>_</code></li>
+<li><code>PUBLISH_TIMEOUT_SECONDS</code>: a float indicating the maximum number of seconds
+  to wait for the PubSub client to complete a publish operation, defaults to 1
+  second and may require tuning</li>
+<li><code>FLUSH_CONCURRENT_MESSAGES</code>: an integer indicating the number of messages per
+  worker that may be read from the queue before waiting on publish results,
+  defaults to 1000 messages based on <a href="https://cloud.google.com/pubsub/quotas#resource_limits">publish request
+  limits</a> and may
+  require tuning</li>
+<li><code>FLUSH_CONCURRENT_BYTES</code>: an integer indicating the number of bytes per
+  worker that may be read from the queue before waiting on publish results,
+  which may be exceeded by one message and measures data bytes rather than
+  serialized message size, defaults to 10MB based on <a href="https://cloud.google.com/pubsub/quotas#resource_limits">publish request
+  limits</a> and may
+  require tuning</li>
+<li><code>FLUSH_SLEEP_SECONDS</code>: a float indicating the number of seconds waited
+  between flush attempts, defaults to 1 second and may require tuning</li>
+</ul>
+<h2 id="testing">Testing</h2>
+<p>Run tests with <a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros">CircleCI Local
+CLI</a>,
+<code>docker-compose</code>, or <code>pytest</code> wrappers</p>
+<pre><code class="bash"># circleci
+(cd .. &amp;&amp; circleci build --job ingestion-edge)
+
+# docker-compose
+docker-compose run --rm test
+
+# pytest wrapper (pytest-all calls lint and pytest)
+./bin/pytest-all
+</code></pre>
+
+<p>The <code>pytest</code> wrappers add these options via the environment:</p>
+<ul>
+<li><code>CLEAN_RELOCATES</code> controls whether <code>bin/lint</code> and <code>bin/pytest</code> will remove
+  <code>.pyc</code> files not in <code>venv/</code> that do not contain <code>$PWD</code> to prevent errors when
+  switching between running in and out of docker, defaults to <code>true</code></li>
+<li><code>VENV</code> controls whether to use a python <code>venv</code> in <code>venv/$(uname)</code> in
+  <code>bin/lint</code> and <code>bin/pytest</code>, and in <code>bin/build</code> to create and use that
+  <code>venv</code>, defaults to <code>false</code> in <code>Dockerfile</code> and <code>true</code> otherwise</li>
+</ul>
+<h3 id="style-checks">Style Checks</h3>
+<p>Run style checks</p>
+<pre><code class="bash"># docker-compose
+docker-compose run --rm test bin/lint
+
+# pytest wrapper
+./bin/lint
+</code></pre>
+
+<h3 id="unit-tests">Unit Tests</h3>
+<p>Run unit tests</p>
+<pre><code class="bash"># docker-compose
+docker-compose run --rm test bin/pytest tests/unit
+
+# pytest wrapper
+./bin/pytest tests/unit
+</code></pre>
+
+<h3 id="integration-tests">Integration Tests</h3>
+<p>Run integration tests locally</p>
+<pre><code class="bash"># docker-compose
+docker-compose run --rm test bin/pytest tests/integration
+
+# pytest wrapper
+./bin/pytest tests/integration
+</code></pre>
+
+<p>Test a remote server (requires credentials to read PubSub)</p>
+<pre><code class="bash"># define the same ROUTE_TABLE as your edge server
+export ROUTE_TABLE='[[&quot;/submit/telemetry/&lt;suffix:path&gt;&quot;,&quot;projects/PROJECT/topics/TOPIC&quot;]]'
+
+# docker using latest image and no git checkout
+docker run --rm --tty --interactive --env ROUTE_TABLE mozilla/ingestion-edge:latest bin/pytest tests/integration --server https://myedgeserver.example.com
+
+# docker-compose
+docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --server https://myedgeserver.example.com
+
+# pytest wrapper
+./bin/pytest tests/integration --server https://myedgeserver.example.com
+</code></pre>
+
+<h3 id="load-tests">Load Tests</h3>
+<p>Run a load test (defaults to a single GKE cluster and a PubSub emulator)</p>
+<pre><code class="bash"># docker using latest image and no git checkout
+docker run --rm --tty --interactive mozilla/ingestion-edge:latest bin/pytest tests/load
+
+# docker-compose
+docker-compose run --rm test bin/pytest tests/load
+
+# pytest
+./bin/pytest tests/load
+</code></pre>
+
+<p>Load test options (from <code>./bin/test -h</code>)</p>
+<pre><code>  --min-success-rate=MIN_SUCCESS_RATE
+                        Minimum 200 responses per non-200 response to require
+                        during --test-period, default is 1000 (0.1% errors)
+  --min-throughput=MIN_THROUGHPUT
+                        Minimum 200 responses per second to require during
+                        --test-period, default is 15000
+  --test-period=TEST_PERIOD
+                        Number of seconds to evaluate after warmup, default is
+                        1800 (30 minutes)
+  --warmup-threshold=WARMUP_THRESHOLD
+                        Minimum 200 responses per second that indicate warmup
+                        is complete, default is 15000
+  --warmup-timeout=WARMUP_TIMEOUT
+                        Maximum number of seconds to wait for warmup to
+                        complete, default is 600 (10 minutes)
+  --cluster=CLUSTER     Name of GKE cluster to create for test resources,
+                        default is 'load-test', ignored when --load-balancer
+                        and --no-traffic-generator are both specified
+  --location=LOCATION   Location to use for --cluster, default is us-west1
+  --preemptible         Use preemptible instances for --cluster, default is
+                        False
+  --project=PROJECT     Project to use for --cluster, default is from
+                        credentials
+  --load-balancer=LOAD_BALANCER
+                        Load Balancing url map to monitor, implies --no-
+                        generator when --server-uri is not specified, ignores
+                        --image and --no-emulator
+  --server-uri=SERVER_URI
+                        Server uri like 'https://edge.stage.domain.com/submit/
+                        telemetry/suffix', ignored when --no-generator is
+                        specified or --load-balancer is missing
+  --image=IMAGE         Docker image for server deployment, default is
+                        'mozilla/ingestion-edge:latest', ignored when --load-
+                        balancer is specified
+  --no-emulator         Don't use a PubSub emulator, ignored when --load-
+                        balancer is specified
+  --topic=TOPIC         PubSub topic name, default is 'topic', ignored when
+                        --load-balancer is specified
+  --no-generator        Don't deploy a traffic generator, ignore --script
+  --script=SCRIPT       Lua script to use for traffic generator deployment,
+                        default is 'tests/load/wrk/telemetry.lua', ignored
+                        when --no-generator is specified
+</code></pre></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
+
+<!--
+MkDocs version : 1.0.4
+Build Date UTC : 2019-08-12 20:36:41
+-->

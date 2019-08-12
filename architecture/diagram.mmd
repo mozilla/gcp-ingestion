@@ -1,0 +1,47 @@
+%% To install the mmdc command run:
+%%   npm install -g mermaid.cli
+%% To update this file run:
+%%   mmdc -i diagram.mmd -o diagram.svg
+%% Or use the docker wrapper in this repo (from the top-level directory):
+%%   ./bin/update-diagrams
+
+graph TD
+
+f1(Producers) --> k1(Ingestion Edge)
+k1 --> p1(Raw Topics)
+p1 --> d1(Landfill Sink)
+d1 --> c1(Cloud Storage)
+p1 --> d2(Decoder)
+m1(Cloud Memorystore) --- d2
+d2 --> p2(Decoded Topics)
+p2 --> d3(BigQuery Sink)
+d3 --> b1(BigQuery)
+p2 --> d4(Dataset Sink)
+d4 --> c2(Cloud Storage)
+p2 --> d5(Republisher)
+m1 --> d5
+d5 --> p5(Per DocType Topics)
+d5 --> p6(Monitoring Sample Topics)
+
+subgraph Colors
+    d(Dataflow jobs are green)
+    k(Kubernetes services are magenta)
+    f(Producers are orange)
+    p(PubSub topics are cyan)
+    g(Google Cloud services are purple)
+
+    %% connect them to make the key vertical
+    d --- k
+    k --- f
+    f --- p
+    p --- g
+end
+
+classDef cyan fill:#eff,stroke:#099;
+classDef green fill:#efe,stroke:#090;
+classDef magenta fill:#fef,stroke:#909;
+classDef orange fill:#fee,stroke:#f90;
+class p,p0,p1,p2,p3,p4,p5,p6 cyan
+class d,d0,d1,d2,d3,d4,d5 green
+class k,k0,k1 magenta
+class f,f1 orange

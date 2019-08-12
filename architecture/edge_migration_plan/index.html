@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Edge Migration Plan - GCP Ingestion</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">GCP Ingestion</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li >
+                                <a href="../../ingestion-edge/">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../ingestion-beam/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../../ingestion-beam/ingestion_testing_workflow/">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../overview/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../differences_from_aws/">Differences from AWS</a>
+</li>
+                                    
+<li >
+    <a href="../pain_points/">Pain Points</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Edge Migration Plan</a>
+</li>
+                                    
+<li >
+    <a href="../reliability/">Reliability</a>
+</li>
+                                    
+<li >
+    <a href="../test_requirements/">Test requirements</a>
+</li>
+                                    
+<li >
+    <a href="../landfill_service_specification/">Landfill Service Specification</a>
+</li>
+                                    
+<li >
+    <a href="../edge_server_specification.md">Edge Server Specification</a>
+</li>
+                                    
+<li >
+    <a href="../bigquery_sink_specification/">BigQuery Sink Specification</a>
+</li>
+                                    
+<li >
+    <a href="../decoder_service_specification/">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li >
+                                <a rel="next" href="../pain_points/">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li >
+                                <a rel="prev" href="../reliability/">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#plans-for-migrating-edge-traffic-to-gcp-ingestion">Plans for migrating edge traffic to GCP Ingestion</a></li>
+            <li><a href="#current-state">Current state</a></li>
+            <li><a href="#phase-1">Phase 1</a></li>
+            <li><a href="#phase-2">Phase 2</a></li>
+            <li><a href="#phase-3">Phase 3</a></li>
+            <li><a href="#phase-3-alternative">Phase 3 (alternative)</a></li>
+            <li><a href="#phase-4">Phase 4</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="plans-for-migrating-edge-traffic-to-gcp-ingestion">Plans for migrating edge traffic to GCP Ingestion</h1>
+<p>This document outlines plans to migrate edge traffic from AWS to GCP using the code in this repository.</p>
+<h2 id="current-state">Current state</h2>
+<p>Today, data producers send data to the ingestion stack on AWS as described <a href="https://github.com/mozilla/firefox-data-docs/blob/042fddcbf27aa5993ee5578224200a3ef65fd7c7/src/concepts/pipeline/data_pipeline_detail.md#ingestion">here</a>.</p>
+<h2 id="phase-1">Phase 1</h2>
+<p>Timeline: <strong>Q4 2018</strong></p>
+<pre><code>Data Producers -&gt; AWS Edge -&gt; Kafka -&gt; AWS Hindsight -&gt; PubSub -&gt; GCP Hindsight w/ HTTP Output -&gt; GCP Edge
+</code></pre>
+
+<p>In this configuration we get 100% of "expected" data going to the GCP pipeline without any risk of affecting production AWS processing.</p>
+<p>This "expected" data does <em>not</em> include recording and replaying traffic that we currently throw away at the edge (e.g. data from Firefox versions prior to unified telemetry). There may be some other subtle differences from the original incoming data from producers, such as missing some headers that are not currently being stored in Landfill. On the whole, this is a good approximation of 100% of the data we actually care about. We also need to test operation of the new system while processing data we <em>don't</em> care about; see more detail in Phase 3 below.</p>
+<p>During this phase, we will collect logging info to determine exactly what data is being ignored by limiting to this "expected" data.</p>
+<p>Why have a GCP PubSub topic instead of running an HTTP output from the AWS consumer directly? The main reason is that we want 100% of data in a PubSub topic anyway, for staging purposes. This way we can have a production GCP Edge ingestion stack writing to production GCP resources, while being able to e.g. simulate load and various outage conditions using the same data in a staging environment. We could in theory do the stage testing using the prod GCP edge output topic, assuming the edge has no issues. This will be the eventual end state of the system when there's no more AWS, but we are currently reusing most of the hindsight tooling for stage testing since it's already written and working in production.</p>
+<h2 id="phase-2">Phase 2</h2>
+<p>Timeline: <strong>possibly Q4 2018</strong></p>
+<pre><code>Data Producers -&gt; AWS Edge -&gt; Kafka -&gt; AWS Hindsight w/ HTTP Output -&gt; GCP Edge
+</code></pre>
+
+<p>We continue to write the Hindsight PubSub topic from Phase 1, but we move the HTTP output to the AWS side. This will help us better empirically determine performance and various other implications of cross-cloud requests without potentially affecting production AWS processing. We can still use the GCP PubSub topic for stage testing, but it won't necessarily be actively used and the production GCP Edge will be receiving its data directly from AWS via HTTP POST.</p>
+<h2 id="phase-3">Phase 3</h2>
+<p>Timeline: <strong>2019</strong></p>
+<pre><code>Data Producers -&gt; AWS Tee -&gt; AWS Edge
+                          \
+                           `-&gt; GCP Edge
+</code></pre>
+
+<p>This is how we did the last major migration from <a href="https://hekad.readthedocs.io/en/v0.10.0/"><code>Heka</code></a> to <a href="http://mozilla-services.github.io/hindsight/"><code>Hindsight</code></a>.</p>
+<p>This architecture introduces risk of data loss, so should be considered more dangerous than previous phases. This is why we are not planning on doing this until we're reasonably confident in the efficacy of the GCP infrastructure. In active tee mode, the client will be affected by GCP edge processing, particularly in request processing time and potentially by its status code. Depending on how we configure the tee, the AWS data ingestion infrastructure is susceptible to data duplication or loss due to client retry behavior. </p>
+<p>We should ensure that we are sufficiently confident in the behavior, performance, and stability of the GCP Edge before we move to this phase to ensure things don't go south. The previous phases are safer and should let us discover any major issues before we proceed to this phase.</p>
+<p>This does the "last mile" testing of most of the major missing pieces from earlier phases, in addition to prepping for the eventual fourth phase.</p>
+<h2 id="phase-3-alternative">Phase 3 (alternative)</h2>
+<pre><code>Data Producers -&gt; Weighted DNS -&gt; AWS Edge
+                               \
+                                `-&gt; GCP edge
+</code></pre>
+
+<p>This alternative does not make use of a Tee to duplicate traffic.</p>
+<p>Depending on the results of Phase 2, an alternative strategy to teeing would be weighted DNS and running two GCP edges. In this configuration we could e.g. tee 1% of data directly to one of the GCP edges, while having the other 99% be processed by the other edge as per earlier phases. We would then need to do the reverse of Phase 1 and write that 1% back to AWS + Kafka for the AWS ingestion stack to process. This strategy can be just as dangerous as using the <code>OpenResty</code> tee because data loss on either side may result in partial data to both, and also requires writing code to convert the GCP representation back to the AWS representation. The risk can be mitigated by using the DNS weights to adjust the amount of data being sent directly to GCP, which is an advantage. This is an interesting variation more similar to a standard DNS cut-over, if required.</p>
+<h2 id="phase-4">Phase 4</h2>
+<p>Timeline: <strong>To Be Determined</strong></p>
+<pre><code>Data Producers -&gt; GCP Edge
+</code></pre>
+
+<p>This will happen after we are confident that there is no risk of data loss by switching the endpoint to the GCP stack. It will also depend on the logistics and timing of sunsetting systems and components in AWS.</p></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
