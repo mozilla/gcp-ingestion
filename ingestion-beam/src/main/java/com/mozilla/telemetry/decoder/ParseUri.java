@@ -47,9 +47,6 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     }
   }
 
-  private static class NullUriException extends InvalidUriException {
-  }
-
   private ParseUri() {
   }
 
@@ -94,7 +91,10 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     // parse uri based on prefix
     final String uri = attributes.get("uri");
     if (uri == null) {
-      throw new NullUriException();
+      // We should only have a missing uri attribute if we're replaying messages from decoded
+      // payloads in which case they already have parsed URI attributes encoded in the payload
+      // and these will be recovered in ParsePayload.
+      return message;
     } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
       // We don't yet have access to the version field, so we delay populating the document_version
       // attribute until the ParsePayload step where we have map-like access to the JSON content.
