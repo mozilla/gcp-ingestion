@@ -1,4 +1,4 @@
-# Ingestion Edge Server
+# Ingestion Edge Service
 
 A simple service for delivering HTTP messages to Google Cloud PubSub
 

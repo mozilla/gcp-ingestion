@@ -1,6 +1,9 @@
 site_name: GCP Ingestion
 site_description: Mozilla Telemetry ingestion on Google Cloud Platform
 site_author: Mozilla Data Platform Team
+
+repo_url: https://github.com/mozilla/gcp-ingestion/
+
 nav:
   - Home: index.md
   - ingestion-edge: ingestion-edge/index.md
@@ -18,3 +21,7 @@ nav:
     - Edge Server Specification: architecture/edge_service_specification.md
     - BigQuery Sink Specification: architecture/bigquery_sink_specification.md
     - Decoder Service Specification: architecture/decoder_service_specification.md
+
+theme:
+    name: mkdocs
+    custom_dir: custom_docs_theme/
