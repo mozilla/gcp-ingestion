@@ -1,28 +1,16 @@
-[![CircleCI](https://circleci.com/gh/mozilla/gcp-ingestion.svg?style=svg&circle-token=d98a470269580907d5c6d74d0e67612834a21be7)](https://circleci.com/gh/mozilla/gcp-ingestion)
-
 # Ingestion Edge Server
 
 A simple service for delivering HTTP messages to Google Cloud PubSub
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-  - [Building](#building)
-  - [Running](#running)
-  - [Configuration](#configuration)
-  - [Testing](#testing)
-    - [Style Checks](#style-checks)
-    - [Unit Tests](#unit-tests)
-    - [Integration Tests](#integration-tests)
-    - [Load Tests](#load-tests)
-- [License](#license)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+The source code lives in the [ingestion-edge](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam)
+subdirectory of the gcp-ingestion repository.
 
 ## Building
 
-Install and update dependencies as-needed
+We assume that you have [docker-compose](https://docs.docker.com/compose/)
+installed.
+
+From inside the `ingestion-edge` subdirectory:
 
 ```bash
 # docker-compose
@@ -230,8 +218,3 @@ Load test options (from `./bin/test -h`)
                         when --no-generator is specified
 ```
 
-# License
-
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/.
