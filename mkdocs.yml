@@ -21,3 +21,7 @@ nav:
     - Edge Server Specification: architecture/edge_service_specification.md
     - BigQuery Sink Specification: architecture/bigquery_sink_specification.md
     - Decoder Service Specification: architecture/decoder_service_specification.md
+
+theme:
+    name: mkdocs
+    custom_dir: custom_docs_theme/
