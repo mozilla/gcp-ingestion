@@ -524,6 +524,12 @@ use the `bin/mvn` executable to run maven in docker:
 ./bin/mvn clean test
 ```
 
+If you wish to just run a single test, try something like this:
+
+```bash
+./bin/mvn test -Dtest=com.mozilla.telemetry.util.SnakeCaseTest
+```
+
 To run the project in a sandbox against production data, see this document on
 [configuring an integration testing workflow](./ingestion_testing_workflow.md).
 
