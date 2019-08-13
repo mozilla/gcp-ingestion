@@ -118,15 +118,9 @@
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li >
-                                <a rel="next" href="..">
-                                    <i class="fa fa-arrow-left"></i> Previous
-                                </a>
-                            </li>
-                            <li >
-                                <a rel="prev" href="../ingestion-beam/">
-                                    Next <i class="fa fa-arrow-right"></i>
-                                </a>
+
+                            <li>
+                                <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-edge/index.md"><i class="fa fa-github"></i> Edit on GitHub</a>
                             </li>
                     </ul>
                 </div>
@@ -136,7 +130,7 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#ingestion-edge-server">Ingestion Edge Server</a></li>
+        <li class="main active"><a href="#ingestion-edge-service">Ingestion Edge Service</a></li>
             <li><a href="#building">Building</a></li>
             <li><a href="#running">Running</a></li>
             <li><a href="#configuration">Configuration</a></li>
@@ -145,7 +139,7 @@
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h1 id="ingestion-edge-server">Ingestion Edge Server</h1>
+<h1 id="ingestion-edge-service">Ingestion Edge Service</h1>
 <p>A simple service for delivering HTTP messages to Google Cloud PubSub</p>
 <p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam">ingestion-edge</a>
 subdirectory of the gcp-ingestion repository.</p>
@@ -416,5 +410,5 @@ docker-compose run --rm test bin/pytest tests/load
 
 <!--
 MkDocs version : 1.0.4
-Build Date UTC : 2019-08-13 13:25:18
+Build Date UTC : 2019-08-13 17:54:08
 -->
