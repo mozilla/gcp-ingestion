@@ -9,14 +9,23 @@ jobs:
         name: Spell Check
         command: mdspell --ignore-numbers --en-us --report '**/*.md'
 
-  doctoc:
+  docs:
     docker:
-    - image: node:8.10.0
+    - image: circleci/python:3.7
     steps:
-      - checkout
-      - run:
-          name: Ensure markdown tables of contents are up to date
-          command: ./.circleci/doctoc-check.sh
+    - checkout
+    - run:
+        name: Install dependencies
+        command: sudo pip install mkdocs markdown-include
+    - add_ssh_keys:
+        fingerprints:
+          "84:b0:66:dd:ec:68:b1:45:9d:5d:66:fd:4a:4f:1b:57"
+    - run:
+        name: Build and deploy docs
+        command: |
+          if [ $CIRCLE_BRANCH == "master" ]; then
+            mkdocs gh-deploy
+          fi
 
   ingestion-edge: &ingestion-edge
     working_directory: /root/project/ingestion-edge
@@ -173,7 +182,10 @@ workflows:
   build:
     jobs:
     - spelling
-    - doctoc
+    - docs:
+        filters:
+          tags:
+            only: /.*/
     - ingestion-edge
     - ingestion-edge-release:
         filters:

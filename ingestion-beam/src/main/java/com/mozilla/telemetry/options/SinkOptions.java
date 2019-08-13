@@ -66,6 +66,32 @@ public interface SinkOptions extends PipelineOptions {
 
   void setSchemaAliasesLocation(ValueProvider<String> value);
 
+  @Description("Method of reading from BigQuery; the table will either be exported to GCS"
+      + " (GA and free, but may take some time to export and may hit quotas) or accessed using the "
+      + " BigQuery Storage API (beta and some cost, but faster and no quotas)")
+  @Default.Enum("export")
+  BigQueryReadMethod getBqReadMethod();
+
+  void setBqReadMethod(BigQueryReadMethod value);
+
+  @Description("When --bqReadMethod=storageapi, all rows of the input table are read by default,"
+      + " but this option can take a SQL text filtering statement, similar to a WHERE clause;"
+      + " currently, only a single predicate that is a comparison between a column and a constant"
+      + " value is supported; a likely choice to limit partitions would be something like"
+      + " \"CAST(submission_timestamp AS DATE) BETWEEN '2020-01-10' AND '2020-01-14'\"; see"
+      + " https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1beta1#tablereadoptions")
+  String getBqRowRestriction();
+
+  void setBqRowRestriction(String value);
+
+  @Description("When --bqReadMethod=storageapi, all fields of the input table are read by default,"
+      + " but this option can take a comma-separated list of field names, in which case only the"
+      + " listed fields will be read, saving costs; when reading decoded payload_bytes, none of the"
+      + " metadata fields are needed, so setting --bqSelectedFields=payload is recommended")
+  List<String> getBqSelectedFields();
+
+  void setBqSelectedFields(List<String> value);
+
   @Description("Method of writing to BigQuery")
   @Default.Enum("file_loads")
   BigQueryWriteMethod getBqWriteMethod();

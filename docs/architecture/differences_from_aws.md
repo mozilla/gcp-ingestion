@@ -1,22 +1,7 @@
-# Differences from AWS Architecture
+# Differences from AWS
 
 This document explains how GCP Ingestion differs from the [AWS Data Platform
 Architecture](https://mana.mozilla.org/wiki/display/SVCOPS/Telemetry+-+Data+Pipeline+Architecture).
-
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [Replace Heka Framed Protobuf with newline delimited JSON](#replace-heka-framed-protobuf-with-newline-delimited-json)
-- [Replace EC2 Edge with Kubernetes Edge](#replace-ec2-edge-with-kubernetes-edge)
-- [Replace Kafka with PubSub](#replace-kafka-with-pubsub)
-- [Replace Hindsight Data Warehouse Loaders with Dataflow](#replace-hindsight-data-warehouse-loaders-with-dataflow)
-- [Replace S3 with Cloud Storage](#replace-s3-with-cloud-storage)
-- [Messages Always Delivered to Message Queue](#messages-always-delivered-to-message-queue)
-- [Landfill is Downstream from Message Queue](#landfill-is-downstream-from-message-queue)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 
 ## Replace Heka Framed Protobuf with newline delimited JSON
 

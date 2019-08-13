@@ -89,14 +89,14 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       throw e;
     }
 
+    // In case this message is being replayed from an error output where AddMetadata has already
+    // been applied, we strip out any existing metadata fields and put them into attributes.
+    AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
+
     if (MessageScrubber.shouldScrub(attributes, json)) {
       // Prevent the message from going to success or error output.
       throw new MessageShouldBeDroppedException();
     }
-
-    // In case this message is being replayed from an error output where AddMetadata has already
-    // been applied, we strip out any existing metadata fields and put them into attributes.
-    AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {

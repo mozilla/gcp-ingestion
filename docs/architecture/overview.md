@@ -2,31 +2,6 @@
 
 This document specifies the architecture for GCP Ingestion as a whole.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [Architecture Diagram](#architecture-diagram)
-- [Architecture Components](#architecture-components)
-  - [Ingestion Edge](#ingestion-edge)
-  - [Landfill Sink](#landfill-sink)
-  - [Decoder](#decoder)
-  - [Republisher](#republisher)
-  - [BigQuery Sink](#bigquery-sink)
-  - [Dataset Sink](#dataset-sink)
-  - [Notes](#notes)
-- [Design Decisions](#design-decisions)
-  - [Kubernetes Engine and PubSub](#kubernetes-engine-and-pubsub)
-  - [Different topics for "raw" and "validated" data](#different-topics-for-raw-and-validated-data)
-  - [BigQuery](#bigquery)
-  - [Save messages as newline delimited JSON](#save-messages-as-newline-delimited-json)
-  - [Use destination tables](#use-destination-tables)
-  - [Use views for user-facing data](#use-views-for-user-facing-data)
-- [Known Issues](#known-issues)
-- [Further Reading](#further-reading)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 ## Architecture Diagram
 
 ![diagram.mmd](diagram.svg "Architecture Diagram")
