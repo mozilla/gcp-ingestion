@@ -1,4 +1,4 @@
-# Edge Server Specification
+# Edge Service Specification
 
 This document specifies the behavior of the server that accepts submissions
 from HTTP clients e.g. Firefox telemetry.
