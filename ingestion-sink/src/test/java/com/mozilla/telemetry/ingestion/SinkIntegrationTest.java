@@ -115,7 +115,8 @@ public class SinkIntegrationTest extends TestWithPubsubResources {
     CompletableFuture<Void> main = CompletableFuture.runAsync(() -> Sink.main(new String[] {}));
 
     String query = "SELECT * REPLACE (FORMAT_TIMESTAMP('%FT%R:%E*SZ', submission_timestamp) AS "
-        + "submission_timestamp), _TABLE_SUFFIX AS table FROM `" + project + "." + dataset + ".*`";
+        + "submission_timestamp), _TABLE_SUFFIX AS table FROM "
+        + String.format("`%s.%s.*`", project, dataset);
     AtomicReference<List<List<String>>> actual = new AtomicReference<>();
     do {
       actual.set(new LinkedList<>());
