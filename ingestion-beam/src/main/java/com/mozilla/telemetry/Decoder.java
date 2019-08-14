@@ -13,6 +13,7 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +60,7 @@ public class Decoder extends Sink {
         .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
         .apply(ParseUri.of()).errorsTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
+        .apply(LimitPayloadSize.toMB(10)).errorsTo(errorCollections) //
         .apply(ParsePayload.of(options.getSchemasLocation(), options.getSchemaAliasesLocation())) //
         .errorsTo(errorCollections) //
         .apply(ParseProxy.of()) //
