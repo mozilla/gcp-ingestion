@@ -29,6 +29,7 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
+import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.SnakeCase;
 import java.io.IOException;
@@ -275,7 +276,8 @@ public class PubsubMessageToTableRow
       }
     }
 
-    TableRow tableRow = Json.readTableRow(message.getPayload());
+    byte[] payload = GzipUtil.maybeDecompress(message.getPayload());
+    TableRow tableRow = Json.readTableRow(payload);
 
     // Strip metadata so that it's not subject to transformation.
     Object metadata = tableRow.remove(AddMetadata.METADATA);
