@@ -1,0 +1,9 @@
+# docker-compose.override.yml is in the default path for docker-compose
+version: '3.4'
+
+# override docker-compose.yml to use maven cache and detect source code changes
+services:
+  sink:
+    volumes:
+    - ~/.m2:/root/.m2
+    - ..:/app
