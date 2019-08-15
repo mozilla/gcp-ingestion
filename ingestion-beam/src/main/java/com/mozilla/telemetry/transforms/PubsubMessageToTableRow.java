@@ -23,7 +23,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
@@ -172,7 +171,7 @@ public class PubsubMessageToTableRow
         return tableSet;
       });
     } catch (ExecutionException e) {
-      throw new UncheckedExecutionException(e);
+      throw new BubbleUpException(e.getCause());
     }
 
     // Send to error collection if dataset or table doesn't exist so BigQueryIO doesn't throw a
@@ -277,7 +276,7 @@ public class PubsubMessageToTableRow
           }
         });
       } catch (ExecutionException e) {
-        throw new UncheckedExecutionException(e);
+        throw new BubbleUpException(e.getCause());
       }
     }
 
@@ -450,7 +449,7 @@ public class PubsubMessageToTableRow
     try {
       return normalizedNameCache.get(name, () -> convertNameForBq(name));
     } catch (ExecutionException e) {
-      throw new UncheckedExecutionException(e.getCause());
+      throw new BubbleUpException(e.getCause());
     }
   }
 
