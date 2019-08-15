@@ -10,6 +10,8 @@ import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.PubsubMessage;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Pubsub {
 
@@ -17,6 +19,8 @@ public class Pubsub {
   }
 
   public static class Read {
+
+    private static final Logger LOG = LoggerFactory.getLogger(Read.class);
 
     @VisibleForTesting
     Subscriber subscriber;
@@ -30,14 +34,11 @@ public class Pubsub {
                 if (exception == null) {
                   consumer.ack();
                 } else {
+                  LOG.warn("Exception while attempting to deliver message:", exception);
                   consumer.nack();
                 }
               })))
           .build();
-    }
-
-    public Read(String subscriptionName, Function<PubsubMessage, CompletableFuture<?>> output) {
-      this(subscriptionName, output, b -> b);
     }
 
     public void run() {

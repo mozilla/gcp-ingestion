@@ -9,6 +9,7 @@ import static com.mozilla.telemetry.ingestion.util.Attribute.CLIENT_ID;
 import com.google.cloud.bigquery.TableId;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.io.BigQuery.Write.TableRow;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -21,6 +22,8 @@ public class PubsubMessageToTableRow {
   }
 
   public static final String PAYLOAD = "payload";
+
+  private static final Base64.Encoder base64Encoder = Base64.getEncoder();
 
   private final String tableSpecTemplate;
   private final TableRowFormat tableRowFormat;
@@ -78,7 +81,8 @@ public class PubsubMessageToTableRow {
    */
   private Map<String, Object> rawContents(PubsubMessage message) {
     Map<String, Object> contents = new HashMap<>(message.getAttributesMap());
-    contents.put(PAYLOAD, message.getData().toByteArray());
+    // bytes must be inserted as base64 encoded strings
+    contents.put(PAYLOAD, base64Encoder.encodeToString(message.getData().toByteArray()));
     return contents;
   }
 
@@ -88,7 +92,8 @@ public class PubsubMessageToTableRow {
   static Map<String, Object> decodedContents(PubsubMessage message) {
     Map<String, Object> contents = AddMetadata
         .attributesToMetadataPayload(message.getAttributesMap());
-    contents.put(PAYLOAD, message.getData().toByteArray());
+    // bytes must be inserted as base64 encoded strings
+    contents.put(PAYLOAD, base64Encoder.encodeToString(message.getData().toByteArray()));
     // Also include client_id if present.
     Optional.ofNullable(message.getAttributesOrDefault(CLIENT_ID, null))
         .ifPresent(clientId -> contents.put(CLIENT_ID, clientId));

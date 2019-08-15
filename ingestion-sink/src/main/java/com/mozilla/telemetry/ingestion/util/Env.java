@@ -22,4 +22,12 @@ public class Env {
   public static String getString(String key, String defaultValue) {
     return Optional.ofNullable(System.getenv(key)).orElse(defaultValue);
   }
+
+  public static Integer getInt(String key, Integer defaultValue) {
+    return Optional.ofNullable(System.getenv(key)).map(Integer::new).orElse(defaultValue);
+  }
+
+  public static Long getLong(String key, Long defaultValue) {
+    return Optional.ofNullable(System.getenv(key)).map(Long::new).orElse(defaultValue);
+  }
 }
