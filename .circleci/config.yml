@@ -27,7 +27,7 @@ jobs:
             mkdocs gh-deploy
           fi
 
-  ingestion-edge: &ingestion-edge
+  ingestion-edge:
     working_directory: /root/project/ingestion-edge
     docker:
     - image: python:3.7
@@ -82,7 +82,8 @@ jobs:
     - image: docker/compose:1.22.0
     steps:
     - *checkout
-    - setup_remote_docker:
+    - &setup_remote_docker
+      setup_remote_docker:
         docker_layer_caching: true
     - run:
         name: Create version.json
@@ -94,10 +95,11 @@ jobs:
           "$CIRCLE_PROJECT_REPONAME"
           "$CIRCLE_BUILD_URL"
           > version.json
-    - run:
+    - &persist_ci_env
+      run:
         name: Persist CI environment file for passing into docker containers
         command: env | grep '^CI' > circleci.env
-    - run:
+    - run: &docker_compose_test
         name: Docker Compose Test
         command: >-
           docker-compose
@@ -106,7 +108,7 @@ jobs:
           --abort-on-container-exit
           --force-recreate
           --quiet-pull
-        environment: &compose_env
+        environment: &edge_compose_env
           COMPOSE_FILE: docker-compose.yml:docker-compose.circleci.yml
           COMPOSE_PROJECT_NAME: circleci-ingestion-edge
     - run:
@@ -114,7 +116,7 @@ jobs:
         command: |
           echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
           docker-compose push web
-        environment: *compose_env
+        environment: *edge_compose_env
 
   ingestion-beam: &ingestion_beam
     working_directory: /root/project/ingestion-beam
@@ -140,7 +142,8 @@ jobs:
         name: Download resources needed for Beam tests
         command: |
           bin/download-schemas
-    - run:
+    - &maven_test
+      run:
         name: Maven Test
         command: mvn clean test
     - *report_code_coverage
@@ -165,8 +168,9 @@ jobs:
     - *skip_unmodified
     - *restore_cache_beam
     - *download_beam_resources
-    - run:
-        name: Maven Test
+    - &maven_integration_test
+      run:
+        name: Maven Integration Test
         # Google's client libraries will check for GOOGLE_APPLICATION_CREDENTIALS
         # and use a file in that location for credentials if present;
         # See https://cloud.google.com/docs/authentication/production
@@ -176,6 +180,59 @@ jobs:
           mvn clean test -Dtest=*IntegrationTest
     - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
+
+  ingestion-sink: &ingestion_sink
+    <<: *ingestion_beam
+    working_directory: /root/project/ingestion-sink
+    steps:
+    - *checkout
+    - *skip_unmodified
+    - &sink_restore_cache
+      restore_cache:
+        keys:
+          # when lock file changes, use increasingly general patterns to restore cache
+          # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
+          - &cache_key_sink
+            maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "pom.xml" }}
+          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}
+          - maven-repo-v1-sink-{{ .Branch }}-
+          - maven-repo-v1-sink-
+          - maven-repo-v1-
+    - *maven_test
+    - *report_code_coverage
+    - save_cache:
+        paths:
+          - ~/.m2
+        key: *cache_key_sink
+
+  ingestion-sink-integration:
+    <<: *ingestion_sink
+    steps:
+    - *checkout
+    - *skip_unmodified
+    - *sink_restore_cache
+    - *maven_integration_test
+    - *report_code_coverage
+
+  ingestion-sink-release:
+    <<: *ingestion_sink
+    docker:
+      - image: docker/compose:1.22.0
+    steps:
+      - *setup_remote_docker
+      - *checkout
+      - *persist_ci_env
+      - run:
+          <<: *docker_compose_test
+          environment: &sink_compose_env
+            <<: *edge_compose_env
+            COMPOSE_PROJECT_NAME: circleci-ingestion-sink
+      - run:
+          name: Deploy to Dockerhub
+          command: |
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            docker-compose push sink
+          environment: *sink_compose_env
 
 workflows:
   version: 2
@@ -195,3 +252,11 @@ workflows:
             only: /.*/
     - ingestion-beam
     - ingestion-beam-integration
+    - ingestion-sink
+    - ingestion-sink-integration
+    - ingestion-sink-release:
+        filters:
+          branches:
+            only: master
+          tags:
+            only: /.*/
