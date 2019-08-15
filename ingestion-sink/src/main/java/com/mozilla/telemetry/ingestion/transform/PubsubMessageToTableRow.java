@@ -4,6 +4,8 @@
 
 package com.mozilla.telemetry.ingestion.transform;
 
+import static com.mozilla.telemetry.ingestion.util.Attribute.CLIENT_ID;
+
 import com.google.cloud.bigquery.TableId;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.io.BigQuery.Write.TableRow;
@@ -17,6 +19,8 @@ public class PubsubMessageToTableRow {
   public enum TableRowFormat {
     raw, decoded, payload
   }
+
+  public static final String PAYLOAD = "payload";
 
   private final String tableSpecTemplate;
   private final TableRowFormat tableRowFormat;
@@ -47,15 +51,20 @@ public class PubsubMessageToTableRow {
     final TableId tableId = getTableId(message.getAttributesMap());
     final Optional<String> documentId = Optional
         .ofNullable(message.getAttributesOrDefault("document_id", null));
+    final Map<String, Object> contents;
     switch (tableRowFormat) {
       case raw:
-        return new TableRow(tableId, message.getSerializedSize(), documentId, rawContents(message));
+        contents = rawContents(message);
+        break;
       case decoded:
+        contents = decodedContents(message);
+        break;
       case payload:
       default:
         throw new IllegalArgumentException(
             "TableRowFormat not yet implemented: " + tableRowFormat.name());
     }
+    return new TableRow(tableId, message.getSerializedSize(), documentId, contents);
   }
 
   /**
@@ -69,7 +78,20 @@ public class PubsubMessageToTableRow {
    */
   private Map<String, Object> rawContents(PubsubMessage message) {
     Map<String, Object> contents = new HashMap<>(message.getAttributesMap());
-    contents.put("payload", message.getData().toByteArray());
+    contents.put(PAYLOAD, message.getData().toByteArray());
+    return contents;
+  }
+
+  /**
+   * Like {@link #rawContents(PubsubMessage)}, but uses the nested metadata format of decoded pings.
+   */
+  static Map<String, Object> decodedContents(PubsubMessage message) {
+    Map<String, Object> contents = AddMetadata
+        .attributesToMetadataPayload(message.getAttributesMap());
+    contents.put(PAYLOAD, message.getData().toByteArray());
+    // Also include client_id if present.
+    Optional.ofNullable(message.getAttributesOrDefault(CLIENT_ID, null))
+        .ifPresent(clientId -> contents.put(CLIENT_ID, clientId));
     return contents;
   }
 }
