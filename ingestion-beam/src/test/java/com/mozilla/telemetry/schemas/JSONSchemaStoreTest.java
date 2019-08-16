@@ -39,6 +39,8 @@ public class JSONSchemaStoreTest {
     JSONSchemaStore store = JSONSchemaStore.of(SCHEMAS_LOCATION, EMPTY_ALIASING_CONFIG_LOCATION);
     assertTrue(store.docTypeExists("telemetry", "main"));
     assertTrue(store.docTypeExists("telemetry", "update"));
+    assertTrue(store.docTypeExists("telemetry", "untrustedModules"));
+    assertTrue(store.docTypeExists("telemetry", "untrusted_modules"));
   }
 
   @Test
