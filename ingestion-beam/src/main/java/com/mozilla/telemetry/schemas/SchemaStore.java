@@ -12,7 +12,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.mozilla.telemetry.util.SnakeCase;
+import com.mozilla.telemetry.ingestion.common.SnakeCase;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;

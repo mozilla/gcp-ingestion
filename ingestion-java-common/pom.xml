@@ -11,20 +11,11 @@
     </parent>
 
     <groupId>com.mozilla.telemetry</groupId>
-    <artifactId>ingestion-sink</artifactId>
+    <artifactId>ingestion-java-common</artifactId>
     <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <properties>
-        <exec.mainClass>com.mozilla.telemetry.ingestion.Sink</exec.mainClass>
-    </properties>
-
     <dependencies>
-        <dependency>
-            <groupId>com.mozilla.telemetry</groupId>
-            <artifactId>ingestion-java-common</artifactId>
-            <version>${parent.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-pubsub</artifactId>

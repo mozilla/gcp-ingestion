@@ -28,6 +28,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.mozilla.telemetry</groupId>
+            <artifactId>ingestion-java-common</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-runners-direct-java</artifactId>
             <version>${beam.version}</version>

@@ -31,7 +31,7 @@ public class Time {
    * <p>Inspired by
    * <a href="https://github.com/GoogleCloudPlatform/DataflowTemplates/blob/304bdbf4a3e2eac78adc4b06f466da82b656ef2c/src/main/java/com/google/cloud/teleport/util/DurationUtils.java">teleport DurationUtils</a>
    * and
-   * <a href="https://github.com/dropwizard/dropwizard/blob/v1.3.5/dropwizard-util/src/main/java/io/dropwizard/util/Duration.java">dropwizard-util Duration</a>.
+   * <a href="https://github.com/dropwizard/dropwizard/blob/v1.3.5/dropwizard-util/src/main/java/io/dropwizard/util/Duration.java">dropwizard-common Duration</a>.
    *
    * @param value The duration value to parse.
    * @return The {@link org.joda.time.Duration} parsed from the supplied string.

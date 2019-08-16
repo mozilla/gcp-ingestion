@@ -30,7 +30,7 @@ import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.SnakeCase;
+import com.mozilla.telemetry.ingestion.common.SnakeCase;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.HashMap;

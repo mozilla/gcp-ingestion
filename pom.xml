@@ -10,6 +10,7 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>ingestion-java-common</module>
         <module>ingestion-beam</module>
         <module>ingestion-sink</module>
     </modules>

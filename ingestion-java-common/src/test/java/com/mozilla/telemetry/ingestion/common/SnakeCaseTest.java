@@ -2,11 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.util;
+package com.mozilla.telemetry.ingestion.common;
 
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.ingestion.common.SnakeCase;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;

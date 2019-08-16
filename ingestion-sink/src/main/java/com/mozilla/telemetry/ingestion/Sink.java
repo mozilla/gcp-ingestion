@@ -8,7 +8,7 @@ import com.google.cloud.bigquery.BigQueryOptions;
 import com.mozilla.telemetry.ingestion.io.BigQuery;
 import com.mozilla.telemetry.ingestion.io.Pubsub;
 import com.mozilla.telemetry.ingestion.transform.PubsubMessageToTableRow;
-import com.mozilla.telemetry.ingestion.util.Env;
+import com.mozilla.telemetry.ingestion.common.Env;
 import java.util.concurrent.CompletableFuture;
 
 public class Sink {

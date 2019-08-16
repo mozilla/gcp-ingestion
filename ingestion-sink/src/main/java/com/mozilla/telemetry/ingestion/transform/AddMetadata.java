@@ -5,7 +5,7 @@
 package com.mozilla.telemetry.ingestion.transform;
 
 import com.google.common.collect.ImmutableList;
-import com.mozilla.telemetry.ingestion.util.Attribute;
+import com.mozilla.telemetry.ingestion.common.Attribute;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

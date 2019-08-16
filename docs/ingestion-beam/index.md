@@ -528,10 +528,10 @@ If you wish to just run a single test class or a single test case, try something
 
 ```bash
 # Run all tests in a single class
-./bin/mvn test -Dtest=com.mozilla.telemetry.util.SnakeCaseTest
+./bin/mvn test -Dtest=com.mozilla.telemetry.ingestion.common.SnakeCaseTest
 
 # Run only a single test case
-./bin/mvn test -Dtest='com.mozilla.telemetry.util.SnakeCaseTest#testSnakeCaseFormat'
+./bin/mvn test -Dtest='com.mozilla.telemetry.ingestion.common.SnakeCaseTest#testSnakeCaseFormat'
 ```
 
 To run the project in a sandbox against production data, see this document on

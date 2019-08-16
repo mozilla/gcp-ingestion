@@ -4,7 +4,7 @@
 
 package com.mozilla.telemetry.ingestion.transform;
 
-import static com.mozilla.telemetry.ingestion.util.Attribute.CLIENT_ID;
+import static com.mozilla.telemetry.ingestion.common.Attribute.CLIENT_ID;
 
 import com.google.cloud.bigquery.TableId;
 import com.google.pubsub.v1.PubsubMessage;
