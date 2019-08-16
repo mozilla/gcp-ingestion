@@ -263,7 +263,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=text", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--errorOutputType=file",
         "--bqWriteMethod=streaming", "--errorOutputFileCompression=UNCOMPRESSED",
-        "--schemasLocation=schemas.tar.gz", "--errorOutput=" + errorOutput });
+        "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 

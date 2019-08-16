@@ -5,14 +5,12 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.api.gax.retrying.RetrySettings;
-import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
-import com.google.cloud.bigquery.Dataset;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
@@ -22,23 +20,23 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Maps;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
+import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.SnakeCase;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,7 +49,6 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.commons.text.StringSubstitutor;
 
 /**
  * Parses JSON payloads using Google's JSON API model library, emitting a BigQuery-specific
@@ -87,14 +84,13 @@ public class PubsubMessageToTableRow
       .setTotalTimeout(org.threeten.bp.Duration.ofSeconds(120)) // Defaults to 50 seconds
       .build();
 
-  private final ValueProvider<String> tableSpecTemplate;
   private final ValueProvider<List<String>> strictSchemaDocTypes;
   private final ValueProvider<String> schemasLocation;
   private final ValueProvider<String> schemaAliasesLocation;
   private final ValueProvider<TableRowFormat> tableRowFormat;
+  private final KeyByBigQueryTableDestination keyByBigQueryTableDestination;
 
   // We'll instantiate these on first use.
-  private transient Cache<DatasetReference, Set<String>> tableListingCache;
   private transient Cache<TableReference, Schema> tableSchemaCache;
   private transient Cache<String, String> normalizedNameCache;
   private transient BigQuerySchemaStore schemaStore;
@@ -103,100 +99,39 @@ public class PubsubMessageToTableRow
   private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate,
       ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
       ValueProvider<String> schemaAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat) {
-    this.tableSpecTemplate = tableSpecTemplate;
     this.strictSchemaDocTypes = strictSchemaDocTypes;
     this.schemasLocation = schemasLocation;
     this.schemaAliasesLocation = schemaAliasesLocation;
     this.tableRowFormat = tableRowFormat;
+    this.keyByBigQueryTableDestination = KeyByBigQueryTableDestination.of(tableSpecTemplate);
   }
 
   @Override
-  protected KV<TableDestination, TableRow> processElement(PubsubMessage message)
-      throws IOException {
+  protected KV<TableDestination, TableRow> processElement(PubsubMessage message) {
     message = PubsubConstraints.ensureNonNull(message);
-    Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+    TableDestination tableDestination = keyByBigQueryTableDestination
+        .getTableDestination(message.getAttributeMap());
+    final TableRow tableRow = kvToTableRow(KV.of(tableDestination, message));
+    return KV.of(tableDestination, tableRow);
+  }
 
-    // We coerce all docType and namespace names to be snake_case and to remove invalid
-    // characters; these transformations MUST match with the transformations applied by the
-    // jsonschema-transpiler and mozilla-schema-generator when creating table schemas in BigQuery.
-    final String namespace = attributes.get(ParseUri.DOCUMENT_NAMESPACE);
-    final String docType = attributes.get(ParseUri.DOCUMENT_TYPE);
-    if (namespace != null) {
-      attributes.put(ParseUri.DOCUMENT_NAMESPACE, getAndCacheBqName(namespace));
-    }
-    if (docType != null) {
-      attributes.put(ParseUri.DOCUMENT_TYPE, getAndCacheBqName(docType));
-    }
-
-    // Only letters, numbers, and underscores are allowed in BigQuery dataset and table names,
-    // but some doc types and namespaces contain '-', so we convert to '_'; we don't pass all
-    // values through getAndCacheBqName to avoid expensive regex operations and polluting the
-    // cache of transformed field names.
-    attributes = Maps.transformValues(attributes, v -> v.replaceAll("-", "_"));
-
-    final String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
-
-    // Send to error collection if incomplete tableSpec; $ is not a valid char in tableSpecs.
-    if (tableSpec.contains("$")) {
-      throw new IllegalArgumentException("Element did not contain all the attributes needed to"
-          + " fill out variables in the configured BigQuery output template: "
-          + tableSpecTemplate.get());
-    }
-
-    final TableDestination tableDestination = new TableDestination(tableSpec, null,
-        TIME_PARTITIONING);
-    final TableReference ref = BigQueryHelpers.parseTableSpec(tableSpec);
-    final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
-        .setDatasetId(ref.getDatasetId());
-
-    if (bqService == null) {
-      bqService = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId())
-          .setRetrySettings(RETRY_SETTINGS).build().getService();
-    }
-
-    // Get and cache a listing of table names for this dataset.
-    Set<String> tablesInDataset;
-    if (tableListingCache == null) {
-      tableListingCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1)).build();
-    }
-    try {
-      tablesInDataset = tableListingCache.get(datasetRef, () -> {
-        Set<String> tableSet = new HashSet<>();
-        Dataset dataset = bqService.getDataset(ref.getDatasetId());
-        if (dataset != null) {
-          dataset.list().iterateAll().forEach(t -> {
-            tableSet.add(t.getTableId().getTable());
-          });
-        }
-        return tableSet;
-      });
-    } catch (ExecutionException e) {
-      throw new BubbleUpException(e.getCause());
-    }
-
-    // Send to error collection if dataset or table doesn't exist so BigQueryIO doesn't throw a
-    // pipeline execution exception.
-    if (tablesInDataset.isEmpty()) {
-      throw new IllegalArgumentException("Resolved destination dataset does not exist or has no "
-          + " tables for tableSpec " + tableSpec);
-    } else if (!tablesInDataset.contains(ref.getTableId())) {
-      throw new IllegalArgumentException("Resolved destination table does not exist: " + tableSpec);
-    }
-
-    final TableRow tableRow;
+  public TableRow kvToTableRow(KV<TableDestination, PubsubMessage> kv) {
+    PubsubMessage message = kv.getValue();
     switch (tableRowFormat.get()) {
       case raw:
-        tableRow = rawTableRow(message);
-        break;
+        return rawTableRow(message);
       case decoded:
-        tableRow = decodedTableRow(message);
-        break;
+        return decodedTableRow(message);
       case payload:
       default:
-        tableRow = payloadTableRow(message, ref, tableSpec, namespace, docType, attributes);
-        break;
+        String tableSpec = kv.getKey().getTableSpec();
+        TableReference ref = BigQueryHelpers.parseTableSpec(tableSpec);
+        try {
+          return payloadTableRow(message, ref, tableSpec);
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
     }
-    return KV.of(tableDestination, tableRow);
   }
 
   @Override
@@ -238,8 +173,8 @@ public class PubsubMessageToTableRow
     return tableRow;
   }
 
-  private TableRow payloadTableRow(PubsubMessage message, TableReference ref, String tableSpec,
-      String namespace, String docType, Map<String, String> attributes) throws IOException {
+  private TableRow payloadTableRow(PubsubMessage message, TableReference ref, String tableSpec)
+      throws IOException {
 
     if (schemaStore == null && schemasLocation != null && schemasLocation.isAccessible()
         && schemasLocation.get() != null) {
@@ -251,7 +186,7 @@ public class PubsubMessageToTableRow
     Schema schema;
     if (schemaStore != null) {
       try {
-        schema = schemaStore.getSchema(attributes);
+        schema = schemaStore.getSchema(message.getAttributeMap());
       } catch (SchemaNotFoundException e) {
         throw new IllegalArgumentException(
             "The schema store does not contain a BigQuery schema for this table: " + tableSpec, e);
@@ -260,6 +195,10 @@ public class PubsubMessageToTableRow
       if (tableSchemaCache == null) {
         tableSchemaCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1))
             .build();
+      }
+      if (bqService == null) {
+        bqService = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId())
+            .setRetrySettings(RETRY_SETTINGS).build().getService();
       }
       try {
         schema = tableSchemaCache.get(ref, () -> {
@@ -275,12 +214,16 @@ public class PubsubMessageToTableRow
       }
     }
 
-    TableRow tableRow = Json.readTableRow(message.getPayload());
+    byte[] payload = GzipUtil.maybeDecompress(message.getPayload());
+    TableRow tableRow = Json.readTableRow(payload);
 
     // Strip metadata so that it's not subject to transformation.
     Object metadata = tableRow.remove(AddMetadata.METADATA);
 
+    String namespace = message.getAttributeMap().getOrDefault(ParseUri.DOCUMENT_NAMESPACE, "");
+    String docType = message.getAttributeMap().getOrDefault(ParseUri.DOCUMENT_TYPE, "");
     final boolean strictSchema = (strictSchemaDocTypes.isAccessible()
+        && strictSchemaDocTypes.get() != null
         && strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)));
 
     // Make BQ-specific transformations to the payload structure.
