@@ -2,7 +2,7 @@
 
 A simple service for delivering HTTP messages to Google Cloud PubSub
 
-The source code lives in the [ingestion-edge](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam)
+The source code lives in the [ingestion-edge](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-edge)
 subdirectory of the gcp-ingestion repository.
 
 ## Building
@@ -173,7 +173,7 @@ docker-compose run --rm test bin/pytest tests/load
 
 Load test options (from `./bin/test -h`)
 
-```
+```plain
   --min-success-rate=MIN_SUCCESS_RATE
                         Minimum 200 responses per non-200 response to require
                         during --test-period, default is 1000 (0.1% errors)
