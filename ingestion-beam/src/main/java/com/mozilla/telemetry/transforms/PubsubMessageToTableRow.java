@@ -251,12 +251,7 @@ public class PubsubMessageToTableRow
     Schema schema;
     if (schemaStore != null) {
       try {
-        // The untrustedModules docType is translated to untrusted_modules in attributes,
-        // but the schema store supports hyphens rather than underscores, so it appears as
-        // untrusted-modules there and we have to translate.
-        Map<String, String> hyphenatedAttributes = Maps.transformValues(attributes,
-            v -> v.replaceAll("_", "-"));
-        schema = schemaStore.getSchema(hyphenatedAttributes);
+        schema = schemaStore.getSchema(attributes);
       } catch (SchemaNotFoundException e) {
         throw new IllegalArgumentException(
             "The schema store does not contain a BigQuery schema for this table: " + tableSpec, e);
@@ -459,7 +454,7 @@ public class PubsubMessageToTableRow
    * <p>The format must match exactly with the transformations made by jsonschema-transpiler
    * and mozilla-pipeline-schemas. In general, this format requires converting camelCase to
    * snake_case, replacing incompatible characters like '-' with underscores, and prepending
-   * and underscore to names that begin with a digit.
+   * an underscore to names that begin with a digit.
    */
   @VisibleForTesting
   static String convertNameForBq(String name) {
