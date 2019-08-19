@@ -141,7 +141,7 @@
 
 <h1 id="ingestion-edge-service">Ingestion Edge Service</h1>
 <p>A simple service for delivering HTTP messages to Google Cloud PubSub</p>
-<p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam">ingestion-edge</a>
+<p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-edge">ingestion-edge</a>
 subdirectory of the gcp-ingestion repository.</p>
 <h2 id="building">Building</h2>
 <p>We assume that you have <a href="https://docs.docker.com/compose/">docker-compose</a>
@@ -285,7 +285,7 @@ docker-compose run --rm test bin/pytest tests/load
 </code></pre>
 
 <p>Load test options (from <code>./bin/test -h</code>)</p>
-<pre><code>  --min-success-rate=MIN_SUCCESS_RATE
+<pre><code class="plain">  --min-success-rate=MIN_SUCCESS_RATE
                         Minimum 200 responses per non-200 response to require
                         during --test-period, default is 1000 (0.1% errors)
   --min-throughput=MIN_THROUGHPUT
@@ -410,5 +410,5 @@ docker-compose run --rm test bin/pytest tests/load
 
 <!--
 MkDocs version : 1.0.4
-Build Date UTC : 2019-08-16 21:52:08
+Build Date UTC : 2019-08-19 15:44:41
 -->

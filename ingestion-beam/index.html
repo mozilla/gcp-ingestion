@@ -362,7 +362,7 @@ gsutil cat $BUCKET/output/*
 <p>Dataflow templates make a distinction between
 <a href="https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface">runtime parameters that implement the <code>ValueProvider</code> interface</a>
 and compile-time parameters which do not.
-All option can be specified at template compile time by passing command line flags,
+All options can be specified at template compile time by passing command line flags,
 but runtime parameters can also be overridden when
 <a href="https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud">executing the template</a>
 via the <code>--parameters</code> flag.
@@ -432,13 +432,15 @@ configured error output.</p>
 unmodified.</p>
 <h4 id="geoip-lookup">GeoIP Lookup</h4>
 <ol>
-<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute</li>
+<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute<ul>
 <li>when the <code>x_pipeline_proxy</code> attribute is not present, use the
-     second-to-last value (since the last value is a forwarding rule IP
-     added by Google load balancer)</li>
+ second-to-last value (since the last value is a forwarding rule IP
+ added by Google load balancer)</li>
 <li>when the <code>x_pipeline_proxy</code> attribute is present, use the third-to-last
-     value (since the tee introduces an additional proxy IP)</li>
+ value (since the tee introduces an additional proxy IP)</li>
 <li>fall back to the <code>remote_addr</code> attribute, then to an empty string</li>
+</ul>
+</li>
 <li>Execute the following steps until one fails and ignore the exception<ol>
 <li>Parse <code>ip</code> using <code>InetAddress.getByName</code></li>
 <li>Lookup <code>ip</code> in the configured <code>GeoIP2City.mmdb</code></li>
