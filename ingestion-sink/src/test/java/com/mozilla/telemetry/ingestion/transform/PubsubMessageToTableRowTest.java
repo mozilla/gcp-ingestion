@@ -28,9 +28,8 @@ public class PubsubMessageToTableRowTest {
     assertEquals("telemetry_raw", actual.tableId.getDataset());
     assertEquals("main_v4", actual.tableId.getTable());
     assertEquals(104, actual.byteSize);
-    assertEquals("test", new String((byte[]) actual.content.remove("payload")));
     assertEquals(ImmutableMap.of("document_id", "id", "document_namespace", "telemetry",
-        "document_type", "main", "document_version", "4"), actual.content);
+        "document_type", "main", "document_version", "4", "payload", "dGVzdA=="), actual.content);
   }
 
   @Test
@@ -42,10 +41,8 @@ public class PubsubMessageToTableRowTest {
     assertEquals("_raw", actual.tableId.getDataset());
     assertEquals("_v", actual.tableId.getTable());
     assertEquals(65, actual.byteSize);
-    assertEquals("", new String((byte[]) actual.content.remove("payload")));
-    assertEquals(
-        ImmutableMap.of("document_namespace", "", "document_type", "", "document_version", ""),
-        actual.content);
+    assertEquals(ImmutableMap.of("document_namespace", "", "document_type", "", "document_version",
+        "", "payload", ""), actual.content);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -103,7 +100,6 @@ public class PubsubMessageToTableRowTest {
     assertEquals("telemetry_decoded", actual.tableId.getDataset());
     assertEquals("document_type_vdocument_version", actual.tableId.getTable());
     assertEquals(916, actual.byteSize);
-    assertEquals("test", new String((byte[]) actual.content.remove("payload")));
 
     assertEquals(
         ImmutableMap.builder()
@@ -131,7 +127,7 @@ public class PubsubMessageToTableRowTest {
             .put("normalized_country_code", "normalized_country_code")
             .put("normalized_os", "normalized_os")
             .put("normalized_os_version", "normalized_os_version").put("sample_id", 42)
-            .put("client_id", "client_id").build(),
+            .put("payload", "dGVzdA==").put("client_id", "client_id").build(),
         actual.content);
   }
 
@@ -165,7 +161,6 @@ public class PubsubMessageToTableRowTest {
     assertEquals("document_namespace_decoded", actual.tableId.getDataset());
     assertEquals("document_type_vdocument_version", actual.tableId.getTable());
     assertEquals(925, actual.byteSize);
-    assertEquals("test", new String((byte[]) actual.content.remove("payload")));
 
     assertEquals(
         ImmutableMap.builder()
@@ -190,7 +185,7 @@ public class PubsubMessageToTableRowTest {
             .put("normalized_country_code", "normalized_country_code")
             .put("normalized_os", "normalized_os")
             .put("normalized_os_version", "normalized_os_version").put("sample_id", 42)
-            .put("client_id", "client_id").build(),
+            .put("payload", "dGVzdA==").put("client_id", "client_id").build(),
         actual.content);
   }
 
@@ -203,9 +198,8 @@ public class PubsubMessageToTableRowTest {
     assertEquals("_decoded", actual.tableId.getDataset());
     assertEquals("_v", actual.tableId.getTable());
     assertEquals(80, actual.byteSize);
-    assertEquals("", new String((byte[]) actual.content.remove("payload")));
     assertEquals(
-        ImmutableMap.of("metadata",
+        ImmutableMap.of("payload", "", "metadata",
             ImmutableMap.builder().put("document_namespace", "").put("document_type", "")
                 .put("document_version", "").put("geo", ImmutableMap.of())
                 .put("header", ImmutableMap.of()).put("user_agent", ImmutableMap.of()).build()),
