@@ -7,13 +7,16 @@ package com.mozilla.telemetry.options;
 import com.mozilla.telemetry.io.Write;
 import com.mozilla.telemetry.io.Write.FileOutput;
 import com.mozilla.telemetry.io.Write.PrintOutput;
-import com.mozilla.telemetry.io.Write.PubsubOutput;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
@@ -53,8 +56,28 @@ public enum ErrorOutputType {
 
     /** Return a PTransform that writes to Google Pubsub. */
     public Write writeFailures(SinkOptions.Parsed options) {
-      return new PubsubOutput(options.getErrorOutput(), options.getErrorOutputPubsubCompression(),
-          PubsubConstraints.MAX_ENCODABLE_MESSAGE_BYTES);
+      return new Write() {
+
+        @Override
+        public Result<PDone> expand(PCollection<PubsubMessage> input) {
+          // We write errors from many pipelines to a single error topic, so the topic name itself
+          // does not tell us provenance and we must encode that as attributes; see
+          // https://github.com/mozilla/gcp-ingestion/issues/756
+          return input.apply("AddPipelineAttributes",
+              MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
+                message = PubsubConstraints.ensureNonNull(message);
+                Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+                Optional.ofNullable(options.getInput()).filter(ValueProvider::isAccessible)
+                    .map(ValueProvider::get).ifPresent(v -> attributes.put("input", v));
+                attributes.put("input_type", options.getInputType().toString());
+                attributes.put("job_name", options.getJobName());
+                return new PubsubMessage(message.getPayload(), attributes);
+              }))
+              .apply(new PubsubOutput(options.getErrorOutput(),
+                  options.getErrorOutputPubsubCompression(),
+                  PubsubConstraints.MAX_ENCODABLE_MESSAGE_BYTES));
+        }
+      };
     }
   };
 
@@ -87,7 +110,7 @@ public enum ErrorOutputType {
                           message.getAttributeMap().entrySet().stream()
                               .filter(e -> !e.getKey().startsWith("stack_trace"))
                               .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))))
-              .apply(writeFailures(options));
+              .apply("WriteFailures", writeFailures(options));
         }
       };
     }
