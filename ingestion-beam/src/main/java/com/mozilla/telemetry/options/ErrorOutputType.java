@@ -56,6 +56,10 @@ public enum ErrorOutputType {
 
     /** Return a PTransform that writes to Google Pubsub. */
     public Write writeFailures(SinkOptions.Parsed options) {
+      final ValueProvider<String> inputValueProvider = options.getInput();
+      final String inputType = options.getInputType().toString();
+      final String jobName = options.getJobName();
+
       return new Write() {
 
         @Override
@@ -67,10 +71,10 @@ public enum ErrorOutputType {
               MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
                 message = PubsubConstraints.ensureNonNull(message);
                 Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-                Optional.ofNullable(options.getInput()).filter(ValueProvider::isAccessible)
+                Optional.ofNullable(inputValueProvider).filter(ValueProvider::isAccessible)
                     .map(ValueProvider::get).ifPresent(v -> attributes.put("input", v));
-                attributes.put("input_type", options.getInputType().toString());
-                attributes.put("job_name", options.getJobName());
+                attributes.put("input_type", inputType);
+                attributes.put("job_name", jobName);
                 return new PubsubMessage(message.getPayload(), attributes);
               }))
               .apply(new PubsubOutput(options.getErrorOutput(),
