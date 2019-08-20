@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BigQuery {
 
@@ -35,16 +37,22 @@ public class BigQuery {
 
   public static class Write implements Function<Write.TableRow, CompletableFuture<Write.TableRow>> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(Write.class);
+
     private final com.google.cloud.bigquery.BigQuery bigquery;
-    private final int maxBytes = 10_000_000; // HTTP request size limit: 10 MB
-    private final int maxMessages = 10_000; // Maximum rows per request: 10,000
-    private final long maxDelayMillis = 1000; // Default to 1 second
+    private final int maxBytes;
+    private final int maxMessages;
+    private final long maxDelayMillis;
 
     @VisibleForTesting
     final ConcurrentMap<TableId, Batch> batches = new ConcurrentHashMap<>();
 
-    public Write(com.google.cloud.bigquery.BigQuery bigquery) {
+    public Write(com.google.cloud.bigquery.BigQuery bigquery, int maxBytes, int maxMessages,
+        long maxDelayMillis) {
       this.bigquery = bigquery;
+      this.maxBytes = maxBytes;
+      this.maxMessages = maxMessages;
+      this.maxDelayMillis = maxDelayMillis;
     }
 
     @Override
@@ -55,8 +63,8 @@ public class BigQuery {
           batch.add(row).ifPresent(futureRef::set);
         }
         if (futureRef.get() == null) {
-          batch = new Batch(bigquery, row.tableId);
-          batch.add(row).ifPresent(futureRef::set);
+          batch = new Batch(bigquery, row);
+          batch.first.ifPresent(futureRef::set);
         }
         return batch;
       });
@@ -83,6 +91,8 @@ public class BigQuery {
     @VisibleForTesting
     class Batch {
 
+      final Optional<CompletableFuture<TableRow>> first;
+
       private final com.google.cloud.bigquery.BigQuery bigquery;
       private final CompletableFuture<Void> full;
       private final CompletableFuture<InsertAllResponse> result;
@@ -93,15 +103,22 @@ public class BigQuery {
       private int size = 0;
       private int byteSize = 0;
 
-      private Batch(com.google.cloud.bigquery.BigQuery bigquery, TableId tableId) {
+      private Batch(com.google.cloud.bigquery.BigQuery bigquery, TableRow row) {
         this.bigquery = bigquery;
-        builder = InsertAllRequest.newBuilder(tableId)
+        builder = InsertAllRequest.newBuilder(row.tableId)
             // ignore row values for columns not present in the table
             .setIgnoreUnknownValues(true)
             // insert all valid rows when invalid rows are present in the request
             .setSkipInvalidRows(true);
-        full = CompletableFuture.runAsync(this::timeout);
+
+        // block full from completing before the first add()
+        CompletableFuture<Void> init = new CompletableFuture<>();
+        full = init.thenRunAsync(this::timeout);
         result = full.handleAsync(this::insertAll);
+        // expose the return value for the first add()
+        first = add(row);
+        // allow full to complete
+        init.complete(null);
       }
 
       private void timeout() {
@@ -137,7 +154,8 @@ public class BigQuery {
         int index = newSize - 1;
         return Optional.of(result.thenApplyAsync(r -> {
           List<BigQueryError> errors = r.getErrorsFor(index);
-          if (!errors.isEmpty()) {
+          if (errors != null && !errors.isEmpty()) {
+            LOG.warn(errors.toString());
             throw new WriteErrors(errors);
           }
           return row;

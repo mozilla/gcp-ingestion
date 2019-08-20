@@ -7,6 +7,7 @@ package com.mozilla.telemetry.ingestion.io;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -17,13 +18,41 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
+import org.junit.Before;
 import org.junit.Test;
 
 public class BigQueryTest {
 
+  private com.google.cloud.bigquery.BigQuery bigquery;
+  private BigQuery.Write output;
+  private InsertAllResponse response;
+
+  @Before
+  public void mockBigQueryResponse() {
+    bigquery = mock(com.google.cloud.bigquery.BigQuery.class);
+    response = mock(InsertAllResponse.class);
+    when(bigquery.insertAll(any())).thenReturn(response);
+    when(response.getErrorsFor(anyLong())).thenReturn(ImmutableList.of());
+    output = new BigQuery.Write(bigquery, 10, 10, 100);
+  }
+
+  @Test
+  public void canReturnSuccess() {
+    BigQuery.Write.TableRow row = new BigQuery.Write.TableRow(TableId.of("", ""), 0,
+        Optional.empty(), ImmutableMap.of("", ""));
+    assertEquals(row, output.apply(row).join());
+  }
+
+  @Test
+  public void canSendWithNoDelay() {
+    output = new BigQuery.Write(bigquery, 1, 1, 0);
+    output.apply(
+        new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(), ImmutableMap.of()));
+    assertEquals(1, output.batches.get(TableId.of("", "")).builder.build().getRows().size());
+  }
+
   @Test
   public void canBatchMessages() {
-    BigQuery.Write output = new BigQuery.Write(null);
     for (int i = 0; i < 2; i++) {
       output.apply(
           new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(), ImmutableMap.of()));
@@ -33,48 +62,25 @@ public class BigQueryTest {
 
   @Test
   public void canLimitBatchMessageCount() {
-    BigQuery.Write output = new BigQuery.Write(null);
-    for (int i = 0; i < 10_0001; i++) {
+    for (int i = 0; i < 11; i++) {
       output.apply(
           new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(), ImmutableMap.of()));
-    }
-    assertTrue(output.batches.get(TableId.of("", "")).builder.build().getRows().size() < 10_000);
-  }
-
-  @Test
-  public void canLimitBatchByteSize() {
-    BigQuery.Write output = new BigQuery.Write(null);
-    for (int i = 0; i < 10; i++) {
-      output.apply(new BigQuery.Write.TableRow(TableId.of("", ""), 1_000_000, Optional.empty(),
-          ImmutableMap.of()));
     }
     assertTrue(output.batches.get(TableId.of("", "")).builder.build().getRows().size() < 10);
   }
 
   @Test
-  public void canReturnRowOnSuccess() throws InterruptedException {
-    com.google.cloud.bigquery.BigQuery bigquery = mock(com.google.cloud.bigquery.BigQuery.class);
-    InsertAllResponse response = mock(InsertAllResponse.class);
-
-    when(bigquery.insertAll(any())).thenReturn(response);
-    when(response.getErrorsFor(0)).thenReturn(ImmutableList.of());
-
-    BigQuery.Write.TableRow row = new BigQuery.Write.TableRow(TableId.of("", ""), 0,
-        Optional.empty(), ImmutableMap.of("", ""));
-    assertEquals(row, new BigQuery.Write(bigquery).apply(row).join());
+  public void canLimitBatchByteSize() {
+    for (int i = 0; i < 2; i++) {
+      output.apply(
+          new BigQuery.Write.TableRow(TableId.of("", ""), 6, Optional.empty(), ImmutableMap.of()));
+    }
+    assertTrue(output.batches.get(TableId.of("", "")).builder.build().getRows().size() < 2);
   }
 
   @Test(expected = BigQuery.WriteErrors.class)
   public void failsOnInsertErrors() throws Throwable {
-    com.google.cloud.bigquery.BigQuery bigquery = mock(com.google.cloud.bigquery.BigQuery.class);
-    InsertAllResponse response = mock(InsertAllResponse.class);
-    // BigQueryError is a final class, so mocking it requires 'mock-maker-inline' in
-    // src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker
-    BigQueryError error = mock(BigQueryError.class);
-
-    when(bigquery.insertAll(any())).thenReturn(response);
-    when(response.getErrorsFor(0)).thenReturn(ImmutableList.of(error));
-    BigQuery.Write output = new BigQuery.Write(bigquery);
+    when(response.getErrorsFor(0)).thenReturn(ImmutableList.of(new BigQueryError("", "", "")));
 
     try {
       output.apply(new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(),
@@ -86,7 +92,6 @@ public class BigQueryTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnOversizedMessage() {
-    new BigQuery.Write(null)
-        .apply(new BigQuery.Write.TableRow(TableId.of("", ""), 10_000_000, Optional.empty(), null));
+    output.apply(new BigQuery.Write.TableRow(TableId.of("", ""), 11, Optional.empty(), null));
   }
 }

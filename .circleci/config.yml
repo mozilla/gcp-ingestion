@@ -45,6 +45,8 @@ jobs:
               echo "Run tests because [run-tests] in commit message"
           elif ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/.circleci; then
               echo "Run tests because .circleci/ was modified since branching off master"
+          elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/pom.xml; then
+              echo "Run tests because pom.xml was modified since branching off master"
           elif ! git diff --quiet origin/master... -- .; then
               echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off master"
           else
