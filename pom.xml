@@ -52,6 +52,9 @@
              check https://mvnrepository.com/artifact/org.apache.beam -->
         <google-cloud.version>1.61.0</google-cloud.version>
         <jackson.version>2.9.9</jackson.version>
+
+        <!-- Set empty default. -->
+        <exec.mainClass></exec.mainClass>
     </properties>
 
     <repositories>
@@ -114,7 +117,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                  <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                    <skip>true</skip>
+                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
                 </configuration>
             </plugin>
             <plugin>
