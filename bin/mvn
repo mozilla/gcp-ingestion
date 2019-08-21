@@ -31,5 +31,5 @@ docker run $INTERACTIVE_FLAGS --rm \
     -v ~/.m2:/var/maven/.m2 \
     -e MAVEN_CONFIG=/var/maven/.m2 \
     -e GOOGLE_APPLICATION_CREDENTIALS \
-     maven:3-jdk-8 \
+    maven:3-jdk-8 \
     mvn "${PROFILE[@]}" "$@"
