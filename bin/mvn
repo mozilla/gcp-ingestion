@@ -2,7 +2,7 @@
 
 # Wrapper script for executing maven via docker, but interacting with
 # the local filesystem. Useful for local development without installing
-# Java and mvn.
+# Java and mvn and also used by Jenkins.
 
 set -eo pipefail
 
@@ -17,9 +17,14 @@ else
     PROFILE=()
 fi
 
+INTERACTIVE_FLAGS=""
+if [ -z "$NONINTERACTIVE" ]; then
+    INTERACTIVE_FLAGS="-it"
+fi
+
 # Run mvn with a non-root user id
 # https://docs.docker.com/samples/library/maven/#Running-as-non-root
-docker run -it --rm \
+docker run $INTERACTIVE_FLAGS --rm \
     -u $UID \
     -v "$(git rev-parse --show-toplevel)":/var/maven/project \
     -w /var/maven/project \

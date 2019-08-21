@@ -84,4 +84,7 @@ cd "$(dirname "$0")/.."
 # Create dir to cache maven dependencies if it doesn't already exist.
 mkdir -p ~/.m2
 
+# Jenkins doesn't want a tty, so we set a variable to let ./bin/mvn know not to allocate one.
+export NONINTERACTIVE=true
+
 ./bin/mvn compile exec:java -Dexec.mainClass=$JOB_CLASS -Dexec.args="$COMPILE_OPTIONS"
