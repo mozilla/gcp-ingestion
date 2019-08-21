@@ -9,7 +9,7 @@ public class Constant {
   private Constant() {
   }
 
-  public class Attribute {
+  public static class Attribute {
 
     private Attribute() {
     }
