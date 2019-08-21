@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.beam.sdk.metrics.Counter;
@@ -26,10 +27,10 @@ public class MessageScrubber {
    */
   public static boolean shouldScrub(Map<String, String> attributes, JSONObject json) {
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1567596
-    if ("telemetry".equals(attributes.get(ParseUri.DOCUMENT_NAMESPACE))
-        && "crash".equals(attributes.get(ParseUri.DOCUMENT_TYPE))
-        && "nightly".equals(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
-        && "20190719094503".equals(attributes.get(ParseUri.APP_BUILD_ID)) //
+    if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && "nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
+        && "20190719094503".equals(attributes.get(Attribute.APP_BUILD_ID)) //
         && Optional.of(json) //
             .map(j -> j.optJSONObject("payload")) //
             .map(j -> j.optJSONObject("metadata")) //
@@ -37,13 +38,13 @@ public class MessageScrubber {
             .filter(s -> s.contains("do not use eval with system privileges")).isPresent()) {
       countScrubbedBug1567596.inc();
       return true;
-    } else if ("telemetry".equals(attributes.get(ParseUri.DOCUMENT_NAMESPACE))
-        && "crash".equals(attributes.get(ParseUri.DOCUMENT_TYPE))
-        && (("nightly".equals(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
-            && (attributes.get(ParseUri.APP_VERSION).startsWith("68")
-                || attributes.get(ParseUri.APP_VERSION).startsWith("69")))
-            || ("beta".equals(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
-                && attributes.get(ParseUri.APP_VERSION).startsWith("68")))
+    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && (("nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
+            && (attributes.get(Attribute.APP_VERSION).startsWith("68")
+                || attributes.get(Attribute.APP_VERSION).startsWith("69")))
+            || ("beta".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
+                && attributes.get(Attribute.APP_VERSION).startsWith("68")))
         && Optional.of(json) // payload.metadata.RemoteType
             .map(j -> j.optJSONObject("payload")) //
             .map(j -> j.optJSONObject("metadata")) //
@@ -52,10 +53,10 @@ public class MessageScrubber {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1562011
       countScrubbedBug1562011.inc();
       return true;
-    } else if ("telemetry".equals(attributes.get(ParseUri.DOCUMENT_NAMESPACE))
-        && "bhr".equals(attributes.get(ParseUri.DOCUMENT_TYPE))
-        && (attributes.get(ParseUri.APP_VERSION).startsWith("68")
-            || attributes.get(ParseUri.APP_VERSION).startsWith("69"))
+    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "bhr".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && (attributes.get(Attribute.APP_VERSION).startsWith("68")
+            || attributes.get(Attribute.APP_VERSION).startsWith("69"))
         && Optional.of(json) // payload.hangs[].remoteType
             .map(j -> j.optJSONObject("payload")) //
             .map(j -> {

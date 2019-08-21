@@ -183,12 +183,14 @@ Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove
 
 #### Locally
 
-If you install Java and maven, you can invoke `mvn` directly in the following commands;
-be aware, though, that Java 8 is the target JVM and some reflection warnings may be thrown on
-newer versions, though these are generally harmless.
+If you install Java and maven, you can invoke `mvn -P ingestion-beam` from the
+git root in the following commands instead of using `./bin/mvn` from the
+`ingestion-beam/` directory; be aware, though, that Java 8 is the target JVM
+and some reflection warnings may be thrown on newer versions, though these are
+generally harmless.
 
-The provided `bin/mvn` script downloads and runs maven via docker so that less
-setup is needed on the local machine.
+The provided `bin/mvn` script downloads and runs maven with the correct profile
+via docker so that less setup is needed on the local machine.
 
 ```bash
 # create a test input file
@@ -268,7 +270,7 @@ All options can be specified at template compile time by passing command line fl
 but runtime parameters can also be overridden when
 [executing the template](https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud)
 via the `--parameters` flag.
-In the output of `--help=SinkOptions`, runtime parameters are those 
+In the output of `--help=SinkOptions`, runtime parameters are those
 with type `ValueProvider`.
 
 ```bash

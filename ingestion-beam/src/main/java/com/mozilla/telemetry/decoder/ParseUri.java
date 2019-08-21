@@ -7,6 +7,7 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.HashMap;
@@ -52,22 +53,16 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
 
   private static final ParseUri INSTANCE = new ParseUri();
 
-  public static final String DOCUMENT_NAMESPACE = "document_namespace";
-  public static final String DOCUMENT_TYPE = "document_type";
-  public static final String DOCUMENT_VERSION = "document_version";
-  public static final String DOCUMENT_ID = "document_id";
-  public static final String APP_NAME = "app_name";
-  public static final String APP_VERSION = "app_version";
-  public static final String APP_UPDATE_CHANNEL = "app_update_channel";
-  public static final String APP_BUILD_ID = "app_build_id";
   public static final String TELEMETRY = "telemetry";
 
   public static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
   public static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[] { //
-      DOCUMENT_ID, DOCUMENT_TYPE, APP_NAME, APP_VERSION, APP_UPDATE_CHANNEL, APP_BUILD_ID };
+      Attribute.DOCUMENT_ID, Attribute.DOCUMENT_TYPE, Attribute.APP_NAME, Attribute.APP_VERSION,
+      Attribute.APP_UPDATE_CHANNEL, Attribute.APP_BUILD_ID };
   public static final String GENERIC_URI_PREFIX = "/submit/";
   public static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { //
-      DOCUMENT_NAMESPACE, DOCUMENT_TYPE, DOCUMENT_VERSION, DOCUMENT_ID };
+      Attribute.DOCUMENT_NAMESPACE, Attribute.DOCUMENT_TYPE, Attribute.DOCUMENT_VERSION,
+      Attribute.DOCUMENT_ID };
 
   private static Map<String, String> zip(String[] keys, String[] values)
       throws InvalidUriException {
@@ -98,7 +93,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
       // We don't yet have access to the version field, so we delay populating the document_version
       // attribute until the ParsePayload step where we have map-like access to the JSON content.
-      attributes.put(DOCUMENT_NAMESPACE, TELEMETRY);
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, TELEMETRY);
       attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
           uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
     } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
@@ -164,9 +159,9 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         // OS architecture code
         putBoolPerCode(ImmutableMap.of("64bit_os", 1)),
         // Join three fields on "." to get os version
-        appendString(ParsePayload.OS_VERSION, "."), //
-        appendString(ParsePayload.OS_VERSION, "."), //
-        appendString(ParsePayload.OS_VERSION, "."), //
+        appendString(Attribute.OS_VERSION, "."), //
+        appendString(Attribute.OS_VERSION, "."), //
+        appendString(Attribute.OS_VERSION, "."), //
         putString("service_pack"), putBool("server_os"),
         // Exit code
         putBoolPerCodeSet(new ImmutableMap.Builder<String, Set<Integer>>()

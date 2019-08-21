@@ -9,10 +9,33 @@
     <version>0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <modules>
-        <module>ingestion-beam</module>
-        <module>ingestion-sink</module>
-    </modules>
+    <profiles>
+        <profile>
+            <id>ingestion</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <modules>
+                <module>ingestion-core</module>
+                <module>ingestion-beam</module>
+                <module>ingestion-sink</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ingestion-beam</id>
+            <modules>
+                <module>ingestion-core</module>
+                <module>ingestion-beam</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ingestion-sink</id>
+            <modules>
+                <module>ingestion-core</module>
+                <module>ingestion-sink</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

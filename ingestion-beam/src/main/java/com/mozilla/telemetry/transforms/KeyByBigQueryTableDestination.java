@@ -15,8 +15,7 @@ import com.google.cloud.bigquery.Dataset;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
-import com.mozilla.telemetry.decoder.ParseProxy;
-import com.mozilla.telemetry.decoder.ParseUri;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.SnakeCase;
 import java.time.Duration;
 import java.util.HashMap;
@@ -39,7 +38,7 @@ public class KeyByBigQueryTableDestination
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, PubsubMessage>> {
 
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
-      .setField(ParseProxy.SUBMISSION_TIMESTAMP);
+      .setField(Attribute.SUBMISSION_TIMESTAMP);
 
   public static KeyByBigQueryTableDestination of(ValueProvider<String> tableSpecTemplate) {
     return new KeyByBigQueryTableDestination(tableSpecTemplate);
@@ -51,13 +50,13 @@ public class KeyByBigQueryTableDestination
     // We coerce all docType and namespace names to be snake_case and to remove invalid
     // characters; these transformations MUST match with the transformations applied by the
     // jsonschema-transpiler and mozilla-schema-generator when creating table schemas in BigQuery.
-    final String namespace = attributes.get(ParseUri.DOCUMENT_NAMESPACE);
-    final String docType = attributes.get(ParseUri.DOCUMENT_TYPE);
+    final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
+    final String docType = attributes.get(Attribute.DOCUMENT_TYPE);
     if (namespace != null) {
-      attributes.put(ParseUri.DOCUMENT_NAMESPACE, getAndCacheNormalizedName(namespace));
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, getAndCacheNormalizedName(namespace));
     }
     if (docType != null) {
-      attributes.put(ParseUri.DOCUMENT_TYPE, getAndCacheNormalizedName(docType));
+      attributes.put(Attribute.DOCUMENT_TYPE, getAndCacheNormalizedName(docType));
     }
 
     // Only letters, numbers, and underscores are allowed in BigQuery dataset and table names,

@@ -2,13 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.ingestion.transform;
-
-import static com.mozilla.telemetry.ingestion.util.Attribute.CLIENT_ID;
+package com.mozilla.telemetry.ingestion.sink.transform;
 
 import com.google.cloud.bigquery.TableId;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.io.BigQuery.Write.TableRow;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.sink.io.BigQuery.Write.TableRow;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -95,8 +94,8 @@ public class PubsubMessageToTableRow {
     // bytes must be inserted as base64 encoded strings
     contents.put(PAYLOAD, base64Encoder.encodeToString(message.getData().toByteArray()));
     // Also include client_id if present.
-    Optional.ofNullable(message.getAttributesOrDefault(CLIENT_ID, null))
-        .ifPresent(clientId -> contents.put(CLIENT_ID, clientId));
+    Optional.ofNullable(message.getAttributesOrDefault(Attribute.CLIENT_ID, null))
+        .ifPresent(clientId -> contents.put(Attribute.CLIENT_ID, clientId));
     return contents;
   }
 }

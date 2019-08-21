@@ -2,15 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.ingestion.transform;
+package com.mozilla.telemetry.ingestion.sink.transform;
 
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.io.BigQuery.Write.TableRow;
-import com.mozilla.telemetry.ingestion.transform.PubsubMessageToTableRow.TableRowFormat;
+import com.mozilla.telemetry.ingestion.sink.io.BigQuery.Write.TableRow;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTableRow.TableRowFormat;
 import org.junit.Test;
 
 public class PubsubMessageToTableRowTest {

@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.ingestion;
+package com.mozilla.telemetry.ingestion.sink;
 
 import static org.junit.Assert.assertEquals;
 
@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.util.TestWithPubsubResources;
+import com.mozilla.telemetry.ingestion.sink.util.TestWithPubsubResources;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;

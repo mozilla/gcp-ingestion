@@ -2,14 +2,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.ingestion;
+package com.mozilla.telemetry.ingestion.sink;
 
 import com.google.api.gax.batching.FlowControlSettings;
 import com.google.cloud.bigquery.BigQueryOptions;
-import com.mozilla.telemetry.ingestion.io.BigQuery;
-import com.mozilla.telemetry.ingestion.io.Pubsub;
-import com.mozilla.telemetry.ingestion.transform.PubsubMessageToTableRow;
-import com.mozilla.telemetry.ingestion.util.Env;
+import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
+import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTableRow;
+import com.mozilla.telemetry.ingestion.sink.util.Env;
 import java.util.concurrent.CompletableFuture;
 
 public class Sink {

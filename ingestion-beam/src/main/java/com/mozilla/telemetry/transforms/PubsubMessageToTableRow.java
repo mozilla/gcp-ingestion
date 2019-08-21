@@ -21,9 +21,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.mozilla.telemetry.decoder.AddMetadata;
-import com.mozilla.telemetry.decoder.ParsePayload;
-import com.mozilla.telemetry.decoder.ParseProxy;
-import com.mozilla.telemetry.decoder.ParseUri;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.util.GzipUtil;
@@ -74,7 +72,7 @@ public class PubsubMessageToTableRow
   public static final String PAYLOAD = "payload";
   public static final String ADDITIONAL_PROPERTIES = "additional_properties";
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
-      .setField(ParseProxy.SUBMISSION_TIMESTAMP);
+      .setField(Attribute.SUBMISSION_TIMESTAMP);
 
   // We have hit rate limiting issues that have sent valid data to error output, so we make the
   // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
@@ -167,8 +165,8 @@ public class PubsubMessageToTableRow
     TableRow tableRow = new TableRow();
     AddMetadata.attributesToMetadataPayload(message.getAttributeMap()).forEach(tableRow::set);
     // Also include client_id if present.
-    Optional.ofNullable(message.getAttribute(ParsePayload.CLIENT_ID))
-        .ifPresent(clientId -> tableRow.set(ParsePayload.CLIENT_ID, clientId));
+    Optional.ofNullable(message.getAttribute(Attribute.CLIENT_ID))
+        .ifPresent(clientId -> tableRow.set(Attribute.CLIENT_ID, clientId));
     tableRow.set(PAYLOAD, message.getPayload());
     return tableRow;
   }
@@ -220,8 +218,8 @@ public class PubsubMessageToTableRow
     // Strip metadata so that it's not subject to transformation.
     Object metadata = tableRow.remove(AddMetadata.METADATA);
 
-    String namespace = message.getAttributeMap().getOrDefault(ParseUri.DOCUMENT_NAMESPACE, "");
-    String docType = message.getAttributeMap().getOrDefault(ParseUri.DOCUMENT_TYPE, "");
+    String namespace = message.getAttributeMap().getOrDefault(Attribute.DOCUMENT_NAMESPACE, "");
+    String docType = message.getAttributeMap().getOrDefault(Attribute.DOCUMENT_TYPE, "");
     final boolean strictSchema = (strictSchemaDocTypes.isAccessible()
         && strictSchemaDocTypes.get() != null
         && strictSchemaDocTypes.get().contains(String.format("%s/%s", namespace, docType)));
