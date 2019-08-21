@@ -16,6 +16,7 @@ import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import org.junit.Before;
@@ -33,7 +34,7 @@ public class BigQueryTest {
     response = mock(InsertAllResponse.class);
     when(bigquery.insertAll(any())).thenReturn(response);
     when(response.getErrorsFor(anyLong())).thenReturn(ImmutableList.of());
-    output = new BigQuery.Write(bigquery, 10, 10, 100);
+    output = new BigQuery.Write(bigquery, 10, 10, Duration.ofMillis(100));
   }
 
   @Test
@@ -45,7 +46,7 @@ public class BigQueryTest {
 
   @Test
   public void canSendWithNoDelay() {
-    output = new BigQuery.Write(bigquery, 1, 1, 0);
+    output = new BigQuery.Write(bigquery, 1, 1, Duration.ofMillis(0));
     output.apply(
         new BigQuery.Write.TableRow(TableId.of("", ""), 0, Optional.empty(), ImmutableMap.of()));
     assertEquals(1, output.batches.get(TableId.of("", "")).builder.build().getRows().size());
