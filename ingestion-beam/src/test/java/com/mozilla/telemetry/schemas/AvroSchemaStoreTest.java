@@ -8,8 +8,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.google.common.io.Resources;
-import com.mozilla.telemetry.schemas.SchemaNotFoundException;
-
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.avro.Schema;

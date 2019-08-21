@@ -6,7 +6,6 @@ package com.mozilla.telemetry.transforms;
 
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.DecompressPayload;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.testing.PAssert;

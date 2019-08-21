@@ -174,10 +174,23 @@
                 <version>1.23.0</version>
                 <configuration>
                     <java>
+                        <excludes>
+                            <!-- exclude beam patch from formatting -->
+                            <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/WriteTables.java</exclude>
+                        </excludes>
+                        <licenseHeader>
+                            <!-- end license header with extra trailing newline to separate from package statement -->
+                            <file>${maven.multiModuleProjectDirectory}/checkstyle/java.header</file>
+                        </licenseHeader>
                         <eclipse>
                             <file>https://raw.githubusercontent.com/apache/beam/v${beam.version}/sdks/java/build-tools/src/main/resources/beam/beam-codestyle.xml</file>
                             <version>4.7.1</version>
                         </eclipse>
+                        <importOrder>
+                            <!-- default import order -->
+                            <order>#</order>
+                        </importOrder>
+                        <removeUnusedImports/>
                     </java>
                 </configuration>
                 <executions>

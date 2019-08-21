@@ -10,7 +10,6 @@ import static org.junit.Assert.assertThat;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.schemas.AvroSchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
