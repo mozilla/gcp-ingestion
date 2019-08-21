@@ -10,16 +10,19 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.mozilla.telemetry</groupId>
     <artifactId>ingestion-sink</artifactId>
-    <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
-        <exec.mainClass>com.mozilla.telemetry.ingestion.Sink</exec.mainClass>
+        <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ingestion-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-pubsub</artifactId>

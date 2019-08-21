@@ -134,8 +134,9 @@ jobs:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
           - &cache_key_beam
-            maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "pom.xml" }}
-          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}
+            maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-{{ checksum "pom.xml" }}
+          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-
+          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-
           - maven-repo-v1-beam-{{ .Branch }}-
           - maven-repo-v1-beam-
           - maven-repo-v1-
@@ -147,7 +148,10 @@ jobs:
     - &maven_test
       run:
         name: Maven Test
-        command: mvn clean test
+        command: |
+          PROFILE="$(basename "$PWD")"
+          cd ..
+          mvn -P "$PROFILE" clean test
     - *report_code_coverage
     - save_cache:
         paths:
@@ -179,7 +183,9 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          mvn clean test -Dtest=*IntegrationTest
+          PROFILE="$(basename "$PWD")"
+          cd ..
+          mvn -P "$PROFILE" clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
     - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
 
@@ -195,8 +201,9 @@ jobs:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
           - &cache_key_sink
-            maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "pom.xml" }}
-          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}
+            maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-{{ checksum "pom.xml" }}
+          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-
+          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-
           - maven-repo-v1-sink-{{ .Branch }}-
           - maven-repo-v1-sink-
           - maven-repo-v1-

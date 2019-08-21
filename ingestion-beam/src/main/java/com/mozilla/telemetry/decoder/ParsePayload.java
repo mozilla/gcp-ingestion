@@ -6,6 +6,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.schemas.JSONSchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
@@ -34,11 +35,6 @@ import org.json.JSONObject;
  * incur the cost of parsing the JSON only once.
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
-
-  public static final String CLIENT_ID = "client_id";
-  public static final String SAMPLE_ID = "sample_id";
-  public static final String OS = "os";
-  public static final String OS_VERSION = "os_version";
 
   public static ParsePayload of(ValueProvider<String> schemasLocation,
       ValueProvider<String> schemaAliasesLocation) {
@@ -111,10 +107,10 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     if (!attributes.containsKey("document_version")) {
       if (json.has("version")) {
         String version = json.get("version").toString();
-        attributes.put(ParseUri.DOCUMENT_VERSION, version);
+        attributes.put(Attribute.DOCUMENT_VERSION, version);
       } else if (json.has("v")) {
         String version = json.get("v").toString();
-        attributes.put(ParseUri.DOCUMENT_VERSION, version);
+        attributes.put(Attribute.DOCUMENT_VERSION, version);
       } else {
         PerDocTypeCounter.inc(attributes, "error_missing_version");
         PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
@@ -169,38 +165,41 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/glean/baseline/baseline.1.schema.json
       Optional.ofNullable(gleanClientInfo.get().optString("app_channel"))
           .filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(ParseUri.APP_UPDATE_CHANNEL, v));
-      Optional.ofNullable(gleanClientInfo.get().optString(OS))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS, v));
-      Optional.ofNullable(gleanClientInfo.get().optString(OS_VERSION))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS_VERSION, v));
-      Optional.ofNullable(gleanClientInfo.get().optString(CLIENT_ID))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(CLIENT_ID, v));
+          .ifPresent(v -> attributes.put(Attribute.APP_UPDATE_CHANNEL, v));
+      Optional.ofNullable(gleanClientInfo.get().optString(Attribute.OS))
+          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(Attribute.OS, v));
+      Optional.ofNullable(gleanClientInfo.get().optString(Attribute.OS_VERSION))
+          .filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
+      Optional.ofNullable(gleanClientInfo.get().optString(Attribute.CLIENT_ID))
+          .filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
     } else if (commonPingOs.isPresent()) {
       // See common ping structure in:
       // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
       Optional.ofNullable(commonPingOs.get().optString("name"))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS, v));
+          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(Attribute.OS, v));
       Optional.ofNullable(commonPingOs.get().optString("version"))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS_VERSION, v));
+          .filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     } else {
       // Try to extract "core ping"-style values; see
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/telemetry/core/core.10.schema.json
-      Optional.ofNullable(json.optString(OS)).filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(OS, v));
+      Optional.ofNullable(json.optString(Attribute.OS)).filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(Attribute.OS, v));
       Optional.ofNullable(json.optString("osversion")).filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(OS_VERSION, v));
+          .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
     // Try extracting variants of top-level client id.
-    Optional.ofNullable(json.optString(CLIENT_ID)).filter(v -> !Strings.isNullOrEmpty(v))
-        .ifPresent(v -> attributes.put(CLIENT_ID, v));
+    Optional.ofNullable(json.optString(Attribute.CLIENT_ID)).filter(v -> !Strings.isNullOrEmpty(v))
+        .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
     Optional.ofNullable(json.optString("clientId")).filter(v -> !Strings.isNullOrEmpty(v))
-        .ifPresent(v -> attributes.put(CLIENT_ID, v));
+        .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
 
     // Add sample id.
-    Optional.ofNullable(attributes.get(CLIENT_ID)) //
-        .ifPresent(v -> attributes.put(SAMPLE_ID, Long.toString(calculateSampleId(v))));
+    Optional.ofNullable(attributes.get(Attribute.CLIENT_ID)) //
+        .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
   }
 
   @VisibleForTesting

@@ -10,9 +10,7 @@
         <version>0.1-SNAPSHOT</version>
     </parent>
 
-    <groupId>com.mozilla.telemetry</groupId>
     <artifactId>ingestion-beam</artifactId>
-    <version>0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -27,6 +25,11 @@
     </repositories>
 
     <dependencies>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>ingestion-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-runners-direct-java</artifactId>

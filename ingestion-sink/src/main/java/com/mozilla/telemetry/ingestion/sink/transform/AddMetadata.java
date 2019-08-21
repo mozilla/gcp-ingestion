@@ -2,10 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.ingestion.transform;
+package com.mozilla.telemetry.ingestion.sink.transform;
 
 import com.google.common.collect.ImmutableList;
-import com.mozilla.telemetry.ingestion.util.Attribute;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -11,10 +11,16 @@ cd "$(dirname "$0")/.."
 # Create dir to cache maven dependencies if it doesn't already exist.
 mkdir -p ~/.m2
 
+if [ "$(git rev-parse --show-toplevel)" != "$PWD" ]; then
+    PROFILE=( -P "$(basename "$PWD")" )
+else
+    PROFILE=()
+fi
+
 docker run -it --rm \
     -v ~/.m2:/root/.m2 \
     -v "$(git rev-parse --show-toplevel)":/root/project \
-    -w /root/project/"$(git rev-parse --show-prefix)" \
+    -w /root/project \
     -e GOOGLE_APPLICATION_CREDENTIALS \
     maven \
-    mvn "$@"
+    mvn "${PROFILE[@]}" "$@"

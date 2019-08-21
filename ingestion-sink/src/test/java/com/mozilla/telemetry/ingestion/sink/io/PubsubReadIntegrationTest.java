@@ -2,13 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package com.mozilla.telemetry.ingestion.io;
+package com.mozilla.telemetry.ingestion.sink.io;
 
 import static org.junit.Assert.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.util.TestWithPubsubResources;
+import com.mozilla.telemetry.ingestion.sink.util.TestWithPubsubResources;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -9,6 +9,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,9 +21,9 @@ public class MessageScrubberTest {
   @Test
   public void testShouldScrubBug1567596() throws Exception {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(ParseUri.DOCUMENT_NAMESPACE, "telemetry").put(ParseUri.DOCUMENT_TYPE, "crash")
-        .put(ParseUri.APP_UPDATE_CHANNEL, "nightly").put(ParseUri.APP_BUILD_ID, "20190719094503")
-        .put(ParseUri.APP_VERSION, "70.0a1").build();
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "crash")
+        .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_BUILD_ID, "20190719094503")
+        .put(Attribute.APP_VERSION, "70.0a1").build();
     JSONObject bug1567596AffectedJson = Json.readJSONObject(("{\n" //
         + "  \"payload\": {\n" //
         + "    \"metadata\": {\n" //
@@ -48,16 +49,16 @@ public class MessageScrubberTest {
         + "  \"client_id\": null\n" + "}").getBytes());
 
     Map<String, String> attributes = Maps.newHashMap(ImmutableMap.<String, String>builder()
-        .put(ParseUri.DOCUMENT_NAMESPACE, "telemetry").put(ParseUri.DOCUMENT_TYPE, "crash")
-        .put(ParseUri.APP_UPDATE_CHANNEL, "nightly").put(ParseUri.APP_VERSION, "68.0").build());
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "crash")
+        .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_VERSION, "68.0").build());
 
     assertTrue(MessageScrubber.shouldScrub(attributes, ping));
 
-    attributes.put(ParseUri.APP_UPDATE_CHANNEL, "beta");
-    attributes.put(ParseUri.APP_VERSION, "68");
+    attributes.put(Attribute.APP_UPDATE_CHANNEL, "beta");
+    attributes.put(Attribute.APP_VERSION, "68");
     assertTrue(MessageScrubber.shouldScrub(attributes, ping));
 
-    attributes.put(ParseUri.APP_VERSION, "69");
+    attributes.put(Attribute.APP_VERSION, "69");
     assertFalse(MessageScrubber.shouldScrub(attributes, ping));
   }
 
@@ -74,8 +75,8 @@ public class MessageScrubberTest {
         + "  \"client_id\": null\n" + "}").getBytes());
 
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(ParseUri.DOCUMENT_NAMESPACE, "telemetry").put(ParseUri.DOCUMENT_TYPE, "bhr")
-        .put(ParseUri.APP_UPDATE_CHANNEL, "nightly").put(ParseUri.APP_VERSION, "68.0").build();
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "bhr")
+        .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_VERSION, "68.0").build();
 
     assertTrue(MessageScrubber.shouldScrub(attributes, ping));
   }
