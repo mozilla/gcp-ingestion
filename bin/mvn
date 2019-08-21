@@ -17,10 +17,14 @@ else
     PROFILE=()
 fi
 
+# Run mvn with a non-root user id
+# https://docs.docker.com/samples/library/maven/#Running-as-non-root
 docker run -it --rm \
-    -v ~/.m2:/root/.m2 \
-    -v "$(git rev-parse --show-toplevel)":/root/project \
-    -w /root/project \
+    -u $UID \
+    -v "$(git rev-parse --show-toplevel)":/var/maven/project \
+    -w /var/maven/project \
+    -v ~/.m2:/var/maven/.m2 \
+    -e MAVEN_CONFIG=/var/maven/.m2 \
     -e GOOGLE_APPLICATION_CREDENTIALS \
     maven \
     mvn "${PROFILE[@]}" "$@"
