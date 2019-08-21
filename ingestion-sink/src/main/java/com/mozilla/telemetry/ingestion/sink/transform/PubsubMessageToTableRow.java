@@ -12,9 +12,10 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.text.StringSubstitutor;
 
-public class PubsubMessageToTableRow {
+public class PubsubMessageToTableRow implements Function<PubsubMessage, TableRow> {
 
   public enum TableRowFormat {
     raw, decoded, payload
