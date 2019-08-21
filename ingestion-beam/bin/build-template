@@ -84,14 +84,4 @@ cd "$(dirname "$0")/.."
 # Create dir to cache maven dependencies if it doesn't already exist.
 mkdir -p ~/.m2
 
-# Get current path and git root path
-GIT_TOPLEVEL="$(git rev-parse --show-toplevel)"
-GIT_PREFIX="$(git rev-parse --show-prefix)"
-
-# Run mvn with a non-root user id
-# https://docs.docker.com/samples/library/maven/#Running-as-non-root
-docker run -v ~/.m2:/var/maven/.m2 --rm -u $UID \
-  -v "$GIT_TOPLEVEL":/var/maven/project -w /var/maven/project/"$GIT_PREFIX" \
-  -e MAVEN_CONFIG=/var/maven/.m2 maven mvn \
-  -Duser.home=/var/maven \
-  compile exec:java -Dexec.mainClass=$JOB_CLASS -Dexec.args="$COMPILE_OPTIONS"
+./bin/mvn compile exec:java -Dexec.mainClass=$JOB_CLASS -Dexec.args="$COMPILE_OPTIONS"
