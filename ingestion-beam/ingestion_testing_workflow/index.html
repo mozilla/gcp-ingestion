@@ -193,7 +193,7 @@ PROJECT=$(gcloud config get-value project)
 BUCKET=&quot;gs://$PROJECT&quot;
 
 path=&quot;$BUCKET/data/*.ndjson&quot;
-mvn compile exec:java -Dexec.args=&quot;\
+./bin/mvn compile exec:java -Dexec.args=&quot;\
     --runner=Dataflow \
     --project=$PROJECT \
     --autoscalingAlgorithm=NONE \
