@@ -7,4 +7,4 @@ services:
       dockerfile: ingestion-sink/Dockerfile
     image: &image "${DOCKER_IMAGE_PREFIX}ingestion-sink:${CIRCLE_TAG-latest}"
     command:
-      mvn clean test
+      mvn -P ingestion-sink clean test
