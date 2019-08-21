@@ -34,7 +34,7 @@ public class Sink {
     // read pubsub messages from INPUT_SUBSCRIPTION
     new Pubsub.Read(Env.getString("INPUT_SUBSCRIPTION"),
         message -> CompletableFuture.supplyAsync(() -> message) // start new future with message
-            .thenApplyAsync(routeMessage::apply) // determine output path of message
+            .thenApplyAsync(routeMessage) // determine output path of message
             .thenComposeAsync(output), // output message
         builder -> builder.setFlowControlSettings(FlowControlSettings.newBuilder()
             .setMaxOutstandingElementCount(
