@@ -5,7 +5,6 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableList;
-import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
