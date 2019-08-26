@@ -9,17 +9,14 @@ import static org.junit.Assert.assertEquals;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-
 import org.apache.avro.AvroTypeException;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import org.junit.Test;
 
 public class PubsubMessageRecordFormatterTest {
