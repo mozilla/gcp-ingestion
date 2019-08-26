@@ -29,7 +29,7 @@ public class Sink {
         // the JSON that actually gets sent over HTTP, so we use 60% of the API limit by default.
         Env.getInt("BATCH_MAX_BYTES", 6_000_000), // HTTP request size limit: 10 MB
         Env.getInt("BATCH_MAX_MESSAGES", 10_000), // Maximum rows per request: 10,000
-        Env.getLong("BATCH_MAX_DELAY_MILLIS", 1000L)); // Default 1 second
+        Env.getDuration("BATCH_MAX_DELAY", "1s")); // Default 1 second
 
     // read pubsub messages from INPUT_SUBSCRIPTION
     new Pubsub.Read(Env.getString("INPUT_SUBSCRIPTION"),

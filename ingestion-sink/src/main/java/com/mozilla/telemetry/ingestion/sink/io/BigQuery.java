@@ -9,6 +9,7 @@ import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,11 +49,11 @@ public class BigQuery {
     final ConcurrentMap<TableId, Batch> batches = new ConcurrentHashMap<>();
 
     public Write(com.google.cloud.bigquery.BigQuery bigquery, int maxBytes, int maxMessages,
-        long maxDelayMillis) {
+        Duration maxDelay) {
       this.bigquery = bigquery;
       this.maxBytes = maxBytes;
       this.maxMessages = maxMessages;
-      this.maxDelayMillis = maxDelayMillis;
+      this.maxDelayMillis = maxDelay.toMillis();
     }
 
     @Override
