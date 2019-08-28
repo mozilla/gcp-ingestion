@@ -9,15 +9,15 @@ import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap.Format;
+import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,131 +36,79 @@ public class BigQuery {
     }
   }
 
-  public static class Write implements Function<Write.TableRow, CompletableFuture<Write.TableRow>> {
+  public static class Write extends BatchWrite<PubsubMessage, TableId, InsertAllResponse> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Write.class);
 
-    private final com.google.cloud.bigquery.BigQuery bigquery;
-    private final int maxBytes;
-    private final int maxMessages;
-    private final long maxDelayMillis;
+    private final com.google.cloud.bigquery.BigQuery bigQuery;
+    private final PubsubMessageToMap encoder;
 
-    @VisibleForTesting
-    final ConcurrentMap<TableId, Batch> batches = new ConcurrentHashMap<>();
-
-    public Write(com.google.cloud.bigquery.BigQuery bigquery, int maxBytes, int maxMessages,
-        Duration maxDelay) {
-      this.bigquery = bigquery;
-      this.maxBytes = maxBytes;
-      this.maxMessages = maxMessages;
-      this.maxDelayMillis = maxDelay.toMillis();
+    public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
+        Duration maxDelay, String batchKeyTemplate, Format format) {
+      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
+      this.bigQuery = bigQuery;
+      this.encoder = new PubsubMessageToMap(format);
     }
 
     @Override
-    public CompletableFuture<TableRow> apply(TableRow row) {
-      AtomicReference<CompletableFuture<TableRow>> futureRef = new AtomicReference<>();
-      batches.compute(row.tableId, (tableId, batch) -> {
-        if (batch != null) {
-          batch.add(row).ifPresent(futureRef::set);
-        }
-        if (futureRef.get() == null) {
-          batch = new Batch(bigquery, row);
-          batch.first.ifPresent(futureRef::set);
-        }
-        return batch;
-      });
-      return Optional.ofNullable(futureRef.get())
-          .orElseThrow(() -> new IllegalArgumentException("Empty batch rejected message"));
-    }
-
-    public static class TableRow {
-
-      public final TableId tableId;
-      public final int byteSize;
-      public final Optional<String> id;
-      public final Map<String, Object> content;
-
-      public TableRow(TableId tableId, int byteSize, Optional<String> id,
-          Map<String, Object> content) {
-        this.tableId = tableId;
-        this.byteSize = byteSize;
-        this.id = id;
-        this.content = content;
+    protected TableId getBatchKey(PubsubMessage input) {
+      String batchKey = batchKeyTemplate(input).replaceAll(":", ".");
+      final String[] tableSpecParts = batchKey.split("\\.", 3);
+      if (tableSpecParts.length == 3) {
+        return TableId.of(tableSpecParts[0], tableSpecParts[1], tableSpecParts[2]);
+      } else if (tableSpecParts.length == 2) {
+        return TableId.of(tableSpecParts[0], tableSpecParts[1]);
+      } else {
+        throw new IllegalArgumentException("Could not determine dataset from the configured"
+            + " BigQuery output template: " + batchKeyTemplate);
       }
     }
 
+    @Override
+    protected Batch getBatch(TableId batchKey) {
+      return new Batch(batchKey);
+    }
+
     @VisibleForTesting
-    class Batch {
-
-      final Optional<CompletableFuture<TableRow>> first;
-
-      private final com.google.cloud.bigquery.BigQuery bigquery;
-      private final CompletableFuture<Void> full;
-      private final CompletableFuture<InsertAllResponse> result;
+    class Batch extends BatchWrite<PubsubMessage, TableId, InsertAllResponse>.Batch {
 
       @VisibleForTesting
       final InsertAllRequest.Builder builder;
 
-      private int size = 0;
-      private int byteSize = 0;
-
-      private Batch(com.google.cloud.bigquery.BigQuery bigquery, TableRow row) {
-        this.bigquery = bigquery;
-        builder = InsertAllRequest.newBuilder(row.tableId)
+      private Batch(TableId batchKey) {
+        super();
+        builder = InsertAllRequest.newBuilder(batchKey)
             // ignore row values for columns not present in the table
             .setIgnoreUnknownValues(true)
             // insert all valid rows when invalid rows are present in the request
             .setSkipInvalidRows(true);
-
-        // block full from completing before the first add()
-        CompletableFuture<Void> init = new CompletableFuture<>();
-        full = init.thenRunAsync(this::timeout);
-        result = full.handleAsync(this::insertAll);
-        // expose the return value for the first add()
-        first = add(row);
-        // allow full to complete
-        init.complete(null);
       }
 
-      private void timeout() {
-        try {
-          Thread.sleep(maxDelayMillis);
-        } catch (InterruptedException e) {
-          // this is fine
-        }
+      @Override
+      protected synchronized InsertAllResponse close(Void v, Throwable t) {
+        return bigQuery.insertAll(builder.build());
       }
 
-      private synchronized InsertAllResponse insertAll(Void v, Throwable t) {
-        return bigquery.insertAll(builder.build());
+      @Override
+      protected synchronized void write(PubsubMessage input) {
+        Map<String, Object> content = encoder.apply(input);
+        Optional.ofNullable(input.getAttributesOrDefault(Attribute.DOCUMENT_ID, null))
+            .map(id -> builder.addRow(id, content)).orElseGet(() -> builder.addRow(content));
       }
 
-      private synchronized Optional<CompletableFuture<TableRow>> add(TableRow row) {
-        if (full.isDone()) {
-          return Optional.empty();
-        }
-        int newSize = size + 1;
-        // Plus one byte for the comma between messages
-        int newByteSize = byteSize + row.byteSize + 1;
-        if (newSize > maxMessages || newByteSize > maxBytes) {
-          this.full.complete(null);
-          return Optional.empty();
-        }
-        size = newSize;
-        byteSize = newByteSize;
-        if (row.id.isPresent()) {
-          builder.addRow(row.id.get(), row.content);
-        } else {
-          builder.addRow(row.content);
-        }
-        int index = newSize - 1;
-        return Optional.of(result.thenApplyAsync(r -> {
-          List<BigQueryError> errors = r.getErrorsFor(index);
-          if (errors != null && !errors.isEmpty()) {
-            LOG.warn(errors.toString());
-            throw new WriteErrors(errors);
-          }
-          return row;
-        }));
+      @Override
+      protected long getByteSize(PubsubMessage input) {
+        // plus one for a comma between messages in the HTTP request
+        return input.getSerializedSize() + 1;
+      }
+
+      @Override
+      protected void checkResultFor(InsertAllResponse batchResult, int index) {
+        Optional.ofNullable(batchResult.getErrorsFor(index)).filter(errors -> !errors.isEmpty())
+            .ifPresent(errors -> {
+              LOG.warn("Write errors: " + errors.toString());
+              throw new WriteErrors(errors);
+            });
       }
     }
   }
