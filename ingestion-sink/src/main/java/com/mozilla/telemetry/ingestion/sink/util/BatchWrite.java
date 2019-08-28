@@ -6,6 +6,7 @@ package com.mozilla.telemetry.ingestion.sink.util;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -57,7 +58,8 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
   }
 
   protected String batchKeyTemplate(PubsubMessage input) {
-    String batchKey = StringSubstitutor.replace(batchKeyTemplate, input.getAttributesMap());
+    String batchKey = StringSubstitutor.replace(batchKeyTemplate,
+        DerivedAttributesMap.of(input.getAttributesMap()));
     if (batchKey.contains("$")) {
       throw new IllegalArgumentException("Element did not contain all the attributes needed to"
           + " fill out variables in the configured output template: " + batchKeyTemplate);
