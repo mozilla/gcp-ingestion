@@ -33,6 +33,8 @@ public class Sink {
   private static final String OUTPUT_FORMAT = "OUTPUT_FORMAT";
   private static final String OUTPUT_BUCKET = "OUTPUT_BUCKET";
   private static final String OUTPUT_TABLE = "OUTPUT_TABLE";
+  private static final String OUTPUT_TOPIC = "OUTPUT_TOPIC";
+  private static final String OUTPUT_TOPIC_EXECUTOR_THREADS = "OUTPUT_TOPIC_EXECUTOR_THREADS";
   private static final String MAX_OUTSTANDING_ELEMENT_COUNT = "MAX_OUTSTANDING_ELEMENT_COUNT";
   private static final String MAX_OUTSTANDING_REQUEST_BYTES = "MAX_OUTSTANDING_REQUEST_BYTES";
 
@@ -60,15 +62,20 @@ public class Sink {
       // default 1GB
       maxOutstandingRequestBytes = Env.getLong(MAX_OUTSTANDING_REQUEST_BYTES, 1_000_000_000L);
     } else {
-      output = new BigQuery.Write(BigQueryOptions.getDefaultInstance().getService(),
-          // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
-          // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the 10MB
-          // API limit by default.
-          Env.getLong(BATCH_MAX_BYTES, 6_000_000L), // default 6MB
-          // BigQuery Streaming API Limits maximum rows per request to 10,000
-          Env.getInt(BATCH_MAX_MESSAGES, 10_000), // default 10K messages
-          Env.getDuration(BATCH_MAX_DELAY, "1s"), // default 1 second
-          Env.getString(OUTPUT_TABLE), format);
+      if (Env.optString(OUTPUT_TOPIC).isPresent()) {
+        output = new Pubsub.Write(Env.getString(OUTPUT_TOPIC),
+            Env.getInt(OUTPUT_TOPIC_EXECUTOR_THREADS, 1), b -> b)::withoutResult;
+      } else {
+        output = new BigQuery.Write(BigQueryOptions.getDefaultInstance().getService(),
+            // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
+            // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
+            // 10MB API limit by default.
+            Env.getLong(BATCH_MAX_BYTES, 6_000_000L), // default 6MB
+            // BigQuery Streaming API Limits maximum rows per request to 10,000
+            Env.getInt(BATCH_MAX_MESSAGES, 10_000), // default 10K messages
+            Env.getDuration(BATCH_MAX_DELAY, "1s"), // default 1 second
+            Env.getString(OUTPUT_TABLE), format);
+      }
       // default 50K messages
       maxOutstandingElementCount = Env.getLong(MAX_OUTSTANDING_ELEMENT_COUNT, 50_000L);
       // default 100MB
@@ -76,7 +83,7 @@ public class Sink {
     }
 
     // read pubsub messages from INPUT_SUBSCRIPTION
-    return new Pubsub.Read(Env.getString(INPUT_SUBSCRIPTION), output::apply,
+    return new Pubsub.Read(Env.getString(INPUT_SUBSCRIPTION), output,
         builder -> builder.setFlowControlSettings(FlowControlSettings.newBuilder()
             .setMaxOutstandingElementCount(maxOutstandingElementCount)
             .setMaxOutstandingRequestBytes(maxOutstandingRequestBytes).build()));

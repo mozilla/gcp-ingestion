@@ -53,7 +53,7 @@ public class BigQuery {
 
     @Override
     protected TableId getBatchKey(PubsubMessage input) {
-      String batchKey = applyBatchKeyTemplate(input).replaceAll(":", ".");
+      String batchKey = batchKeyTemplate.apply(input).replaceAll(":", ".");
       final String[] tableSpecParts = batchKey.split("\\.", 3);
       if (tableSpecParts.length == 3) {
         return TableId.of(tableSpecParts[0], tableSpecParts[1], tableSpecParts[2]);
@@ -61,7 +61,7 @@ public class BigQuery {
         return TableId.of(tableSpecParts[0], tableSpecParts[1]);
       } else {
         throw new IllegalArgumentException("Could not determine dataset from the configured"
-            + " BigQuery output template: " + batchKeyTemplate);
+            + " BigQuery output template: " + batchKeyTemplate.template);
       }
     }
 

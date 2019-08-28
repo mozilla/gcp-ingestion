@@ -52,7 +52,7 @@ public class Gcs {
 
     @Override
     protected String getBatchKey(PubsubMessage input) {
-      return applyBatchKeyTemplate(input);
+      return batchKeyTemplate.apply(input);
     }
 
     @Override
