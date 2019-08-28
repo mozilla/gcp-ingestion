@@ -43,7 +43,7 @@ public class PubsubReadIntegrationTest extends TestWithPubsubResources {
   }
 
   @Test
-   public void canRetryOnException() throws Exception {
+  public void canRetryOnException() throws Exception {
     System.err.println("Causing Exception Warning...");
 
     String messageId = publisher
