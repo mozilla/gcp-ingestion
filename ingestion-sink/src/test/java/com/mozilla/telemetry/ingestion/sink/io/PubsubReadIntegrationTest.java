@@ -44,6 +44,8 @@ public class PubsubReadIntegrationTest extends TestWithPubsubResources {
 
   @Test
   public void canCanRetryOnException() throws Exception {
+    System.err.println("Causing Exception Warning...");
+
     String messageId = publisher
         .publish(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes())).build())
         .get(10, TimeUnit.SECONDS);
