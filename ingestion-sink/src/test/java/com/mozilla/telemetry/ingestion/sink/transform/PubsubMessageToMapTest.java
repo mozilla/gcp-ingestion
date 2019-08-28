@@ -9,70 +9,50 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.io.BigQuery.Write.TableRow;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTableRow.TableRowFormat;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap.Format;
+import java.util.Map;
 import org.junit.Test;
 
-public class PubsubMessageToTableRowTest {
+public class PubsubMessageToMapTest {
 
-  private static final PubsubMessageToTableRow RAW_TRANSFORM = new PubsubMessageToTableRow(
-      "${document_namespace}_raw.${document_type}_v${document_version}", TableRowFormat.raw);
+  private static final PubsubMessageToMap RAW_TRANSFORM = new PubsubMessageToMap(Format.raw);
+  private static final PubsubMessageToMap DECODED_TRANSFORM = new PubsubMessageToMap(
+      Format.decoded);
+  private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
 
   @Test
   public void canFormatAsRaw() {
-    final TableRow actual = RAW_TRANSFORM
+    final Map<String, Object> actual = RAW_TRANSFORM
         .apply(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
             .putAttributes("document_id", "id").putAttributes("document_namespace", "telemetry")
             .putAttributes("document_type", "main").putAttributes("document_version", "4").build());
-
-    assertEquals("telemetry_raw", actual.tableId.getDataset());
-    assertEquals("main_v4", actual.tableId.getTable());
-    assertEquals(104, actual.byteSize);
     assertEquals(ImmutableMap.of("document_id", "id", "document_namespace", "telemetry",
-        "document_type", "main", "document_version", "4", "payload", "dGVzdA=="), actual.content);
+        "document_type", "main", "document_version", "4", "payload", "dGVzdA=="), actual);
   }
 
   @Test
   public void canFormatAsRawWithEmptyValues() {
-    final TableRow actual = RAW_TRANSFORM
-        .apply(PubsubMessage.newBuilder().putAttributes("document_namespace", "")
-            .putAttributes("document_type", "").putAttributes("document_version", "").build());
-
-    assertEquals("_raw", actual.tableId.getDataset());
-    assertEquals("_v", actual.tableId.getTable());
-    assertEquals(65, actual.byteSize);
-    assertEquals(ImmutableMap.of("document_namespace", "", "document_type", "", "document_version",
-        "", "payload", ""), actual.content);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnMissingAttributes() {
-    RAW_TRANSFORM.apply(PubsubMessage.newBuilder().build());
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnInvalidTable() {
-    new PubsubMessageToTableRow("", TableRowFormat.raw).apply(PubsubMessage.newBuilder().build());
+    assertEquals(ImmutableMap.of(), RAW_TRANSFORM.apply(EMPTY_MESSAGE));
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnUnimplementedFormat() {
-    new PubsubMessageToTableRow("dataset.table", TableRowFormat.payload)
-        .apply(PubsubMessage.newBuilder().build());
+    new PubsubMessageToMap(Format.payload).apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = NullPointerException.class)
-  public void failsOnNullMessage() {
+  public void failsFormatRawNullMessage() {
     RAW_TRANSFORM.apply(null);
   }
 
-  private static final PubsubMessageToTableRow DECODED_TRANSFORM = new PubsubMessageToTableRow(
-      "${document_namespace}_decoded.${document_type}_v${document_version}",
-      TableRowFormat.decoded);
+  @Test(expected = NullPointerException.class)
+  public void failsFormatDecodedNullMessage() {
+    DECODED_TRANSFORM.apply(null);
+  }
 
   @Test
   public void canFormatTelemetryAsDecoded() {
-    final TableRow actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
+    final Map<String, Object> actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
         .setData(ByteString.copyFrom("test".getBytes())).putAttributes("geo_city", "geo_city")
         .putAttributes("geo_country", "geo_country")
         .putAttributes("geo_subdivision1", "geo_subdivision1")
@@ -96,10 +76,6 @@ public class PubsubMessageToTableRowTest {
         .putAttributes("normalized_os", "normalized_os")
         .putAttributes("normalized_os_version", "normalized_os_version")
         .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build());
-
-    assertEquals("telemetry_decoded", actual.tableId.getDataset());
-    assertEquals("document_type_vdocument_version", actual.tableId.getTable());
-    assertEquals(916, actual.byteSize);
 
     assertEquals(
         ImmutableMap.builder()
@@ -128,12 +104,12 @@ public class PubsubMessageToTableRowTest {
             .put("normalized_os", "normalized_os")
             .put("normalized_os_version", "normalized_os_version").put("sample_id", 42)
             .put("payload", "dGVzdA==").put("client_id", "client_id").build(),
-        actual.content);
+        actual);
   }
 
   @Test
   public void canFormatNonTelemetryAsDecoded() {
-    final TableRow actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
+    final Map<String, Object> actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
         .setData(ByteString.copyFrom("test".getBytes())).putAttributes("geo_city", "geo_city")
         .putAttributes("geo_country", "geo_country")
         .putAttributes("geo_subdivision1", "geo_subdivision1")
@@ -157,10 +133,6 @@ public class PubsubMessageToTableRowTest {
         .putAttributes("normalized_os", "normalized_os")
         .putAttributes("normalized_os_version", "normalized_os_version")
         .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build());
-
-    assertEquals("document_namespace_decoded", actual.tableId.getDataset());
-    assertEquals("document_type_vdocument_version", actual.tableId.getTable());
-    assertEquals(925, actual.byteSize);
 
     assertEquals(
         ImmutableMap.builder()
@@ -186,23 +158,28 @@ public class PubsubMessageToTableRowTest {
             .put("normalized_os", "normalized_os")
             .put("normalized_os_version", "normalized_os_version").put("sample_id", 42)
             .put("payload", "dGVzdA==").put("client_id", "client_id").build(),
-        actual.content);
+        actual);
   }
 
   @Test
-  public void canFormatAsDecodedWithEmptyValues() {
-    final TableRow actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
-        .putAttributes("document_namespace", "").putAttributes("document_type", "")
-        .putAttributes("document_version", "").putAttributes("sample_id", "").build());
+  public void canFormatTelemetryAsDecodedWithEmptyValues() {
+    final Map<String, Object> actual = DECODED_TRANSFORM
+        .apply(PubsubMessage.newBuilder().putAttributes("document_namespace", "telemetry").build());
 
-    assertEquals("_decoded", actual.tableId.getDataset());
-    assertEquals("_v", actual.tableId.getTable());
-    assertEquals(80, actual.byteSize);
-    assertEquals(
-        ImmutableMap.of("payload", "", "metadata",
-            ImmutableMap.builder().put("document_namespace", "").put("document_type", "")
-                .put("document_version", "").put("geo", ImmutableMap.of())
-                .put("header", ImmutableMap.of()).put("user_agent", ImmutableMap.of()).build()),
-        actual.content);
+    assertEquals(ImmutableMap.builder()
+        .put("metadata",
+            ImmutableMap.builder().put("document_namespace", "telemetry")
+                .put("geo", ImmutableMap.of()).put("header", ImmutableMap.of())
+                .put("user_agent", ImmutableMap.of()).put("uri", ImmutableMap.of()).build())
+        .build(), actual);
+  }
+
+  @Test
+  public void canFormatNonTelemetryAsDecodedWithEmptyValues() {
+    assertEquals(ImmutableMap.builder()
+        .put("metadata",
+            ImmutableMap.builder().put("geo", ImmutableMap.of()).put("header", ImmutableMap.of())
+                .put("user_agent", ImmutableMap.of()).build())
+        .build(), DECODED_TRANSFORM.apply(EMPTY_MESSAGE));
   }
 }
