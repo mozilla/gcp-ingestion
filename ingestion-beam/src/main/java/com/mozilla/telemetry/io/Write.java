@@ -369,6 +369,7 @@ public abstract class Write
           .withFormatFunction(pubsubMessageToTableRow::kvToTableRow) //
           .to((ValueInSingleWindow<KV<TableDestination, PubsubMessage>> vsw) -> vsw.getValue()
               .getKey())
+          .withClustering() //
           .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER) //
           .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND) //
           .ignoreUnknownValues();

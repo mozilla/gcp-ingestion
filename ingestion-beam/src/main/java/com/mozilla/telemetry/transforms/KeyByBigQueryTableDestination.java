@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.api.gax.retrying.RetrySettings;
+import com.google.api.services.bigquery.model.Clustering;
 import com.google.api.services.bigquery.model.DatasetReference;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TimePartitioning;
@@ -18,6 +19,7 @@ import com.google.common.collect.Maps;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.SnakeCase;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,7 +28,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
-import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV2;
+import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV3;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
@@ -39,6 +41,8 @@ public class KeyByBigQueryTableDestination
 
   public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
       .setField(Attribute.SUBMISSION_TIMESTAMP);
+  public static final Clustering CLUSTERING = new Clustering()
+      .setFields(Arrays.asList(Attribute.SUBMISSION_TIMESTAMP));
 
   public static KeyByBigQueryTableDestination of(ValueProvider<String> tableSpecTemplate) {
     return new KeyByBigQueryTableDestination(tableSpecTemplate);
@@ -75,7 +79,7 @@ public class KeyByBigQueryTableDestination
     }
 
     final TableDestination tableDestination = new TableDestination(tableSpec, null,
-        TIME_PARTITIONING);
+        TIME_PARTITIONING, CLUSTERING);
     final TableReference ref = BigQueryHelpers.parseTableSpec(tableSpec);
     final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
         .setDatasetId(ref.getDatasetId());
@@ -130,7 +134,7 @@ public class KeyByBigQueryTableDestination
     WithErrors.Result<PCollection<KV<TableDestination, PubsubMessage>>> result = super.expand(
         input);
     result.output()
-        .setCoder(KvCoder.of(TableDestinationCoderV2.of(), PubsubMessageWithAttributesCoder.of()));
+        .setCoder(KvCoder.of(TableDestinationCoderV3.of(), PubsubMessageWithAttributesCoder.of()));
     return result;
   }
 
