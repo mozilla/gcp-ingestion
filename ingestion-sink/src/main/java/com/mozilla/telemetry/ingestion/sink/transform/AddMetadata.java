@@ -60,7 +60,7 @@ public class AddMetadata {
    * See https://github.com/mozilla-services/mozilla-pipeline-schemas
    */
   public static Map<String, Object> attributesToMetadataPayload(Map<String, String> attributes) {
-    final String namespace = attributes.get("document_namespace");
+    final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
     // Currently, every entry in metadata is a Map<String, String>, but we keep Object as the
     // value type to support future evolution of the metadata structure to include fields that
     // are not specifically Map<String, String>.
