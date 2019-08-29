@@ -7,15 +7,15 @@ package com.mozilla.telemetry.ingestion.sink.transform;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import org.json.JSONObject;
 
 /**
  * Transform a {@link PubsubMessage} into a {@code Map<String, Object>}.
  */
-public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, Object>> {
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONObject> {
 
   public enum Format {
     raw, decoded, payload
@@ -26,11 +26,11 @@ public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, O
 
   private final Format format;
 
-  public PubsubMessageToMap(Format format) {
+  public PubsubMessageToJSONObject(Format format) {
     this.format = format;
   }
 
-  public Map<String, Object> apply(PubsubMessage message) {
+  public JSONObject apply(PubsubMessage message) {
     switch (format) {
       case raw:
         return rawContents(message);
@@ -51,8 +51,8 @@ public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, O
    * table to determine which of those actually appear as fields; some of the attributes may be
    * thrown away.
    */
-  private Map<String, Object> rawContents(PubsubMessage message) {
-    Map<String, Object> contents = new HashMap<>(message.getAttributesMap());
+  private static JSONObject rawContents(PubsubMessage message) {
+    JSONObject contents = new JSONObject(message.getAttributesMap());
     // bytes must be formatted as base64 encoded string.
     Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))
         // include payload if present.
@@ -63,8 +63,8 @@ public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, O
   /**
    * Like {@link #rawContents(PubsubMessage)}, but uses the nested metadata format of decoded pings.
    */
-  private static Map<String, Object> decodedContents(PubsubMessage message) {
-    Map<String, Object> contents = new HashMap<>(
+  private static JSONObject decodedContents(PubsubMessage message) {
+    JSONObject contents = new JSONObject(
         AddMetadata.attributesToMetadataPayload(message.getAttributesMap()));
     // bytes must be formatted as base64 encoded string.
     Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))

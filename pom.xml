@@ -46,10 +46,14 @@
 
         <beam.version>2.15.0</beam.version>
 
-        <!-- Keep these dependency versions in sync with those pulled in by beam;
+        <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
         <google-cloud.version>1.61.0</google-cloud.version>
         <jackson.version>2.9.9</jackson.version>
+
+        <!-- Keep this dependency version in sync with what is pulled in by jackson;
+             check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.9 -->
+        <org-json.version>20171018</org-json.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>

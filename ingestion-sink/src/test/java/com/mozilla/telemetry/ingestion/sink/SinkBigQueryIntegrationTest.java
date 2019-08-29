@@ -43,7 +43,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.rules.Timeout;
 
-public class SinkIntegrationTest extends TestWithPubsubResources {
+public class SinkBigQueryIntegrationTest extends TestWithPubsubResources {
 
   private BigQuery bigquery;
   private String project;
