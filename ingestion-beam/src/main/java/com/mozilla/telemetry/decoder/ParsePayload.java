@@ -140,7 +140,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
     addAttributesFromPayload(attributes, json);
 
-    byte[] normalizedPayload = json.toString().getBytes();
+    // https://github.com/mozilla/gcp-ingestion/issues/780
+    // We need to be careful to consistently use our util methods (which use Jackson) for
+    // serializing and deserializing JSON to reduce the possibility of introducing encoding
+    // issues. We previously called json.toString().getBytes() here without specifying a charset.
+    byte[] normalizedPayload = Json.asBytes(json);
 
     PerDocTypeCounter.inc(attributes, "valid_submission");
     PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
