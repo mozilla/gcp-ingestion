@@ -9,7 +9,7 @@ subdirectory of the gcp-ingestion repository.
 
 ## Sink Job
 
-A job for delivering messages between Google Cloud services.
+A job for delivering messages between Google Cloud services. Defined in the `com.mozilla.telemetry.Sink` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java)).
 
 ### Supported Input and Outputs
 
@@ -332,7 +332,7 @@ or 10 if `--maxWorkers` is unspecified.
 
 ## Decoder Job
 
-A job for normalizing ingestion messages.
+A job for normalizing ingestion messages. Defined in the `com.mozilla.telemetry.Decoder` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java)).
 
 ### Transforms
 
@@ -412,7 +412,7 @@ echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > 
 
 ## Republisher Job
 
-A job for republishing subsets of decoded messages to new destinations.
+A job for republishing subsets of decoded messages to new destinations. Defined in the `com.mozilla.telemetry.Republisher` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java)).
 
 The primary intention is to produce smaller derived Pub/Sub topics so
 that consumers that only need a specific subset of messages don't incur
