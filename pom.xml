@@ -53,7 +53,7 @@
 
         <!-- Keep this dependency version in sync with what is pulled in by jackson;
              check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.9 -->
-        <org-json.version>20171018</org-json.version>
+        <org-json.version>20190722</org-json.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
