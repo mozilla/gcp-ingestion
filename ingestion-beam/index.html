@@ -147,7 +147,7 @@ Apache Beam jobs.</p>
 <p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam">ingestion-beam</a>
 subdirectory of the gcp-ingestion repository.</p>
 <h2 id="sink-job">Sink Job</h2>
-<p>A job for delivering messages between Google Cloud services.</p>
+<p>A job for delivering messages between Google Cloud services. Defined in the <code>com.mozilla.telemetry.Sink</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java">source</a>).</p>
 <h3 id="supported-input-and-outputs">Supported Input and Outputs</h3>
 <p>Supported inputs:</p>
 <ul>
@@ -423,7 +423,7 @@ As codified in <a href="https://github.com/apache/beam/pull/1952">apache/beam/pu
 the Dataflow runner suggests a reasonable starting point <code>numShards</code> is <code>2 * maxWorkers</code>
 or 10 if <code>--maxWorkers</code> is unspecified.</p>
 <h2 id="decoder-job">Decoder Job</h2>
-<p>A job for normalizing ingestion messages.</p>
+<p>A job for normalizing ingestion messages. Defined in the <code>com.mozilla.telemetry.Decoder</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java">source</a>).</p>
 <h3 id="transforms">Transforms</h3>
 <p>These transforms are currently executed against each message in order.</p>
 <h4 id="parse-uri">Parse URI</h4>
@@ -494,7 +494,7 @@ echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;
 </code></pre>
 
 <h2 id="republisher-job">Republisher Job</h2>
-<p>A job for republishing subsets of decoded messages to new destinations.</p>
+<p>A job for republishing subsets of decoded messages to new destinations. Defined in the <code>com.mozilla.telemetry.Republisher</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java">source</a>).</p>
 <p>The primary intention is to produce smaller derived Pub/Sub topics so
 that consumers that only need a specific subset of messages don't incur
 the cost of reading the entire stream of decoded messages.</p>
