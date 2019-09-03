@@ -72,7 +72,7 @@ jobs:
     - &report_code_coverage
       run:
         name: Report code coverage
-        command: bash <(curl -s https://codecov.io/bash) -F "$(basename $PWD | sed s/[^a-z]/_/g)"
+        command: bash <(curl -s https://codecov.io/bash) -F "${CODECOV_FLAG:-$(basename $PWD | sed s/[^a-z]/_/g)}"
     - save_cache:
         paths:
         - ingestion-edge/venv/
@@ -160,6 +160,8 @@ jobs:
 
   ingestion-beam-integration:
     <<: *ingestion_beam
+    environment:
+      CODECOV_FLAG: ingestion_beam_integration
     steps:
     # Checkout would fail if it were not the first step
     # because checkout path would contain working dir
@@ -216,6 +218,8 @@ jobs:
 
   ingestion-sink-integration:
     <<: *ingestion_sink
+    environment:
+      CODECOV_FLAG: ingestion_sink_integration
     steps:
     - *checkout
     - *skip_unmodified
