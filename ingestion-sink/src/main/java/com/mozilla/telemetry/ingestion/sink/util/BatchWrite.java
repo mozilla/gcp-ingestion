@@ -71,9 +71,9 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
 
     public Batch() {
       // wait for init then setup full indicator by timeout
-      full = init.thenRunAsync(this::timeout);
+      full = init.thenRunAsync(this::timeout).exceptionally(ignore -> null);
       // wait for full then close
-      result = full.handleAsync(this::close);
+      result = full.thenComposeAsync(this::close);
     }
 
     private void timeout() {
@@ -104,7 +104,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     protected void checkResultFor(BatchResultT batchResult, int index) {
     }
 
-    protected abstract BatchResultT close(Void ignoreVoid, Throwable ignoreThrowable);
+    protected abstract CompletableFuture<BatchResultT> close(Void ignore);
 
     protected abstract void write(EncodedT encodedInput);
 
