@@ -12,7 +12,7 @@ import java.util.function.Function;
 import org.json.JSONObject;
 
 /**
- * Transform a {@link PubsubMessage} into a {@code Map<String, Object>}.
+ * Transform a {@link PubsubMessage} into a {@link JSONObject}.
  */
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONObject> {
@@ -30,6 +30,7 @@ public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONOb
     this.format = format;
   }
 
+  @Override
   public JSONObject apply(PubsubMessage message) {
     switch (format) {
       case raw:
@@ -62,6 +63,10 @@ public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONOb
 
   /**
    * Like {@link #rawContents(PubsubMessage)}, but uses the nested metadata format of decoded pings.
+   *
+   * <p>We include most attributes as fields, but the nested metadata format does not include error
+   * attributes and only includes {@code metadata.uri} when document namespace is
+   * {@code "telemetry"}.
    */
   private static JSONObject decodedContents(PubsubMessage message) {
     JSONObject contents = new JSONObject(
