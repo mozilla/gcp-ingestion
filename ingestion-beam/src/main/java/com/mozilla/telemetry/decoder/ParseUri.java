@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -273,7 +274,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         }
       }
       // Serialize new payload as json
-      return payload.toString().getBytes();
+      return payload.toString().getBytes(StandardCharsets.UTF_8);
     }
   }
 }

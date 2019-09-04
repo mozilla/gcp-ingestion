@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.junit.Test;
 
@@ -25,7 +26,8 @@ public class PubsubMessageToJSONObjectTest {
   @Test
   public void canFormatAsRaw() {
     final Map<String, Object> actual = RAW_TRANSFORM
-        .apply(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
+        .apply(PubsubMessage.newBuilder()
+            .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
             .putAttributes("document_id", "id").putAttributes("document_namespace", "telemetry")
             .putAttributes("document_type", "main").putAttributes("document_version", "4").build())
         .toMap();
@@ -55,32 +57,30 @@ public class PubsubMessageToJSONObjectTest {
 
   @Test
   public void canFormatTelemetryAsDecoded() {
-    final Map<String, Object> actual = DECODED_TRANSFORM
-        .apply(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
-            .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
-            .putAttributes("geo_subdivision1", "geo_subdivision1")
-            .putAttributes("geo_subdivision2", "geo_subdivision2")
-            .putAttributes("user_agent_browser", "user_agent_browser")
-            .putAttributes("user_agent_os", "user_agent_os")
-            .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
-            .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
-            .putAttributes("x_pingsender_version", "x_pingsender_version")
-            .putAttributes("uri", "uri").putAttributes("app_build_id", "app_build_id")
-            .putAttributes("app_name", "app_name")
-            .putAttributes("app_update_channel", "app_update_channel")
-            .putAttributes("app_version", "app_version")
-            .putAttributes("document_namespace", "telemetry")
-            .putAttributes("document_type", "document_type")
-            .putAttributes("document_version", "document_version")
-            .putAttributes("submission_timestamp", "submission_timestamp")
-            .putAttributes("document_id", "document_id")
-            .putAttributes("normalized_app_name", "normalized_app_name")
-            .putAttributes("normalized_channel", "normalized_channel")
-            .putAttributes("normalized_country_code", "normalized_country_code")
-            .putAttributes("normalized_os", "normalized_os")
-            .putAttributes("normalized_os_version", "normalized_os_version")
-            .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build())
-        .toMap();
+    final Map<String, Object> actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
+        .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
+        .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
+        .putAttributes("geo_subdivision1", "geo_subdivision1")
+        .putAttributes("geo_subdivision2", "geo_subdivision2")
+        .putAttributes("user_agent_browser", "user_agent_browser")
+        .putAttributes("user_agent_os", "user_agent_os")
+        .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
+        .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
+        .putAttributes("x_pingsender_version", "x_pingsender_version").putAttributes("uri", "uri")
+        .putAttributes("app_build_id", "app_build_id").putAttributes("app_name", "app_name")
+        .putAttributes("app_update_channel", "app_update_channel")
+        .putAttributes("app_version", "app_version")
+        .putAttributes("document_namespace", "telemetry")
+        .putAttributes("document_type", "document_type")
+        .putAttributes("document_version", "document_version")
+        .putAttributes("submission_timestamp", "submission_timestamp")
+        .putAttributes("document_id", "document_id")
+        .putAttributes("normalized_app_name", "normalized_app_name")
+        .putAttributes("normalized_channel", "normalized_channel")
+        .putAttributes("normalized_country_code", "normalized_country_code")
+        .putAttributes("normalized_os", "normalized_os")
+        .putAttributes("normalized_os_version", "normalized_os_version")
+        .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build()).toMap();
 
     assertEquals(
         ImmutableMap.builder()
@@ -114,32 +114,30 @@ public class PubsubMessageToJSONObjectTest {
 
   @Test
   public void canFormatNonTelemetryAsDecoded() {
-    final Map<String, Object> actual = DECODED_TRANSFORM
-        .apply(PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
-            .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
-            .putAttributes("geo_subdivision1", "geo_subdivision1")
-            .putAttributes("geo_subdivision2", "geo_subdivision2")
-            .putAttributes("user_agent_browser", "user_agent_browser")
-            .putAttributes("user_agent_os", "user_agent_os")
-            .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
-            .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
-            .putAttributes("x_pingsender_version", "x_pingsender_version")
-            .putAttributes("uri", "uri").putAttributes("app_build_id", "app_build_id")
-            .putAttributes("app_name", "app_name")
-            .putAttributes("app_update_channel", "app_update_channel")
-            .putAttributes("app_version", "app_version")
-            .putAttributes("document_namespace", "document_namespace")
-            .putAttributes("document_type", "document_type")
-            .putAttributes("document_version", "document_version")
-            .putAttributes("submission_timestamp", "submission_timestamp")
-            .putAttributes("document_id", "document_id")
-            .putAttributes("normalized_app_name", "normalized_app_name")
-            .putAttributes("normalized_channel", "normalized_channel")
-            .putAttributes("normalized_country_code", "normalized_country_code")
-            .putAttributes("normalized_os", "normalized_os")
-            .putAttributes("normalized_os_version", "normalized_os_version")
-            .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build())
-        .toMap();
+    final Map<String, Object> actual = DECODED_TRANSFORM.apply(PubsubMessage.newBuilder()
+        .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
+        .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
+        .putAttributes("geo_subdivision1", "geo_subdivision1")
+        .putAttributes("geo_subdivision2", "geo_subdivision2")
+        .putAttributes("user_agent_browser", "user_agent_browser")
+        .putAttributes("user_agent_os", "user_agent_os")
+        .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
+        .putAttributes("dnt", "dnt").putAttributes("x_debug_id", "x_debug_id")
+        .putAttributes("x_pingsender_version", "x_pingsender_version").putAttributes("uri", "uri")
+        .putAttributes("app_build_id", "app_build_id").putAttributes("app_name", "app_name")
+        .putAttributes("app_update_channel", "app_update_channel")
+        .putAttributes("app_version", "app_version")
+        .putAttributes("document_namespace", "document_namespace")
+        .putAttributes("document_type", "document_type")
+        .putAttributes("document_version", "document_version")
+        .putAttributes("submission_timestamp", "submission_timestamp")
+        .putAttributes("document_id", "document_id")
+        .putAttributes("normalized_app_name", "normalized_app_name")
+        .putAttributes("normalized_channel", "normalized_channel")
+        .putAttributes("normalized_country_code", "normalized_country_code")
+        .putAttributes("normalized_os", "normalized_os")
+        .putAttributes("normalized_os_version", "normalized_os_version")
+        .putAttributes("sample_id", "42").putAttributes("client_id", "client_id").build()).toMap();
 
     assertEquals(
         ImmutableMap.builder()

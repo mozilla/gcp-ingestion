@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
@@ -31,7 +32,7 @@ public class MessageScrubberTest {
         + "    },\n" //
         + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
         + "  },\n" //
-        + "  \"client_id\": null\n" + "}").getBytes());
+        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
     assertTrue(MessageScrubber.shouldScrub(attributes, bug1567596AffectedJson));
     assertFalse(MessageScrubber.shouldScrub(new HashMap<>(), bug1567596AffectedJson));
     assertFalse(MessageScrubber.shouldScrub(attributes, new JSONObject()));
@@ -46,7 +47,7 @@ public class MessageScrubberTest {
         + "    },\n" //
         + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
         + "  },\n" //
-        + "  \"client_id\": null\n" + "}").getBytes());
+        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
 
     Map<String, String> attributes = Maps.newHashMap(ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "crash")
@@ -72,7 +73,7 @@ public class MessageScrubberTest {
         + "    ],\n" //
         + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
         + "  },\n" //
-        + "  \"client_id\": null\n" + "}").getBytes());
+        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
 
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "bhr")

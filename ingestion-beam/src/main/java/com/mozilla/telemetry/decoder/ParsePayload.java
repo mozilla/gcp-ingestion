@@ -14,6 +14,7 @@ import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -212,7 +213,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       crc32 = new CRC32();
     }
     crc32.reset();
-    crc32.update(clientId.getBytes());
+    crc32.update(clientId.getBytes(StandardCharsets.UTF_8));
     return crc32.getValue() % 100;
   }
 

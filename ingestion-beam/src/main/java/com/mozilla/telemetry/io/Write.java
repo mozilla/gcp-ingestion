@@ -26,6 +26,7 @@ import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import com.mozilla.telemetry.util.NoColonFileNaming;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -442,7 +443,7 @@ public abstract class Write
                   }
                   TableRow row = bqie.getRow();
                   row.setFactory(JacksonFactory.getDefaultInstance());
-                  byte[] payload = row.toString().getBytes();
+                  byte[] payload = row.toString().getBytes(StandardCharsets.UTF_8);
                   return new PubsubMessage(payload, attributes);
                 })));
       });

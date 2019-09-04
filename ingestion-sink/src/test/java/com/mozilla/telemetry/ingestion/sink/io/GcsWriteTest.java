@@ -20,6 +20,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import org.junit.Before;
@@ -28,7 +29,7 @@ import org.junit.Test;
 public class GcsWriteTest {
 
   private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
-  private static final int EMPTY_MESSAGE_SIZE = "{}\n".getBytes().length;
+  private static final int EMPTY_MESSAGE_SIZE = "{}\n".getBytes(StandardCharsets.UTF_8).length;
   private static final String BATCH_KEY = "bucket/prefix/";
   private static final int MAX_BYTES = 10;
   private static final int MAX_MESSAGES = 10;
