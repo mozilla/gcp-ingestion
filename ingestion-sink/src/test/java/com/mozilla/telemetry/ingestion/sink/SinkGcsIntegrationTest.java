@@ -17,6 +17,7 @@ import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import com.mozilla.telemetry.ingestion.sink.util.TestWithSinglePubsubTopic;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -66,11 +67,11 @@ public class SinkGcsIntegrationTest extends TestWithSinglePubsubTopic {
     String submissionTimestamp = ZonedDateTime.now(ZoneOffset.UTC)
         .format(DateTimeFormatter.ISO_DATE_TIME);
     List<String> versions = ImmutableList.of("1", "2");
-    versions.forEach(version -> publish(
-        PubsubMessage.newBuilder().setData(ByteString.copyFrom("test".getBytes()))
-            .putAttributes("document_namespace", "namespace").putAttributes("document_type", "type")
-            .putAttributes("document_version", version)
-            .putAttributes("submission_timestamp", submissionTimestamp).build()));
+    versions.forEach(version -> publish(PubsubMessage.newBuilder()
+        .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
+        .putAttributes("document_namespace", "namespace").putAttributes("document_type", "type")
+        .putAttributes("document_version", version)
+        .putAttributes("submission_timestamp", submissionTimestamp).build()));
 
     environmentVariables.set("INPUT_SUBSCRIPTION", getSubscription());
     environmentVariables.set("BATCH_MAX_DELAY", "0.001s");

@@ -16,6 +16,7 @@ import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -38,7 +39,7 @@ public class Gcs {
 
       @Override
       protected byte[] encodeInput(PubsubMessage input) {
-        return (encoder.apply(input).toString() + "\n").getBytes();
+        return (encoder.apply(input).toString() + "\n").getBytes(StandardCharsets.UTF_8);
       }
     }
 

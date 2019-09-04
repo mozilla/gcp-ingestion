@@ -7,6 +7,7 @@ package com.mozilla.telemetry.util;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -30,7 +31,7 @@ public abstract class TestWithDeterministicJson {
   @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
   public static String sortJSON(String data) {
     try {
-      return Json.readJSONObject(data.getBytes()).toString();
+      return Json.readJSONObject(data.getBytes(StandardCharsets.UTF_8)).toString();
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }

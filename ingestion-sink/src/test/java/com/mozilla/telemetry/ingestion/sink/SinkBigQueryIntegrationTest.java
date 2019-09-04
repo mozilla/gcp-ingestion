@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.TestWithSinglePubsubTopic;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -95,8 +96,8 @@ public class SinkBigQueryIntegrationTest extends TestWithSinglePubsubTopic {
       TableId tableId = TableId.of(dataset, table);
       bigquery.create(TableInfo.newBuilder(tableId, tableDef).build());
       PubsubMessage.Builder message = PubsubMessage.newBuilder()
-          .setData(ByteString.copyFrom("test".getBytes())).putAttributes("document_type", "test")
-          .putAttributes("document_version", version)
+          .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
+          .putAttributes("document_type", "test").putAttributes("document_version", version)
           .putAttributes("submission_timestamp", submissionTimestamp);
       if (documentIds.containsKey(version)) {
         message.putAttributes("document_id", documentIds.get(version));

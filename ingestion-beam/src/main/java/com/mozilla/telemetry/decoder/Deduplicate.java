@@ -15,6 +15,7 @@ import com.mozilla.telemetry.util.Time;
 import java.io.Serializable;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -119,7 +120,8 @@ public class Deduplicate {
             .apply("DropDuplicatePayloads", MapElements //
                 .into(TypeDescriptor.of(PubsubMessage.class))
                 .via(message -> FailureMessage.of("Duplicate",
-                    new PubsubMessage("".getBytes(), message.getAttributeMap()),
+                    new PubsubMessage("".getBytes(StandardCharsets.UTF_8),
+                        message.getAttributeMap()),
                     new DuplicateIdException())));
         PCollection<PubsubMessage> errors = PCollectionList.of(tuple().get(errorTag()))
             .and(duplicateMetadata)
