@@ -4,12 +4,14 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.Json;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +22,6 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.json.JSONObject;
 
 public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
@@ -152,7 +153,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     public static final Map<String, Integer> SUFFIX_LENGTH = ImmutableMap.of("6", 36, "7", 37, "8",
         39);
 
-    public static final List<BiConsumer<String, JSONObject>> HANDLERS = ImmutableList.of(//
+    public static final List<BiConsumer<String, ObjectNode>> HANDLERS = ImmutableList.of(//
         ignore(), // ping_version handled by parsePingVersion
         putString("build_channel"), putString("update_channel"), putString("locale"),
         // Build architecture code
@@ -191,41 +192,41 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         putString("download_ip"), putString("attribution"),
         putIntegerAsString("profile_cleanup_prompt"), putBool("profile_cleanup_requested"));
 
-    private static BiConsumer<String, JSONObject> ignore() {
+    private static BiConsumer<String, ObjectNode> ignore() {
       return (value, payload) -> {
       };
     }
 
-    private static BiConsumer<String, JSONObject> putString(String key) {
+    private static BiConsumer<String, ObjectNode> putString(String key) {
       return (value, payload) -> payload.put(key, value);
     }
 
-    private static BiConsumer<String, JSONObject> appendString(String key, String separator) {
+    private static BiConsumer<String, ObjectNode> appendString(String key, String separator) {
       return (value, payload) -> payload.put(key,
-          Optional.ofNullable(payload.optString(key, null)).map(v -> v + separator).orElse("")
+          Optional.ofNullable(payload.path(key).textValue()).map(v -> v + separator).orElse("")
               + value);
     }
 
-    private static BiConsumer<String, JSONObject> putBool(String key) {
+    private static BiConsumer<String, ObjectNode> putBool(String key) {
       return (value, payload) -> payload.put(key, value.equals("1"));
     }
 
-    private static BiConsumer<String, JSONObject> putInteger(String key) {
+    private static BiConsumer<String, ObjectNode> putInteger(String key) {
       return (value, payload) -> payload.put(key, Integer.parseInt(value));
     }
 
-    private static BiConsumer<String, JSONObject> putIntegerAsString(String key) {
+    private static BiConsumer<String, ObjectNode> putIntegerAsString(String key) {
       return (value, payload) -> payload.put(key, Integer.toString(Integer.parseInt(value)));
     }
 
-    private static BiConsumer<String, JSONObject> putBoolPerCode(Map<String, Integer> fieldCodes) {
+    private static BiConsumer<String, ObjectNode> putBoolPerCode(Map<String, Integer> fieldCodes) {
       return (string, payload) -> {
         Integer value = Integer.parseInt(string);
         fieldCodes.forEach((key, code) -> payload.put(key, value.equals(code)));
       };
     }
 
-    private static BiConsumer<String, JSONObject> putBoolPerCodeSet(
+    private static BiConsumer<String, ObjectNode> putBoolPerCodeSet(
         Map<String, Set<Integer>> fieldCodes) {
       return (string, payload) -> {
         Integer value = Integer.parseInt(string);
@@ -233,7 +234,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
       };
     }
 
-    private static JSONObject parsePingVersion(String[] elements) throws InvalidUriException {
+    private static ObjectNode parsePingVersion(String[] elements) throws InvalidUriException {
       // Parse ping version using a regex pattern
       String pingVersion = elements[0];
       Matcher matcher = PING_VERSION_PATTERN.matcher(pingVersion);
@@ -246,7 +247,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         throw new UnexpectedPathElementsException(unexpectedElements);
       }
       // Initialize new payload with ping version and funnelcake ID
-      JSONObject payload = new JSONObject();
+      ObjectNode payload = Json.createObjectNode();
       payload.put("installer_type", "stub");
       payload.put("installer_version", ""); // it's required but stub pings don't have it
       payload.put("ping_version", pingVersion);
@@ -262,7 +263,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
       // Split uri into path elements
       String[] elements = uri.substring(PREFIX.length()).split("/");
       // Initialize payload based on ping version
-      JSONObject payload = parsePingVersion(elements);
+      ObjectNode payload = parsePingVersion(elements);
       // Update payload with values from path elements
       for (int i = 0; i < elements.length; i++) {
         try {

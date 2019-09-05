@@ -22,7 +22,9 @@ import org.apache.beam.sdk.metrics.MetricsFilter;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.Rule;
 import org.junit.Test;
@@ -71,7 +73,8 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB), null))
-        .apply(OutputFileFormat.json.encode());
+        .apply(MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.json.encodeSingleMessage(m))));
 
     PAssert.that(output).containsInAnyOrder(expected);
 
@@ -104,7 +107,8 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
         .apply(InputFileFormat.json.decode()).output() //
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB),
             pipeline.newProvider("src/test/resources/cityFilters/sacramento.txt")))
-        .apply(OutputFileFormat.json.encode());
+        .apply(MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.json.encodeSingleMessage(m))));
 
     PAssert.that(output).containsInAnyOrder(expected);
 
@@ -130,7 +134,8 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
         .apply(InputFileFormat.json.decode()).output() //
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB),
             pipeline.newProvider("src/test/resources/cityFilters/milton.txt")))
-        .apply(OutputFileFormat.json.encode());
+        .apply(MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.json.encodeSingleMessage(m))));
 
     PAssert.that(output).containsInAnyOrder(expected);
 

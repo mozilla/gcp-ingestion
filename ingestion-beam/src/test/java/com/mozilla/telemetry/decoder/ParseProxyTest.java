@@ -21,7 +21,9 @@ import org.apache.beam.sdk.metrics.MetricsFilter;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -78,7 +80,8 @@ public class ParseProxyTest extends TestWithDeterministicJson {
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //
         .apply(ParseProxy.of()) //
-        .apply(OutputFileFormat.json.encode());
+        .apply(MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.json.encodeSingleMessage(m))));
 
     PAssert.that(output).containsInAnyOrder(expected);
 
@@ -131,7 +134,8 @@ public class ParseProxyTest extends TestWithDeterministicJson {
         .apply(ParseProxy.of()) //
         .apply(GeoCityLookup
             .of(pipeline.newProvider("src/test/resources/cityDB/GeoIP2-City-Test.mmdb"), null))
-        .apply(OutputFileFormat.json.encode());
+        .apply(MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.json.encodeSingleMessage(m))));
 
     PAssert.that(output).containsInAnyOrder(expected);
 

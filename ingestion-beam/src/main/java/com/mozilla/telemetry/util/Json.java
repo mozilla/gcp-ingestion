@@ -9,7 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -17,7 +17,6 @@ import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.Schema;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -48,22 +47,6 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
     SCHEMA_FROM_PB.setAccessible(true);
     MAPPER.addMixIn(PubsubMessage.class, PubsubMessageMixin.class);
     MAPPER.registerModule(new JsonOrgModule());
-  }
-
-  /**
-   * Make serialization of {@link Map} deterministic for testing.
-   */
-  @VisibleForTesting
-  static void enableOrderMapEntriesByKeys() {
-    Json.MAPPER.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
-  }
-
-  /**
-   * Reset the {@link ObjectMapper} configuration changed above.
-   */
-  @VisibleForTesting
-  static void disableOrderMapEntriesByKeys() {
-    Json.MAPPER.disable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
   }
 
   /**
@@ -141,12 +124,11 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   }
 
   /**
-   * Serialize {@code data} as a {@link String}.
-   *
-   * @exception IOException if data cannot be encoded as json.
+   * Use {@code MAPPER} to convert {@code Map<String, ?>} to {@link ObjectNode}.
    */
-  public static String asString(Object data) throws IOException {
-    return MAPPER.writeValueAsString(data);
+  @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+  public static JSONObject asJSONObject(ObjectNode objectNode) {
+    return MAPPER.convertValue(objectNode, JSONObject.class);
   }
 
   /**

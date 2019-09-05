@@ -7,10 +7,12 @@ package com.mozilla.telemetry.decoder;
 import static org.junit.Assert.assertEquals;
 
 import avro.shaded.com.google.common.collect.ImmutableList;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
+import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,7 +25,7 @@ import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import org.json.JSONObject;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -52,19 +54,20 @@ public class AddMetadataTest extends TestWithDeterministicJson {
             + ",\"user_agent\":{}}" //
             + ",\"normalized_channel\":\"release\"" //
             + ",\"sample_id\":18}", //
-        "{\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
+        "{\"id\":null," //
+            + "\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
             + ",\"header\":{\"x_debug_id\":\"mysession\"}" //
             + ",\"user_agent\":{}}" //
             + ",\"normalized_channel\":\"release\"" //
-            + ",\"sample_id\":18" //
-            + ",\"id\":null}");
+            + ",\"sample_id\":18}");
     final List<String> expectedError = Arrays.asList("{", "[]");
     final PCollection<String> error = output.errors() //
         .apply("EncodeTextError", OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 
     final PCollection<String> main = output.output() //
-        .apply("EncodeTextMain", OutputFileFormat.text.encode());
+        .apply("EncodeTextMain", MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.text.encodeSingleMessage(m))));
     PAssert.that(main).containsInAnyOrder(expectedMain);
 
     pipeline.run();
@@ -84,7 +87,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     Map<String, Object> metadata = ImmutableMap.of("geo",
         ImmutableMap.of("country", "CA", "city", "Whistler"));
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putGeoAttributes(attributes, new JSONObject(metadata));
+    AddMetadata.putGeoAttributes(attributes, Json.asObjectNode(metadata));
     Map<String, String> expected = ImmutableMap.of("geo_country", "CA", "geo_city", "Whistler");
     assertEquals(expected, attributes);
   }
@@ -112,7 +115,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
         "user_agent_version", "63.0", //
         "user_agent_os", "Macintosh");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putUserAgentAttributes(attributes, new JSONObject(metadata));
+    AddMetadata.putUserAgentAttributes(attributes, Json.asObjectNode(metadata));
     assertEquals(expected, attributes);
   }
 
@@ -133,7 +136,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     Map<String, String> expected = ImmutableMap.of("dnt", "1", //
         "x_debug_id", "mysession");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putHeaderAttributes(attributes, new JSONObject(metadata));
+    AddMetadata.putHeaderAttributes(attributes, Json.asObjectNode(metadata));
     assertEquals(expected, attributes);
   }
 
@@ -158,7 +161,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     Map<String, String> expected = ImmutableMap.of("app_name", "Firefox", //
         "app_update_channel", "release");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putUriAttributes(attributes, new JSONObject(metadata));
+    AddMetadata.putUriAttributes(attributes, Json.asObjectNode(metadata));
     assertEquals(expected, attributes);
   }
 
@@ -194,8 +197,8 @@ public class AddMetadataTest extends TestWithDeterministicJson {
         .put("uri", ImmutableMap.of("app_name", "Firefox"))
         .put("header", ImmutableMap.of("x_debug_id", "mysession"))
         .put("geo", ImmutableMap.of("country", "CA")).put("user_agent", ImmutableMap.of()).build();
-    JSONObject payload = new JSONObject();
-    payload.put("metadata", metadata);
+    ObjectNode payload = Json.createObjectNode();
+    payload.set("metadata", Json.asObjectNode(metadata));
     payload.put("field1", 99);
     payload.put("normalized_channel", "release");
     payload.put("sample_id", 18);
@@ -205,7 +208,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     Map<String, String> attributes = new HashMap<>();
     AddMetadata.stripPayloadMetadataToAttributes(attributes, payload);
     assertEquals(expected, attributes);
-    assertEquals(ImmutableMap.of("field1", 99), payload.toMap());
+    assertEquals(ImmutableMap.of("field1", 99), Json.asMap(payload));
   }
 
 }

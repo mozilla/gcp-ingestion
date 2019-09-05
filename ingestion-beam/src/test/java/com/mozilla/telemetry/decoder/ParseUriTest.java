@@ -12,8 +12,6 @@ import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -90,7 +88,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
         .apply(ParseUri.of());
 
     PCollection<String> output = parsed.output() //
-        .apply("EncodeJsonOutput", OutputFileFormat.json.encode());
+        .apply("EncodeJsonOutput", MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.json.encodeSingleMessage(m))));
     PAssert.that(output).containsInAnyOrder(expected);
 
     PCollection<String> exceptions = parsed.errors() //
@@ -288,7 +287,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
         VALID_V6_CASES.values(), //
         VALID_V7_CASES.values(), //
         VALID_V8_CASES.values())) //
-        .map(v -> sortJSON("{\"installer_type\":\"stub\",\"installer_version\":\"\"," + v + "}"))
+        .map(v -> sortJson("{\"installer_type\":\"stub\",\"installer_version\":\"\"," + v + "}"))
         .collect(Collectors.toList());
     final List<String> expectedAttributes = Collections.nCopies(expectedPayloads.size(),
         "{\"document_namespace\":\"firefox-installer\","
@@ -310,18 +309,14 @@ public class ParseUriTest extends TestWithDeterministicJson {
 
     PCollection<String> payloads = output //
         .apply("PayloadString", MapElements.into(TypeDescriptors.strings())
-            .via(message -> new String(message.getPayload())));
+            .via(message -> sortJson(new String(message.getPayload()))));
     PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
     PCollection<String> attributesSansUri = output //
         .apply("AttributesSansUri", MapElements.into(TypeDescriptors.strings()).via(message -> {
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
           attributes.remove("uri");
-          try {
-            return Json.asString(attributes);
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
+          return sortJson(Json.asObjectNode(attributes).toString());
         }));
     PAssert.that(attributesSansUri).containsInAnyOrder(expectedAttributes);
 

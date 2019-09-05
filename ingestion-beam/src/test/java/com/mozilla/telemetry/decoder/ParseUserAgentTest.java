@@ -17,7 +17,9 @@ import java.util.stream.IntStream;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -97,7 +99,8 @@ public class ParseUserAgentTest extends TestWithDeterministicJson {
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()).output() //
         .apply(ParseUserAgent.of()) //
-        .apply(OutputFileFormat.json.encode());
+        .apply(MapElements.into(TypeDescriptors.strings())
+            .via(m -> sortJson(OutputFileFormat.json.encodeSingleMessage(m))));
 
     PAssert.that(output).containsInAnyOrder(expected);
 

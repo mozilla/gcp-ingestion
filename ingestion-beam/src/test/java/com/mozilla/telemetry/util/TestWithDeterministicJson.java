@@ -4,9 +4,6 @@
 
 package com.mozilla.telemetry.util;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -27,12 +24,7 @@ public abstract class TestWithDeterministicJson {
   /**
    * Reserialize {@code data} to make json deterministic.
    */
-  @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-  public static String sortJSON(String data) {
-    try {
-      return Json.readJSONObject(data.getBytes(StandardCharsets.UTF_8)).toString();
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  public static String sortJson(String data) {
+    return Json.sortJson(data);
   }
 }
