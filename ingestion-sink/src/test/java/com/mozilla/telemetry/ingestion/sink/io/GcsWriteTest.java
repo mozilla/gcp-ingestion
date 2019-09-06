@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,13 +40,17 @@ public class GcsWriteTest {
   private Gcs.Write.Ndjson output;
   private WriteChannel writer;
 
+  private CompletableFuture<Void> batchCloseHook(BlobInfo ignore) {
+    return CompletableFuture.completedFuture(null);
+  }
+
   @Before
   public void mockBigQueryResponse() {
     storage = mock(Storage.class);
     writer = mock(WriteChannel.class);
     when(storage.writer(any())).thenReturn(writer);
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY,
-        Format.raw);
+        Format.raw, this::batchCloseHook);
   }
 
   @Test
@@ -59,7 +64,7 @@ public class GcsWriteTest {
   @Test
   public void canSendWithNoDelay() {
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0), BATCH_KEY,
-        Format.raw);
+        Format.raw, this::batchCloseHook);
     output.apply(EMPTY_MESSAGE).join();
     assertEquals(1, output.batches.get(BATCH_KEY).size);
     assertEquals(EMPTY_MESSAGE_SIZE, output.batches.get(BATCH_KEY).byteSize);
