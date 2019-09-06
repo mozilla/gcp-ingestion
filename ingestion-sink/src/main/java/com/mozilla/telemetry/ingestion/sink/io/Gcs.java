@@ -10,8 +10,9 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
+import com.mozilla.telemetry.ingestion.core.util.Json;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -23,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class Gcs {
 
@@ -33,18 +35,23 @@ public class Gcs {
 
     public static class Ndjson extends Write {
 
-      private final PubsubMessageToJSONObject encoder;
+      private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
           String batchKeyTemplate, Format format,
           Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
         super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
-        this.encoder = new PubsubMessageToJSONObject(format);
+        this.encoder = new PubsubMessageToObjectNode(format);
       }
 
       @Override
       protected byte[] encodeInput(PubsubMessage input) {
-        return (encoder.apply(input).toString() + "\n").getBytes(StandardCharsets.UTF_8);
+        try {
+          return ArrayUtils.addAll(Json.asBytes(encoder.apply(input)),
+              "\n".getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
       }
     }
 
