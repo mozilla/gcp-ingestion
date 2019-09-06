@@ -6,12 +6,14 @@ package com.mozilla.telemetry.ingestion.sink.config;
 
 import com.google.api.gax.batching.FlowControlSettings;
 import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.collect.ImmutableList;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
+import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
 import java.util.List;
@@ -50,15 +52,29 @@ public class SinkConfig {
       @Override
       Function<PubsubMessage, CompletableFuture<Void>> getOutput(Env env) {
         String gcsPrefix = env.getString(OUTPUT_BUCKET);
-        // Append - to output prefix if necessary to separate each blob's UUID from other parts
-        if (gcsPrefix.contains("/") && !gcsPrefix.endsWith("/")) {
-          gcsPrefix = gcsPrefix + "-";
+        // Append / to GCS prefix to enforce that it will be a directory
+        if (!gcsPrefix.endsWith("/")) {
+          gcsPrefix += "/";
         }
+        // Append OUTPUT_TABLE to GCS prefix if present
+        if (env.containsKey(OUTPUT_TABLE)) {
+          gcsPrefix += "output_table=" + env.getString(OUTPUT_TABLE) + "/";
+        }
+
+        // if OUTPUT_TOPIC is present send notification for each gcs blob written
+        final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
+        if (env.containsKey(OUTPUT_TOPIC)) {
+          Function<PubsubMessage, CompletableFuture<Void>> pubsubWrite = pubsub.getOutput(env);
+          batchCloseHook = blobInfo -> pubsubWrite.apply(BlobInfoToPubsubMessage.apply(blobInfo));
+        } else {
+          batchCloseHook = ignore -> CompletableFuture.completedFuture(null);
+        }
+
         return new Gcs.Write.Ndjson(StorageOptions.getDefaultInstance().getService(),
             env.getLong(BATCH_MAX_BYTES, 100_000_000L), // default 100MB
             env.getInt(BATCH_MAX_MESSAGES, 1_000_000), // default 1M messages
             env.getDuration(BATCH_MAX_DELAY, "10m"), // default 10 minutes
-            gcsPrefix, getFormat(env));
+            gcsPrefix, getFormat(env), batchCloseHook);
       }
 
       @Override
