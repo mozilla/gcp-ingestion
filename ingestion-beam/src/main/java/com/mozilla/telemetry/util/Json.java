@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -27,7 +26,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -165,12 +163,6 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
       throw new IOException("not a valid PubsubMessage.payload: null");
     }
     return output;
-  }
-
-  /** Convert a tree to a map of strings to objects. */
-  public static Map<String, Object> asMap(ObjectNode root) {
-    return MAPPER.convertValue(root, new TypeReference<HashMap<String, Object>>() {
-    });
   }
 
   /** Convert a tree to a map of strings to strings, as appropriate for attributes. */
