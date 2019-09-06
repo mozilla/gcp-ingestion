@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
@@ -107,12 +108,10 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // If no "document_version" attribute was parsed from the URI, this element must be from the
     // /submit/telemetry endpoint and we now need to grab version from the payload.
     if (!attributes.containsKey("document_version")) {
-      if (json.has("version")) {
-        String version = json.get("version").toString();
-        attributes.put(Attribute.DOCUMENT_VERSION, version);
-      } else if (json.has("v")) {
-        String version = json.get("v").toString();
-        attributes.put(Attribute.DOCUMENT_VERSION, version);
+      Optional<JsonNode> version = Stream.of(json.path("version"), json.path("v"))
+          .filter(JsonNode::isValueNode).findFirst();
+      if (version.isPresent()) {
+        attributes.put(Attribute.DOCUMENT_VERSION, version.get().asText());
       } else {
         PerDocTypeCounter.inc(attributes, "error_missing_version");
         PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
@@ -140,7 +139,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       throw e;
     }
 
-    // addAttributesFromPayload(attributes, json);
+    addAttributesFromPayload(attributes, json);
 
     // https://github.com/mozilla/gcp-ingestion/issues/780
     // We need to be careful to consistently use our util methods (which use Jackson) for
@@ -157,81 +156,57 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json) {
 
     // Try to get glean-style client_info object.
-    Optional<JsonNode> gleanClientInfo = Optional.ofNullable(json) //
-        .map(j -> j.get("client_info"));
+    JsonNode gleanClientInfo = json.path("client_info");
 
     // Try to get "common ping"-style os object.
-    Optional<JsonNode> commonPingOs = Optional.ofNullable(json) //
-        .map(j -> j.get("environment")) //
-        .map(j -> j.get("system")) //
-        .map(j -> j.get("os"));
+    JsonNode commonPingOs = json.path("environment").path("system").path("os");
 
-    if (gleanClientInfo.isPresent()) {
+    if (gleanClientInfo.isObject()) {
       // See glean ping structure in:
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/glean/baseline/baseline.1.schema.json
-      gleanClientInfo //
-          .map(j -> j.get("app_channel")) //
-          .map(JsonNode::textValue) //
+      Optional.ofNullable(gleanClientInfo.path("app_channel").textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v)) //
           .ifPresent(v -> attributes.put(Attribute.APP_UPDATE_CHANNEL, v));
-      gleanClientInfo //
-          .map(j -> j.get(Attribute.OS)) //
-          .map(JsonNode::textValue) //
+      Optional.ofNullable(gleanClientInfo.path(Attribute.OS).textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v)) //
           .ifPresent(v -> attributes.put(Attribute.OS, v));
-      gleanClientInfo //
-          .map(j -> j.get(Attribute.OS_VERSION)) //
-          .map(JsonNode::textValue) //
+      Optional.ofNullable(gleanClientInfo.path(Attribute.OS_VERSION).textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v))
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
-      gleanClientInfo //
-          .map(j -> j.get(Attribute.CLIENT_ID)) //
-          .map(JsonNode::textValue) //
+      Optional.ofNullable(gleanClientInfo.path(Attribute.CLIENT_ID).textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v))
           .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
-    } else if (commonPingOs.isPresent()) {
+    } else if (commonPingOs.isObject()) {
       // See common ping structure in:
       // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
-      commonPingOs //
-          .map(j -> j.get("name")).map(JsonNode::textValue) //
+      Optional.ofNullable(commonPingOs.path("name").textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v)) //
           .ifPresent(v -> attributes.put(Attribute.OS, v));
-      commonPingOs //
-          .map(j -> j.get("version")) //
-          .map(JsonNode::textValue) //
+      Optional.ofNullable(commonPingOs.path("version").textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v)) //
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     } else {
       // Try to extract "core ping"-style values; see
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/telemetry/core/core.10.schema.json
-      Optional.ofNullable(json) //
-          .map(j -> j.get(Attribute.OS)) //
-          .map(JsonNode::textValue) //
+      Optional.ofNullable(json.path(Attribute.OS).textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v)) //
           .ifPresent(v -> attributes.put(Attribute.OS, v));
-      Optional.ofNullable(json) //
-          .map(j -> j.get("osversion")) //
+      Optional.ofNullable(json.path("osversion")) //
           .map(JsonNode::textValue) //
           .filter(v -> !Strings.isNullOrEmpty(v)) //
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
     // Try extracting variants of top-level client id.
-    Optional.ofNullable(json) //
-        .map(j -> j.get(Attribute.CLIENT_ID)) //
-        .map(JsonNode::textValue) //
+    Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
         .filter(v -> !Strings.isNullOrEmpty(v)) //
         .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
-    Optional.ofNullable(json) //
-        .map(j -> j.get("clientId")) //
-        .map(JsonNode::textValue) //
+    Optional.ofNullable(json.path("clientId").textValue()) //
         .filter(v -> !Strings.isNullOrEmpty(v)) //
         .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
 
     // Add sample id.
-    Optional.ofNullable(json) //
-        .map(j -> j.get(Attribute.CLIENT_ID)) //
-        .map(JsonNode::textValue) //
+    Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
         .filter(v -> !Strings.isNullOrEmpty(v)) //
         .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
   }

@@ -5,7 +5,6 @@
 package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -34,12 +33,10 @@ public class MessageScrubber {
         && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
         && "nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
         && "20190719094503".equals(attributes.get(Attribute.APP_BUILD_ID)) //
-        && Optional.of(json) //
-            .map(j -> j.get("payload")) //
-            .map(j -> j.get("metadata")) //
-            .map(j -> j.get("MozCrashReason")) //
-            .map(JsonNode::textValue) //
-            .filter(s -> s.contains("do not use eval with system privileges")).isPresent()) {
+        && Optional.of(json) // payload.metadata.MozCrashReason
+            .map(j -> j.path("payload").path("metadata").path("MozCrashReason").textValue())
+            .filter(s -> s.contains("do not use eval with system privileges")) //
+            .isPresent()) {
       countScrubbedBug1567596.inc();
       return true;
     } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
@@ -50,10 +47,9 @@ public class MessageScrubber {
             || ("beta".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
                 && attributes.get(Attribute.APP_VERSION).startsWith("68")))
         && Optional.of(json) // payload.metadata.RemoteType
-            .map(j -> j.get("payload")) //
-            .map(j -> j.get("metadata")) //
-            .map(j -> j.get("RemoteType")) //
-            .map(JsonNode::textValue).filter(s -> s.startsWith("webIsolated=")).isPresent()) {
+            .map(j -> j.path("payload").path("metadata").path("RemoteType").textValue())
+            .filter(s -> s.startsWith("webIsolated=")) //
+            .isPresent()) {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1562011
       countScrubbedBug1562011.inc();
       return true;
@@ -62,14 +58,10 @@ public class MessageScrubber {
         && (attributes.get(Attribute.APP_VERSION).startsWith("68")
             || attributes.get(Attribute.APP_VERSION).startsWith("69"))
         && Optional.of(json) // payload.hangs[].remoteType
-            .map(j -> j.get("payload")) //
-            .map(j -> j.get("hangs")) //
-            .filter(JsonNode::isArray).map(ArrayNode.class::cast) //
-            .map(ArrayNode::elements) //
-            .map(Streams::stream).orElseGet(Stream::empty) //
-            .map(j -> j.get("remoteType")) //
-            .map(JsonNode::textValue) //
-            .anyMatch(s -> s.startsWith("webIsolated="))) {
+            .map(j -> j.path("payload").path("hangs").elements()) //
+            .map(Streams::stream).orElseGet(Stream::empty).map(j -> j.path("remoteType")) //
+            .filter(JsonNode::isTextual) //
+            .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       countScrubbedBug1562011.inc();
       return true;
     } else {

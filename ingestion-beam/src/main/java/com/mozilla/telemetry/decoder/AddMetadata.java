@@ -223,11 +223,10 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
       String nestingKey, String prefix) {
     Optional //
         .ofNullable(metadata) //
-        .map(m -> m.get(nestingKey)) //
-        .map(JsonNode::fields) //
+        .map(m -> m.path(nestingKey).fields()) //
         .map(Streams::stream).orElseGet(Stream::empty) //
-        .forEach(entry -> Optional.ofNullable(entry.getValue()).ifPresent(value ->
-            attributes.put(prefix + entry.getKey(), value.asText())));
+        .filter(entry -> entry.getValue() != null) //
+        .forEach(entry -> attributes.put(prefix + entry.getKey(), entry.getValue().asText()));
   }
 
 }

@@ -200,13 +200,13 @@ public class SinkAvroTest {
     // Case where the schema is an integer but the value is a string
     data = new String(Files.readAllBytes(getPath(outputPath + "/err", "namespace_0")));
     obj = Json.readTree(data.getBytes(StandardCharsets.UTF_8));
-    msg = obj.get("attributeMap").get("error_message").textValue();
+    msg = obj.path("attributeMap").path("error_message").textValue();
     assertThat(msg, CoreMatchers.containsString("org.apache.avro.AvroTypeException"));
 
     // Case where the schema does not exist in the schema store
     data = new String(Files.readAllBytes(getPath(outputPath + "/err", "namespace_57")));
     obj = Json.readTree(data.getBytes(StandardCharsets.UTF_8));
-    msg = obj.get("attributeMap").get("error_message").textValue();
+    msg = obj.path("attributeMap").path("error_message").textValue();
     assertThat(msg,
         CoreMatchers.containsString("com.mozilla.telemetry.schemas.SchemaNotFoundException"));
   }

@@ -4,7 +4,6 @@
 
 package com.mozilla.telemetry.decoder;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -13,7 +12,7 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +79,8 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
   }
 
   @Override
-  protected PubsubMessage processElement(PubsubMessage message) throws InvalidUriException {
+  protected PubsubMessage processElement(PubsubMessage message)
+      throws InvalidUriException, IOException {
     message = PubsubConstraints.ensureNonNull(message);
     // Copy attributes
     final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
@@ -203,8 +203,9 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     }
 
     private static BiConsumer<String, ObjectNode> appendString(String key, String separator) {
-      return (value, payload) -> payload.put(key, Optional.ofNullable(payload.get(key))
-          .map(JsonNode::textValue).map(v -> v + separator).orElse("") + value);
+      return (value, payload) -> payload.put(key,
+          Optional.ofNullable(payload.path(key).textValue()).map(v -> v + separator).orElse("")
+              + value);
     }
 
     private static BiConsumer<String, ObjectNode> putBool(String key) {
@@ -256,7 +257,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     }
 
     private static byte[] parse(String uri, Map<String, String> attributes)
-        throws InvalidUriException {
+        throws InvalidUriException, IOException {
       attributes.put("document_namespace", "firefox-installer");
       attributes.put("document_type", "install");
       attributes.put("document_version", "1");
@@ -275,7 +276,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         }
       }
       // Serialize new payload as json
-      return payload.toString().getBytes(StandardCharsets.UTF_8);
+      return Json.asBytes(payload);
     }
   }
 }
