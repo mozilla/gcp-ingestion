@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -28,18 +29,15 @@ import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.json.JSONObject;
 
-public class Json {
-
-  /**
-   * A Jackson ObjectMapper pre-configured for use in com.mozilla.telemetry.
-   *
-   * <p>Registers {@link PubsubMessageMixin} for decoding to {@link PubsubMessage}.
-   *
-   * <p>Registers {@link JsonOrgModule} for decoding to json.org types.
-   */
-  @VisibleForTesting
-  static final ObjectMapper MAPPER = new ObjectMapper()
-      .addMixIn(PubsubMessage.class, PubsubMessageMixin.class).registerModule(new JsonOrgModule());
+/**
+ * Extends {@link com.mozilla.telemetry.ingestion.core.util.Json} with configuration and methods
+ * specific to ingestion-beam.
+ *
+ * <p>Registers {@link PubsubMessageMixin} for decoding to {@link PubsubMessage}.
+ *
+ * <p>Registers {@link JsonOrgModule} for decoding to json.org types.
+ */
+public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
 
   static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
@@ -48,6 +46,24 @@ public class Json {
 
   static {
     SCHEMA_FROM_PB.setAccessible(true);
+    MAPPER.addMixIn(PubsubMessage.class, PubsubMessageMixin.class);
+    MAPPER.registerModule(new JsonOrgModule());
+  }
+
+  /**
+   * Make serialization of {@link Map} deterministic for testing.
+   */
+  @VisibleForTesting
+  static void enableOrderMapEntriesByKeys() {
+    Json.MAPPER.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+  }
+
+  /**
+   * Reset the {@link ObjectMapper} configuration changed above.
+   */
+  @VisibleForTesting
+  static void disableOrderMapEntriesByKeys() {
+    Json.MAPPER.disable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
   }
 
   /**
@@ -122,15 +138,6 @@ public class Json {
       throw new IOException("not a valid PubsubMessage.payload: null");
     }
     return output;
-  }
-
-  /**
-   * Serialize {@code data} as a {@code byte[]}.
-   *
-   * @exception IOException if data cannot be encoded as json.
-   */
-  public static byte[] asBytes(Object data) throws IOException {
-    return MAPPER.writeValueAsBytes(data);
   }
 
   /**

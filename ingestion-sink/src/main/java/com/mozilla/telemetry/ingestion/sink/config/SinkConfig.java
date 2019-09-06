@@ -12,7 +12,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -122,8 +122,8 @@ public class SinkConfig {
     }
   }
 
-  private static PubsubMessageToJSONObject.Format getFormat(Env env) {
-    return PubsubMessageToJSONObject.Format.valueOf(env.getString(OUTPUT_FORMAT, "raw"));
+  private static PubsubMessageToObjectNode.Format getFormat(Env env) {
+    return PubsubMessageToObjectNode.Format.valueOf(env.getString(OUTPUT_FORMAT, "raw"));
   }
 
   public static Pubsub.Read getInput() {
