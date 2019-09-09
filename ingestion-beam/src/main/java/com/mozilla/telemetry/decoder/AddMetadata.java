@@ -74,7 +74,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     // Currently, every entry in metadata is a Map<String, String>, but we keep Object as the
     // value type to support future evolution of the metadata structure to include fields that
     // are not specifically Map<String, String>.
-    ObjectNode metadata = Json.emptyTree();
+    ObjectNode metadata = Json.createObjectNode();
     metadata.set(GEO, geoFromAttributes(attributes));
     metadata.set(Attribute.USER_AGENT, userAgentFromAttributes(attributes));
     metadata.set(HEADER, headersFromAttributes(attributes));
@@ -84,7 +84,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     IDENTIFYING_FIELDS.forEach(name -> Optional //
         .ofNullable(attributes.get(name)) //
         .ifPresent(value -> metadata.put(name, value)));
-    ObjectNode payload = Json.emptyTree();
+    ObjectNode payload = Json.createObjectNode();
     payload.set(METADATA, metadata);
     TOP_LEVEL_STRING_FIELDS.forEach(name -> Optional //
         .ofNullable(attributes.get(name)) //
@@ -135,12 +135,11 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     TOP_LEVEL_INT_FIELDS.forEach(name -> Optional //
         .ofNullable(payload) //
         .map(p -> p.remove(name)) //
-        .filter(JsonNode::isTextual) //
-        .ifPresent(value -> attributes.put(name, value.textValue())));
+        .ifPresent(value -> attributes.put(name, value.asText())));
   }
 
   static ObjectNode geoFromAttributes(Map<String, String> attributes) {
-    ObjectNode geo = Json.emptyTree();
+    ObjectNode geo = Json.createObjectNode();
     attributes.keySet().stream() //
         .filter(k -> k.startsWith(GEO_PREFIX)) //
         .forEach(k -> geo.put(k.substring(4), attributes.get(k)));
@@ -152,7 +151,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   }
 
   static ObjectNode userAgentFromAttributes(Map<String, String> attributes) {
-    ObjectNode userAgent = Json.emptyTree();
+    ObjectNode userAgent = Json.createObjectNode();
     attributes.entrySet().stream() //
         .filter(entry -> entry.getKey().startsWith(USER_AGENT_PREFIX)) //
         .forEach(entry -> userAgent.put(entry.getKey().substring(USER_AGENT_PREFIX.length()),
@@ -165,7 +164,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   }
 
   static ObjectNode headersFromAttributes(Map<String, String> attributes) {
-    ObjectNode header = Json.emptyTree();
+    ObjectNode header = Json.createObjectNode();
     attributes.entrySet().stream().filter(entry -> HEADER_ATTRIBUTES.contains(entry.getKey())) //
         .forEach(entry -> header.put(entry.getKey(), entry.getValue()));
     return header;
@@ -176,7 +175,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
   }
 
   static ObjectNode uriFromAttributes(Map<String, String> attributes) {
-    ObjectNode uri = Json.emptyTree();
+    ObjectNode uri = Json.createObjectNode();
     attributes.entrySet().stream().filter(entry -> URI_ATTRIBUTES.contains(entry.getKey())) //
         .forEach(entry -> uri.put(entry.getKey(), entry.getValue()));
     return uri;

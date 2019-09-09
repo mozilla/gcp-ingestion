@@ -35,7 +35,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   @Test
-  public void testOutput() throws Exception {
+  public void testOutput() {
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
     Map<String, String> attributes = ImmutableMap.<String, String>builder().put("sample_id", "18")
         .put("geo_country", "CA").put("x_debug_id", "mysession")
@@ -60,11 +60,6 @@ public class AddMetadataTest extends TestWithDeterministicJson {
             + ",\"normalized_channel\":\"release\"" //
             + ",\"sample_id\":18" //
             + ",\"id\":null}");
-    // Json.asString(ImmutableMap.of("metadata", ImmutableMap
-    // .of(ImmutableMap.of("geo", ImmutableMap.of("country", "CA")), //
-    // ImmutableMap.of("user_agent", ImmutableMap.of())),
-    // "normalized_channel", "release",
-    // "sample_id", 18)));
     final List<String> expectedError = Arrays.asList("{", "[]");
     final PCollection<String> error = output.errors() //
         .apply("EncodeTextError", OutputFileFormat.text.encode());
@@ -78,7 +73,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
   }
 
   private ObjectNode mapToObjectNode(Map<String, Object> m) throws IOException {
-    return Json.readTree(Json.asBytes(m));
+    return Json.readObjectNode(Json.asBytes(m));
   }
 
   @Test
@@ -99,70 +94,124 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     Map<String, String> expected = ImmutableMap.of("geo_country", "CA", "geo_city", "Whistler");
     assertEquals(expected, attributes);
   }
-  /*
-   * @Test public void testUserAgentFromAttributes() { Map<String, String> attributes =
-   * ImmutableMap.of("user_agent_browser", "Firefox", // "user_agent_version", "63.0", //
-   * "sample_id", "3", // "user_agent_os", "Macintosh"); Map<String, Object> expected =
-   * ImmutableMap.of("browser", "Firefox", // "version", "63.0", // "os", "Macintosh"); Map<String,
-   * Object> userAgent = AddMetadata.userAgentFromAttributes(attributes); assertEquals(expected,
-   * userAgent); }
-   * 
-   * @Test public void testPutUserAgentAttributes() { Map<String, Object> metadata =
-   * ImmutableMap.of("user_agent", ImmutableMap.of("browser", "Firefox", // "version", "63.0", //
-   * "os", "Macintosh")); Map<String, String> expected = ImmutableMap.of("user_agent_browser",
-   * "Firefox", // "user_agent_version", "63.0", // "user_agent_os", "Macintosh"); Map<String,
-   * String> attributes = new HashMap<>(); AddMetadata.putUserAgentAttributes(attributes, new
-   * JSONObject(metadata)); assertEquals(expected, attributes); }
-   * 
-   * @Test public void testHeadersFromAttributes() { Map<String, String> attributes =
-   * ImmutableMap.of("dnt", "1", // "sample_id", "18", // "x_debug_id", "mysession"); Map<String,
-   * Object> headers = AddMetadata.headersFromAttributes(attributes); Map<String, Object> expected =
-   * ImmutableMap.of("dnt", "1", "x_debug_id", "mysession"); assertEquals(expected, headers); }
-   * 
-   * @Test public void testPutHeaderAttributes() { Map<String, Object> metadata =
-   * ImmutableMap.of("header", ImmutableMap.of("dnt", "1", "x_debug_id", "mysession")); Map<String,
-   * String> expected = ImmutableMap.of("dnt", "1", // "x_debug_id", "mysession"); Map<String,
-   * String> attributes = new HashMap<>(); AddMetadata.putHeaderAttributes(attributes, new
-   * JSONObject(metadata)); assertEquals(expected, attributes); }
-   * 
-   * @Test public void testUriFromAttributes() { Map<String, String> attributes = ImmutableMap //
-   * .of("uri", "/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049", // "app_name",
-   * "Firefox", // "sample_id", "18", // "app_update_channel", "release"); Map<String, Object> uri =
-   * AddMetadata.uriFromAttributes(attributes); Map<String, Object> expected = ImmutableMap //
-   * .of("uri", "/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049", // "app_name",
-   * "Firefox", "app_update_channel", "release"); assertEquals(expected, uri); }
-   * 
-   * @Test public void testPutUriAttributes() { Map<String, Object> metadata =
-   * ImmutableMap.of("uri", ImmutableMap // .of("app_name", "Firefox", "app_update_channel",
-   * "release")); Map<String, String> expected = ImmutableMap.of("app_name", "Firefox", //
-   * "app_update_channel", "release"); Map<String, String> attributes = new HashMap<>();
-   * AddMetadata.putUriAttributes(attributes, new JSONObject(metadata)); assertEquals(expected,
-   * attributes); }
-   * 
-   * @Test public void testAttributesToMetadataPayload() { Map<String, String> attributes =
-   * ImmutableMap.<String, String>builder() .put("document_namespace", "telemetry") //
-   * .put("app_name", "Firefox") // .put("sample_id", "18") // .put("geo_country", "CA") //
-   * .put("x_debug_id", "mysession") // .put("normalized_channel", "release") //
-   * .put("x_forwarded_for", "??") // .build(); Map<String, Object> payload =
-   * AddMetadata.attributesToMetadataPayload(attributes); Map<String, Object> expected =
-   * ImmutableMap.<String, Object>builder() // .put("metadata", ImmutableMap.<String,
-   * Object>builder() // .put("document_namespace", "telemetry") // .put("uri",
-   * ImmutableMap.of("app_name", "Firefox")) // .put("header", ImmutableMap.of("x_debug_id",
-   * "mysession")) // .put("geo", ImmutableMap.of("country", "CA")) // .put("user_agent",
-   * ImmutableMap.of()) // .build()) // .put("normalized_channel", "release") // .put("sample_id",
-   * 18) // .build(); assertEquals(expected, payload); }
-   * 
-   * @Test public void testStripPayloadMetadataToAttributes() { Map<String, Object> metadata =
-   * ImmutableMap.<String, Object>builder() // .put("uri", ImmutableMap.of("app_name", "Firefox"))
-   * .put("header", ImmutableMap.of("x_debug_id", "mysession")) .put("geo",
-   * ImmutableMap.of("country", "CA")).put("user_agent", ImmutableMap.of()).build(); JSONObject
-   * payload = new JSONObject(); payload.put("metadata", metadata); payload.put("field1", 99);
-   * payload.put("normalized_channel", "release"); payload.put("sample_id", 18); Map<String, String>
-   * expected = ImmutableMap.<String, String>builder().put("app_name", "Firefox") .put("sample_id",
-   * "18").put("geo_country", "CA").put("x_debug_id", "mysession") .put("normalized_channel",
-   * "release").build(); Map<String, String> attributes = new HashMap<>();
-   * AddMetadata.stripPayloadMetadataToAttributes(attributes, payload); assertEquals(expected,
-   * attributes); assertEquals(ImmutableMap.of("field1", 99), payload.toMap()); }
-   */
+
+  @Test
+  public void testUserAgentFromAttributes() throws Exception {
+    Map<String, String> attributes = ImmutableMap.of("user_agent_browser", "Firefox", //
+        "user_agent_version", "63.0", //
+        "sample_id", "3", //
+        "user_agent_os", "Macintosh");
+    ObjectNode expected = mapToObjectNode(ImmutableMap.of("browser", "Firefox", //
+        "version", "63.0", //
+        "os", "Macintosh"));
+    ObjectNode userAgent = AddMetadata.userAgentFromAttributes(attributes);
+    assertEquals(expected, userAgent);
+  }
+
+  @Test
+  public void testPutUserAgentAttributes() throws Exception {
+    ObjectNode metadata = mapToObjectNode(ImmutableMap.of("user_agent",
+        ImmutableMap.of("browser", "Firefox", //
+            "version", "63.0", //
+            "os", "Macintosh")));
+    Map<String, String> expected = ImmutableMap.of("user_agent_browser", "Firefox", //
+        "user_agent_version", "63.0", //
+        "user_agent_os", "Macintosh");
+    Map<String, String> attributes = new HashMap<>();
+    AddMetadata.putUserAgentAttributes(attributes, metadata);
+    assertEquals(expected, attributes);
+  }
+
+  @Test
+  public void testHeadersFromAttributes() throws Exception {
+    Map<String, String> attributes = ImmutableMap.of("dnt", "1", //
+        "sample_id", "18", //
+        "x_debug_id", "mysession");
+    ObjectNode headers = AddMetadata.headersFromAttributes(attributes);
+    ObjectNode expected = mapToObjectNode(ImmutableMap.of("dnt", "1", "x_debug_id", "mysession"));
+    assertEquals(expected, headers);
+  }
+
+  @Test
+  public void testPutHeaderAttributes() throws Exception {
+    ObjectNode metadata = mapToObjectNode(
+        ImmutableMap.of("header", ImmutableMap.of("dnt", "1", "x_debug_id", "mysession")));
+    Map<String, String> expected = ImmutableMap.of("dnt", "1", //
+        "x_debug_id", "mysession");
+    Map<String, String> attributes = new HashMap<>();
+    AddMetadata.putHeaderAttributes(attributes, (metadata));
+    assertEquals(expected, attributes);
+  }
+
+  @Test
+  public void testUriFromAttributes() throws Exception {
+    Map<String, String> attributes = ImmutableMap //
+        .of("uri", "/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049", //
+            "app_name", "Firefox", //
+            "sample_id", "18", //
+            "app_update_channel", "release");
+    ObjectNode uri = AddMetadata.uriFromAttributes(attributes);
+    ObjectNode expected = mapToObjectNode(ImmutableMap //
+        .of("uri", "/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049", //
+            "app_name", "Firefox", "app_update_channel", "release"));
+    assertEquals(expected, uri);
+  }
+
+  @Test
+  public void testPutUriAttributes() throws Exception {
+    ObjectNode metadata = mapToObjectNode(ImmutableMap.of("uri", ImmutableMap //
+        .of("app_name", "Firefox", "app_update_channel", "release")));
+    Map<String, String> expected = ImmutableMap.of("app_name", "Firefox", //
+        "app_update_channel", "release");
+    Map<String, String> attributes = new HashMap<>();
+    AddMetadata.putUriAttributes(attributes, (metadata));
+    assertEquals(expected, attributes);
+  }
+
+  @Test
+  public void testAttributesToMetadataPayload() throws Exception {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put("document_namespace", "telemetry") //
+        .put("app_name", "Firefox") //
+        .put("sample_id", "18") //
+        .put("geo_country", "CA") //
+        .put("x_debug_id", "mysession") //
+        .put("normalized_channel", "release") //
+        .put("x_forwarded_for", "??") //
+        .build();
+    ObjectNode payload = AddMetadata.attributesToMetadataPayload(attributes);
+    ObjectNode expected = mapToObjectNode(ImmutableMap.<String, Object>builder() //
+        .put("metadata", ImmutableMap.<String, Object>builder() //
+            .put("document_namespace", "telemetry") //
+            .put("uri", ImmutableMap.of("app_name", "Firefox")) //
+            .put("header", ImmutableMap.of("x_debug_id", "mysession")) //
+            .put("geo", ImmutableMap.of("country", "CA")) //
+            .put("user_agent", ImmutableMap.of()) //
+            .build()) //
+        .put("normalized_channel", "release") //
+        .put("sample_id", 18) //
+        .build());
+    assertEquals(expected, payload);
+  }
+
+  @Test
+  public void testStripPayloadMetadataToAttributes() throws Exception {
+    ObjectNode metadata = mapToObjectNode(ImmutableMap.<String, Object>builder() //
+        .put("uri", ImmutableMap.of("app_name", "Firefox"))
+        .put("header", ImmutableMap.of("x_debug_id", "mysession"))
+        .put("geo", ImmutableMap.of("country", "CA")).put("user_agent", ImmutableMap.of()).build());
+    ObjectNode payload = Json.createObjectNode();
+    payload.set("metadata", metadata);
+    payload.put("field1", 99);
+    payload.put("normalized_channel", "release");
+    payload.put("sample_id", 18);
+    Map<String, String> expected = ImmutableMap.<String, String>builder().put("app_name", "Firefox")
+        .put("sample_id", "18").put("geo_country", "CA").put("x_debug_id", "mysession")
+        .put("normalized_channel", "release").build();
+    Map<String, String> attributes = new HashMap<>();
+    AddMetadata.stripPayloadMetadataToAttributes(attributes, payload);
+    assertEquals(expected, attributes);
+    assertEquals(mapToObjectNode(ImmutableMap.of("field1", 99)), payload);
+  }
 
 }

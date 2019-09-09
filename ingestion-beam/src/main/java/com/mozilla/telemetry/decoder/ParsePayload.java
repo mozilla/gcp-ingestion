@@ -223,7 +223,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
   private ObjectNode parseTimed(byte[] bytes) throws IOException {
     long startTime = System.currentTimeMillis();
-    final ObjectNode json = Json.readTree(bytes);
+    final ObjectNode json = Json.readObjectNode(bytes);
     long endTime = System.currentTimeMillis();
     parseTimer.update(endTime - startTime);
     return json;

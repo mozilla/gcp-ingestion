@@ -248,7 +248,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         throw new UnexpectedPathElementsException(unexpectedElements);
       }
       // Initialize new payload with ping version and funnelcake ID
-      ObjectNode payload = Json.emptyTree();
+      ObjectNode payload = Json.createObjectNode();
       payload.put("installer_type", "stub");
       payload.put("installer_version", ""); // it's required but stub pings don't have it
       payload.put("ping_version", pingVersion);

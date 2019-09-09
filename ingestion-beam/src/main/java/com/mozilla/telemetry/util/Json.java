@@ -126,7 +126,7 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
    *
    * @exception IOException if {@code data} does not contain a valid json object.
    */
-  public static ObjectNode readTree(byte[] data) throws IOException {
+  public static ObjectNode readObjectNode(byte[] data) throws IOException {
     // Read data into a tree
     TreeNode root = MAPPER.readTree(data);
     // Check that we have an object, because treeToValue won't
@@ -139,14 +139,14 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   /**
    * Return a new, empty {@link ObjectNode}.
    */
-  public static ObjectNode emptyTree() {
+  public static ObjectNode createObjectNode() {
     return MAPPER.createObjectNode();
   }
 
   /**
    * Return a new, empty {@link ArrayNode}.
    */
-  public static ArrayNode emptyArray() {
+  public static ArrayNode createArrayNode() {
     return MAPPER.createArrayNode();
   }
 

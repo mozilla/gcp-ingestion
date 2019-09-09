@@ -25,7 +25,7 @@ public class MessageScrubberTest {
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "crash")
         .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_BUILD_ID, "20190719094503")
         .put(Attribute.APP_VERSION, "70.0a1").build();
-    ObjectNode bug1567596AffectedJson = Json.readTree(("{\n" //
+    ObjectNode bug1567596AffectedJson = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //
         + "    \"metadata\": {\n" //
         + "      \"MozCrashReason\": \"bar; do not use eval with system privileges foo)\"\n" //
@@ -35,12 +35,12 @@ public class MessageScrubberTest {
         + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
     assertTrue(MessageScrubber.shouldScrub(attributes, bug1567596AffectedJson));
     assertFalse(MessageScrubber.shouldScrub(new HashMap<>(), bug1567596AffectedJson));
-    assertFalse(MessageScrubber.shouldScrub(attributes, Json.emptyTree()));
+    assertFalse(MessageScrubber.shouldScrub(attributes, Json.createObjectNode()));
   }
 
   @Test
   public void testShouldScrubCrashBug1562011() throws Exception {
-    ObjectNode ping = Json.readTree(("{\n" //
+    ObjectNode ping = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //
         + "    \"metadata\": {\n" //
         + "      \"RemoteType\": \"webIsolated=foo\"\n" //
@@ -65,7 +65,7 @@ public class MessageScrubberTest {
 
   @Test
   public void testShouldScrubBhrBug1562011() throws Exception {
-    ObjectNode ping = Json.readTree(("{\n" //
+    ObjectNode ping = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //
         + "    \"hangs\": [\n" //
         + "      {\"remoteType\": \"webIsolated=foo\"},\n" //

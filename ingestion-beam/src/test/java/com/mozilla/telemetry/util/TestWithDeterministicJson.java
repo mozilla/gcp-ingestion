@@ -30,7 +30,7 @@ public abstract class TestWithDeterministicJson {
   @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
   public static String sortJSON(String data) {
     try {
-      return Json.asString(Json.asMap(Json.readTree(data.getBytes(StandardCharsets.UTF_8))));
+      return Json.asString(Json.asMap(Json.readObjectNode(data.getBytes(StandardCharsets.UTF_8))));
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
