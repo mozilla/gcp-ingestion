@@ -47,6 +47,9 @@
             <property name="format" value="getBytes\(\)"/>
             <property name="ignoreComments" value="true"/>
         </module>
+        <module name="IllegalImport">
+            <property name="illegalClasses" value="org.json.JSONObject"/>
+        </module>
         <module name="IllegalTokenText">
             <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
             <property name="format"

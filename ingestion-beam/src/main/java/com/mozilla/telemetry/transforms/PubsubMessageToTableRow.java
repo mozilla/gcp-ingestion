@@ -163,7 +163,8 @@ public class PubsubMessageToTableRow
   @VisibleForTesting
   static TableRow decodedTableRow(PubsubMessage message) {
     TableRow tableRow = new TableRow();
-    AddMetadata.attributesToMetadataPayload(message.getAttributeMap()).forEach(tableRow::set);
+    Json.asMap(AddMetadata.attributesToMetadataPayload(message.getAttributeMap()))
+        .forEach(tableRow::set);
     // Also include client_id if present.
     Optional.ofNullable(message.getAttribute(Attribute.CLIENT_ID))
         .ifPresent(clientId -> tableRow.set(Attribute.CLIENT_ID, clientId));

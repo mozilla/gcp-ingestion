@@ -39,7 +39,7 @@ public class Json {
    * Use {@code MAPPER} to convert {@link ObjectNode} to {@code Map<String, Object>}.
    */
   public static Map<String, Object> asMap(ObjectNode objectNode) {
-    return MAPPER.convertValue(objectNode, new TypeReference<Object>() {
+    return MAPPER.convertValue(objectNode, new TypeReference<Map<String, Object>>() {
     });
   }
 }

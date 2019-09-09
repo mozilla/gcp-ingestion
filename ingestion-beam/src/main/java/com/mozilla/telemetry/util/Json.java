@@ -7,9 +7,12 @@ package com.mozilla.telemetry.util;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -27,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.json.JSONObject;
 
 /**
  * Extends {@link com.mozilla.telemetry.ingestion.core.util.Json} with configuration and methods
@@ -105,24 +107,48 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   }
 
   /**
-   * Read a {@link JSONObject} from a byte array.
-   *
-   * <p>Using a Jackson {@link ObjectMapper} here is better about not changing long integers to
-   * strings than using {@code new JSONObject(new String(data)}, and accepts {@code byte[]} so that
-   * we don't need to decode to a {@link String} first.
+   * Read an instance of {@code klass} from a byte array.
    *
    * @exception IOException if {@code data} does not contain a valid json object.
    */
-  @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-  public static JSONObject readJSONObject(byte[] data) throws IOException {
+  public static <T> T readValue(byte[] data, Class<T> klass) throws IOException {
     // Read data into a tree
     TreeNode tree = MAPPER.readTree(data);
     // Check that we have an object, because treeToValue won't
     if (tree == null || !tree.isObject()) {
       throw new IOException("json value is not an object");
     }
-    // Return a JSONObject created from tree
-    return MAPPER.treeToValue(tree, JSONObject.class);
+    // Return a class instance created from the tree
+    return MAPPER.treeToValue(tree, klass);
+  }
+
+  /**
+   * Read bytes into a tree of {@link com.fasterxml.jackson.databind.JsonNode}.
+   *
+   * @exception IOException if {@code data} does not contain a valid json object.
+   */
+  public static ObjectNode readObjectNode(byte[] data) throws IOException {
+    // Read data into a tree
+    TreeNode root = MAPPER.readTree(data);
+    // Check that we have an object, because treeToValue won't
+    if (root == null || !root.isObject()) {
+      throw new IOException("json value is not an object");
+    }
+    return (ObjectNode) root;
+  }
+
+  /**
+   * Return a new, empty {@link ObjectNode}.
+   */
+  public static ObjectNode createObjectNode() {
+    return MAPPER.createObjectNode();
+  }
+
+  /**
+   * Return a new, empty {@link ArrayNode}.
+   */
+  public static ArrayNode createArrayNode() {
+    return MAPPER.createArrayNode();
   }
 
   /**
@@ -138,6 +164,13 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
       throw new IOException("not a valid PubsubMessage.payload: null");
     }
     return output;
+  }
+
+  /**
+   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   */
+  public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
+    return MAPPER.treeToValue(root, klass);
   }
 
   /**
