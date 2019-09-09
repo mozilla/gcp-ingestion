@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.Validator;
@@ -19,7 +20,7 @@ public class JsonValidator {
     this.validator = Validator.builder().failEarly().build();
   }
 
-  public void validate(Schema schema, ObjectNode json) {
+  public void validate(Schema schema, ObjectNode json) throws JsonProcessingException {
     validator.performValidation(schema, Json.convertValue(json, JSONObject.class));
   }
 

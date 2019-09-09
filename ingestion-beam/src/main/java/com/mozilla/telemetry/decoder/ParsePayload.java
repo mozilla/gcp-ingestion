@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
@@ -229,7 +230,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     return json;
   }
 
-  private void validateTimed(Schema schema, ObjectNode json) {
+  private void validateTimed(Schema schema, ObjectNode json) throws JsonProcessingException {
     if (validator == null) {
       validator = new JsonValidator();
     }

@@ -7,6 +7,7 @@ package com.mozilla.telemetry.util;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -168,7 +169,7 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   /**
    * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
    */
-  public static <T> T convertValue(ObjectNode root, Class<T> klass) {
+  public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
     return MAPPER.treeToValue(root, klass);
   }
 
