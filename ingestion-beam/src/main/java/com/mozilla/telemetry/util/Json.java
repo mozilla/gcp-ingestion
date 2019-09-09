@@ -165,9 +165,11 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
     return output;
   }
 
-  /** Convert a tree to a map of strings to strings, as appropriate for attributes. */
+  /**
+   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   */
   public static <T> T convertValue(ObjectNode root, Class<T> klass) {
-    return MAPPER.convertValue(root, klass);
+    return MAPPER.treeToValue(root, klass);
   }
 
   /**
