@@ -13,9 +13,11 @@
 cd "$(dirname "$0")/.." || exit
 
 if [[ ! -d "bq-schemas" ]]; then
-    echo "Run 'bin/generate-bq-schemas'"
+    echo "Run 'bin/generate-bq-schemas' or 'bin/copy-bq-schemas'"
     exit 1
 fi
+
+echo "Running dataset updates on $(gcloud config get-value project)"
 
 total=0
 skip=0
