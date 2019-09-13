@@ -131,6 +131,7 @@
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
         <li class="main active"><a href="#apache-beam-jobs-for-ingestion">Apache Beam Jobs for Ingestion</a></li>
+            <li><a href="#building">Building</a></li>
             <li><a href="#sink-job">Sink Job</a></li>
             <li><a href="#decoder-job">Decoder Job</a></li>
             <li><a href="#republisher-job">Republisher Job</a></li>
@@ -146,6 +147,12 @@ Google Cloud Dataflow is a Google Cloud Platform service that natively runs
 Apache Beam jobs.</p>
 <p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam">ingestion-beam</a>
 subdirectory of the gcp-ingestion repository.</p>
+<h2 id="building">Building</h2>
+<p>Move to the <code>ingestion-beam</code> subdirectory of your gcp-ingestion checkout and run:</p>
+<pre><code class="bash">./bin/mvn clean compile
+</code></pre>
+
+<p>See the details below under each job for details on how to run what you've produced.</p>
 <h2 id="sink-job">Sink Job</h2>
 <p>A job for delivering messages between Google Cloud services. Defined in the <code>com.mozilla.telemetry.Sink</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java">source</a>).</p>
 <h3 id="supported-input-and-outputs">Supported Input and Outputs</h3>
