@@ -50,12 +50,16 @@ about the sandbox environment that is provided by data operations.
 Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.
 
 ```bash
+# this must be an absolute path
 export GOOGLE_APPLICATION_CREDENTIALS=keys.json
 PROJECT=$(gcloud config get-value project)
 BUCKET="gs://$PROJECT"
 
 path="$BUCKET/data/*.ndjson"
-./bin/mvn compile exec:java -Dexec.args="\
+
+# use local maven instead of the docker container in bin/mvn, otherwise make sure to mount
+# credentials into the proper location in the container
+mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
     --project=$PROJECT \
     --autoscalingAlgorithm=NONE \
