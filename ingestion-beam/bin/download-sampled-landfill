@@ -151,7 +151,7 @@ def parse_arguments():
         "--submission-date", default=(datetime.now() - timedelta(1)).strftime("%Y%m%d")
     )
     parser.add_argument("--schema-file", default="schemas.tar.gz")
-    parser.add_argument("--output-file", default="landfill-integration.ndjson")
+    parser.add_argument("--output-file", default="avro-landfill-integration.ndjson")
     args = parser.parse_args()
     return args
 

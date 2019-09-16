@@ -5,36 +5,34 @@
 # suitable for ingesting data from decoded messages. Set the following
 # environment variables to modify the behavior of the update.
 #
-#   DATASET=name        - Set the dataset name, defaults to test_ingestion
 #   SKIP_EXISTING=1     - Skip table creation if the table already exists
-#   OVERWRITE=1         - Drop the dataset and create tables from scratch
+#   REPLACE_EXISTING=1  - Drop and create a table whether it exists or not
 #
 # The default behavior is to fail when encountering an existing table.
 
-: "${DATASET:=test_ingestion}"
-: "${SKIP_EXISTING:=1}"
-: "${OVERWRITE:=0}"
+cd "$(dirname "$0")/.." || exit
 
-# globals
+if [[ ! -d "bq-schemas" ]]; then
+    echo "Run 'bin/generate-bq-schemas'"
+    exit 1
+fi
+
 total=0
 skip=0
 error=0
-
 function update_table() {
     # Arguments:
-    #   $1 - dataset name
-    #   $2 - path to the document in format `{namespace}.{type}.{version}.bq`
+    #   $1 - path to the document in format `{namespace}.{type}.{version}.bq.json`
     #
     # Options via envvar
     #   $SKIP_EXISTING  - skip if exists
-    #   $OVERWRITE - remove and create if exists
+    #   $REPLACE_EXISTING - remove and create if exists
     #
     # Counters:
     #   $total - the total number of documents seen
     #   $skip  - the number of documents that have been skipped
     #   $error - the number of errors encountered
-    local dataset=$1
-    local document=$2
+    document=$1
     ((total++))
 
     # downcase hyphens to underscores before generating names
@@ -43,7 +41,12 @@ function update_table() {
     doctype=$(echo "${bq_document}" | cut -d. -f2)
     docver=$(echo "${bq_document}" | cut -d. -f3)
 
-    table_exists=$(bq ls "${dataset}" | grep "${namespace}__${doctype}_v${docver}")
+    if ! bq ls | grep "${namespace}" >/dev/null ; then
+        echo "creating dataset: ${namespace}"
+        bq mk "${namespace}"
+    fi
+
+    table_exists=$(bq ls "${namespace}" | grep "${doctype}_v${docver}")
 
     if [[ -n ${SKIP_EXISTING+x} ]] && [[ -n ${table_exists} ]]; then
         echo "skipping bq mk for ${document}"
@@ -51,45 +54,24 @@ function update_table() {
         return
     fi
 
+    if [[ -n ${REPLACE_EXISTING+x} ]] && [[ -n ${table_exists} ]]; then
+        echo "running bq rm for ${document}"
+        bq rm -f "${namespace}.${doctype}_v${docver}"
+    fi
+
     bq mk --table \
         --schema "${document}" \
         --time_partitioning_field submission_timestamp \
-        --clustering_fields submission_timestamp \
-        "${dataset}.${namespace}__${doctype}_v${docver}"
+        "${namespace}.${doctype}_v${docver}"
     if [[ $? ]]; then
         ((error++))
     fi
 }
 
-function main() {
-    cd "$(dirname "$0")/.." || exit
+documents=$(find bq-schemas -type file)
+trap "exit" INT
+for document in ${documents}; do
+    update_table "${document}"
+done
 
-    if [[ ! -d "bq-schemas" ]]; then
-        echo "Run 'bin/generate-bq-schemas' or 'bin/copy-bq-schemas'"
-        exit 1
-    fi
-
-    echo "Running dataset updates on $(gcloud config get-value project)"
-
-    if [[ -n ${OVERWRITE} ]]; then
-        echo "running bq rm for ${DATASET}"
-        bq rm -rf "${DATASET}"
-    fi
-
-    if ! bq ls ${DATASET} > /dev/null; then
-        echo "creating dataset: ${DATASET}"
-        bq mk "${DATASET}"
-    fi
-
-    documents=$(find bq-schemas -type file | sort)
-    trap "exit" INT
-    for document in ${documents}; do
-        update_table "${DATASET}" "${document}"
-    done
-
-    echo "$((total-skip-error))/${total} sucessfully updated, ${skip} skipped, ${error} errors."
-}
-
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+echo "$((total-skip-error))/${total} sucessfully updated, ${skip} skipped, ${error} errors."
