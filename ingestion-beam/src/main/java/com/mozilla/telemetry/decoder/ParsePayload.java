@@ -207,7 +207,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
         .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
 
     // Add sample id.
-    Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
+    Optional.ofNullable(attributes.get(Attribute.CLIENT_ID)) //
         .filter(v -> !Strings.isNullOrEmpty(v)) //
         .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
   }
