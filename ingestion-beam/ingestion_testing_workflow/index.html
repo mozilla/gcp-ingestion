@@ -170,18 +170,20 @@ about the sandbox environment that is provided by data operations.</p>
 <li>A <code>schemas.tar.gz</code> will appear at the project root.</li>
 </ul>
 </li>
-<li>Generate BigQuery schemas using <code>bin/generate-bq-schemas</code>.<ul>
-<li>Schemas will be written to <code>bq-schemas/</code>.
+<li>Copy generated BigQuery schemas using <code>bin/copy-bq-schemas</code>.<ul>
+<li>Schemas will be written to <code>bq-schemas/</code> with a <code>.bq</code> extension</li>
+<li>Schemas can be generated directly from JSON Schema using <code>bin/generate-bq-schemas</code>
 <code>bq-schemas/
-├── activity-stream.impression-stats.1.bigquery.json
-├── coverage.coverage.1.bigquery.json
-├── edge-validator.error-report.1.bigquery.json
-├── eng-workflow.bmobugs.1.bigquery.json
+├── activity-stream.impression-stats.1.bq
+├── coverage.coverage.1.bq
+├── edge-validator.error-report.1.bq
+├── eng-workflow.bmobugs.1.bq
 ....</code></li>
 </ul>
 </li>
 <li>Update the BigQuery table in the current project using <code>bin/update-bq-table</code>.<ul>
 <li>This may take several minutes. Read the script for usage information.</li>
+<li>Each namespace will be given its own dataset and each document type its own table.</li>
 </ul>
 </li>
 <li>Verify that tables have been updated by viewing the BigQuery console.</li>
@@ -204,7 +206,7 @@ path=&quot;$BUCKET/data/*.ndjson&quot;
     --inputType=file \
     --input=$path\
     --outputType=bigquery \
-    --output=$PROJECT:\${document_namespace}.\${document_type}_v\${document_version} \
+    --output=$PROJECT:test_ingestion.\${document_namespace}__\${document_type}_v\${document_version} \
     --bqWriteMethod=file_loads \
     --tempLocation=$BUCKET/temp/bq-loads \
     --errorOutputType=file \
