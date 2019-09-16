@@ -42,7 +42,7 @@ about the sandbox environment that is provided by data operations.
     ```
 * Update the BigQuery table in the current project using `bin/update-bq-table`.
     - This may take several minutes. Read the script for usage information.
-    - Each namespace will be given its own dataset and each doctype its own table.
+    - Each namespace will be given its own dataset and each document type its own table.
 * Verify that tables have been updated by viewing the BigQuery console.
 
 ## Building the project
@@ -66,7 +66,7 @@ path="$BUCKET/data/*.ndjson"
     --inputType=file \
     --input=$path\
     --outputType=bigquery \
-    --output=$PROJECT:\${document_namespace}.\${document_type}_v\${document_version} \
+    --output=$PROJECT:test_ingestion.\${document_namespace}__\${document_type}_v\${document_version} \
     --bqWriteMethod=file_loads \
     --tempLocation=$BUCKET/temp/bq-loads \
     --errorOutputType=file \
