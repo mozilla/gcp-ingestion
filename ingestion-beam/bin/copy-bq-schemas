@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Copies BigQuery schemas for integration testing and validation from the
-# generated schema # archive fetched by `bin/download-schemas`. This script will
-# write to a flat # directory called `bq-schemas` containing BQ schemas.
+# generated schema archive fetched by `bin/download-schemas`. This script will
+# write to a flat directory called `bq-schemas` containing BQ schemas.
 
 set -e
 
