@@ -30,6 +30,7 @@ docker run $INTERACTIVE_FLAGS --rm \
     -w /var/maven/project \
     -v ~/.m2:/var/maven/.m2 \
     -e MAVEN_CONFIG=/var/maven/.m2 \
-    -e GOOGLE_APPLICATION_CREDENTIALS \
+    -e GOOGLE_APPLICATION_CREDENTIALS=/app/.credentials \
+    -v $GOOGLE_APPLICATION_CREDENTIALS:/app/.credentials \
     maven:3-jdk-8 \
     mvn -Duser.home=/var/maven "${PROFILE[@]}" "$@"

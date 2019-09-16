@@ -29,20 +29,21 @@ about the sandbox environment that is provided by data operations.
 * Download the latest schemas from `mozilla-pipeline-schemas` using `bin/download-schemas`.
     - This script may also inject testing resources into the resulting archive.
     - A `schemas.tar.gz` will appear at the project root.
-* Generate BigQuery schemas using `bin/generate-bq-schemas`.
-    - Schemas will be written to `bq-schemas/`.
+* Copy generated BigQuery schemas using `bin/copy-bq-schemas`.
+    - Schemas will be written to `bq-schemas/` with a `.bq` extension
+    - Schemas can be generated directly from JSON Schema using `bin/generate-bq-schemas`
     ```
     bq-schemas/
-    ├── activity-stream.impression-stats.1.bigquery.json
-    ├── coverage.coverage.1.bigquery.json
-    ├── edge-validator.error-report.1.bigquery.json
-    ├── eng-workflow.bmobugs.1.bigquery.json
+    ├── activity-stream.impression-stats.1.bq
+    ├── coverage.coverage.1.bq
+    ├── edge-validator.error-report.1.bq
+    ├── eng-workflow.bmobugs.1.bq
     ....
     ```
 * Update the BigQuery table in the current project using `bin/update-bq-table`.
     - This may take several minutes. Read the script for usage information.
+    - Each namespace will be given its own dataset and each document type its own table.
 * Verify that tables have been updated by viewing the BigQuery console.
-
 
 ## Building the project
 
@@ -65,7 +66,7 @@ path="$BUCKET/data/*.ndjson"
     --inputType=file \
     --input=$path\
     --outputType=bigquery \
-    --output=$PROJECT:\${document_namespace}.\${document_type}_v\${document_version} \
+    --output=$PROJECT:test_ingestion.\${document_namespace}__\${document_type}_v\${document_version} \
     --bqWriteMethod=file_loads \
     --tempLocation=$BUCKET/temp/bq-loads \
     --errorOutputType=file \

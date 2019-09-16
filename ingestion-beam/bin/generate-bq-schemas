@@ -53,7 +53,7 @@ function generate_bq_schema() {
     local name
     # replace // with / and get the proper namespace
     namespace=$(echo "$src" | sed 's/\/\//\//g' | cut -d/ -f3)
-    name="$namespace.$(basename "$src" .schema.json).bigquery.json"
+    name="$namespace.$(basename "$src" .schema.json).bq"
     local dst="$root/$name"
     
     # Create the folder if not exists
