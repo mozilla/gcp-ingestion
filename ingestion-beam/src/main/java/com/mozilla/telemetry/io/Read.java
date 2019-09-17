@@ -105,7 +105,7 @@ public abstract class Read
             Map<String, String> attributes = new HashMap<>();
             tableSchema.getFields().stream() //
                 .filter(f -> "STRING".equals(f.getType())) //
-                .forEach(f -> attributes.put(f.getName(), (String) record.get(f.getName())));
+                .forEach(f -> attributes.put(f.getName(), record.get(f.getName()).toString()));
             return new PubsubMessage(payload, attributes);
           }) //
           .withCoder(PubsubMessageWithAttributesCoder.of()) //
