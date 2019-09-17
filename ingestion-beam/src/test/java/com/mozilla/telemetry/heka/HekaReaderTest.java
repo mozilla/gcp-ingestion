@@ -6,8 +6,10 @@ package com.mozilla.telemetry.heka;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.FileInputStream;
@@ -44,9 +46,10 @@ public class HekaReaderTest extends TestWithDeterministicJson {
     // sequence key
     long seq = 0;
     for (PubsubMessage extractedObj : res) {
-      expectedObject = expectedObject.put("seq", seq);
+      expectedObject.put("seq", seq);
+      JsonNode meta = expectedObject.remove("meta");
       assertEquals(sortJSON(Json.asString(expectedObject)),
-          sortJSON(Json.asString(extractedObj.getPayload())));
+          sortJSON(Json.asString(Json.readObjectNode(extractedObj.getPayload()))));
       seq++;
     }
   }
@@ -64,14 +67,17 @@ public class HekaReaderTest extends TestWithDeterministicJson {
 
     // just one message in this one
     assertEquals(res.size(), 1);
+    PubsubMessage actual = res.get(0);
 
     // compare against what we expect
     Path expectedJsonPayloadFilePath = Paths
         .get(Resources.getResource("testdata/heka/test_telemetry_snappy.heka.json").getPath());
     ObjectNode expectedJsonPing = Json
         .readObjectNode(Files.readAllBytes(expectedJsonPayloadFilePath));
+    JsonNode meta = expectedJsonPing.remove("meta");
 
     assertEquals(sortJSON(Json.asString(expectedJsonPing)),
-        sortJSON(Json.asString(res.get(0).getPayload())));
+        sortJSON(Json.asString(Json.readObjectNode(actual.getPayload()))));
+    assertEquals(meta.path("documentId").textValue(), actual.getAttribute(Attribute.DOCUMENT_ID));
   }
 }

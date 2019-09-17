@@ -7,8 +7,8 @@ package com.mozilla.telemetry.heka;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.mozilla.telemetry.heka.Heka.Field.ValueType;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.Time;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.xerial.snappy.Snappy;
 
@@ -57,11 +58,6 @@ public class HekaReader {
     Heka.Message message = Heka.Message.parseFrom(uncompressedMessage);
 
     ObjectNode payload = Json.readObjectNode(message.getPayload().getBytes(StandardCharsets.UTF_8));
-    Map<String, String> attributes = new HashMap<>();
-
-    // TODO: Extract more metadata.
-    attributes.put("remote_addr", message.getHostname());
-    attributes.put("submission_timestamp", Time.epochNanosToTimestamp(message.getTimestamp()));
 
     FieldDescriptor fieldDescriptor = message.getDescriptorForType().findFieldByName("fields");
     Object field = message.getField(fieldDescriptor);
@@ -98,6 +94,38 @@ public class HekaReader {
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1339421
       }
     }
+
+    Map<String, String> attributes = new HashMap<>();
+    attributes.put(Attribute.DOCUMENT_NAMESPACE, "telemetry");
+    attributes.put(Attribute.HOST, message.getHostname());
+    Optional.ofNullable(payload.remove("meta")).ifPresent(meta -> {
+      Optional.ofNullable(meta.path("Date").textValue())
+          .ifPresent(s -> attributes.put(Attribute.DATE, s));
+      Optional.ofNullable(meta.path("docType").textValue())
+          .ifPresent(s -> attributes.put(Attribute.DOCUMENT_TYPE, s));
+      Optional.ofNullable(meta.path("appBuildId").textValue())
+          .ifPresent(s -> attributes.put(Attribute.APP_BUILD_ID, s));
+      Optional.ofNullable(meta.path("appName").textValue())
+          .ifPresent(s -> attributes.put(Attribute.APP_NAME, s));
+      Optional.ofNullable(meta.path("appUpdateChannel").textValue())
+          .ifPresent(s -> attributes.put(Attribute.APP_UPDATE_CHANNEL, s));
+      Optional.ofNullable(meta.path("appVersion").textValue())
+          .ifPresent(s -> attributes.put(Attribute.APP_VERSION, s));
+      Optional.ofNullable(meta.path("documentId").textValue())
+          .ifPresent(s -> attributes.put(Attribute.DOCUMENT_ID, s));
+      Optional.ofNullable(meta.path("sourceVersion").textValue())
+          .ifPresent(s -> attributes.put(Attribute.DOCUMENT_VERSION, s));
+      Optional.ofNullable(meta.path("geoCity").textValue())
+          .ifPresent(s -> attributes.put(Attribute.GEO_CITY, s));
+      Optional.ofNullable(meta.path("geoCountry").textValue())
+          .ifPresent(s -> attributes.put(Attribute.GEO_COUNTRY, s));
+      Optional.ofNullable(meta.path("geoSubdivision1").textValue())
+          .ifPresent(s -> attributes.put(Attribute.GEO_SUBDIVISION1, s));
+      Optional.ofNullable(meta.path("geoSubdivision2").textValue())
+          .ifPresent(s -> attributes.put(Attribute.GEO_SUBDIVISION2, s));
+      // TODO: Do heka messages contain parsed user agent info? DNT? Method? Protocol?
+    });
+
     return new PubsubMessage(Json.asBytes(payload), attributes);
   }
 
