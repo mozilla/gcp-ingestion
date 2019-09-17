@@ -85,8 +85,7 @@ public abstract class Read
     @Override
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
       Result<PCollection<List<PubsubMessage>>> result = input
-          .apply(FileIO.match().filepattern(fileSpec))
-          .apply(FileIO.readMatches())
+          .apply(FileIO.match().filepattern(fileSpec)).apply(FileIO.readMatches())
           .apply(HekaIO.readFiles());
       result.output().setCoder(ListCoder.of(PubsubMessageWithAttributesCoder.of()));
       return Result.of(result.output().apply(Flatten.iterables()), result.errors());

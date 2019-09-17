@@ -16,11 +16,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.junit.Test;
 
-public class HekaTest extends TestWithDeterministicJson {
+public class HekaReaderTest extends TestWithDeterministicJson {
 
-  private List<ObjectNode> readHekaBlob(String fileName) throws IOException {
+  private List<PubsubMessage> readHekaBlob(String fileName) throws IOException {
     String path = Resources.getResource(fileName).getPath();
     FileInputStream fis = new FileInputStream(path);
     return HekaReader.readHekaStream(fis);
@@ -35,16 +36,17 @@ public class HekaTest extends TestWithDeterministicJson {
   public void testRepeatedEmbeddedBlobParsing() throws IOException {
     // this test validates that we can extract multiple json structures
     // (10 in this case) stored inside a heka blob
-    List<ObjectNode> res = readHekaBlob("testdata/heka/test_snappy.heka");
+    List<PubsubMessage> res = readHekaBlob("testdata/heka/test_snappy.heka");
     ObjectNode expectedObject = getJsonBlobFromFile("testdata/heka/test_snappy.heka.json");
     assertEquals(10, res.size());
 
     // the only difference between the blobs should be an incrementing
     // sequence key
     long seq = 0;
-    for (ObjectNode extractedObj : res) {
+    for (PubsubMessage extractedObj : res) {
       expectedObject = expectedObject.put("seq", seq);
-      assertEquals(sortJSON(Json.asString(expectedObject)), sortJSON(Json.asString(extractedObj)));
+      assertEquals(sortJSON(Json.asString(expectedObject)),
+          sortJSON(Json.asString(extractedObj.getPayload())));
       seq++;
     }
   }
@@ -58,7 +60,7 @@ public class HekaTest extends TestWithDeterministicJson {
     String inputHekaFileName = Resources.getResource("testdata/heka/test_telemetry_snappy.heka")
         .getPath();
     FileInputStream fis = new FileInputStream(inputHekaFileName);
-    List<ObjectNode> res = HekaReader.readHekaStream(fis);
+    List<PubsubMessage> res = HekaReader.readHekaStream(fis);
 
     // just one message in this one
     assertEquals(res.size(), 1);
@@ -69,6 +71,7 @@ public class HekaTest extends TestWithDeterministicJson {
     ObjectNode expectedJsonPing = Json
         .readObjectNode(Files.readAllBytes(expectedJsonPayloadFilePath));
 
-    assertEquals(sortJSON(Json.asString(expectedJsonPing)), sortJSON(Json.asString(res.get(0))));
+    assertEquals(sortJSON(Json.asString(expectedJsonPing)),
+        sortJSON(Json.asString(res.get(0).getPayload())));
   }
 }
