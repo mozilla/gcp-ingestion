@@ -59,7 +59,7 @@ path="$BUCKET/data/*.ndjson"
 
 # use local maven instead of the docker container in bin/mvn, otherwise make sure to mount
 # credentials into the proper location in the container
-mvn compile exec:java -Dexec.args="\
+./bin/mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
     --project=$PROJECT \
     --autoscalingAlgorithm=NONE \
