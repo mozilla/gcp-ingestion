@@ -22,6 +22,17 @@ if [ -z "$NONINTERACTIVE" ]; then
     INTERACTIVE_FLAGS="-it"
 fi
 
+MOUNT_CREDENTIALS_FLAGS=""
+if [[ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]]; then
+    # Credentials are detected on the local filesystem via environment. This is
+    # mounted into the maven container into an arbitrary location, with the
+    # container environment set to point at the mounted volume.
+    echo "Using GOOGLE_APPLICATION_CREDENTIALS..."
+    mount_location="/app/.credentials"
+    MOUNT_CREDENTIALS_FLAGS="-v ${GOOGLE_APPLICATION_CREDENTIALS}:${mount_location}"
+    GOOGLE_APPLICATION_CREDENTIALS=$mount_location
+fi
+
 # Run mvn with a non-root user id
 # https://docs.docker.com/samples/library/maven/#Running-as-non-root
 docker run $INTERACTIVE_FLAGS --rm \
@@ -31,5 +42,6 @@ docker run $INTERACTIVE_FLAGS --rm \
     -v ~/.m2:/var/maven/.m2 \
     -e MAVEN_CONFIG=/var/maven/.m2 \
     -e GOOGLE_APPLICATION_CREDENTIALS \
+    $MOUNT_CREDENTIALS_FLAGS \
     maven:3-jdk-8 \
     mvn -Duser.home=/var/maven "${PROFILE[@]}" "$@"
