@@ -4,15 +4,16 @@
 
 package com.mozilla.telemetry.heka;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.util.Json;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.json.JSONObject;
 
 public class HekaTransform extends MapElementsWithErrors<ReadableFile, List<PubsubMessage>> {
 
@@ -20,8 +21,8 @@ public class HekaTransform extends MapElementsWithErrors<ReadableFile, List<Pubs
   protected List<PubsubMessage> processElement(ReadableFile readableFile) throws IOException {
     List<PubsubMessage> pubsubMessages = new ArrayList<PubsubMessage>();
     ByteArrayInputStream bis = new ByteArrayInputStream(readableFile.readFullyAsBytes());
-    for (JSONObject json : HekaReader.readHekaStream(bis)) {
-      pubsubMessages.add(new PubsubMessage(json.toString().getBytes(), null));
+    for (ObjectNode json : HekaReader.readHekaStream(bis)) {
+      pubsubMessages.add(new PubsubMessage(Json.asBytes(json), null));
     }
     return pubsubMessages;
   }

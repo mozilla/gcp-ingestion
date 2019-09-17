@@ -4,30 +4,21 @@
 
 package com.mozilla.telemetry.heka;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.protobuf.Descriptors.FieldDescriptor;
+import com.mozilla.telemetry.heka.Heka.Field.ValueType;
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.xerial.snappy.Snappy;
 
 public class HekaReader {
 
-  private static void insertPath(JSONObject o, List<String> s, Object v) {
-    String key = s.get(0);
-    if (s.size() == 1) {
-      o.put(key, v);
-    } else {
-      JSONObject newValue = o.has(key) ? o.getJSONObject(key) : new JSONObject("{}");
-      insertPath(newValue, s.subList(1, s.size()), v);
-      o.put(key, newValue);
-    }
-  }
-
-  private static JSONObject readHekaMessage(InputStream is) throws IOException {
+  private static ObjectNode readHekaMessage(InputStream is) throws IOException {
     while (true) {
       // continue reading until we find a heka message or we reach the end of the
       // file
@@ -37,7 +28,7 @@ public class HekaReader {
       if (cursor == -1) {
         return null;
       } else if (cursor == 0x1E) {
-        // found seperator, continue
+        // found separator, continue
         break;
       }
     }
@@ -61,35 +52,43 @@ public class HekaReader {
     Snappy.uncompress(messageBuffer, 0, header.getMessageLength(), uncompressedMessage, 0);
     Heka.Message message = Heka.Message.parseFrom(uncompressedMessage);
 
-    JSONObject payload = new JSONObject(new String(message.getPayload().getBytes()));
+    ObjectNode payload = Json.readObjectNode(message.getPayload().getBytes(StandardCharsets.UTF_8));
 
-    insertPath(payload, Arrays.asList("meta", "Hostname"), message.getHostname());
-    insertPath(payload, Arrays.asList("meta", "Timestamp"), new Long(message.getTimestamp()));
-    insertPath(payload, Arrays.asList("meta", "Type"), message.getDtype());
+    // TODO: Make metadata structure match expectation of decoder.
+    ObjectNode meta = payload.putObject("meta");
+    meta.put("Hostname", message.getHostname());
+    meta.put("Timestamp", message.getTimestamp());
+    meta.put("Type", message.getDtype());
 
     FieldDescriptor fieldDescriptor = message.getDescriptorForType().findFieldByName("fields");
     Object field = message.getField(fieldDescriptor);
     if (field instanceof List) {
       for (Object i : (List) field) {
         Heka.Field f = (Heka.Field) i;
-        String key = (String) f.getName();
+        String key = f.getName();
         List<String> path = key.contains(".") ? Arrays.asList(key.split("\\."))
             : Arrays.asList("meta", key);
-        if (f.getValueType() == Heka.Field.ValueType.STRING) {
+        String lastKey = path.get(path.size() - 1);
+        ObjectNode target = payload;
+        for (int j = 0; j < path.size() - 1; j++) {
+          String p = path.get(j);
+          target = (ObjectNode) (target.has(p) ? target.path(p) : target.putObject(p));
+        }
+        if (f.getValueType() == Heka.Field.ValueType.STRING && target.isObject()) {
           String value = f.getValueString(0);
           if (value.charAt(0) == '{') {
-            insertPath(payload, path, new JSONObject(value));
+            target.set(lastKey, Json.readObjectNode(value.getBytes(StandardCharsets.UTF_8)));
           } else if (value.charAt(0) == '[') {
-            insertPath(payload, path, new JSONArray(value));
+            target.set(lastKey, Json.readArrayNode(value.getBytes(StandardCharsets.UTF_8)));
           } else {
-            insertPath(payload, path, value);
+            target.put(lastKey, value);
           }
         } else if (f.getValueType() == Heka.Field.ValueType.BOOL) {
-          insertPath(payload, path, f.getValueBool(0));
-        } else if (f.getValueType() == Heka.Field.ValueType.INTEGER) {
-          insertPath(payload, path, f.getValueInteger(0));
+          target.put(lastKey, f.getValueBool(0));
+        } else if (f.getValueType() == ValueType.INTEGER) {
+          target.put(lastKey, f.getValueInteger(0));
         } else if (f.getValueType() == Heka.Field.ValueType.DOUBLE) {
-          insertPath(payload, path, f.getValueDouble(0));
+          target.put(lastKey, f.getValueDouble(0));
         }
         // FIXME: do we need to handle byte fields?
         // see code in moztelemetry and
@@ -99,11 +98,11 @@ public class HekaReader {
     return payload;
   }
 
-  public static List<JSONObject> readHekaStream(InputStream is) throws IOException {
-    List<JSONObject> decodedMessages = new LinkedList<JSONObject>();
+  public static List<ObjectNode> readHekaStream(InputStream is) throws IOException {
+    List<ObjectNode> decodedMessages = new ArrayList<>();
 
     while (true) {
-      JSONObject o = readHekaMessage(is);
+      ObjectNode o = readHekaMessage(is);
       if (o == null) {
         break;
       }
