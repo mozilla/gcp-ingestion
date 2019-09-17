@@ -6,52 +6,51 @@ package com.mozilla.telemetry.heka;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import org.json.JSONObject;
 import org.junit.Test;
-import org.skyscreamer.jsonassert.JSONAssert;
 
-public class HekaTest {
+public class HekaTest extends TestWithDeterministicJson {
 
-  private List<JSONObject> readHekaBlob(String fileName) throws IOException, FileNotFoundException {
+  private List<ObjectNode> readHekaBlob(String fileName) throws IOException {
     String path = Resources.getResource(fileName).getPath();
     FileInputStream fis = new FileInputStream(path);
     return HekaReader.readHekaStream(fis);
   }
 
-  private JSONObject getJsonBlobFromFile(String fileName)
-      throws IOException, FileNotFoundException {
+  private ObjectNode getJsonBlobFromFile(String fileName) throws IOException {
     Path path = Paths.get(Resources.getResource(fileName).getPath());
-    return new JSONObject(new String(Files.readAllBytes(path)));
+    return Json.readObjectNode(Files.readAllBytes(path));
   }
 
   @Test
-  public void testRepeatedEmbeddedBlobParsing() throws IOException, FileNotFoundException {
+  public void testRepeatedEmbeddedBlobParsing() throws IOException {
     // this test validates that we can extract multiple json structures
     // (10 in this case) stored inside a heka blob
-    List<JSONObject> res = readHekaBlob("testdata/heka/test_snappy.heka");
-    JSONObject expectedObject = getJsonBlobFromFile("testdata/heka/test_snappy.heka.json");
+    List<ObjectNode> res = readHekaBlob("testdata/heka/test_snappy.heka");
+    ObjectNode expectedObject = getJsonBlobFromFile("testdata/heka/test_snappy.heka.json");
     assertEquals(10, res.size());
 
     // the only difference between the blobs should be an incrementing
     // sequence key
-    int seq = 0;
-    for (JSONObject extractedObj : res) {
+    long seq = 0;
+    for (ObjectNode extractedObj : res) {
       expectedObject = expectedObject.put("seq", seq);
-      JSONAssert.assertEquals(extractedObj, expectedObject, false);
+      assertEquals(sortJSON(Json.asString(expectedObject)), sortJSON(Json.asString(extractedObj)));
       seq++;
     }
   }
 
   @Test
-  public void testTelemetryParsing() throws IOException, FileNotFoundException {
+  public void testTelemetryParsing() throws IOException {
     // this test validates that we can parse a reasonably complex heka-encoded structure, very
     // close to what we have in telemetry
 
@@ -59,7 +58,7 @@ public class HekaTest {
     String inputHekaFileName = Resources.getResource("testdata/heka/test_telemetry_snappy.heka")
         .getPath();
     FileInputStream fis = new FileInputStream(inputHekaFileName);
-    List<JSONObject> res = HekaReader.readHekaStream(fis);
+    List<ObjectNode> res = HekaReader.readHekaStream(fis);
 
     // just one message in this one
     assertEquals(res.size(), 1);
@@ -67,8 +66,9 @@ public class HekaTest {
     // compare against what we expect
     Path expectedJsonPayloadFilePath = Paths
         .get(Resources.getResource("testdata/heka/test_telemetry_snappy.heka.json").getPath());
-    JSONObject expectedJsonPing = new JSONObject(
-        new String(Files.readAllBytes(expectedJsonPayloadFilePath)));
-    JSONAssert.assertEquals(res.get(0), expectedJsonPing, false);
+    ObjectNode expectedJsonPing = Json
+        .readObjectNode(Files.readAllBytes(expectedJsonPayloadFilePath));
+
+    assertEquals(sortJSON(Json.asString(expectedJsonPing)), sortJSON(Json.asString(res.get(0))));
   }
 }
