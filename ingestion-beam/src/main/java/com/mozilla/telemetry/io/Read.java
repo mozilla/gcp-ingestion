@@ -6,7 +6,7 @@ package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.storage.v1beta1.ReadOptions.TableReadOptions;
-import com.mozilla.telemetry.heka.HekaTransform;
+import com.mozilla.telemetry.heka.HekaIO;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
@@ -85,8 +85,9 @@ public abstract class Read
     @Override
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
       Result<PCollection<List<PubsubMessage>>> result = input
-          .apply(FileIO.match().filepattern(fileSpec)).apply(FileIO.readMatches())
-          .apply(new HekaTransform());
+          .apply(FileIO.match().filepattern(fileSpec))
+          .apply(FileIO.readMatches())
+          .apply(HekaIO.readFiles());
       result.output().setCoder(ListCoder.of(PubsubMessageWithAttributesCoder.of()));
       return Result.of(result.output().apply(Flatten.iterables()), result.errors());
     }
