@@ -8,17 +8,21 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.mozilla.telemetry.heka.Heka.Field.ValueType;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.Time;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.xerial.snappy.Snappy;
 
 public class HekaReader {
 
-  private static ObjectNode readHekaMessage(InputStream is) throws IOException {
+  private static PubsubMessage readHekaMessage(InputStream is) throws IOException {
     while (true) {
       // continue reading until we find a heka message or we reach the end of the
       // file
@@ -53,12 +57,11 @@ public class HekaReader {
     Heka.Message message = Heka.Message.parseFrom(uncompressedMessage);
 
     ObjectNode payload = Json.readObjectNode(message.getPayload().getBytes(StandardCharsets.UTF_8));
+    Map<String, String> attributes = new HashMap<>();
 
-    // TODO: Make metadata structure match expectation of decoder.
-    ObjectNode meta = payload.putObject("meta");
-    meta.put("Hostname", message.getHostname());
-    meta.put("Timestamp", message.getTimestamp());
-    meta.put("Type", message.getDtype());
+    // TODO: Extract more metadata.
+    attributes.put("remote_addr", message.getHostname());
+    attributes.put("submission_timestamp", Time.epochNanosToTimestamp(message.getTimestamp()));
 
     FieldDescriptor fieldDescriptor = message.getDescriptorForType().findFieldByName("fields");
     Object field = message.getField(fieldDescriptor);
@@ -95,14 +98,14 @@ public class HekaReader {
         // https://bugzilla.mozilla.org/show_bug.cgi?id=1339421
       }
     }
-    return payload;
+    return new PubsubMessage(Json.asBytes(payload), attributes);
   }
 
-  public static List<ObjectNode> readHekaStream(InputStream is) throws IOException {
-    List<ObjectNode> decodedMessages = new ArrayList<>();
+  public static List<PubsubMessage> readHekaStream(InputStream is) throws IOException {
+    List<PubsubMessage> decodedMessages = new ArrayList<>();
 
     while (true) {
-      ObjectNode o = readHekaMessage(is);
+      PubsubMessage o = readHekaMessage(is);
       if (o == null) {
         break;
       }
