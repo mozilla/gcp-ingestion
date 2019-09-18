@@ -128,6 +128,7 @@ public abstract class Read
           }) //
           .withCoder(PubsubMessageWithAttributesCoder.of()) //
           .withTemplateCompatibility() //
+          .withoutValidation() //
           .withMethod(method.method);
       switch (source) {
         case TABLE:
