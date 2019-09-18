@@ -52,22 +52,38 @@ public class HekaReader {
     byte[] messageBuffer = new byte[header.getMessageLength()];
     is.read(messageBuffer);
 
-    int uncompressedLength = Snappy.uncompressedLength(messageBuffer);
-    byte[] uncompressedMessage = new byte[uncompressedLength];
-    Snappy.uncompress(messageBuffer, 0, header.getMessageLength(), uncompressedMessage, 0);
+    byte[] uncompressedMessage;
+    if (Snappy.isValidCompressedBuffer(messageBuffer)) {
+      int uncompressedLength = Snappy.uncompressedLength(messageBuffer);
+      uncompressedMessage = new byte[uncompressedLength];
+      Snappy.uncompress(messageBuffer, 0, header.getMessageLength(), uncompressedMessage, 0);
+    } else {
+      uncompressedMessage = messageBuffer;
+    }
     Heka.Message message = Heka.Message.parseFrom(uncompressedMessage);
 
-    ObjectNode payload;
+    ObjectNode payload = null;
     // most messages produced by our infra should have a payload
     if (message.getPayload().length() > 0) {
       payload = Json.readObjectNode(message.getPayload().getBytes(StandardCharsets.UTF_8));
     } else {
-      // there should be a field called "submission" ("content" is also theoretically possible,
-      // though it should not appear in the data we care about)
-      FieldDescriptor fieldDescriptor = message.getDescriptorForType()
-          .findFieldByName("submission");
-      payload = Json.readObjectNode(((Heka.Field) message.getField(fieldDescriptor))
-          .getValueString(0).getBytes(StandardCharsets.UTF_8));
+      // if no payload, there should be a field called "submission" ("content" is also theoretically
+      // possible, though it should not appear in the data we care about)
+      FieldDescriptor fieldDescriptor = message.getDescriptorForType().findFieldByName("fields");
+      Object field = message.getField(fieldDescriptor);
+      if (field instanceof List) {
+        for (Object i : (List) field) {
+          Heka.Field f = (Heka.Field) i;
+          String key = f.getName();
+          if (key.contentEquals("submission")) {
+            payload = Json.readObjectNode(f.getValueBytes(0).toByteArray());
+            break;
+          }
+        }
+      }
+    }
+    if (payload == null) {
+      throw new IOException("Unable to find viable payload for heka message");
     }
 
     FieldDescriptor fieldDescriptor = message.getDescriptorForType().findFieldByName("fields");
