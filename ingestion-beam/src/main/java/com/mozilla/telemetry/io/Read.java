@@ -11,6 +11,7 @@ import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
+import com.mozilla.telemetry.util.Time;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
@@ -98,14 +99,31 @@ public abstract class Read
             GenericRecord record = schemaAndRecord.getRecord();
             byte[] payload = ((ByteBuffer) record.get("payload")).array();
 
-            // We copy only string-type fields to attributes, which is complete for raw and
-            // error tables; decoded payload tables have the nested metadata object also encoded in
-            // the payload, so we can safely drop the metadata object here and rely on ParsePayload
-            // to parse attributes from it.
+            // We populate attributes for all simple string and timestamp fields, which is complete
+            // for raw and error tables; decoded payload tables have the nested metadata object also
+            // encoded in the payload, so we can safely drop the metadata object here and rely on
+            // ParsePayload to parse attributes from it.
             Map<String, String> attributes = new HashMap<>();
             tableSchema.getFields().stream() //
-                .filter(f -> "STRING".equals(f.getType())) //
-                .forEach(f -> attributes.put(f.getName(), record.get(f.getName()).toString()));
+                .filter(f -> !"REPEATED".equals(f.getMode())) //
+                .forEach(f -> {
+                  Object value = record.get(f.getName());
+                  if (value != null) {
+                    switch (f.getType()) {
+                      case "TIMESTAMP":
+                        attributes.put(f.getName(), Time.epochMicrosToTimestamp((Long) value));
+                        break;
+                      case "STRING":
+                      case "INTEGER":
+                      case "INT64":
+                        attributes.put(f.getName(), value.toString());
+                        break;
+                      // Ignore any other types (only the payload BYTES field should hit this).
+                      default:
+                        break;
+                    }
+                  }
+                });
             return new PubsubMessage(payload, attributes);
           }) //
           .withCoder(PubsubMessageWithAttributesCoder.of()) //
