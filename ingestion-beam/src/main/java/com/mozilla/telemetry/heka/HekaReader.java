@@ -57,7 +57,18 @@ public class HekaReader {
     Snappy.uncompress(messageBuffer, 0, header.getMessageLength(), uncompressedMessage, 0);
     Heka.Message message = Heka.Message.parseFrom(uncompressedMessage);
 
-    ObjectNode payload = Json.readObjectNode(message.getPayload().getBytes(StandardCharsets.UTF_8));
+    ObjectNode payload;
+    // most messages produced by our infra should have a payload
+    if (message.getPayload().length() > 0) {
+      payload = Json.readObjectNode(message.getPayload().getBytes(StandardCharsets.UTF_8));
+    } else {
+      // there should be a field called "submission" ("content" is also theoretically possible,
+      // though it should not appear in the data we care about)
+      FieldDescriptor fieldDescriptor = message.getDescriptorForType()
+          .findFieldByName("submission");
+      payload = Json.readObjectNode(((Heka.Field) message.getField(fieldDescriptor))
+          .getValueString(0).getBytes(StandardCharsets.UTF_8));
+    }
 
     FieldDescriptor fieldDescriptor = message.getDescriptorForType().findFieldByName("fields");
     Object field = message.getField(fieldDescriptor);
@@ -65,6 +76,10 @@ public class HekaReader {
       for (Object i : (List) field) {
         Heka.Field f = (Heka.Field) i;
         String key = f.getName();
+        if (key.contentEquals("submission") || key.contentEquals("content")) {
+          // these should be handled above, skip
+          continue;
+        }
         List<String> path = key.contains(".") ? Arrays.asList(key.split("\\."))
             : Arrays.asList("meta", key);
         String lastKey = path.get(path.size() - 1);
