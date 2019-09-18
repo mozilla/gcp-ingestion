@@ -116,6 +116,10 @@ public class HekaReader {
     Optional.ofNullable(payload.remove("meta")).ifPresent(meta -> {
       Optional.ofNullable(meta.path("Date").textValue())
           .ifPresent(s -> attributes.put(Attribute.DATE, s));
+      Optional.ofNullable(meta.path("DNT").textValue())
+          .ifPresent(s -> attributes.put(Attribute.DNT, s));
+      Optional.ofNullable(meta.path("X-PingSender-Version").textValue())
+          .ifPresent(s -> attributes.put(Attribute.X_PINGSENDER_VERSION, s));
       Optional.ofNullable(meta.path("docType").textValue())
           .ifPresent(s -> attributes.put(Attribute.DOCUMENT_TYPE, s));
       Optional.ofNullable(meta.path("appBuildId").textValue())
