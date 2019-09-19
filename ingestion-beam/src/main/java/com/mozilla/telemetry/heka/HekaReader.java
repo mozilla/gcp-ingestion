@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.heka;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.mozilla.telemetry.heka.Heka.Field.ValueType;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -104,8 +105,18 @@ public class HekaReader {
           String p = path.get(j);
           target = (ObjectNode) (target.has(p) ? target.path(p) : target.putObject(p));
         }
-        if (f.getValueType() == Heka.Field.ValueType.STRING && target.isObject()) {
-          String value = f.getValueString(0);
+        if ((f.getValueType() == Heka.Field.ValueType.STRING
+            || f.getValueType() == Heka.Field.ValueType.BYTES) && target.isObject()) {
+          String value;
+          if (f.getValueType() == Heka.Field.ValueType.BYTES) {
+            // assuming byte fields are parseable as UTF8
+            // see code in moztelemetry and
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=1339421
+            ByteString bytesValue = f.getValueBytes(0);
+            value = bytesValue.toString(StandardCharsets.UTF_8);
+          } else {
+            value = f.getValueString(0);
+          }
           if (value.charAt(0) == '{') {
             target.set(lastKey, Json.readObjectNode(value.getBytes(StandardCharsets.UTF_8)));
           } else if (value.charAt(0) == '[') {
@@ -120,9 +131,6 @@ public class HekaReader {
         } else if (f.getValueType() == Heka.Field.ValueType.DOUBLE) {
           target.put(lastKey, f.getValueDouble(0));
         }
-        // FIXME: do we need to handle byte fields?
-        // see code in moztelemetry and
-        // https://bugzilla.mozilla.org/show_bug.cgi?id=1339421
       }
     }
 
