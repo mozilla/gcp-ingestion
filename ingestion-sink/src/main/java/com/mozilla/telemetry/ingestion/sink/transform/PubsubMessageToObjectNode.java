@@ -4,18 +4,19 @@
 
 package com.mozilla.telemetry.ingestion.sink.transform;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant;
+import com.mozilla.telemetry.ingestion.core.util.Json;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.function.Function;
-import org.json.JSONObject;
 
 /**
- * Transform a {@link PubsubMessage} into a {@code Map<String, Object>}.
+ * Transform a {@link PubsubMessage} into a {@link ObjectNode}.
  */
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONObject> {
+public class PubsubMessageToObjectNode implements Function<PubsubMessage, ObjectNode> {
 
   public enum Format {
     raw, decoded, payload
@@ -26,11 +27,12 @@ public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONOb
 
   private final Format format;
 
-  public PubsubMessageToJSONObject(Format format) {
+  public PubsubMessageToObjectNode(Format format) {
     this.format = format;
   }
 
-  public JSONObject apply(PubsubMessage message) {
+  @Override
+  public ObjectNode apply(PubsubMessage message) {
     switch (format) {
       case raw:
         return rawContents(message);
@@ -51,8 +53,8 @@ public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONOb
    * table to determine which of those actually appear as fields; some of the attributes may be
    * thrown away.
    */
-  private static JSONObject rawContents(PubsubMessage message) {
-    JSONObject contents = new JSONObject(message.getAttributesMap());
+  private static ObjectNode rawContents(PubsubMessage message) {
+    ObjectNode contents = Json.asObjectNode(message.getAttributesMap());
     // bytes must be formatted as base64 encoded string.
     Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))
         // include payload if present.
@@ -62,10 +64,14 @@ public class PubsubMessageToJSONObject implements Function<PubsubMessage, JSONOb
 
   /**
    * Like {@link #rawContents(PubsubMessage)}, but uses the nested metadata format of decoded pings.
+   *
+   * <p>We include most attributes as fields, but the nested metadata format does not include error
+   * attributes and only includes {@code metadata.uri} when document namespace is
+   * {@code "telemetry"}.
    */
-  private static JSONObject decodedContents(PubsubMessage message) {
-    JSONObject contents = new JSONObject(
-        AddMetadata.attributesToMetadataPayload(message.getAttributesMap()));
+  private static ObjectNode decodedContents(PubsubMessage message) {
+    ObjectNode contents = Json
+        .asObjectNode(AddMetadata.attributesToMetadataPayload(message.getAttributesMap()));
     // bytes must be formatted as base64 encoded string.
     Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))
         // include payload if present.

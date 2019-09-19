@@ -9,6 +9,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.TestWithSinglePubsubTopic;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -18,7 +19,7 @@ import org.junit.Test;
 public class PubsubReadIntegrationTest extends TestWithSinglePubsubTopic {
 
   private static final PubsubMessage TEST_MESSAGE = PubsubMessage.newBuilder()
-      .setData(ByteString.copyFrom("test".getBytes())).build();
+      .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8))).build();
 
   @Test
   public void canReadOneMessage() {
