@@ -33,7 +33,9 @@ import com.mozilla.telemetry.Sink;
 import com.mozilla.telemetry.matchers.Lines;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.PipelineResult;
 import org.hamcrest.Matchers;
@@ -420,51 +422,54 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
     result.waitUntilFinish();
 
-    assertEquals(
-        Json.asString(ImmutableMap.<String, Object>builder()
-            .put("document_id", "6c49ec73-4350-45a0-9c8a-6c8f5aded0cf")
-            .put("metadata",
-                ImmutableMap.<String, Object>builder().put("document_namespace", "telemetry")
-                    .put("document_version", "4").put("document_type", "main")
-                    .put("geo",
-                        ImmutableMap.<String, String>builder().put("country", "US")
-                            .put("subdivision1", "WA").put("subdivision2", "Clark")
-                            .put("city", "Vancouver").build())
-                    .put("header",
-                        ImmutableMap.<String, String>builder()
-                            .put("date", "Mon, 12 Jan 2020 21:02:18 GMT").put("dnt", "1")
-                            .put("x_pingsender_version", "1.0")
-                            .put("x_debug_id", "my_debug_session_1").build())
-                    .put("uri",
-                        ImmutableMap.<String, String>builder().put("app_name", "Firefox")
-                            .put("app_version", "58.0.2").put("app_update_channel", "release")
-                            .put("app_build_id", "20180206200532").build())
-                    .put("user_agent",
-                        ImmutableMap.<String, String>builder().put("browser", "pingsender")
-                            .put("browser_version", "1.0").put("os", "Windows")
-                            .put("os_version", "10").build())
-                    .build())
-            .put("submission_timestamp", "2020-01-12T21:02:18.123456Z")
-            .put("normalized_app_name", "Firefox").put("normalized_channel", "release")
-            .put("normalized_country_code", "US").put("normalized_os", "Windows")
-            .put("normalized_os_version", "10").put("sample_id", 42).put("payload", "dGVzdA==")
-            .build()),
-        String.join("\n",
-            stringValuesQueryWithRetries("SELECT TO_JSON_STRING(t) FROM " + tableSpec + " AS t")));
+    Map<String, Object> expectedMap = ImmutableMap.<String, Object>builder()
+        .put("document_id", "6c49ec73-4350-45a0-9c8a-6c8f5aded0cf")
+        .put("metadata", ImmutableMap.<String, Object>builder()
+            .put("document_namespace", "telemetry").put("document_version", "4")
+            .put("document_type", "main")
+            .put("geo",
+                ImmutableMap
+                    .<String, String>builder().put("country", "US").put("subdivision1", "WA")
+                    .put("subdivision2", "Clark").put("city", "Vancouver").build())
+            .put("header",
+                ImmutableMap.<String, String>builder().put("date", "Mon, 12 Jan 2020 21:02:18 GMT")
+                    .put("dnt", "1").put("x_pingsender_version", "1.0")
+                    .put("x_debug_id", "my_debug_session_1").build())
+            .put("uri",
+                ImmutableMap.<String, String>builder().put("app_name", "Firefox")
+                    .put("app_version", "58.0.2").put("app_update_channel", "release")
+                    .put("app_build_id", "20180206200532").build())
+            .put("user_agent", ImmutableMap.<String, String>builder().put("browser", "pingsender")
+                .put("browser_version", "1.0").put("os", "Windows").put("os_version", "10").build())
+            .build())
+        .put("submission_timestamp", "2020-01-12T21:02:18.123456Z")
+        .put("normalized_app_name", "Firefox").put("normalized_country_code", "US")
+        .put("normalized_os", "Windows").put("normalized_os_version", "10").put("sample_id", 42)
+        .put("payload", "dGVzdA==").build();
+    expectedMap = new HashMap<>(expectedMap);
+    expectedMap.put("normalized_channel", null);
+    assertEquals(Json.asString(expectedMap), String.join("\n",
+        stringValuesQueryWithRetries("SELECT TO_JSON_STRING(t) FROM " + tableSpec + " AS t")));
 
     String fileOutput = outputPath + "/out";
     PipelineResult readResult = Sink.run(new String[] { "--inputType=bigquery_table",
         "--input=" + fullyQualifiedTableSpec, "--project=" + projectId, "--bqReadMethod=storageapi",
-        "--outputFileCompression=UNCOMPRESSED", "--bqSelectedFields=payload",
+        "--outputFileCompression=UNCOMPRESSED",
+        "--bqSelectedFields=payload,normalized_channel,normalized_app_name,submission_timestamp",
         "--bqRowRestriction=CAST(submission_timestamp AS DATE)"
             + " BETWEEN '2020-01-10' AND '2020-01-14'",
         "--outputType=file", "--outputFileFormat=json", "--output=" + fileOutput,
         "--errorOutputType=stderr" });
 
+    readResult.waitUntilFinish();
+
     List<String> outputLines = Lines.files(fileOutput + "*.ndjson");
     assertEquals(1, outputLines.size());
     assertEquals("Output read from BigQuery differed from expectation",
-        Json.asString(ImmutableMap.of("attributeMap", ImmutableMap.of(), "payload", "dGVzdA==")),
+        Json.asString(ImmutableMap.of("attributeMap",
+            ImmutableMap.of("normalized_app_name", "Firefox", //
+                "submission_timestamp", "2020-01-12T21:02:18.123456Z"),
+            "payload", "dGVzdA==")),
         outputLines.get(0));
   }
 

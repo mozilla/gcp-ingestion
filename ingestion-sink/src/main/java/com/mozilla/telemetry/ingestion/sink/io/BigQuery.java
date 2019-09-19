@@ -11,13 +11,15 @@ import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
+import com.mozilla.telemetry.ingestion.core.util.Json;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,18 +44,18 @@ public class BigQuery {
     private static final Logger LOG = LoggerFactory.getLogger(Write.class);
 
     private final com.google.cloud.bigquery.BigQuery bigQuery;
-    private final PubsubMessageToJSONObject encoder;
+    private final PubsubMessageToObjectNode encoder;
 
     public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
         Duration maxDelay, String batchKeyTemplate, Format format) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
       this.bigQuery = bigQuery;
-      this.encoder = new PubsubMessageToJSONObject(format);
+      this.encoder = new PubsubMessageToObjectNode(format);
     }
 
     @Override
     protected TableId getBatchKey(PubsubMessage input) {
-      String batchKey = applyBatchKeyTemplate(input).replaceAll(":", ".");
+      String batchKey = batchKeyTemplate.apply(input).replaceAll(":", ".");
       final String[] tableSpecParts = batchKey.split("\\.", 3);
       if (tableSpecParts.length == 3) {
         return TableId.of(tableSpecParts[0], tableSpecParts[1], tableSpecParts[2]);
@@ -61,7 +63,7 @@ public class BigQuery {
         return TableId.of(tableSpecParts[0], tableSpecParts[1]);
       } else {
         throw new IllegalArgumentException("Could not determine dataset from the configured"
-            + " BigQuery output template: " + batchKeyTemplate);
+            + " BigQuery output template: " + batchKeyTemplate.template);
       }
     }
 
@@ -91,13 +93,13 @@ public class BigQuery {
       }
 
       @Override
-      protected synchronized InsertAllResponse close(Void v, Throwable t) {
-        return bigQuery.insertAll(builder.build());
+      protected synchronized CompletableFuture<InsertAllResponse> close(Void ignore) {
+        return CompletableFuture.completedFuture(bigQuery.insertAll(builder.build()));
       }
 
       @Override
       protected synchronized void write(PubsubMessage input) {
-        Map<String, Object> content = encoder.apply(input).toMap();
+        Map<String, Object> content = Json.asMap(encoder.apply(input));
         Optional.ofNullable(input.getAttributesOrDefault(Attribute.DOCUMENT_ID, null))
             .map(id -> builder.addRow(id, content)).orElseGet(() -> builder.addRow(content));
       }

@@ -7,6 +7,16 @@ Apache Beam jobs.
 The source code lives in the [ingestion-beam](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam)
 subdirectory of the gcp-ingestion repository.
 
+## Building
+
+Move to the `ingestion-beam` subdirectory of your gcp-ingestion checkout and run:
+
+```bash
+./bin/mvn clean compile
+```
+
+See the details below under each job for details on how to run what you've produced.
+
 ## Sink Job
 
 A job for delivering messages between Google Cloud services. Defined in the `com.mozilla.telemetry.Sink` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java)).
