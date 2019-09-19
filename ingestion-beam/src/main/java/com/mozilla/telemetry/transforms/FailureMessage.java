@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.common.collect.ImmutableMap;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class FailureMessage {
    * Return a PubsubMessage wrapping a String payload with attributes describing the error.
    */
   public static PubsubMessage of(Object caller, String payload, Throwable e) {
-    return FailureMessage.of(caller, payload.getBytes(), e);
+    return FailureMessage.of(caller, payload.getBytes(StandardCharsets.UTF_8), e);
   }
 
   /**

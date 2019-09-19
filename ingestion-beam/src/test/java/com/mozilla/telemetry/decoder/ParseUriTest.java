@@ -14,6 +14,7 @@ import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,6 +42,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
   @Test
   public void testOutput() {
     final List<String> validInput = Arrays.asList(//
+        "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
             + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
@@ -50,7 +52,6 @@ public class ParseUriTest extends TestWithDeterministicJson {
             + "},\"payload\":\"\"}");
 
     final List<String> invalidInput = Arrays.asList(//
-        "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"uri\":\"/nonexistent_prefix/ce39b608-f595-4c69-b6a6-f7a436604648" //
             + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
@@ -64,6 +65,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
             + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"app_build_id\":\"20180328030202\"" //
             + ",\"app_name\":\"Firefox\"" //
@@ -95,9 +97,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
     PCollection<String> exceptions = parsed.errors() //
         .apply(MapElements.into(TypeDescriptors.strings())
             .via(message -> message.getAttribute("exception_class")));
-    PAssert.that(exceptions)
-        .containsInAnyOrder(Arrays.asList("com.mozilla.telemetry.decoder.ParseUri$NullUriException",
-            "com.mozilla.telemetry.decoder.ParseUri$InvalidUriException",
+    PAssert.that(exceptions).containsInAnyOrder(
+        Arrays.asList("com.mozilla.telemetry.decoder.ParseUri$InvalidUriException",
             "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
             "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException"));
 
@@ -310,7 +311,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
 
     PCollection<String> payloads = output //
         .apply("PayloadString", MapElements.into(TypeDescriptors.strings())
-            .via(message -> new String(message.getPayload())));
+            .via(message -> sortJSON(new String(message.getPayload(), StandardCharsets.UTF_8))));
     PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
     PCollection<String> attributesSansUri = output //

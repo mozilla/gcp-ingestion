@@ -26,15 +26,17 @@ import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
  */
 public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
-  @Description("URI of a redis server that will be used for deduplication")
+  @Description("URI of a redis server that will be contacted to mark document IDs as seen for"
+      + " deduplication purposes; if left unspecified, this step of the pipeline is skipped")
   @Validation.Required
   ValueProvider<String> getRedisUri();
 
   void setRedisUri(ValueProvider<String> value);
 
-  @Description("Duration for which message ids should be stored for deduplication."
+  @Description("Duration for which document IDs should be stored for deduplication."
       + " Allowed formats are: Ns (for seconds, example: 5s),"
-      + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h).")
+      + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h)."
+      + " Can be omitted if --redisUri is unset.")
   @Default.String("24h")
   ValueProvider<String> getDeduplicateExpireDuration();
 
@@ -93,19 +95,13 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   void setPerDocTypeDestination(String value);
 
-  @Description("A comma-separated list of namespaces that should be republished to individual"
-      + " topics")
-  List<String> getPerNamespaceEnabledList();
+  @Description("A JSON-formatted map of document namespaces to output topic names (assuming"
+      + " --outputType=pubsub) for per-namespace sampling; the verbose map representation is used"
+      + " here to support cases where the destination topics are heterogeneous and may live in"
+      + " different projects")
+  Map<String, String> getPerNamespaceDestinations();
 
-  void setPerNamespaceEnabledList(List<String> value);
-
-  @Description("A pattern for output topic names (assuming --outputType=pubsub) for per-namespace"
-      + " sampling; the pattern must contain a placeholder ${document_namespace} that will be "
-      + " filled in to give a distinct publisher per namespace configured in"
-      + " --perNamespaceEnabledList")
-  String getPerNamespaceDestination();
-
-  void setPerNamespaceDestination(String value);
+  void setPerNamespaceDestinations(Map<String, String> value);
 
   /*
    * Subinterface and static methods.

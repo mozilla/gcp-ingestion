@@ -81,11 +81,17 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
   private class DoFnWithErrors extends DoFn<InputT, OutputT> {
 
     @ProcessElement
-    public void processElementOrError(@Element InputT element, MultiOutputReceiver out) {
+    public void processElementOrError(@Element InputT element, MultiOutputReceiver out)
+        throws BubbleUpException {
       OutputT processed = null;
       boolean exceptionWasThrown = false;
       try {
         processed = processElement(element);
+      } catch (MessageShouldBeDroppedException e) {
+        // Don't emit the message to any output.
+        exceptionWasThrown = true;
+      } catch (BubbleUpException e) {
+        throw e;
       } catch (Exception e) {
         exceptionWasThrown = true;
         out.get(errorTag).output(processError(element, e));
@@ -140,4 +146,24 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       }
     }
   }
+
+  /**
+   * Special exception class that implementations of {@link MapElementsWithErrors} can throw to
+   * signal that a given message should not be sent downstream to either success or error output.
+   */
+  public static class MessageShouldBeDroppedException extends Exception {
+  }
+
+  /**
+   * Special exception class that can be thrown from the body of a {@link MapElementsWithErrors}
+   * subclass to indicate that the pipeline should fail rather than sending the current message
+   * to error output.
+   */
+  public static class BubbleUpException extends RuntimeException {
+
+    public BubbleUpException(Throwable cause) {
+      super(cause);
+    }
+  }
+
 }

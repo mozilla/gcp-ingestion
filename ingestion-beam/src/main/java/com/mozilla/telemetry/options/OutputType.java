@@ -67,7 +67,8 @@ public enum OutputType {
       return new BigQueryOutput(options.getOutput(), options.getBqWriteMethod(),
           options.getParsedBqTriggeringFrequency(), options.getInputType(),
           options.getBqNumFileShards(), options.getBqStreamingDocTypes(),
-          options.getBqStrictSchemaDocTypes());
+          options.getBqStrictSchemaDocTypes(), options.getSchemasLocation(),
+          options.getSchemaAliasesLocation(), options.getOutputTableRowFormat());
     }
   };
 

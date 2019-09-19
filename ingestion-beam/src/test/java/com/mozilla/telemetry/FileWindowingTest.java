@@ -15,6 +15,7 @@ import com.mozilla.telemetry.options.SinkOptions;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -98,17 +99,18 @@ public class FileWindowingTest implements Serializable {
     pipeline.run().waitUntilFinish();
 
     List<String> expectedFileNames = ImmutableList.of(
-        "out-1970-01-01T00:00:00.000Z-1970-01-01T00:10:00.000Z-0-00000-of-00001.txt",
-        "out-1970-01-01T00:00:00.000Z-1970-01-01T00:10:00.000Z-1-00000-of-00001.txt",
-        "out-1970-01-01T00:00:00.000Z-1970-01-01T00:10:00.000Z-2-00000-of-00001.txt",
-        "out-1970-01-01T00:10:00.000Z-1970-01-01T00:20:00.000Z-0-00000-of-00001.txt");
+        "out-1970-01-01T00-00-00.000Z-1970-01-01T00-10-00.000Z-0-00000-of-00001.txt",
+        "out-1970-01-01T00-00-00.000Z-1970-01-01T00-10-00.000Z-1-00000-of-00001.txt",
+        "out-1970-01-01T00-00-00.000Z-1970-01-01T00-10-00.000Z-2-00000-of-00001.txt",
+        "out-1970-01-01T00-10-00.000Z-1970-01-01T00-20-00.000Z-0-00000-of-00001.txt");
 
     assertThat(Lines.files(outputPath + "/out*.txt"), Matchers.hasSize(9));
     assertThat(fileNames(outputPath + "/out*.txt"), matchesInAnyOrder(expectedFileNames));
   }
 
   private TimestampedValue<PubsubMessage> message(String content, Duration baseTimeOffset) {
-    return TimestampedValue.of(new PubsubMessage(content.getBytes(), new HashMap<>()),
+    return TimestampedValue.of(
+        new PubsubMessage(content.getBytes(StandardCharsets.UTF_8), new HashMap<>()),
         baseTime.plus(baseTimeOffset));
   }
 

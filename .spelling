@@ -16,6 +16,7 @@ CircleCI
 CLI
 cron
 Dataflow
+datapipeline
 dataset
 deduplicate
 deduplication
@@ -28,6 +29,8 @@ encodings
 failsafe
 featureful
 filesystem
+fx-metrics
+gcp-ingestion
 GCP
 GCS
 GeoIP
@@ -35,11 +38,13 @@ GKE
 GroupByKey
 gzip
 gzipped
+Hadoop
 Heka
 HTTPS
 hyperloglog
 IAM
 IPs
+irc.mozilla.org
 Javadoc
 JSON
 JVM

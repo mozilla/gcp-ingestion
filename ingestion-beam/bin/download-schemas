@@ -34,13 +34,33 @@ function insert_testing_schemas() {
   "required" : []
 }
 EOF
+    mkdir -p schemas/my-namespace/my-test
+    cat > schemas/my-namespace/my-test/my-test.1.bq << 'EOF'
+[
+  {
+    "mode": "NULLABLE",
+    "name": "client_id",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "type",
+    "type": "STRING"
+  },
+  {
+    "mode": "NULLABLE",
+    "name": "submission_timestamp",
+    "type": "TIMESTAMP"
+  }
+]
+EOF
 }
 
 cd "$(dirname "$0")/.."
 init_working_directory
 
 # Fetch schemas
-BRANCH="dev"
+BRANCH="generated-schemas"
 TARFILE="$BRANCH.tar.gz"
 curl -sL https://github.com/mozilla-services/mozilla-pipeline-schemas/archive/$TARFILE > schemas.tar.gz
 
