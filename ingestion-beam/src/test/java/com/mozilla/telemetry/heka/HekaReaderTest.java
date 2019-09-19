@@ -80,4 +80,30 @@ public class HekaReaderTest extends TestWithDeterministicJson {
         sortJSON(Json.asString(Json.readObjectNode(actual.getPayload()))));
     assertEquals(meta.path("documentId").textValue(), actual.getAttribute(Attribute.DOCUMENT_ID));
   }
+
+  @Test
+  public void testCrashPingParsing() throws IOException {
+    // this test validates that we can parse a reasonably complex heka-encoded structure, very
+    // close to what we have in telemetry
+
+    // read the heka-encoded crash ping
+    String inputHekaFileName = Resources.getResource("testdata/heka/crashping.heka").getPath();
+    FileInputStream fis = new FileInputStream(inputHekaFileName);
+    List<PubsubMessage> res = HekaReader.readHekaStream(fis);
+
+    // just one message in this one
+    assertEquals(res.size(), 1);
+    PubsubMessage actual = res.get(0);
+
+    // compare against what we expect
+    Path expectedJsonPayloadFilePath = Paths
+        .get(Resources.getResource("testdata/heka/crashping.heka.json").getPath());
+    ObjectNode expectedJsonPing = Json
+        .readObjectNode(Files.readAllBytes(expectedJsonPayloadFilePath));
+    JsonNode meta = expectedJsonPing.remove("meta");
+    assertEquals(sortJSON(Json.asString(expectedJsonPing)),
+        sortJSON(Json.asString(Json.readObjectNode(actual.getPayload()))));
+    assertEquals(meta.path("documentId").textValue(), actual.getAttribute(Attribute.DOCUMENT_ID));
+  }
+
 }
