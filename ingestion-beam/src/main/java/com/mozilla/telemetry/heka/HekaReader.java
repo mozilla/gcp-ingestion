@@ -4,6 +4,7 @@
 
 package com.mozilla.telemetry.heka;
 
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
@@ -122,6 +123,8 @@ public class HekaReader {
             target.set(lastKey, Json.readObjectNode(value.getBytes(StandardCharsets.UTF_8)));
           } else if (value.length() > 0 && value.charAt(0) == '[') {
             target.set(lastKey, Json.readArrayNode(value.getBytes(StandardCharsets.UTF_8)));
+          } else if (value.matches("null")) {
+            target.set(lastKey, NullNode.getInstance());
           } else {
             target.put(lastKey, value);
           }
