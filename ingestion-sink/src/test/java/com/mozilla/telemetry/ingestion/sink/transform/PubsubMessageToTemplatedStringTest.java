@@ -1,0 +1,38 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package com.mozilla.telemetry.ingestion.sink.transform;
+
+import static org.junit.Assert.assertEquals;
+
+import com.google.pubsub.v1.PubsubMessage;
+import org.junit.Test;
+
+public class PubsubMessageToTemplatedStringTest {
+
+  private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
+
+  @Test
+  public void canResolveStaticTemplateWithEmptyMessage() {
+    assertEquals("static", new PubsubMessageToTemplatedString("static").apply(EMPTY_MESSAGE));
+  }
+
+  @Test
+  public void canResolveDerivedAttributes() {
+    assertEquals("2019-01-01/23",
+        new PubsubMessageToTemplatedString("${submission_date}/${submission_hour}")
+            .apply(PubsubMessage.newBuilder()
+                .putAttributes("submission_timestamp", "2019-01-01T23:00:00").build()));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void failsOnMissingAttributes() {
+    new PubsubMessageToTemplatedString("${missing}").apply(EMPTY_MESSAGE);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void failsOnMalformedTemplate() {
+    new PubsubMessageToTemplatedString("${").apply(EMPTY_MESSAGE);
+  }
+}

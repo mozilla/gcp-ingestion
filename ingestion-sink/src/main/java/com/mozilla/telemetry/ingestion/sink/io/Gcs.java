@@ -10,77 +10,93 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
+import com.mozilla.telemetry.ingestion.core.util.Json;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class Gcs {
 
   private Gcs() {
   }
 
-  public abstract static class Write extends BatchWrite<PubsubMessage, byte[], String, BlobInfo> {
+  public abstract static class Write extends BatchWrite<PubsubMessage, byte[], String, Void> {
 
     public static class Ndjson extends Write {
 
-      private final PubsubMessageToJSONObject encoder;
+      private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-          String batchKeyTemplate, Format format) {
-        super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate);
-        this.encoder = new PubsubMessageToJSONObject(format);
+          String batchKeyTemplate, Format format,
+          Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
+        super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
+        this.encoder = new PubsubMessageToObjectNode(format);
       }
 
       @Override
       protected byte[] encodeInput(PubsubMessage input) {
-        return (encoder.apply(input).toString() + "\n").getBytes();
+        try {
+          return ArrayUtils.addAll(Json.asBytes(encoder.apply(input)),
+              "\n".getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
+        }
       }
     }
 
     private final Storage storage;
+    private final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
 
     private Write(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-        String batchKeyTemplate) {
+        String batchKeyTemplate, Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
       this.storage = storage;
+      this.batchCloseHook = batchCloseHook;
     }
 
     @Override
     protected String getBatchKey(PubsubMessage input) {
-      return applyBatchKeyTemplate(input);
+      return batchKeyTemplate.apply(input);
     }
+
+    private static final String BUCKET = "bucket";
+    private static final String NAME = "name";
+    private static final Pattern blobIdPattern = Pattern
+        .compile("(gs://)?(?<" + BUCKET + ">[^/]+)(/(?<" + NAME + ">.*))?");
 
     @Override
     protected Batch getBatch(String gcsPrefix) {
-      return new Batch(storage, gcsPrefix);
+      final Matcher gcsPrefixMatcher = blobIdPattern.matcher(gcsPrefix);
+      if (!gcsPrefixMatcher.matches()) {
+        throw new IllegalArgumentException(
+            String.format("Gcs prefix must match \"%s\" but got \"%s\" from: %s",
+                blobIdPattern.pattern(), gcsPrefix, batchKeyTemplate.template));
+      }
+      return new Batch(storage, gcsPrefixMatcher.group(BUCKET), gcsPrefixMatcher.group(NAME));
     }
 
     @VisibleForTesting
-    class Batch extends BatchWrite<PubsubMessage, byte[], String, BlobInfo>.Batch {
+    class Batch extends BatchWrite<PubsubMessage, byte[], String, Void>.Batch {
 
       @VisibleForTesting
       final BlobInfo blobInfo;
 
       private final WriteChannel writer;
 
-      private Batch(Storage storage, String gcsPrefix) {
+      private Batch(Storage storage, String bucket, String keyPrefix) {
         super();
-        // save blobInfo for the response from this.close
-        final String[] outputPrefixParts = gcsPrefix.split("/", 2);
-        final String bucket;
-        final String keyPrefix;
-        if (outputPrefixParts.length == 2) {
-          bucket = outputPrefixParts[0];
-          keyPrefix = outputPrefixParts[1];
-        } else {
-          bucket = gcsPrefix;
-          keyPrefix = "";
-        }
+        // save blobInfo for batchCloseHook
         blobInfo = BlobInfo
             .newBuilder(BlobId.of(bucket, keyPrefix + UUID.randomUUID().toString() + ".ndjson"))
             .setContentType("application/json").build();
@@ -88,13 +104,13 @@ public class Gcs {
       }
 
       @Override
-      protected BlobInfo close(Void ignoreVoid, Throwable ignoreThrowable) {
+      protected CompletableFuture<Void> close(Void ignore) {
         try {
           writer.close();
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }
-        return blobInfo;
+        return batchCloseHook.apply(blobInfo);
       }
 
       @Override

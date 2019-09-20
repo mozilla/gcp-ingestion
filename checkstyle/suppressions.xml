@@ -12,8 +12,9 @@
     <suppress checks="LineLength"
               files="OutputType.java"/>
 
-    <!-- suppress all checks in files we have copied in from other projects -->
-    <suppress checks=".*" files="WriteTables.java" />
+    <!-- Confine use of JSONObject to only the JsonValidator class -->
+    <suppress checks="IllegalImport"
+              files="JsonValidator.java|JSONSchemaStore.java"/>
 
     <!-- suppress all checks in the generated directories -->
     <suppress checks=".*" files=".+[\\\/]generated[\\\/].+\.java" />
