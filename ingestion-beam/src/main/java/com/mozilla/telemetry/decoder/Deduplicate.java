@@ -238,6 +238,9 @@ public class Deduplicate {
     }
   }
 
+  /**
+   * Container for methods that talk to Redis. All methods are no-ops if uri is null.
+   */
   private static class RedisIdService implements Serializable {
 
     private final ValueProvider<URI> uri;
@@ -248,23 +251,29 @@ public class Deduplicate {
     }
 
     boolean exists(byte[] key) {
-      try {
-        return getJedis().exists(key);
-      } catch (JedisConnectionException e) {
-        // The connection is in a bad state, perhaps due to the Redis cluster failing over to
-        // a different node, so we reset the connection and assume the key doesn't exist.
-        initializeNewClient();
+      if (uri != null && uri.isAccessible() && uri.get() != null) {
+        try {
+          return getJedis().exists(key);
+        } catch (JedisConnectionException e) {
+          // The connection is in a bad state, perhaps due to the Redis cluster failing over to
+          // a different node, so we reset the connection and assume the key doesn't exist.
+          initializeNewClient();
+          return false;
+        }
+      } else {
         return false;
       }
     }
 
     void setWithExpiration(byte[] key, int ttl) {
-      try {
-        getJedis().setex(key, ttl, new byte[0]);
-      } catch (JedisConnectionException e) {
-        // The connection is in a bad state, perhaps due to the Redis cluster failing over to
-        // a different node, so we reset the connection and ignore this key.
-        initializeNewClient();
+      if (uri != null && uri.isAccessible() && uri.get() != null) {
+        try {
+          getJedis().setex(key, ttl, new byte[0]);
+        } catch (JedisConnectionException e) {
+          // The connection is in a bad state, perhaps due to the Redis cluster failing over to
+          // a different node, so we reset the connection and ignore this key.
+          initializeNewClient();
+        }
       }
     }
 
