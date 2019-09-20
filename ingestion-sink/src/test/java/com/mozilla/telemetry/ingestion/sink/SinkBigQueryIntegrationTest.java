@@ -22,7 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.util.TestWithPubsubResources;
+import com.mozilla.telemetry.ingestion.sink.util.TestWithSinglePubsubTopic;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,7 +44,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.rules.Timeout;
 
-public class SinkBigQueryIntegrationTest extends TestWithPubsubResources {
+public class SinkBigQueryIntegrationTest extends TestWithSinglePubsubTopic {
 
   private BigQuery bigquery;
   private String project;
@@ -95,20 +96,16 @@ public class SinkBigQueryIntegrationTest extends TestWithPubsubResources {
       TableId tableId = TableId.of(dataset, table);
       bigquery.create(TableInfo.newBuilder(tableId, tableDef).build());
       PubsubMessage.Builder message = PubsubMessage.newBuilder()
-          .setData(ByteString.copyFrom("test".getBytes())).putAttributes("document_type", "test")
-          .putAttributes("document_version", version)
+          .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
+          .putAttributes("document_type", "test").putAttributes("document_version", version)
           .putAttributes("submission_timestamp", submissionTimestamp);
       if (documentIds.containsKey(version)) {
         message.putAttributes("document_id", documentIds.get(version));
       }
-      try {
-        publisher.publish(message.build()).get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+      publish(message.build());
     });
 
-    environmentVariables.set("INPUT_SUBSCRIPTION", subscriptionName.toString());
+    environmentVariables.set("INPUT_SUBSCRIPTION", getSubscription());
     environmentVariables.set("OUTPUT_TABLE",
         project + "." + dataset + ".${document_type}_v${document_version}");
 

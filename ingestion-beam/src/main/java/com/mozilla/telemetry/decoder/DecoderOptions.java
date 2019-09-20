@@ -35,7 +35,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setGeoCityFilter(ValueProvider<String> value);
 
-  @Description("URI of a redis server that will be used for deduplication")
+  @Description("URI of a redis server that will be used for deduplication; leave null to disable")
   @Validation.Required
   ValueProvider<String> getRedisUri();
 

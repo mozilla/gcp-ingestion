@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -88,7 +89,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   public void testCoerceMapValueToString() throws Exception {
     String mainPing = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
         + "{\"timestamps.first_paint\":5405}}}}}";
-    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes());
+    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes(StandardCharsets.UTF_8));
     Map<String, Object> additionalProperties = new HashMap<>();
     parent.put("64bit", true);
     parent.put("hi-fi", true);
@@ -211,7 +212,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
         + "      }\n" //
         + "    }\n" //
         + "  }\n" //
-        + "}\n").getBytes());
+        + "}\n").getBytes(StandardCharsets.UTF_8));
     List<Field> bqFields = ImmutableList.of(Field
         .newBuilder("metrics", LegacySQLTypeName.RECORD, Field.of("key", LegacySQLTypeName.STRING),
             Field.of("value", LegacySQLTypeName.RECORD,
@@ -240,7 +241,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
 
   @Test
   public void testRawFormat() throws Exception {
-    PubsubMessage message = new PubsubMessage("test".getBytes(),
+    PubsubMessage message = new PubsubMessage("test".getBytes(StandardCharsets.UTF_8),
         // Use example values for all attributes present in the spec:
         // https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#edge-server-pubsub-message-schema
         ImmutableMap.<String, String>builder()
@@ -264,7 +265,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   @Test
   public void testDecodedFormat() throws Exception {
 
-    PubsubMessage message = new PubsubMessage("test".getBytes(),
+    PubsubMessage message = new PubsubMessage("test".getBytes(StandardCharsets.UTF_8),
         // Ensure sure we preserve all attributes present in the spec:
         // https://github.com/mozilla/gcp-ingestion/blob/master/docs/decoder.md#decoded-message-metadata-schema
         ImmutableMap.<String, String>builder()
