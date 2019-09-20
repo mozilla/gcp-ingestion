@@ -117,9 +117,10 @@ public class HekaReader {
           } else {
             value = f.getValueString(0);
           }
-          if (value.charAt(0) == '{') {
+
+          if (value.length() > 0 && value.charAt(0) == '{') {
             target.set(lastKey, Json.readObjectNode(value.getBytes(StandardCharsets.UTF_8)));
-          } else if (value.charAt(0) == '[') {
+          } else if (value.length() > 0 && value.charAt(0) == '[') {
             target.set(lastKey, Json.readArrayNode(value.getBytes(StandardCharsets.UTF_8)));
           } else {
             target.put(lastKey, value);
