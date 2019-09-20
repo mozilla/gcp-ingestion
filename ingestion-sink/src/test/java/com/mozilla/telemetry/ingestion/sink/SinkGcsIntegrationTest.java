@@ -16,7 +16,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
-import com.mozilla.telemetry.ingestion.sink.util.TestWithPubsubResources;
+import com.mozilla.telemetry.ingestion.sink.util.TestWithSinglePubsubTopic;
+import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,7 +36,7 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.rules.Timeout;
 
-public class SinkGcsIntegrationTest extends TestWithPubsubResources {
+public class SinkGcsIntegrationTest extends TestWithSinglePubsubTopic {
 
   private Storage storage;
   private String bucket;
@@ -66,20 +67,13 @@ public class SinkGcsIntegrationTest extends TestWithPubsubResources {
     String submissionTimestamp = ZonedDateTime.now(ZoneOffset.UTC)
         .format(DateTimeFormatter.ISO_DATE_TIME);
     List<String> versions = ImmutableList.of("1", "2");
-    versions.forEach(version -> {
-      PubsubMessage.Builder message = PubsubMessage.newBuilder()
-          .setData(ByteString.copyFrom("test".getBytes()))
-          .putAttributes("document_namespace", "namespace").putAttributes("document_type", "type")
-          .putAttributes("document_version", version)
-          .putAttributes("submission_timestamp", submissionTimestamp);
-      try {
-        publisher.publish(message.build()).get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    versions.forEach(version -> publish(PubsubMessage.newBuilder()
+        .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
+        .putAttributes("document_namespace", "namespace").putAttributes("document_type", "type")
+        .putAttributes("document_version", version)
+        .putAttributes("submission_timestamp", submissionTimestamp).build()));
 
-    environmentVariables.set("INPUT_SUBSCRIPTION", subscriptionName.toString());
+    environmentVariables.set("INPUT_SUBSCRIPTION", getSubscription());
     environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
     environmentVariables.set("OUTPUT_BUCKET", bucket + "/${document_namespace}/${document_type}_"
         + "v${document_version}/${submission_date}/${submission_hour}/");

@@ -15,6 +15,7 @@ import com.mozilla.telemetry.options.SinkOptions;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -108,7 +109,8 @@ public class FileWindowingTest implements Serializable {
   }
 
   private TimestampedValue<PubsubMessage> message(String content, Duration baseTimeOffset) {
-    return TimestampedValue.of(new PubsubMessage(content.getBytes(), new HashMap<>()),
+    return TimestampedValue.of(
+        new PubsubMessage(content.getBytes(StandardCharsets.UTF_8), new HashMap<>()),
         baseTime.plus(baseTimeOffset));
   }
 

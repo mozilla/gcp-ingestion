@@ -6,6 +6,9 @@ package com.mozilla.telemetry.util;
 
 import static com.mozilla.telemetry.ingestion.core.util.Time.parseJavaDuration;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 
@@ -63,6 +66,30 @@ public class Time {
    */
   public static ValueProvider<Long> parseSeconds(ValueProvider<String> value) {
     return NestedValueProvider.of(value, Time::parseSeconds);
+  }
+
+  /**
+   * Attempts to parse a string in format '2011-12-03T10:15:30Z', returning null in case of error.
+   */
+  public static Instant parseAsInstantOrNull(String timestamp) {
+    try {
+      return Instant.from(DateTimeFormatter.ISO_INSTANT.parse(timestamp));
+    } catch (DateTimeParseException | NullPointerException ignore) {
+      return null;
+    }
+  }
+
+  /**
+   * Returns a timestamp of form '2011-12-03T10:15:30Z' based on microseconds since Unix epoch.
+   */
+  public static String epochMicrosToTimestamp(Long epochMicros) {
+    try {
+      long epochSeconds = epochMicros / 1_000_000;
+      long nanos = epochMicros % 1_000_000 * 1000;
+      return DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochSecond(epochSeconds, nanos));
+    } catch (DateTimeParseException | NullPointerException ignore) {
+      return null;
+    }
   }
 
   /*
