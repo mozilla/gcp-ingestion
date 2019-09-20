@@ -102,12 +102,14 @@ public class DeduplicateTest {
     // run RemoveDuplicates
     pipeline.run();
 
+    // Check that having a null URI disables deduplication; all messages should pass through to the
+    // output collection even if they've been marked as seen in Redis.
     PCollection<String> nonDedupledIds = pipeline
-        .apply("ids", Create.of(Arrays.asList(newId, duplicatedId)))
+        .apply("ids", Create.of(Arrays.asList(newId, seenId)))
         .apply("create messages", mapStringsToId)
         .apply("no-op deduplicate", Deduplicate.removeDuplicates(StaticValueProvider.of(null)))
         .ignoreDuplicates().output().apply("get non-deduped IDs", mapMessagesToId);
-    PAssert.that(nonDedupledIds).containsInAnyOrder(newId, duplicatedId);
+    PAssert.that(nonDedupledIds).containsInAnyOrder(newId, seenId);
 
     // run RemoveDuplicates
     pipeline.run();
