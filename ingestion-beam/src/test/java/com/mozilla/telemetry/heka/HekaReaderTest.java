@@ -121,5 +121,4 @@ public class HekaReaderTest extends TestWithDeterministicJson {
     return decodedMessages;
   }
 
-
 }
