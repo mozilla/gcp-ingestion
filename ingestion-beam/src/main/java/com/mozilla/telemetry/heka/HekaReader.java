@@ -25,7 +25,7 @@ import org.xerial.snappy.Snappy;
 
 public class HekaReader {
 
-  private static PubsubMessage readHekaMessage(InputStream is) throws IOException {
+  public static PubsubMessage readHekaMessage(InputStream is) throws IOException {
     while (true) {
       // continue reading until we find a heka message or we reach the end of the
       // file
@@ -170,22 +170,9 @@ public class HekaReader {
           .ifPresent(s -> attributes.put(Attribute.GEO_SUBDIVISION1, s));
       Optional.ofNullable(meta.path("geoSubdivision2").textValue())
           .ifPresent(s -> attributes.put(Attribute.GEO_SUBDIVISION2, s));
-      // TODO: Do heka messages contain parsed user agent info? DNT? Method? Protocol?
     });
 
     return new PubsubMessage(Json.asBytes(payload), attributes);
   }
 
-  public static List<PubsubMessage> readHekaStream(InputStream is) throws IOException {
-    List<PubsubMessage> decodedMessages = new ArrayList<>();
-
-    while (true) {
-      PubsubMessage o = readHekaMessage(is);
-      if (o == null) {
-        break;
-      }
-      decodedMessages.add(o);
-    }
-    return decodedMessages;
-  }
 }

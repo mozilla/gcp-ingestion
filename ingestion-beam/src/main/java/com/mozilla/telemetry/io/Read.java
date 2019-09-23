@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.coders.ListCoder;
 import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
@@ -27,7 +26,6 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
@@ -84,11 +82,10 @@ public abstract class Read
 
     @Override
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
-      Result<PCollection<List<PubsubMessage>>> result = input
-          .apply(FileIO.match().filepattern(fileSpec)).apply(FileIO.readMatches())
+      return input //
+          .apply(FileIO.match().filepattern(fileSpec)) //
+          .apply(FileIO.readMatches()) //
           .apply(HekaIO.readFiles());
-      result.output().setCoder(ListCoder.of(PubsubMessageWithAttributesCoder.of()));
-      return Result.of(result.output().apply(Flatten.iterables()), result.errors());
     }
 
   }
