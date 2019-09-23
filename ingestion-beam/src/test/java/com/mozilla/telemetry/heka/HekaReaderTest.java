@@ -14,9 +14,11 @@ import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.junit.Test;
@@ -26,7 +28,7 @@ public class HekaReaderTest extends TestWithDeterministicJson {
   private List<PubsubMessage> readHekaBlob(String fileName) throws IOException {
     String path = Resources.getResource(fileName).getPath();
     FileInputStream fis = new FileInputStream(path);
-    return HekaReader.readHekaStream(fis);
+    return readHekaStream(fis);
   }
 
   private ObjectNode getJsonBlobFromFile(String fileName) throws IOException {
@@ -63,7 +65,7 @@ public class HekaReaderTest extends TestWithDeterministicJson {
     String inputHekaFileName = Resources.getResource("testdata/heka/test_telemetry_snappy.heka")
         .getPath();
     FileInputStream fis = new FileInputStream(inputHekaFileName);
-    List<PubsubMessage> res = HekaReader.readHekaStream(fis);
+    List<PubsubMessage> res = readHekaStream(fis);
 
     // just one message in this one
     assertEquals(res.size(), 1);
@@ -89,7 +91,7 @@ public class HekaReaderTest extends TestWithDeterministicJson {
     // read the heka-encoded crash ping
     String inputHekaFileName = Resources.getResource("testdata/heka/crashping.heka").getPath();
     FileInputStream fis = new FileInputStream(inputHekaFileName);
-    List<PubsubMessage> res = HekaReader.readHekaStream(fis);
+    List<PubsubMessage> res = readHekaStream(fis);
 
     // just one message in this one
     assertEquals(res.size(), 1);
@@ -105,5 +107,19 @@ public class HekaReaderTest extends TestWithDeterministicJson {
         sortJSON(Json.asString(Json.readObjectNode(actual.getPayload()))));
     assertEquals(meta.path("documentId").textValue(), actual.getAttribute(Attribute.DOCUMENT_ID));
   }
+
+  private static List<PubsubMessage> readHekaStream(InputStream is) throws IOException {
+    List<PubsubMessage> decodedMessages = new ArrayList<>();
+
+    while (true) {
+      PubsubMessage o = HekaReader.readHekaMessage(is);
+      if (o == null) {
+        break;
+      }
+      decodedMessages.add(o);
+    }
+    return decodedMessages;
+  }
+
 
 }
