@@ -27,27 +27,29 @@ public class HekaIO {
     return ReadFiles.INSTANCE;
   }
 
-  public static class ReadFiles extends PTransform<PCollection<ReadableFile>, Result<PCollection<PubsubMessage>>> {
+  public static class ReadFiles
+      extends PTransform<PCollection<ReadableFile>, Result<PCollection<PubsubMessage>>> {
 
-    TupleTag<PubsubMessage> successTag = new TupleTag<PubsubMessage>() {};
-    TupleTag<PubsubMessage> failureTag = new TupleTag<PubsubMessage>() {};
+    TupleTag<PubsubMessage> successTag = new TupleTag<PubsubMessage>() {
+    };
+    TupleTag<PubsubMessage> failureTag = new TupleTag<PubsubMessage>() {
+    };
 
     @Override
     public Result<PCollection<PubsubMessage>> expand(PCollection<ReadableFile> input) {
       PCollectionTuple tuple = input.apply("ReadHekaFile",
-          ParDo.of(new Fn())
-              .withOutputTags(successTag, TupleTagList.of(failureTag))
-      );
-      return Result.of(tuple.get(successTag).setCoder(PubsubMessageWithAttributesCoder.of()), tuple.get(failureTag));
+          ParDo.of(new Fn()).withOutputTags(successTag, TupleTagList.of(failureTag)));
+      return Result.of(tuple.get(successTag).setCoder(PubsubMessageWithAttributesCoder.of()),
+          tuple.get(failureTag));
     }
 
     private static ReadFiles INSTANCE = new ReadFiles();
 
     private class Fn extends DoFn<ReadableFile, PubsubMessage> {
+
       @ProcessElement
       public void processElement(@Element ReadableFile readableFile, MultiOutputReceiver out) {
-        try (
-            ReadableByteChannel channel = readableFile.open();
+        try (ReadableByteChannel channel = readableFile.open();
             InputStream is = Channels.newInputStream(channel)) {
           while (true) {
             try {
