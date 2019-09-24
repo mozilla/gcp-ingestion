@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Mozilla Data Platform Team">
+        
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Sink Job - GCP Ingestion</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+        <![endif]-->
+
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+            <div class="container">
+
+                <!-- Collapsed navigation -->
+                <div class="navbar-header">
+                    <!-- Expander button -->
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="../..">GCP Ingestion</a>
+                </div>
+
+                <!-- Expanded navigation -->
+                <div class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li >
+                                <a href="../..">Home</a>
+                            </li>
+                            <li >
+                                <a href="../../ingestion-edge/">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown active">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../">Overview</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Sink Job</a>
+</li>
+                                    
+<li >
+    <a href="../decoder-job/">Decoder Job</a>
+</li>
+                                    
+<li >
+    <a href="../republisher-job/">Republisher Job</a>
+</li>
+                                    
+<li >
+    <a href="../ingestion_testing_workflow/">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li >
+    <a href="../../architecture/overview/">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/differences_from_aws/">Differences from AWS</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/pain_points/">Pain Points</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/edge_migration_plan/">Edge Migration Plan</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/reliability/">Reliability</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/test_requirements/">Test requirements</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/landfill_service_specification/">Landfill Service Specification</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/edge_service_specification/">Edge Server Specification</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
+</li>
+                                    
+<li >
+    <a href="../../architecture/decoder_service_specification/">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li>
+                            <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+
+                            <li>
+                                <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/sink-job.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#sink-job">Sink Job</a></li>
+            <li><a href="#supported-input-and-outputs">Supported Input and Outputs</a></li>
+            <li><a href="#encoding">Encoding</a></li>
+            <li><a href="#output-path-specification">Output Path Specification</a></li>
+            <li><a href="#executing">Executing</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="sink-job">Sink Job</h1>
+<p>A job for delivering messages between Google Cloud services. Defined in the <code>com.mozilla.telemetry.Sink</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java">source</a>).</p>
+<h2 id="supported-input-and-outputs">Supported Input and Outputs</h2>
+<p>Supported inputs:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+<li>Google Cloud Storage</li>
+</ul>
+<p>Supported outputs:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+<li>Google Cloud Storage</li>
+<li>Google Cloud BigQuery</li>
+<li>stdout</li>
+<li>stderr</li>
+</ul>
+<p>Supported error outputs, must include attributes and must not validate messages:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+<li>Google Cloud Storage with JSON encoding</li>
+<li>stdout with JSON encoding</li>
+<li>stderr with JSON encoding</li>
+</ul>
+<h2 id="encoding">Encoding</h2>
+<p>Internally messages are stored and transported as
+<a href="https://beam.apache.org/documentation/sdks/javadoc/2.6.0/org/apache/beam/sdk/io/gcp/pubsub/PubsubMessage.html">PubsubMessage</a>.</p>
+<p>Supported file formats for Cloud Storage are <code>json</code> or <code>text</code>. The <code>json</code> file
+format stores newline delimited JSON, encoding the field <code>payload</code> as a base64
+string, and <code>attributeMap</code> as an optional object with string keys and values.
+The <code>text</code> file format stores newline delimited strings, encoding the field
+<code>payload</code> as <code>UTF-8</code>.</p>
+<p>We'll construct example inputs based on the following two values and their base64 encodings:</p>
+<pre><code>$ echo -en &quot;test&quot; | base64
+dGVzdA==
+
+$ echo -en &quot;test\n&quot; | base64
+dGVzdAo=
+</code></pre>
+
+<p>Example <code>json</code> file:</p>
+<pre><code>{"payload":"dGVzdA==","attributeMap":{"meta":"data"}}
+{"payload":"dGVzdAo=","attributeMap":null}
+{"payload":"dGVzdA=="}
+</code></pre>
+<p>The above file when stored in the <code>text</code> format:</p>
+<pre><code>test
+test
+
+test
+</code></pre>
+<p>Note that the newline embedded at the end of the second JSON message results in
+two text messages, one of which is blank.</p>
+<h2 id="output-path-specification">Output Path Specification</h2>
+<p>Depending on the specified output type, the <code>--output</code> path that you provide controls
+several aspects of the behavior.</p>
+<h3 id="bigquery">BigQuery</h3>
+<p>When <code>--outputType=bigquery</code>, <code>--output</code> is a <code>tableSpec</code> of form <code>dataset.tablename</code>
+or the more verbose <code>projectId:dataset.tablename</code>. The values can contain
+attribute placeholders of form <code>${attribute_name}</code>. To set dataset to the
+document namespace and table name to the document type, specify:</p>
+<pre><code>--output='${document_namespace}.${document_type}'
+</code></pre>
+<p>All <code>-</code> characters in the attributes will be converted to <code>_</code> per BigQuery
+naming restrictions. Additionally, document namespace and type values will
+be processed to ensure they are in snake case format (<code>untrustedModules</code>
+becomes <code>untrusted_modules</code>).</p>
+<p>Defaults for the placeholders using <code>${attribute_name:-default_value}</code>
+are supported, but likely don't make much sense since it's unlikely that
+there is a default table whose schema is compatible with all potential
+payloads.
+Instead, records missing an attribute required by a placeholder
+will be redirected to error output if no default is provided.</p>
+<h3 id="protocol">Protocol</h3>
+<p>When <code>--outputType=file</code>, <code>--output</code> may be prefixed by a protocol specifier 
+to determine the
+target data store. Without a protocol prefix, the output path is assumed
+to be a relative or absolute path on the filesystem. To write to Google
+Cloud Storage, use a <code>gs://</code> path like:</p>
+<pre><code>--output=gs://mybucket/somdir/myfileprefix
+</code></pre>
+<h3 id="attribute-placeholders">Attribute placeholders</h3>
+<p>We support <code>FileIO</code>'s "Dynamic destinations" feature (<code>FileIO.writeDynamic</code>) where
+it's possible to route individual messages to different output locations based
+on properties of the message.
+In our case, we allow routing messages based on the <code>PubsubMessage</code> attribute map.
+Routing is accomplished by adding placeholders of form <code>${attribute_name:-default_value}</code>
+to the path.</p>
+<p>For example, to route based on a <code>document_type</code> attribute, your path might look like:</p>
+<pre><code>--output=gs://mybucket/mydocs/${document_type:-UNSPECIFIED}/myfileprefix
+</code></pre>
+<p>Messages with <code>document_type</code> of "main" would be grouped together and end up in
+the following directory:</p>
+<pre><code>gs://mybucket/mydocs/main/
+</code></pre>
+<p>Messages with <code>document_type</code> set to <code>null</code> or missing that attribute completely
+would be grouped together and end up in directory:</p>
+<pre><code>gs://mybucket/mydocs/UNSPECIFIED/
+</code></pre>
+<p>Note that placeholders <em>must</em> specify a default value so that a poorly formatted
+message doesn't cause a pipeline exception. A placeholder without a default will
+result in an <code>IllegalArgumentException</code> on pipeline startup.</p>
+<p>File-based outputs support the additional <em>derived</em> attributes
+<code>"submission_date"</code> and <code>"submission_hour"</code> which will be parsed from the value
+of the <code>submission_timestamp</code> attribute if it exists.
+These can be useful for making sure your output specification buckets messages
+into hourly directories.</p>
+<p>The templating and default syntax used here is based on the
+<a href="https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html">Apache commons-text <code>StringSubstitutor</code></a>,
+which in turn bases its syntax on common practice in bash and other Unix/Linux shells.
+Beware the need for proper escaping on the command line (use <code>\$</code> in place of <code>$</code>),
+as your shell may try to substitute in values
+for your placeholders before they're passed to <code>Sink</code>.</p>
+<p><a href="https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage">Google's PubsubMessage format</a>
+allows arbitrary strings for attribute names and values. We place the following restrictions
+on attribute names and default values used in placeholders:</p>
+<ul>
+<li>attribute names may not contain the string <code>:-</code></li>
+<li>attribute names may not contain curly braces (<code>{</code> or <code>}</code>)</li>
+<li>default values may not contain curly braces (<code>{</code> or <code>}</code>)</li>
+</ul>
+<h3 id="file-prefix">File prefix</h3>
+<p>Individual files are named by replacing <code>:</code> with <code>-</code> in the default format discussed in
+the "File naming" section of Beam's
+<a href="https://beam.apache.org/documentation/sdks/javadoc/2.6.0/org/apache/beam/sdk/io/FileIO.html"><code>FileIO</code> Javadoc</a>:</p>
+<pre><code>$prefix-$start-$end-$pane-$shard-of-$numShards$suffix$compressionSuffix
+</code></pre>
+<p>In our case, <code>$prefix</code> is determined from the last <code>/</code>-delimited piece of the <code>--output</code>
+path. If you specify a path ending in <code>/</code>, you'll end up with an empty prefix
+and your file names will begin with <code>-</code>. This is probably not what you want, 
+so it's recommended to end your output path with a non-empty file prefix. We replace <code>:</code>
+with <code>-</code> because <a href="https://stackoverflow.com/q/48909921">Hadoop can't handle <code>:</code> in file names</a>.</p>
+<p>For example, given:</p>
+<pre><code>--output=/tmp/output/out
+</code></pre>
+<p>An output file might be:</p>
+<pre><code>/tmp/output/out--290308-12-21T20-00-00.000Z--290308-12-21T20-10-00.000Z-00000-of-00001.ndjson
+</code></pre>
+<h2 id="executing">Executing</h2>
+<p>Note: <code>-Dexec.args</code> does not handle newlines gracefully, but bash will remove
+<code>\</code> escaped newlines in <code>"</code>s.</p>
+<h3 id="locally">Locally</h3>
+<p>If you install Java and maven, you can invoke <code>mvn -P ingestion-beam</code> from the
+git root in the following commands instead of using <code>./bin/mvn</code> from the
+<code>ingestion-beam/</code> directory; be aware, though, that Java 8 is the target JVM
+and some reflection warnings may be thrown on newer versions, though these are
+generally harmless.</p>
+<p>The provided <code>bin/mvn</code> script downloads and runs maven with the correct profile
+via docker so that less setup is needed on the local machine.</p>
+<pre><code class="bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' &gt; tmp/input.json
+
+# consume messages from the test file, decode and re-encode them, and write to a directory
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=tmp/output/out \
+    --errorOutputType=file \
+    --errorOutput=tmp/error \
+&quot;
+
+# check that the message was delivered
+cat tmp/output/*
+
+# write message payload straight to stdout
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputFileFormat=text \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+&quot;
+
+# check the help page to see types of options
+./bin/mvn compile exec:java -Dexec.args=--help
+
+# check the SinkOptions help page for options specific to Sink
+./bin/mvn compile exec:java -Dexec.args=--help=SinkOptions
+</code></pre>
+
+<h3 id="on-dataflow">On Dataflow</h3>
+<pre><code class="bash"># Pick a bucket to store files in
+BUCKET=&quot;gs://$(gcloud config get-value project)&quot;
+
+# create a test input file
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' | gsutil cp - $BUCKET/input.json
+
+# Set credentials; beam is not able to use gcloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS=&quot;path/to/your/creds.json&quot;
+
+# consume messages from the test file, decode and re-encode them, and write to a bucket
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --runner=Dataflow \
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=$BUCKET/input.json \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=$BUCKET/output \
+    --errorOutputType=file \
+    --errorOutput=$BUCKET/error \
+&quot;
+
+# wait for the job to finish
+gcloud dataflow jobs list
+
+# check that the message was delivered
+gsutil cat $BUCKET/output/*
+</code></pre>
+
+<h3 id="on-dataflow-with-templates">On Dataflow with templates</h3>
+<p>Dataflow templates make a distinction between
+<a href="https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface">runtime parameters that implement the <code>ValueProvider</code> interface</a>
+and compile-time parameters which do not.
+All options can be specified at template compile time by passing command line flags,
+but runtime parameters can also be overridden when
+<a href="https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud">executing the template</a>
+via the <code>--parameters</code> flag.
+In the output of <code>--help=SinkOptions</code>, runtime parameters are those
+with type <code>ValueProvider</code>.</p>
+<pre><code class="bash"># Pick a bucket to store files in
+BUCKET=&quot;gs://$(gcloud config get-value project)&quot;
+
+# Set credentials; beam is not able to use gcloud credentials
+export GOOGLE_APPLICATION_CREDENTIALS=&quot;path/to/your/creds.json&quot;
+
+# create a template
+./bin/mvn compile exec:java -Dexec.args=&quot;\
+    --runner=Dataflow \
+    --project=$(gcloud config get-value project) \
+    --inputFileFormat=json \
+    --inputType=file \
+    --outputFileFormat=json \
+    --outputType=file \
+    --errorOutputType=file \
+    --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile \
+    --stagingLocation=$BUCKET/sink/staging \
+&quot;
+
+# create a test input file
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' | gsutil cp - $BUCKET/input.json
+
+# run the dataflow template with gcloud
+JOBNAME=FileToFile1
+gcloud dataflow jobs run $JOBNAME --gcs-location=$BUCKET/sink/templates/JsonFileToJsonFile --parameters &quot;input=$BUCKET/input.json,output=$BUCKET/output/,errorOutput=$BUCKET/error&quot;
+
+# get the job id
+JOB_ID=&quot;$(gcloud dataflow jobs list --filter name=fileToStdout1 | tail -1 | cut -d' ' -f1)&quot;
+
+# wait for the job to finish
+gcloud dataflow jobs show &quot;$JOB_ID&quot;
+
+# check that the message was delivered
+gsutil cat $BUCKET/output/*
+</code></pre>
+
+<h3 id="in-streaming-mode">In streaming mode</h3>
+<p>If <code>--inputType=pubsub</code>, Beam will execute in streaming mode, requiring some
+extra configuration for file-based outputs. You will need to specify sharding like:</p>
+<pre><code>    --outputNumShards=10
+    --errorOutputNumShards=10
+</code></pre>
+
+<p>As discussed in the
+<a href="https://beam.apache.org/releases/javadoc/2.8.0/org/apache/beam/sdk/io/FileIO.Write.html#withNumShards-int-">Beam documentation for <code>FileIO.Write#withNumShards</code></a>,
+batch mode is most efficient when the runner is left to determine sharding,
+so <code>numShards</code> options should normally be left to their default of <code>0</code>, but
+streaming mode can't perform the same optimizations thus an exception will be thrown
+during pipeline construction if sharding is not specified.
+As codified in <a href="https://github.com/apache/beam/pull/1952">apache/beam/pull/1952</a>,
+the Dataflow runner suggests a reasonable starting point <code>numShards</code> is <code>2 * maxWorkers</code>
+or 10 if <code>--maxWorkers</code> is unspecified.</p></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="Keyboard Shortcuts Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Keyboard Shortcuts</h4>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

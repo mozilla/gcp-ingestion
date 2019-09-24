@@ -7,11 +7,11 @@
         
         <meta name="author" content="Mozilla Data Platform Team">
         
-        <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Overview - GCP Ingestion</title>
-        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="../css/font-awesome.min.css" rel="stylesheet">
-        <link href="../css/base.css" rel="stylesheet">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Republisher Job - GCP Ingestion</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
@@ -19,8 +19,8 @@
             <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
 
-        <script src="../js/jquery-1.10.2.min.js" defer></script>
-        <script src="../js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
         <script>hljs.initHighlightingOnLoad();</script> 
     </head>
@@ -39,7 +39,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="..">GCP Ingestion</a>
+                    <a class="navbar-brand" href="../..">GCP Ingestion</a>
                 </div>
 
                 <!-- Expanded navigation -->
@@ -47,33 +47,33 @@
                         <!-- Main navigation -->
                         <ul class="nav navbar-nav">
                             <li >
-                                <a href="..">Home</a>
+                                <a href="../..">Home</a>
                             </li>
                             <li >
-                                <a href="../ingestion-edge/">ingestion-edge</a>
+                                <a href="../../ingestion-edge/">ingestion-edge</a>
                             </li>
                             <li class="dropdown active">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     
+<li >
+    <a href="../">Overview</a>
+</li>
+                                    
+<li >
+    <a href="../sink-job/">Sink Job</a>
+</li>
+                                    
+<li >
+    <a href="../decoder-job/">Decoder Job</a>
+</li>
+                                    
 <li class="active">
-    <a href="./">Overview</a>
+    <a href="./">Republisher Job</a>
 </li>
                                     
 <li >
-    <a href="sink-job/">Sink Job</a>
-</li>
-                                    
-<li >
-    <a href="decoder-job/">Decoder Job</a>
-</li>
-                                    
-<li >
-    <a href="republisher-job/">Republisher Job</a>
-</li>
-                                    
-<li >
-    <a href="ingestion_testing_workflow/">Ingestion testing workflow</a>
+    <a href="../ingestion_testing_workflow/">Ingestion testing workflow</a>
 </li>
                                 </ul>
                             </li>
@@ -82,43 +82,43 @@
                                 <ul class="dropdown-menu">
                                     
 <li >
-    <a href="../architecture/overview/">Overview</a>
+    <a href="../../architecture/overview/">Overview</a>
 </li>
                                     
 <li >
-    <a href="../architecture/differences_from_aws/">Differences from AWS</a>
+    <a href="../../architecture/differences_from_aws/">Differences from AWS</a>
 </li>
                                     
 <li >
-    <a href="../architecture/pain_points/">Pain Points</a>
+    <a href="../../architecture/pain_points/">Pain Points</a>
 </li>
                                     
 <li >
-    <a href="../architecture/edge_migration_plan/">Edge Migration Plan</a>
+    <a href="../../architecture/edge_migration_plan/">Edge Migration Plan</a>
 </li>
                                     
 <li >
-    <a href="../architecture/reliability/">Reliability</a>
+    <a href="../../architecture/reliability/">Reliability</a>
 </li>
                                     
 <li >
-    <a href="../architecture/test_requirements/">Test requirements</a>
+    <a href="../../architecture/test_requirements/">Test requirements</a>
 </li>
                                     
 <li >
-    <a href="../architecture/landfill_service_specification/">Landfill Service Specification</a>
+    <a href="../../architecture/landfill_service_specification/">Landfill Service Specification</a>
 </li>
                                     
 <li >
-    <a href="../architecture/edge_service_specification/">Edge Server Specification</a>
+    <a href="../../architecture/edge_service_specification/">Edge Server Specification</a>
 </li>
                                     
 <li >
-    <a href="../architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
+    <a href="../../architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
 </li>
                                     
 <li >
-    <a href="../architecture/decoder_service_specification/">Decoder Service Specification</a>
+    <a href="../../architecture/decoder_service_specification/">Decoder Service Specification</a>
 </li>
                                 </ul>
                             </li>
@@ -132,7 +132,7 @@
                         </li>
 
                             <li>
-                                <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/index.md"><i class="fa fa-github"></i> Edit on GitHub</a>
+                                <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/republisher-job.md"><i class="fa fa-github"></i> Edit on GitHub</a>
                             </li>
                     </ul>
                 </div>
@@ -142,68 +142,87 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#apache-beam-jobs-for-ingestion">Apache Beam Jobs for Ingestion</a></li>
-            <li><a href="#building">Building</a></li>
-            <li><a href="#testing">Testing</a></li>
-            <li><a href="#code-formatting">Code Formatting</a></li>
+        <li class="main active"><a href="#republisher-job">Republisher Job</a></li>
+            <li><a href="#capabilities">Capabilities</a></li>
+            <li><a href="#executing">Executing</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h1 id="apache-beam-jobs-for-ingestion">Apache Beam Jobs for Ingestion</h1>
-<p>This ingestion-beam java module contains our <a href="https://beam.apache.org/">Apache Beam</a> jobs for use in Ingestion.
-Google Cloud Dataflow is a Google Cloud Platform service that natively runs
-Apache Beam jobs.</p>
-<p>The source code lives in the <a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam">ingestion-beam</a>
-subdirectory of the gcp-ingestion repository.</p>
-<p>There are currently three jobs defined, please see the respective sections on them in the
-documentation:</p>
+<h1 id="republisher-job">Republisher Job</h1>
+<p>A job for republishing subsets of decoded messages to new destinations. Defined in the <code>com.mozilla.telemetry.Republisher</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java">source</a>).</p>
+<p>The primary intention is to produce smaller derived Pub/Sub topics so
+that consumers that only need a specific subset of messages don't incur
+the cost of reading the entire stream of decoded messages.</p>
+<p>The Republisher has the additional responsibility of marking messages as seen
+in <code>Cloud MemoryStore</code> for deduplication purposes. That functionality exists
+here to avoid the expense of an additional separate consumer of the full
+decoded topic.</p>
+<h2 id="capabilities">Capabilities</h2>
+<h3 id="marking-messages-as-seen">Marking Messages As Seen</h3>
+<p>The job needs to connect to Redis in order to mark <code>document_id</code>s of consumed
+messages as seen. The Decoder is able to use that information to drop duplicate
+messages flowing through the pipeline.</p>
+<h3 id="debug-republishing">Debug Republishing</h3>
+<p>If <code>--enableDebugDestination</code> is set, messages containing an <code>x_debug_id</code>
+attribute will be republished to a destination that's configurable at runtime.
+This is currently expected to be a feature specific to structured ingestion,
+so should not be set for <code>telemetry-decoded</code> input.</p>
+<h3 id="per-doctype-republishing">Per-<code>docType</code> Republishing</h3>
+<p>If <code>--perDocTypeEnabledList</code> is provided, a separate producer will be created
+for each <code>docType</code> specified in the given comma-separated list.
+See the <code>--help</code> output for details on format.</p>
+<h3 id="per-channel-sampled-republishing">Per-Channel Sampled Republishing</h3>
+<p>If <code>--perChannelSampleRatios</code> is provided, a separate producer will be created
+for each specified release channel. The messages will be randomly sampled
+according to the ratios provided per channel.
+This is currently intended as a feature only for telemetry data, so should
+not be set for <code>structured-decoded</code> input.
+See the <code>--help</code> output for details on format.</p>
+<h2 id="executing">Executing</h2>
+<p>Republisher jobs are executed the <a href="../sink-job/#executing">same way as sink jobs</a>
+but with a few differences in flags. You'll need to set the <code>mainClass</code>:</p>
 <ul>
-<li><a href="./sink-job/">Sink job</a>: A job for delivering messages between Google Cloud services</li>
-<li><a href="./decoder-job/">Decoder job</a>: A job for normalizing ingestion messages</li>
-<li><a href="./republisher-job/">Republisher job</a>: A job for republishing subsets of decoded messages to new destinations</li>
+<li><code>-Dexec.mainClass=com.mozilla.telemetry.Republisher</code></li>
 </ul>
-<h2 id="building">Building</h2>
-<p>Move to the <code>ingestion-beam</code> subdirectory of your gcp-ingestion checkout and run:</p>
-<pre><code class="bash">./bin/mvn clean compile
-</code></pre>
+<p>The <code>--outputType</code> flag is still required as in the sink, but the <code>--output</code>
+configuration is ignored for the Republisher. Instead, there is a separate
+destination configuration flag for each of the three republishing types.
+For each type, there is an compile-time option that affects what publishers
+are generated in the graph for the Dataflow job along with a runtime option
+that determines the specific location (usually a topic name) for each publisher.</p>
+<p>To enable debug republishing:</p>
+<ul>
+<li><code>--enableDebugDestination</code> (compile-time)</li>
+<li><code>--debugDestination=/some/pubsub/topic/path</code></li>
+</ul>
+<p>To enable per-<code>docType</code> republishing:</p>
+<ul>
+<li><code>--perDocTypeEnabledList=event,heartbeat</code> (compile-time)</li>
+<li><code>--perDocTypeDestination=/some/pubsub/topic/path/per-doctype-${document_namespace}-${document_type}</code> (compile-time)</li>
+</ul>
+<p>To enable per-channel sampled republishing:</p>
+<ul>
+<li><code>--perChannelSampleRatios='{"nightly":1.0,"beta":0.1,"release":0.01}'</code> (compile-time)</li>
+<li><code>--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}</code> (compile-time)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;x_debug_id&quot;:&quot;mysession&quot;}}' &gt; tmp/input.json
 
-<p>See the details below under each job for details on how to run what you've produced.</p>
-<h2 id="testing">Testing</h2>
-<p>Before anything else, be sure to download the test data:</p>
-<pre><code class="bash">./bin/download-cities15000
-./bin/download-geolite2
-./bin/download-schemas
-</code></pre>
+# Republish only messages with x_debug_id attribute to stdout.
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Republisher -Dexec.args=&quot;\
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+    --enableDebugDestination
+&quot;
 
-<p>Run tests locally with <a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros">CircleCI Local CLI</a></p>
-<pre><code class="bash">(cd .. &amp;&amp; circleci build --job ingestion-beam)
-</code></pre>
-
-<p>To make more targeted test invocations, you can install Java and maven locally or
-use the <code>bin/mvn</code> executable to run maven in docker:</p>
-<pre><code class="bash">./bin/mvn clean test
-</code></pre>
-
-<p>If you wish to just run a single test class or a single test case, try something like this:</p>
-<pre><code class="bash"># Run all tests in a single class
-./bin/mvn test -Dtest=com.mozilla.telemetry.util.SnakeCaseTest -DfailIfNoTests=false
-
-# Run only a single test case
-./bin/mvn test -Dtest='com.mozilla.telemetry.util.SnakeCaseTest#testSnakeCaseFormat -DfailIfNoTests=false'
-</code></pre>
-
-<p>The <code>-DfailIfNoTests=false</code> is necessary, otherwise it will fail because the <code>ingestion-core</code> module
-(on which we depend) will not match any of the above tests.</p>
-<p>To run the project in a sandbox against production data, see this document on
-<a href="ingestion_testing_workflow/">configuring an integration testing workflow</a>.</p>
-<h2 id="code-formatting">Code Formatting</h2>
-<p>Use spotless to automatically reformat code:</p>
-<pre><code class="bash">mvn spotless:apply
-</code></pre>
-
-<p>or just check what changes it requires:</p>
-<pre><code class="bash">mvn spotless:check
+# check the RepublisherOptions help page for options specific to Republisher
+./bin/mvn compile exec:java -Dexec.args=--help=RepublisherOptions
+&quot;
 </code></pre></div>
         </div>
 
@@ -212,11 +231,11 @@ use the <code>bin/mvn</code> executable to run maven in docker:</p>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>
-            var base_url = "..",
+            var base_url = "../..",
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
-        <script src="../js/base.js" defer></script>
-        <script src="../search/main.js" defer></script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">

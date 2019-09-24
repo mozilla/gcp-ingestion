@@ -7,11 +7,11 @@
         
         <meta name="author" content="Mozilla Data Platform Team">
         
-        <link rel="shortcut icon" href="/img/favicon.ico">
-        <title>GCP Ingestion</title>
-        <link href="/css/bootstrap-custom.min.css" rel="stylesheet">
-        <link href="/css/font-awesome.min.css" rel="stylesheet">
-        <link href="/css/base.css" rel="stylesheet">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Decoder Job - GCP Ingestion</title>
+        <link href="../../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
         <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
         <!--[if lt IE 9]>
@@ -19,8 +19,8 @@
             <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
 
-        <script src="/js/jquery-1.10.2.min.js" defer></script>
-        <script src="/js/bootstrap-3.0.3.min.js" defer></script>
+        <script src="../../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../../js/bootstrap-3.0.3.min.js" defer></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
         <script>hljs.initHighlightingOnLoad();</script> 
     </head>
@@ -39,7 +39,7 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="/.">GCP Ingestion</a>
+                    <a class="navbar-brand" href="../..">GCP Ingestion</a>
                 </div>
 
                 <!-- Expanded navigation -->
@@ -47,33 +47,33 @@
                         <!-- Main navigation -->
                         <ul class="nav navbar-nav">
                             <li >
-                                <a href="/.">Home</a>
+                                <a href="../..">Home</a>
                             </li>
                             <li >
-                                <a href="/ingestion-edge/">ingestion-edge</a>
+                                <a href="../../ingestion-edge/">ingestion-edge</a>
                             </li>
-                            <li class="dropdown">
+                            <li class="dropdown active">
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
                                 <ul class="dropdown-menu">
                                     
 <li >
-    <a href="/ingestion-beam/">Overview</a>
+    <a href="../">Overview</a>
 </li>
                                     
 <li >
-    <a href="/ingestion-beam/sink-job/">Sink Job</a>
+    <a href="../sink-job/">Sink Job</a>
+</li>
+                                    
+<li class="active">
+    <a href="./">Decoder Job</a>
 </li>
                                     
 <li >
-    <a href="/ingestion-beam/decoder-job/">Decoder Job</a>
+    <a href="../republisher-job/">Republisher Job</a>
 </li>
                                     
 <li >
-    <a href="/ingestion-beam/republisher-job/">Republisher Job</a>
-</li>
-                                    
-<li >
-    <a href="/ingestion-beam/ingestion_testing_workflow/">Ingestion testing workflow</a>
+    <a href="../ingestion_testing_workflow/">Ingestion testing workflow</a>
 </li>
                                 </ul>
                             </li>
@@ -82,43 +82,43 @@
                                 <ul class="dropdown-menu">
                                     
 <li >
-    <a href="/architecture/overview/">Overview</a>
+    <a href="../../architecture/overview/">Overview</a>
 </li>
                                     
 <li >
-    <a href="/architecture/differences_from_aws/">Differences from AWS</a>
+    <a href="../../architecture/differences_from_aws/">Differences from AWS</a>
 </li>
                                     
 <li >
-    <a href="/architecture/pain_points/">Pain Points</a>
+    <a href="../../architecture/pain_points/">Pain Points</a>
 </li>
                                     
 <li >
-    <a href="/architecture/edge_migration_plan/">Edge Migration Plan</a>
+    <a href="../../architecture/edge_migration_plan/">Edge Migration Plan</a>
 </li>
                                     
 <li >
-    <a href="/architecture/reliability/">Reliability</a>
+    <a href="../../architecture/reliability/">Reliability</a>
 </li>
                                     
 <li >
-    <a href="/architecture/test_requirements/">Test requirements</a>
+    <a href="../../architecture/test_requirements/">Test requirements</a>
 </li>
                                     
 <li >
-    <a href="/architecture/landfill_service_specification/">Landfill Service Specification</a>
+    <a href="../../architecture/landfill_service_specification/">Landfill Service Specification</a>
 </li>
                                     
 <li >
-    <a href="/architecture/edge_service_specification/">Edge Server Specification</a>
+    <a href="../../architecture/edge_service_specification/">Edge Server Specification</a>
 </li>
                                     
 <li >
-    <a href="/architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
+    <a href="../../architecture/bigquery_sink_specification/">BigQuery Sink Specification</a>
 </li>
                                     
 <li >
-    <a href="/architecture/decoder_service_specification/">Decoder Service Specification</a>
+    <a href="../../architecture/decoder_service_specification/">Decoder Service Specification</a>
 </li>
                                 </ul>
                             </li>
@@ -130,8 +130,9 @@
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
+
                             <li>
-                                <a href="https://github.com/mozilla/gcp-ingestion/"><i class="fa fa-github"></i> GitHub</a>
+                                <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/decoder-job.md"><i class="fa fa-github"></i> Edit on GitHub</a>
                             </li>
                     </ul>
                 </div>
@@ -139,15 +140,85 @@
         </div>
 
         <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#decoder-job">Decoder Job</a></li>
+            <li><a href="#transforms">Transforms</a></li>
+            <li><a href="#executing">Executing</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
 
-    <div class="row-fluid">
-      <div id="main-content" class="span12">
-        <h1 id="404-page-not-found" style="text-align: center">404</h1>
-        <p style="text-align: center"><strong>Page not found</strong></p>
-      </div>
-    </div>
+<h1 id="decoder-job">Decoder Job</h1>
+<p>A job for normalizing ingestion messages. Defined in the <code>com.mozilla.telemetry.Decoder</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java">source</a>).</p>
+<h2 id="transforms">Transforms</h2>
+<p>These transforms are currently executed against each message in order.</p>
+<h3 id="parse-uri">Parse URI</h3>
+<p>Attempt to extract attributes from <code>uri</code>, on failure send messages to the
+configured error output.</p>
+<h3 id="decompress">Decompress</h3>
+<p>Attempt to decompress payload with gzip, on failure pass the message through
+unmodified.</p>
+<h3 id="geoip-lookup">GeoIP Lookup</h3>
+<ol>
+<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute<ul>
+<li>when the <code>x_pipeline_proxy</code> attribute is not present, use the
+ second-to-last value (since the last value is a forwarding rule IP
+ added by Google load balancer)</li>
+<li>when the <code>x_pipeline_proxy</code> attribute is present, use the third-to-last
+ value (since the tee introduces an additional proxy IP)</li>
+<li>fall back to the <code>remote_addr</code> attribute, then to an empty string</li>
+</ul>
+</li>
+<li>Execute the following steps until one fails and ignore the exception<ol>
+<li>Parse <code>ip</code> using <code>InetAddress.getByName</code></li>
+<li>Lookup <code>ip</code> in the configured <code>GeoIP2City.mmdb</code></li>
+<li>Extract <code>country.iso_code</code> as <code>geo_country</code></li>
+<li>Extract <code>city.name</code> as <code>geo_city</code> if <code>cities15000.txt</code> is not configured
+   or <code>city.geo_name_id</code> is in the configured <code>cities15000.txt</code></li>
+<li>Extract <code>subdivisions[0].iso_code</code> as <code>geo_subdivision1</code></li>
+<li>Extract <code>subdivisions[1].iso_code</code> as <code>geo_subdivision2</code></li>
+</ol>
+</li>
+<li>Remove the <code>x_forwarded_for</code> and <code>remote_addr</code> attributes</li>
+<li>Remove any <code>null</code> values added to attributes</li>
+</ol>
+<h3 id="parse-user-agent">Parse User Agent</h3>
+<p>Attempt to extract browser, browser version, and os from the <code>user_agent</code>
+attribute, drop any nulls, and remove <code>user_agent</code> from attributes.</p>
+<h2 id="executing">Executing</h2>
+<p>Decoder jobs are executed the <a href="../sink-job/#executing">same way as sink jobs</a>
+but with a few extra flags:</p>
+<ul>
+<li><code>-Dexec.mainClass=com.mozilla.telemetry.Decoder</code></li>
+<li><code>--geoCityDatabase=/path/to/GeoIP2-City.mmdb</code></li>
+<li><code>--geoCityFilter=/path/to/cities15000.txt</code> (optional)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;remote_addr&quot;:&quot;63.245.208.195&quot;}}' &gt; tmp/input.json
 
+# Download `cities15000.txt`, `GeoLite2-City.mmdb`, and `schemas.tar.gz`
+./bin/download-cities15000
+./bin/download-geolite2
+./bin/download-schemas
 
+# do geo lookup on messages to stdout
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args=&quot;\
+    --geoCityDatabase=GeoLite2-City.mmdb \
+    --geoCityFilter=cities15000.txt \
+    --schemasLocation=schemas.tar.gz \
+    --inputType=file \
+    --input=tmp/input.json \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+&quot;
+
+# check the DecoderOptions help page for options specific to Decoder
+./bin/mvn compile exec:java -Dexec.args=--help=DecoderOptions
+&quot;
+</code></pre></div>
         </div>
 
         <footer class="col-md-12">
@@ -155,11 +226,11 @@
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
         <script>
-            var base_url = "/",
+            var base_url = "../..",
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
-        <script src="/js/base.js" defer></script>
-        <script src="/search/main.js" defer></script>
+        <script src="../../js/base.js" defer></script>
+        <script src="../../search/main.js" defer></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
     <div class="modal-dialog">
