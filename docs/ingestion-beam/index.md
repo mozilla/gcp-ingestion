@@ -51,11 +51,14 @@ If you wish to just run a single test class or a single test case, try something
 
 ```bash
 # Run all tests in a single class
-./bin/mvn test -Dtest=com.mozilla.telemetry.util.SnakeCaseTest
+./bin/mvn test -Dtest=com.mozilla.telemetry.util.SnakeCaseTest -DfailIfNoTests=false
 
 # Run only a single test case
-./bin/mvn test -Dtest='com.mozilla.telemetry.util.SnakeCaseTest#testSnakeCaseFormat'
+./bin/mvn test -Dtest='com.mozilla.telemetry.util.SnakeCaseTest#testSnakeCaseFormat -DfailIfNoTests=false'
 ```
+
+The `-DfailIfNoTests=false` is necessary, otherwise it will fail because the `ingestion-core` module
+(on which we depend) will not match any of the above tests.
 
 To run the project in a sandbox against production data, see this document on
 [configuring an integration testing workflow](./ingestion_testing_workflow.md).
