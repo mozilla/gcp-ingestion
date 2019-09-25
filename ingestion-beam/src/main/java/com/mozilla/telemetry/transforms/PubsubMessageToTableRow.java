@@ -30,6 +30,7 @@ import com.mozilla.telemetry.util.SnakeCase;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -325,13 +326,19 @@ public class PubsubMessageToTableRow
     } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED) {
       List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
           .orElse(ImmutableList.of());
+      List<Object> repeatedAdditionalProperties = new ArrayList<>();
       records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
         Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
         transformForBqSchema(record, field.getSubFields(), props);
         if (props != null && !props.isEmpty()) {
-          additionalProperties.put(name, props);
+          repeatedAdditionalProperties.add(props);
+        } else {
+          repeatedAdditionalProperties.add(null);
         }
       });
+      if (!repeatedAdditionalProperties.stream().allMatch(p -> p == null)) {
+        additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
+      }
     } else {
       value.ifPresent(v -> parent.put(name, v));
     }

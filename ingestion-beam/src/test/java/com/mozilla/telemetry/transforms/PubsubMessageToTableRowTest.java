@@ -315,4 +315,23 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     assertEquals(expected, actual);
   }
 
+  @Test
+  public void testRepeatedRecordAdditionalProperties() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [\n" //
+        + "     {\"a\": 1},\n" //
+        + "     {\"a\": 2, \"b\": 22},\n" //
+        + "     {\"a\": 3}\n" //
+        + "]}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("a", LegacySQLTypeName.INTEGER)) //
+        .setMode(Mode.REPEATED).build());
+    String expected = "{\"payload\":[{\"a\":1},{\"a\":2},{\"a\":3}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"payload\":[null,{\"b\":22},null]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
 }
