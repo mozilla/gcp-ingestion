@@ -334,4 +334,44 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     String expectedAdditional = "{\"payload\":[null,{\"b\":22},null]}";
     assertEquals(expectedAdditional, Json.asString(additionalProperties));
   }
+
+  @Test
+  public void testTupleIntoStruct() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [\"foo\",26,true],\n" //
+        + "  \"additional\": [\"bar\",82,false]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("f0_", LegacySQLTypeName.STRING), //
+        Field.of("f1_", LegacySQLTypeName.INTEGER), //
+        Field.of("f2_", LegacySQLTypeName.BOOLEAN), //
+        Field.newBuilder("f3_", LegacySQLTypeName.STRING).setMode(Mode.NULLABLE).build()) //
+        .setMode(Mode.NULLABLE).build());
+    String expected = "{\"payload\":{\"f0_\":\"foo\",\"f1_\":26,\"f2_\":true}}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"additional\":[\"bar\",82,false]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
+  public void testTupleIntoStructAdditionalProperties() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [26,{\"a\":83,\"b\":44}]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("f0_", LegacySQLTypeName.INTEGER), //
+        Field.of("f1_", LegacySQLTypeName.RECORD, //
+            Field.of("a", LegacySQLTypeName.INTEGER))) //
+        .setMode(Mode.NULLABLE).build());
+    String expected = "{\"payload\":{\"f0_\":26,\"f1_\":{\"a\":83}}}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"payload\":[null,{\"b\":44}]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
 }

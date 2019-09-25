@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -313,6 +314,25 @@ public class PubsubMessageToTableRow
 
       // We need to recursively call transformForBqSchema on any normal record type.
     } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
+      // A list signifies a fixed length tuple which should be given anonymous field names.
+      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
+        Map<String, Object> m = new HashMap<>();
+        for (int i = 0; i < list.size(); i++) {
+          m.put(String.format("f%d_", i), list.get(i));
+        }
+        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+        transformForBqSchema(m, field.getSubFields(), props);
+        if (props != null && !props.isEmpty()) {
+          List<Object> tupleAdditionalProperties = new ArrayList<>(
+              Collections.nCopies(list.size(), null));
+          props.forEach((k, v) -> {
+            int index = Integer.parseInt(k.substring(1, k.length() - 1));
+            tupleAdditionalProperties.set(index, v);
+          });
+          additionalProperties.put(jsonFieldName, tupleAdditionalProperties);
+        }
+        parent.put(name, m);
+      });
       value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
         Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
         transformForBqSchema(m, field.getSubFields(), props);
