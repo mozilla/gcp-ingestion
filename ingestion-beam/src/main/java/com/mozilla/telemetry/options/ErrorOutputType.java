@@ -5,10 +5,12 @@
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.io.Write;
+import com.mozilla.telemetry.io.Write.BigQueryOutput;
 import com.mozilla.telemetry.io.Write.FileOutput;
 import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
@@ -82,6 +85,19 @@ public enum ErrorOutputType {
                   PubsubConstraints.MAX_ENCODABLE_MESSAGE_BYTES));
         }
       };
+    }
+  },
+
+  bigquery {
+
+    /** Return a PTransform that writes to a BigQuery table. */
+    public Write writeFailures(SinkOptions.Parsed options) {
+      return new BigQueryOutput(options.getErrorOutput(), options.getErrorBqWriteMethod(),
+          options.getParsedErrorBqTriggeringFrequency(), options.getInputType(),
+          options.getErrorBqNumFileShards(), StaticValueProvider.of(null),
+          StaticValueProvider.of(null), options.getSchemasLocation(),
+          options.getSchemaAliasesLocation(), StaticValueProvider.of(TableRowFormat.raw),
+          options.getErrorBqPartitioningField(), options.getErrorBqClusteringFields());
     }
   };
 
