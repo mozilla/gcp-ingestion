@@ -19,9 +19,9 @@ import com.google.common.collect.Maps;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.SnakeCase;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -39,13 +39,10 @@ import org.apache.commons.text.StringSubstitutor;
 public class KeyByBigQueryTableDestination
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, PubsubMessage>> {
 
-  public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
-      .setField(Attribute.SUBMISSION_TIMESTAMP);
-  public static final Clustering CLUSTERING = new Clustering()
-      .setFields(Arrays.asList(Attribute.SUBMISSION_TIMESTAMP));
-
-  public static KeyByBigQueryTableDestination of(ValueProvider<String> tableSpecTemplate) {
-    return new KeyByBigQueryTableDestination(tableSpecTemplate);
+  public static KeyByBigQueryTableDestination of(ValueProvider<String> tableSpecTemplate,
+      ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
+    return new KeyByBigQueryTableDestination(tableSpecTemplate, partitioningField,
+        clusteringFields);
   }
 
   public TableDestination getTableDestination(Map<String, String> attributes) {
@@ -79,7 +76,8 @@ public class KeyByBigQueryTableDestination
     }
 
     final TableDestination tableDestination = new TableDestination(tableSpec, null,
-        TIME_PARTITIONING, CLUSTERING);
+        new TimePartitioning().setField(partitioningField.get()),
+        new Clustering().setFields(clusteringFields.get()));
     final TableReference ref = BigQueryHelpers.parseTableSpec(tableSpec);
     final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
         .setDatasetId(ref.getDatasetId());
@@ -141,6 +139,8 @@ public class KeyByBigQueryTableDestination
   ////
 
   private final ValueProvider<String> tableSpecTemplate;
+  private final ValueProvider<String> partitioningField;
+  private final ValueProvider<List<String>> clusteringFields;
 
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
@@ -155,8 +155,11 @@ public class KeyByBigQueryTableDestination
       .setTotalTimeout(org.threeten.bp.Duration.ofSeconds(120)) // Defaults to 50 seconds
       .build();
 
-  private KeyByBigQueryTableDestination(ValueProvider<String> tableSpecTemplate) {
+  private KeyByBigQueryTableDestination(ValueProvider<String> tableSpecTemplate,
+      ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
     this.tableSpecTemplate = tableSpecTemplate;
+    this.partitioningField = partitioningField;
+    this.clusteringFields = clusteringFields;
   }
 
   private String getAndCacheNormalizedName(String name) {
