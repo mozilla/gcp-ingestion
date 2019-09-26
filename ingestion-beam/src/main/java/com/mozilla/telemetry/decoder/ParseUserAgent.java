@@ -5,6 +5,7 @@
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableMap;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -154,10 +155,6 @@ public class ParseUserAgent
   }
 
   private static final String LAST_SLASH = ".*/"; // Special case value for browser.separator
-  private static final String USER_AGENT = "user_agent";
-  private static final String USER_AGENT_BROWSER = "user_agent_browser";
-  private static final String USER_AGENT_OS = "user_agent_os";
-  private static final String USER_AGENT_VERSION = "user_agent_version";
 
   private static final Map<String, Os> OS_MAP = Os.asMap();
   private static final Map<String, Browser> BROWSER_MAP = Browser.asMap();
@@ -179,7 +176,7 @@ public class ParseUserAgent
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
 
       // Remove and record user agent if present
-      String agent = attributes.remove(USER_AGENT);
+      String agent = attributes.remove(Attribute.USER_AGENT);
 
       // Parse user agent
       if (agent != null) {
@@ -217,29 +214,29 @@ public class ParseUserAgent
 
         if (browser != null) {
           // put browser attribute
-          attributes.put(USER_AGENT_BROWSER, browser.value);
+          attributes.put(Attribute.USER_AGENT_BROWSER, browser.value);
           if (browser.version != null) {
             // put version attribute from browser
-            attributes.put(USER_AGENT_VERSION, browser.version);
+            attributes.put(Attribute.USER_AGENT_VERSION, browser.version);
           } else if (browser.separator == LAST_SLASH) {
             // search for this pattern as late as possible because it's slow
             search = LAST_SLASH_VERSION.matcher(agent);
             if (search.find()) {
               // put version attribute from search
-              attributes.put(USER_AGENT_VERSION, search.group("version"));
+              attributes.put(Attribute.USER_AGENT_VERSION, search.group("version"));
             }
           } else if (version != null) {
             // put version attribute
-            attributes.put(USER_AGENT_VERSION, version);
+            attributes.put(Attribute.USER_AGENT_VERSION, version);
           }
         }
 
         if (browser != null && browser.os != null) {
           // put os attribute from browser
-          attributes.put(USER_AGENT_OS, browser.os);
+          attributes.put(Attribute.USER_AGENT_OS, browser.os);
         } else if (os != null) {
           // put os attribute
-          attributes.put(USER_AGENT_OS, os.value);
+          attributes.put(Attribute.USER_AGENT_OS, os.value);
         }
       }
       // Return new message

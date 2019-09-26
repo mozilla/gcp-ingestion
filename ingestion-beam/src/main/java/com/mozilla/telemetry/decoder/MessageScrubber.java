@@ -4,12 +4,15 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Streams;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 public class MessageScrubber {
 
@@ -24,53 +27,41 @@ public class MessageScrubber {
    *
    * <p>This is usually due to some potential for PII having leaked into the payload.
    */
-  public static boolean shouldScrub(Map<String, String> attributes, JSONObject json) {
+  public static boolean shouldScrub(Map<String, String> attributes, ObjectNode json) {
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1567596
-    if ("telemetry".equals(attributes.get(ParseUri.DOCUMENT_NAMESPACE))
-        && "crash".equals(attributes.get(ParseUri.DOCUMENT_TYPE))
-        && "nightly".equals(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
-        && "20190719094503".equals(attributes.get(ParseUri.APP_BUILD_ID)) //
-        && Optional.of(json) //
-            .map(j -> j.optJSONObject("payload")) //
-            .map(j -> j.optJSONObject("metadata")) //
-            .map(j -> j.optString("MozCrashReason"))
-            .filter(s -> s.contains("do not use eval with system privileges")).isPresent()) {
+    if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && "nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
+        && "20190719094503".equals(attributes.get(Attribute.APP_BUILD_ID)) //
+        && Optional.of(json) // payload.metadata.MozCrashReason
+            .map(j -> j.path("payload").path("metadata").path("MozCrashReason").textValue())
+            .filter(s -> s.contains("do not use eval with system privileges")) //
+            .isPresent()) {
       countScrubbedBug1567596.inc();
       return true;
-    } else if ("telemetry".equals(attributes.get(ParseUri.DOCUMENT_NAMESPACE))
-        && "crash".equals(attributes.get(ParseUri.DOCUMENT_TYPE))
-        && (("nightly".equals(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
-            && (attributes.get(ParseUri.APP_VERSION).startsWith("68")
-                || attributes.get(ParseUri.APP_VERSION).startsWith("69")))
-            || ("beta".equals(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
-                && attributes.get(ParseUri.APP_VERSION).startsWith("68")))
+    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && (("nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
+            && (attributes.get(Attribute.APP_VERSION).startsWith("68")
+                || attributes.get(Attribute.APP_VERSION).startsWith("69")))
+            || ("beta".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
+                && attributes.get(Attribute.APP_VERSION).startsWith("68")))
         && Optional.of(json) // payload.metadata.RemoteType
-            .map(j -> j.optJSONObject("payload")) //
-            .map(j -> j.optJSONObject("metadata")) //
-            .map(j -> j.optString("RemoteType")) //
-            .filter(s -> s.startsWith("webIsolated=")).isPresent()) {
+            .map(j -> j.path("payload").path("metadata").path("RemoteType").textValue())
+            .filter(s -> s.startsWith("webIsolated=")) //
+            .isPresent()) {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1562011
       countScrubbedBug1562011.inc();
       return true;
-    } else if ("telemetry".equals(attributes.get(ParseUri.DOCUMENT_NAMESPACE))
-        && "bhr".equals(attributes.get(ParseUri.DOCUMENT_TYPE))
-        && (attributes.get(ParseUri.APP_VERSION).startsWith("68")
-            || attributes.get(ParseUri.APP_VERSION).startsWith("69"))
+    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "bhr".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && (attributes.get(Attribute.APP_VERSION).startsWith("68")
+            || attributes.get(Attribute.APP_VERSION).startsWith("69"))
         && Optional.of(json) // payload.hangs[].remoteType
-            .map(j -> j.optJSONObject("payload")) //
-            .map(j -> {
-              Boolean isPresent = false;
-              JSONArray arr = j.optJSONArray("hangs");
-              for (int i = 0; i < arr.length(); i++) {
-                String s = arr.optJSONObject(i).optString("remoteType");
-                if (s != null && s.startsWith("webIsolated=")) {
-                  isPresent = true;
-                  break;
-                }
-              }
-              return isPresent;
-            }) //
-            .filter(b -> b).isPresent()) {
+            .map(j -> j.path("payload").path("hangs").elements()) //
+            .map(Streams::stream).orElseGet(Stream::empty).map(j -> j.path("remoteType")) //
+            .filter(JsonNode::isTextual) //
+            .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       countScrubbedBug1562011.inc();
       return true;
     } else {

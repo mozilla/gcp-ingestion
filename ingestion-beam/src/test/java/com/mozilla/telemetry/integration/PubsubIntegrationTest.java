@@ -21,12 +21,14 @@ import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 import com.google.pubsub.v1.PushConfig;
 import com.mozilla.telemetry.matchers.Lines;
+import com.mozilla.telemetry.options.ErrorOutputType;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.options.OutputType;
 import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -64,7 +66,7 @@ import org.junit.Test;
  * significant configuration code, as seen in
  * <a href="https://github.com/googleapis/google-cloud-java/blob/d971c35c944a5a9e200ac4c94ca926024c71677c/TESTING.md#testing-code-that-uses-pubsub">TESTING.md</a>.
  */
-public class PubsubIntegrationTest {
+public class PubsubIntegrationTest extends TestWithDeterministicJson {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -143,6 +145,34 @@ public class PubsubIntegrationTest {
 
     System.err.println("Waiting for subscriber to receive messages published in the pipeline...");
     List<String> expectedLines = Lines.resources("testdata/pubsub-integration/truncated.ndjson");
+    List<String> received = receiveLines(expectedLines.size());
+    assertThat(received, matchesInAnyOrder(expectedLines));
+    result.cancel();
+  }
+
+  @Test(timeout = 30000)
+  public void canSendPubsubErrorOutput() throws Exception {
+    final List<String> inputLines = Lines
+        .resources("testdata/pubsub-integration/error-input.ndjson");
+
+    pipeline.getOptions().as(DirectOptions.class).setBlockOnRun(false);
+
+    SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
+    sinkOptions.setInput(pipeline.newProvider("test input"));
+    sinkOptions.setJobName("test job name");
+    sinkOptions.setErrorOutput(pipeline.newProvider(topicName.toString()));
+    // We would normally use pipeline.newProvider instead of StaticValueProvider in tests,
+    // but something about this configuration causes the pipeline to stall when CompressPayload
+    // accesses a method on the underlying enum value when defined via pipeline.newProvider.
+    sinkOptions.setErrorOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
+
+    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
+        .apply(ErrorOutputType.pubsub.write(sinkOptions));
+
+    final PipelineResult result = pipeline.run();
+
+    System.err.println("Waiting for subscriber to receive messages published in the pipeline...");
+    List<String> expectedLines = Lines.resources("testdata/pubsub-integration/error-output.ndjson");
     List<String> received = receiveLines(expectedLines.size());
     assertThat(received, matchesInAnyOrder(expectedLines));
     result.cancel();

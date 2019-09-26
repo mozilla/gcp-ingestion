@@ -1,4 +1,4 @@
-FROM python:3.7
+FROM python:3.7-stretch
 WORKDIR /app
 RUN apt-get update && apt-get install -y wrk
 COPY constraints.txt requirements.txt /app/

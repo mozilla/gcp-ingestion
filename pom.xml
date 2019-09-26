@@ -9,13 +9,71 @@
     <version>0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <modules>
-        <module>ingestion-beam</module>
-    </modules>
+    <profiles>
+        <profile>
+            <id>ingestion</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <modules>
+                <module>ingestion-core</module>
+                <module>ingestion-beam</module>
+                <module>ingestion-sink</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ingestion-beam</id>
+            <modules>
+                <module>ingestion-core</module>
+                <module>ingestion-beam</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>ingestion-sink</id>
+            <modules>
+                <module>ingestion-core</module>
+                <module>ingestion-sink</module>
+            </modules>
+        </profile>
+    </profiles>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- MAVEN_OPTS environment variable configuration is not picked up by jacoco, so we configure memory here -->
+        <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
+        <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+
+        <beam.version>2.15.0</beam.version>
+
+        <!-- Keep these dependency versions in sync with what is pulled in by beam;
+             check https://mvnrepository.com/artifact/org.apache.beam -->
+        <google-cloud.version>1.61.0</google-cloud.version>
+        <jackson.version>2.9.9</jackson.version>
+
+        <!-- Keep this dependency version in sync with what is pulled in by jackson;
+             check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.9 -->
+        <org-json.version>20171018</org-json.version>
+
+        <!-- Set empty default. -->
+        <exec.mainClass></exec.mainClass>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -24,8 +82,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <source>1.11</source>
-                    <target>1.11</target>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                    <showWarnings>true</showWarnings>
                     <compilerArgument>-Xlint:all</compilerArgument>
                     <compilerArgument>-Xdoclint:all</compilerArgument>
                     <compilerArgument>-Werror</compilerArgument>
@@ -69,7 +128,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                  <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                    <skip>true</skip>
+                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
                 </configuration>
             </plugin>
             <plugin>
@@ -122,13 +182,28 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>1.23.0</version>
+                <version>1.24.3</version>
                 <configuration>
                     <java>
+                        <excludes>
+                            <!-- exclude beam patch from formatting -->
+                            <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/WriteTables.java</exclude>
+                            <!-- exclude auto-generated protocol buffer file from formatting -->
+                            <exclude>src/main/java/com/mozilla/telemetry/heka/Heka.java</exclude>
+                        </excludes>
+                        <licenseHeader>
+                            <!-- end license header with extra trailing newline to separate from package statement -->
+                            <file>${maven.multiModuleProjectDirectory}/checkstyle/java.header</file>
+                        </licenseHeader>
                         <eclipse>
                             <file>https://raw.githubusercontent.com/apache/beam/v${beam.version}/sdks/java/build-tools/src/main/resources/beam/beam-codestyle.xml</file>
                             <version>4.7.1</version>
                         </eclipse>
+                        <importOrder>
+                            <!-- default import order -->
+                            <order>#</order>
+                        </importOrder>
+                        <removeUnusedImports/>
                     </java>
                 </configuration>
                 <executions>

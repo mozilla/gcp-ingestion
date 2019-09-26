@@ -73,4 +73,9 @@ public class TimeTest {
   public void testNegativeThrows() {
     Time.parseDuration("-PT6H");
   }
+
+  @Test
+  public void testEpochMicrosToTimestamp() {
+    assertEquals("2020-01-12T21:02:18.123456Z", Time.epochMicrosToTimestamp(1578862938123456L));
+  }
 }

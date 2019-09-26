@@ -12,12 +12,15 @@ import com.google.cloud.bigquery.Field.Mode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.junit.Test;
 
@@ -29,8 +32,9 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
           Field.of("value", LegacySQLTypeName.INTEGER)) //
       .setMode(Mode.REPEATED).build();
 
-  private static final PubsubMessageToTableRow TRANSFORM = PubsubMessageToTableRow
-      .of(StaticValueProvider.of("foo"), null, null, null);
+  private static final PubsubMessageToTableRow TRANSFORM = PubsubMessageToTableRow.of(
+      StaticValueProvider.of("foo"), null, null, null,
+      StaticValueProvider.of(TableRowFormat.payload));
 
   @Test
   public void testConvertFieldNameForBq() {
@@ -85,7 +89,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   public void testCoerceMapValueToString() throws Exception {
     String mainPing = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
         + "{\"timestamps.first_paint\":5405}}}}}";
-    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes());
+    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes(StandardCharsets.UTF_8));
     Map<String, Object> additionalProperties = new HashMap<>();
     parent.put("64bit", true);
     parent.put("hi-fi", true);
@@ -142,7 +146,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
             MAP_FIELD));
     String expected = "{\"client_id\":\"abc123\",\"outer\":{"
         + "\"map_field\":[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}}";
-    String expectedAdditional = "{\"other_strange_id_field\":3,\"outer\":{\"other_field\":3}}";
+    String expectedAdditional = "{\"otherStrangeIdField\":3,\"outer\":{\"otherField\":3}}";
     Map<String, Object> additionalProperties = new HashMap<>();
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
@@ -208,7 +212,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
         + "      }\n" //
         + "    }\n" //
         + "  }\n" //
-        + "}\n").getBytes());
+        + "}\n").getBytes(StandardCharsets.UTF_8));
     List<Field> bqFields = ImmutableList.of(Field
         .newBuilder("metrics", LegacySQLTypeName.RECORD, Field.of("key", LegacySQLTypeName.STRING),
             Field.of("value", LegacySQLTypeName.RECORD,
@@ -229,10 +233,84 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
 
-    String expectedAdditional = "{\"metrics\":{\"engine\":{\"keyed_histograms\":"
+    String expectedAdditional = "{\"metrics\":{\"engine\":{\"keyedHistograms\":"
         + "{\"TELEMETRY_TEST_KEYED_HISTOGRAM\":"
         + "{\"key1\":{\"values\":{\"1\":1}},\"key2\":{\"values\":{}}}}}}}";
     assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
+  public void testRawFormat() throws Exception {
+    PubsubMessage message = new PubsubMessage("test".getBytes(StandardCharsets.UTF_8),
+        // Use example values for all attributes present in the spec:
+        // https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#edge-server-pubsub-message-schema
+        ImmutableMap.<String, String>builder()
+            .put("submission_timestamp", "2018-03-12T21:02:18.123456Z")
+            .put("uri",
+                "/submit/telemetry/6c49ec73-4350-45a0-9c8a-6c8f5aded0cf/main/Firefox/58.0.2"
+                    + "/release/20180206200532")
+            .put("protocol", "HTTP/1.1").put("method", "POST").put("args", "v=4")
+            .put("remote_addr", "172.31.32.5").put("content_length", "4722")
+            .put("date", "Mon, 12 Mar 2018 21:02:18 GMT").put("dnt", "1")
+            .put("host", "incoming.telemetry.mozilla.org").put("user_agent", "pingsender/1.0")
+            .put("x_forwarded_for", "10.98.132.74, 103.3.237.12").put("x_pingsender_version", "1.0")
+            .put("x_debug_id", "my_debug_session_1")
+            .put("x_pipeline_proxy", "2018-03-12T21:02:18.123456Z").build());
+    String expected = Json.asString(ImmutableMap.<String, String>builder()
+        .putAll(message.getAttributeMap()).put("payload", "dGVzdA==").build());
+    String actual = Json.asString(PubsubMessageToTableRow.rawTableRow(message));
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testDecodedFormat() throws Exception {
+
+    PubsubMessage message = new PubsubMessage("test".getBytes(StandardCharsets.UTF_8),
+        // Ensure sure we preserve all attributes present in the spec:
+        // https://github.com/mozilla/gcp-ingestion/blob/master/docs/decoder.md#decoded-message-metadata-schema
+        ImmutableMap.<String, String>builder()
+            .put("client_id", "5c49ec73-4350-45a0-9c8a-6c8f5aded0da").put("document_version", "4")
+            .put("document_id", "6c49ec73-4350-45a0-9c8a-6c8f5aded0cf")
+            .put("document_namespace", "telemetry").put("document_type", "main")
+            .put("app_name", "Firefox").put("app_version", "58.0.2")
+            .put("app_update_channel", "release").put("app_build_id", "20180206200532")
+            .put("geo_country", "US").put("geo_subdivision1", "WA").put("geo_subdivision2", "Clark")
+            .put("geo_city", "Vancouver").put("submission_timestamp", "2018-03-12T21:02:18.123456Z")
+            .put("date", "Mon, 12 Mar 2018 21:02:18 GMT").put("dnt", "1")
+            .put("x_pingsender_version", "1.0").put("x_debug_id", "my_debug_session_1")
+            .put("user_agent_browser", "pingsender").put("user_agent_browser_version", "1.0")
+            .put("user_agent_os", "Windows").put("user_agent_os_version", "10")
+            .put("normalized_app_name", "Firefox").put("normalized_channel", "release")
+            .put("normalized_country_code", "US").put("normalized_os", "Windows")
+            .put("normalized_os_version", "10").put("sample_id", "42").build());
+    String expected = Json.asString(ImmutableMap.<String, Object>builder()
+        .put("client_id", "5c49ec73-4350-45a0-9c8a-6c8f5aded0da")
+        .put("document_id", "6c49ec73-4350-45a0-9c8a-6c8f5aded0cf")
+        .put("metadata", ImmutableMap.<String, Object>builder()
+            .put("document_namespace", "telemetry").put("document_version", "4")
+            .put("document_type", "main")
+            .put("geo",
+                ImmutableMap.<String, String>builder().put("country", "US")
+                    .put("subdivision1", "WA").put("subdivision2", "Clark").put("city", "Vancouver")
+                    .build())
+            .put("header",
+                ImmutableMap.<String, String>builder().put("date", "Mon, 12 Mar 2018 21:02:18 GMT")
+                    .put("dnt", "1").put("x_pingsender_version", "1.0")
+                    .put("x_debug_id", "my_debug_session_1").build())
+            .put("uri",
+                ImmutableMap.<String, String>builder().put("app_name", "Firefox")
+                    .put("app_version", "58.0.2").put("app_update_channel", "release")
+                    .put("app_build_id", "20180206200532").build())
+            .put("user_agent", ImmutableMap.<String, String>builder().put("browser", "pingsender")
+                .put("browser_version", "1.0").put("os", "Windows").put("os_version", "10").build())
+            .build())
+        .put("submission_timestamp", "2018-03-12T21:02:18.123456Z")
+        .put("normalized_app_name", "Firefox").put("normalized_channel", "release")
+        .put("normalized_country_code", "US").put("normalized_os", "Windows")
+        .put("normalized_os_version", "10").put("sample_id", 42).put("payload", "dGVzdA==")
+        .build());
+    String actual = Json.asString(PubsubMessageToTableRow.decodedTableRow(message));
+    assertEquals(expected, actual);
   }
 
 }

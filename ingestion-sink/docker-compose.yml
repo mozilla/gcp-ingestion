@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:
+  sink:
+    build: &build
+      context: ..
+      dockerfile: ingestion-sink/Dockerfile
+    image: &image "${DOCKER_IMAGE_PREFIX}ingestion-sink:${CIRCLE_TAG-latest}"
+    command:
+      mvn -P ingestion-sink clean test

@@ -4,11 +4,15 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.Json;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +22,6 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.json.JSONObject;
 
 public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
@@ -47,30 +50,21 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     }
   }
 
-  private static class NullUriException extends InvalidUriException {
-  }
-
   private ParseUri() {
   }
 
   private static final ParseUri INSTANCE = new ParseUri();
 
-  public static final String DOCUMENT_NAMESPACE = "document_namespace";
-  public static final String DOCUMENT_TYPE = "document_type";
-  public static final String DOCUMENT_VERSION = "document_version";
-  public static final String DOCUMENT_ID = "document_id";
-  public static final String APP_NAME = "app_name";
-  public static final String APP_VERSION = "app_version";
-  public static final String APP_UPDATE_CHANNEL = "app_update_channel";
-  public static final String APP_BUILD_ID = "app_build_id";
   public static final String TELEMETRY = "telemetry";
 
   public static final String TELEMETRY_URI_PREFIX = "/submit/telemetry/";
   public static final String[] TELEMETRY_URI_SUFFIX_ELEMENTS = new String[] { //
-      DOCUMENT_ID, DOCUMENT_TYPE, APP_NAME, APP_VERSION, APP_UPDATE_CHANNEL, APP_BUILD_ID };
+      Attribute.DOCUMENT_ID, Attribute.DOCUMENT_TYPE, Attribute.APP_NAME, Attribute.APP_VERSION,
+      Attribute.APP_UPDATE_CHANNEL, Attribute.APP_BUILD_ID };
   public static final String GENERIC_URI_PREFIX = "/submit/";
   public static final String[] GENERIC_URI_SUFFIX_ELEMENTS = new String[] { //
-      DOCUMENT_NAMESPACE, DOCUMENT_TYPE, DOCUMENT_VERSION, DOCUMENT_ID };
+      Attribute.DOCUMENT_NAMESPACE, Attribute.DOCUMENT_TYPE, Attribute.DOCUMENT_VERSION,
+      Attribute.DOCUMENT_ID };
 
   private static Map<String, String> zip(String[] keys, String[] values)
       throws InvalidUriException {
@@ -85,7 +79,8 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
   }
 
   @Override
-  protected PubsubMessage processElement(PubsubMessage message) throws InvalidUriException {
+  protected PubsubMessage processElement(PubsubMessage message)
+      throws InvalidUriException, IOException {
     message = PubsubConstraints.ensureNonNull(message);
     // Copy attributes
     final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
@@ -94,11 +89,14 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     // parse uri based on prefix
     final String uri = attributes.get("uri");
     if (uri == null) {
-      throw new NullUriException();
+      // We should only have a missing uri attribute if we're replaying messages from decoded
+      // payloads in which case they already have parsed URI attributes encoded in the payload
+      // and these will be recovered in ParsePayload.
+      return message;
     } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
       // We don't yet have access to the version field, so we delay populating the document_version
       // attribute until the ParsePayload step where we have map-like access to the JSON content.
-      attributes.put(DOCUMENT_NAMESPACE, TELEMETRY);
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, TELEMETRY);
       attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
           uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
     } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
@@ -156,7 +154,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     public static final Map<String, Integer> SUFFIX_LENGTH = ImmutableMap.of("6", 36, "7", 37, "8",
         39);
 
-    public static final List<BiConsumer<String, JSONObject>> HANDLERS = ImmutableList.of(//
+    public static final List<BiConsumer<String, ObjectNode>> HANDLERS = ImmutableList.of(//
         ignore(), // ping_version handled by parsePingVersion
         putString("build_channel"), putString("update_channel"), putString("locale"),
         // Build architecture code
@@ -164,9 +162,9 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         // OS architecture code
         putBoolPerCode(ImmutableMap.of("64bit_os", 1)),
         // Join three fields on "." to get os version
-        appendString(ParsePayload.OS_VERSION, "."), //
-        appendString(ParsePayload.OS_VERSION, "."), //
-        appendString(ParsePayload.OS_VERSION, "."), //
+        appendString(Attribute.OS_VERSION, "."), //
+        appendString(Attribute.OS_VERSION, "."), //
+        appendString(Attribute.OS_VERSION, "."), //
         putString("service_pack"), putBool("server_os"),
         // Exit code
         putBoolPerCodeSet(new ImmutableMap.Builder<String, Set<Integer>>()
@@ -195,41 +193,41 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         putString("download_ip"), putString("attribution"),
         putIntegerAsString("profile_cleanup_prompt"), putBool("profile_cleanup_requested"));
 
-    private static BiConsumer<String, JSONObject> ignore() {
+    private static BiConsumer<String, ObjectNode> ignore() {
       return (value, payload) -> {
       };
     }
 
-    private static BiConsumer<String, JSONObject> putString(String key) {
+    private static BiConsumer<String, ObjectNode> putString(String key) {
       return (value, payload) -> payload.put(key, value);
     }
 
-    private static BiConsumer<String, JSONObject> appendString(String key, String separator) {
+    private static BiConsumer<String, ObjectNode> appendString(String key, String separator) {
       return (value, payload) -> payload.put(key,
-          Optional.ofNullable(payload.optString(key, null)).map(v -> v + separator).orElse("")
+          Optional.ofNullable(payload.path(key).textValue()).map(v -> v + separator).orElse("")
               + value);
     }
 
-    private static BiConsumer<String, JSONObject> putBool(String key) {
+    private static BiConsumer<String, ObjectNode> putBool(String key) {
       return (value, payload) -> payload.put(key, value.equals("1"));
     }
 
-    private static BiConsumer<String, JSONObject> putInteger(String key) {
+    private static BiConsumer<String, ObjectNode> putInteger(String key) {
       return (value, payload) -> payload.put(key, Integer.parseInt(value));
     }
 
-    private static BiConsumer<String, JSONObject> putIntegerAsString(String key) {
+    private static BiConsumer<String, ObjectNode> putIntegerAsString(String key) {
       return (value, payload) -> payload.put(key, Integer.toString(Integer.parseInt(value)));
     }
 
-    private static BiConsumer<String, JSONObject> putBoolPerCode(Map<String, Integer> fieldCodes) {
+    private static BiConsumer<String, ObjectNode> putBoolPerCode(Map<String, Integer> fieldCodes) {
       return (string, payload) -> {
         Integer value = Integer.parseInt(string);
         fieldCodes.forEach((key, code) -> payload.put(key, value.equals(code)));
       };
     }
 
-    private static BiConsumer<String, JSONObject> putBoolPerCodeSet(
+    private static BiConsumer<String, ObjectNode> putBoolPerCodeSet(
         Map<String, Set<Integer>> fieldCodes) {
       return (string, payload) -> {
         Integer value = Integer.parseInt(string);
@@ -237,7 +235,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
       };
     }
 
-    private static JSONObject parsePingVersion(String[] elements) throws InvalidUriException {
+    private static ObjectNode parsePingVersion(String[] elements) throws InvalidUriException {
       // Parse ping version using a regex pattern
       String pingVersion = elements[0];
       Matcher matcher = PING_VERSION_PATTERN.matcher(pingVersion);
@@ -250,7 +248,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         throw new UnexpectedPathElementsException(unexpectedElements);
       }
       // Initialize new payload with ping version and funnelcake ID
-      JSONObject payload = new JSONObject();
+      ObjectNode payload = Json.createObjectNode();
       payload.put("installer_type", "stub");
       payload.put("installer_version", ""); // it's required but stub pings don't have it
       payload.put("ping_version", pingVersion);
@@ -259,14 +257,14 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     }
 
     private static byte[] parse(String uri, Map<String, String> attributes)
-        throws InvalidUriException {
+        throws InvalidUriException, IOException {
       attributes.put("document_namespace", "firefox-installer");
       attributes.put("document_type", "install");
       attributes.put("document_version", "1");
       // Split uri into path elements
       String[] elements = uri.substring(PREFIX.length()).split("/");
       // Initialize payload based on ping version
-      JSONObject payload = parsePingVersion(elements);
+      ObjectNode payload = parsePingVersion(elements);
       // Update payload with values from path elements
       for (int i = 0; i < elements.length; i++) {
         try {
@@ -278,7 +276,7 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
         }
       }
       // Serialize new payload as json
-      return payload.toString().getBytes();
+      return Json.asBytes(payload);
     }
   }
 }

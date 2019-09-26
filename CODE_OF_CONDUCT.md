@@ -1,12 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-
-- [Community Participation Guidelines](#community-participation-guidelines)
-  - [How to Report](#how-to-report)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # Community Participation Guidelines
 
 This repository is governed by Mozilla's code of conduct and etiquette guidelines. 
