@@ -154,6 +154,36 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputTableRowFormat(ValueProvider<TableRowFormat> value);
 
+  @Description("Name of time partitioning field of error destination tables;"
+      + " defaults to submission_timestamp")
+  ValueProvider<String> getErrorBqPartitioningField();
+
+  void setErrorBqPartitioningField(ValueProvider<String> value);
+
+  @Description("Comma-separated list of clustering fields for error destination table;"
+      + " defaults to submission_timestamp")
+  ValueProvider<List<String>> getErrorBqClusteringFields();
+
+  void setErrorBqClusteringFields(ValueProvider<List<String>> value);
+
+  @Description("Method of writing to BigQuery for error output")
+  @Default.Enum("file_loads")
+  BigQueryWriteMethod getErrorBqWriteMethod();
+
+  void setErrorBqWriteMethod(BigQueryWriteMethod value);
+
+  @Description("How often to load a batch of files to BigQuery when writing errors via file_loads")
+  @Default.String("5m")
+  String getErrorBqTriggeringFrequency();
+
+  void setErrorBqTriggeringFrequency(String value);
+
+  @Description("Number of file shards to stage for BigQuery when writing errors via file_loads")
+  @Default.Integer(100)
+  int getErrorBqNumFileShards();
+
+  void setErrorBqNumFileShards(int value);
+
   @Description("Compression format for --outputType=file")
   @Default.Enum("GZIP")
   Compression getOutputFileCompression();
@@ -272,6 +302,10 @@ public interface SinkOptions extends PipelineOptions {
 
     void setParsedBqTriggeringFrequency(Duration value);
 
+    @JsonIgnore
+    Duration getParsedErrorBqTriggeringFrequency();
+
+    void setParsedErrorBqTriggeringFrequency(Duration value);
   }
 
   /**
@@ -291,6 +325,8 @@ public interface SinkOptions extends PipelineOptions {
     validateSinkOptions(options);
     options.setParsedWindowDuration(Time.parseDuration(options.getWindowDuration()));
     options.setParsedBqTriggeringFrequency(Time.parseDuration(options.getBqTriggeringFrequency()));
+    options.setParsedErrorBqTriggeringFrequency(
+        Time.parseDuration(options.getErrorBqTriggeringFrequency()));
     options.setDecompressInputPayloads(
         providerWithDefault(options.getDecompressInputPayloads(), true));
     options.setOutputTableRowFormat(
