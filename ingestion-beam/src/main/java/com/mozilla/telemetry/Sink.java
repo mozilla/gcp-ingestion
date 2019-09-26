@@ -7,9 +7,11 @@ package com.mozilla.telemetry;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.transforms.DeduplicateByDocumentId;
 import com.mozilla.telemetry.transforms.PublishBundleMetrics;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -49,12 +51,15 @@ public class Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    // Trailing comments are used below to prevent rewrapping by google-java-format.
-    pipeline //
-        .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
-        .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(PublishBundleMetrics.of()) //
-        .apply(options.getOutputType().write(options)).errorsTo(errorCollections);
+    // We wrap pipeline in Optional for more convenience in chaining together transforms.
+    Optional.of(pipeline) //
+        .map(p -> p //
+            .apply(options.getInputType().read(options)).errorsTo(errorCollections)
+            .apply(DecompressPayload.enabled(options.getDecompressInputPayloads()))
+            .apply(PublishBundleMetrics.of())) //
+        .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
+        .map(p -> p //
+            .apply(options.getOutputType().write(options)).errorsTo(errorCollections));
 
     PCollectionList.of(errorCollections) //
         .apply("FlattenErrorCollections", Flatten.pCollections()) //

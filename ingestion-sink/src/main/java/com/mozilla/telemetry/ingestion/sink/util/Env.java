@@ -1,0 +1,62 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package com.mozilla.telemetry.ingestion.sink.util;
+
+import com.mozilla.telemetry.ingestion.core.util.Time;
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+public class Env {
+
+  private final Map<String, String> env;
+  private final Set<String> unused;
+
+  public Env(List<String> include) {
+    env = include.stream().filter(key -> System.getenv(key) != null)
+        .collect(Collectors.toMap(key -> key, System::getenv));
+    unused = new HashSet<>(env.keySet());
+  }
+
+  public void requireAllVarsUsed() {
+    if (!unused.isEmpty()) {
+      throw new IllegalArgumentException("Env vars set but not used: " + unused.toString());
+    }
+  }
+
+  public boolean containsKey(String key) {
+    return env.containsKey(key);
+  }
+
+  private Optional<String> optString(String key) {
+    unused.remove(key);
+    return Optional.ofNullable(env.get(key));
+  }
+
+  public String getString(String key) {
+    return optString(key)
+        .orElseThrow(() -> new IllegalArgumentException("Missing required env var: " + key));
+  }
+
+  public String getString(String key, String defaultValue) {
+    return optString(key).orElse(defaultValue);
+  }
+
+  public Integer getInt(String key, Integer defaultValue) {
+    return optString(key).map(Integer::new).orElse(defaultValue);
+  }
+
+  public Long getLong(String key, Long defaultValue) {
+    return optString(key).map(Long::new).orElse(defaultValue);
+  }
+
+  public Duration getDuration(String key, String defaultValue) {
+    return Time.parseJavaDuration(getString(key, defaultValue));
+  }
+}

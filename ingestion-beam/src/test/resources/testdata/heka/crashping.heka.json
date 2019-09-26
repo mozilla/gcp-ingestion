@@ -1,0 +1,1770 @@
+{
+    "application": {
+        "architecture": "x86",
+        "buildId": "20190708182549",
+        "channel": "release",
+        "displayVersion": "69.0b3",
+        "name": "Firefox",
+        "platformVersion": "69.0",
+        "vendor": "Mozilla",
+        "version": "69.0",
+        "xpcomAbi": "x86-msvc"
+    },
+    "clientId": "0e8e41d2-d46f-4818-b071-c6605257e6aa",
+    "creationDate": "2019-08-31T18:23:42.784Z",
+    "environment": {
+        "addons": {
+            "activeAddons": {
+                "@autopagerizetweaked": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "A version of Autopagerize with more settings. Now web extensions compatible.",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 18095,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "AutoPagerize Advanced",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 18095,
+                    "userDisabled": false,
+                    "version": "0.0.2.1"
+                },
+                "enhancerforyoutube@maximerf.addons.mozilla.org": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Tons of features to improve your user experience on YouTube\u2122.",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17956,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Enhancer for YouTube\u2122",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 18138,
+                    "userDisabled": false,
+                    "version": "2.0.98.1"
+                },
+                "firefox@tampermonkey.net": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "The world's most popular userscript manager, with over 10 million users",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17930,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Tampermonkey",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 18031,
+                    "userDisabled": false,
+                    "version": "4.9.5941"
+                },
+                "formautofill@mozilla.org": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": null,
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17924,
+                    "isSystem": true,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Form Autofill",
+                    "scope": 1,
+                    "type": "extension",
+                    "updateDay": 18085,
+                    "userDisabled": false,
+                    "version": "1.0"
+                },
+                "fxmonitor@mozilla.org": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": null,
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17973,
+                    "isSystem": true,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Firefox Monitor",
+                    "scope": 1,
+                    "type": "extension",
+                    "updateDay": 18085,
+                    "userDisabled": false,
+                    "version": "3.0"
+                },
+                "mozilla_cc3@internetdownloadmanager.com": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Download files with Internet Download Manager",
+                    "foreignInstall": true,
+                    "hasBinaryComponents": false,
+                    "installDay": 17822,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "IDM Integration Module",
+                    "scope": 2,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 17822,
+                    "userDisabled": false,
+                    "version": "6.31.9"
+                },
+                "quickdial@matmoul.com": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Quick Dial, a speed dial page inspired from fast dial. Full Open Source, No Web Service, No Cloud Ac",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17930,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Quick Dial",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 17973,
+                    "userDisabled": false,
+                    "version": "0.1.19"
+                },
+                "screenshots@mozilla.org": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Take clips and screenshots from the Web and save them temporarily or permanently.",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17924,
+                    "isSystem": true,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Firefox Screenshots",
+                    "scope": 1,
+                    "type": "extension",
+                    "updateDay": 18085,
+                    "userDisabled": false,
+                    "version": "39.0.0"
+                },
+                "support@lastpass.com": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Last Password you will ever need",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17930,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "LastPass: Free Password Manager",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 18123,
+                    "userDisabled": false,
+                    "version": "4.31.2.3"
+                },
+                "webcompat-reporter@mozilla.org": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Report site compatibility issues on webcompat.com",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17924,
+                    "isSystem": true,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "WebCompat Reporter",
+                    "scope": 1,
+                    "type": "extension",
+                    "updateDay": 18085,
+                    "userDisabled": false,
+                    "version": "1.1.0"
+                },
+                "webcompat@mozilla.org": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Urgent post-release fixes for web compatibility.",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17924,
+                    "isSystem": true,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Web Compat",
+                    "scope": 1,
+                    "type": "extension",
+                    "updateDay": 18085,
+                    "userDisabled": false,
+                    "version": "4.3.2"
+                },
+                "{287dcf75-bec6-4eec-b4f6-71948a2eea29}": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Re-implements the Google Images' \"View Image\" and \"Search by Image\" buttons.",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 18115,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "View Image",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 18115,
+                    "userDisabled": false,
+                    "version": "3.0.3"
+                },
+                "{6AC85730-7D0F-4de0-B3FA-21142DD85326}": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Advanced Eyedropper, Color Picker, Gradient Generator and other colorful goodies",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17930,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "ColorZilla",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 17930,
+                    "userDisabled": false,
+                    "version": "3.3"
+                },
+                "{91495d5b-104c-42d4-99f3-c787ada70b74}": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Memutar openload, streamango, dan video lainnya tanpa ads.",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17948,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "VidPlay",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 17948,
+                    "userDisabled": false,
+                    "version": "1.3.6"
+                },
+                "{9AA46F4F-4DC7-4c06-97AF-5035170634FE}": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Translator, Dictionary, Voice",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17956,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "ImTranslator: Translator, Dictionary, TTS",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 18135,
+                    "userDisabled": false,
+                    "version": "15.34"
+                },
+                "{b14f4076-e80d-4baa-8c7d-8c65dfd2519c}": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "As though the mouse wheel rotate by the right click on the images, you can do the images extenting /",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17930,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Zoom Image",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 17930,
+                    "userDisabled": false,
+                    "version": "2.6.1"
+                },
+                "{d10d0bf8-f5b5-c8b4-a8b2-2b9879e08c5d}": {
+                    "appDisabled": false,
+                    "blocklisted": false,
+                    "description": "Download Adblock Plus, one of the world's most popular ad blockers.",
+                    "foreignInstall": false,
+                    "hasBinaryComponents": false,
+                    "installDay": 17930,
+                    "isSystem": false,
+                    "isWebExtension": true,
+                    "multiprocessCompatible": true,
+                    "name": "Adblock Plus - free ad blocker",
+                    "scope": 1,
+                    "signedState": 2,
+                    "type": "extension",
+                    "updateDay": 18130,
+                    "userDisabled": false,
+                    "version": "3.6.3"
+                }
+            },
+            "activeGMPlugins": {
+                "gmp-gmpopenh264": {
+                    "applyBackgroundUpdates": 1,
+                    "userDisabled": false,
+                    "version": "1.8.1"
+                },
+                "gmp-widevinecdm": {
+                    "applyBackgroundUpdates": 1,
+                    "userDisabled": false,
+                    "version": "4.10.1440.19"
+                }
+            },
+            "activePlugins": [
+                {
+                    "blocklisted": false,
+                    "clicktoplay": true,
+                    "description": "Shockwave Flash 32.0 r0",
+                    "disabled": false,
+                    "mimeTypes": [
+                        "application/x-shockwave-flash",
+                        "application/futuresplash"
+                    ],
+                    "name": "Shockwave Flash",
+                    "updateDay": 18115,
+                    "version": "32.0.0.223"
+                }
+            ],
+            "theme": {
+                "appDisabled": false,
+                "blocklisted": false,
+                "description": "A theme with a dark color scheme.",
+                "foreignInstall": false,
+                "hasBinaryComponents": false,
+                "id": "firefox-compact-dark@mozilla.org",
+                "installDay": 18048,
+                "name": "Dark",
+                "scope": 4,
+                "updateDay": 18032,
+                "userDisabled": false,
+                "version": "1.0"
+            }
+        },
+        "build": {
+            "applicationId": "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}",
+            "applicationName": "Firefox",
+            "architecture": "x86",
+            "buildId": "20190708182549",
+            "displayVersion": "69.0b3",
+            "platformVersion": "69.0",
+            "updaterAvailable": true,
+            "vendor": "Mozilla",
+            "version": "69.0",
+            "xpcomAbi": "x86-msvc"
+        },
+        "experiments": {
+            "rollout-monitor-v2-1505837": {
+                "branch": "active",
+                "type": "normandy-prefrollout"
+            }
+        },
+        "partner": {
+            "distributionId": null,
+            "distributionVersion": null,
+            "distributor": null,
+            "distributorChannel": null,
+            "partnerId": null,
+            "partnerNames": []
+        },
+        "profile": {
+            "creationDate": 17930,
+            "firstUseDate": 17930,
+            "resetDate": 17930
+        },
+        "settings": {
+            "addonCompatibilityCheckEnabled": true,
+            "blocklistEnabled": true,
+            "defaultSearchEngine": "google-b-d",
+            "defaultSearchEngineData": {
+                "loadPath": "[other]addEngineWithDetails:google@search.mozilla.org",
+                "name": "Google",
+                "origin": "default",
+                "submissionURL": "https://www.google.com/search?client=firefox-b-d&q="
+            },
+            "e10sEnabled": true,
+            "e10sMultiProcesses": 8,
+            "intl": {
+                "acceptLanguages": [
+                    "en-US",
+                    "en"
+                ],
+                "appLocales": [
+                    "en-US"
+                ],
+                "availableLocales": [
+                    "en-US"
+                ],
+                "regionalPrefsLocales": [
+                    "id-ID"
+                ],
+                "requestedLocales": [
+                    "en-US"
+                ],
+                "systemLocales": [
+                    "en-US"
+                ]
+            },
+            "isDefaultBrowser": true,
+            "launcherProcessState": 1,
+            "locale": "en-US",
+            "sandbox": {
+                "effectiveContentProcessLevel": 5
+            },
+            "telemetryEnabled": true,
+            "update": {
+                "autoDownload": true,
+                "channel": "release",
+                "enabled": true
+            },
+            "userPrefs": {
+                "browser.cache.disk.capacity": 1048576,
+                "browser.search.region": "ID",
+                "browser.search.widget.inNavBar": true,
+                "browser.startup.page": 0,
+                "general.config.filename": "<set>"
+            }
+        },
+        "system": {
+            "appleModelId": null,
+            "cpu": {
+                "cores": 4,
+                "count": 4,
+                "extensions": [
+                    "hasMMX",
+                    "hasSSE",
+                    "hasSSE2",
+                    "hasSSE3",
+                    "hasSSSE3",
+                    "hasSSE4_1",
+                    "hasSSE4_2",
+                    "hasAVX",
+                    "hasAVX2",
+                    "hasAES"
+                ],
+                "family": 6,
+                "l2cacheKB": 256,
+                "l3cacheKB": 6144,
+                "model": 60,
+                "speedMHz": 3193,
+                "stepping": 3,
+                "vendor": "GenuineIntel"
+            },
+            "gfx": {
+                "ContentBackend": "Skia",
+                "D2DEnabled": false,
+                "DWriteEnabled": true,
+                "Headless": false,
+                "adapters": [
+                    {
+                        "GPUActive": true,
+                        "RAM": 2048,
+                        "description": "NVIDIA GeForce GT 630",
+                        "deviceID": "0x1284",
+                        "driver": "C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumdx.dll,C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumdx.dll,C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumdx.dll,C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumdx.dll C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumd.dll,C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumd.dll,C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumd.dll,C:\\WINDOWS\\System32\\DriverStore\\FileRepository\\nv_ref_pubwu.inf_amd64_2e7fa54192fe16d0\\nvldumd.dll",
+                        "driverDate": "10-27-2017",
+                        "driverVendor": null,
+                        "driverVersion": "23.21.13.8813",
+                        "subsysID": "00000000",
+                        "vendorID": "0x10de"
+                    },
+                    {
+                        "GPUActive": false,
+                        "RAM": null,
+                        "description": "Intel(R) HD Graphics 4600",
+                        "deviceID": "0x0412",
+                        "driver": "igdumdim64 igd10iumd64 igd10iumd64 igd12umd64 igdumdim32 igd10iumd32 igd10iumd32 igd12umd32",
+                        "driverDate": "9-29-2016",
+                        "driverVendor": null,
+                        "driverVersion": "20.19.15.4531",
+                        "subsysID": "0000000c",
+                        "vendorID": "0x8086"
+                    }
+                ],
+                "features": {
+                    "advancedLayers": {
+                        "status": "available"
+                    },
+                    "compositor": "webrender",
+                    "d2d": {
+                        "status": "available",
+                        "version": "1.1"
+                    },
+                    "d3d11": {
+                        "blacklisted": false,
+                        "status": "available",
+                        "textureSharing": true,
+                        "version": 45056,
+                        "warp": false
+                    },
+                    "gpuProcess": {
+                        "status": "available"
+                    },
+                    "webrender": {
+                        "status": "available"
+                    },
+                    "wrQualified": {
+                        "status": "available"
+                    }
+                },
+                "monitors": [
+                    {
+                        "pseudoDisplay": false,
+                        "refreshRate": 60,
+                        "screenHeight": 1080,
+                        "screenWidth": 1920
+                    }
+                ]
+            },
+            "hdd": {
+                "binary": {
+                    "model": "ADATA SU650",
+                    "revision": "P180509a",
+                    "type": "SSD"
+                },
+                "profile": {
+                    "model": "ADATA SU650",
+                    "revision": "P180509a",
+                    "type": "SSD"
+                },
+                "system": {
+                    "model": "ADATA SU650",
+                    "revision": "P180509a",
+                    "type": "SSD"
+                }
+            },
+            "isWow64": true,
+            "isWowARM64": false,
+            "memoryMB": 8115,
+            "os": {
+                "installYear": 2019,
+                "locale": "en-US",
+                "name": "Windows_NT",
+                "servicePackMajor": 0,
+                "servicePackMinor": 0,
+                "version": "10.0",
+                "windowsBuildNumber": 18362,
+                "windowsUBR": 295
+            },
+            "sec": {
+                "antispyware": null,
+                "antivirus": [
+                    "Kaspersky Internet Security"
+                ],
+                "firewall": [
+                    "Kaspersky Internet Security"
+                ]
+            },
+            "virtualMaxMB": 4096
+        }
+    },
+    "id": "a7886ec6-e7ae-488d-84b5-0f1565c5093c",
+    "meta": {
+        "Date": "Sat, 31 Aug 2019 18:23:42 GMT",
+        "Host": "incoming.telemetry.mozilla.org",
+        "Hostname": "ip-172-31-37-65",
+        "Timestamp": 1567275823471129088,
+        "Type": "telemetry",
+        "appBuildId": "20190708182549",
+        "appName": "Firefox",
+        "appUpdateChannel": "release",
+        "appVendor": "Mozilla",
+        "appVersion": "69.0",
+        "clientId": "0e8e41d2-d46f-4818-b071-c6605257e6aa",
+        "creationTimestamp": 1.567275822784e+18,
+        "docType": "crash",
+        "documentId": "a7886ec6-e7ae-488d-84b5-0f1565c5093c",
+        "geoCity": "Padang",
+        "geoCountry": "ID",
+        "geoSubdivision1": "SB",
+        "normalizedChannel": "release",
+        "normalizedOSVersion": "10.0",
+        "os": "Windows_NT",
+        "sampleId": 22.0,
+        "sourceName": "telemetry",
+        "sourceVersion": 4.0,
+        "submissionDate": "20190831",
+        "telemetryEnabled": true
+    },
+    "payload": {
+        "crashDate": "2019-08-31",
+        "crashId": "3dc612f7-9e9f-4c8c-847c-4d7bef81b00e",
+        "crashTime": "2019-08-31T18:00:00.000Z",
+        "hasCrashEnvironment": true,
+        "metadata": {
+            "AvailablePageFile": "2251292672",
+            "AvailablePhysicalMemory": "1420423168",
+            "AvailableVirtualMemory": "75309056",
+            "BuildID": "20190708182549",
+            "ContainsMemoryReport": "1",
+            "CrashTime": "1567275819",
+            "LowCommitSpaceEvents": "59",
+            "MemoryErrorCorrection": "None",
+            "MozCrashReason": "MOZ_CRASH()",
+            "OOMAllocationSize": "1048576",
+            "ProductID": "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}",
+            "ProductName": "Firefox",
+            "ReleaseChannel": "release",
+            "RemoteType": "web",
+            "SystemMemoryUsePercentage": "83",
+            "TotalPageFile": "1223557120",
+            "TotalPhysicalMemory": "8509292544",
+            "TotalVirtualMemory": "4294836224",
+            "UptimeTS": "229287.923169999"
+        },
+        "minidumpSha256Hash": "6f2f16350218af8435b46919b7f5c859516e83dd9636f6fcdf7976542b983f2d",
+        "processType": "content",
+        "sessionId": "085704cb-1e53-4153-8a65-f7f3bf5038a5",
+        "stackTraces": {
+            "crash_info": {
+                "address": "0x5e8bd7ef",
+                "crashing_thread": 0,
+                "type": "EXCEPTION_BREAKPOINT"
+            },
+            "main_module": 0,
+            "modules": [
+                {
+                    "base_addr": "0xc60000",
+                    "code_id": "5D23A02180000",
+                    "debug_file": "firefox.pdb",
+                    "debug_id": "3E27FD8B6F639E5E4C4C44205044422E1",
+                    "end_addr": "0xce0000",
+                    "filename": "firefox.exe",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x18fb0000",
+                    "code_id": "22939E162a000",
+                    "debug_file": "rtworkq.pdb",
+                    "debug_id": "70498A2209115CA5C1DA8375AAB073EC1",
+                    "end_addr": "0x18fda000",
+                    "filename": "RTWorkQ.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x19160000",
+                    "code_id": "269B79E2f000",
+                    "debug_file": "ResourcePolicyClient.pdb",
+                    "debug_id": "4CA8E90CBE31B513713F00E7CD58C41C1",
+                    "end_addr": "0x1916f000",
+                    "filename": "resourcepolicyclient.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x22f20000",
+                    "code_id": "DCB855801c000",
+                    "debug_file": "dxva2.pdb",
+                    "debug_id": "5E97C38988663BBFD13F14443E105E801",
+                    "end_addr": "0x22f3c000",
+                    "filename": "dxva2.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x2fcc0000",
+                    "code_id": "5D23A05137000",
+                    "debug_file": "mozavutil.pdb",
+                    "debug_id": "D91911A936D183C34C4C44205044422E1",
+                    "end_addr": "0x2fcf7000",
+                    "filename": "mozavutil.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x38830000",
+                    "code_id": "1E4CDDDA84000",
+                    "debug_file": "mf.pdb",
+                    "debug_id": "A95B49BB06D726CE9CDB9A4C87A531D61",
+                    "end_addr": "0x388b4000",
+                    "filename": "mf.dll",
+                    "version": "10.0.18362.145"
+                },
+                {
+                    "base_addr": "0x52e30000",
+                    "code_id": "2B3B33CB90000",
+                    "debug_file": "EVR.pdb",
+                    "debug_id": "39C20E142FDE5992230A95821D397D3E1",
+                    "end_addr": "0x52ec0000",
+                    "filename": "evr.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x54700000",
+                    "code_id": "0D6344226f000",
+                    "debug_file": "MSAudDecMFT.pdb",
+                    "debug_id": "4826ADE5241B8C5259CF0D10F84456781",
+                    "end_addr": "0x5476f000",
+                    "filename": "MSAudDecMFT.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x57200000",
+                    "code_id": "51029DD717d000",
+                    "debug_file": "MFPLAT.pdb",
+                    "debug_id": "029405F06860F5478C90105F4F1E669D1",
+                    "end_addr": "0x5737d000",
+                    "filename": "mfplat.dll",
+                    "version": "10.0.18362.207"
+                },
+                {
+                    "base_addr": "0x59730000",
+                    "code_id": "6EDF5DF94ec000",
+                    "debug_file": "d2d1.pdb",
+                    "debug_id": "A8642ED5BC144612924D34450133B55C1",
+                    "end_addr": "0x59c1c000",
+                    "filename": "d2d1.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x59e50000",
+                    "code_id": "3ACDDCBE20000",
+                    "debug_file": "cabinet.pdb",
+                    "debug_id": "607586911888D827A64D39DE2D6E647C1",
+                    "end_addr": "0x59e70000",
+                    "filename": "cabinet.dll",
+                    "version": "5.0.1.1"
+                },
+                {
+                    "base_addr": "0x5b910000",
+                    "code_id": "88B4880018d000",
+                    "debug_file": "d3d9.pdb",
+                    "debug_id": "2789F4DB1404486DFDA9E83D819D1CD41",
+                    "end_addr": "0x5ba9d000",
+                    "filename": "d3d9.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x5baa0000",
+                    "code_id": "5D23A1543f3000",
+                    "debug_file": "libGLESv2.pdb",
+                    "debug_id": "53F404CCF7FE550F4C4C44205044422E1",
+                    "end_addr": "0x5be93000",
+                    "filename": "libGLESv2.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x5bea0000",
+                    "code_id": "73B006EB390000",
+                    "debug_file": "D3DCompiler_47.pdb",
+                    "debug_id": "FB60D1A5A41CEFD28A65F48BC0CF009E1",
+                    "end_addr": "0x5c230000",
+                    "filename": "d3dcompiler_47.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x5c230000",
+                    "code_id": "59F357151792000",
+                    "debug_file": "nvwgf2um_cfg.pdb",
+                    "debug_id": "BB6DD4492AF64D8AB2DB7709FB672FC51",
+                    "end_addr": "0x5d9c2000",
+                    "filename": "nvwgf2um_cfg.dll",
+                    "version": "23.21.13.8813"
+                },
+                {
+                    "base_addr": "0x5d9d0000",
+                    "code_id": "59F35113c4000",
+                    "debug_file": "nvldumd.pdb",
+                    "debug_id": "0F09050706DF4ADC9712929FD27601991",
+                    "end_addr": "0x5da94000",
+                    "filename": "nvldumd.dll",
+                    "version": "23.21.13.8813"
+                },
+                {
+                    "base_addr": "0x5daa0000",
+                    "code_id": "0D6EEA3Cb3000",
+                    "debug_file": "InputHost.pdb",
+                    "debug_id": "A375A8E524B171ACA7908973AF3E32A51",
+                    "end_addr": "0x5db53000",
+                    "filename": "InputHost.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x5db60000",
+                    "code_id": "D4DA12E6100000",
+                    "debug_file": "Windows.UI.pdb",
+                    "debug_id": "95201E2E44FB4F8D15ADA166E515DEE71",
+                    "end_addr": "0x5dc60000",
+                    "filename": "Windows.UI.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x5dc60000",
+                    "code_id": "2F26BA7411e000",
+                    "debug_file": "audioses.pdb",
+                    "debug_id": "5645F00659E6B46201A82A4B34EB6F051",
+                    "end_addr": "0x5dd7e000",
+                    "filename": "AudioSes.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x5dd80000",
+                    "code_id": "4BC3DFCB67000",
+                    "debug_file": "MMDevAPI.pdb",
+                    "debug_id": "70E726590B24665A405F3FBA7D38D06C1",
+                    "end_addr": "0x5dde7000",
+                    "filename": "MMDevAPI.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x5deb0000",
+                    "code_id": "5B85875199000",
+                    "debug_file": "remote_eka_prague_loader.pdb",
+                    "debug_id": "DB8BB5ED884B4D2FB775491D72F989821",
+                    "end_addr": "0x5df49000",
+                    "filename": "remote_eka_prague_loader.dll",
+                    "version": "1.8.145.41"
+                },
+                {
+                    "base_addr": "0x5df50000",
+                    "code_id": "5D23A1845d9f000",
+                    "debug_file": "xul.pdb",
+                    "debug_id": "326A7B32703518CF4C4C44205044422E1",
+                    "end_addr": "0x63cef000",
+                    "filename": "xul.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x63cf0000",
+                    "code_id": "72782B96280000",
+                    "debug_file": "DWrite.pdb",
+                    "debug_id": "A859614932B9D7735676647009FA2BC11",
+                    "end_addr": "0x63f70000",
+                    "filename": "DWrite.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x64030000",
+                    "code_id": "5D23A0C180000",
+                    "debug_file": "freebl3.pdb",
+                    "debug_id": "8CD11A16037671E44C4C44205044422E1",
+                    "end_addr": "0x640b0000",
+                    "filename": "freebl3.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x64150000",
+                    "code_id": "5D23A0AF46000",
+                    "debug_file": "softokn3.pdb",
+                    "debug_id": "2E3B4D66B974625E4C4C44205044422E1",
+                    "end_addr": "0x64196000",
+                    "filename": "softokn3.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x642e0000",
+                    "code_id": "549EE1E894000",
+                    "debug_file": "mscms.pdb",
+                    "debug_id": "0ADFC58201BD3CA0AB877ADDA82E10441",
+                    "end_addr": "0x64374000",
+                    "filename": "mscms.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x64380000",
+                    "code_id": "3DAA43CC8000",
+                    "debug_file": "avrt.pdb",
+                    "debug_id": "F01BE808683188FC7C1CA1E5C77EA1471",
+                    "end_addr": "0x64388000",
+                    "filename": "avrt.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x643a0000",
+                    "code_id": "551407F211000",
+                    "debug_file": "ColorAdapterClient.pdb",
+                    "debug_id": "F5BFEE33831D2E8C26769E1DDF02C4B01",
+                    "end_addr": "0x643b1000",
+                    "filename": "ColorAdapterClient.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x643c0000",
+                    "code_id": "A54D93435f000",
+                    "debug_file": "webauthn.pdb",
+                    "debug_id": "01A3A74897E4999176A7A40A0FD807A41",
+                    "end_addr": "0x6441f000",
+                    "filename": "webauthn.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x64420000",
+                    "code_id": "5D23A065295000",
+                    "debug_file": "nss3.pdb",
+                    "debug_id": "D71075FC778446594C4C44205044422E1",
+                    "end_addr": "0x646b5000",
+                    "filename": "nss3.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x646c0000",
+                    "code_id": "5B7BFD093f000",
+                    "debug_file": "klsihk.pdb",
+                    "debug_id": "ACD9DD101A584BB695FCC44C029C57541",
+                    "end_addr": "0x646ff000",
+                    "filename": "klsihk.dll",
+                    "version": "20.1.16.0"
+                },
+                {
+                    "base_addr": "0x64700000",
+                    "code_id": "599C43D075000",
+                    "debug_file": "inproc_agent.pdb",
+                    "debug_id": "9DE78CD209E845C7BE8D274C088C4A1A1",
+                    "end_addr": "0x64775000",
+                    "filename": "inproc_agent.dll",
+                    "version": "5.1.94.10"
+                },
+                {
+                    "base_addr": "0x64780000",
+                    "code_id": "5B3EFA1870000",
+                    "debug_file": "msvcp140.i386.pdb",
+                    "debug_id": "8779276EC0C74FC2A764D023A11167D91",
+                    "end_addr": "0x647f0000",
+                    "filename": "msvcp140.dll",
+                    "version": "14.15.26706.0"
+                },
+                {
+                    "base_addr": "0x64fe0000",
+                    "code_id": "5B3EFA0C14000",
+                    "debug_file": "vcruntime140.i386.pdb",
+                    "debug_id": "F6E4E6F7A2F74045B8636A46DE86B7761",
+                    "end_addr": "0x64ff4000",
+                    "filename": "VCRUNTIME140.dll",
+                    "version": "14.15.26706.0"
+                },
+                {
+                    "base_addr": "0x65000000",
+                    "code_id": "5D239D0B34000",
+                    "debug_file": "mozglue.pdb",
+                    "debug_id": "3574E2C53BF242044C4C44205044422E1",
+                    "end_addr": "0x65034000",
+                    "filename": "mozglue.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x65470000",
+                    "code_id": "0DCA38DE19000",
+                    "debug_file": "DXCore.pdb",
+                    "debug_id": "869B2495A23070D6F61EACB2F68975F31",
+                    "end_addr": "0x65489000",
+                    "filename": "DXCore.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x65490000",
+                    "code_id": "212D3164c0000",
+                    "debug_file": "dxgi.pdb",
+                    "debug_id": "DFA7868B8794151FDDED854D4C2592E11",
+                    "end_addr": "0x65550000",
+                    "filename": "dxgi.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x65550000",
+                    "code_id": "55073E0A169000",
+                    "debug_file": "dcomp.pdb",
+                    "debug_id": "2044C59369FB707B61E377A75EA2FC451",
+                    "end_addr": "0x656b9000",
+                    "filename": "dcomp.dll",
+                    "version": "10.0.18362.145"
+                },
+                {
+                    "base_addr": "0x656c0000",
+                    "code_id": "002910E91de000",
+                    "debug_file": "d3d11.pdb",
+                    "debug_id": "48D522A9D073E8B496C96F23CB33184B1",
+                    "end_addr": "0x6589e000",
+                    "filename": "d3d11.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x658e0000",
+                    "code_id": "90000E4717000",
+                    "debug_file": "usp10.pdb",
+                    "debug_id": "D48E009B7F894B1051985E92246DA9C21",
+                    "end_addr": "0x658f7000",
+                    "filename": "usp10.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x65a40000",
+                    "code_id": "5D23A16Ab000",
+                    "debug_file": "libEGL.pdb",
+                    "debug_id": "FE294F84D0BABDCE4C4C44205044422E1",
+                    "end_addr": "0x65a4b000",
+                    "filename": "libEGL.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x65a60000",
+                    "code_id": "448446DA89000",
+                    "debug_file": "CoreMessaging.pdb",
+                    "debug_id": "3C8FE0BC2C73656D899703A48F2159C41",
+                    "end_addr": "0x65ae9000",
+                    "filename": "CoreMessaging.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x65b60000",
+                    "code_id": "3D3CB25B25e000",
+                    "debug_file": "CoreUIComponents.pdb",
+                    "debug_id": "9BF4D0543F0D59C9860F7352F33A77831",
+                    "end_addr": "0x65dbe000",
+                    "filename": "CoreUIComponents.dll",
+                    "version": "10.0.18362.207"
+                },
+                {
+                    "base_addr": "0x65dc0000",
+                    "code_id": "BBCDD42584000",
+                    "debug_file": "TextInputFramework.pdb",
+                    "debug_id": "968C62B78DF77259AF169C8A453B7F561",
+                    "end_addr": "0x65e44000",
+                    "filename": "TextInputFramework.dll",
+                    "version": "10.0.18362.207"
+                },
+                {
+                    "base_addr": "0x68500000",
+                    "code_id": "A1DDC89E106000",
+                    "debug_file": "mfperfhelper.pdb",
+                    "debug_id": "09CB0138C10406B87F32C5BB74067C731",
+                    "end_addr": "0x68606000",
+                    "filename": "mfperfhelper.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x69b30000",
+                    "code_id": "E12B6EEEd000",
+                    "debug_file": "credui.pdb",
+                    "debug_id": "CD112941D468203F804A680AC830AB511",
+                    "end_addr": "0x69b3d000",
+                    "filename": "credui.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6abc0000",
+                    "code_id": "A550F8FB18f000",
+                    "debug_file": "dbghelp.pdb",
+                    "debug_id": "72102E1B245E065F6C5AF3F31B252A4D1",
+                    "end_addr": "0x6ad4f000",
+                    "filename": "dbghelp.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6c200000",
+                    "code_id": "5D23A083268000",
+                    "debug_file": "mozavcodec.pdb",
+                    "debug_id": "584911747F2BCA244C4C44205044422E1",
+                    "end_addr": "0x6c468000",
+                    "filename": "mozavcodec.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x6c470000",
+                    "code_id": "451D00A92b000",
+                    "debug_file": "XmlLite.pdb",
+                    "debug_id": "7B5C56EA08816A333F2F153317F507591",
+                    "end_addr": "0x6c49b000",
+                    "filename": "xmllite.dll",
+                    "version": "10.0.18362.295"
+                },
+                {
+                    "base_addr": "0x6cba0000",
+                    "code_id": "800B947D15000",
+                    "debug_file": "dhcpcsvc.pdb",
+                    "debug_id": "E08610C92D0FD0A632B281EC05EA88341",
+                    "end_addr": "0x6cbb5000",
+                    "filename": "dhcpcsvc.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x6cbc0000",
+                    "code_id": "CAC2ABA7da000",
+                    "debug_file": "WinTypes.pdb",
+                    "debug_id": "8BA619AB35D00EBF5FD9DA008A3000731",
+                    "end_addr": "0x6cc9a000",
+                    "filename": "WinTypes.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x6cca0000",
+                    "code_id": "6595B4C210000",
+                    "debug_file": "wshbth.pdb",
+                    "debug_id": "730AB7B89C534B6A68512158CA7B4DDB1",
+                    "end_addr": "0x6ccb0000",
+                    "filename": "wshbth.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6ccb0000",
+                    "code_id": "EA2F497116000",
+                    "debug_file": "nlaapi.pdb",
+                    "debug_id": "D7CFD3CAAABBE9A36705FEF9568832B51",
+                    "end_addr": "0x6ccc6000",
+                    "filename": "nlaapi.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6ccd0000",
+                    "code_id": "9188563Fb000",
+                    "debug_file": "winrnr.pdb",
+                    "debug_id": "25B746D70C494D28CBB6726ECAECACFD1",
+                    "end_addr": "0x6ccdb000",
+                    "filename": "winrnr.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6cd70000",
+                    "code_id": "51619FFC16000",
+                    "debug_file": "pnrpnsp.pdb",
+                    "debug_id": "6D1D42C2F6C9A41E20A63A5C1493921D1",
+                    "end_addr": "0x6cd86000",
+                    "filename": "pnrpnsp.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6ce40000",
+                    "code_id": "D0D4C0F111000",
+                    "debug_file": "NapiNSP.pdb",
+                    "debug_id": "D5722422AE210660850E93A58441C8601",
+                    "end_addr": "0x6ce51000",
+                    "filename": "NapiNSP.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6e010000",
+                    "code_id": "F81E0F1723000",
+                    "debug_file": "devobj.pdb",
+                    "debug_id": "495B80CDDAE6DE9EB999B97B4935D3521",
+                    "end_addr": "0x6e033000",
+                    "filename": "devobj.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x6f020000",
+                    "code_id": "5D239FE9b000",
+                    "debug_file": "lgpllibs.pdb",
+                    "debug_id": "56B9010CEC49AEFF4C4C44205044422E1",
+                    "end_addr": "0x6f02b000",
+                    "filename": "lgpllibs.dll",
+                    "version": "69.0.0.7128"
+                },
+                {
+                    "base_addr": "0x6fa90000",
+                    "code_id": "3B5489DF8000",
+                    "debug_file": "wsock32.pdb",
+                    "debug_id": "C88330C0C16E24872251827373804DFC1",
+                    "end_addr": "0x6fa98000",
+                    "filename": "wsock32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x70840000",
+                    "code_id": "2C6F9EFB91000",
+                    "debug_file": "dnsapi.pdb",
+                    "debug_id": "93C6321A88493DE6CC89661CB36CD3901",
+                    "end_addr": "0x708d1000",
+                    "filename": "dnsapi.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x71100000",
+                    "code_id": "2F0F6F0223a000",
+                    "debug_file": "msmpeg2vdec.pdb",
+                    "debug_id": "1ABAE01AA4D360A916F5050F1C338C261",
+                    "end_addr": "0x7133a000",
+                    "filename": "msmpeg2vdec.dll",
+                    "version": "10.0.18362.145"
+                },
+                {
+                    "base_addr": "0x71cd0000",
+                    "code_id": "B60540772f000",
+                    "debug_file": "rsaenh.pdb",
+                    "debug_id": "7EA5721389DBBFBF81D2D2E133F1986D1",
+                    "end_addr": "0x71cff000",
+                    "filename": "rsaenh.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x72950000",
+                    "code_id": "599C44A054000",
+                    "debug_file": "plugins_meta.pdb",
+                    "debug_id": "972A6F6EFBF64DF09AE7139BD2D439341",
+                    "end_addr": "0x729a4000",
+                    "filename": "plugins_meta.dll",
+                    "version": "5.1.94.10"
+                },
+                {
+                    "base_addr": "0x73000000",
+                    "code_id": "CE8A74FF29000",
+                    "debug_file": "ntmarta.pdb",
+                    "debug_id": "9002F8E281EB36A51BA0137DAE4741581",
+                    "end_addr": "0x73029000",
+                    "filename": "ntmarta.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x73110000",
+                    "code_id": "5B85872A80000",
+                    "debug_file": "prremote.pdb",
+                    "debug_id": "3526A3AA5AB4433CA60460B594BB863F1",
+                    "end_addr": "0x73190000",
+                    "filename": "prremote.dll",
+                    "version": "1.8.145.41"
+                },
+                {
+                    "base_addr": "0x73610000",
+                    "code_id": "C446370Ff000",
+                    "debug_file": "wtsapi32.pdb",
+                    "debug_id": "D2903F19E0F33118A7AD6F88FA6FEE731",
+                    "end_addr": "0x7361f000",
+                    "filename": "wtsapi32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x73700000",
+                    "code_id": "54929E2B52000",
+                    "debug_file": "wmswsock.pdb",
+                    "debug_id": "FD845760CD8D1946BB39CB48EF007EF81",
+                    "end_addr": "0x73752000",
+                    "filename": "mswsock.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x73de0000",
+                    "code_id": "BD75C03123000",
+                    "debug_file": "WINMMBASE.pdb",
+                    "debug_id": "FA9C43DC68CD9A9E37B97480E8393A131",
+                    "end_addr": "0x73e03000",
+                    "filename": "WINMMBASE.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x73e30000",
+                    "code_id": "5BB6434146000",
+                    "debug_file": "product_info.pdb",
+                    "debug_id": "F346A9F8DDAF4E3DB6748F9CD885E5091",
+                    "end_addr": "0x73e76000",
+                    "filename": "product_info.dll",
+                    "version": "18.0.0.785"
+                },
+                {
+                    "base_addr": "0x74030000",
+                    "code_id": "B9A3996D25000",
+                    "debug_file": "dwmapi.pdb",
+                    "debug_id": "08A8631E517F5DEA3A8BCE509EA12FEA1",
+                    "end_addr": "0x74055000",
+                    "filename": "dwmapi.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x74080000",
+                    "code_id": "07F2B2EC1e000",
+                    "debug_file": "userenv.pdb",
+                    "debug_id": "8393F81AF2E6579CEC510AABCAE83DEC1",
+                    "end_addr": "0x7409e000",
+                    "filename": "userenv.dll",
+                    "version": "10.0.18362.175"
+                },
+                {
+                    "base_addr": "0x740c0000",
+                    "code_id": "FDB2B2368000",
+                    "debug_file": "version.pdb",
+                    "debug_id": "37947E4990565E1B63C722A8644B7D181",
+                    "end_addr": "0x740c8000",
+                    "filename": "version.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x740f0000",
+                    "code_id": "B343369324000",
+                    "debug_file": "winmm.pdb",
+                    "debug_id": "B23362A0139A17A9278A28DA8938169E1",
+                    "end_addr": "0x74114000",
+                    "filename": "winmm.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74170000",
+                    "code_id": "1F55C6F77a000",
+                    "debug_file": "wUxTheme.pdb",
+                    "debug_id": "1D5DF90D76ADEA7946310B3D4DCD833B1",
+                    "end_addr": "0x741ea000",
+                    "filename": "uxtheme.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74390000",
+                    "code_id": "D03B82F432000",
+                    "debug_file": "iphlpapi.pdb",
+                    "debug_id": "E273A1053C395EF7D5BC0DBF699874C81",
+                    "end_addr": "0x743c2000",
+                    "filename": "IPHLPAPI.DLL",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x743d0000",
+                    "code_id": "B76A2D7Bc5000",
+                    "debug_file": "propsys.pdb",
+                    "debug_id": "B68479B2F356AA8C9F4C1EA2E08CB0621",
+                    "end_addr": "0x74495000",
+                    "filename": "propsys.dll",
+                    "version": "7.0.18362.267"
+                },
+                {
+                    "base_addr": "0x74810000",
+                    "code_id": "5218D924a000",
+                    "debug_file": "cryptbase.pdb",
+                    "debug_id": "CF045B82A4BA09E8798E6ABE8978753E1",
+                    "end_addr": "0x7481a000",
+                    "filename": "CRYPTBASE.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74820000",
+                    "code_id": "915E1A8220000",
+                    "debug_file": "wsspicli.pdb",
+                    "debug_id": "0D9FFB13F8FBFB8914EEAFDEB7CE7FF21",
+                    "end_addr": "0x74840000",
+                    "filename": "sspicli.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74840000",
+                    "code_id": "6203CA74f000",
+                    "debug_file": "Kernel.Appcore.pdb",
+                    "debug_id": "FC4E4AB79BA2A34F9DB5D029FF1AE0E91",
+                    "end_addr": "0x7484f000",
+                    "filename": "kernel.appcore.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74850000",
+                    "code_id": "F42D35CB17000",
+                    "debug_file": "profapi.pdb",
+                    "debug_id": "B11050D78C14281B12799278166180231",
+                    "end_addr": "0x74867000",
+                    "filename": "profapi.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74870000",
+                    "code_id": "527FAF7F21000",
+                    "debug_file": "wgdi32.pdb",
+                    "debug_id": "EC26B17219AF25A2531508809FB3C8821",
+                    "end_addr": "0x74891000",
+                    "filename": "gdi32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x748b0000",
+                    "code_id": "E2E5DA0284000",
+                    "debug_file": "shcore.pdb",
+                    "debug_id": "8409DABDE4C0C92BF02EE53BEB17A10B1",
+                    "end_addr": "0x74934000",
+                    "filename": "SHCore.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74a00000",
+                    "code_id": "221A4640f7000",
+                    "debug_file": "ole32.pdb",
+                    "debug_id": "C456794AAF92BB031A5F098EE1B817501",
+                    "end_addr": "0x74af7000",
+                    "filename": "ole32.dll",
+                    "version": "10.0.18362.113"
+                },
+                {
+                    "base_addr": "0x74b00000",
+                    "code_id": "FAF7CDEB13000",
+                    "debug_file": "cryptsp.pdb",
+                    "debug_id": "E438FC5E36482E9C9DDF2915E9926E011",
+                    "end_addr": "0x74b13000",
+                    "filename": "cryptsp.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74b20000",
+                    "code_id": "E0D2B38325000",
+                    "debug_file": "wimm32.pdb",
+                    "debug_id": "415D6DCB837C6A4CEBB5BB536F272FE71",
+                    "end_addr": "0x74b45000",
+                    "filename": "imm32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x74b50000",
+                    "code_id": "D8F9F660195000",
+                    "debug_file": "wuser32.pdb",
+                    "debug_id": "D04DB1D4AB8C2AD85ADED034779AC9BA1",
+                    "end_addr": "0x74ce5000",
+                    "filename": "user32.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x74cf0000",
+                    "code_id": "04C380B276000",
+                    "debug_file": "sechost.pdb",
+                    "debug_id": "C9202725FEF2C2DDFD6BFDFE4481E11F1",
+                    "end_addr": "0x74d66000",
+                    "filename": "sechost.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x74d70000",
+                    "code_id": "C312E06D5c2000",
+                    "debug_file": "Windows.Storage.pdb",
+                    "debug_id": "9122656BEF0BB9D70BED3E3CC953A6961",
+                    "end_addr": "0x75332000",
+                    "filename": "windows.storage.dll",
+                    "version": "10.0.18362.295"
+                },
+                {
+                    "base_addr": "0x75340000",
+                    "code_id": "4DD96967575000",
+                    "debug_file": "shell32.pdb",
+                    "debug_id": "15A0E0B4FB5BDE08380C922649A9F3261",
+                    "end_addr": "0x758b5000",
+                    "filename": "shell32.dll",
+                    "version": "10.0.18362.295"
+                },
+                {
+                    "base_addr": "0x75920000",
+                    "code_id": "CB515CA2449000",
+                    "debug_file": "setupapi.pdb",
+                    "debug_id": "7F0545B4F6D29AD6C74E64F6C9AADD301",
+                    "end_addr": "0x75d69000",
+                    "filename": "setupapi.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x75d70000",
+                    "code_id": "F7E0EC6F43000",
+                    "debug_file": "powrprof.pdb",
+                    "debug_id": "B25647B6FB2807B90F08C62ED1FDD3181",
+                    "end_addr": "0x75db3000",
+                    "filename": "powrprof.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x75dc0000",
+                    "code_id": "478924067c000",
+                    "debug_file": "msvcp_win.pdb",
+                    "debug_id": "3AEAB30B7BE292C335CD020E7F921B181",
+                    "end_addr": "0x75e3c000",
+                    "filename": "msvcp_win.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x75e40000",
+                    "code_id": "3C6910C746000",
+                    "debug_file": "wintrust.pdb",
+                    "debug_id": "327317ACA12E356F522980A78C5675FB1",
+                    "end_addr": "0x75e86000",
+                    "filename": "wintrust.dll",
+                    "version": "10.0.18362.145"
+                },
+                {
+                    "base_addr": "0x75e90000",
+                    "code_id": "7AAB3B53bb000",
+                    "debug_file": "wrpcrt4.pdb",
+                    "debug_id": "BBE52BEF24D845729F400EF0DF372EB11",
+                    "end_addr": "0x75f4b000",
+                    "filename": "rpcrt4.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x75f50000",
+                    "code_id": "EE330FBD80000",
+                    "debug_file": "CLBCatQ.pdb",
+                    "debug_id": "EBD72BC4D1D2D9014727FA7BAB14610F1",
+                    "end_addr": "0x75fd0000",
+                    "filename": "clbcatq.dll",
+                    "version": "2001.12.10941.16384"
+                },
+                {
+                    "base_addr": "0x75fd0000",
+                    "code_id": "33B74EA219000",
+                    "debug_file": "bcrypt.pdb",
+                    "debug_id": "40165D1D08017B1BA24AE9C8E1347A711",
+                    "end_addr": "0x75fe9000",
+                    "filename": "bcrypt.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x76080000",
+                    "code_id": "E4AFE5363b000",
+                    "debug_file": "cfgmgr32.pdb",
+                    "debug_id": "618B5FD435BB907A41AB25EE57AD442E1",
+                    "end_addr": "0x760bb000",
+                    "filename": "cfgmgr32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x760c0000",
+                    "code_id": "7A643F74e000",
+                    "debug_file": "msasn1.pdb",
+                    "debug_id": "77E3B8C8515747F04C85A034C0D557011",
+                    "end_addr": "0x760ce000",
+                    "filename": "msasn1.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x760d0000",
+                    "code_id": "91664CAB1fc000",
+                    "debug_file": "wkernelbase.pdb",
+                    "debug_id": "1C7704418115A2DA7FD4FBB98ED061251",
+                    "end_addr": "0x762cc000",
+                    "filename": "KERNELBASE.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x76440000",
+                    "code_id": "61A1F7CFd000",
+                    "debug_file": "UMPDC.pdb",
+                    "debug_id": "25883FED4EC3EB7E5B727970F4E1947B1",
+                    "end_addr": "0x7644d000",
+                    "filename": "umpdc.dll",
+                    "version": ""
+                },
+                {
+                    "base_addr": "0x76450000",
+                    "code_id": "ADA56A7A5e000",
+                    "debug_file": "ws2_32.pdb",
+                    "debug_id": "1BC1B088B134A6874E3D72D3F81A90B91",
+                    "end_addr": "0x764ae000",
+                    "filename": "ws2_32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x764b0000",
+                    "code_id": "C3D29DD344000",
+                    "debug_file": "shlwapi.pdb",
+                    "debug_id": "9FA3B3DD1A1CD387B2E3E4A38049BF751",
+                    "end_addr": "0x764f4000",
+                    "filename": "shlwapi.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x76500000",
+                    "code_id": "C05C9F2D1b000",
+                    "debug_file": "imagehlp.pdb",
+                    "debug_id": "9A5D1D917160DC1270799435C2FEC5311",
+                    "end_addr": "0x7651b000",
+                    "filename": "imagehlp.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x76520000",
+                    "code_id": "9D37C05C92000",
+                    "debug_file": "oleaut32.pdb",
+                    "debug_id": "BF39FCFB419AC1034C03F2960B90A6DC1",
+                    "end_addr": "0x765b2000",
+                    "filename": "oleaut32.dll",
+                    "version": "10.0.18362.295"
+                },
+                {
+                    "base_addr": "0x76620000",
+                    "code_id": "12F36500e0000",
+                    "debug_file": "wkernel32.pdb",
+                    "debug_id": "DF32ADE3A79F5A14488CB00B014923AC1",
+                    "end_addr": "0x76700000",
+                    "filename": "kernel32.dll",
+                    "version": "10.0.18362.86"
+                },
+                {
+                    "base_addr": "0x76700000",
+                    "code_id": "6DC317397000",
+                    "debug_file": "nsi.pdb",
+                    "debug_id": "51889AC83BE9043995A77D33ED9934EC1",
+                    "end_addr": "0x76707000",
+                    "filename": "nsi.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x76710000",
+                    "code_id": "1B7F605D5f000",
+                    "debug_file": "bcryptprimitives.pdb",
+                    "debug_id": "70FC19AE6CB35487644FA5674CDB6C241",
+                    "end_addr": "0x7676f000",
+                    "filename": "bcryptPrimitives.dll",
+                    "version": "10.0.18362.295"
+                },
+                {
+                    "base_addr": "0x76770000",
+                    "code_id": "56B3822879000",
+                    "debug_file": "advapi32.pdb",
+                    "debug_id": "6C7E21FD0EC7E1AB4FB1F331F93027651",
+                    "end_addr": "0x767e9000",
+                    "filename": "advapi32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x767f0000",
+                    "code_id": "A66A1E0011f000",
+                    "debug_file": "ucrtbase.pdb",
+                    "debug_id": "F1DEEB7EE7E2DE476F1A0AADEFB404081",
+                    "end_addr": "0x7690f000",
+                    "filename": "ucrtbase.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x76910000",
+                    "code_id": "AEFA875117000",
+                    "debug_file": "wwin32u.pdb",
+                    "debug_id": "CF6D6C9C1D66836C529E375FEF89D5CA1",
+                    "end_addr": "0x76927000",
+                    "filename": "win32u.dll",
+                    "version": "10.0.18362.295"
+                },
+                {
+                    "base_addr": "0x76930000",
+                    "code_id": "CB829712276000",
+                    "debug_file": "combase.pdb",
+                    "debug_id": "1CCB987694FA9123E8EB643DC2597D371",
+                    "end_addr": "0x76ba6000",
+                    "filename": "combase.dll",
+                    "version": "10.0.18362.267"
+                },
+                {
+                    "base_addr": "0x76bb0000",
+                    "code_id": "58BEC60Cbf000",
+                    "debug_file": "msvcrt.pdb",
+                    "debug_id": "1EBA660F39B8C2CF4A66A428FAF0D0421",
+                    "end_addr": "0x76c6f000",
+                    "filename": "msvcrt.dll",
+                    "version": "7.0.18362.1"
+                },
+                {
+                    "base_addr": "0x76c70000",
+                    "code_id": "0990712015a000",
+                    "debug_file": "wgdi32full.pdb",
+                    "debug_id": "18201295426BA76561D0BD80348B3D681",
+                    "end_addr": "0x76dca000",
+                    "filename": "gdi32full.dll",
+                    "version": "10.0.18362.295"
+                },
+                {
+                    "base_addr": "0x76dd0000",
+                    "code_id": "82360A9Efb000",
+                    "debug_file": "crypt32.pdb",
+                    "debug_id": "E0E7A025DFC0C9690A24CF2F21178D361",
+                    "end_addr": "0x76ecb000",
+                    "filename": "crypt32.dll",
+                    "version": "10.0.18362.1"
+                },
+                {
+                    "base_addr": "0x77050000",
+                    "code_id": "9BBCB4A919a000",
+                    "debug_file": "wntdll.pdb",
+                    "debug_id": "6756B5D7A11431F85EA1F03D2CE3E3091",
+                    "end_addr": "0x771ea000",
+                    "filename": "ntdll.dll",
+                    "version": "10.0.18362.1"
+                }
+            ],
+            "status": "OK",
+            "threads": [
+                {
+                    "frames": [
+                        {
+                            "ip": "0x5e8bd7ef",
+                            "module_index": 21,
+                            "trust": "context"
+                        },
+                        {
+                            "ip": "0x5e8bd859",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea654cd",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea77060",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea667e1",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea6713d",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea7c15b",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea7b2f3",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea5bbe6",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5ea69777",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5e80a215",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5e8631d6",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x5f4c5ac3",
+                            "module_index": 21,
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0xd743db5",
+                            "trust": "frame_pointer"
+                        },
+                        {
+                            "ip": "0x62556f37",
+                            "module_index": 21,
+                            "trust": "scan"
+                        },
+                        {
+                            "ip": "0xeb36b3a",
+                            "trust": "frame_pointer"
+                        }
+                    ]
+                }
+            ]
+        },
+        "version": 1
+    },
+    "type": "crash",
+    "version": 4
+}

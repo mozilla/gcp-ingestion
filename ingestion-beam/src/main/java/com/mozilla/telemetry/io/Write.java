@@ -10,6 +10,7 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.avro.BinaryRecordFormatter;
 import com.mozilla.telemetry.avro.GenericRecordBinaryEncoder;
 import com.mozilla.telemetry.avro.PubsubMessageRecordFormatter;
+import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
 import com.mozilla.telemetry.options.BigQueryWriteMethod;
 import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
@@ -17,14 +18,15 @@ import com.mozilla.telemetry.schemas.AvroSchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.CompressPayload;
 import com.mozilla.telemetry.transforms.FailureMessage;
+import com.mozilla.telemetry.transforms.KeyByBigQueryTableDestination;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
-import com.mozilla.telemetry.util.DerivedAttributesMap;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import com.mozilla.telemetry.util.NoColonFileNaming;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -352,10 +354,23 @@ public abstract class Write
       input = input //
           .apply(LimitPayloadSize.toBytes(writeMethod.maxPayloadBytes)).errorsTo(errorCollections);
 
-      final BigQueryIO.Write<KV<TableDestination, TableRow>> baseWriteTransform = BigQueryIO //
-          .<KV<TableDestination, TableRow>>write() //
-          .withFormatFunction(KV::getValue) //
-          .to((ValueInSingleWindow<KV<TableDestination, TableRow>> vsw) -> vsw.getValue().getKey())
+      // When writing to live tables, we expect the input is uncompressed and we partition to
+      // streaming vs. file loads based on uncompressed size, but we then want to compress again
+      // before sending to BigQueryIO to save on I/O costs during several GBK operations;
+      // the payload will again be decompressed in the formatFunction passed to BigQueryIO.
+      final CompressPayload maybeCompress = CompressPayload
+          .of(NestedValueProvider.of(tableRowFormat,
+              v -> v == TableRowFormat.payload ? Compression.GZIP : Compression.UNCOMPRESSED));
+
+      final PubsubMessageToTableRow pubsubMessageToTableRow = PubsubMessageToTableRow.of(
+          tableSpecTemplate, strictSchemaDocTypes, schemasLocation, schemasAliasesLocation,
+          tableRowFormat);
+      final BigQueryIO.Write<KV<TableDestination, PubsubMessage>> baseWriteTransform = BigQueryIO //
+          .<KV<TableDestination, PubsubMessage>>write() //
+          .withFormatFunction(pubsubMessageToTableRow::kvToTableRow) //
+          .to((ValueInSingleWindow<KV<TableDestination, PubsubMessage>> vsw) -> vsw.getValue()
+              .getKey())
+          .withClustering() //
           .withCreateDisposition(BigQueryIO.Write.CreateDisposition.CREATE_NEVER) //
           .withWriteDisposition(BigQueryIO.Write.WriteDisposition.WRITE_APPEND) //
           .ignoreUnknownValues();
@@ -399,8 +414,8 @@ public abstract class Write
 
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
-            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes,
-                schemasLocation, schemasAliasesLocation, tableRowFormat))
+            .apply(maybeCompress) //
+            .apply(KeyByBigQueryTableDestination.of(tableSpecTemplate)) //
             .errorsTo(errorCollections) //
             .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
@@ -428,13 +443,13 @@ public abstract class Write
                   }
                   TableRow row = bqie.getRow();
                   row.setFactory(JacksonFactory.getDefaultInstance());
-                  byte[] payload = row.toString().getBytes();
+                  byte[] payload = row.toString().getBytes(StandardCharsets.UTF_8);
                   return new PubsubMessage(payload, attributes);
                 })));
       });
 
       fileLoadsInput.ifPresent(messages -> {
-        BigQueryIO.Write<KV<TableDestination, TableRow>> fileLoadsWrite = baseWriteTransform
+        BigQueryIO.Write<KV<TableDestination, PubsubMessage>> fileLoadsWrite = baseWriteTransform
             .withMethod(BigQueryWriteMethod.file_loads.method);
         if (inputType == InputType.pubsub) {
           // When using the file_loads method of inserting to BigQuery, BigQueryIO requires
@@ -444,8 +459,8 @@ public abstract class Write
               .withNumFileShards(numShards);
         }
         messages //
-            .apply(PubsubMessageToTableRow.of(tableSpecTemplate, strictSchemaDocTypes,
-                schemasLocation, schemasAliasesLocation, tableRowFormat))
+            .apply(maybeCompress) //
+            .apply(KeyByBigQueryTableDestination.of(tableSpecTemplate)) //
             .errorsTo(errorCollections) //
             .apply(fileLoadsWrite);
       });

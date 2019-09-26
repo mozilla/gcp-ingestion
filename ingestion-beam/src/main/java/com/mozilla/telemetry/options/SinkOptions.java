@@ -190,6 +190,14 @@ public interface SinkOptions extends PipelineOptions {
 
   void setWindowDuration(String value);
 
+  @Description("Deduplicate globally by document_id attribute; it assumes that the job is running"
+      + " in batch mode over a single day of input"
+      + " (submission_timestamp values are all on the same date)")
+  @Default.Boolean(false)
+  Boolean getDeduplicateByDocumentId();
+
+  void setDeduplicateByDocumentId(Boolean value);
+
   /*
    * Note: Dataflow templates accept ValueProvider options at runtime, and other options at creation
    * time. When running without templates specify all options at once.

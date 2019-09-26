@@ -38,7 +38,7 @@ public class JSONSchemaStore extends SchemaStore<Schema> {
   @Override
   protected Schema loadSchemaFromArchive(ArchiveInputStream archive) throws IOException {
     byte[] bytes = IOUtils.toByteArray(archive);
-    JSONObject json = Json.readJSONObject(bytes);
+    JSONObject json = Json.readValue(bytes, JSONObject.class);
     return SchemaLoader.load(json);
   }
 }

@@ -45,6 +45,8 @@ jobs:
               echo "Run tests because [run-tests] in commit message"
           elif ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/.circleci; then
               echo "Run tests because .circleci/ was modified since branching off master"
+          elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/pom.xml; then
+              echo "Run tests because pom.xml was modified since branching off master"
           elif ! git diff --quiet origin/master... -- .; then
               echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off master"
           else
@@ -132,8 +134,9 @@ jobs:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
           - &cache_key_beam
-            maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "pom.xml" }}
-          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}
+            maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-{{ checksum "pom.xml" }}
+          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-
+          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-
           - maven-repo-v1-beam-{{ .Branch }}-
           - maven-repo-v1-beam-
           - maven-repo-v1-
@@ -145,7 +148,10 @@ jobs:
     - &maven_test
       run:
         name: Maven Test
-        command: mvn clean test
+        command: |
+          PROFILE="$(basename "$PWD")"
+          cd ..
+          mvn -P "$PROFILE" clean test
     - *report_code_coverage
     - save_cache:
         paths:
@@ -158,11 +164,12 @@ jobs:
     # Checkout would fail if it were not the first step
     # because checkout path would contain working dir
     - *checkout
-    - run:
+    - &skip_forked_pr
+      run:
         name: Early return if this build is from a forked PR
         command: |
           if [ -n "$CIRCLE_PR_NUMBER" ]; then
-            echo "Nothing to upload for forked PRs, so marking this step successful"
+            echo "Cannot pass creds to forked PRs, so marking this step successful"
             circleci step halt
           fi
     - *skip_unmodified
@@ -177,7 +184,9 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          mvn clean test -Dtest=*IntegrationTest
+          PROFILE="$(basename "$PWD")"
+          cd ..
+          mvn -P "$PROFILE" clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
     - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
 
@@ -193,8 +202,9 @@ jobs:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
           - &cache_key_sink
-            maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "pom.xml" }}
-          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}
+            maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-{{ checksum "pom.xml" }}
+          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-
+          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-
           - maven-repo-v1-sink-{{ .Branch }}-
           - maven-repo-v1-sink-
           - maven-repo-v1-
@@ -209,6 +219,7 @@ jobs:
     <<: *ingestion_sink
     steps:
     - *checkout
+    - *skip_forked_pr
     - *skip_unmodified
     - *sink_restore_cache
     - *maven_integration_test
