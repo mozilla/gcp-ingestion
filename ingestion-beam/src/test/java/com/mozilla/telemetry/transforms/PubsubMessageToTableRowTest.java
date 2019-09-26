@@ -32,9 +32,11 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
           Field.of("value", LegacySQLTypeName.INTEGER)) //
       .setMode(Mode.REPEATED).build();
 
-  private static final PubsubMessageToTableRow TRANSFORM = PubsubMessageToTableRow.of(
-      StaticValueProvider.of("foo"), null, null, null,
-      StaticValueProvider.of(TableRowFormat.payload));
+  private static final KeyByBigQueryTableDestination KEY_BY = KeyByBigQueryTableDestination.of(
+      StaticValueProvider.of("foo"), StaticValueProvider.of(null), StaticValueProvider.of(null));
+
+  private static final PubsubMessageToTableRow TRANSFORM = PubsubMessageToTableRow.of(null, null,
+      null, StaticValueProvider.of(TableRowFormat.payload), KEY_BY);
 
   @Test
   public void testConvertFieldNameForBq() {

@@ -58,11 +58,12 @@ import org.apache.beam.sdk.values.PCollection;
 public class PubsubMessageToTableRow
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, TableRow>> {
 
-  public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemasAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat) {
-    return new PubsubMessageToTableRow(tableSpecTemplate, strictSchemaDocTypes, schemasLocation,
-        schemasAliasesLocation, tableRowFormat);
+  public static PubsubMessageToTableRow of(ValueProvider<List<String>> strictSchemaDocTypes,
+      ValueProvider<String> schemasLocation, ValueProvider<String> schemasAliasesLocation,
+      ValueProvider<TableRowFormat> tableRowFormat,
+      KeyByBigQueryTableDestination keyByBigQueryTableDestination) {
+    return new PubsubMessageToTableRow(strictSchemaDocTypes, schemasLocation,
+        schemasAliasesLocation, tableRowFormat, keyByBigQueryTableDestination);
   }
 
   public enum TableRowFormat {
@@ -94,14 +95,15 @@ public class PubsubMessageToTableRow
   private transient BigQuerySchemaStore schemaStore;
   private transient BigQuery bqService;
 
-  private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat) {
+  private PubsubMessageToTableRow(ValueProvider<List<String>> strictSchemaDocTypes,
+      ValueProvider<String> schemasLocation, ValueProvider<String> schemaAliasesLocation,
+      ValueProvider<TableRowFormat> tableRowFormat,
+      KeyByBigQueryTableDestination keyByBigQueryTableDestination) {
     this.strictSchemaDocTypes = strictSchemaDocTypes;
     this.schemasLocation = schemasLocation;
     this.schemaAliasesLocation = schemaAliasesLocation;
     this.tableRowFormat = tableRowFormat;
-    this.keyByBigQueryTableDestination = KeyByBigQueryTableDestination.of(tableSpecTemplate);
+    this.keyByBigQueryTableDestination = keyByBigQueryTableDestination;
   }
 
   @Override

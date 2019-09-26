@@ -10,6 +10,7 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.avro.BinaryRecordFormatter;
 import com.mozilla.telemetry.avro.GenericRecordBinaryEncoder;
 import com.mozilla.telemetry.avro.PubsubMessageRecordFormatter;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
 import com.mozilla.telemetry.options.BigQueryWriteMethod;
 import com.mozilla.telemetry.options.InputType;
@@ -325,14 +326,16 @@ public abstract class Write
     private final ValueProvider<String> schemasLocation;
     private final ValueProvider<String> schemasAliasesLocation;
     private final ValueProvider<TableRowFormat> tableRowFormat;
+    private final ValueProvider<String> partitioningField;
+    private final ValueProvider<List<String>> clusteringFields;
 
     /** Public constructor. */
     public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
         Duration triggeringFrequency, InputType inputType, int numShards,
         ValueProvider<List<String>> streamingDocTypes,
         ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-        ValueProvider<String> schemasAliasesLocation,
-        ValueProvider<TableRowFormat> tableRowFormat) {
+        ValueProvider<String> schemasAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat,
+        ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
@@ -345,11 +348,17 @@ public abstract class Write
       this.schemasLocation = schemasLocation;
       this.schemasAliasesLocation = schemasAliasesLocation;
       this.tableRowFormat = tableRowFormat;
+      this.partitioningField = NestedValueProvider.of(partitioningField,
+          f -> f != null ? f : Attribute.SUBMISSION_TIMESTAMP);
+      this.clusteringFields = NestedValueProvider.of(clusteringFields,
+          f -> f != null ? f : Collections.singletonList(Attribute.SUBMISSION_TIMESTAMP));
     }
 
     @Override
     public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
       final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+      KeyByBigQueryTableDestination keyByBigQueryTableDestination = KeyByBigQueryTableDestination
+          .of(tableSpecTemplate, partitioningField, clusteringFields);
 
       input = input //
           .apply(LimitPayloadSize.toBytes(writeMethod.maxPayloadBytes)).errorsTo(errorCollections);
@@ -363,8 +372,8 @@ public abstract class Write
               v -> v == TableRowFormat.payload ? Compression.GZIP : Compression.UNCOMPRESSED));
 
       final PubsubMessageToTableRow pubsubMessageToTableRow = PubsubMessageToTableRow.of(
-          tableSpecTemplate, strictSchemaDocTypes, schemasLocation, schemasAliasesLocation,
-          tableRowFormat);
+          strictSchemaDocTypes, schemasLocation, schemasAliasesLocation, tableRowFormat,
+          keyByBigQueryTableDestination);
       final BigQueryIO.Write<KV<TableDestination, PubsubMessage>> baseWriteTransform = BigQueryIO //
           .<KV<TableDestination, PubsubMessage>>write() //
           .withFormatFunction(pubsubMessageToTableRow::kvToTableRow) //
@@ -415,7 +424,7 @@ public abstract class Write
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
             .apply(maybeCompress) //
-            .apply(KeyByBigQueryTableDestination.of(tableSpecTemplate)) //
+            .apply(keyByBigQueryTableDestination) //
             .errorsTo(errorCollections) //
             .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
@@ -460,7 +469,7 @@ public abstract class Write
         }
         messages //
             .apply(maybeCompress) //
-            .apply(KeyByBigQueryTableDestination.of(tableSpecTemplate)) //
+            .apply(keyByBigQueryTableDestination) //
             .errorsTo(errorCollections) //
             .apply(fileLoadsWrite);
       });
