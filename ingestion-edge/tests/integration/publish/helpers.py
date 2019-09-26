@@ -33,7 +33,7 @@ class IntegrationTest:
     data: bytes = b""
     headers: Dict[str, Optional[bytes]] = field(default_factory=dict)
     protocol: str = "HTTP/1.1"
-    uri_suffix: str = "."  # may 404 on ""
+    uri_suffix: str = "x"  # may 404 on ""
 
     @property
     def host(self) -> str:
