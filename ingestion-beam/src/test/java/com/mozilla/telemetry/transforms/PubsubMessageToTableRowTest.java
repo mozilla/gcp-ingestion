@@ -374,4 +374,18 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     String expectedAdditional = "{\"payload\":[null,{\"b\":44}]}";
     assertEquals(expectedAdditional, Json.asString(additionalProperties));
   }
+
+  @Test
+  public void testTupleIntoStructNested() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[1],[2],[3]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("f0_", LegacySQLTypeName.INTEGER)) //
+        .setMode(Mode.REPEATED).build());
+    String expected = "{\"payload\":[{\"f0_\":1},{\"f0_\":2},{\"f0_\":3}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+  }
 }

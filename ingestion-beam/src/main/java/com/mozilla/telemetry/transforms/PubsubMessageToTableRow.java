@@ -345,6 +345,23 @@ public class PubsubMessageToTableRow
           repeatedAdditionalProperties.add(null);
         }
       });
+      // Arrays of tuples cannot be transformed in place, instead each element of the parent array
+      // will need to reference a new transformed object.
+      if (records.stream().allMatch(List.class::isInstance)) {
+        for (int i = 0; i < records.size(); i++) {
+          List<Object> tuple = (List<Object>) records.get(i);
+          Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+          Map<String, Object> m = processTupleField(jsonFieldName, field.getSubFields(), tuple,
+              props);
+          if (props != null && !props.isEmpty()) {
+            repeatedAdditionalProperties.add(props);
+          } else {
+            repeatedAdditionalProperties.add(null);
+          }
+          records.set(i, (Object) m);
+        }
+      }
+
       if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
         additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
       }
