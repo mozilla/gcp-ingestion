@@ -92,6 +92,17 @@ public interface SinkOptions extends PipelineOptions {
 
   void setBqSelectedFields(List<String> value);
 
+  @Description("Name of time partitioning field of destination tables;"
+      + " defaults to submission_timestamp")
+  ValueProvider<String> getBqPartitioningField();
+
+  void setBqPartitioningField(ValueProvider<String> value);
+
+  @Description("Comma-separated list of clustering fields; defaults to submission_timestamp")
+  ValueProvider<List<String>> getBqClusteringFields();
+
+  void setBqClusteringFields(ValueProvider<List<String>> value);
+
   @Description("Method of writing to BigQuery")
   @Default.Enum("file_loads")
   BigQueryWriteMethod getBqWriteMethod();
