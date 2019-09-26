@@ -7,11 +7,13 @@ package com.mozilla.telemetry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.schemas.AvroSchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
-
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
@@ -28,7 +29,6 @@ import org.apache.avro.io.DatumReader;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -194,19 +194,19 @@ public class SinkAvroTest {
         Matchers.greaterThan(0L));
 
     String data = null;
-    JSONObject obj = null;
+    ObjectNode obj = null;
     String msg = null;
 
     // Case where the schema is an integer but the value is a string
     data = new String(Files.readAllBytes(getPath(outputPath + "/err", "namespace_0")));
-    obj = new JSONObject(data);
-    msg = obj.getJSONObject("attributeMap").getString("error_message");
+    obj = Json.readObjectNode(data.getBytes(StandardCharsets.UTF_8));
+    msg = obj.path("attributeMap").path("error_message").textValue();
     assertThat(msg, CoreMatchers.containsString("org.apache.avro.AvroTypeException"));
 
     // Case where the schema does not exist in the schema store
     data = new String(Files.readAllBytes(getPath(outputPath + "/err", "namespace_57")));
-    obj = new JSONObject(data);
-    msg = obj.getJSONObject("attributeMap").getString("error_message");
+    obj = Json.readObjectNode(data.getBytes(StandardCharsets.UTF_8));
+    msg = obj.path("attributeMap").path("error_message").textValue();
     assertThat(msg,
         CoreMatchers.containsString("com.mozilla.telemetry.schemas.SchemaNotFoundException"));
   }

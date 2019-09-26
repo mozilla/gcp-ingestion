@@ -7,8 +7,12 @@ package com.mozilla.telemetry.schemas;
 import avro.shaded.com.google.common.annotations.VisibleForTesting;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.mozilla.telemetry.util.SnakeCase;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +25,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
@@ -37,7 +43,7 @@ public abstract class SchemaStore<T> implements Serializable {
   /** Return the parsed schema corresponding to a path underneath the schemas/ directory. */
   public T getSchema(String path) throws SchemaNotFoundException {
     ensureSchemasLoaded();
-    T schema = schemas.get(path);
+    T schema = schemas.get(getAndCacheNormalizedPath(path));
     if (schema == null) {
       throw SchemaNotFoundException.forName(path);
     }
@@ -63,14 +69,15 @@ public abstract class SchemaStore<T> implements Serializable {
     if (namespace == null || docType == null) {
       return false;
     } else {
-      return dirs.contains(namespace + "/" + docType);
+      return dirs.contains(
+          getAndCacheNormalizedName(namespace) + "/" + getAndCacheNormalizedName(docType));
     }
   }
 
   /** Returns true if we found at least one schema with matching the given attributes. */
   public boolean docTypeExists(Map<String, String> attributes) {
-    String namespace = attributes.get("document_namespace");
-    String docType = attributes.get("document_type");
+    String namespace = getAndCacheNormalizedName(attributes.get("document_namespace"));
+    String docType = getAndCacheNormalizedName(attributes.get("document_type"));
     return docTypeExists(namespace, docType);
   }
 
@@ -97,6 +104,7 @@ public abstract class SchemaStore<T> implements Serializable {
   private final ValueProvider<String> schemaAliasesLocation;
   private transient Map<String, T> schemas;
   private transient Set<String> dirs;
+  private transient Cache<String, String> normalizedNameCache;
 
   @VisibleForTesting
   int numLoadedSchemas() {
@@ -126,7 +134,8 @@ public abstract class SchemaStore<T> implements Serializable {
         }
         String[] components = entry.getName().split("/");
         if (components.length > 2 && "schemas".equals(components[1])) {
-          String name = String.join("/", Arrays.copyOfRange(components, 2, components.length));
+          String name = getAndCacheNormalizedPath(
+              Arrays.copyOfRange(components, 2, components.length));
           if (entry.isDirectory()) {
             tempDirs.add(name);
             continue;
@@ -158,7 +167,7 @@ public abstract class SchemaStore<T> implements Serializable {
             SchemaAliasingConfiguration.class);
 
         aliasingConfig.aliases().forEach((e) -> {
-          aliases.put(e.base(), e.alias());
+          aliases.put(getAndCacheNormalizedPath(e.base()), getAndCacheNormalizedPath(e.alias()));
         });
       }
       schemaAliasesMap = aliases;
@@ -205,6 +214,36 @@ public abstract class SchemaStore<T> implements Serializable {
         throw new UncheckedIOException("Unexpected error while loading schemas", e);
       }
     }
+  }
+
+  /**
+   * We normalize all path components to snake_case both when loading schemas and when fetching
+   * schemas to deal with some naming inconsistencies in mozilla-pipeline-schemas.
+   */
+  private String getAndCacheNormalizedName(String name) {
+    if (name == null) {
+      return null;
+    } else if (normalizedNameCache == null) {
+      normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
+    }
+    try {
+      return normalizedNameCache.get(name, () -> SnakeCase.format(name));
+    } catch (ExecutionException e) {
+      throw new UncheckedExecutionException(e.getCause());
+    }
+  }
+
+  private String getAndCacheNormalizedPath(String[] components) {
+    return Arrays.stream(components).map(s -> {
+      // We want to preserve the suffix after '.' unchanged, so we split before normalizing.
+      String[] suffixSplit = s.split("\\.", 2);
+      String suffix = suffixSplit.length > 1 ? "." + suffixSplit[1] : "";
+      return getAndCacheNormalizedName(suffixSplit[0]) + suffix;
+    }).collect(Collectors.joining("/"));
+  }
+
+  private String getAndCacheNormalizedPath(String path) {
+    return getAndCacheNormalizedPath(path.split("/"));
   }
 
 }

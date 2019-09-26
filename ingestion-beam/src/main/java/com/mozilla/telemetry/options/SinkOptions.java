@@ -6,6 +6,7 @@ package com.mozilla.telemetry.options;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mozilla.telemetry.Sink;
+import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +66,32 @@ public interface SinkOptions extends PipelineOptions {
 
   void setSchemaAliasesLocation(ValueProvider<String> value);
 
+  @Description("Method of reading from BigQuery; the table will either be exported to GCS"
+      + " (GA and free, but may take some time to export and may hit quotas) or accessed using the "
+      + " BigQuery Storage API (beta and some cost, but faster and no quotas)")
+  @Default.Enum("export")
+  BigQueryReadMethod getBqReadMethod();
+
+  void setBqReadMethod(BigQueryReadMethod value);
+
+  @Description("When --bqReadMethod=storageapi, all rows of the input table are read by default,"
+      + " but this option can take a SQL text filtering statement, similar to a WHERE clause;"
+      + " currently, only a single predicate that is a comparison between a column and a constant"
+      + " value is supported; a likely choice to limit partitions would be something like"
+      + " \"CAST(submission_timestamp AS DATE) BETWEEN '2020-01-10' AND '2020-01-14'\"; see"
+      + " https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1beta1#tablereadoptions")
+  String getBqRowRestriction();
+
+  void setBqRowRestriction(String value);
+
+  @Description("When --bqReadMethod=storageapi, all fields of the input table are read by default,"
+      + " but this option can take a comma-separated list of field names, in which case only the"
+      + " listed fields will be read, saving costs; when reading decoded payload_bytes, none of the"
+      + " metadata fields are needed, so setting --bqSelectedFields=payload is recommended")
+  List<String> getBqSelectedFields();
+
+  void setBqSelectedFields(List<String> value);
+
   @Description("Method of writing to BigQuery")
   @Default.Enum("file_loads")
   BigQueryWriteMethod getBqWriteMethod();
@@ -107,6 +134,14 @@ public interface SinkOptions extends PipelineOptions {
   OutputFileFormat getOutputFileFormat();
 
   void setOutputFileFormat(OutputFileFormat value);
+
+  @Description("Row format for --outputType=bigquery; must be one of"
+      + " raw (each row contains payload[Bytes] and attributes as top level fields) or"
+      + " decoded (each row contains payload[Bytes] and attributes as nested metadata fields) or"
+      + " payload (each row is extracted from payload); defaults to payload")
+  ValueProvider<TableRowFormat> getOutputTableRowFormat();
+
+  void setOutputTableRowFormat(ValueProvider<TableRowFormat> value);
 
   @Description("Compression format for --outputType=file")
   @Default.Enum("GZIP")
@@ -154,6 +189,14 @@ public interface SinkOptions extends PipelineOptions {
   String getWindowDuration();
 
   void setWindowDuration(String value);
+
+  @Description("Deduplicate globally by document_id attribute; it assumes that the job is running"
+      + " in batch mode over a single day of input"
+      + " (submission_timestamp values are all on the same date)")
+  @Default.Boolean(false)
+  Boolean getDeduplicateByDocumentId();
+
+  void setDeduplicateByDocumentId(Boolean value);
 
   /*
    * Note: Dataflow templates accept ValueProvider options at runtime, and other options at creation
@@ -239,6 +282,8 @@ public interface SinkOptions extends PipelineOptions {
     options.setParsedBqTriggeringFrequency(Time.parseDuration(options.getBqTriggeringFrequency()));
     options.setDecompressInputPayloads(
         providerWithDefault(options.getDecompressInputPayloads(), true));
+    options.setOutputTableRowFormat(
+        providerWithDefault(options.getOutputTableRowFormat(), TableRowFormat.payload));
     options.setOutputPubsubCompression(
         providerWithDefault(options.getOutputPubsubCompression(), Compression.GZIP));
     options.setErrorOutputPubsubCompression(

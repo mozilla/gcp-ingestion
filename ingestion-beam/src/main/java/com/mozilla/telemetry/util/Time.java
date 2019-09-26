@@ -4,9 +4,11 @@
 
 package com.mozilla.telemetry.util;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static com.mozilla.telemetry.ingestion.core.util.Time.parseJavaDuration;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 
@@ -66,6 +68,30 @@ public class Time {
     return NestedValueProvider.of(value, Time::parseSeconds);
   }
 
+  /**
+   * Attempts to parse a string in format '2011-12-03T10:15:30Z', returning null in case of error.
+   */
+  public static Instant parseAsInstantOrNull(String timestamp) {
+    try {
+      return Instant.from(DateTimeFormatter.ISO_INSTANT.parse(timestamp));
+    } catch (DateTimeParseException | NullPointerException ignore) {
+      return null;
+    }
+  }
+
+  /**
+   * Returns a timestamp of form '2011-12-03T10:15:30Z' based on microseconds since Unix epoch.
+   */
+  public static String epochMicrosToTimestamp(Long epochMicros) {
+    try {
+      long epochSeconds = epochMicros / 1_000_000;
+      long nanos = epochMicros % 1_000_000 * 1000;
+      return DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochSecond(epochSeconds, nanos));
+    } catch (DateTimeParseException | NullPointerException ignore) {
+      return null;
+    }
+  }
+
   /*
    * Private methods.
    */
@@ -76,43 +102,6 @@ public class Time {
 
   private static org.joda.time.Duration parseJodaDuration(String value) {
     return toJoda(parseJavaDuration(value));
-  }
-
-  private static java.time.Duration parseJavaDuration(String value) {
-    checkNotNull(value, "The specified duration must be a non-null value!");
-    java.time.Duration duration;
-
-    try {
-      // This is already an ISO-8601 duration.
-      duration = java.time.Duration.parse(value);
-    } catch (java.time.format.DateTimeParseException outer) {
-      String modifiedValue = value.toLowerCase().replaceAll("seconds", "s")
-          .replaceAll("second", "s").replaceAll("sec", "s").replaceAll("minutes", "m")
-          .replaceAll("minute", "m").replaceAll("mins", "m").replaceAll("min", "m")
-          .replaceAll("hours", "h").replaceAll("hour", "h").replaceAll("days", "dt")
-          .replaceAll("day", "dt").replaceAll("\\s+", "").toUpperCase();
-      if (!modifiedValue.contains("T")) {
-        modifiedValue = "T" + modifiedValue;
-      }
-      if (!modifiedValue.contains("P")) {
-        modifiedValue = "P" + modifiedValue;
-      }
-      if (modifiedValue.endsWith("T")) {
-        modifiedValue += "0S";
-      }
-      try {
-        duration = java.time.Duration.parse(modifiedValue);
-      } catch (java.time.format.DateTimeParseException e) {
-        throw new IllegalArgumentException(
-            "User-provided duration '" + value + "' was transformed to '" + modifiedValue
-                + "', but java.time.Duration.parse() could not understand it.",
-            e);
-      }
-    }
-
-    checkArgument(duration.toMillis() > 0, "The window duration must be greater than 0!");
-
-    return duration;
   }
 
 }

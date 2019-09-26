@@ -12,6 +12,7 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.CityResponse;
 import com.maxmind.geoip2.record.City;
 import com.maxmind.geoip2.record.Subdivision;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -45,8 +46,6 @@ import org.apache.beam.sdk.values.PCollection;
 
 public class GeoCityLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
-
-  public static final String GEO_COUNTRY = "geo_country";
 
   public static GeoCityLookup of(ValueProvider<String> geoCityDatabase,
       ValueProvider<String> geoCityFilter) {
@@ -90,7 +89,7 @@ public class GeoCityLookup
           loadResourcesOnFirstMessage();
         }
 
-        if (message.getAttributeMap().containsKey("geo_country")) {
+        if (message.getAttributeMap().containsKey(Attribute.GEO_COUNTRY)) {
           // Return early since geo has already been applied;
           // we are likely reprocessing a message from error output.
           countGeoAlreadyApplied.inc();
@@ -102,7 +101,7 @@ public class GeoCityLookup
 
         // Determine client ip
         String ip;
-        String xff = attributes.get("x_forwarded_for");
+        String xff = attributes.get(Attribute.X_FORWARDED_FOR);
         if (xff != null) {
           // Google's load balancer will append the immediate sending client IP and a global
           // forwarding rule IP to any existing content in X-Forwarded-For as documented in:
@@ -114,7 +113,7 @@ public class GeoCityLookup
           ip = ips[Math.max(ips.length - 2, 0)];
           countIpForwarded.inc();
         } else {
-          ip = attributes.getOrDefault("remote_addr", "");
+          ip = attributes.getOrDefault(Attribute.REMOTE_ADDR, "");
           countIpRemoteAddr.inc();
         }
 
@@ -131,19 +130,19 @@ public class GeoCityLookup
           foundCity.inc();
 
           String countryCode = response.getCountry().getIsoCode();
-          attributes.put(GEO_COUNTRY, countryCode);
+          attributes.put(Attribute.GEO_COUNTRY, countryCode);
 
           City city = response.getCity();
           if (cityAllowed(city.getGeoNameId())) {
-            attributes.put("geo_city", city.getName());
+            attributes.put(Attribute.GEO_CITY, city.getName());
             foundCityAllowed.inc();
           }
 
           List<Subdivision> subdivisions = response.getSubdivisions();
           // Throws IndexOutOfBoundsException
-          attributes.put("geo_subdivision1", subdivisions.get(0).getIsoCode());
+          attributes.put(Attribute.GEO_SUBDIVISION1, subdivisions.get(0).getIsoCode());
           foundGeo1.inc();
-          attributes.put("geo_subdivision2", subdivisions.get(1).getIsoCode());
+          attributes.put(Attribute.GEO_SUBDIVISION2, subdivisions.get(1).getIsoCode());
           foundGeo2.inc();
 
         } catch (UnknownHostException | GeoIp2Exception | IndexOutOfBoundsException ignore) {
@@ -151,9 +150,8 @@ public class GeoCityLookup
         }
 
         // remove client ip from attributes
-        attributes.remove("x_forwarded_for");
-        attributes.remove("x_pipeline_proxy");
-        attributes.remove("remote_addr");
+        attributes.remove(Attribute.X_FORWARDED_FOR);
+        attributes.remove(Attribute.REMOTE_ADDR);
 
         // remove null attributes because the coder can't handle them
         attributes.values().removeIf(Objects::isNull);

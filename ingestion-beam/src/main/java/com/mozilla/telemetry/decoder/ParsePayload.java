@@ -4,18 +4,25 @@
 
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.schemas.JSONSchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.JsonValidator;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
@@ -23,22 +30,15 @@ import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
-import org.everit.json.schema.Validator;
-import org.json.JSONObject;
 
 /**
- * A {@code PTransform} that parses the message's payload as a {@link JSONObject}, sets
+ * A {@code PTransform} that parses the message's payload as a JSON tree, sets
  * some attributes based on the content, and validates that it conforms to its schema.
  *
  * <p>There are several unrelated concerns all packed into this single transform so that we
  * incur the cost of parsing the JSON only once.
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
-
-  public static final String CLIENT_ID = "client_id";
-  public static final String SAMPLE_ID = "sample_id";
-  public static final String OS = "os";
-  public static final String OS_VERSION = "os_version";
 
   public static ParsePayload of(ValueProvider<String> schemasLocation,
       ValueProvider<String> schemaAliasesLocation) {
@@ -55,7 +55,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   private final ValueProvider<String> schemasLocation;
   private final ValueProvider<String> schemaAliasesLocation;
 
-  private transient Validator validator;
+  private transient JsonValidator validator;
   private transient JSONSchemaStore schemaStore;
   private transient CRC32 crc32;
 
@@ -77,7 +77,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
     final int submissionBytes = message.getPayload().length;
 
-    JSONObject json;
+    ObjectNode json;
     try {
       json = parseTimed(message.getPayload());
     } catch (IOException e) {
@@ -89,14 +89,14 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       throw e;
     }
 
+    // In case this message is being replayed from an error output where AddMetadata has already
+    // been applied, we strip out any existing metadata fields and put them into attributes.
+    AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
+
     if (MessageScrubber.shouldScrub(attributes, json)) {
       // Prevent the message from going to success or error output.
       throw new MessageShouldBeDroppedException();
     }
-
-    // In case this message is being replayed from an error output where AddMetadata has already
-    // been applied, we strip out any existing metadata fields and put them into attributes.
-    AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {
@@ -109,12 +109,10 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // If no "document_version" attribute was parsed from the URI, this element must be from the
     // /submit/telemetry endpoint and we now need to grab version from the payload.
     if (!attributes.containsKey("document_version")) {
-      if (json.has("version")) {
-        String version = json.get("version").toString();
-        attributes.put(ParseUri.DOCUMENT_VERSION, version);
-      } else if (json.has("v")) {
-        String version = json.get("v").toString();
-        attributes.put(ParseUri.DOCUMENT_VERSION, version);
+      Optional<JsonNode> version = Stream.of(json.path("version"), json.path("v"))
+          .filter(JsonNode::isValueNode).findFirst();
+      if (version.isPresent()) {
+        attributes.put(Attribute.DOCUMENT_VERSION, version.get().asText());
       } else {
         PerDocTypeCounter.inc(attributes, "error_missing_version");
         PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
@@ -144,7 +142,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
     addAttributesFromPayload(attributes, json);
 
-    byte[] normalizedPayload = json.toString().getBytes();
+    // https://github.com/mozilla/gcp-ingestion/issues/780
+    // We need to be careful to consistently use our util methods (which use Jackson) for
+    // serializing and deserializing JSON to reduce the possibility of introducing encoding
+    // issues. We previously called json.toString().getBytes() here without specifying a charset.
+    byte[] normalizedPayload = Json.asBytes(json);
 
     PerDocTypeCounter.inc(attributes, "valid_submission");
     PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
@@ -152,55 +154,62 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     return new PubsubMessage(normalizedPayload, attributes);
   }
 
-  private void addAttributesFromPayload(Map<String, String> attributes, JSONObject json) {
+  private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json) {
 
     // Try to get glean-style client_info object.
-    Optional<JSONObject> gleanClientInfo = Optional.of(json) //
-        .map(j -> j.optJSONObject("client_info"));
+    JsonNode gleanClientInfo = json.path("client_info");
 
     // Try to get "common ping"-style os object.
-    Optional<JSONObject> commonPingOs = Optional.of(json) //
-        .map(j -> j.optJSONObject("environment")) //
-        .map(j -> j.optJSONObject("system")) //
-        .map(j -> j.optJSONObject("os"));
+    JsonNode commonPingOs = json.path("environment").path("system").path("os");
 
-    if (gleanClientInfo.isPresent()) {
+    if (gleanClientInfo.isObject()) {
       // See glean ping structure in:
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/glean/baseline/baseline.1.schema.json
-      Optional.ofNullable(gleanClientInfo.get().optString("app_channel"))
+      Optional.ofNullable(gleanClientInfo.path("app_channel").textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .ifPresent(v -> attributes.put(Attribute.APP_UPDATE_CHANNEL, v));
+      Optional.ofNullable(gleanClientInfo.path(Attribute.OS).textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .ifPresent(v -> attributes.put(Attribute.OS, v));
+      Optional.ofNullable(gleanClientInfo.path(Attribute.OS_VERSION).textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(ParseUri.APP_UPDATE_CHANNEL, v));
-      Optional.ofNullable(gleanClientInfo.get().optString(OS))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS, v));
-      Optional.ofNullable(gleanClientInfo.get().optString(OS_VERSION))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS_VERSION, v));
-      Optional.ofNullable(gleanClientInfo.get().optString(CLIENT_ID))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(CLIENT_ID, v));
-    } else if (commonPingOs.isPresent()) {
+          .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
+      Optional.ofNullable(gleanClientInfo.path(Attribute.CLIENT_ID).textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v))
+          .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
+    } else if (commonPingOs.isObject()) {
       // See common ping structure in:
       // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
-      Optional.ofNullable(commonPingOs.get().optString("name"))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS, v));
-      Optional.ofNullable(commonPingOs.get().optString("version"))
-          .filter(v -> !Strings.isNullOrEmpty(v)).ifPresent(v -> attributes.put(OS_VERSION, v));
+      Optional.ofNullable(commonPingOs.path("name").textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .ifPresent(v -> attributes.put(Attribute.OS, v));
+      Optional.ofNullable(commonPingOs.path("version").textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     } else {
       // Try to extract "core ping"-style values; see
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/telemetry/core/core.10.schema.json
-      Optional.ofNullable(json.optString(OS)).filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(OS, v));
-      Optional.ofNullable(json.optString("osversion")).filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(OS_VERSION, v));
+      Optional.ofNullable(json.path(Attribute.OS).textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .ifPresent(v -> attributes.put(Attribute.OS, v));
+      Optional.ofNullable(json.path("osversion")) //
+          .map(JsonNode::textValue) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
     // Try extracting variants of top-level client id.
-    Optional.ofNullable(json.optString(CLIENT_ID)).filter(v -> !Strings.isNullOrEmpty(v))
-        .ifPresent(v -> attributes.put(CLIENT_ID, v));
-    Optional.ofNullable(json.optString("clientId")).filter(v -> !Strings.isNullOrEmpty(v))
-        .ifPresent(v -> attributes.put(CLIENT_ID, v));
+    Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
+        .filter(v -> !Strings.isNullOrEmpty(v)) //
+        .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
+    Optional.ofNullable(json.path("clientId").textValue()) //
+        .filter(v -> !Strings.isNullOrEmpty(v)) //
+        .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
 
     // Add sample id.
-    Optional.ofNullable(attributes.get(CLIENT_ID)) //
-        .ifPresent(v -> attributes.put(SAMPLE_ID, Long.toString(calculateSampleId(v))));
+    Optional.ofNullable(attributes.get(Attribute.CLIENT_ID)) //
+        .filter(v -> !Strings.isNullOrEmpty(v)) //
+        .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
   }
 
   @VisibleForTesting
@@ -209,26 +218,24 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       crc32 = new CRC32();
     }
     crc32.reset();
-    crc32.update(clientId.getBytes());
+    crc32.update(clientId.getBytes(StandardCharsets.UTF_8));
     return crc32.getValue() % 100;
   }
 
-  private JSONObject parseTimed(byte[] bytes) throws IOException {
+  private ObjectNode parseTimed(byte[] bytes) throws IOException {
     long startTime = System.currentTimeMillis();
-    final JSONObject json = Json.readJSONObject(bytes);
+    final ObjectNode json = Json.readObjectNode(bytes);
     long endTime = System.currentTimeMillis();
     parseTimer.update(endTime - startTime);
     return json;
   }
 
-  private void validateTimed(Schema schema, JSONObject json) {
+  private void validateTimed(Schema schema, ObjectNode json) throws JsonProcessingException {
     if (validator == null) {
-      // Without failEarly(), a pathological payload may cause the validator to consume all memory;
-      // https://github.com/mozilla/gcp-ingestion/issues/374
-      validator = Validator.builder().failEarly().build();
+      validator = new JsonValidator();
     }
     long startTime = System.currentTimeMillis();
-    validator.performValidation(schema, json);
+    validator.validate(schema, json);
     long endTime = System.currentTimeMillis();
     validateTimer.update(endTime - startTime);
   }

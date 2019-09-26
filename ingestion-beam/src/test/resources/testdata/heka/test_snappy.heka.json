@@ -1,0 +1,12 @@
+{
+    "data": "0000000000000000000000000000",
+    "meta": {
+        "Hostname": "test.example.com",
+        "Timestamp": 1437688956000000000,
+        "Type": "",
+        "test_double_field": 123.45,
+        "test_int_field": 100,
+        "test_string_field": "test_string_value"
+    },
+    "seq": 0
+}

@@ -5,9 +5,7 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.common.collect.ImmutableList;
-import com.mozilla.telemetry.decoder.GeoCityLookup;
-import com.mozilla.telemetry.decoder.ParsePayload;
-import com.mozilla.telemetry.decoder.ParseUri;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,12 +20,6 @@ import org.apache.beam.sdk.values.PCollection;
 
 public class NormalizeAttributes
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
-
-  public static final String NORMALIZED_CHANNEL = "normalized_channel";
-  public static final String NORMALIZED_OS = "normalized_os";
-  public static final String NORMALIZED_OS_VERSION = "normalized_os_version";
-  public static final String NORMALIZED_APP_NAME = "normalized_app_name";
-  public static final String NORMALIZED_COUNTRY_CODE = "normalized_country_code";
 
   public static NormalizeAttributes of() {
     return INSTANCE;
@@ -154,21 +146,21 @@ public class NormalizeAttributes
       message = PubsubConstraints.ensureNonNull(message);
       Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
-      Optional.ofNullable(attributes.get(ParseUri.APP_UPDATE_CHANNEL))
+      Optional.ofNullable(attributes.get(Attribute.APP_UPDATE_CHANNEL))
           .map(NormalizeAttributes::normalizeChannel)
-          .ifPresent(v -> attributes.put(NORMALIZED_CHANNEL, v));
-      Optional.ofNullable(attributes.get(ParsePayload.OS)) //
+          .ifPresent(v -> attributes.put(Attribute.NORMALIZED_CHANNEL, v));
+      Optional.ofNullable(attributes.get(Attribute.OS)) //
           .map(NormalizeAttributes::normalizeOs) //
-          .ifPresent(v -> attributes.put(NORMALIZED_OS, v));
-      Optional.ofNullable(attributes.get(ParsePayload.OS_VERSION))
+          .ifPresent(v -> attributes.put(Attribute.NORMALIZED_OS, v));
+      Optional.ofNullable(attributes.get(Attribute.OS_VERSION))
           .map(NormalizeAttributes::normalizeOsVersion)
-          .ifPresent(v -> attributes.put(NORMALIZED_OS_VERSION, v));
-      Optional.ofNullable(attributes.get(ParseUri.APP_NAME))
+          .ifPresent(v -> attributes.put(Attribute.NORMALIZED_OS_VERSION, v));
+      Optional.ofNullable(attributes.get(Attribute.APP_NAME))
           .map(NormalizeAttributes::normalizeAppName)
-          .ifPresent(v -> attributes.put(NORMALIZED_APP_NAME, v));
-      Optional.ofNullable(attributes.get(GeoCityLookup.GEO_COUNTRY))
+          .ifPresent(v -> attributes.put(Attribute.NORMALIZED_APP_NAME, v));
+      Optional.ofNullable(attributes.get(Attribute.GEO_COUNTRY))
           .map(NormalizeAttributes::normalizeCountryCode)
-          .ifPresent(v -> attributes.put(NORMALIZED_COUNTRY_CODE, v));
+          .ifPresent(v -> attributes.put(Attribute.NORMALIZED_COUNTRY_CODE, v));
 
       return new PubsubMessage(message.getPayload(), attributes);
     }
