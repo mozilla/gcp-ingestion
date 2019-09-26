@@ -356,7 +356,7 @@ public class PubsubMessageToTableRow
           repeatedAdditionalProperties.add(null);
         }
       });
-      if (!repeatedAdditionalProperties.stream().allMatch(p -> p == null)) {
+      if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
         additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
       }
     } else {
