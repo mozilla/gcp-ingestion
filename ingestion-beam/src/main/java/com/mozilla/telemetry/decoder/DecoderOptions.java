@@ -7,6 +7,7 @@ package com.mozilla.telemetry.decoder;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mozilla.telemetry.options.SinkOptions;
 import java.net.URI;
+import java.util.Optional;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
@@ -35,8 +36,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setGeoCityFilter(ValueProvider<String> value);
 
-  @Description("URI of a redis server that will be used for deduplication")
-  @Validation.Required
+  @Description("URI of a redis server that will be used for deduplication; leave null to disable")
   ValueProvider<String> getRedisUri();
 
   void setRedisUri(ValueProvider<String> value);
@@ -77,7 +77,8 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(), URI::create));
+    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(),
+        s -> Optional.ofNullable(s).map(URI::create).orElse(null)));
   }
 
 }

@@ -68,7 +68,7 @@ public enum OutputType {
           options.getParsedBqTriggeringFrequency(), options.getInputType(),
           options.getBqNumFileShards(), options.getBqStreamingDocTypes(),
           options.getBqStrictSchemaDocTypes(), options.getSchemasLocation(),
-          options.getSchemaAliasesLocation());
+          options.getSchemaAliasesLocation(), options.getOutputTableRowFormat());
     }
   };
 

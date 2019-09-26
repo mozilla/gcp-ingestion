@@ -13,9 +13,12 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.transforms.DeduplicateByDocumentId;
+import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -54,21 +57,26 @@ public class Decoder extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    // Trailing comments are used below to prevent rewrapping by google-java-format.
-    pipeline //
-        .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
-        .apply(ParseUri.of()).errorsTo(errorCollections) //
-        .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParsePayload.of(options.getSchemasLocation(), options.getSchemaAliasesLocation())) //
-        .errorsTo(errorCollections) //
-        .apply(ParseProxy.of()) //
-        .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
-        .apply(ParseUserAgent.of()) //
-        .apply(NormalizeAttributes.of()) //
-        .apply(AddMetadata.of()).errorsTo(errorCollections) //
-        .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-        .sendDuplicateMetadataToErrors().errorsTo(errorCollections) //
-        .apply(options.getOutputType().write(options)).errorsTo(errorCollections);
+    // We wrap pipeline in Optional for more convenience in chaining together transforms.
+    Optional.of(pipeline) //
+        .map(p -> p //
+            .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
+            .apply(ParseUri.of()).errorsTo(errorCollections) //
+            .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
+            .apply(LimitPayloadSize.toMB(10)).errorsTo(errorCollections) //
+            .apply(
+                ParsePayload.of(options.getSchemasLocation(), options.getSchemaAliasesLocation()))
+            .errorsTo(errorCollections) //
+            .apply(ParseProxy.of()) //
+            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
+            .apply(ParseUserAgent.of()) //
+            .apply(NormalizeAttributes.of()) //
+            .apply(AddMetadata.of()).errorsTo(errorCollections) //
+            .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
+            .sendDuplicateMetadataToErrors().errorsTo(errorCollections)) //
+        .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
+        .map(p -> p //
+            .apply(options.getOutputType().write(options)).errorsTo(errorCollections));
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //

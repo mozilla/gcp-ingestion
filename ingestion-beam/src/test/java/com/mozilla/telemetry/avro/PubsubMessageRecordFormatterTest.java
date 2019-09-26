@@ -6,27 +6,27 @@ package com.mozilla.telemetry.avro;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mozilla.telemetry.util.Json;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-
 import org.apache.avro.AvroTypeException;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericArray;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import org.junit.Test;
 
 public class PubsubMessageRecordFormatterTest {
 
   @Test
   public void testFormatNull() {
-    byte[] data = new JSONObject().put("test_null", JSONObject.NULL).toString().getBytes();
+    byte[] data = Json.createObjectNode().set("test_null", NullNode.getInstance()).toString()
+        .getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields().name("test_null").type().nullType()
@@ -40,10 +40,10 @@ public class PubsubMessageRecordFormatterTest {
 
   @Test
   public void testFormatFlatSchema() {
-    byte[] data = new JSONObject() //
+    byte[] data = Json.createObjectNode() //
         .put("test_bool", true).put("test_long", -7).put("test_double", 0.99)
         .put("test_string", "hello world") //
-        .toString().getBytes();
+        .toString().getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -64,15 +64,15 @@ public class PubsubMessageRecordFormatterTest {
 
   private byte[] generateNestedObject() {
     // a tree with boolean leaves
-    return new JSONObject().put("shape", new JSONObject() //
-        .put("quadrilateral", new JSONObject() //
+    return Json.createObjectNode().set("shape", Json.createObjectNode() //
+        .set("quadrilateral", Json.createObjectNode() //
             .put("square", true) //
             .put("rectangle", true) //
             .put("rhombus", true) //
             .put("parallelogram", true) //
             .put("trapezoid", true) //
             .put("kite", true))) //
-        .toString().getBytes();
+        .toString().getBytes(StandardCharsets.UTF_8);
   }
 
   @Test
@@ -125,9 +125,9 @@ public class PubsubMessageRecordFormatterTest {
 
   @Test
   public void testFormatArray() {
-    byte[] data = new JSONObject() //
-        .put("test_array", new JSONArray().put(true).put(false).put(true)) //
-        .toString().getBytes();
+    byte[] data = Json.createObjectNode() //
+        .set("test_array", Json.createArrayNode().add(true).add(false).add(true)) //
+        .toString().getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder //
@@ -144,10 +144,9 @@ public class PubsubMessageRecordFormatterTest {
 
   @Test
   public void testFormatNullableBoolean() {
-    byte[] data = new JSONObject() //
-        .put("test_none", JSONObject.NULL) //
-        .put("test_some", true) //
-        .toString().getBytes();
+    byte[] data = Json.createObjectNode() //
+        .put("test_some", true).set("test_none", NullNode.getInstance()) //
+        .toString().getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder //
@@ -166,7 +165,8 @@ public class PubsubMessageRecordFormatterTest {
   @Test(expected = AvroTypeException.class)
   public void testFormatMissingRequiredFieldThrowsException() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
-    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    byte[] data = Json.createObjectNode().set("unused", NullNode.getInstance()).toString()
+        .getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -178,7 +178,8 @@ public class PubsubMessageRecordFormatterTest {
   @Test(expected = AvroTypeException.class)
   public void testFormatNullAsBooleanWithBooleanDefault() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
-    byte[] data = new JSONObject().put("test", JSONObject.NULL).toString().getBytes();
+    byte[] data = Json.createObjectNode().set("test", NullNode.getInstance()).toString()
+        .getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -193,7 +194,8 @@ public class PubsubMessageRecordFormatterTest {
   @Test
   public void testFormatMissingAsBooleanWithBooleanDefaultIsNull() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
-    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    byte[] data = Json.createObjectNode().set("unused", NullNode.getInstance()).toString()
+        .getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -212,7 +214,8 @@ public class PubsubMessageRecordFormatterTest {
   @Test
   public void testFormatMissingAsBooleanWithNullDefault() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
-    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    byte[] data = Json.createObjectNode().set("unused", NullNode.getInstance()).toString()
+        .getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -226,7 +229,8 @@ public class PubsubMessageRecordFormatterTest {
   @Test
   public void testFormatMissingMultipleAsBooleanWithNull() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
-    byte[] data = new JSONObject().put("unused", JSONObject.NULL).toString().getBytes();
+    byte[] data = Json.createObjectNode().set("unused", NullNode.getInstance()).toString()
+        .getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -242,7 +246,7 @@ public class PubsubMessageRecordFormatterTest {
   @Test
   public void testFormatEmptyObjectAsBooleanWithNull() {
     PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
-    byte[] data = new JSONObject().toString().getBytes();
+    byte[] data = Json.createObjectNode().toString().getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -257,10 +261,10 @@ public class PubsubMessageRecordFormatterTest {
 
   @Test
   public void testFormatNullableObject() {
-    byte[] data = new JSONObject() //
-        .put("test_none", JSONObject.NULL) //
-        .put("test_some", new JSONObject().put("test_field", true)) //
-        .toString().getBytes();
+    ObjectNode json = Json.createObjectNode();
+    json.set("test_some", Json.createObjectNode().put("test_field", true));
+    json.set("test_none", NullNode.getInstance());
+    byte[] data = json.toString().getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema subschema = SchemaBuilder.record("test_object").fields().name("test_field").type()
@@ -279,15 +283,15 @@ public class PubsubMessageRecordFormatterTest {
   }
 
   @Test
-  public void testFormatCastsFieldsToJsonString() {
-    byte[] data = new JSONObject() //
-        .put("test_bool", true) //
+  public void testFormatCastsFieldsToJsonString() throws Exception {
+    ObjectNode json = Json.createObjectNode();
+    json.put("test_bool", true) //
         .put("test_long", -7) //
         .put("test_double", 0.99) //
-        .put("test_string", "hello world") //
-        .put("test_object", new JSONObject().put("test_field", true)) //
-        .put("test_array", new JSONArray().put(1).put(2).put(3)) //
-        .toString().getBytes();
+        .put("test_string", "hello world");
+    json.set("test_object", Json.createObjectNode().put("test_field", true));
+    json.set("test_array", Json.createArrayNode().add(1).add(2).add(3));
+    byte[] data = Json.asBytes(json);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //
@@ -312,14 +316,14 @@ public class PubsubMessageRecordFormatterTest {
 
   @Test
   public void testFormatCorrectsFieldNames() {
-    byte[] data = new JSONObject() //
+    byte[] data = Json.createObjectNode() //
         .put("test", true) //
         .put("test-hyphen", true) //
         .put("test.dot", true) //
         .put("-test-prefix-hyphen", true) //
         .put("$test-bad-symbol", true) //
         .put("0-test-prefix-number", true) //
-        .toString().getBytes();
+        .toString().getBytes(StandardCharsets.UTF_8);
     PubsubMessage message = new PubsubMessage(data, Collections.emptyMap());
 
     Schema schema = SchemaBuilder.record("root").fields() //

@@ -1,0 +1,12 @@
+# This file is not in the default docker-compose path, so will be ignored
+# unless passed explicitly to docker-compose as we do in our CI configuration.
+version: '3.4'
+
+services:
+  sink:
+  # command:
+  #   export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
+  #   echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+  #   mvn clean test -Dtest=*
+    env_file:
+    - circleci.env
