@@ -13,6 +13,7 @@ import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Field.Mode;
+import com.google.cloud.bigquery.FieldList;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Table;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -315,22 +317,9 @@ public class PubsubMessageToTableRow
       // We need to recursively call transformForBqSchema on any normal record type.
     } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
       // A list signifies a fixed length tuple which should be given anonymous field names.
-      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
-        Map<String, Object> m = new HashMap<>();
-        for (int i = 0; i < list.size(); i++) {
-          m.put(String.format("f%d_", i), list.get(i));
-        }
-        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
-        transformForBqSchema(m, field.getSubFields(), props);
-        if (props != null && !props.isEmpty()) {
-          List<Object> tupleAdditionalProperties = new ArrayList<>(
-              Collections.nCopies(list.size(), null));
-          props.forEach((k, v) -> {
-            int index = Integer.parseInt(k.substring(1, k.length() - 1));
-            tupleAdditionalProperties.set(index, v);
-          });
-          additionalProperties.put(jsonFieldName, tupleAdditionalProperties);
-        }
+      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(tuple -> {
+        Map<String, Object> m = processTupleField(jsonFieldName, field.getSubFields(), tuple,
+            additionalProperties);
         parent.put(name, m);
       });
       value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
@@ -362,6 +351,35 @@ public class PubsubMessageToTableRow
     } else {
       value.ifPresent(v -> parent.put(name, v));
     }
+  }
+
+  /**
+   * A shim into transformForBqSchema for translating tuples into objects and to
+   * reconstruct additional properties.
+   * @param jsonFieldName The name of the original JSON field.
+   * @param fields A list of types for each element of the tuple.
+   * @param tuple A list of objects that are mapped into a record.
+   * @param additionalProperties A mutable map of elements that aren't captured in the schema.
+   * @return A record object with anonymous struct naming.
+   */
+  private Map<String, Object> processTupleField(String jsonFieldName, FieldList fields,
+      List<Object> tuple, Map<String, Object> additionalProperties) {
+    Map<String, Object> m = new HashMap<>();
+    for (int i = 0; i < tuple.size(); i++) {
+      m.put(String.format("f%d_", i), tuple.get(i));
+    }
+    Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+    transformForBqSchema(m, fields, props);
+    if (props != null && !props.isEmpty()) {
+      List<Object> tupleAdditionalProperties = new ArrayList<>(
+          Collections.nCopies(tuple.size(), null));
+      props.forEach((k, v) -> {
+        int index = Integer.parseInt(k.substring(1, k.length() - 1));
+        tupleAdditionalProperties.set(index, v);
+      });
+      additionalProperties.put(jsonFieldName, tupleAdditionalProperties);
+    }
+    return m;
   }
 
   /**
