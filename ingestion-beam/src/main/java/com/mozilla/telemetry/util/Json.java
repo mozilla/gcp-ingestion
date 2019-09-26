@@ -138,6 +138,21 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   }
 
   /**
+   * Read bytes into an {@link ArrayNode}.
+   *
+   * @exception IOException if {@code data} does not contain a valid json object.
+   */
+  public static ArrayNode readArrayNode(byte[] data) throws IOException {
+    // Read data into a tree
+    TreeNode root = MAPPER.readTree(data);
+    // Check that we have an array, because treeToValue won't
+    if (root == null || !root.isArray()) {
+      throw new IOException("json value is not an array");
+    }
+    return (ArrayNode) root;
+  }
+
+  /**
    * Return a new, empty {@link ObjectNode}.
    */
   public static ObjectNode createObjectNode() {

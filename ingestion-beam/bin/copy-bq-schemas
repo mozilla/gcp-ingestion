@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Copies BigQuery schemas for integration testing and validation from the
+# generated schema archive fetched by `bin/download-schemas`. This script will
+# write to a flat directory called `bq-schemas` containing BQ schemas.
+
+set -e
+
+cd "$(dirname "$0")/.." || exit
+
+if [[ ! -f schemas.tar.gz ]]; then
+    echo "Run 'bin/download-schemas'"
+    exit 1
+fi
+
+function init_working_directory() {
+    # Create a temporary directory for working. The current directory is stored
+    # into $rootdir and the working directory is stored into $workdir. The
+    # working directory will be removed on exit.
+    rootdir=$(pwd)
+    workdir=$(mktemp -d -t tmp.XXXXXXXXXX)
+    function cleanup {
+        rm -rf "$workdir"
+        echo "Running cleanup!"
+    }
+    trap cleanup EXIT
+    cd "$workdir" || exit
+}
+
+init_working_directory
+
+src="mozilla-pipeline-schemas"
+dst="bq-schemas"
+
+# Find all JSON schemas in the extracted archive. The top-level folder in the
+# archive is consistently named in `bin/download-schemas`
+tar -xf "$rootdir/schemas.tar.gz" -C "$workdir"
+schemas=$(find $src/schemas -type file -name "*.bq")
+
+mkdir $dst
+
+for schema in $schemas; do
+    # replace // with / and get the proper namespace
+    namespace=$(echo "$schema" | sed 's/\/\//\//g' | cut -d/ -f3)
+    mv "$schema" "$dst/$namespace.$(basename $schema)"
+done
+
+# Generate the final archive, overwriting any existing files
+cp -r "$dst" "$rootdir"

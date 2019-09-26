@@ -79,6 +79,19 @@ public class Time {
     }
   }
 
+  /**
+   * Returns a timestamp of form '2011-12-03T10:15:30Z' based on microseconds since Unix epoch.
+   */
+  public static String epochMicrosToTimestamp(Long epochMicros) {
+    try {
+      long epochSeconds = epochMicros / 1_000_000;
+      long nanos = epochMicros % 1_000_000 * 1000;
+      return DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochSecond(epochSeconds, nanos));
+    } catch (DateTimeParseException | NullPointerException ignore) {
+      return null;
+    }
+  }
+
   /*
    * Private methods.
    */
