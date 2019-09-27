@@ -11,6 +11,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.mozilla.telemetry.heka.Heka.Field.ValueType;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.Time;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -140,6 +141,8 @@ public class HekaReader {
     Map<String, String> attributes = new HashMap<>();
     attributes.put(Attribute.DOCUMENT_NAMESPACE, "telemetry");
     attributes.put(Attribute.HOST, message.getHostname());
+    Optional.of(message.getTimestamp()).filter(v -> v > 0).map(Time::epochNanosToTimestamp)
+        .ifPresent(s -> attributes.put(Attribute.SUBMISSION_TIMESTAMP, s));
     Optional.ofNullable(payload.remove("meta")).ifPresent(meta -> {
       Optional.ofNullable(meta.path("Date").textValue())
           .ifPresent(s -> attributes.put(Attribute.DATE, s));
