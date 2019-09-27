@@ -2,7 +2,7 @@
 
 . "$(dirname "$0")"/include/common.sh
 
-if ${VENV:-true}; then python3.7 -m venv "$VENV_DIR"; fi
+if ${VENV:-true}; then python3.7 -m venv "$VENV_DIR"; source "$VENV_ACTIVATE"; fi
 
 python3.7 -m pip install --upgrade --no-cache-dir -r requirements.txt
 
