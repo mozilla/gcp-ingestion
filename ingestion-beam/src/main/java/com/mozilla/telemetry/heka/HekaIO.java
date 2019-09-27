@@ -4,12 +4,14 @@
 
 package com.mozilla.telemetry.heka;
 
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Optional;
 import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
@@ -20,6 +22,8 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
+import org.joda.time.Instant;
+import org.joda.time.format.ISODateTimeFormat;
 
 public class HekaIO {
 
@@ -57,7 +61,14 @@ public class HekaIO {
               if (o == null) {
                 break;
               }
-              out.get(successTag).output(o);
+              Instant instant = Optional.ofNullable(o.getAttribute(Attribute.SUBMISSION_TIMESTAMP))
+                  .map(s -> ISODateTimeFormat.dateTimeParser().parseDateTime(s).toInstant())
+                  .orElse(null);
+              if (instant == null) {
+                out.get(successTag).output(o);
+              } else {
+                out.get(successTag).outputWithTimestamp(o, instant);
+              }
             } catch (Exception e) {
               // We emit one error output message per exception thrown while trying to read messages
               // out of the file; we don't have metadata about where in the file each record
