@@ -17,7 +17,7 @@ def init(app, mocker):
 
 async def test_heartbeat(app):
     responses = []
-    request = Request(b"/__heartbeat__", {}, "1.1", "GET", "http")
+    request = Request(b"/__heartbeat__", {}, "1.1", "GET", "http", app)
     await app.handle_request(request, lambda r: responses.append(r), None)
     assert len(responses) == 1
     response = responses.pop()
@@ -31,7 +31,7 @@ async def test_heartbeat(app):
 
 async def test_lbheartbeat(app):
     responses = []
-    request = Request(b"/__lbheartbeat__", {}, "1.1", "GET", "http")
+    request = Request(b"/__lbheartbeat__", {}, "1.1", "GET", "http", app)
     await app.handle_request(request, lambda r: responses.append(r), None)
     assert len(responses) == 1
     response = responses.pop()
@@ -41,7 +41,7 @@ async def test_lbheartbeat(app):
 
 async def test_version(app):
     responses = []
-    request = Request(b"/__version__", {}, "1.1", "GET", "http")
+    request = Request(b"/__version__", {}, "1.1", "GET", "http", app)
     await app.handle_request(request, lambda r: responses.append(r), None)
     assert len(responses) == 1
     response = responses.pop()

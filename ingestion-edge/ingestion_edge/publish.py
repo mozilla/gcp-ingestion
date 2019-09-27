@@ -12,7 +12,7 @@ from functools import partial
 from google.api_core.retry import Retry, if_exception_type
 from google.cloud.pubsub_v1 import PublisherClient
 from persistqueue import SQLiteAckQueue
-from typing import Dict, Tuple
+from typing import Callable, Dict, Tuple
 from .config import logger
 from .util import AsyncioBatch, HTTP_STATUS
 import google.api_core.exceptions
@@ -35,7 +35,7 @@ async def submit(
     q: SQLiteAckQueue,
     topic: str,
     metadata_headers: Dict[str, str],
-    **kwargs
+    **kwargs,
 ) -> response.HTTPResponse:
     """Deliver request to the pubsub topic.
 
@@ -55,7 +55,7 @@ async def submit(
             **{
                 attr: request.headers.get(header)
                 for header, attr in metadata_headers.items()
-            }
+            },
         ).items()
         if value is not None
     }
@@ -111,25 +111,22 @@ def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
         if len(attribute.encode("utf8")) > 256:
             # https://cloud.google.com/pubsub/quotas#resource_limits
             raise ValueError("Metadata attribute exceeds key size limit of 256 bytes")
-    # generate one view_func per topic
-    handlers = {
-        route.topic: partial(
-            submit,
-            client=client,
-            q=q,
-            topic=route.topic,
-            metadata_headers=metadata_headers,
-        )
-        for route in app.config["ROUTE_TABLE"]
-    }
     # add routes for ROUTE_TABLE
+    handlers: Dict[str, Callable] = {}
     for route in app.config["ROUTE_TABLE"]:
+        if route.topic not in handlers:
+            # generate one handler per topic
+            handlers[route.topic] = partial(
+                submit,
+                client=client,
+                q=q,
+                topic=route.topic,
+                metadata_headers=metadata_headers,
+            )
+            handlers[route.topic].__name__ = f"submit({route.topic})"
         app.add_route(
             handler=handlers[route.topic],
             uri=route.uri,
             methods=[method.upper() for method in route.methods],
-            # required because handler.__name__ does not exist
-            # must be a unique name for each handler
-            name="submit_" + route.topic,
         )
     return client, q
