@@ -23,9 +23,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Count;
-import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,10 +46,6 @@ public class HekaIOTest extends TestWithDeterministicJson {
         .apply(FileIO.match()
             .filepattern(Resources.getResource("testdata/heka/test_snappy.heka").getPath()))
         .apply(FileIO.readMatches()).apply(HekaIO.readFiles());
-    result.errors().apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(m -> {
-      System.out.println(m.getAttributeMap());
-      return m;
-    }));
 
     PAssert.thatSingleton(result.output().apply(Count.globally())).isEqualTo(10L);
     PAssert.that(result.output()).satisfies(iter -> {
