@@ -292,6 +292,16 @@ public class PubsubMessageToTableRow
         && field.getSubFields().get(1).getName().equals("value");
   }
 
+  /**
+   * Return true if this field is a nested list.
+   */
+  private static boolean isNestedListType(Field field, Optional<Object> value) {
+    return field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED //
+        && field.getSubFields().size() == 1 //
+        && field.getSubFields().get(0).getName().equals("list") //
+        && value.filter(List.class::isInstance).isPresent();
+  }
+
   private void processField(String jsonFieldName, Field field, Object val,
       Map<String, Object> parent, Map<String, Object> additionalProperties) {
     String name = field.getName();
@@ -313,6 +323,10 @@ public class PubsubMessageToTableRow
       // A record of key and value indicates we need to transformForBqSchema a map to an array.
     } else if (isMapType(field)) {
       expandMapType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
+
+      // A record with a single "list" field and a list value should be expanded appropriately.
+    } else if (isNestedListType(field, value)) {
+      expandNestedListType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
 
       // We need to recursively call transformForBqSchema on any normal record type.
     } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
@@ -420,6 +434,37 @@ public class PubsubMessageToTableRow
         return kv;
       }).collect(Collectors.toList());
       parent.put(field.getName(), unmapped);
+    });
+  }
+
+  /**
+   * Expand nested lists into an object with a list item to support unnested in BigQuery.
+   */
+  private void expandNestedListType(String jsonFieldName, Object val, Field field,
+      Map<String, Object> parent, Map<String, Object> additionalProperties) {
+    Optional<Object> value = Optional.ofNullable(val);
+    value.filter(List.class::isInstance).map(List.class::cast).ifPresent(l -> {
+      List<Object> list = l;
+      Field valueField = field.getSubFields().get(0);
+      List<Object> repeatedAdditionalProperties = new ArrayList<>();
+      List<Map<String, Object>> nestedList = list.stream().map(item -> {
+        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+        Map<String, Object> map = new HashMap<>(1);
+        map.put("list", item);
+        processField("list", valueField, item, map, props);
+        if (props != null && !props.isEmpty()) {
+          repeatedAdditionalProperties.add(props.get("list"));
+        } else {
+          repeatedAdditionalProperties.add(null);
+        }
+        return map;
+      }).collect(Collectors.toList());
+
+      parent.put(field.getName(), nestedList);
+
+      if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
+        additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
+      }
     });
   }
 

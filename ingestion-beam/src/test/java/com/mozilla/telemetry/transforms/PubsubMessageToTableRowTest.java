@@ -399,9 +399,28 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
         Field.newBuilder("list", LegacySQLTypeName.INTEGER) //
             .setMode(Mode.REPEATED).build() //
     ).setMode(Mode.REPEATED).build()); //
-    String expected = "{\"payload\":[{\"list\":[0]},{\"list\":[1]}]}]}";
+    String expected = "{\"payload\":[{\"list\":[0]},{\"list\":[1]}]}";
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
+  }
+
+  @Test
+  public void testNestedListAdditionalProperties() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[{\"a\":1}],[{\"a\":2},{\"a\":3,\"b\":4}]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.newBuilder("list", LegacySQLTypeName.RECORD, //
+            Field.of("a", LegacySQLTypeName.INTEGER)) //
+            .setMode(Mode.REPEATED).build() //
+    ).setMode(Mode.REPEATED).build()); //
+    String expected = "{\"payload\":[{\"list\":[{\"a\":1}]},{\"list\":[{\"a\":2},{\"a\":3}]}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"payload\":[null,[null,{\"b\":4}]]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
   }
 
   @Test
