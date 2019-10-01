@@ -388,4 +388,38 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
   }
+
+  @Test
+  public void testNestedList() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[0],[1]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.newBuilder("list", LegacySQLTypeName.INTEGER) //
+            .setMode(Mode.REPEATED).build() //
+    ).setMode(Mode.REPEATED).build()); //
+    String expected = "{\"payload\":[{\"list\":[0]},{\"list\":[1]}]}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+  }
+
+  @Test
+  public void testDoublyNestedList() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[[0],[1]],[[2]]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.newBuilder("list", LegacySQLTypeName.RECORD, //
+            Field.of("list", LegacySQLTypeName.INTEGER)) //
+            .setMode(Mode.REPEATED).build() //
+    ).setMode(Mode.REPEATED).build()); //
+    String expected = "{\"payload\":[" //
+        + "{\"list\":[{\"list\":[0]},{\"list\":[1]}]}," //
+        + "{\"list\":[{\"list\":[2]}]}" //
+        + "]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+  }
 }
