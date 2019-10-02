@@ -25,12 +25,15 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Partition;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.View;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionView;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
+import org.joda.time.Duration;
 
 /**
  * Transform that introduces a GroupByKey operation to group together all duplicate messages in
@@ -54,6 +57,9 @@ public class DeduplicateByDocumentId
 
   @Override
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> input) {
+    // Deduplicate only within whole days.
+    input = input.apply(Window.into(FixedWindows.of(Duration.standardDays(1))));
+
     // The great majority of documents are not duplicated, so we can avoid shuffling most records
     // by first identifying which ones are potential duplicates; we extract just document IDs here
     // and create a view of IDs that occur more than once, which we then pass as side input to

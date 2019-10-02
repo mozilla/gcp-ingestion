@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.Pipeline;
@@ -65,6 +66,7 @@ import org.apache.beam.sdk.transforms.Partition;
 import org.apache.beam.sdk.transforms.Requirements;
 import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PBegin;
@@ -466,6 +468,9 @@ public abstract class Write
           // pubsub), but forbids the option if the input PCollection is bounded.
           fileLoadsWrite = fileLoadsWrite.withTriggeringFrequency(triggeringFrequency) //
               .withNumFileShards(numShards);
+        } else {
+          // We instead window by triggeringFrequency in the case of batch mode.
+          messages = messages.apply(Window.into(FixedWindows.of(triggeringFrequency)));
         }
         messages //
             .apply(maybeCompress) //
@@ -474,7 +479,11 @@ public abstract class Write
             .apply(fileLoadsWrite);
       });
 
-      PCollection<PubsubMessage> errorCollection = PCollectionList.of(errorCollections)
+      PCollection<PubsubMessage> errorCollection = PCollectionList
+          // Make sure all error collections are back in the global window;
+          // otherwise it may not be possible to flatten them together.
+          .of(errorCollections.stream().map(pc -> pc.apply(Window.into(new GlobalWindows())))
+              .collect(Collectors.toList()))
           .apply("Flatten bigquery errors", Flatten.pCollections());
 
       return WithErrors.Result.of(PDone.in(input.getPipeline()), errorCollection);
