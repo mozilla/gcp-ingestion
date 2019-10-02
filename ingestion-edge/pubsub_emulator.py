@@ -1,7 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, you can obtain one at http://mozilla.org/MPL/2.0/.
-
 """Pubsub Emulator for testing."""
 
 from google.cloud.pubsub_v1.proto import pubsub_pb2_grpc, pubsub_pb2
