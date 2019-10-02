@@ -2,8 +2,8 @@ package com.mozilla.telemetry.decoder;
 
 import static org.junit.Assert.assertEquals;
 
-import avro.shaded.com.google.common.collect.ImmutableList;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
