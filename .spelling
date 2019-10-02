@@ -50,6 +50,7 @@ JSON
 JVM
 Kubernetes
 lookups
+MacOS
 Memorystore
 metadata
 monorepo
@@ -59,7 +60,6 @@ namespaces
 natively
 nginx
 ok
-osx
 pre-production
 protobuf
 PubSub

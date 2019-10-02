@@ -181,7 +181,7 @@ generally harmless.
 
 The provided `bin/mvn` script downloads and runs maven via docker so that less
 setup is needed on the local machine. For prolonged development performance is
-likely to be significantly better, especially in osx, if `mvn` is installed and
+likely to be significantly better, especially in MacOS, if `mvn` is installed and
 run natively without docker.
 
 ```bash
