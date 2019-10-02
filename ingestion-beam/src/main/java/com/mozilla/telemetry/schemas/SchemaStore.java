@@ -1,7 +1,7 @@
 package com.mozilla.telemetry.schemas;
 
-import avro.shaded.com.google.common.annotations.VisibleForTesting;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
