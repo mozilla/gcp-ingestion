@@ -1,5 +1,6 @@
 FROM maven:3-jdk-8 AS base
-WORKDIR /app/ingestion-sink
+WORKDIR /app
+COPY LICENSE /app/LICENSE
 COPY pom.xml /app/pom.xml
 COPY ingestion-sink/pom.xml /app/ingestion-sink/pom.xml
 COPY checkstyle /app/checkstyle
