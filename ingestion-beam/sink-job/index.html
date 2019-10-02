@@ -292,13 +292,14 @@ with <code>-</code> because <a href="https://stackoverflow.com/q/48909921">Hadoo
 <p>Note: <code>-Dexec.args</code> does not handle newlines gracefully, but bash will remove
 <code>\</code> escaped newlines in <code>"</code>s.</p>
 <h3 id="locally">Locally</h3>
-<p>If you install Java and maven, you can invoke <code>mvn -P ingestion-beam</code> from the
-git root in the following commands instead of using <code>./bin/mvn</code> from the
-<code>ingestion-beam/</code> directory; be aware, though, that Java 8 is the target JVM
+<p>If you install Java and maven, you can invoke <code>mvn</code> in the following commands
+instead of using <code>./bin/mvn</code>; be aware, though, that Java 8 is the target JVM
 and some reflection warnings may be thrown on newer versions, though these are
 generally harmless.</p>
-<p>The provided <code>bin/mvn</code> script downloads and runs maven with the correct profile
-via docker so that less setup is needed on the local machine.</p>
+<p>The provided <code>bin/mvn</code> script downloads and runs maven via docker so that less
+setup is needed on the local machine. For prolonged development performance is
+likely to be significantly better, especially in MacOS, if <code>mvn</code> is installed and
+run natively without docker.</p>
 <pre><code class="bash"># create a test input file
 mkdir -p tmp/
 echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' &gt; tmp/input.json
