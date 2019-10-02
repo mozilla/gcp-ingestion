@@ -174,14 +174,15 @@ Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove
 
 ### Locally
 
-If you install Java and maven, you can invoke `mvn -P ingestion-beam` from the
-git root in the following commands instead of using `./bin/mvn` from the
-`ingestion-beam/` directory; be aware, though, that Java 8 is the target JVM
+If you install Java and maven, you can invoke `mvn` in the following commands
+instead of using `./bin/mvn`; be aware, though, that Java 8 is the target JVM
 and some reflection warnings may be thrown on newer versions, though these are
 generally harmless.
 
-The provided `bin/mvn` script downloads and runs maven with the correct profile
-via docker so that less setup is needed on the local machine.
+The provided `bin/mvn` script downloads and runs maven via docker so that less
+setup is needed on the local machine. For prolonged development performance is
+likely to be significantly better, especially in osx, if `mvn` is installed and
+run natively without docker.
 
 ```bash
 # create a test input file

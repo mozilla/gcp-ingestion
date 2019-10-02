@@ -24,14 +24,12 @@
         <profile>
             <id>ingestion-beam</id>
             <modules>
-                <module>ingestion-core</module>
                 <module>ingestion-beam</module>
             </modules>
         </profile>
         <profile>
             <id>ingestion-sink</id>
             <modules>
-                <module>ingestion-core</module>
                 <module>ingestion-sink</module>
             </modules>
         </profile>
@@ -67,6 +65,17 @@
     </repositories>
 
     <dependencies>
+        <!-- dependencies for ingestion-core must be specified here -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>28.1-jre</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -193,7 +202,7 @@
                         </excludes>
                         <licenseHeader>
                             <!-- end license header with extra trailing newline to separate from package statement -->
-                            <file>${maven.multiModuleProjectDirectory}/checkstyle/java.header</file>
+                            <file>checkstyle/java.header</file>
                         </licenseHeader>
                         <eclipse>
                             <file>https://raw.githubusercontent.com/apache/beam/v${beam.version}/sdks/java/build-tools/src/main/resources/beam/beam-codestyle.xml</file>
@@ -232,6 +241,66 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <!-- add ingestion-core/src to all modules -->
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.parent.basedir}/ingestion-core/src/main/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-test-source</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.parent.basedir}/ingestion-core/src/test/java</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-resource</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>add-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${project.parent.basedir}/ingestion-core/src/main/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>add-test-resource</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>add-test-resource</goal>
+                        </goals>
+                        <configuration>
+                            <resources>
+                                <resource>
+                                    <directory>${project.parent.basedir}/ingestion-core/src/test/resources</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
