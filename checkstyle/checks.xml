@@ -273,8 +273,4 @@
         </module>
         <module name="CommentsIndentation"/>
     </module>
-    <module name="Header">
-        <property name="headerFile" value="checkstyle/java.header"/>
-        <property name="fileExtensions" value="java"/>
-    </module>
 </module>
