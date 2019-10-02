@@ -47,6 +47,8 @@ jobs:
               echo "Run tests because .circleci/ was modified since branching off master"
           elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/pom.xml; then
               echo "Run tests because pom.xml was modified since branching off master"
+          elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/ingestion-core/src; then
+              echo "Run tests because ingestion-core/src was modified since branching off master"
           elif ! git diff --quiet origin/master... -- .; then
               echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off master"
           else
@@ -149,9 +151,7 @@ jobs:
       run:
         name: Maven Test
         command: |
-          PROFILE="$(basename "$PWD")"
-          cd ..
-          mvn -P "$PROFILE" clean test
+          mvn clean test
     - *report_code_coverage
     - save_cache:
         paths:
@@ -184,9 +184,7 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          PROFILE="$(basename "$PWD")"
-          cd ..
-          mvn -P "$PROFILE" clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
+          mvn clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
     - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
 
