@@ -1,10 +1,7 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.transforms;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 /**
@@ -45,7 +42,7 @@ public abstract class DecodePubsubMessages
   public static class Text extends DecodePubsubMessages {
 
     protected PubsubMessage processElement(String element) {
-      return new PubsubMessage(element.getBytes(), null);
+      return new PubsubMessage(element.getBytes(StandardCharsets.UTF_8), null);
     }
   }
 

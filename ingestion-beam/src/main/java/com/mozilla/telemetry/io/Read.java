@@ -1,21 +1,20 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.storage.v1beta1.ReadOptions.TableReadOptions;
+import com.mozilla.telemetry.heka.HekaIO;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
+import com.mozilla.telemetry.util.Time;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
@@ -51,7 +50,7 @@ public abstract class Read
     }
   }
 
-  /** Implementation of reading from local or remote files. */
+  /** Implementation of reading from line-delimited local or remote files. */
   public static class FileInput extends Read {
 
     private final ValueProvider<String> fileSpec;
@@ -68,7 +67,26 @@ public abstract class Read
     }
   }
 
-  /** Implementation of reading from local or remote files. */
+  /** Implementation of reading from heka blobs stored as files. */
+  public static class HekaInput extends Read {
+
+    private final ValueProvider<String> fileSpec;
+
+    public HekaInput(ValueProvider<String> fileSpec) {
+      this.fileSpec = fileSpec;
+    }
+
+    @Override
+    public Result<PCollection<PubsubMessage>> expand(PBegin input) {
+      return input //
+          .apply(FileIO.match().filepattern(fileSpec)) //
+          .apply(FileIO.readMatches()) //
+          .apply(HekaIO.readFiles());
+    }
+
+  }
+
+  /** Implementation of reading from BigQuery. */
   public static class BigQueryInput extends Read {
 
     private final ValueProvider<String> tableSpec;
@@ -98,18 +116,36 @@ public abstract class Read
             GenericRecord record = schemaAndRecord.getRecord();
             byte[] payload = ((ByteBuffer) record.get("payload")).array();
 
-            // We copy only string-type fields to attributes, which is complete for raw and
-            // error tables; decoded payload tables have the nested metadata object also encoded in
-            // the payload, so we can safely drop the metadata object here and rely on ParsePayload
-            // to parse attributes from it.
+            // We populate attributes for all simple string and timestamp fields, which is complete
+            // for raw and error tables; decoded payload tables have the nested metadata object also
+            // encoded in the payload, so we can safely drop the metadata object here and rely on
+            // ParsePayload to parse attributes from it.
             Map<String, String> attributes = new HashMap<>();
             tableSchema.getFields().stream() //
-                .filter(f -> "STRING".equals(f.getType())) //
-                .forEach(f -> attributes.put(f.getName(), (String) record.get(f.getName())));
+                .filter(f -> !"REPEATED".equals(f.getMode())) //
+                .forEach(f -> {
+                  Object value = record.get(f.getName());
+                  if (value != null) {
+                    switch (f.getType()) {
+                      case "TIMESTAMP":
+                        attributes.put(f.getName(), Time.epochMicrosToTimestamp((Long) value));
+                        break;
+                      case "STRING":
+                      case "INTEGER":
+                      case "INT64":
+                        attributes.put(f.getName(), value.toString());
+                        break;
+                      // Ignore any other types (only the payload BYTES field should hit this).
+                      default:
+                        break;
+                    }
+                  }
+                });
             return new PubsubMessage(payload, attributes);
           }) //
           .withCoder(PubsubMessageWithAttributesCoder.of()) //
           .withTemplateCompatibility() //
+          .withoutValidation() //
           .withMethod(method.method);
       switch (source) {
         case TABLE:

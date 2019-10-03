@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.ingestion.core;
 
 public class Constant {
@@ -29,6 +25,7 @@ public class Constant {
     public static final String GEO_COUNTRY = "geo_country";
     public static final String GEO_SUBDIVISION1 = "geo_subdivision1";
     public static final String GEO_SUBDIVISION2 = "geo_subdivision2";
+    public static final String HOST = "host";
     public static final String NORMALIZED_APP_NAME = "normalized_app_name";
     public static final String NORMALIZED_CHANNEL = "normalized_channel";
     public static final String NORMALIZED_COUNTRY_CODE = "normalized_country_code";

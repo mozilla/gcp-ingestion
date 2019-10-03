@@ -1,21 +1,18 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.ingestion.sink.transform;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant;
+import com.mozilla.telemetry.ingestion.core.util.Json;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Transform a {@link PubsubMessage} into a {@code Map<String, Object>}.
+ * Transform a {@link PubsubMessage} into a {@link ObjectNode}.
  */
-public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, Object>> {
+@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
+public class PubsubMessageToObjectNode implements Function<PubsubMessage, ObjectNode> {
 
   public enum Format {
     raw, decoded, payload
@@ -26,11 +23,12 @@ public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, O
 
   private final Format format;
 
-  public PubsubMessageToMap(Format format) {
+  public PubsubMessageToObjectNode(Format format) {
     this.format = format;
   }
 
-  public Map<String, Object> apply(PubsubMessage message) {
+  @Override
+  public ObjectNode apply(PubsubMessage message) {
     switch (format) {
       case raw:
         return rawContents(message);
@@ -51,8 +49,8 @@ public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, O
    * table to determine which of those actually appear as fields; some of the attributes may be
    * thrown away.
    */
-  private Map<String, Object> rawContents(PubsubMessage message) {
-    Map<String, Object> contents = new HashMap<>(message.getAttributesMap());
+  private static ObjectNode rawContents(PubsubMessage message) {
+    ObjectNode contents = Json.asObjectNode(message.getAttributesMap());
     // bytes must be formatted as base64 encoded string.
     Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))
         // include payload if present.
@@ -62,10 +60,14 @@ public class PubsubMessageToMap implements Function<PubsubMessage, Map<String, O
 
   /**
    * Like {@link #rawContents(PubsubMessage)}, but uses the nested metadata format of decoded pings.
+   *
+   * <p>We include most attributes as fields, but the nested metadata format does not include error
+   * attributes and only includes {@code metadata.uri} when document namespace is
+   * {@code "telemetry"}.
    */
-  private static Map<String, Object> decodedContents(PubsubMessage message) {
-    Map<String, Object> contents = new HashMap<>(
-        AddMetadata.attributesToMetadataPayload(message.getAttributesMap()));
+  private static ObjectNode decodedContents(PubsubMessage message) {
+    ObjectNode contents = Json
+        .asObjectNode(AddMetadata.attributesToMetadataPayload(message.getAttributesMap()));
     // bytes must be formatted as base64 encoded string.
     Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))
         // include payload if present.

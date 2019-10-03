@@ -42,6 +42,14 @@
         <module name="SuppressWarningsHolder"/>
         <module name="UnusedImports"/>
         <module name="OuterTypeFilename"/>
+        <module name="RegexpSinglelineJava">
+            <!-- We should always pass in StandardCharsets.UTF_8 when calling String#getBytes() -->
+            <property name="format" value="getBytes\(\)"/>
+            <property name="ignoreComments" value="true"/>
+        </module>
+        <module name="IllegalImport">
+            <property name="illegalClasses" value="org.json.JSONObject"/>
+        </module>
         <module name="IllegalTokenText">
             <property name="tokens" value="STRING_LITERAL, CHAR_LITERAL"/>
             <property name="format"
@@ -264,9 +272,5 @@
             <property name="exceptionVariableName" value="expected"/>
         </module>
         <module name="CommentsIndentation"/>
-    </module>
-    <module name="Header">
-        <property name="headerFile" value="checkstyle/java.header"/>
-        <property name="fileExtensions" value="java"/>
     </module>
 </module>

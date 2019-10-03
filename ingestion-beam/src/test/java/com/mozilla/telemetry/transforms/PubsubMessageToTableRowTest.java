@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.transforms;
 
 import static org.junit.Assert.assertEquals;
@@ -15,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -31,9 +28,11 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
           Field.of("value", LegacySQLTypeName.INTEGER)) //
       .setMode(Mode.REPEATED).build();
 
-  private static final PubsubMessageToTableRow TRANSFORM = PubsubMessageToTableRow.of(
-      StaticValueProvider.of("foo"), null, null, null,
-      StaticValueProvider.of(TableRowFormat.payload));
+  private static final KeyByBigQueryTableDestination KEY_BY = KeyByBigQueryTableDestination.of(
+      StaticValueProvider.of("foo"), StaticValueProvider.of(null), StaticValueProvider.of(null));
+
+  private static final PubsubMessageToTableRow TRANSFORM = PubsubMessageToTableRow.of(null, null,
+      null, StaticValueProvider.of(TableRowFormat.payload), KEY_BY);
 
   @Test
   public void testConvertFieldNameForBq() {
@@ -88,7 +87,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   public void testCoerceMapValueToString() throws Exception {
     String mainPing = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
         + "{\"timestamps.first_paint\":5405}}}}}";
-    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes());
+    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes(StandardCharsets.UTF_8));
     Map<String, Object> additionalProperties = new HashMap<>();
     parent.put("64bit", true);
     parent.put("hi-fi", true);
@@ -211,7 +210,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
         + "      }\n" //
         + "    }\n" //
         + "  }\n" //
-        + "}\n").getBytes());
+        + "}\n").getBytes(StandardCharsets.UTF_8));
     List<Field> bqFields = ImmutableList.of(Field
         .newBuilder("metrics", LegacySQLTypeName.RECORD, Field.of("key", LegacySQLTypeName.STRING),
             Field.of("value", LegacySQLTypeName.RECORD,
@@ -240,7 +239,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
 
   @Test
   public void testRawFormat() throws Exception {
-    PubsubMessage message = new PubsubMessage("test".getBytes(),
+    PubsubMessage message = new PubsubMessage("test".getBytes(StandardCharsets.UTF_8),
         // Use example values for all attributes present in the spec:
         // https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#edge-server-pubsub-message-schema
         ImmutableMap.<String, String>builder()
@@ -264,7 +263,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   @Test
   public void testDecodedFormat() throws Exception {
 
-    PubsubMessage message = new PubsubMessage("test".getBytes(),
+    PubsubMessage message = new PubsubMessage("test".getBytes(StandardCharsets.UTF_8),
         // Ensure sure we preserve all attributes present in the spec:
         // https://github.com/mozilla/gcp-ingestion/blob/master/docs/decoder.md#decoded-message-metadata-schema
         ImmutableMap.<String, String>builder()
@@ -312,4 +311,130 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     assertEquals(expected, actual);
   }
 
+  @Test
+  public void testRepeatedRecordAdditionalProperties() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [\n" //
+        + "     {\"a\": 1},\n" //
+        + "     {\"a\": 2, \"b\": 22},\n" //
+        + "     {\"a\": 3}\n" //
+        + "]}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("a", LegacySQLTypeName.INTEGER)) //
+        .setMode(Mode.REPEATED).build());
+    String expected = "{\"payload\":[{\"a\":1},{\"a\":2},{\"a\":3}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"payload\":[null,{\"b\":22},null]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
+  public void testTupleIntoStruct() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [\"foo\",26,true],\n" //
+        + "  \"additional\": [\"bar\",82,false]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("f0_", LegacySQLTypeName.STRING), //
+        Field.of("f1_", LegacySQLTypeName.INTEGER), //
+        Field.of("f2_", LegacySQLTypeName.BOOLEAN), //
+        Field.newBuilder("f3_", LegacySQLTypeName.STRING).setMode(Mode.NULLABLE).build()) //
+        .setMode(Mode.NULLABLE).build());
+    String expected = "{\"payload\":{\"f0_\":\"foo\",\"f1_\":26,\"f2_\":true}}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"additional\":[\"bar\",82,false]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
+  public void testTupleIntoStructAdditionalProperties() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [26,{\"a\":83,\"b\":44}]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("f0_", LegacySQLTypeName.INTEGER), //
+        Field.of("f1_", LegacySQLTypeName.RECORD, //
+            Field.of("a", LegacySQLTypeName.INTEGER))) //
+        .setMode(Mode.NULLABLE).build());
+    String expected = "{\"payload\":{\"f0_\":26,\"f1_\":{\"a\":83}}}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"payload\":[null,{\"b\":44}]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
+  public void testTupleIntoStructNested() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[1],[2],[3]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.of("f0_", LegacySQLTypeName.INTEGER)) //
+        .setMode(Mode.REPEATED).build());
+    String expected = "{\"payload\":[{\"f0_\":1},{\"f0_\":2},{\"f0_\":3}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+  }
+
+  @Test
+  public void testNestedList() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[0],[1]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.newBuilder("list", LegacySQLTypeName.INTEGER) //
+            .setMode(Mode.REPEATED).build() //
+    ).setMode(Mode.REPEATED).build()); //
+    String expected = "{\"payload\":[{\"list\":[0]},{\"list\":[1]}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+  }
+
+  @Test
+  public void testNestedListAdditionalProperties() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[{\"a\":1}],[{\"a\":2},{\"a\":3,\"b\":4}]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.newBuilder("list", LegacySQLTypeName.RECORD, //
+            Field.of("a", LegacySQLTypeName.INTEGER)) //
+            .setMode(Mode.REPEATED).build() //
+    ).setMode(Mode.REPEATED).build()); //
+    String expected = "{\"payload\":[{\"list\":[{\"a\":1}]},{\"list\":[{\"a\":2},{\"a\":3}]}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"payload\":[null,[null,{\"b\":4}]]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
+  public void testDoublyNestedList() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"payload\": [[[0],[1]],[[2]]]\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
+        Field.newBuilder("list", LegacySQLTypeName.RECORD, //
+            Field.of("list", LegacySQLTypeName.INTEGER)) //
+            .setMode(Mode.REPEATED).build() //
+    ).setMode(Mode.REPEATED).build()); //
+    String expected = "{\"payload\":[" //
+        + "{\"list\":[{\"list\":[0]},{\"list\":[1]}]}," //
+        + "{\"list\":[{\"list\":[2]}]}" //
+        + "]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+  }
 }

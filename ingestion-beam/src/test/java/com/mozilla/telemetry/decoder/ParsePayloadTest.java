@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.decoder;
 
 import static org.junit.Assert.assertEquals;
@@ -10,6 +6,9 @@ import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
+import com.mozilla.telemetry.util.Json;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -43,7 +42,8 @@ public class ParsePayloadTest {
   public void testOutput() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
-    final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{");
+    final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{",
+        "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}");
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode()).output()
         .apply("AddAttributes",
@@ -53,10 +53,27 @@ public class ParsePayloadTest {
                         "document_version", "1"))))
         .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
-    final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}");
+    final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}",
+        "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}");
     final PCollection<String> main = output.output().apply("encodeTextMain",
         OutputFileFormat.text.encode());
     PAssert.that(main).containsInAnyOrder(expectedMain);
+
+    final List<String> expectedAttributes = Arrays.asList(
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\",\"document_type\":\"test\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\",\"document_type\":\"test\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"client_id\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\""
+            + ",\"document_type\":\"test\",\"sample_id\":\"67\"}");
+    final PCollection<String> attributes = output.output()
+        .apply(MapElements.into(TypeDescriptors.strings()).via(m -> {
+          try {
+            return Json.asString(m.getAttributeMap());
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        }));
+    PAssert.that(attributes).containsInAnyOrder(expectedAttributes);
 
     final List<String> expectedError = Arrays.asList("[]", "{");
     final PCollection<String> error = output.errors().apply("encodeTextError",

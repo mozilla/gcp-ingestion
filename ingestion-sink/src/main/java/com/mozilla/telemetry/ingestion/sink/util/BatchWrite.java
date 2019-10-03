@@ -1,12 +1,7 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.ingestion.sink.util;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -14,12 +9,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import org.apache.commons.text.StringSubstitutor;
 
-public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
+public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     implements Function<InputT, CompletableFuture<Void>> {
 
-  protected final String batchKeyTemplate;
+  protected final PubsubMessageToTemplatedString batchKeyTemplate;
 
   private final long maxBytes;
   private final int maxMessages;
@@ -29,7 +23,7 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
     this.maxBytes = maxBytes;
     this.maxMessages = maxMessages;
     this.maxDelayMillis = maxDelay.toMillis();
-    this.batchKeyTemplate = batchKeyTemplate;
+    this.batchKeyTemplate = new PubsubMessageToTemplatedString(batchKeyTemplate);
   }
 
   @VisibleForTesting
@@ -38,15 +32,15 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
   @Override
   public CompletableFuture<Void> apply(InputT input) {
     AtomicReference<CompletableFuture<Void>> output = new AtomicReference<>();
-
+    EncodedT encodedInput = encodeInput(input);
     batches.compute(getBatchKey(input), (batchKey, batch) -> {
       if (batch != null) {
-        batch.add(input).ifPresent(output::set);
+        batch.add(encodedInput).ifPresent(output::set);
       }
       if (output.get() == null) {
         batch = getBatch(batchKey);
         // add first input before allowing batch
-        batch.add(input).ifPresent(output::set);
+        batch.add(encodedInput).ifPresent(output::set);
         // allow batch to complete by timeout now that we have attempted to add the first item
         batch.init.complete(null);
       }
@@ -55,16 +49,6 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
 
     return Optional.ofNullable(output.get())
         .orElseThrow(() -> new IllegalArgumentException("Empty batch rejected input"));
-  }
-
-  protected String batchKeyTemplate(PubsubMessage input) {
-    String batchKey = StringSubstitutor.replace(batchKeyTemplate,
-        DerivedAttributesMap.of(input.getAttributesMap()));
-    if (batchKey.contains("$")) {
-      throw new IllegalArgumentException("Element did not contain all the attributes needed to"
-          + " fill out variables in the configured output template: " + batchKeyTemplate);
-    }
-    return batchKey;
   }
 
   public abstract class Batch {
@@ -83,9 +67,9 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
 
     public Batch() {
       // wait for init then setup full indicator by timeout
-      full = init.thenRunAsync(this::timeout);
+      full = init.thenRunAsync(this::timeout).exceptionally(ignore -> null);
       // wait for full then close
-      result = full.handleAsync(this::close);
+      result = full.thenComposeAsync(this::close);
     }
 
     private void timeout() {
@@ -96,19 +80,19 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
       }
     }
 
-    private synchronized Optional<CompletableFuture<Void>> add(InputT input) {
+    private synchronized Optional<CompletableFuture<Void>> add(EncodedT encodedInput) {
       if (full.isDone()) {
         return Optional.empty();
       }
       int newSize = size + 1;
-      long newByteSize = byteSize + getByteSize(input);
+      long newByteSize = byteSize + getByteSize(encodedInput);
       if (newSize > maxMessages || newByteSize > maxBytes) {
         this.full.complete(null);
         return Optional.empty();
       }
       size = newSize;
       byteSize = newByteSize;
-      write(input);
+      write(encodedInput);
       return Optional
           .of(result.thenAcceptAsync(result -> this.checkResultFor(result, newSize - 1)));
     }
@@ -116,14 +100,16 @@ public abstract class BatchWrite<InputT, BatchKeyT, BatchResultT>
     protected void checkResultFor(BatchResultT batchResult, int index) {
     }
 
-    protected abstract BatchResultT close(Void ignoreVoid, Throwable ignoreThrowable);
+    protected abstract CompletableFuture<BatchResultT> close(Void ignore);
 
-    protected abstract void write(InputT input);
+    protected abstract void write(EncodedT encodedInput);
 
-    protected abstract long getByteSize(InputT input);
+    protected abstract long getByteSize(EncodedT encodedInput);
   }
 
   protected abstract BatchKeyT getBatchKey(InputT input);
+
+  protected abstract EncodedT encodeInput(InputT input);
 
   protected abstract Batch getBatch(BatchKeyT batchKey);
 }

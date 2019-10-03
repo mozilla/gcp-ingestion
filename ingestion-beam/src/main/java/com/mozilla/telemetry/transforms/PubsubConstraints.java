@@ -1,15 +1,11 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.transforms;
 
-import com.google.common.base.Charsets;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -111,7 +107,7 @@ public class PubsubConstraints {
     if (s == null) {
       return null;
     }
-    Charset charset = Charsets.UTF_8;
+    Charset charset = StandardCharsets.UTF_8;
     CharsetDecoder decoder = charset.newDecoder();
     byte[] sba = s.getBytes(charset);
     if (sba.length <= maxBytes) {

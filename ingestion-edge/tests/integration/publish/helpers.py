@@ -1,6 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, you can obtain one at http://mozilla.org/MPL/2.0/.
 """Reusable code for integration tests against publish endpoints."""
 
 from dataclasses import dataclass, field
@@ -33,7 +30,7 @@ class IntegrationTest:
     data: bytes = b""
     headers: Dict[str, Optional[bytes]] = field(default_factory=dict)
     protocol: str = "HTTP/1.1"
-    uri_suffix: str = "."  # may 404 on ""
+    uri_suffix: str = "x"  # may 404 on ""
 
     @property
     def host(self) -> str:

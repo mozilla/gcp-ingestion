@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.transforms;
 
 import com.google.api.gax.retrying.RetrySettings;
@@ -13,6 +9,7 @@ import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.Field.Mode;
+import com.google.cloud.bigquery.FieldList;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.Table;
@@ -30,10 +27,13 @@ import com.mozilla.telemetry.util.SnakeCase;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -58,11 +58,12 @@ import org.apache.beam.sdk.values.PCollection;
 public class PubsubMessageToTableRow
     extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, TableRow>> {
 
-  public static PubsubMessageToTableRow of(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemasAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat) {
-    return new PubsubMessageToTableRow(tableSpecTemplate, strictSchemaDocTypes, schemasLocation,
-        schemasAliasesLocation, tableRowFormat);
+  public static PubsubMessageToTableRow of(ValueProvider<List<String>> strictSchemaDocTypes,
+      ValueProvider<String> schemasLocation, ValueProvider<String> schemasAliasesLocation,
+      ValueProvider<TableRowFormat> tableRowFormat,
+      KeyByBigQueryTableDestination keyByBigQueryTableDestination) {
+    return new PubsubMessageToTableRow(strictSchemaDocTypes, schemasLocation,
+        schemasAliasesLocation, tableRowFormat, keyByBigQueryTableDestination);
   }
 
   public enum TableRowFormat {
@@ -94,14 +95,15 @@ public class PubsubMessageToTableRow
   private transient BigQuerySchemaStore schemaStore;
   private transient BigQuery bqService;
 
-  private PubsubMessageToTableRow(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat) {
+  private PubsubMessageToTableRow(ValueProvider<List<String>> strictSchemaDocTypes,
+      ValueProvider<String> schemasLocation, ValueProvider<String> schemaAliasesLocation,
+      ValueProvider<TableRowFormat> tableRowFormat,
+      KeyByBigQueryTableDestination keyByBigQueryTableDestination) {
     this.strictSchemaDocTypes = strictSchemaDocTypes;
     this.schemasLocation = schemasLocation;
     this.schemaAliasesLocation = schemaAliasesLocation;
     this.tableRowFormat = tableRowFormat;
-    this.keyByBigQueryTableDestination = KeyByBigQueryTableDestination.of(tableSpecTemplate);
+    this.keyByBigQueryTableDestination = keyByBigQueryTableDestination;
   }
 
   @Override
@@ -163,7 +165,8 @@ public class PubsubMessageToTableRow
   @VisibleForTesting
   static TableRow decodedTableRow(PubsubMessage message) {
     TableRow tableRow = new TableRow();
-    AddMetadata.attributesToMetadataPayload(message.getAttributeMap()).forEach(tableRow::set);
+    Json.asMap(AddMetadata.attributesToMetadataPayload(message.getAttributeMap()))
+        .forEach(tableRow::set);
     // Also include client_id if present.
     Optional.ofNullable(message.getAttribute(Attribute.CLIENT_ID))
         .ifPresent(clientId -> tableRow.set(Attribute.CLIENT_ID, clientId));
@@ -285,6 +288,16 @@ public class PubsubMessageToTableRow
         && field.getSubFields().get(1).getName().equals("value");
   }
 
+  /**
+   * Return true if this field is a nested list.
+   */
+  private static boolean isNestedListType(Field field, Optional<Object> value) {
+    return field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED //
+        && field.getSubFields().size() == 1 //
+        && field.getSubFields().get(0).getName().equals("list") //
+        && value.filter(List.class::isInstance).isPresent();
+  }
+
   private void processField(String jsonFieldName, Field field, Object val,
       Map<String, Object> parent, Map<String, Object> additionalProperties) {
     String name = field.getName();
@@ -307,8 +320,18 @@ public class PubsubMessageToTableRow
     } else if (isMapType(field)) {
       expandMapType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
 
+      // A record with a single "list" field and a list value should be expanded appropriately.
+    } else if (isNestedListType(field, value)) {
+      expandNestedListType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
+
       // We need to recursively call transformForBqSchema on any normal record type.
     } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() != Mode.REPEATED) {
+      // A list signifies a fixed length tuple which should be given anonymous field names.
+      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(tuple -> {
+        Map<String, Object> m = processTupleField(jsonFieldName, field.getSubFields(), tuple,
+            additionalProperties);
+        parent.put(name, m);
+      });
       value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
         Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
         transformForBqSchema(m, field.getSubFields(), props);
@@ -322,16 +345,68 @@ public class PubsubMessageToTableRow
     } else if (field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED) {
       List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
           .orElse(ImmutableList.of());
+      List<Object> repeatedAdditionalProperties = new ArrayList<>();
       records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
         Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
         transformForBqSchema(record, field.getSubFields(), props);
         if (props != null && !props.isEmpty()) {
-          additionalProperties.put(name, props);
+          repeatedAdditionalProperties.add(props);
+        } else {
+          repeatedAdditionalProperties.add(null);
         }
       });
+      // Arrays of tuples cannot be transformed in place, instead each element of the parent array
+      // will need to reference a new transformed object.
+      if (records.stream().allMatch(List.class::isInstance)) {
+        for (int i = 0; i < records.size(); i++) {
+          List<Object> tuple = (List<Object>) records.get(i);
+          Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+          Map<String, Object> m = processTupleField(jsonFieldName, field.getSubFields(), tuple,
+              props);
+          if (props != null && !props.isEmpty()) {
+            repeatedAdditionalProperties.add(props);
+          } else {
+            repeatedAdditionalProperties.add(null);
+          }
+          records.set(i, (Object) m);
+        }
+      }
+
+      if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
+        additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
+      }
     } else {
       value.ifPresent(v -> parent.put(name, v));
     }
+  }
+
+  /**
+   * A shim into transformForBqSchema for translating tuples into objects and to
+   * reconstruct additional properties.
+   * @param jsonFieldName The name of the original JSON field.
+   * @param fields A list of types for each element of the tuple.
+   * @param tuple A list of objects that are mapped into a record.
+   * @param additionalProperties A mutable map of elements that aren't captured in the schema.
+   * @return A record object with anonymous struct naming.
+   */
+  private Map<String, Object> processTupleField(String jsonFieldName, FieldList fields,
+      List<Object> tuple, Map<String, Object> additionalProperties) {
+    Map<String, Object> m = new HashMap<>();
+    for (int i = 0; i < tuple.size(); i++) {
+      m.put(String.format("f%d_", i), tuple.get(i));
+    }
+    Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+    transformForBqSchema(m, fields, props);
+    if (props != null && !props.isEmpty()) {
+      List<Object> tupleAdditionalProperties = new ArrayList<>(
+          Collections.nCopies(tuple.size(), null));
+      props.forEach((k, v) -> {
+        int index = Integer.parseInt(k.substring(1, k.length() - 1));
+        tupleAdditionalProperties.set(index, v);
+      });
+      additionalProperties.put(jsonFieldName, tupleAdditionalProperties);
+    }
+    return m;
   }
 
   /**
@@ -355,6 +430,37 @@ public class PubsubMessageToTableRow
         return kv;
       }).collect(Collectors.toList());
       parent.put(field.getName(), unmapped);
+    });
+  }
+
+  /**
+   * Expand nested lists into an object with a list item to support unnested in BigQuery.
+   */
+  private void expandNestedListType(String jsonFieldName, Object val, Field field,
+      Map<String, Object> parent, Map<String, Object> additionalProperties) {
+    Optional<Object> value = Optional.ofNullable(val);
+    value.filter(List.class::isInstance).map(List.class::cast).ifPresent(l -> {
+      List<Object> list = l;
+      Field valueField = field.getSubFields().get(0);
+      List<Object> repeatedAdditionalProperties = new ArrayList<>();
+      List<Map<String, Object>> nestedList = list.stream().map(item -> {
+        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+        Map<String, Object> map = new HashMap<>(1);
+        map.put("list", item);
+        processField("list", valueField, item, map, props);
+        if (props != null && !props.isEmpty()) {
+          repeatedAdditionalProperties.add(props.get("list"));
+        } else {
+          repeatedAdditionalProperties.add(null);
+        }
+        return map;
+      }).collect(Collectors.toList());
+
+      parent.put(field.getName(), nestedList);
+
+      if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
+        additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
+      }
     });
   }
 

@@ -1,14 +1,14 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.util;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -26,20 +26,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.json.JSONObject;
 
-public class Json {
-
-  /**
-   * A Jackson ObjectMapper pre-configured for use in com.mozilla.telemetry.
-   *
-   * <p>Registers {@link PubsubMessageMixin} for decoding to {@link PubsubMessage}.
-   *
-   * <p>Registers {@link JsonOrgModule} for decoding to json.org types.
-   */
-  @VisibleForTesting
-  static final ObjectMapper MAPPER = new ObjectMapper()
-      .addMixIn(PubsubMessage.class, PubsubMessageMixin.class).registerModule(new JsonOrgModule());
+/**
+ * Extends {@link com.mozilla.telemetry.ingestion.core.util.Json} with configuration and methods
+ * specific to ingestion-beam.
+ *
+ * <p>Registers {@link PubsubMessageMixin} for decoding to {@link PubsubMessage}.
+ *
+ * <p>Registers {@link JsonOrgModule} for decoding to json.org types.
+ */
+public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
 
   static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
@@ -48,6 +44,24 @@ public class Json {
 
   static {
     SCHEMA_FROM_PB.setAccessible(true);
+    MAPPER.addMixIn(PubsubMessage.class, PubsubMessageMixin.class);
+    MAPPER.registerModule(new JsonOrgModule());
+  }
+
+  /**
+   * Make serialization of {@link Map} deterministic for testing.
+   */
+  @VisibleForTesting
+  static void enableOrderMapEntriesByKeys() {
+    Json.MAPPER.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
+  }
+
+  /**
+   * Reset the {@link ObjectMapper} configuration changed above.
+   */
+  @VisibleForTesting
+  static void disableOrderMapEntriesByKeys() {
+    Json.MAPPER.disable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
   }
 
   /**
@@ -89,24 +103,63 @@ public class Json {
   }
 
   /**
-   * Read a {@link JSONObject} from a byte array.
-   *
-   * <p>Using a Jackson {@link ObjectMapper} here is better about not changing long integers to
-   * strings than using {@code new JSONObject(new String(data)}, and accepts {@code byte[]} so that
-   * we don't need to decode to a {@link String} first.
+   * Read an instance of {@code klass} from a byte array.
    *
    * @exception IOException if {@code data} does not contain a valid json object.
    */
-  @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
-  public static JSONObject readJSONObject(byte[] data) throws IOException {
+  public static <T> T readValue(byte[] data, Class<T> klass) throws IOException {
     // Read data into a tree
     TreeNode tree = MAPPER.readTree(data);
     // Check that we have an object, because treeToValue won't
     if (tree == null || !tree.isObject()) {
       throw new IOException("json value is not an object");
     }
-    // Return a JSONObject created from tree
-    return MAPPER.treeToValue(tree, JSONObject.class);
+    // Return a class instance created from the tree
+    return MAPPER.treeToValue(tree, klass);
+  }
+
+  /**
+   * Read bytes into a tree of {@link com.fasterxml.jackson.databind.JsonNode}.
+   *
+   * @exception IOException if {@code data} does not contain a valid json object.
+   */
+  public static ObjectNode readObjectNode(byte[] data) throws IOException {
+    // Read data into a tree
+    TreeNode root = MAPPER.readTree(data);
+    // Check that we have an object, because treeToValue won't
+    if (root == null || !root.isObject()) {
+      throw new IOException("json value is not an object");
+    }
+    return (ObjectNode) root;
+  }
+
+  /**
+   * Read bytes into an {@link ArrayNode}.
+   *
+   * @exception IOException if {@code data} does not contain a valid json object.
+   */
+  public static ArrayNode readArrayNode(byte[] data) throws IOException {
+    // Read data into a tree
+    TreeNode root = MAPPER.readTree(data);
+    // Check that we have an array, because treeToValue won't
+    if (root == null || !root.isArray()) {
+      throw new IOException("json value is not an array");
+    }
+    return (ArrayNode) root;
+  }
+
+  /**
+   * Return a new, empty {@link ObjectNode}.
+   */
+  public static ObjectNode createObjectNode() {
+    return MAPPER.createObjectNode();
+  }
+
+  /**
+   * Return a new, empty {@link ArrayNode}.
+   */
+  public static ArrayNode createArrayNode() {
+    return MAPPER.createArrayNode();
   }
 
   /**
@@ -125,12 +178,10 @@ public class Json {
   }
 
   /**
-   * Serialize {@code data} as a {@code byte[]}.
-   *
-   * @exception IOException if data cannot be encoded as json.
+   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
    */
-  public static byte[] asBytes(Object data) throws IOException {
-    return MAPPER.writeValueAsBytes(data);
+  public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
+    return MAPPER.treeToValue(root, klass);
   }
 
   /**

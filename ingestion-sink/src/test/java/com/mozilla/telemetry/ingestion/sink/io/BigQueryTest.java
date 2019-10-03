@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.ingestion.sink.io;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -21,7 +17,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToMap.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionException;
