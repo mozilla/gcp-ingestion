@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.util;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -201,11 +202,17 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
    * {@code getAttributeMap} method returns the value for the {@code attributes} parameter.
    * Additionally jackson doesn't like that there are no setter methods on {@link PubsubMessage}.
    *
+   * <p>Beam 2.16 added the {@code messageId} field, which is not relevant for our purposes;
+   * we mark that field with {@link JsonIgnore} so that it is not serialized and we maintain
+   * compatibility with existing messages that our pipeline has persisted without {@code messageId}.
+   * </p>
+   *
    * <p>The default jackson output format for PubsubMessage, which we want to read, looks like:
    * <pre>
    * {
    *   "payload": "${base64 encoded byte array}",
-   *   "attributeMap": {"${key}": "${value}"...}
+   *   "attributeMap": {"${key}": "${value}"...},
+   *   "messageId": null
    * }
    * </pre>
    */
@@ -215,6 +222,11 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
     @JsonCreator
     public PubsubMessageMixin(@JsonProperty("payload") byte[] payload,
         @JsonProperty("attributeMap") Map<String, String> attributes) {
+    }
+
+    @JsonIgnore
+    public String getMessageId() {
+      return null;
     }
   }
 }
