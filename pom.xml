@@ -42,12 +42,12 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
-        <beam.version>2.15.0</beam.version>
+        <beam.version>2.16.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
         <google-cloud.version>1.61.0</google-cloud.version>
-        <jackson.version>2.9.9</jackson.version>
+        <jackson.version>2.9.10</jackson.version>
 
         <!-- Keep this dependency version in sync with what is pulled in by jackson;
              check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.9 -->
