@@ -3,7 +3,6 @@ package com.mozilla.telemetry.transforms;
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
-import com.google.api.services.bigquery.model.TimePartitioning;
 import com.google.cloud.ServiceOptions;
 import com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.bigquery.BigQueryOptions;
@@ -72,8 +71,6 @@ public class PubsubMessageToTableRow
 
   public static final String PAYLOAD = "payload";
   public static final String ADDITIONAL_PROPERTIES = "additional_properties";
-  public static final TimePartitioning TIME_PARTITIONING = new TimePartitioning()
-      .setField(Attribute.SUBMISSION_TIMESTAMP);
 
   // We have hit rate limiting issues that have sent valid data to error output, so we make the
   // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
