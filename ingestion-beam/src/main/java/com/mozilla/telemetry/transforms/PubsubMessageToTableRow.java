@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
-import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV2;
+import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV3;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
@@ -138,7 +138,7 @@ public class PubsubMessageToTableRow
   public WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> expand(
       PCollection<PubsubMessage> input) {
     WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
-    result.output().setCoder(KvCoder.of(TableDestinationCoderV2.of(), TableRowJsonCoder.of()));
+    result.output().setCoder(KvCoder.of(TableDestinationCoderV3.of(), TableRowJsonCoder.of()));
     return result;
   }
 
