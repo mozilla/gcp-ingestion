@@ -105,7 +105,8 @@ public interface SinkOptions extends PipelineOptions {
 
   void setBqWriteMethod(BigQueryWriteMethod value);
 
-  @Description("How often to load a batch of files to BigQuery when writing via file_loads")
+  @Description("How often to load a batch of files to BigQuery when writing via file_loads in"
+      + " streaming mode")
   @Default.String("5m")
   String getBqTriggeringFrequency();
 
