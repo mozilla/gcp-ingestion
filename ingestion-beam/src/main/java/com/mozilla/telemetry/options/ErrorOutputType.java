@@ -3,6 +3,7 @@ package com.mozilla.telemetry.options;
 import com.mozilla.telemetry.io.Write;
 import com.mozilla.telemetry.io.Write.BigQueryOutput;
 import com.mozilla.telemetry.io.Write.FileOutput;
+import com.mozilla.telemetry.io.Write.IgnoreOutput;
 import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -38,6 +39,14 @@ public enum ErrorOutputType {
     /** Return a PTransform that prints errors to STDERR; only for local running. */
     public Write writeFailures(SinkOptions.Parsed options) {
       return new PrintOutput(FORMAT, Println.stderr());
+    }
+  },
+
+  ignore {
+
+    /** Return a PTransform that prints messages to STDERR; only for local running. */
+    public Write writeFailures(SinkOptions.Parsed options) {
+      return new IgnoreOutput();
     }
   },
 
