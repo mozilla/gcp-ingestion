@@ -309,7 +309,7 @@ public class PubsubMessageToTableRow
         parent.put(name, jsonified);
       });
 
-      // A string field might need us to JSON-ify an object coerce a value to string.
+      // A string field might need us to JSON-ify an object to coerce a value to string.
     } else if (field.getType() == LegacySQLTypeName.STRING && field.getMode() != Mode.REPEATED) {
       value.ifPresent(o -> parent.put(name, coerceToString(o)));
 
