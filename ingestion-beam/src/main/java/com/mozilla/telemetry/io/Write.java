@@ -103,6 +103,20 @@ public abstract class Write
 
   }
 
+  /** Implementation of ignoring messages and sending to no output. */
+  public static class IgnoreOutput extends Write {
+
+    public IgnoreOutput() {
+    }
+
+    @Override
+    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+      return WithErrors.Result.of(PDone.in(input.getPipeline()),
+          EmptyErrors.in(input.getPipeline()));
+    }
+
+  }
+
   /**
    * Implementation of writing to local or remote files.
    *
