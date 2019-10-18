@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -exo pipefail
+
+source $(dirname $0)/env
+
+mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+    --runner=Dataflow \
+    --jobName=$JOB_NAME \
+    --project=$PROJECT  \
+    --geoCityDatabase=gs://backfill-test-public1/GeoIP2-City.mmdb \
+    --geoCityFilter=gs://backfill-test-public1/cities15000.txt \
+    --schemasLocation=gs://backfill-test-public1/201910161604_cd71b88.tar.gz \
+    --inputType=heka \
+    --input=gs://moz-fx-data-prod-us-central1-data/telemetry-3/$DT/telemetry/** \
+    --outputType=bigquery \
+    --bqWriteMethod=file_loads \
+    --bqClusteringFields=submission_timestamp \
+    --output=${PROJECT}:telemetry_live.\${document_type}_v\${document_version} \
+    --errorOutputType=bigquery \
+    --errorOutput=${PROJECT}:telemetry_live.error_v1 \
+    --experiments=shuffle_mode=service \
+    --region=us-central1 \
+    --usePublicIps=false \
+    --gcsUploadBufferSizeBytes=16777216 \
+"

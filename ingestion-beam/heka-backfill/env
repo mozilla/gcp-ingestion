@@ -1,0 +1,12 @@
+set -o allexport
+: $DAYNUM
+: $MONTHNUM
+: "${YEARNUM:=2019}"
+: "${PROJECT:=moz-fx-data-backfill-$DAYNUM}"
+: "${DATASET:=telemetry_live}"
+DAYNUM_PADDED=$(printf "%02d" "$DAYNUM")
+MONTHNUM_PADDED=$(printf "%02d" "$MONTHNUM")
+DT="${YEARNUM}${MONTHNUM_PADDED}${DAYNUM_PADDED}"
+DTDASH="${YEARNUM}-${MONTHNUM_PADDED}-${DAYNUM_PADDED}"
+JOB_NAME="heka-backfill-$DT"
+set +o allexport

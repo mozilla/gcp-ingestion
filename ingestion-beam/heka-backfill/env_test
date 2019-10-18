@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -exuo pipefail
+
+source $(dirname $0)/env
+echo $DTDASH

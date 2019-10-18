@@ -1,0 +1,12 @@
+#!/bin/bash
+
+source $(dirname $0)/env
+
+while true; do
+    echo "----- Dataflow job state --------------"
+    gcloud dataflow jobs list --region us-central1 --project "$PROJECT" --filter="name=$JOB_NAME" --format="get(name,creation_time,state)"
+    echo "----- Dates available in BigQuery -----"
+    bq query --nouse_legacy_sql -q --format=csv 'select DATE(submission_timestamp) AS date, count(*) AS n from `moz-fx-data-backfill-'$DAYNUM'.telemetry_live.main_v4` group by 1 order by 1' | tail -n +2
+    echo "---------------------------------------"
+    sleep 60
+done
