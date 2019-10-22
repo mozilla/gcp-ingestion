@@ -12,6 +12,7 @@ import com.google.cloud.bigquery.Dataset;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.SnakeCase;
 import java.time.Duration;
@@ -99,7 +100,7 @@ public class KeyByBigQueryTableDestination
         }
         return tableSet;
       });
-    } catch (ExecutionException e) {
+    } catch (ExecutionException | UncheckedExecutionException e) {
       throw new BubbleUpException(e.getCause());
     }
 
