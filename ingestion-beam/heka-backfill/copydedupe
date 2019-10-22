@@ -6,9 +6,10 @@ source $(dirname $0)/env
 
 source $(dirname $(dirname $0))/venv/bin/activate
 
-date && time $(dirname $0)/py-copydedupe --date "$DTDASH" --except 'telemetry_live.main_v*' 'telemetry_live.error_v*' --project_id "$PROJECT"
-date && time $(dirname $0)/py-copydedupe --date "$DTDASH" --slices=20 --only 'telemetry_live.main_v*' --project_id "$PROJECT"
+#BASE_CMD="date && time $(dirname $0)/py-copydedupe --date "$DTDASH" --project_id "$PROJECT" --parallelism 4"
+PARALLELISM=20
+PROJECTS=$(for i in $(seq 1 $PARALLELISM); do printf moz-fx-data-backfill-$i' '; done)
+BASE_CMD="time $(dirname $0)/py-multi-copydedupe --date $DTDASH --project_id $PROJECT --parallelism $PARALLELISM --billing-projects $PROJECTS; done)"
 
-
-
-#time $(dirname $0)/py-multi-copydedupe --date "$DTDASH" --slices=100 --only 'telemetry_live.main_v*' --project_id "$PROJECT" --parallelism 8 --billing-projects moz-fx-data-backfill-1 moz-fx-data-backfill-2 moz-fx-data-backfill-3 moz-fx-data-backfill-4 moz-fx-data-backfill-5 moz-fx-data-backfill-6 moz-fx-data-backfill-7 moz-fx-data-backfill-8
+date && $BASE_CMD --except 'telemetry_live.main_v4' 'telemetry_live.error_v*'
+date && $BASE_CMD --slices=20 --only 'telemetry_live.main_v4' --project_id "$PROJECT"
