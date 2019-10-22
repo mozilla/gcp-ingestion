@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -exo pipefail
+
+source $(dirname $0)/env
+
+source $(dirname $(dirname $0))/venv/bin/activate
+
+#date && time $(dirname $0)/py-copydedupe --date "$DT" --except 'telemetry_live.main_v*' 'telemetry_live.error_v*' --project_id "$PROJECT"
+date && time $(dirname $0)/py-copydedupe --date "$DTDASH" --slices=20 --only 'telemetry_live.main_v*' --project_id "$PROJECT"
