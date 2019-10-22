@@ -4,7 +4,11 @@ set -exo pipefail
 
 source $(dirname $0)/env
 
-source $(dirname $(dirname $0))/bin/activate
+source $(dirname $(dirname $0))/venv/bin/activate
 
-time $(dirname $0)/py-copydedupe --date "$DT" --except 'telemetry_live.main_v*' 'telemetry_live.error_v*' --project_id "$PROJECT"
-time $(dirname $0)/py-copydedupe --date "$DT" --slices=100 --only 'telemetry_live.main_v*' --project_id "$PROJECT"
+date && time $(dirname $0)/py-copydedupe --date "$DTDASH" --except 'telemetry_live.main_v*' 'telemetry_live.error_v*' --project_id "$PROJECT"
+date && time $(dirname $0)/py-copydedupe --date "$DTDASH" --slices=20 --only 'telemetry_live.main_v*' --project_id "$PROJECT"
+
+
+
+#time $(dirname $0)/py-multi-copydedupe --date "$DTDASH" --slices=100 --only 'telemetry_live.main_v*' --project_id "$PROJECT" --parallelism 8 --billing-projects moz-fx-data-backfill-1 moz-fx-data-backfill-2 moz-fx-data-backfill-3 moz-fx-data-backfill-4 moz-fx-data-backfill-5 moz-fx-data-backfill-6 moz-fx-data-backfill-7 moz-fx-data-backfill-8

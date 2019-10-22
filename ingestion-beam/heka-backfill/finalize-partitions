@@ -1,0 +1,70 @@
+#!/bin/bash
+
+set -eo pipefail
+
+source $(dirname $0)/env
+
+cd $(dirname $0)
+
+# globals
+total=0
+skip=0
+error=0
+
+function update_table() {
+    # Arguments:
+    #   $1 - dataset name
+    #   $2 - path to the document in format `{namespace}.{type}.{version}.bq`
+    #
+    # Options via envvar
+    #   $SKIP_EXISTING  - skip if exists
+    #   $OVERWRITE - remove and create if exists
+    #
+    # Counters:
+    #   $total - the total number of documents seen
+    #   $skip  - the number of documents that have been skipped
+    #   $error - the number of errors encountered
+    local dataset=$1
+    local document=$2
+    ((total++))
+
+    # downcase hyphens to underscores before generating names
+    bq_document=$(basename "${document}" | sed 's/-/_/g')
+    namespace=$(echo "${bq_document}" | cut -d. -f1)
+    doctype=$(echo "${bq_document}" | cut -d. -f2)
+    docver=$(echo "${bq_document}" | cut -d. -f3)
+
+    live_table="$PROJECT:telemetry_live.${doctype}_v${docver}"
+    src_table="backfill-test-252723:telemetry_stable.${doctype}_v${docver}"
+    med_table="backfill-test-252723:telemetry_stable_2.${doctype}_v${docver}"
+    final_table="moz-fx-data-shared-prod:telemetry_stable.${doctype}_v${docver}"
+
+    # echo "Removing $live_table\$$DT"
+    # bq rm --force "$live_table\$$DT"
+
+    if ! bq ls -n1000 "backfill-test-252723:telemetry_stable_2" | awk '{print $1}' | grep "^${doctype}_v${docver}\$" > /dev/null; then
+        bq cp "$src_table" "$med_table"
+        bq update --table \
+           --schema <(bq show --format=prettyjson "$final_table" | jq '.schema.fields') \
+           --time_partitioning_field submission_timestamp \
+           --clustering_fields normalized_channel,sample_id \
+           "$med_table"
+    fi
+
+    bq cp --force "${med_table}\$$DT" "${final_table}\$$DT"
+
+}
+
+function main() {
+    documents=$(find bq-schemas -type file | sort | grep -v error\.1)
+    trap "exit" INT
+    for document in ${documents}; do
+        update_table "foo" "${document}"
+    done
+
+    echo "$((total-skip-error))/${total} sucessfully updated, ${skip} skipped, ${error} errors."
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
