@@ -16,6 +16,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
@@ -487,7 +488,7 @@ public class PubsubMessageToTableRow
     }
     try {
       return normalizedNameCache.get(name, () -> convertNameForBq(name));
-    } catch (ExecutionException e) {
+    } catch (ExecutionException | UncheckedExecutionException e) {
       throw new BubbleUpException(e.getCause());
     }
   }
