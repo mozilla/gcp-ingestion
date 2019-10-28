@@ -44,6 +44,8 @@ import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV3;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
@@ -72,6 +74,18 @@ public class PubsubMessageToTableRow
 
   public static final String PAYLOAD = "payload";
   public static final String ADDITIONAL_PROPERTIES = "additional_properties";
+
+  // Metrics
+  private static final Counter coercedToString = Metrics.counter(PubsubMessageToTableRow.class,
+      "coerced_to_string");
+  private static final Counter coercedToInt = Metrics.counter(PubsubMessageToTableRow.class,
+      "coerced_to_int");
+  private static final Counter notCoercedToInt = Metrics.counter(PubsubMessageToTableRow.class,
+      "not_coerced_to_int");
+  private static final Counter notCoercedToBool = Metrics.counter(PubsubMessageToTableRow.class,
+      "not_coerced_to_bool");
+  private static final Counter coercionFailureInList = Metrics
+      .counter(PubsubMessageToTableRow.class, "coercion_failure_in_list");
 
   // We have hit rate limiting issues that have sent valid data to error output, so we make the
   // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
@@ -473,7 +487,7 @@ public class PubsubMessageToTableRow
    * <p>Returning {@code null} here indicates that no coercion is defined and that the field should
    * be put to {@code additional_properties}.
    */
-  private static Optional<Object> coerceToBqType(Object o, Field field) {
+  private Optional<Object> coerceToBqType(Object o, Field field) {
     if (field.getMode() == Mode.REPEATED) {
       if (o instanceof List) {
         return Optional.of(((List<Object>) o).stream().map(v -> coerceSingleValueToBqType(v, field))
@@ -481,7 +495,12 @@ public class PubsubMessageToTableRow
             // be coerced to appropriate values, so this filter should not be getting rid of
             // elements; a future improvement would be to refactor so that we can insert
             // non-coerceable values from a list into additional_properties.
-            .filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList()));
+            .filter(v -> {
+              if (!v.isPresent()) {
+                coercionFailureInList.inc();
+              }
+              return v.isPresent();
+            }).map(Optional::get).collect(Collectors.toList()));
       } else {
         return Optional.empty();
       }
@@ -490,39 +509,43 @@ public class PubsubMessageToTableRow
     }
   }
 
-  private static Optional<Object> coerceSingleValueToBqType(Object o, Field field) {
+  private Optional<Object> coerceSingleValueToBqType(Object o, Field field) {
     if (field.getType() == LegacySQLTypeName.STRING) {
-      return Optional.of(coerceToString(o));
+      if (o instanceof String) {
+        return Optional.of(o);
+      } else {
+        coercedToString.inc();
+        // If not already a string, we JSON-ify the value.
+        return Optional.of(coerceToString(o));
+      }
     } else if (field.getType() == LegacySQLTypeName.INTEGER) {
       if (o instanceof Integer || o instanceof Long) {
         return Optional.of(o);
       } else if (o instanceof Boolean) {
+        coercedToInt.inc();
         // We assume that false is equivalent to zero and true to 1.
         return Optional.of(o).map(v -> (Boolean) v ? 1 : 0);
       } else {
+        notCoercedToInt.inc();
         return Optional.empty();
       }
     } else if (field.getType() == LegacySQLTypeName.BOOLEAN) {
       if (o instanceof Boolean) {
         return Optional.of(o);
       } else {
+        notCoercedToBool.inc();
         return Optional.empty();
       }
     } else {
-      return Optional.empty();
+      return Optional.of(o);
     }
   }
 
-  private static String coerceToString(Object o) {
-    if (o instanceof String) {
-      return (String) o;
-    } else {
-      // If not already a string, we JSON-ify the value.
-      try {
-        return Json.asString(o);
-      } catch (IOException ignore) {
-        return o.toString();
-      }
+  private String coerceToString(Object o) {
+    try {
+      return Json.asString(o);
+    } catch (IOException ignore) {
+      return o.toString();
     }
   }
 
