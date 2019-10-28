@@ -1,0 +1,66 @@
+#!/bin/bash
+
+source $(dirname $0)/env
+
+cd $(dirname $0)
+
+# globals
+total=0
+skip=0
+error=0
+
+function update_table() {
+    # Arguments:
+    #   $1 - dataset name
+    #   $2 - path to the document in format `{namespace}.{type}.{version}.bq`
+    #
+    # Options via envvar
+    #   $SKIP_EXISTING  - skip if exists
+    #   $OVERWRITE - remove and create if exists
+    #
+    # Counters:
+    #   $total - the total number of documents seen
+    #   $skip  - the number of documents that have been skipped
+    #   $error - the number of errors encountered
+    local dataset=$1
+    local document=$2
+    ((total++))
+
+    # downcase hyphens to underscores before generating names
+    bq_document=$(basename "${document}" | sed 's/-/_/g')
+    namespace=$(echo "${bq_document}" | cut -d. -f1)
+    doctype=$(echo "${bq_document}" | cut -d. -f2)
+    docver=$(echo "${bq_document}" | cut -d. -f3)
+
+    dst_table="moz-fx-data-shared-prod:telemetry_live.${doctype}_v${docver}"
+
+    query="
+    with base as (
+    select * from \`moz-fx-data-backfill-21.telemetry_live.${doctype}_v${docver}\`
+    union all
+    select * from \`moz-fx-data-backfill-22.telemetry_live.${doctype}_v${docver}\`
+    )
+    select * from base
+    where date(submission_timestamp) > '2019-09-01'
+    "
+
+    bq query --nouse_legacy_sql --append_table --destination_table="$dst_table" -n0 "$query"
+
+    if [[ $? ]]; then
+        ((error++))
+    fi
+}
+
+function main() {
+    documents=$(find bq-schemas -type file | sort | grep telemetry)
+    trap "exit" INT
+    for document in ${documents}; do
+        update_table "${DATASET}" "${document}"
+    done
+
+    echo "$((total-skip-error))/${total} sucessfully updated, ${skip} skipped, ${error} errors."
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi

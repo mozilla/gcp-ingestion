@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -exo pipefail
+
+source $(dirname $0)/env
+
+source $(dirname $(dirname $0))/venv/bin/activate
+
+PARALLELISM=5
+PROJECTS=$(for i in $(seq 1 $PARALLELISM); do printf moz-fx-data-backfill-$i' '; done)
+BASE_CMD="time $(dirname $0)/py-copydedupe-from-stable --date "$DTDASH" --project_id "$PROJECT" --parallelism $PARALLELISM"
+
+date && $BASE_CMD --except 'telemetry_live.main_v4' 'telemetry_live.error_v*'
+#date && $BASE_CMD --slices=20 --only 'telemetry_live.main_v4' --project_id "$PROJECT"

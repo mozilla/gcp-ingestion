@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -exo pipefail
+
+source $(dirname $0)/env
+JOB_NAME="decoded-backfill-query-nonmain-$DT"
+
+
+mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+    --runner=Dataflow \
+    --jobName=$JOB_NAME \
+    --project=$PROJECT  \
+    --geoCityDatabase=gs://backfill-test-public1/GeoIP2-City.mmdb \
+    --geoCityFilter=gs://backfill-test-public1/cities15000.txt \
+    --schemasLocation=gs://backfill-test-public1/201910161604_cd71b88.tar.gz \
+    --inputType=bigquery_query \
+    --bqReadMethod=export \
+    --input=\"SELECT * FROM \`moz-fx-data-shared-prod.payload_bytes_decoded.telemetry_telemetry__*\` WHERE _TABLE_SUFFIX != 'main_v4' AND DATE(submission_timestamp) = '$DTDASH'\" \
+    --outputType=bigquery \
+    --bqWriteMethod=file_loads \
+    --bqClusteringFields=submission_timestamp \
+    --output=${PROJECT}:telemetry_live.\${document_type}_v\${document_version} \
+    --errorOutputType=bigquery \
+    --errorOutput=${PROJECT}:telemetry_live.error_v1 \
+    --experiments=shuffle_mode=service \
+    --region=us-central1 \
+    --usePublicIps=false \
+    --gcsUploadBufferSizeBytes=16777216 \
+"
+
+
+# --bqReadMethod=storageapi \
+# --bqRowRestriction=\"CAST(submission_timestamp AS DATE) = '$DTDASH'\" \
+
+# --inputType=bigquery_table \
+#            --bqReadMethod=export \
+#            --input=moz-fx-data-shared-prod:payload_bytes_decoded.telemetry_telemetry__main_v4\$$DT \
+
+# --inputType=bigquery_query \
+#            --bqReadMethod=export \
+#            --input=\"SELECT * FROM \`moz-fx-data-shared-prod\`:payload_bytes_decoded.telemetry_telemetry__* WHERE _TABLE_SUFFIX != 'main_v4' AND DATE(submission_timestamp) = '$DTDASH'\" \
