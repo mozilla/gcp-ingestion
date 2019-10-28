@@ -300,21 +300,8 @@ public class PubsubMessageToTableRow
     String name = field.getName();
     Optional<Object> value = Optional.ofNullable(val);
 
-    // A repeated string field might need us to JSON-ify a list or map.
-    if (field.getType() == LegacySQLTypeName.STRING && field.getMode() == Mode.REPEATED) {
-
-      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
-        List<Object> jsonified = ((List<Object>) list).stream().map(o -> coerceToString(o))
-            .collect(Collectors.toList());
-        parent.put(name, jsonified);
-      });
-
-      // A string field might need us to JSON-ify an object to coerce a value to string.
-    } else if (field.getType() == LegacySQLTypeName.STRING && field.getMode() != Mode.REPEATED) {
-      value.ifPresent(o -> parent.put(name, coerceToString(o)));
-
-      // A record of key and value indicates we need to transformForBqSchema a map to an array.
-    } else if (isMapType(field)) {
+    // A record of key and value indicates we need to transformForBqSchema a map to an array.
+    if (isMapType(field)) {
       expandMapType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
 
       // A record with a single "list" field and a list value should be expanded appropriately.
@@ -372,19 +359,19 @@ public class PubsubMessageToTableRow
       if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
         additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
       }
-      // This is a basic type.
+      // If we've made it here, we have a basic type or a list of basic types.
     } else {
       value.ifPresent(v -> {
-        Object coerced = coerceToBqType(v, field);
-        // A null coerced value means the actual type didn't match expected and we don't define
-        // a coercion. We put the value to additional_properties instead.
-        if (coerced == null) {
+        Optional<Object> coerced = coerceToBqType(v, field);
+        if (coerced.isPresent()) {
+          parent.put(name, coerced.get());
+        } else {
+          // An empty coerced value means the actual type didn't match expected and we don't define
+          // a coercion. We put the value to additional_properties instead.
           if (additionalProperties != null) {
             additionalProperties.put(jsonFieldName, v);
           }
           parent.remove(name);
-        } else {
-          parent.put(name, coerced);
         }
       });
     }
@@ -485,30 +472,43 @@ public class PubsubMessageToTableRow
    * <p>Returning {@code null} here indicates that no coercion is defined and that the field should
    * be put to {@code additional_properties}.
    */
-  private static Object coerceToBqType(Object o, Field field) {
+  private static Optional<Object> coerceToBqType(Object o, Field field) {
     if (field.getMode() == Mode.REPEATED) {
-      return o;
-    } else {
-      if (field.getType() == LegacySQLTypeName.STRING) {
-        return coerceToString(o);
-      } else if (field.getType() == LegacySQLTypeName.INTEGER) {
-        if (o instanceof Integer || o instanceof Long) {
-          return o;
-        } else if (o instanceof Boolean) {
-          // We assume that false is equivalent to zero and true to 1.
-          return (Boolean) o ? 1 : 0;
-        } else {
-          return null;
-        }
-      } else if (field.getType() == LegacySQLTypeName.BOOLEAN) {
-        if (o instanceof Boolean) {
-          return o;
-        } else {
-          return null;
-        }
+      if (o instanceof List) {
+        return Optional.of(((List<Object>) o).stream().map(v -> coerceSingleValueToBqType(v, field))
+            // We have not yet observed a case where an array type contains values that cannot
+            // be coerced to appropriate values, so this filter should not be getting rid of
+            // elements; a future improvement would be to refactor so that we can insert
+            // non-coerceable values from a list into additional_properties.
+            .filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList()));
       } else {
-        return o;
+        return Optional.empty();
       }
+    } else {
+      return coerceSingleValueToBqType(o, field);
+    }
+  }
+
+  private static Optional<Object> coerceSingleValueToBqType(Object o, Field field) {
+    if (field.getType() == LegacySQLTypeName.STRING) {
+      return Optional.of(coerceToString(o));
+    } else if (field.getType() == LegacySQLTypeName.INTEGER) {
+      if (o instanceof Integer || o instanceof Long) {
+        return Optional.of(o);
+      } else if (o instanceof Boolean) {
+        // We assume that false is equivalent to zero and true to 1.
+        return Optional.of(o).map(v -> (Boolean) v ? 1 : 0);
+      } else {
+        return Optional.empty();
+      }
+    } else if (field.getType() == LegacySQLTypeName.BOOLEAN) {
+      if (o instanceof Boolean) {
+        return Optional.of(o);
+      } else {
+        return Optional.empty();
+      }
+    } else {
+      return Optional.empty();
     }
   }
 
@@ -516,6 +516,7 @@ public class PubsubMessageToTableRow
     if (o instanceof String) {
       return (String) o;
     } else {
+      // If not already a string, we JSON-ify the value.
       try {
         return Json.asString(o);
       } catch (IOException ignore) {
