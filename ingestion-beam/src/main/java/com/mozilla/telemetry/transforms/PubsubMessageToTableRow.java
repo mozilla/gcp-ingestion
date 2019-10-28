@@ -373,8 +373,21 @@ public class PubsubMessageToTableRow
       if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
         additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
       }
+      // This is a basic type.
     } else {
-      value.ifPresent(v -> parent.put(name, v));
+      value.ifPresent(v -> {
+        Object coerced = coerceToBqType(v, field);
+        // A null coerced value means the actual type didn't match expected and we don't define
+        // a coercion. We put the value to additional_properties instead.
+        if (coerced == null) {
+          if (additionalProperties != null) {
+            additionalProperties.put(jsonFieldName, v);
+          }
+          parent.remove(name);
+        } else {
+          parent.put(name, coerced);
+        }
+      });
     }
   }
 
@@ -462,6 +475,44 @@ public class PubsubMessageToTableRow
     });
   }
 
+  /**
+   * This method gives us a chance to perform some additional type coercions in case the BigQuery
+   * field type is different from the source data type. This should rarely happen, since only
+   * validated payloads get through to this BQ sink path, but there are sets of probes with
+   * heterogeneous types that appear as explicit fields in BQ, but are treated as loosely typed
+   * maps at the validation phase; we need to catch these or they can cause the entire pipeline
+   * to stall.
+   *
+   * <p>Returning {@code null} here indicates that no coercion is defined and that the field should
+   * be put to {@code additional_properties}.
+   */
+  private static Object coerceToBqType(Object o, Field field) {
+    if (field.getMode() == Mode.REPEATED) {
+      return o;
+    } else {
+      if (field.getType() == LegacySQLTypeName.STRING) {
+        return coerceToString(o);
+      } else if (field.getType() == LegacySQLTypeName.INTEGER) {
+        if (o instanceof Integer || o instanceof Long) {
+          return o;
+        } else if (o instanceof Boolean) {
+          // We assume that false is equivalent to zero and true to 1.
+          return (Boolean) o ? 1 : 0;
+        } else {
+          return null;
+        }
+      } else if (field.getType() == LegacySQLTypeName.BOOLEAN) {
+        if (o instanceof Boolean) {
+          return o;
+        } else {
+          return null;
+        }
+      } else {
+        return o;
+      }
+    }
+  }
+
   private static String coerceToString(Object o) {
     if (o instanceof String) {
       return (String) o;
@@ -471,14 +522,6 @@ public class PubsubMessageToTableRow
       } catch (IOException ignore) {
         return o.toString();
       }
-    }
-  }
-
-  private static Object coerceIfStringExpected(Object o, LegacySQLTypeName typeName) {
-    if (typeName == LegacySQLTypeName.STRING) {
-      return coerceToString(o);
-    } else {
-      return o;
     }
   }
 
