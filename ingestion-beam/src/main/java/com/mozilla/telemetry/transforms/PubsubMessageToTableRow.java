@@ -517,7 +517,11 @@ public class PubsubMessageToTableRow
         // so no point in maintaining a counter here as it will quickly reach many billions.
         return Optional.of(coerceToString(o));
       }
-    } else if (field.getType() == LegacySQLTypeName.INTEGER) {
+      // Our BigQuery schemas use Standard SQL type names, but the BQ API expects legacy SQL
+      // type names, so we end up with technically invalid types of INT64 that we need to
+      // check for.
+    } else if (field.getType() == LegacySQLTypeName.INTEGER
+        || "INT64".equals(field.getType().toString())) {
       if (o instanceof Integer || o instanceof Long) {
         return Optional.of(o);
       } else if (o instanceof Boolean) {
@@ -528,7 +532,11 @@ public class PubsubMessageToTableRow
         notCoercedToInt.inc();
         return Optional.empty();
       }
-    } else if (field.getType() == LegacySQLTypeName.BOOLEAN) {
+      // Our BigQuery schemas use Standard SQL type names, but the BQ API expects legacy SQL
+      // type names, so we may end up with technically invalid types of BOOL that we need to
+      // check for.
+    } else if (field.getType() == LegacySQLTypeName.BOOLEAN
+        || "BOOL".equals(field.getType().toString())) {
       if (o instanceof Boolean) {
         return Optional.of(o);
       } else {
