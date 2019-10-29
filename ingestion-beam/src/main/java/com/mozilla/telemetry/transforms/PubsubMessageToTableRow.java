@@ -76,8 +76,6 @@ public class PubsubMessageToTableRow
   public static final String ADDITIONAL_PROPERTIES = "additional_properties";
 
   // Metrics
-  private static final Counter coercedToString = Metrics.counter(PubsubMessageToTableRow.class,
-      "coerced_to_string");
   private static final Counter coercedToInt = Metrics.counter(PubsubMessageToTableRow.class,
       "coerced_to_int");
   private static final Counter notCoercedToInt = Metrics.counter(PubsubMessageToTableRow.class,
@@ -514,8 +512,9 @@ public class PubsubMessageToTableRow
       if (o instanceof String) {
         return Optional.of(o);
       } else {
-        coercedToString.inc();
         // If not already a string, we JSON-ify the value.
+        // We have many fields that we expect to be coerced to string (histograms, userPrefs, etc.)
+        // so no point in maintaining a counter here as it will quickly reach many billions.
         return Optional.of(coerceToString(o));
       }
     } else if (field.getType() == LegacySQLTypeName.INTEGER) {
