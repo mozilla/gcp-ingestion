@@ -34,29 +34,18 @@ function update_table() {
     doctype=$(echo "${bq_document}" | cut -d. -f2)
     docver=$(echo "${bq_document}" | cut -d. -f3)
 
-    live_table="$PROJECT:telemetry_live.${doctype}_v${docver}"
-    src_table="backfill-test-252723:telemetry_stable.${doctype}_v${docver}"
-    med_table="backfill-test-252723:telemetry_stable_2.${doctype}_v${docver}"
-    final_table="moz-fx-data-shared-prod:telemetry_stable.${doctype}_v${docver}"
+    src_table="moz-fx-data-backfill-${DAYNUM}:telemetry_stable.${doctype}_v${docver}"
+    dst_table="backfill-test-252723:telemetry_stable.${doctype}_v${docver}"
 
     # echo "Removing $live_table\$$DT"
     # bq rm --force "$live_table\$$DT"
 
-    # if ! bq ls -n1000 "backfill-test-252723:telemetry_stable_2" | awk '{print $1}' | grep "^${doctype}_v${docver}\$" > /dev/null; then
-    #     bq update --table \
-    #        --schema <(bq show --format=prettyjson "$final_table" | jq '.schema.fields') \
-    #        --time_partitioning_field submission_timestamp \
-    #        --clustering_fields normalized_channel,sample_id \
-    #        "$med_table"
-    # fi
-
-    #bq cp --force "${med_table}\$$DT" "${final_table}\$$DT"
-    bq cp --force "${src_table}\$$DT" "${final_table}\$$DT"
+    bq cp --force "${src_table}\$$DT" "${dst_table}\$$DT"
 
 }
 
 function main() {
-    documents=$(find bq-schemas -type file | sort | grep -v error\.1)
+    documents=$(find bq-schemas -type file | sort | grep main\.4)
     trap "exit" INT
     for document in ${documents}; do
         update_table "foo" "${document}"
