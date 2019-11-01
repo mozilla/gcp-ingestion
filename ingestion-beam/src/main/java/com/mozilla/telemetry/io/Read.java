@@ -3,6 +3,7 @@ package com.mozilla.telemetry.io;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.storage.v1beta1.ReadOptions.TableReadOptions;
 import com.mozilla.telemetry.heka.HekaIO;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
@@ -10,6 +11,7 @@ import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
 import com.mozilla.telemetry.util.Time;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -117,9 +119,12 @@ public abstract class Read
             byte[] payload = ((ByteBuffer) record.get("payload")).array();
 
             // We populate attributes for all simple string and timestamp fields, which is complete
-            // for raw and error tables; decoded payload tables have the nested metadata object also
-            // encoded in the payload, so we can safely drop the metadata object here and rely on
-            // ParsePayload to parse attributes from it.
+            // for raw and error tables.
+            // Decoded payload tables also have a top-level nested "metadata" struct; we can mostly
+            // just drop this since the same metadata object is encoded in the payload, but we do
+            // parse out the document namespace, type, and version since those are necessary in the
+            // case of a Sink job that doesn't look at the payload but still may need those
+            // attributes in order to route to the correct destination.
             Map<String, String> attributes = new HashMap<>();
             tableSchema.getFields().stream() //
                 .filter(f -> !"REPEATED".equals(f.getMode())) //
@@ -134,6 +139,16 @@ public abstract class Read
                       case "INTEGER":
                       case "INT64":
                         attributes.put(f.getName(), value.toString());
+                        break;
+                      case "RECORD":
+                      case "STRUCT":
+                        // The only struct we support is the top-level nested "metadata" and we
+                        // extract only the attributes needed for destination routing.
+                        GenericRecord metadata = (GenericRecord) value;
+                        Arrays
+                            .asList(Attribute.DOCUMENT_NAMESPACE, Attribute.DOCUMENT_TYPE,
+                                Attribute.DOCUMENT_VERSION)
+                            .forEach(v -> attributes.put(v, metadata.get(v).toString()));
                         break;
                       // Ignore any other types (only the payload BYTES field should hit this).
                       default:
