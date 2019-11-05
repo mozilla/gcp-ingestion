@@ -7,6 +7,7 @@ import com.mozilla.telemetry.util.Time;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
@@ -143,7 +144,8 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
     options
         .setDeduplicateExpireSeconds(NestedValueProvider.of(options.getDeduplicateExpireDuration(),
             value -> Ints.checkedCast(Time.parseSeconds(value))));
-    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(), URI::create));
+    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(),
+        s -> Optional.ofNullable(s).map(URI::create).orElse(null)));
   }
 
 }
