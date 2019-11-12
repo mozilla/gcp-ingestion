@@ -98,7 +98,7 @@ class BatchLoads<DestinationT, ElementT>
   // TODO: Remove this custom lower threshold; this forces a day of main pings
   // to be split to about 100 pieces, sidestepping the bug where a single large
   // BQ load into a clustered tables often fails with memory exceeded errors.
-  static final long DEFAULT_MAX_BYTES_PER_PARTITION = 100 * (1L << 30);
+  static final long DEFAULT_MAX_BYTES_PER_PARTITION = 20 * (1L << 30);
   // // Maximum number of bytes in a single partition -- 11 TiB just under BQ's 12 TiB limit.
   // static final long DEFAULT_MAX_BYTES_PER_PARTITION = 11 * (1L << 40);
 
@@ -171,6 +171,7 @@ class BatchLoads<DestinationT, ElementT>
     this.elementCoder = elementCoder;
     this.toRowFunction = toRowFunction;
     this.kmsKey = kmsKey;
+    LOG.warn("Initializing a Mozilla-patched version of BatchLoads with maxBytesPerPartition=" + this.maxBytesPerPartition);
   }
 
   void setTestServices(BigQueryServices bigQueryServices) {
