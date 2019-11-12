@@ -51,6 +51,9 @@ import org.slf4j.LoggerFactory;
 /** Contains some useful helper instances of {@link DynamicDestinations}. */
 class DynamicDestinationsHelpers {
   private static final Logger LOG = LoggerFactory.getLogger(DynamicDestinationsHelpers.class);
+  static {
+    LOG.warn("Using a Mozilla-patched version of DynamicDestinationsHelpers; this should be removed once the pipeline is upgraded to Beam 2.17.");
+  }
 
   /** Always returns a constant table destination. */
   static class ConstantTableDestinations<T> extends DynamicDestinations<T, TableDestination> {
