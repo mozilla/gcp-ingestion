@@ -289,13 +289,15 @@ public class PubsubMessageToTableRow
   }
 
   /**
-   * Return true if this field is a repeated struct of key/value, indicating a JSON map.
+   * Return true if this field is a repeated struct of key and maybe value, indicating a JSON map.
    */
   private static boolean isMapType(Field field) {
     return field.getType() == LegacySQLTypeName.RECORD && field.getMode() == Mode.REPEATED //
-        && field.getSubFields().size() == 2 //
-        && field.getSubFields().get(0).getName().equals("key") //
-        && field.getSubFields().get(1).getName().equals("value");
+        && ((field.getSubFields().size() == 2 //
+            && field.getSubFields().get(0).getName().equals("key") //
+            && field.getSubFields().get(1).getName().equals("value"))
+            || (field.getSubFields().size() == 1
+                && field.getSubFields().get(0).getName().equals("key")));
   }
 
   /**
@@ -428,17 +430,24 @@ public class PubsubMessageToTableRow
     Optional<Object> value = Optional.ofNullable(val);
     value.filter(Map.class::isInstance).map(Map.class::cast).ifPresent(m -> {
       Map<String, Object> map = m;
-      Field valueField = field.getSubFields().get(1);
       Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+      Optional<Field> valueFieldOption;
+      if (field.getSubFields().size() == 2) {
+        valueFieldOption = Optional.of(field.getSubFields().get(1));
+      } else {
+        valueFieldOption = Optional.empty();
+        props.putAll(map);
+      }
       List<Map<String, Object>> unmapped = map.entrySet().stream().map(entry -> {
         Map<String, Object> kv = new HashMap<>(2);
         kv.put("key", entry.getKey());
-        processField(entry.getKey(), valueField, entry.getValue(), kv, props);
-        if (props != null && !props.isEmpty()) {
-          additionalProperties.put(jsonFieldName, props);
-        }
+        valueFieldOption.ifPresent(
+            valueField -> processField(entry.getKey(), valueField, entry.getValue(), kv, props));
         return kv;
       }).collect(Collectors.toList());
+      if (props != null && !props.isEmpty()) {
+        additionalProperties.put(jsonFieldName, props);
+      }
       parent.put(field.getName(), unmapped);
     });
   }
