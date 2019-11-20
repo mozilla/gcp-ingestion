@@ -53,20 +53,30 @@ public class NormalizeAttributes
    * Normalize an operating system string to one of the three major desktop platforms,
    * one of the two major mobile platforms, or "Other".
    *
-   * <p>Reimplements and combines the logic of {@code os} and {@code mobile_os} from
+   * <p>Previously implemented by {@code os} and {@code mobile_os} from
    * https://github.com/mozilla-services/lua_sandbox_extensions/blob/607b3c7b9def600ddbd373a14f67a55e1c69f7a1/moz_telemetry/modules/moz_telemetry/normalize.lua#L184-L215
    */
-  public static String normalizeOs(String name) {
-    if (name.startsWith("Windows") || name.startsWith("WINNT")) {
-      return WINDOWS;
-    } else if (name.startsWith("Darwin")) {
-      return MAC;
-    } else if (name.contains("Linux") || name.contains("BSD") || name.contains("SunOS")) {
-      return LINUX;
-    } else if (name.startsWith("iOS") || name.contains("iPhone")) {
+  public static String normalizeOs(String name, Optional<String> normalizedAppName) {
+    boolean appIsNotDesktop = normalizedAppName //
+        .map(v -> !OTHER.equals(v) && !FIREFOX.equals(v)).orElse(false);
+    // Don't look for desktop os names if app is not desktop
+    if (!appIsNotDesktop) {
+      if (name.startsWith(WINDOWS) || name.startsWith("WINNT")) {
+        return WINDOWS;
+      } else if (name.startsWith("Darwin")) {
+        return MAC;
+      } else if (name.contains(LINUX) || name.contains("BSD") || name.contains("SunOS")) {
+        return LINUX;
+      }
+    }
+    // Fall through to mobile os names
+    if (name.startsWith(IOS) || name.contains("iPhone")) {
       return IOS;
-    } else if (name.startsWith("Android")) {
+    } else if (name.startsWith(ANDROID)) {
       return ANDROID;
+    } else if (appIsNotDesktop && name.contains(LINUX)) {
+      // Detect non-desktop Linux
+      return LINUX;
     } else {
       return OTHER;
     }
@@ -141,19 +151,19 @@ public class NormalizeAttributes
     public PubsubMessage apply(PubsubMessage message) {
       message = PubsubConstraints.ensureNonNull(message);
       Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+      Optional<String> normalizedAppName = Optional.ofNullable(attributes.get(Attribute.APP_NAME))
+          .map(NormalizeAttributes::normalizeAppName);
 
       Optional.ofNullable(attributes.get(Attribute.APP_UPDATE_CHANNEL))
           .map(NormalizeAttributes::normalizeChannel)
           .ifPresent(v -> attributes.put(Attribute.NORMALIZED_CHANNEL, v));
       Optional.ofNullable(attributes.get(Attribute.OS)) //
-          .map(NormalizeAttributes::normalizeOs) //
+          .map(v -> NormalizeAttributes.normalizeOs(v, normalizedAppName)) //
           .ifPresent(v -> attributes.put(Attribute.NORMALIZED_OS, v));
       Optional.ofNullable(attributes.get(Attribute.OS_VERSION))
           .map(NormalizeAttributes::normalizeOsVersion)
           .ifPresent(v -> attributes.put(Attribute.NORMALIZED_OS_VERSION, v));
-      Optional.ofNullable(attributes.get(Attribute.APP_NAME))
-          .map(NormalizeAttributes::normalizeAppName)
-          .ifPresent(v -> attributes.put(Attribute.NORMALIZED_APP_NAME, v));
+      normalizedAppName.ifPresent(v -> attributes.put(Attribute.NORMALIZED_APP_NAME, v));
       Optional.ofNullable(attributes.get(Attribute.GEO_COUNTRY))
           .map(NormalizeAttributes::normalizeCountryCode)
           .ifPresent(v -> attributes.put(Attribute.NORMALIZED_COUNTRY_CODE, v));
@@ -177,6 +187,8 @@ public class NormalizeAttributes
   private static final String IOS = "iOS";
   private static final String ANDROID = "Android";
 
+  private static final String FIREFOX = "Firefox";
+
   private static final List<String> APP_NAMES = ImmutableList.of(
       // Make sure more-specific versions come before Zerda.
       "Zerda_cn", "Zerda",
@@ -189,7 +201,7 @@ public class NormalizeAttributes
       // Other apps
       "Fennec", "Scryer", "WebXR", "Lockbox",
       // Desktop Firefox
-      "Firefox");
+      FIREFOX);
 
   private static final Pattern OS_VERSION_RE = Pattern.compile("([0-9]+(?:\\.[0-9]+){0,2}).*");
   private static final Pattern COUNTRY_CODE_RE = Pattern.compile("[A-Z][A-Z]");

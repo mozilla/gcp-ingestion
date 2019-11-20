@@ -3,6 +3,7 @@ package com.mozilla.telemetry.util;
 import static org.junit.Assert.assertEquals;
 
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
+import java.util.Optional;
 import org.junit.Test;
 
 public class NormalizeAttributesTest {
@@ -44,31 +45,36 @@ public class NormalizeAttributesTest {
   @Test
   public void os() {
     // Desktop OS.
-    assertEquals("Windows", NormalizeAttributes.normalizeOs("Windows"));
-    assertEquals("Windows", NormalizeAttributes.normalizeOs("WINNT"));
-    assertEquals("Windows", NormalizeAttributes.normalizeOs("Windows_NT"));
-    assertEquals("Windows", NormalizeAttributes.normalizeOs("WindowsNT"));
-    assertEquals("Mac", NormalizeAttributes.normalizeOs("Darwin"));
-    assertEquals("Linux", NormalizeAttributes.normalizeOs("Linux"));
-    assertEquals("Linux", NormalizeAttributes.normalizeOs("GNU/Linux"));
-    assertEquals("Linux", NormalizeAttributes.normalizeOs("SunOS"));
-    assertEquals("Linux", NormalizeAttributes.normalizeOs("FreeBSD"));
-    assertEquals("Linux", NormalizeAttributes.normalizeOs("GNU/kFreeBSD"));
-    assertEquals("Other", NormalizeAttributes.normalizeOs("AIX"));
+    assertEquals("Windows", NormalizeAttributes.normalizeOs("Windows", Optional.of("Firefox")));
+    assertEquals("Windows", NormalizeAttributes.normalizeOs("WINNT", Optional.of("Firefox")));
+    assertEquals("Windows", NormalizeAttributes.normalizeOs("Windows_NT", Optional.of("Firefox")));
+    assertEquals("Windows", NormalizeAttributes.normalizeOs("WindowsNT", Optional.of("Firefox")));
+    assertEquals("Windows", NormalizeAttributes.normalizeOs("Windows", Optional.of("Other")));
+    assertEquals("Mac", NormalizeAttributes.normalizeOs("Darwin", Optional.of("Firefox")));
+    assertEquals("Linux", NormalizeAttributes.normalizeOs("Linux", Optional.of("Firefox")));
+    assertEquals("Linux", NormalizeAttributes.normalizeOs("GNU/Linux", Optional.of("Firefox")));
+    assertEquals("Linux", NormalizeAttributes.normalizeOs("SunOS", Optional.of("Firefox")));
+    assertEquals("Linux", NormalizeAttributes.normalizeOs("FreeBSD", Optional.of("Firefox")));
+    assertEquals("Linux", NormalizeAttributes.normalizeOs("GNU/kFreeBSD", Optional.of("Firefox")));
+    assertEquals("Other", NormalizeAttributes.normalizeOs("AIX", Optional.of("Firefox")));
 
-    // Mobile OS.
-    assertEquals("iOS", NormalizeAttributes.normalizeOs("iOS"));
-    assertEquals("iOS", NormalizeAttributes.normalizeOs("iOS?"));
-    assertEquals("iOS", NormalizeAttributes.normalizeOs("iPhone"));
-    assertEquals("iOS", NormalizeAttributes.normalizeOs("All the iPhones"));
-    assertEquals("Other", NormalizeAttributes.normalizeOs("All the iOSes"));
-    assertEquals("Other", NormalizeAttributes.normalizeOs("IOS"));
-    assertEquals("Android", NormalizeAttributes.normalizeOs("Android"));
-    assertEquals("Android", NormalizeAttributes.normalizeOs("Android?"));
-    assertEquals("Other", NormalizeAttributes.normalizeOs("All the Androids"));
+    // Not Desktop OS.
+    assertEquals("iOS", NormalizeAttributes.normalizeOs("iOS", Optional.of("Fennec")));
+    assertEquals("iOS", NormalizeAttributes.normalizeOs("iOS?", Optional.of("Fennec")));
+    assertEquals("iOS", NormalizeAttributes.normalizeOs("iPhone", Optional.of("Fennec")));
+    assertEquals("iOS", NormalizeAttributes.normalizeOs("All the iPhones", Optional.of("Fennec")));
+    assertEquals("Other", NormalizeAttributes.normalizeOs("All the iOSes", Optional.of("Fennec")));
+    assertEquals("Other", NormalizeAttributes.normalizeOs("IOS", Optional.of("Fennec")));
+    assertEquals("Android", NormalizeAttributes.normalizeOs("Android", Optional.of("Fennec")));
+    assertEquals("Android", NormalizeAttributes.normalizeOs("Android?", Optional.of("Fennec")));
+    assertEquals("Android", NormalizeAttributes.normalizeOs("Android Linux", Optional.of("Fennec")));
+    assertEquals("Linux", NormalizeAttributes.normalizeOs("Linux", Optional.of("Fennec")));
+    assertEquals("Other", NormalizeAttributes.normalizeOs("Windows", Optional.of("Fennec")));
+    assertEquals("Other",
+        NormalizeAttributes.normalizeOs("All the Androids", Optional.of("Fennec")));
 
     // Other.
-    assertEquals("Other", NormalizeAttributes.normalizeOs("asdf"));
+    assertEquals("Other", NormalizeAttributes.normalizeOs("asdf", Optional.empty()));
   }
 
   /**
