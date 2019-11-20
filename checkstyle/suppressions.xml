@@ -21,7 +21,7 @@
 
     <!-- copied file from upstream apache/beam -->
     <suppress checks=".*" files="DynamicDestinationsHelpers.java" />
-    <suppress checks=".*" files="BatchLoads.java" />
+    <suppress checks=".*" files="WritePartition.java" />
 
     <!-- suppress all checks in the generated directories -->
     <suppress checks=".*" files=".+[\\\/]generated[\\\/].+\.java" />

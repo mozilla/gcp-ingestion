@@ -198,7 +198,7 @@
                             <!-- exclude auto-generated protocol buffer file from formatting -->
                             <exclude>src/main/java/com/mozilla/telemetry/heka/Heka.java</exclude>
                             <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/DynamicDestinationsHelpers.java</exclude>
-                            <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/BatchLoads.java</exclude>
+                            <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/WritePartition.java</exclude>
                         </excludes>
                         <eclipse>
                             <file>https://raw.githubusercontent.com/apache/beam/v${beam.version}/sdks/java/build-tools/src/main/resources/beam/beam-codestyle.xml</file>
