@@ -6,7 +6,6 @@ import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
@@ -96,8 +95,7 @@ public class BigQuery {
       @Override
       protected synchronized void write(PubsubMessage input) {
         Map<String, Object> content = Json.asMap(encoder.apply(input));
-        Optional.ofNullable(input.getAttributesOrDefault(Attribute.DOCUMENT_ID, null))
-            .map(id -> builder.addRow(id, content)).orElseGet(() -> builder.addRow(content));
+        builder.addRow(content);
       }
 
       @Override
