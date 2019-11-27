@@ -3,6 +3,7 @@ package com.mozilla.telemetry.ingestion.sink.io;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
@@ -119,7 +120,7 @@ public class BigQueryTest {
     List<InsertAllRequest.RowToInsert> rows = ((BigQuery.Write.Batch) output.batches
         .get(BATCH_KEY)).builder.build().getRows();
 
-    assertEquals("id", rows.get(0).getId());
+    assertNull(rows.get(0).getId());
     assertEquals(ImmutableMap.of("document_id", "id"), rows.get(0).getContent());
     assertEquals(20, output.batches.get(BATCH_KEY).byteSize);
   }
