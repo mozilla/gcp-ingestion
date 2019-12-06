@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+"""Download samples of json documents from the decoded and error stream.
+
+This is meant for integration testing, and is easily inspected through the command-line.
+For example, to count the total number documents per group:
+
+  cat document_sample.ndjson | \
+  jq -rc '.attributeMap | [.document_namespace, .document_type, .document_version]' | \
+  uniq -c
+"""
+
+import argparse
+import base64
+import gzip
+import json
+import logging
+import os
+import time
+
+from google.cloud import bigquery
+
+INGESTION_BEAM_ROOT = os.path.realpath(
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "..")
+)
+
+# formatted using the BigQuery console formatter
+QUERY = """
+-- Create a PubSub compatible row with the most recent document samples that
+-- have been decoded.
+SELECT
+  STRUCT( document_namespace,
+    document_type,
+    document_version ) AS attributeMap,
+  payload
+FROM
+  `moz-fx-data-shared-prod`.monitoring.document_sample_nonprod_v1
+WHERE
+  document_decoded
+  AND submission_timestamp = (
+  SELECT
+    MAX(submission_timestamp)
+  FROM
+    `moz-fx-data-shared-prod`.monitoring.document_sample_nonprod_v1 )
+ORDER BY
+  document_namespace,
+  document_type,
+  document_version
+"""
+
+
+def extract_samples(query):
+    """A generator for reading documents in the sampled landfill dataset that exist in the schemas.
+    
+    Documents can be processed using jq e.g. 
+
+        jq '.payload | @base64d | fromjson'
+    """
+    client = bigquery.Client()
+    query_job = client.query(query)
+    for row in query_job:
+        row_dict = dict(row.items())
+        row_dict["payload"] = base64.b64encode(
+            gzip.decompress(row_dict["payload"])
+        ).decode("utf-8")
+        yield row_dict
+
+
+def main(args):
+    os.chdir(INGESTION_BEAM_ROOT)
+    start = time.time()
+    with open(args.output_file, "w") as fp:
+        for pubsub_document in extract_samples(QUERY):
+            fp.write(f"{json.dumps(pubsub_document)}\n")
+    logging.info(f"Done in {time.time()-start} seconds!")
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser("download-document-sample")
+    parser.add_argument("--output-file", default="document_sample.ndjson")
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    main(parse_arguments())
