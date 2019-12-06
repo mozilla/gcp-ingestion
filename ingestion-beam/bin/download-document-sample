@@ -28,6 +28,12 @@ INGESTION_BEAM_ROOT = os.path.realpath(
 QUERY = """
 -- Create a PubSub compatible row with the most recent document samples that
 -- have been decoded.
+with most_recent_timestamp AS (
+  SELECT
+    MAX(submission_timestamp)
+  FROM
+    `moz-fx-data-shared-prod`.monitoring.document_sample_nonprod_v1
+)
 SELECT
   STRUCT( document_namespace,
     document_type,
@@ -37,11 +43,7 @@ FROM
   `moz-fx-data-shared-prod`.monitoring.document_sample_nonprod_v1
 WHERE
   document_decoded
-  AND submission_timestamp = (
-  SELECT
-    MAX(submission_timestamp)
-  FROM
-    `moz-fx-data-shared-prod`.monitoring.document_sample_nonprod_v1 )
+  AND submission_timestamp = (SELECT * FROM most_recent_timestamp)
 ORDER BY
   document_namespace,
   document_type,
@@ -50,7 +52,7 @@ ORDER BY
 
 
 def extract_samples(query):
-    """A generator for reading documents in the sampled landfill dataset that exist in the schemas.
+    """A generator for a query on the document sample table.
     
     Documents can be processed using jq e.g. 
 
