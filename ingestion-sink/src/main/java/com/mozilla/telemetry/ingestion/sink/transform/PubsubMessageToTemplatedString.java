@@ -1,7 +1,16 @@
 package com.mozilla.telemetry.ingestion.sink.transform;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
+import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import org.apache.commons.text.StringSubstitutor;
 
@@ -17,18 +26,77 @@ public class PubsubMessageToTemplatedString implements Function<PubsubMessage, S
 
   public final String template;
 
-  public PubsubMessageToTemplatedString(String template) {
-    this.template = template;
+  public static PubsubMessageToTemplatedString of(String template) {
+    return new PubsubMessageToTemplatedString(template, DestinationType.OTHER);
+  }
+
+  public static PubsubMessageToTemplatedString forBigQuery(String template) {
+    return new PubsubMessageToTemplatedString(template, DestinationType.BIGQUERY);
   }
 
   @Override
   public String apply(PubsubMessage message) {
-    String batchKey = StringSubstitutor.replace(template,
-        DerivedAttributesMap.of(message.getAttributesMap()));
+    final String batchKey;
+    if (destinationType == DestinationType.BIGQUERY) {
+      batchKey = applyForBigQuery(message);
+    } else {
+      batchKey = applyForOther(message);
+    }
     if (batchKey.contains("$")) {
       throw new IllegalArgumentException("Element did not contain all the attributes needed to"
           + " fill out variables in the configured template: " + template);
     }
     return batchKey;
   }
+
+  private String applyForOther(PubsubMessage message) {
+    return StringSubstitutor.replace(template, DerivedAttributesMap.of(message.getAttributesMap()));
+  }
+
+  private String applyForBigQuery(PubsubMessage message) {
+    Map<String, String> attributes = new HashMap<>(message.getAttributesMap());
+
+    // We coerce all docType and namespace names to be snake_case and to remove invalid
+    // characters; these transformations MUST match with the transformations applied by the
+    // jsonschema-transpiler and mozilla-schema-generator when creating table schemas in BigQuery.
+    final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
+    final String docType = attributes.get(Attribute.DOCUMENT_TYPE);
+    if (namespace != null) {
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, getAndCacheNormalizedName(namespace));
+    }
+    if (docType != null) {
+      attributes.put(Attribute.DOCUMENT_TYPE, getAndCacheNormalizedName(docType));
+    }
+
+    attributes = Maps.transformValues(DerivedAttributesMap.of(attributes),
+        v -> v.replaceAll("-", "_"));
+
+    return StringSubstitutor.replace(template, attributes);
+  }
+
+  ////
+
+  private enum DestinationType {
+    OTHER, BIGQUERY
+  }
+
+  private final DestinationType destinationType;
+  private transient Cache<String, String> normalizedNameCache;
+
+  private PubsubMessageToTemplatedString(String template, DestinationType destinationType) {
+    this.template = template;
+    this.destinationType = destinationType;
+  }
+
+  private String getAndCacheNormalizedName(String name) {
+    if (normalizedNameCache == null) {
+      normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
+    }
+    try {
+      return normalizedNameCache.get(name, () -> SnakeCase.format(name));
+    } catch (ExecutionException e) {
+      throw new UncheckedExecutionException(e.getCause());
+    }
+  }
+
 }

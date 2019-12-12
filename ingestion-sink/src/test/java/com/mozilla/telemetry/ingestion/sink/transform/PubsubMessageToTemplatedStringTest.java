@@ -11,24 +11,24 @@ public class PubsubMessageToTemplatedStringTest {
 
   @Test
   public void canResolveStaticTemplateWithEmptyMessage() {
-    assertEquals("static", new PubsubMessageToTemplatedString("static").apply(EMPTY_MESSAGE));
+    assertEquals("static", PubsubMessageToTemplatedString.of("static").apply(EMPTY_MESSAGE));
   }
 
   @Test
   public void canResolveDerivedAttributes() {
     assertEquals("2019-01-01/23",
-        new PubsubMessageToTemplatedString("${submission_date}/${submission_hour}")
+        PubsubMessageToTemplatedString.of("${submission_date}/${submission_hour}")
             .apply(PubsubMessage.newBuilder()
                 .putAttributes("submission_timestamp", "2019-01-01T23:00:00").build()));
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnMissingAttributes() {
-    new PubsubMessageToTemplatedString("${missing}").apply(EMPTY_MESSAGE);
+    PubsubMessageToTemplatedString.of("${missing}").apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnMalformedTemplate() {
-    new PubsubMessageToTemplatedString("${").apply(EMPTY_MESSAGE);
+    PubsubMessageToTemplatedString.of("${").apply(EMPTY_MESSAGE);
   }
 }

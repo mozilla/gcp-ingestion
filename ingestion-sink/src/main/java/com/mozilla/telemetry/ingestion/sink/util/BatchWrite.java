@@ -19,11 +19,12 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
   private final int maxMessages;
   private final long maxDelayMillis;
 
-  public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay, String batchKeyTemplate) {
+  public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
+      PubsubMessageToTemplatedString batchKeyTemplate) {
     this.maxBytes = maxBytes;
     this.maxMessages = maxMessages;
     this.maxDelayMillis = maxDelay.toMillis();
-    this.batchKeyTemplate = new PubsubMessageToTemplatedString(batchKeyTemplate);
+    this.batchKeyTemplate = batchKeyTemplate;
   }
 
   @VisibleForTesting

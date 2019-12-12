@@ -14,6 +14,7 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +29,8 @@ public class GcsWriteTest {
   private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
   private static final int EMPTY_MESSAGE_SIZE = "{}\n".getBytes(StandardCharsets.UTF_8).length;
   private static final String BATCH_KEY = "bucket/prefix/";
+  private static final PubsubMessageToTemplatedString BATCH_KEY_TEMPLATE = //
+      PubsubMessageToTemplatedString.of(BATCH_KEY);
   private static final int MAX_BYTES = 10;
   private static final int MAX_MESSAGES = 10;
   private static final Duration MAX_DELAY = Duration.ofMillis(100);
@@ -45,7 +48,7 @@ public class GcsWriteTest {
     storage = mock(Storage.class);
     writer = mock(WriteChannel.class);
     when(storage.writer(any())).thenReturn(writer);
-    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY,
+    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
         Format.raw, this::batchCloseHook);
   }
 
@@ -59,8 +62,8 @@ public class GcsWriteTest {
 
   @Test
   public void canSendWithNoDelay() {
-    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0), BATCH_KEY,
-        Format.raw, this::batchCloseHook);
+    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
+        BATCH_KEY_TEMPLATE, Format.raw, this::batchCloseHook);
     output.apply(EMPTY_MESSAGE).join();
     assertEquals(1, output.batches.get(BATCH_KEY).size);
     assertEquals(EMPTY_MESSAGE_SIZE, output.batches.get(BATCH_KEY).byteSize);
