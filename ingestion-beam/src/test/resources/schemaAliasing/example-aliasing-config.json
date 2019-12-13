@@ -2,11 +2,11 @@
   "aliases": [
     {
       "alias": "some-product/baseline",
-      "base": "glean/baseline"
+      "base": "glean/glean"
     },
     {
       "alias": "some-product/some-doctype",
-      "base": "glean/metrics"
+      "base": "glean/glean"
     }
   ]
 }
