@@ -1,7 +1,9 @@
 package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
@@ -16,6 +18,8 @@ public class MessageScrubber {
       "bug_1567596");
   private static final Counter countScrubbedBug1562011 = Metrics.counter(MessageScrubber.class,
       "bug_1562011");
+  private static final Counter countRedactedBug1602844 = Metrics.counter(MessageScrubber.class,
+      "bug_1602844");
 
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
@@ -62,6 +66,29 @@ public class MessageScrubber {
       return true;
     } else {
       return false;
+    }
+  }
+
+  // See bug 1603487 for discussion of affected versions, etc.
+  @VisibleForTesting
+  static boolean bug1602844Affected(Map<String, String> attributes) {
+    return ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "focus-event".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && "Lockbox".equals(attributes.get(Attribute.APP_NAME))
+        && attributes.get(Attribute.APP_VERSION) != null
+        && ("1.7.0".equals(attributes.get(Attribute.APP_VERSION))
+            || attributes.get(Attribute.APP_VERSION).matches("1\\.[0-6][0-9.]*"));
+  }
+
+  public static void redact(Map<String, String> attributes, ObjectNode json) {
+    if (bug1602844Affected(attributes)) {
+      json.path("events").elements().forEachRemaining(event -> {
+        JsonNode eventMapValues = event.path(5);
+        if (eventMapValues.has("fxauid")) {
+          ((ObjectNode) eventMapValues).replace("fxauid", NullNode.getInstance());
+          countRedactedBug1602844.inc();
+        }
+      });
     }
   }
 
