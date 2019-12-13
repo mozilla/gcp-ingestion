@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.decoder;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -76,6 +77,62 @@ public class MessageScrubberTest {
         .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_VERSION, "68.0").build();
 
     assertTrue(MessageScrubber.shouldScrub(attributes, ping));
+  }
+
+  @Test
+  public void testBug1602844Affected() throws Exception {
+    Map<String, String> baseAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
+        .put(Attribute.DOCUMENT_TYPE, "focus-event").put(Attribute.APP_NAME, "Lockbox").build();
+    assertFalse(MessageScrubber.bug1602844Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "1.7.1").build()));
+    assertTrue(MessageScrubber.bug1602844Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "1.7.0").build()));
+    assertTrue(MessageScrubber.bug1602844Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "1.6.1").build()));
+    assertTrue(MessageScrubber.bug1602844Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "1.3").build()));
+    assertTrue(MessageScrubber.bug1602844Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "1.1.1").build()));
+  }
+
+  @Test
+  public void testRedactForBug1602844() throws Exception {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
+        .put(Attribute.DOCUMENT_TYPE, "focus-event").put(Attribute.APP_NAME, "Lockbox")
+        .put(Attribute.APP_VERSION, "1.7.0").build();
+    ObjectNode json = Json.readObjectNode(("{\n" //
+        + "  \"arch\": \"arm64\",\n" //
+        + "  \"events\": [\n" //
+        + "    [\n" //
+        + "      224264,\n" //
+        + "      \"action\",\n" //
+        + "      \"background\",\n" //
+        + "      \"app\",\n" //
+        + "      null,\n" //
+        + "      {\n" //
+        + "        \"fxauid\": \"should-be-redacted\"\n" //
+        + "      }\n" //
+        + "    ],\n" //
+        + "    [\n" //
+        + "      49,\n" //
+        + "      \"action\",\n" //
+        + "      \"startup\",\n" //
+        + "      \"app\"\n" //
+        + "    ]\n" //
+        + "  ],\n" //
+        + "  \"tz\": 0" //
+        + "  },\n" //
+        + "}").getBytes(StandardCharsets.UTF_8));
+
+    assertFalse(json.path("events").path(0).path(5).path("fxauid").isNull());
+    MessageScrubber.redact(attributes, json);
+
+    assertTrue(json.path("events").path(0).path(5).path("fxauid").isNull());
+    assertFalse(json.path("events").path(0).path(5).path("fxauid").isMissingNode());
+    assertEquals("app", json.path("events").path(0).path(3).textValue());
+    assertEquals("0", json.path("tz").asText());
   }
 
 }
