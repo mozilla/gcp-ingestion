@@ -27,21 +27,17 @@ public class PubsubMessageToTemplatedString implements Function<PubsubMessage, S
   public final String template;
 
   public static PubsubMessageToTemplatedString of(String template) {
-    return new PubsubMessageToTemplatedString(template, DestinationType.OTHER);
+    return new PubsubMessageToTemplatedString(template);
   }
 
   public static PubsubMessageToTemplatedString forBigQuery(String template) {
-    return new PubsubMessageToTemplatedString(template, DestinationType.BIGQUERY);
+    return new PubsubMessageToTemplatedStringForBigQuery(template);
   }
 
   @Override
   public String apply(PubsubMessage message) {
-    final String batchKey;
-    if (destinationType == DestinationType.BIGQUERY) {
-      batchKey = applyForBigQuery(message);
-    } else {
-      batchKey = applyForOther(message);
-    }
+    final String batchKey = StringSubstitutor.replace(template,
+        DerivedAttributesMap.of(message.getAttributesMap()));
     if (batchKey.contains("$")) {
       throw new IllegalArgumentException("Element did not contain all the attributes needed to"
           + " fill out variables in the configured template: " + template);
@@ -49,54 +45,50 @@ public class PubsubMessageToTemplatedString implements Function<PubsubMessage, S
     return batchKey;
   }
 
-  private String applyForOther(PubsubMessage message) {
-    return StringSubstitutor.replace(template, DerivedAttributesMap.of(message.getAttributesMap()));
-  }
-
-  private String applyForBigQuery(PubsubMessage message) {
-    Map<String, String> attributes = new HashMap<>(message.getAttributesMap());
-
-    // We coerce all docType and namespace names to be snake_case and to remove invalid
-    // characters; these transformations MUST match with the transformations applied by the
-    // jsonschema-transpiler and mozilla-schema-generator when creating table schemas in BigQuery.
-    final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
-    final String docType = attributes.get(Attribute.DOCUMENT_TYPE);
-    if (namespace != null) {
-      attributes.put(Attribute.DOCUMENT_NAMESPACE, getAndCacheNormalizedName(namespace));
-    }
-    if (docType != null) {
-      attributes.put(Attribute.DOCUMENT_TYPE, getAndCacheNormalizedName(docType));
-    }
-
-    attributes = Maps.transformValues(DerivedAttributesMap.of(attributes),
-        v -> v.replaceAll("-", "_"));
-
-    return StringSubstitutor.replace(template, attributes);
-  }
-
   ////
 
-  private enum DestinationType {
-    OTHER, BIGQUERY
-  }
-
-  private final DestinationType destinationType;
-  private transient Cache<String, String> normalizedNameCache;
-
-  private PubsubMessageToTemplatedString(String template, DestinationType destinationType) {
+  private PubsubMessageToTemplatedString(String template) {
     this.template = template;
-    this.destinationType = destinationType;
   }
 
-  private String getAndCacheNormalizedName(String name) {
-    if (normalizedNameCache == null) {
-      normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
+  private static class PubsubMessageToTemplatedStringForBigQuery
+      extends PubsubMessageToTemplatedString {
+
+    private transient Cache<String, String> normalizedNameCache;
+
+    private PubsubMessageToTemplatedStringForBigQuery(String template) {
+      super(template);
+      this.normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
     }
-    try {
-      return normalizedNameCache.get(name, () -> SnakeCase.format(name));
-    } catch (ExecutionException e) {
-      throw new UncheckedExecutionException(e.getCause());
+
+    private String getAndCacheNormalizedName(String name) {
+      try {
+        return normalizedNameCache.get(name, () -> SnakeCase.format(name));
+      } catch (ExecutionException e) {
+        throw new UncheckedExecutionException(e.getCause());
+      }
+    }
+
+    @Override
+    public String apply(PubsubMessage message) {
+      Map<String, String> attributes = new HashMap<>(message.getAttributesMap());
+
+      // We coerce all docType and namespace names to be snake_case and to remove invalid
+      // characters; these transformations MUST match with the transformations applied by the
+      // jsonschema-transpiler and mozilla-schema-generator when creating table schemas in BigQuery.
+      final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
+      final String docType = attributes.get(Attribute.DOCUMENT_TYPE);
+      if (namespace != null) {
+        attributes.put(Attribute.DOCUMENT_NAMESPACE, getAndCacheNormalizedName(namespace));
+      }
+      if (docType != null) {
+        attributes.put(Attribute.DOCUMENT_TYPE, getAndCacheNormalizedName(docType));
+      }
+
+      attributes = Maps.transformValues(DerivedAttributesMap.of(attributes),
+          v -> v.replaceAll("-", "_"));
+
+      return super.apply(PubsubMessage.newBuilder().putAllAttributes(attributes).build());
     }
   }
-
 }
