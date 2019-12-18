@@ -3,6 +3,7 @@ package com.mozilla.telemetry.ingestion.sink.io;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyLong;
@@ -18,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionException;
@@ -31,7 +33,8 @@ public class BigQueryTest {
   private static final int MAX_MESSAGES = 10;
   private static final Duration MAX_DELAY = Duration.ofMillis(100);
   private static final Duration NO_DELAY = Duration.ofMillis(0);
-  private static final String BATCH_KEY_TEMPLATE = "_._";
+  private static final PubsubMessageToTemplatedString BATCH_KEY_TEMPLATE = //
+      PubsubMessageToTemplatedString.forBigQuery("_._");
   private static final TableId BATCH_KEY = TableId.of("_", "_");
 
   private com.google.cloud.bigquery.BigQuery bigQuery;
@@ -106,7 +109,7 @@ public class BigQueryTest {
   @Test
   public void canHandleProjectInTableId() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        "project.dataset.table", Format.raw);
+        PubsubMessageToTemplatedString.forBigQuery("project.dataset.table"), Format.raw);
     output.apply(EMPTY_MESSAGE).join();
     assertNotNull(output.batches.get(TableId.of("project", "dataset", "table")));
   }
@@ -119,15 +122,15 @@ public class BigQueryTest {
     List<InsertAllRequest.RowToInsert> rows = ((BigQuery.Write.Batch) output.batches
         .get(BATCH_KEY)).builder.build().getRows();
 
-    assertEquals("id", rows.get(0).getId());
+    assertNull(rows.get(0).getId());
     assertEquals(ImmutableMap.of("document_id", "id"), rows.get(0).getContent());
     assertEquals(20, output.batches.get(BATCH_KEY).byteSize);
   }
 
   @Test
   public void canHandleDynamicTableId() {
-    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, "${dataset}.${table}",
-        Format.raw);
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
+        PubsubMessageToTemplatedString.forBigQuery("${dataset}.${table}"), Format.raw);
     output.apply(PubsubMessage.newBuilder().putAttributes("dataset", "dataset")
         .putAttributes("table", "table").build()).join();
     assertNotNull(output.batches.get(TableId.of("dataset", "table")));
@@ -136,7 +139,7 @@ public class BigQueryTest {
   @Test
   public void canHandleDynamicTableIdWithEmptyValues() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        "${dataset}_.${table}_", Format.raw);
+        PubsubMessageToTemplatedString.forBigQuery("${dataset}_.${table}_"), Format.raw);
     output.apply(
         PubsubMessage.newBuilder().putAttributes("dataset", "").putAttributes("table", "").build())
         .join();
@@ -146,21 +149,35 @@ public class BigQueryTest {
   @Test
   public void canHandleDynamicTableIdWithDefaults() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        "${dataset:-dataset}.${table:-table}", Format.raw);
+        PubsubMessageToTemplatedString.forBigQuery("${dataset:-dataset}.${table:-table}"),
+        Format.raw);
     output.apply(EMPTY_MESSAGE).join();
     assertNotNull(output.batches.get(TableId.of("dataset", "table")));
   }
 
+  @Test
+  public void canHandleDynamicTableIdWithHyphens() {
+    output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
+        PubsubMessageToTemplatedString
+            .forBigQuery("${document_namespace}.${document_type}_${suffix}"),
+        Format.raw);
+    output.apply(PubsubMessage.newBuilder().putAttributes("document_namespace", "my-namespace")
+        .putAttributes("document_type", "myDocType").putAttributes("suffix", "my-suffix").build())
+        .join();
+    assertNotNull(output.batches.get(TableId.of("my_namespace", "my_doc_type_my_suffix")));
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void failsOnMissingAttributes() {
-    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, "${dataset}.${table}",
-        Format.raw).apply(EMPTY_MESSAGE);
+    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
+        PubsubMessageToTemplatedString.forBigQuery("${dataset}.${table}"), Format.raw)
+            .apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnInvalidTable() {
-    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, "", Format.raw)
-        .apply(EMPTY_MESSAGE);
+    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
+        PubsubMessageToTemplatedString.forBigQuery(""), Format.raw).apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = IllegalArgumentException.class)
