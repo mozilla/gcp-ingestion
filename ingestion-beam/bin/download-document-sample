@@ -73,8 +73,9 @@ def main(args):
     start = time.time()
     with open(args.output_file, "w") as fp:
         for pubsub_document in extract_samples(QUERY):
-            fp.write(f"{json.dumps(pubsub_document)}\n")
-    logging.info(f"Done in {time.time()-start} seconds!")
+            fp.write(json.dumps(pubsub_document))
+            fp.write("\n")
+    logging.info("Done in {} seconds!".format(time.time()-start))
 
 
 def parse_arguments():
