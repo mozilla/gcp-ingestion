@@ -11,6 +11,7 @@ import com.mozilla.telemetry.ingestion.sink.io.Gcs;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -70,7 +71,7 @@ public class SinkConfig {
             env.getLong(BATCH_MAX_BYTES, 100_000_000L), // default 100MB
             env.getInt(BATCH_MAX_MESSAGES, 1_000_000), // default 1M messages
             env.getDuration(BATCH_MAX_DELAY, "10m"), // default 10 minutes
-            gcsPrefix, getFormat(env), batchCloseHook);
+            PubsubMessageToTemplatedString.of(gcsPrefix), getFormat(env), batchCloseHook);
       }
 
       @Override
@@ -95,7 +96,8 @@ public class SinkConfig {
             // BigQuery Streaming API Limits maximum rows per request to 10,000
             env.getInt(BATCH_MAX_MESSAGES, 10_000), // default 10K messages
             env.getDuration(BATCH_MAX_DELAY, "1s"), // default 1 second
-            env.getString(OUTPUT_TABLE), getFormat(env));
+            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
+            getFormat(env));
       }
     };
 
