@@ -43,6 +43,7 @@ public class GcsWriteTest {
     return CompletableFuture.completedFuture(null);
   }
 
+  /** Prepare a mock BQ response. */
   @Before
   public void mockBigQueryResponse() {
     storage = mock(Storage.class);

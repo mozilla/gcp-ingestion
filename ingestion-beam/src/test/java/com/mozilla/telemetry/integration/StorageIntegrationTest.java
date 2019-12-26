@@ -48,7 +48,11 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
     storage.create(BucketInfo.of(bucket));
   }
 
-  /** Clean up all GCS resources we created. */
+  /**
+   * Clean up all GCS resources we created.
+   *
+   * @throws Exception if BigQuery is unavailable
+   */
   @After
   public void deleteBucket() throws Exception {
     RemoteStorageHelper.forceDelete(storage, bucket, 5, TimeUnit.SECONDS);

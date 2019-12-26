@@ -10,6 +10,7 @@ public class JsonValidator {
 
   private final Validator validator;
 
+  /** Build a JSON validator object.*/
   public JsonValidator() {
     // Without failEarly(), a pathological payload may cause the validator to consume all memory;
     // https://github.com/mozilla/gcp-ingestion/issues/374

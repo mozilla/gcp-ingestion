@@ -101,6 +101,7 @@ public abstract class Read
       TABLE, QUERY
     }
 
+    /** Constructor. */
     public BigQueryInput(ValueProvider<String> tableSpec, BigQueryReadMethod method, Source source,
         String rowRestriction, List<String> selectedFields) {
       this.tableSpec = tableSpec;

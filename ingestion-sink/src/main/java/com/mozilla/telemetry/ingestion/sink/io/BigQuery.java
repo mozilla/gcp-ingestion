@@ -42,6 +42,7 @@ public class BigQuery {
     private final com.google.cloud.bigquery.BigQuery bigQuery;
     private final PubsubMessageToObjectNode encoder;
 
+    /** Constructor. */
     public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
         Duration maxDelay, PubsubMessageToTemplatedString batchKeyTemplate, Format format) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);

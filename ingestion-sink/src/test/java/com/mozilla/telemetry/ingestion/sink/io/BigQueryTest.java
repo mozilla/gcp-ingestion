@@ -41,6 +41,7 @@ public class BigQueryTest {
   private BigQuery.Write output;
   private InsertAllResponse response;
 
+  /** Prepare a mock BQ response. */
   @Before
   public void mockBigQueryResponse() {
     bigQuery = mock(com.google.cloud.bigquery.BigQuery.class);

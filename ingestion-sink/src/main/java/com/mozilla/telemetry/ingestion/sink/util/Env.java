@@ -14,12 +14,16 @@ public class Env {
   private final Map<String, String> env;
   private final Set<String> unused;
 
+  /** Constructor. */
   public Env(List<String> include) {
     env = include.stream().filter(key -> System.getenv(key) != null)
         .collect(Collectors.toMap(key -> key, System::getenv));
     unused = new HashSet<>(env.keySet());
   }
 
+  /**
+   * Throw an {@link IllegalArgumentException} for any environment variables set but not used.
+   */
   public void requireAllVarsUsed() {
     if (!unused.isEmpty()) {
       throw new IllegalArgumentException("Env vars set but not used: " + unused.toString());

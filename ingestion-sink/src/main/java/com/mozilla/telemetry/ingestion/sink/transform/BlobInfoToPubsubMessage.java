@@ -7,6 +7,9 @@ import java.nio.charset.StandardCharsets;
 
 public class BlobInfoToPubsubMessage {
 
+  /**
+   * Read the contents of a GCS blob into a {@link PubsubMessage}.
+   */
   public static PubsubMessage apply(BlobInfo blobInfo) {
     return PubsubMessage.newBuilder()
         .setData(ByteString.copyFrom(("gs://" + blobInfo.getBucket() + "/" + blobInfo.getName())
