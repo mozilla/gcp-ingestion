@@ -3,6 +3,7 @@ package com.mozilla.telemetry.util;
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;

@@ -96,6 +96,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       throw new MessageShouldBeDroppedException();
     }
 
+    // Potentially mutates the value of json to redact specific fields.
+    MessageScrubber.redact(attributes, json);
+
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {
       PerDocTypeCounter.inc(null, "error_invalid_doc_type");
