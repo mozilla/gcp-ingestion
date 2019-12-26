@@ -19,6 +19,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
   private final int maxMessages;
   private final long maxDelayMillis;
 
+  /** Constructor. */
   public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
       PubsubMessageToTemplatedString batchKeyTemplate) {
     this.maxBytes = maxBytes;
@@ -66,6 +67,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     @VisibleForTesting
     public long byteSize = 0;
 
+    /** Constructor. */
     public Batch() {
       // wait for init then setup full indicator by timeout
       full = init.thenRunAsync(this::timeout).exceptionally(ignore -> null);

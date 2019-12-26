@@ -140,6 +140,7 @@ public class SinkConfig {
     return PubsubMessageToObjectNode.Format.valueOf(env.getString(OUTPUT_FORMAT, "raw"));
   }
 
+  /** Return a configured input transform. */
   public static Pubsub.Read getInput() {
     Env env = new Env(INCLUDE_ENV_VARS);
     OutputType outputType = OutputType.get(env);

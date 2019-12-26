@@ -125,6 +125,10 @@ public class PubsubMessageToTableRow
     return KV.of(tableDestination, tableRow);
   }
 
+  /**
+   * Given a KV containing a destination and a message, return the message content as a {@link
+   * TableRow} ready to pass to {@link org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO}.
+   */
   public TableRow kvToTableRow(KV<TableDestination, PubsubMessage> kv) {
     PubsubMessage message = kv.getValue();
     switch (tableRowFormat.get()) {

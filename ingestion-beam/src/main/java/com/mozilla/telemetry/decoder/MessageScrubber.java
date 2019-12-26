@@ -80,6 +80,10 @@ public class MessageScrubber {
             || attributes.get(Attribute.APP_VERSION).matches("1\\.[0-6][0-9.]*"));
   }
 
+  /**
+   * Redact fields that may contain unintended sensitive information, replacing with null or
+   * other appropriate signifiers.
+   */
   public static void redact(Map<String, String> attributes, ObjectNode json) {
     if (bug1602844Affected(attributes)) {
       json.path("events").elements().forEachRemaining(event -> {

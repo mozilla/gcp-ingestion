@@ -85,7 +85,11 @@ public abstract class TestWithPubsubResources {
     return response.stream().map(ReceivedMessage::getMessage).collect(Collectors.toList());
   }
 
-  /** Create a Pub/Sub topic and subscription. */
+  /**
+   * Create a Pub/Sub topic and subscription.
+   *
+   * @throws IOException if Pub/Sub is unavailable
+   */
   @Before
   public void initializePubsubResources() throws IOException {
     TopicAdminSettings.Builder topicAdminSettings = TopicAdminSettings.newBuilder();
