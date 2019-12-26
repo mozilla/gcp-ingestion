@@ -1,12 +1,7 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.ingestion.sink.util;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -14,18 +9,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import org.apache.commons.text.StringSubstitutor;
 
 public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     implements Function<InputT, CompletableFuture<Void>> {
 
-  protected final String batchKeyTemplate;
+  protected final PubsubMessageToTemplatedString batchKeyTemplate;
 
   private final long maxBytes;
   private final int maxMessages;
   private final long maxDelayMillis;
 
-  public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay, String batchKeyTemplate) {
+  public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
+      PubsubMessageToTemplatedString batchKeyTemplate) {
     this.maxBytes = maxBytes;
     this.maxMessages = maxMessages;
     this.maxDelayMillis = maxDelay.toMillis();
@@ -57,16 +52,6 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
         .orElseThrow(() -> new IllegalArgumentException("Empty batch rejected input"));
   }
 
-  protected String applyBatchKeyTemplate(PubsubMessage input) {
-    String batchKey = StringSubstitutor.replace(batchKeyTemplate,
-        DerivedAttributesMap.of(input.getAttributesMap()));
-    if (batchKey.contains("$")) {
-      throw new IllegalArgumentException("Element did not contain all the attributes needed to"
-          + " fill out variables in the configured output template: " + batchKeyTemplate);
-    }
-    return batchKey;
-  }
-
   public abstract class Batch {
 
     // block this batch from completing by timeout until this future is resolved
@@ -83,9 +68,9 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
 
     public Batch() {
       // wait for init then setup full indicator by timeout
-      full = init.thenRunAsync(this::timeout);
+      full = init.thenRunAsync(this::timeout).exceptionally(ignore -> null);
       // wait for full then close
-      result = full.handleAsync(this::close);
+      result = full.thenComposeAsync(this::close);
     }
 
     private void timeout() {
@@ -116,7 +101,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     protected void checkResultFor(BatchResultT batchResult, int index) {
     }
 
-    protected abstract BatchResultT close(Void ignoreVoid, Throwable ignoreThrowable);
+    protected abstract CompletableFuture<BatchResultT> close(Void ignore);
 
     protected abstract void write(EncodedT encodedInput);
 

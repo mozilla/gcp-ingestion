@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry;
 
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
@@ -50,7 +46,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
   @Test
   public void testMixedErrorCases() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
-    String resourceDir = "src/test/resources/testdata/decoder-integration";
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
     String input = resourceDir + "/*-input.ndjson";
     String output = outputPath + "/out/out";
     String errorOutput = outputPath + "/error/error";
@@ -76,7 +72,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
   @Test
   public void testGzippedPayload() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
-    String resourceDir = "src/test/resources/testdata/decoder-integration";
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
     String input = resourceDir + "/gzipped.ndjson";
     String output = outputPath + "/out/out";
     String errorOutput = outputPath + "/error/error";
@@ -97,7 +93,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
   @Test
   public void testIdempotence() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
-    String resourceDir = "src/test/resources/testdata/decoder-integration";
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
     String input = resourceDir + "/*-input.ndjson";
     String intermediateOutput = outputPath + "/out1/out1";
     String output = outputPath + "/out2/out2";

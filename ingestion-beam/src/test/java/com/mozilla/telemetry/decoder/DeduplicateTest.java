@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableMap;
@@ -11,6 +7,7 @@ import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
 import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -97,6 +94,18 @@ public class DeduplicateTest {
     final PCollection<String> errorWithDupes = dupesAsErrors.errors().apply("get error ids",
         mapMessagesToId);
     PAssert.that(errorWithDupes).containsInAnyOrder(invalidId, duplicatedId);
+
+    // run RemoveDuplicates
+    pipeline.run();
+
+    // Check that having a null URI disables deduplication; all messages should pass through to the
+    // output collection even if they've been marked as seen in Redis.
+    PCollection<String> nonDedupledIds = pipeline
+        .apply("ids", Create.of(Arrays.asList(newId, seenId)))
+        .apply("create messages", mapStringsToId)
+        .apply("no-op deduplicate", Deduplicate.removeDuplicates(StaticValueProvider.of(null)))
+        .ignoreDuplicates().output().apply("get non-deduped IDs", mapMessagesToId);
+    PAssert.that(nonDedupledIds).containsInAnyOrder(newId, seenId);
 
     // run RemoveDuplicates
     pipeline.run();

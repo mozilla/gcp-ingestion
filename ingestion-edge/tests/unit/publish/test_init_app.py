@@ -1,7 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, you can obtain one at http://mozilla.org/MPL/2.0/.
-
 from ingestion_edge import publish
 from ingestion_edge.config import Route
 from sanic import Sanic
@@ -53,7 +49,7 @@ async def test_endpoint(app, kwargs, method, mocker, uri_bytes):
     app.config["ROUTE_TABLE"] = ROUTE_TABLE
     publish.init_app(app)
     responses = []
-    request = Request(uri_bytes, {}, "1.1", method, None)
+    request = Request(uri_bytes, {}, "1.1", method, None, app)
     await app.handle_request(request, lambda r: responses.append(r), None)
     assert responses == [
         dict(client=client, q={"path": ":memory:"}, metadata_headers={}, **kwargs)

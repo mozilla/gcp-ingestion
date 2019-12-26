@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.republisher;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -11,6 +7,7 @@ import com.mozilla.telemetry.util.Time;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
@@ -147,7 +144,8 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
     options
         .setDeduplicateExpireSeconds(NestedValueProvider.of(options.getDeduplicateExpireDuration(),
             value -> Ints.checkedCast(Time.parseSeconds(value))));
-    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(), URI::create));
+    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(),
+        s -> Optional.ofNullable(s).map(URI::create).orElse(null)));
   }
 
 }

@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.io;
 
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -10,6 +6,7 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.mozilla.telemetry.avro.BinaryRecordFormatter;
 import com.mozilla.telemetry.avro.GenericRecordBinaryEncoder;
 import com.mozilla.telemetry.avro.PubsubMessageRecordFormatter;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
 import com.mozilla.telemetry.options.BigQueryWriteMethod;
 import com.mozilla.telemetry.options.InputType;
@@ -26,6 +23,7 @@ import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import com.mozilla.telemetry.util.NoColonFileNaming;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -101,6 +99,20 @@ public abstract class Write
           .apply("endcode PubsubMessages as strings", format.encode()) //
           .apply("print", this.output);
       return WithErrors.Result.of(output, EmptyErrors.in(input.getPipeline()));
+    }
+
+  }
+
+  /** Implementation of ignoring messages and sending to no output. */
+  public static class IgnoreOutput extends Write {
+
+    public IgnoreOutput() {
+    }
+
+    @Override
+    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+      return WithErrors.Result.of(PDone.in(input.getPipeline()),
+          EmptyErrors.in(input.getPipeline()));
     }
 
   }
@@ -324,14 +336,16 @@ public abstract class Write
     private final ValueProvider<String> schemasLocation;
     private final ValueProvider<String> schemasAliasesLocation;
     private final ValueProvider<TableRowFormat> tableRowFormat;
+    private final ValueProvider<String> partitioningField;
+    private final ValueProvider<List<String>> clusteringFields;
 
     /** Public constructor. */
     public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
         Duration triggeringFrequency, InputType inputType, int numShards,
         ValueProvider<List<String>> streamingDocTypes,
         ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-        ValueProvider<String> schemasAliasesLocation,
-        ValueProvider<TableRowFormat> tableRowFormat) {
+        ValueProvider<String> schemasAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat,
+        ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
@@ -344,11 +358,17 @@ public abstract class Write
       this.schemasLocation = schemasLocation;
       this.schemasAliasesLocation = schemasAliasesLocation;
       this.tableRowFormat = tableRowFormat;
+      this.partitioningField = NestedValueProvider.of(partitioningField,
+          f -> f != null ? f : Attribute.SUBMISSION_TIMESTAMP);
+      this.clusteringFields = NestedValueProvider.of(clusteringFields,
+          f -> f != null ? f : Collections.singletonList(Attribute.SUBMISSION_TIMESTAMP));
     }
 
     @Override
     public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
       final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+      KeyByBigQueryTableDestination keyByBigQueryTableDestination = KeyByBigQueryTableDestination
+          .of(tableSpecTemplate, partitioningField, clusteringFields);
 
       input = input //
           .apply(LimitPayloadSize.toBytes(writeMethod.maxPayloadBytes)).errorsTo(errorCollections);
@@ -362,8 +382,8 @@ public abstract class Write
               v -> v == TableRowFormat.payload ? Compression.GZIP : Compression.UNCOMPRESSED));
 
       final PubsubMessageToTableRow pubsubMessageToTableRow = PubsubMessageToTableRow.of(
-          tableSpecTemplate, strictSchemaDocTypes, schemasLocation, schemasAliasesLocation,
-          tableRowFormat);
+          strictSchemaDocTypes, schemasLocation, schemasAliasesLocation, tableRowFormat,
+          keyByBigQueryTableDestination);
       final BigQueryIO.Write<KV<TableDestination, PubsubMessage>> baseWriteTransform = BigQueryIO //
           .<KV<TableDestination, PubsubMessage>>write() //
           .withFormatFunction(pubsubMessageToTableRow::kvToTableRow) //
@@ -414,7 +434,7 @@ public abstract class Write
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
             .apply(maybeCompress) //
-            .apply(KeyByBigQueryTableDestination.of(tableSpecTemplate)) //
+            .apply(keyByBigQueryTableDestination) //
             .errorsTo(errorCollections) //
             .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
@@ -442,7 +462,7 @@ public abstract class Write
                   }
                   TableRow row = bqie.getRow();
                   row.setFactory(JacksonFactory.getDefaultInstance());
-                  byte[] payload = row.toString().getBytes();
+                  byte[] payload = row.toString().getBytes(StandardCharsets.UTF_8);
                   return new PubsubMessage(payload, attributes);
                 })));
       });
@@ -459,7 +479,7 @@ public abstract class Write
         }
         messages //
             .apply(maybeCompress) //
-            .apply(KeyByBigQueryTableDestination.of(tableSpecTemplate)) //
+            .apply(keyByBigQueryTableDestination) //
             .errorsTo(errorCollections) //
             .apply(fileLoadsWrite);
       });

@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.collect.ImmutableMap;
@@ -14,6 +10,7 @@ import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -310,7 +307,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
 
     PCollection<String> payloads = output //
         .apply("PayloadString", MapElements.into(TypeDescriptors.strings())
-            .via(message -> new String(message.getPayload())));
+            .via(message -> sortJSON(new String(message.getPayload(), StandardCharsets.UTF_8))));
     PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
     PCollection<String> attributesSansUri = output //

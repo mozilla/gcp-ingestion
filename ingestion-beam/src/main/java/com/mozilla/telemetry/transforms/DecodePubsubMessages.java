@@ -1,10 +1,11 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.transforms;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 /**
@@ -38,6 +39,11 @@ public abstract class DecodePubsubMessages
     return new Json();
   }
 
+  /** Decoder from sanitized landfill JSON format to PubsubMessage. */
+  public static SantizedLandfill sanitizedLandfill() {
+    return new SantizedLandfill();
+  }
+
   /*
    * Concrete subclasses.
    */
@@ -45,7 +51,7 @@ public abstract class DecodePubsubMessages
   public static class Text extends DecodePubsubMessages {
 
     protected PubsubMessage processElement(String element) {
-      return new PubsubMessage(element.getBytes(), null);
+      return new PubsubMessage(element.getBytes(StandardCharsets.UTF_8), null);
     }
   }
 
@@ -55,4 +61,23 @@ public abstract class DecodePubsubMessages
       return com.mozilla.telemetry.util.Json.readPubsubMessage(element);
     }
   }
+
+  public static class SantizedLandfill extends DecodePubsubMessages {
+
+    protected PubsubMessage processElement(String element) throws IOException {
+      Map<String, String> attributes = new HashMap<>();
+      ObjectNode root = com.mozilla.telemetry.util.Json
+          .readObjectNode(element.getBytes(StandardCharsets.UTF_8));
+      ObjectNode meta = (ObjectNode) root.path("meta");
+      meta.fields().forEachRemaining(entry -> {
+        String attribute = entry.getKey().toLowerCase().replaceAll("-", "_");
+        if (entry.getValue().isTextual()) {
+          attributes.put(attribute, entry.getValue().asText());
+        }
+      });
+      byte[] payload = (root.path("content").asText()).getBytes(StandardCharsets.UTF_8);
+      return new PubsubMessage(payload, attributes);
+    }
+  }
+
 }

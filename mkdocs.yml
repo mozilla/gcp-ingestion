@@ -9,6 +9,9 @@ nav:
   - ingestion-edge: ingestion-edge/index.md
   - ingestion-beam:
     - Overview: ingestion-beam/index.md
+    - Sink Job: ingestion-beam/sink-job.md
+    - Decoder Job: ingestion-beam/decoder-job.md
+    - Republisher Job: ingestion-beam/republisher-job.md
     - Ingestion testing workflow: ingestion-beam/ingestion_testing_workflow.md
   - Architecture:
     - Overview: architecture/overview.md

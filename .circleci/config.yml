@@ -47,6 +47,8 @@ jobs:
               echo "Run tests because .circleci/ was modified since branching off master"
           elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/pom.xml; then
               echo "Run tests because pom.xml was modified since branching off master"
+          elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/ingestion-core/src; then
+              echo "Run tests because ingestion-core/src was modified since branching off master"
           elif ! git diff --quiet origin/master... -- .; then
               echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off master"
           else
@@ -87,7 +89,8 @@ jobs:
     - &setup_remote_docker
       setup_remote_docker:
         docker_layer_caching: true
-    - run:
+    - &create_version_json
+      run:
         name: Create version.json
         command: >-
           printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n'
@@ -149,9 +152,7 @@ jobs:
       run:
         name: Maven Test
         command: |
-          PROFILE="$(basename "$PWD")"
-          cd ..
-          mvn -P "$PROFILE" clean test
+          mvn clean test
     - *report_code_coverage
     - save_cache:
         paths:
@@ -164,11 +165,12 @@ jobs:
     # Checkout would fail if it were not the first step
     # because checkout path would contain working dir
     - *checkout
-    - run:
+    - &skip_forked_pr
+      run:
         name: Early return if this build is from a forked PR
         command: |
           if [ -n "$CIRCLE_PR_NUMBER" ]; then
-            echo "Nothing to upload for forked PRs, so marking this step successful"
+            echo "Cannot pass creds to forked PRs, so marking this step successful"
             circleci step halt
           fi
     - *skip_unmodified
@@ -183,9 +185,7 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          PROFILE="$(basename "$PWD")"
-          cd ..
-          mvn -P "$PROFILE" clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
+          mvn clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
     - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
 
@@ -218,6 +218,7 @@ jobs:
     <<: *ingestion_sink
     steps:
     - *checkout
+    - *skip_forked_pr
     - *skip_unmodified
     - *sink_restore_cache
     - *maven_integration_test
@@ -230,6 +231,7 @@ jobs:
     steps:
       - *setup_remote_docker
       - *checkout
+      - *create_version_json
       - *persist_ci_env
       - run:
           <<: *docker_compose_test

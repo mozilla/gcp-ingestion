@@ -1,12 +1,9 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.util;
 
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;

@@ -1,18 +1,15 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.schemas;
 
-import avro.shaded.com.google.common.annotations.VisibleForTesting;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.mozilla.telemetry.util.SnakeCase;
+import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors.BubbleUpException;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -228,8 +225,8 @@ public abstract class SchemaStore<T> implements Serializable {
     }
     try {
       return normalizedNameCache.get(name, () -> SnakeCase.format(name));
-    } catch (ExecutionException e) {
-      throw new UncheckedExecutionException(e.getCause());
+    } catch (ExecutionException | UncheckedExecutionException e) {
+      throw new BubbleUpException(e.getCause());
     }
   }
 

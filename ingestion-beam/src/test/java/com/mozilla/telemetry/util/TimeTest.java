@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.util;
 
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -72,5 +68,10 @@ public class TimeTest {
   @Test(expected = IllegalArgumentException.class)
   public void testNegativeThrows() {
     Time.parseDuration("-PT6H");
+  }
+
+  @Test
+  public void testEpochMicrosToTimestamp() {
+    assertEquals("2020-01-12T21:02:18.123456Z", Time.epochMicrosToTimestamp(1578862938123456L));
   }
 }

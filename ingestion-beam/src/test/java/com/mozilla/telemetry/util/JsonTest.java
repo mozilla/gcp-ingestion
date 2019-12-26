@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.util;
 
 import static org.junit.Assert.assertEquals;
@@ -9,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
 public class JsonTest {
@@ -20,7 +17,7 @@ public class JsonTest {
 
   @Test
   public void testReadTableRowSuceedsOnEmptyJsonObject() throws Exception {
-    Json.readTableRow("{}".getBytes());
+    Json.readTableRow("{}".getBytes(StandardCharsets.UTF_8));
   }
 
   @Test(expected = IOException.class)
@@ -35,13 +32,14 @@ public class JsonTest {
 
   @Test(expected = IOException.class)
   public void testReadTableRowThrowsOnNullJson() throws Exception {
-    Json.readTableRow("null".getBytes());
+    Json.readTableRow("null".getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
   public void testReadBigQuerySchema() throws Exception {
     Schema schema = Json.readBigQuerySchema(
-        "[{\"mode\":\"NULLABLE\",\"name\":\"document_id\",\"type\": \"STRING\"}]".getBytes());
+        "[{\"mode\":\"NULLABLE\",\"name\":\"document_id\",\"type\": \"STRING\"}]"
+            .getBytes(StandardCharsets.UTF_8));
     assertEquals(LegacySQLTypeName.STRING, schema.getFields().get(0).getType());
   }
 

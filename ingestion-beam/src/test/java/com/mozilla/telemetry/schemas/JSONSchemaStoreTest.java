@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.schemas;
 
 import static org.hamcrest.Matchers.greaterThan;
@@ -56,16 +52,15 @@ public class JSONSchemaStoreTest {
   public void testAliasedDocTypeExists() {
     JSONSchemaStore store = JSONSchemaStore.of(SCHEMAS_LOCATION, ALIASING_CONFIG_LOCATION);
     assertTrue(store.docTypeExists("some-product", "baseline"));
-    assertTrue(store.docTypeExists("glean", "baseline"));
     assertTrue(store.docTypeExists("some-product", "some-doctype"));
-    assertTrue(store.docTypeExists("glean", "metrics"));
+    assertTrue(store.docTypeExists("glean", "glean"));
   }
 
   @Test
   public void testAliasedSchemaExistsViaAttributes() throws SchemaNotFoundException {
     Map<String, String> attributes = new HashMap<>();
     attributes.put("document_namespace", "glean");
-    attributes.put("document_type", "baseline");
+    attributes.put("document_type", "glean");
     attributes.put("document_version", "1");
 
     Map<String, String> aliasedAttributes = new HashMap<>();

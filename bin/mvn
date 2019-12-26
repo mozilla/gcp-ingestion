@@ -7,29 +7,37 @@
 set -eo pipefail
 
 cd "$(dirname "$0")/.."
+GIT_TOPLEVEL="$(git rev-parse --show-toplevel)"
+GIT_PREFIX="$(git rev-parse --show-prefix)"
 
 # Create dir to cache maven dependencies if it doesn't already exist.
 mkdir -p ~/.m2
-
-if [ "$(git rev-parse --show-toplevel)" != "$PWD" ]; then
-    PROFILE=( -P "$(basename "$PWD")" )
-else
-    PROFILE=()
-fi
 
 INTERACTIVE_FLAGS=""
 if [ -z "$NONINTERACTIVE" ]; then
     INTERACTIVE_FLAGS="-it"
 fi
 
+MOUNT_CREDENTIALS_FLAGS=""
+if [[ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]]; then
+    # Credentials are detected on the local filesystem via environment. This is
+    # mounted into the maven container into an arbitrary location, with the
+    # container environment set to point at the mounted volume.
+    echo "Using GOOGLE_APPLICATION_CREDENTIALS..."
+    mount_location="/app/.credentials"
+    MOUNT_CREDENTIALS_FLAGS="-v ${GOOGLE_APPLICATION_CREDENTIALS}:${mount_location}"
+    GOOGLE_APPLICATION_CREDENTIALS=$mount_location
+fi
+
 # Run mvn with a non-root user id
 # https://docs.docker.com/samples/library/maven/#Running-as-non-root
 docker run $INTERACTIVE_FLAGS --rm \
     -u $UID \
-    -v "$(git rev-parse --show-toplevel)":/var/maven/project \
-    -w /var/maven/project \
+    -v "$GIT_TOPLEVEL":/var/maven/project \
+    -w /var/maven/project/"$GIT_PREFIX" \
     -v ~/.m2:/var/maven/.m2 \
     -e MAVEN_CONFIG=/var/maven/.m2 \
     -e GOOGLE_APPLICATION_CREDENTIALS \
+    $MOUNT_CREDENTIALS_FLAGS \
     maven:3-jdk-8 \
-    mvn "${PROFILE[@]}" "$@"
+    mvn -Duser.home=/var/maven "$@"

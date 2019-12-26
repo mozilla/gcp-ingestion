@@ -1,14 +1,13 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.options;
 
 import com.mozilla.telemetry.io.Write;
+import com.mozilla.telemetry.io.Write.BigQueryOutput;
 import com.mozilla.telemetry.io.Write.FileOutput;
+import com.mozilla.telemetry.io.Write.IgnoreOutput;
 import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.transforms.WithErrors.Result;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +16,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
@@ -39,6 +39,14 @@ public enum ErrorOutputType {
     /** Return a PTransform that prints errors to STDERR; only for local running. */
     public Write writeFailures(SinkOptions.Parsed options) {
       return new PrintOutput(FORMAT, Println.stderr());
+    }
+  },
+
+  ignore {
+
+    /** Return a PTransform that prints messages to STDERR; only for local running. */
+    public Write writeFailures(SinkOptions.Parsed options) {
+      return new IgnoreOutput();
     }
   },
 
@@ -82,6 +90,19 @@ public enum ErrorOutputType {
                   PubsubConstraints.MAX_ENCODABLE_MESSAGE_BYTES));
         }
       };
+    }
+  },
+
+  bigquery {
+
+    /** Return a PTransform that writes to a BigQuery table. */
+    public Write writeFailures(SinkOptions.Parsed options) {
+      return new BigQueryOutput(options.getErrorOutput(), options.getErrorBqWriteMethod(),
+          options.getParsedErrorBqTriggeringFrequency(), options.getInputType(),
+          options.getErrorBqNumFileShards(), StaticValueProvider.of(null),
+          StaticValueProvider.of(null), options.getSchemasLocation(),
+          options.getSchemaAliasesLocation(), StaticValueProvider.of(TableRowFormat.raw),
+          options.getErrorBqPartitioningField(), options.getErrorBqClusteringFields());
     }
   };
 

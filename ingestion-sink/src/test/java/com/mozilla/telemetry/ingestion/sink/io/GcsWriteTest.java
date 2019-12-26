@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.ingestion.sink.io;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -17,10 +13,13 @@ import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToJSONObject.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,8 +27,10 @@ import org.junit.Test;
 public class GcsWriteTest {
 
   private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
-  private static final int EMPTY_MESSAGE_SIZE = "{}\n".getBytes().length;
+  private static final int EMPTY_MESSAGE_SIZE = "{}\n".getBytes(StandardCharsets.UTF_8).length;
   private static final String BATCH_KEY = "bucket/prefix/";
+  private static final PubsubMessageToTemplatedString BATCH_KEY_TEMPLATE = //
+      PubsubMessageToTemplatedString.of(BATCH_KEY);
   private static final int MAX_BYTES = 10;
   private static final int MAX_MESSAGES = 10;
   private static final Duration MAX_DELAY = Duration.ofMillis(100);
@@ -38,13 +39,17 @@ public class GcsWriteTest {
   private Gcs.Write.Ndjson output;
   private WriteChannel writer;
 
+  private CompletableFuture<Void> batchCloseHook(BlobInfo ignore) {
+    return CompletableFuture.completedFuture(null);
+  }
+
   @Before
   public void mockBigQueryResponse() {
     storage = mock(Storage.class);
     writer = mock(WriteChannel.class);
     when(storage.writer(any())).thenReturn(writer);
-    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY,
-        Format.raw);
+    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
+        Format.raw, this::batchCloseHook);
   }
 
   @Test
@@ -57,8 +62,8 @@ public class GcsWriteTest {
 
   @Test
   public void canSendWithNoDelay() {
-    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0), BATCH_KEY,
-        Format.raw);
+    output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
+        BATCH_KEY_TEMPLATE, Format.raw, this::batchCloseHook);
     output.apply(EMPTY_MESSAGE).join();
     assertEquals(1, output.batches.get(BATCH_KEY).size);
     assertEquals(EMPTY_MESSAGE_SIZE, output.batches.get(BATCH_KEY).byteSize);

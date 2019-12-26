@@ -1,13 +1,11 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.transforms;
 
 import com.google.common.collect.ImmutableMap;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
 /**
@@ -34,7 +32,7 @@ public class FailureMessage {
    * Return a PubsubMessage wrapping a String payload with attributes describing the error.
    */
   public static PubsubMessage of(Object caller, String payload, Throwable e) {
-    return FailureMessage.of(caller, payload.getBytes(), e);
+    return FailureMessage.of(caller, payload.getBytes(StandardCharsets.UTF_8), e);
   }
 
   /**
@@ -42,6 +40,15 @@ public class FailureMessage {
    */
   public static PubsubMessage of(Object caller, byte[] payload, Throwable e) {
     return new PubsubMessage(payload, errorAttributes(caller, e));
+  }
+
+  /**
+   * Return a PubsubMessage corresponding to an error reading from a file.
+   */
+  public static PubsubMessage of(Object caller, ReadableFile readableFile, Throwable e) {
+    Map<String, String> attributes = errorAttributes(caller, e);
+    attributes.put("readable_file", readableFile.toString());
+    return new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes);
   }
 
   private static Map<String, String> errorAttributes(Object caller, Throwable e) {

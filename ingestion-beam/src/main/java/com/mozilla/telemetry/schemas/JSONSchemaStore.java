@@ -1,7 +1,3 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.schemas;
 
 import com.mozilla.telemetry.util.Json;
@@ -38,7 +34,7 @@ public class JSONSchemaStore extends SchemaStore<Schema> {
   @Override
   protected Schema loadSchemaFromArchive(ArchiveInputStream archive) throws IOException {
     byte[] bytes = IOUtils.toByteArray(archive);
-    JSONObject json = Json.readJSONObject(bytes);
+    JSONObject json = Json.readValue(bytes, JSONObject.class);
     return SchemaLoader.load(json);
   }
 }

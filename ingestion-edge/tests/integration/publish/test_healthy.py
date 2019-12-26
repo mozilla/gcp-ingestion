@@ -1,7 +1,3 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, you can obtain one at http://mozilla.org/MPL/2.0/.
-
 from concurrent.futures import ThreadPoolExecutor
 from .helpers import IntegrationTest
 from ingestion_edge.config import METADATA_HEADERS
@@ -14,29 +10,29 @@ import pytest
 # names by outsourcing the actual values
 DATA = {
     "GZIPPED": gzip.compress(b"data"),
-    "MAX_LENGTH": b"." * (8 * 1024 * 1024),  # nginx max data length 8MB
+    "MAX_LENGTH": b"x" * (8 * 1024 * 1024),  # nginx max data length 8MB
     "NON_UTF8": bytes(range(256)),
-    "TOO_LONG": b"." * (10 * 1024 * 1024 + 1),  # over pubsub max length of 10MB
+    "TOO_LONG": b"x" * (10 * 1024 * 1024 + 1),  # over pubsub max length of 10MB
     # identity values
     "": b"",
     "data": b"data",
 }
 HEADER = {
-    "MAX_LENGTH": b"." * 1024,
+    "MAX_LENGTH": b"x" * 1024,
     "NON_UTF8": bytes(set(range(256)).difference(b"\r\n"))[::-1],
-    "TOO_LONG": b"." * 1025,
+    "TOO_LONG": b"x" * 1025,
     # identity values
     None: None,
     "": b"",
     "header": b"header",
 }
 STRING = {
-    "MAX_LENGTH": "." * 1024,
+    "MAX_LENGTH": "x" * 1024,
     "NON_UTF8": bytes(set(range(256)).difference(b"\r\n"))[::-1].decode("latin"),
-    "TOO_LONG": "." * 1025,
+    "TOO_LONG": "x" * 1025,
     # identity values
     "": "",
-    ".": ".",
+    "x": "x",
     "args": "args",
     "p/a/t/h": "p/a/t/h",
 }
@@ -48,7 +44,7 @@ headers = [
     {key: value for key in METADATA_HEADERS if key != "content-length"}
     for value in [None, "", "header", "NON_UTF8"]
 ] + [{key: "MAX_LENGTH"} for key in METADATA_HEADERS if key != "content-length"]
-uri_suffix = [".", "p/a/t/h", "MAX_LENGTH"]
+uri_suffix = ["x", "p/a/t/h", "MAX_LENGTH"]
 
 
 @pytest.mark.parametrize(
@@ -90,10 +86,10 @@ def test_submit_success(
     chain(
         [
             ("", {}, STRING["TOO_LONG"]),  # uri too long
-            (STRING["TOO_LONG"], {}, "."),  # args too long
+            (STRING["TOO_LONG"], {}, "x"),  # args too long
         ],
         [
-            ("", {key: HEADER["TOO_LONG"]}, ".")  # header too long
+            ("", {key: HEADER["TOO_LONG"]}, "x")  # header too long
             for key in METADATA_HEADERS
             if key != "content-length"
         ],
@@ -105,7 +101,7 @@ def test_submit_invalid_header_too_long(
     uri_suffix: str,
     integration_test: IntegrationTest,
 ):
-    if uri_suffix != "." and "<suffix:path>" not in integration_test.uri_template:
+    if uri_suffix != "x" and "<suffix:path>" not in integration_test.uri_template:
         pytest.skip("requires suffix in uri_template")
     integration_test.args = args
     integration_test.headers = headers

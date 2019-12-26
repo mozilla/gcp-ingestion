@@ -1,15 +1,10 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
 package com.mozilla.telemetry.decoder;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.Time;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -52,11 +47,11 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       if (xpp != null) {
 
         // Check if X-Pipeline-Proxy is a timestamp
-        final Instant proxyInstant = parseAsInstantOrNull(xpp);
+        final Instant proxyInstant = Time.parseAsInstantOrNull(xpp);
         if (proxyInstant != null) {
           // Record the difference between submission and proxy times as tee latency.
           final String submissionTimestamp = attributes.get(Attribute.SUBMISSION_TIMESTAMP);
-          final Instant submissionInstant = parseAsInstantOrNull(submissionTimestamp);
+          final Instant submissionInstant = Time.parseAsInstantOrNull(submissionTimestamp);
           if (submissionInstant != null) {
             teeLatencyTimer.update(submissionInstant.toEpochMilli() - proxyInstant.toEpochMilli());
           }
@@ -96,11 +91,4 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
   private ParseProxy() {
   }
 
-  private static Instant parseAsInstantOrNull(String timestamp) {
-    try {
-      return Instant.from(DateTimeFormatter.ISO_INSTANT.parse(timestamp));
-    } catch (DateTimeParseException | NullPointerException ignore) {
-      return null;
-    }
-  }
 }
