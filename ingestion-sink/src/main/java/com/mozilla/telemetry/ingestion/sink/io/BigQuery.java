@@ -9,6 +9,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.time.Duration;
 import java.util.List;
@@ -42,7 +43,7 @@ public class BigQuery {
     private final PubsubMessageToObjectNode encoder;
 
     public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
-        Duration maxDelay, String batchKeyTemplate, Format format) {
+        Duration maxDelay, PubsubMessageToTemplatedString batchKeyTemplate, Format format) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
       this.bigQuery = bigQuery;
       this.encoder = new PubsubMessageToObjectNode(format);

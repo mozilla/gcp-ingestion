@@ -89,7 +89,8 @@ jobs:
     - &setup_remote_docker
       setup_remote_docker:
         docker_layer_caching: true
-    - run:
+    - &create_version_json
+      run:
         name: Create version.json
         command: >-
           printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n'
@@ -230,6 +231,7 @@ jobs:
     steps:
       - *setup_remote_docker
       - *checkout
+      - *create_version_json
       - *persist_ci_env
       - run:
           <<: *docker_compose_test
