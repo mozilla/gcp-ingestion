@@ -101,7 +101,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.2.0</version>
                 <configuration>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -191,12 +191,14 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>1.24.3</version>
+                <version>1.26.1</version>
                 <configuration>
                     <java>
                         <excludes>
                             <!-- exclude auto-generated protocol buffer file from formatting -->
                             <exclude>src/main/java/com/mozilla/telemetry/heka/Heka.java</exclude>
+                            <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/DynamicDestinationsHelpers.java</exclude>
+                            <exclude>src/main/java/org/apache/beam/sdk/io/gcp/bigquery/WritePartition.java</exclude>
                         </excludes>
                         <eclipse>
                             <file>https://raw.githubusercontent.com/apache/beam/v${beam.version}/sdks/java/build-tools/src/main/resources/beam/beam-codestyle.xml</file>

@@ -17,7 +17,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -93,6 +95,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       // Prevent the message from going to success or error output.
       throw new MessageShouldBeDroppedException();
     }
+
+    // Potentially mutates the value of json to redact specific fields.
+    MessageScrubber.redact(attributes, json);
 
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {
@@ -183,6 +188,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .filter(v -> !Strings.isNullOrEmpty(v)) //
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     } else {
+      // Try to extract "activity-stream"-style values.
+      Optional.ofNullable(json.path("release_channel").textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .ifPresent(v -> attributes.put(Attribute.APP_UPDATE_CHANNEL, v));
+
       // Try to extract "core ping"-style values; see
       // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/telemetry/core/core.10.schema.json
       Optional.ofNullable(json.path(Attribute.OS).textValue()) //
@@ -195,16 +205,23 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     }
 
     // Try extracting variants of top-level client id.
-    Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
-        .filter(v -> !Strings.isNullOrEmpty(v)) //
-        .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
-    Optional.ofNullable(json.path("clientId").textValue()) //
-        .filter(v -> !Strings.isNullOrEmpty(v)) //
+    Stream
+        .of(attributes.get(Attribute.CLIENT_ID), json.path(Attribute.CLIENT_ID).textValue(),
+            json.path("clientId").textValue())
+        .map(ParsePayload::normalizeUuid) //
+        .filter(Objects::nonNull) //
+        .findFirst() //
         .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
 
-    // Add sample id.
-    Optional.ofNullable(attributes.get(Attribute.CLIENT_ID)) //
-        .filter(v -> !Strings.isNullOrEmpty(v)) //
+    // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
+    // allow sampling on non-telemetry pings.
+    Stream.of(attributes.get(Attribute.CLIENT_ID),
+        // "impression_id" is a client_id-like identifier used in activity-stream ping
+        // that do not contain a client_id.
+        json.path("impression_id").textValue()) //
+        .map(ParsePayload::normalizeUuid) //
+        .filter(Objects::nonNull) //
+        .findFirst() //
         .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
   }
 
@@ -216,6 +233,21 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     crc32.reset();
     crc32.update(clientId.getBytes(StandardCharsets.UTF_8));
     return crc32.getValue() % 100;
+  }
+
+  private static String normalizeUuid(String v) {
+    if (v == null) {
+      return null;
+    }
+    // The impression_id in activity-stream pings is a UUID enclosed in curly braces, so we
+    v = v.replaceAll("[{}]", "");
+    try {
+      // Will raise an exception if not a valid UUID.
+      UUID.fromString(v);
+      return v;
+    } catch (IllegalArgumentException ignore) {
+      return null;
+    }
   }
 
   private ObjectNode parseTimed(byte[] bytes) throws IOException {

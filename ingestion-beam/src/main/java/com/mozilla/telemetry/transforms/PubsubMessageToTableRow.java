@@ -16,13 +16,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
 import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.SnakeCase;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
@@ -43,6 +44,8 @@ import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV3;
 import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
@@ -71,6 +74,16 @@ public class PubsubMessageToTableRow
 
   public static final String PAYLOAD = "payload";
   public static final String ADDITIONAL_PROPERTIES = "additional_properties";
+
+  // Metrics
+  private static final Counter coercedToInt = Metrics.counter(PubsubMessageToTableRow.class,
+      "coerced_to_int");
+  private static final Counter notCoercedToInt = Metrics.counter(PubsubMessageToTableRow.class,
+      "not_coerced_to_int");
+  private static final Counter notCoercedToBool = Metrics.counter(PubsubMessageToTableRow.class,
+      "not_coerced_to_bool");
+  private static final Counter coercionFailureInList = Metrics
+      .counter(PubsubMessageToTableRow.class, "coercion_failure_in_list");
 
   // We have hit rate limiting issues that have sent valid data to error output, so we make the
   // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
@@ -300,21 +313,8 @@ public class PubsubMessageToTableRow
     String name = field.getName();
     Optional<Object> value = Optional.ofNullable(val);
 
-    // A repeated string field might need us to JSON-ify a list or map.
-    if (field.getType() == LegacySQLTypeName.STRING && field.getMode() == Mode.REPEATED) {
-
-      value.filter(List.class::isInstance).map(List.class::cast).ifPresent(list -> {
-        List<Object> jsonified = ((List<Object>) list).stream().map(o -> coerceToString(o))
-            .collect(Collectors.toList());
-        parent.put(name, jsonified);
-      });
-
-      // A string field might need us to JSON-ify an object coerce a value to string.
-    } else if (field.getType() == LegacySQLTypeName.STRING && field.getMode() != Mode.REPEATED) {
-      value.ifPresent(o -> parent.put(name, coerceToString(o)));
-
-      // A record of key and value indicates we need to transformForBqSchema a map to an array.
-    } else if (isMapType(field)) {
+    // A record of key and value indicates we need to transformForBqSchema a map to an array.
+    if (isMapType(field)) {
       expandMapType(jsonFieldName, value.orElse(null), field, parent, additionalProperties);
 
       // A record with a single "list" field and a list value should be expanded appropriately.
@@ -372,8 +372,21 @@ public class PubsubMessageToTableRow
       if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
         additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
       }
+      // If we've made it here, we have a basic type or a list of basic types.
     } else {
-      value.ifPresent(v -> parent.put(name, v));
+      value.ifPresent(v -> {
+        Optional<Object> coerced = coerceToBqType(v, field);
+        if (coerced.isPresent()) {
+          parent.put(name, coerced.get());
+        } else {
+          // An empty coerced value means the actual type didn't match expected and we don't define
+          // a coercion. We put the value to additional_properties instead.
+          if (additionalProperties != null) {
+            additionalProperties.put(jsonFieldName, v);
+          }
+          parent.remove(name);
+        }
+      });
     }
   }
 
@@ -461,23 +474,85 @@ public class PubsubMessageToTableRow
     });
   }
 
-  private static String coerceToString(Object o) {
-    if (o instanceof String) {
-      return (String) o;
-    } else {
-      try {
-        return Json.asString(o);
-      } catch (IOException ignore) {
-        return o.toString();
+  /**
+   * This method gives us a chance to perform some additional type coercions in case the BigQuery
+   * field type is different from the source data type. This should rarely happen, since only
+   * validated payloads get through to this BQ sink path, but there are sets of probes with
+   * heterogeneous types that appear as explicit fields in BQ, but are treated as loosely typed
+   * maps at the validation phase; we need to catch these or they can cause the entire pipeline
+   * to stall.
+   *
+   * <p>Returning {@code null} here indicates that no coercion is defined and that the field should
+   * be put to {@code additional_properties}.
+   */
+  private Optional<Object> coerceToBqType(Object o, Field field) {
+    if (field.getMode() == Mode.REPEATED) {
+      if (o instanceof List) {
+        return Optional.of(((List<Object>) o).stream().map(v -> coerceSingleValueToBqType(v, field))
+            // We have not yet observed a case where an array type contains values that cannot
+            // be coerced to appropriate values, so this filter should not be getting rid of
+            // elements; a future improvement would be to refactor so that we can insert
+            // non-coerceable values from a list into additional_properties.
+            .filter(v -> {
+              if (!v.isPresent()) {
+                coercionFailureInList.inc();
+              }
+              return v.isPresent();
+            }).map(Optional::get).collect(Collectors.toList()));
+      } else {
+        return Optional.empty();
       }
+    } else {
+      return coerceSingleValueToBqType(o, field);
     }
   }
 
-  private static Object coerceIfStringExpected(Object o, LegacySQLTypeName typeName) {
-    if (typeName == LegacySQLTypeName.STRING) {
-      return coerceToString(o);
+  private Optional<Object> coerceSingleValueToBqType(Object o, Field field) {
+    if (field.getType() == LegacySQLTypeName.STRING) {
+      if (o instanceof String) {
+        return Optional.of(o);
+      } else {
+        // If not already a string, we JSON-ify the value.
+        // We have many fields that we expect to be coerced to string (histograms, userPrefs, etc.)
+        // so no point in maintaining a counter here as it will quickly reach many billions.
+        return Optional.of(coerceToString(o));
+      }
+      // Our BigQuery schemas use Standard SQL type names, but the BQ API expects legacy SQL
+      // type names, so we end up with technically invalid types of INT64 that we need to
+      // check for.
+    } else if (field.getType() == LegacySQLTypeName.INTEGER
+        || "INT64".equals(field.getType().toString())) {
+      if (o instanceof Integer || o instanceof Long) {
+        return Optional.of(o);
+      } else if (o instanceof Boolean) {
+        coercedToInt.inc();
+        // We assume that false is equivalent to zero and true to 1.
+        return Optional.of(o).map(v -> (Boolean) v ? 1 : 0);
+      } else {
+        notCoercedToInt.inc();
+        return Optional.empty();
+      }
+      // Our BigQuery schemas use Standard SQL type names, but the BQ API expects legacy SQL
+      // type names, so we may end up with technically invalid types of BOOL that we need to
+      // check for.
+    } else if (field.getType() == LegacySQLTypeName.BOOLEAN
+        || "BOOL".equals(field.getType().toString())) {
+      if (o instanceof Boolean) {
+        return Optional.of(o);
+      } else {
+        notCoercedToBool.inc();
+        return Optional.empty();
+      }
     } else {
-      return o;
+      return Optional.of(o);
+    }
+  }
+
+  private String coerceToString(Object o) {
+    try {
+      return Json.asString(o);
+    } catch (IOException ignore) {
+      return o.toString();
     }
   }
 
@@ -487,7 +562,7 @@ public class PubsubMessageToTableRow
     }
     try {
       return normalizedNameCache.get(name, () -> convertNameForBq(name));
-    } catch (ExecutionException e) {
+    } catch (ExecutionException | UncheckedExecutionException e) {
       throw new BubbleUpException(e.getCause());
     }
   }

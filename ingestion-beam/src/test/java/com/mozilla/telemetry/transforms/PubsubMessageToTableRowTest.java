@@ -104,6 +104,39 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     assertEquals(expected, Json.asString(parent));
   }
 
+  /**
+   * We have observed clients very occasionally (less than once per month across all clients)
+   * sending a boolean or string for an integer probe.
+   */
+  @Test
+  public void testTypeCoercion() throws Exception {
+    String mainPing = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
+        + "{\"contentblocking.exceptions\":false" //
+        + ",\"contentblocking.other\":\"should_be_int\"" //
+        + ",\"contentblocking.category\":0}}}}}";
+    String expected = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
+        + "{\"contentblocking_category\":0,\"contentblocking_exceptions\":0}}}}}";
+    String expectedAdditionalProperties = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
+        + "{\"contentblocking.other\":\"should_be_int\"}}}}}";
+    Map<String, Object> parent = Json.readTableRow(mainPing.getBytes(StandardCharsets.UTF_8));
+    Map<String, Object> additionalProperties = new HashMap<>();
+    List<Field> bqFields = ImmutableList
+        .of(Field
+            .of("payload", LegacySQLTypeName.RECORD,
+                Field
+                    .of("processes", LegacySQLTypeName.RECORD,
+                        Field
+                            .of("parent", LegacySQLTypeName.RECORD, Field
+                                .newBuilder("scalars", LegacySQLTypeName.RECORD, //
+                                    Field.of("contentblocking_exceptions",
+                                        LegacySQLTypeName.INTEGER),
+                                    Field.of("contentblocking_category", LegacySQLTypeName.INTEGER))
+                                .build()))));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+    assertEquals(expectedAdditionalProperties, Json.asString(additionalProperties));
+  }
+
   @Test
   public void testUnmap() throws Exception {
     Map<String, Object> parent = new HashMap<>();
@@ -427,7 +460,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
         + "}\n").getBytes(StandardCharsets.UTF_8));
     List<Field> bqFields = ImmutableList.of(Field.newBuilder("payload", LegacySQLTypeName.RECORD, //
         Field.newBuilder("list", LegacySQLTypeName.RECORD, //
-            Field.of("list", LegacySQLTypeName.INTEGER)) //
+            Field.newBuilder("list", LegacySQLTypeName.INTEGER).setMode(Mode.REPEATED).build()) //
             .setMode(Mode.REPEATED).build() //
     ).setMode(Mode.REPEATED).build()); //
     String expected = "{\"payload\":[" //
