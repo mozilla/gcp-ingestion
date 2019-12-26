@@ -44,6 +44,8 @@ about the sandbox environment that is provided by data operations.
     - This may take several minutes. Read the script for usage information.
     - Each namespace will be given its own dataset and each document type its own table.
 * Verify that tables have been updated by viewing the BigQuery console.
+* Download a copy of sampled documents using `bin/download-document-sample`
+    - Upload this to your project's data bucket e.g. `gs://$PROJECT/data/`
 
 ## Building the project
 
@@ -59,7 +61,7 @@ path="$BUCKET/data/*.ndjson"
 
 # use local maven instead of the docker container in bin/mvn, otherwise make sure to mount
 # credentials into the proper location in the container
-./bin/mvn compile exec:java -Dexec.args="\
+mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
     --project=$PROJECT \
     --autoscalingAlgorithm=NONE \

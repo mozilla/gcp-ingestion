@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.util;
+package com.mozilla.telemetry.ingestion.core.util;
 
 import java.util.Arrays;
 import java.util.regex.Pattern;

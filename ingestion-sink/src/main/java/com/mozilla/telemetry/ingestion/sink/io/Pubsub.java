@@ -69,7 +69,7 @@ public class Pubsub {
     public Write(String topicTemplate, int numThreads,
         Function<Publisher.Builder, Publisher.Builder> config) {
       executor = Executors.newFixedThreadPool(numThreads);
-      this.topicTemplate = new PubsubMessageToTemplatedString(topicTemplate);
+      this.topicTemplate = PubsubMessageToTemplatedString.of(topicTemplate);
       this.config = config;
     }
 

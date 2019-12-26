@@ -9,6 +9,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,7 +35,7 @@ public class Gcs {
       private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-          String batchKeyTemplate, Format format,
+          PubsubMessageToTemplatedString batchKeyTemplate, Format format,
           Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
         super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
         this.encoder = new PubsubMessageToObjectNode(format);
@@ -55,7 +56,8 @@ public class Gcs {
     private final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
 
     private Write(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-        String batchKeyTemplate, Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
+        PubsubMessageToTemplatedString batchKeyTemplate,
+        Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
       this.storage = storage;
       this.batchCloseHook = batchCloseHook;
