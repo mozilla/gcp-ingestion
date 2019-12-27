@@ -50,7 +50,7 @@
         <jackson.version>2.9.10</jackson.version>
 
         <!-- Keep this dependency version in sync with what is pulled in by jackson;
-             check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.9 -->
+             check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.10 -->
         <org-json.version>20171018</org-json.version>
 
         <!-- Set empty default. -->
@@ -69,7 +69,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>28.1-jre</version>
+            <version>28.2-jre</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
