@@ -180,6 +180,8 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
 
   /**
    * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   *
+   * @throws JsonProcessingException if the conversion is unsuccessful
    */
   public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
     return MAPPER.treeToValue(root, klass);

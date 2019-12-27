@@ -21,6 +21,10 @@ import org.xerial.snappy.Snappy;
 
 public class HekaReader {
 
+  /**
+   * Read a single heka message from a stream.
+   * @throws IOException if the stream is not valid heka-framed protobuf bytes
+   */
   public static PubsubMessage readHekaMessage(InputStream is) throws IOException {
     while (true) {
       // continue reading until we find a heka message or we reach the end of the

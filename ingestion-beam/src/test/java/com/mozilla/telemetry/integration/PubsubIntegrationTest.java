@@ -75,9 +75,11 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
 
   /**
    * Create a Pub/Sub topic and subscription.
+   *
+   * @throws IOException if Pub/Sub is unavailable
    */
   @Before
-  public void initializePubsubResources() throws Exception {
+  public void initializePubsubResources() throws IOException {
     projectId = ServiceOptions.getDefaultProjectId();
     topicId = "test-topic-" + UUID.randomUUID().toString();
     subscriptionId = "test-subscription-" + UUID.randomUUID().toString();
@@ -89,9 +91,13 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
         PushConfig.getDefaultInstance(), 0);
   }
 
-  /** Clean up all the Pub/Sub resources we created. */
+  /**
+   * Clean up all the Pub/Sub resources we created.
+   *
+   * @throws IOException if Pub/Sub is unavailable
+   */
   @After
-  public void deletePubsubResources() throws Exception {
+  public void deletePubsubResources() throws IOException {
     SubscriptionAdminClient.create().deleteSubscription(subscriptionName);
     TopicAdminClient.create().deleteTopic(topicName);
   }

@@ -42,6 +42,10 @@ public class KeyByBigQueryTableDestination
         clusteringFields);
   }
 
+  /**
+   * Return the appropriate table desination instance for the given document type and other
+   * attributes.
+   */
   public TableDestination getTableDestination(Map<String, String> attributes) {
     attributes = new HashMap<>(attributes);
 

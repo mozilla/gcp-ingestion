@@ -82,6 +82,8 @@ public class GuidedJsonDecoder extends ParsingDecoder implements Parser.ActionHa
 
   /**
    * Create a GuidedJsonDecoder from an InputStream.
+   *
+   * @throws IOException if input stream is not valid JSON
    */
   public GuidedJsonDecoder configure(InputStream in) throws IOException {
     if (null == in) {

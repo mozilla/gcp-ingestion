@@ -33,6 +33,7 @@ public class Pubsub {
     @VisibleForTesting
     public Subscriber subscriber;
 
+    /** Constructor. */
     public <T> Read(String subscriptionName, Function<PubsubMessage, CompletableFuture<T>> output,
         Function<Subscriber.Builder, Subscriber.Builder> config) {
       ProjectSubscriptionName subscription = ProjectSubscriptionName.parse(subscriptionName);
@@ -49,6 +50,7 @@ public class Pubsub {
           .build();
     }
 
+    /** Run the subscriber until terminated. */
     public void run() {
       try {
         subscriber.startAsync();
@@ -66,6 +68,7 @@ public class Pubsub {
     private final PubsubMessageToTemplatedString topicTemplate;
     private final ConcurrentMap<String, Publisher> publishers = new ConcurrentHashMap<>();
 
+    /** Constructor. */
     public Write(String topicTemplate, int numThreads,
         Function<Publisher.Builder, Publisher.Builder> config) {
       executor = Executors.newFixedThreadPool(numThreads);
