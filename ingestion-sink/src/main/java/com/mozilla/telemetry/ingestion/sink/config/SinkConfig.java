@@ -4,6 +4,7 @@ import com.google.api.gax.batching.FlowControlSettings;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.StorageOptions;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
@@ -35,19 +36,42 @@ public class SinkConfig {
       OUTPUT_TABLE, OUTPUT_TOPIC, OUTPUT_TOPIC_EXECUTOR_THREADS, MAX_OUTSTANDING_ELEMENT_COUNT,
       MAX_OUTSTANDING_REQUEST_BYTES);
 
+  @VisibleForTesting
+  protected static class Output implements Function<PubsubMessage, CompletableFuture<Void>> {
+
+    private final Env env;
+    private final OutputType type;
+    private final Function<PubsubMessage, CompletableFuture<Void>> write;
+
+    private Output(Env env, OutputType outputType,
+        Function<PubsubMessage, CompletableFuture<Void>> write) {
+      this.env = env;
+      this.type = outputType;
+      this.write = write;
+    }
+
+    public Output via(Function<PubsubMessage, CompletableFuture<Void>> write) {
+      return new Output(this.env, this.type, write);
+    }
+
+    public CompletableFuture<Void> apply(PubsubMessage message) {
+      return write.apply(message);
+    }
+  }
+
   enum OutputType {
     pubsub {
 
       @Override
-      Function<PubsubMessage, CompletableFuture<Void>> getOutput(Env env) {
-        return new Pubsub.Write(env.getString(OUTPUT_TOPIC),
-            env.getInt(OUTPUT_TOPIC_EXECUTOR_THREADS, 1), b -> b)::withoutResult;
+      Output getOutput(Env env) {
+        return new Output(env, this, new Pubsub.Write(env.getString(OUTPUT_TOPIC),
+            env.getInt(OUTPUT_TOPIC_EXECUTOR_THREADS, 1), b -> b)::withoutResult);
       }
     },
     gcs {
 
       @Override
-      Function<PubsubMessage, CompletableFuture<Void>> getOutput(Env env) {
+      Output getOutput(Env env) {
         String gcsPrefix = env.getString(OUTPUT_BUCKET);
         // Append / to GCS prefix to enforce that it will be a directory
         if (!gcsPrefix.endsWith("/")) {
@@ -67,11 +91,12 @@ public class SinkConfig {
           batchCloseHook = ignore -> CompletableFuture.completedFuture(null);
         }
 
-        return new Gcs.Write.Ndjson(StorageOptions.getDefaultInstance().getService(),
-            env.getLong(BATCH_MAX_BYTES, 100_000_000L), // default 100MB
-            env.getInt(BATCH_MAX_MESSAGES, 1_000_000), // default 1M messages
-            env.getDuration(BATCH_MAX_DELAY, "10m"), // default 10 minutes
-            PubsubMessageToTemplatedString.of(gcsPrefix), getFormat(env), batchCloseHook);
+        return new Output(env, this,
+            new Gcs.Write.Ndjson(StorageOptions.getDefaultInstance().getService(),
+                env.getLong(BATCH_MAX_BYTES, 100_000_000L), // default 100MB
+                env.getInt(BATCH_MAX_MESSAGES, 1_000_000), // default 1M messages
+                env.getDuration(BATCH_MAX_DELAY, "10m"), // default 10 minutes
+                PubsubMessageToTemplatedString.of(gcsPrefix), getFormat(env), batchCloseHook));
       }
 
       @Override
@@ -87,22 +112,24 @@ public class SinkConfig {
     bigQuery {
 
       @Override
-      Function<PubsubMessage, CompletableFuture<Void>> getOutput(Env env) {
-        return new BigQuery.Write(BigQueryOptions.getDefaultInstance().getService(),
-            // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
-            // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
-            // 10MB API limit by default.
-            env.getLong(BATCH_MAX_BYTES, 6_000_000L), // default 6MB
-            // BigQuery Streaming API Limits maximum rows per request to 10,000
-            env.getInt(BATCH_MAX_MESSAGES, 10_000), // default 10K messages
-            env.getDuration(BATCH_MAX_DELAY, "1s"), // default 1 second
-            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
-            getFormat(env));
+      Output getOutput(Env env) {
+        return new Output(env, this,
+            new BigQuery.Write(BigQueryOptions.getDefaultInstance().getService(),
+                // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
+                // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of
+                // the
+                // 10MB API limit by default.
+                env.getLong(BATCH_MAX_BYTES, 6_000_000L), // default 6MB
+                // BigQuery Streaming API Limits maximum rows per request to 10,000
+                env.getInt(BATCH_MAX_MESSAGES, 10_000), // default 10K messages
+                env.getDuration(BATCH_MAX_DELAY, "1s"), // default 1 second
+                PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
+                getFormat(env)));
       }
     };
 
     // Each case in the enum must implement this method to define how to write out messages.
-    abstract Function<PubsubMessage, CompletableFuture<Void>> getOutput(Env env);
+    abstract Output getOutput(Env env);
 
     // Cases in the enum may override this method set a more appropriate default.
     long getDefaultMaxOutstandingElementCount() {
@@ -140,17 +167,20 @@ public class SinkConfig {
     return PubsubMessageToObjectNode.Format.valueOf(env.getString(OUTPUT_FORMAT, "raw"));
   }
 
-  /** Return a configured input transform. */
-  public static Pubsub.Read getInput() {
+  /** Return a configured output transform. */
+  public static Output getOutput() {
     Env env = new Env(INCLUDE_ENV_VARS);
-    OutputType outputType = OutputType.get(env);
-    // read pubsub messages from INPUT_SUBSCRIPTION
-    Pubsub.Read input = new Pubsub.Read(env.getString(INPUT_SUBSCRIPTION),
-        outputType.getOutput(env),
+    return OutputType.get(env).getOutput(env);
+  }
+
+  /** Return a configured input transform. */
+  public static Pubsub.Read getInput(Output output) {
+    Pubsub.Read input = new Pubsub.Read(output.env.getString(INPUT_SUBSCRIPTION), output,
         builder -> builder.setFlowControlSettings(FlowControlSettings.newBuilder()
-            .setMaxOutstandingElementCount(outputType.getMaxOutstandingElementCount(env))
-            .setMaxOutstandingRequestBytes(outputType.getMaxOutstandingRequestBytes(env)).build()));
-    env.requireAllVarsUsed();
+            .setMaxOutstandingElementCount(output.type.getMaxOutstandingElementCount(output.env))
+            .setMaxOutstandingRequestBytes(output.type.getMaxOutstandingRequestBytes(output.env))
+            .build()));
+    output.env.requireAllVarsUsed();
     return input;
   }
 }
