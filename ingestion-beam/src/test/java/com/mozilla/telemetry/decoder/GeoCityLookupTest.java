@@ -71,6 +71,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     PAssert.that(output).containsInAnyOrder(expected);
 
+    GeoCityLookup.clearSingletonsForTests();
     final PipelineResult result = pipeline.run();
 
     final List<MetricResult<Long>> counters = Lists.newArrayList(result.metrics()
@@ -104,7 +105,8 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     PAssert.that(output).containsInAnyOrder(expected);
 
-    final PipelineResult result = pipeline.run();
+    GeoCityLookup.clearSingletonsForTests();
+    pipeline.run();
   }
 
   @Test
@@ -130,7 +132,8 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     PAssert.that(output).containsInAnyOrder(expected);
 
-    final PipelineResult result = pipeline.run();
+    GeoCityLookup.clearSingletonsForTests();
+    pipeline.run();
   }
 
   @Test
@@ -145,6 +148,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
         .apply(InputFileFormat.json.decode()).output() //
         .apply(GeoCityLookup.of(pipeline.newProvider("missing-file.mmdb"), null));
 
+    GeoCityLookup.clearSingletonsForTests();
     pipeline.run();
   }
 
@@ -161,6 +165,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
         .apply(
             GeoCityLookup.of(pipeline.newProvider(MMDB), pipeline.newProvider("missing-file.txt")));
 
+    GeoCityLookup.clearSingletonsForTests();
     pipeline.run();
   }
 
@@ -177,6 +182,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB),
             pipeline.newProvider("src/test/resources/cityFilters/invalid.txt")));
 
+    GeoCityLookup.clearSingletonsForTests();
     pipeline.run();
   }
 
