@@ -257,10 +257,10 @@ public class GeoCityLookup
       if (geoCityDatabase == null || !geoCityDatabase.isAccessible()) {
         throw new IllegalArgumentException("--geoCityDatabase must be defined for GeoCityLookup!");
       }
-      geoIP2City = GeoCityLookup.getOrCreateSingletonGeoCityReader(geoCityDatabase);
+      geoIP2City = getOrCreateSingletonGeoCityReader(geoCityDatabase);
       if (geoCityFilter != null && geoCityFilter.isAccessible()
           && !Strings.isNullOrEmpty(geoCityFilter.get())) {
-        allowedCities = GeoCityLookup.getOrCreateSingletonAllowedCities(geoCityFilter);
+        allowedCities = getOrCreateSingletonAllowedCities(geoCityFilter);
       }
     }
   }
