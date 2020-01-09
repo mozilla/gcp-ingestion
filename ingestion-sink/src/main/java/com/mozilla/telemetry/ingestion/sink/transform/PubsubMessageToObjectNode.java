@@ -11,7 +11,6 @@ import java.util.function.Function;
 /**
  * Transform a {@link PubsubMessage} into a {@link ObjectNode}.
  */
-@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class PubsubMessageToObjectNode implements Function<PubsubMessage, ObjectNode> {
 
   public enum Format {
