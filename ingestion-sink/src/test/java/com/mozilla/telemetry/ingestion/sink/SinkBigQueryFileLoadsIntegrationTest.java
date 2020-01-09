@@ -24,8 +24,8 @@ public class SinkBigQueryFileLoadsIntegrationTest extends SinkBigQueryMixedInteg
 
     environmentVariables.clear("BATCH_MAX_DELAY", "BIG_QUERY_OUTPUT_MODE", "OUTPUT_BUCKET",
         "OUTPUT_TABLE", "OUTPUT_TOPIC");
-    environmentVariables.set("LOAD_MAX_DELAY", "0.001s");
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription(1));
+    environmentVariables.set("LOAD_MAX_DELAY", "0.001s");
     try {
       runTest();
     } finally {

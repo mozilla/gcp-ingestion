@@ -12,16 +12,15 @@ public class SinkBigQueryMixedIntegrationTest extends SinkBigQueryStreamingInteg
   @Test
   @Override
   public void canSinkRawMessages() throws Exception {
+    environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
+    environmentVariables.set("BIG_QUERY_OUTPUT_MODE", "mixed");
+    environmentVariables.set("FILE_MAX_DELAY", "0.001s");
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription(0));
     environmentVariables.set("OUTPUT_BUCKET", gcs.bucket);
-    environmentVariables.set("BIG_QUERY_OUTPUT_MODE", "mixed");
-    environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
-    environmentVariables.set("FILE_MAX_DELAY", "0.001s");
-    environmentVariables.set("STREAMING_BATCH_MAX_DELAY", "0.001s");
-    environmentVariables.set("STREAMING_MESSAGE_MAX_BYTES", "6");
-    environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
     environmentVariables.set("OUTPUT_TABLE",
         bq.project + "." + bq.dataset + ".${document_type}_v${document_version}");
+    environmentVariables.set("STREAMING_BATCH_MAX_DELAY", "0.001s");
+    environmentVariables.set("STREAMING_MESSAGE_MAX_BYTES", "6");
     runTest();
   }
 }
