@@ -50,6 +50,11 @@ but with a few extra flags:
  * `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
  * `--geoCityFilter=/path/to/cities15000.txt` (optional)
 
+To download the [GeoLite2 database](https://dev.maxmind.com/geoip/geoip2/geolite2/),
+you need to [register for a MaxMind account](https://www.maxmind.com/en/geolite2/signup)
+to obtain a license key. After generating a new license key, set `MM_LICENSE_KEY` to 
+your license key.
+
 Example:
 
 ```bash
@@ -59,8 +64,11 @@ echo '{"payload":"dGVzdA==","attributeMap":{"remote_addr":"63.245.208.195"}}' > 
 
 # Download `cities15000.txt`, `GeoLite2-City.mmdb`, and `schemas.tar.gz`
 ./bin/download-cities15000
-./bin/download-geolite2
 ./bin/download-schemas
+
+export MM_LICENSE_KEY="Your MaxMind License Key"
+./bin/download-geolite2
+
 
 # do geo lookup on messages to stdout
 ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
