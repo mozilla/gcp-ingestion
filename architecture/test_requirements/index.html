@@ -157,53 +157,73 @@
 production must include a document explaining why that decision was made.</p>
 <h2 id="test-phases">Test Phases</h2>
 <ol>
-<li>Continuous Integration</li>
+<li>Continuous Integration<ul>
 <li>Must run <a href="#unit-tests">Unit Tests</a> and <a href="#integration-tests">Integration Tests</a></li>
 <li>Must run against every merge to master and every pull request</li>
 <li>Must block merging to master</li>
-<li>Pre-Production</li>
+</ul>
+</li>
+<li>Pre-Production<ul>
 <li>Must run <a href="#unit-tests">Unit Tests</a> and <a href="#load-tests">Load Tests</a></li>
 <li>Must run against every version deployed to production</li>
 <li>Must mimic production configuration as closely as possible</li>
 <li>Should block deployment to production</li>
-<li>Async</li>
+</ul>
+</li>
+<li>Async<ul>
 <li>Must run <a href="#slow-load-tests">Slow Load Tests</a></li>
 <li>Must run against every version deployed to production</li>
 <li>Must mimic production configuration as closely as possible</li>
 <li>Should not block deployment to production</li>
 <li>Must notify someone to investigate failures</li>
+</ul>
+</li>
 </ol>
 <h2 id="test-categories">Test Categories</h2>
 <p>Tests must be both thorough and fast enough to not block development. They are
 split into categories with increasing run time and decreasing coverage.</p>
 <ol>
-<li><a href="#unit-tests">Unit Tests</a></li>
+<li><a href="#unit-tests">Unit Tests</a><ul>
 <li>Must cover 100% of code behavior</li>
 <li>Should run as fast as possible</li>
-<li><a href="#integration-tests">Integration Tests</a></li>
+</ul>
+</li>
+<li><a href="#integration-tests">Integration Tests</a><ul>
 <li>Must cover all expected production behavior</li>
 <li>Must run fast enough to allow frequent merging to master</li>
-<li><a href="#load-tests">Load Tests</a></li>
+</ul>
+</li>
+<li><a href="#load-tests">Load Tests</a><ul>
 <li>Must cover performance at scale with and without external services down</li>
 <li>Must run fast enough to allow multiple production deployments per day</li>
-<li><a href="#slow-load-tests">Slow Load Tests</a></li>
+</ul>
+</li>
+<li><a href="#slow-load-tests">Slow Load Tests</a><ul>
 <li>Must cover performance at scale with extended downtime</li>
 <li>May take a very long time</li>
+</ul>
+</li>
 </ol>
 <h3 id="unit-tests">Unit Tests</h3>
 <ul>
-<li>Must run in under 5 seconds in CI, not including build time</li>
+<li>Must run in under 5 seconds in CI, not including build time<ul>
 <li>May use CI parallelism and run each group of tests in under 5 seconds in CI</li>
 <li>Should validate code as quickly as possible</li>
-<li>Must run completely in memory</li>
+</ul>
+</li>
+<li>Must run completely in memory<ul>
 <li>Must safely run in parallel</li>
 <li>May mock anything that would not run in memory</li>
-<li>Should cover 100% of branches and statements</li>
+</ul>
+</li>
+<li>Should cover 100% of branches and statements<ul>
 <li>Should cover all variations of statements having variable behavior without
-     branching</li>
+ branching</li>
 <li>Should cover all production configuration variations</li>
 <li>Must have <a href="#integration-tests">Integration Tests</a> to cover exceptions</li>
-<li>Must cover all input and output variations</li>
+</ul>
+</li>
+<li>Must cover all input and output variations<ul>
 <li>Must cover all response codes</li>
 <li>Must cover all valid URL patterns</li>
 <li>Must cover gzipped and not gzipped</li>
@@ -212,7 +232,9 @@ split into categories with increasing run time and decreasing coverage.</p>
 <li>Must cover present, absent, invalid, and wrong type payload JSON</li>
 <li>Must cover present, absent, invalid, and wrong type payload fields</li>
 <li>Must cover <code>document_id</code> duplicates</li>
-<li>Must cover all error types</li>
+</ul>
+</li>
+<li>Must cover all error types<ul>
 <li>Must cover PubSub returning OK but rejecting messages in a batch</li>
 <li>Must cover External service returns server error</li>
 <li>Must cover External service timeout</li>
@@ -220,27 +242,35 @@ split into categories with increasing run time and decreasing coverage.</p>
 <li>Must cover Insufficient permissions</li>
 <li>Must cover behavior when disk becomes full</li>
 <li>Must cover behavior with disk already full</li>
+</ul>
+</li>
 <li>Must cover behavior when ingestion-edge disk is no longer full</li>
 </ul>
 <h3 id="integration-tests">Integration Tests</h3>
 <ul>
 <li>Must run in under 5 minutes in CI, not including build time</li>
 <li>Must be configurable to run locally and in CI</li>
-<li>Must be configurable to run against a deployment in GCP</li>
+<li>Must be configurable to run against a deployment in GCP<ul>
 <li>May require a proxy to modify cloud service behavior</li>
 <li>May require specific configuration</li>
 <li>May skip coverage that cannot be forcibly produced in Dataflow</li>
+</ul>
+</li>
 <li>Must clean up created resources when complete</li>
 <li>Must cover everything unit tests should but do not</li>
 <li>Must cover a configuration that mimics production as closely as possible</li>
-<li>Must cover all code with input from or output to external services</li>
+<li>Must cover all code with input from or output to external services<ul>
 <li>The ingestion-edge disk queue is an external service</li>
+</ul>
+</li>
 <li>Must cover all production configuration options</li>
 <li>Must cover all API endpoints with invalid traffic</li>
-<li>Must cover all API endpoints with healthy external services</li>
+<li>Must cover all API endpoints with healthy external services<ul>
 <li>Must assert disk queue is not used in ingestion-edge</li>
 <li>Must assert inputs and outputs preserve schema in ingestion-beam</li>
-<li>Must cover behavior with errors from external services</li>
+</ul>
+</li>
+<li>Must cover behavior with errors from external services<ul>
 <li>Must cover PubSub returning OK but rejecting messages in a batch</li>
 <li>Must cover external service DNS does not resolve</li>
 <li>Must cover external service cannot TCP connect</li>
@@ -251,23 +281,31 @@ split into categories with increasing run time and decreasing coverage.</p>
 <li>Must cover behavior when disk becomes full</li>
 <li>Must cover behavior with disk already full</li>
 <li>Must assert automatic recovery unless manual intervention is required</li>
+</ul>
+</li>
 <li>Must cover behavior when ingestion-edge disk is no longer full</li>
 </ul>
 <h3 id="load-tests">Load Tests</h3>
 <ul>
-<li>Must run in parallel in under 1 hour</li>
+<li>Must run in parallel in under 1 hour<ul>
 <li>May require a separate deployment for each test</li>
+</ul>
+</li>
 <li>Must record how much it cost to run</li>
 <li>Must not require manual intervention to evaluate</li>
 <li>Must check performance against a tunable threshold</li>
-<li>Must sustain at least 1.5x expected peak production traffic volume</li>
+<li>Must sustain at least 1.5x expected peak production traffic volume<ul>
 <li>As of 2018-08-01 peak production traffic volume is about 11K req/s</li>
-<li>Must cover behavior before, during, and after a period of:</li>
+</ul>
+</li>
+<li>Must cover behavior before, during, and after a period of:<ul>
 <li>Service downtime, except ingestion-edge</li>
 <li>100%, 50%, and 5% invalid traffic</li>
 <li>External services cannot TCP connect</li>
 <li>100% and 10% of external service requests time out</li>
 <li>100% and 10% external service requests return 500</li>
+</ul>
+</li>
 <li>Must cover ingestion-edge behavior with PubSub returning 500 and auto scaling
   due to disk filling up</li>
 <li>Must assert ingestion-edge only writes to disk queue when PubSub is unhealthy</li>
@@ -278,19 +316,19 @@ split into categories with increasing run time and decreasing coverage.</p>
 <ul>
 <li>May run for longer than 1 hour</li>
 <li>Should not block deployment to production</li>
-<li>Must cover behavior with sustained load and a backlog equivalent to:</li>
-<li>For ingestion-edge: 1.5x the longest PubSub outage in the last year<ul>
+<li>Must cover behavior with sustained load and a backlog equivalent to:<ul>
+<li>For ingestion-edge: 1.5x the longest PubSub outage in the last year</li>
 <li>As of 2018-08-01 the longest PubSub outage was about 4.5 hours</li>
-</ul>
-</li>
-<li>For everything else: 4 days (1 holiday weekend)<ul>
+<li>For everything else: 4 days (1 holiday weekend)</li>
 <li>Should reach full recovery in under 1 day</li>
 </ul>
 </li>
 <li>Must cover behavior of ingestion-beam BigQuery output with sustained load and
   BigQuery returning 500 for at least 1.5x the longest BigQuery outage in the
-  last year</li>
+  last year<ul>
 <li>As of 2018-08-01 the longest BigQuery outage was about 2.3 hours</li>
+</ul>
+</li>
 </ul></div>
         </div>
 

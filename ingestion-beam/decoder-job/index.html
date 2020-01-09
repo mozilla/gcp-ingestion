@@ -194,6 +194,10 @@ but with a few extra flags:</p>
 <li><code>--geoCityDatabase=/path/to/GeoIP2-City.mmdb</code></li>
 <li><code>--geoCityFilter=/path/to/cities15000.txt</code> (optional)</li>
 </ul>
+<p>To download the <a href="https://dev.maxmind.com/geoip/geoip2/geolite2/">GeoLite2 database</a>,
+you need to <a href="https://www.maxmind.com/en/geolite2/signup">register for a MaxMind account</a>
+to obtain a license key. After generating a new license key, set <code>MM_LICENSE_KEY</code> to 
+your license key.</p>
 <p>Example:</p>
 <pre><code class="bash"># create a test input file
 mkdir -p tmp/
@@ -201,8 +205,11 @@ echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;
 
 # Download `cities15000.txt`, `GeoLite2-City.mmdb`, and `schemas.tar.gz`
 ./bin/download-cities15000
-./bin/download-geolite2
 ./bin/download-schemas
+
+export MM_LICENSE_KEY=&quot;Your MaxMind License Key&quot;
+./bin/download-geolite2
+
 
 # do geo lookup on messages to stdout
 ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args=&quot;\
