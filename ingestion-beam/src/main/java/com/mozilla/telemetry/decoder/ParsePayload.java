@@ -235,7 +235,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     return crc32.getValue() % 100;
   }
 
-  private static String normalizeUuid(String v) {
+  @VisibleForTesting
+  static String normalizeUuid(String v) {
     if (v == null) {
       return null;
     }
@@ -244,7 +245,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     try {
       // Will raise an exception if not a valid UUID.
       UUID.fromString(v);
-      return v;
+      return v.toLowerCase();
     } catch (IllegalArgumentException ignore) {
       return null;
     }
