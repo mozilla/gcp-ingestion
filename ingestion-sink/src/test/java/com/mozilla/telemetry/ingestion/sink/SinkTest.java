@@ -14,10 +14,4 @@ public class SinkTest {
     environmentVariables.set("OUTPUT_TABLE", "dataset.table");
     Sink.main(null);
   }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnMissingOutput() {
-    environmentVariables.set("INPUT_SUBSCRIPTION", "projects/test/subscriptions/test");
-    Sink.main(null);
-  }
 }
