@@ -39,6 +39,17 @@ public class ParsePayloadTest {
   }
 
   @Test
+  public void testUppercaseUuidNormalization() {
+    final String lowercaseUuid = "90210716-99f8-0a4f-8119-9bfc16cd68a3";
+    final String lowercaseNormalizedUuid = ParsePayload.normalizeUuid(lowercaseUuid);
+    assertEquals(lowercaseNormalizedUuid, lowercaseUuid);
+
+    final String uppercaseUuid = "90210716-99F8-0A4F-8119-9BFC16CD68A3";
+    final String uppercaseNormalizedUuid = ParsePayload.normalizeUuid(uppercaseUuid);
+    assertEquals(uppercaseNormalizedUuid, lowercaseUuid);
+  }
+
+  @Test
   public void testOutput() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
