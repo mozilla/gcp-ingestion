@@ -15,4 +15,7 @@ There are currently two components:
 
 For more information, see [the documentation](https://mozilla.github.io/gcp-ingestion).
 
-This project requires Java 8.
+Java 11 support is a work in progress for the Beam Java SDK, so this project requires
+Java 8 and will likely fail to compile using newer versions of the JDK.
+To manage multiple local JDKs, consider [jenv](https://www.jenv.be/) and the 
+`jenv enable-plugin maven` command.
