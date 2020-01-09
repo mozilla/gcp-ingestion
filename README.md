@@ -14,3 +14,5 @@ There are currently two components:
   transformations of ingested messages
 
 For more information, see [the documentation](https://mozilla.github.io/gcp-ingestion).
+
+This project requires Java 8.
