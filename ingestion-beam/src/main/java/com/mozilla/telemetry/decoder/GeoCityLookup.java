@@ -11,6 +11,7 @@ import com.maxmind.geoip2.record.Subdivision;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -19,6 +20,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -52,6 +57,9 @@ public class GeoCityLookup
 
   private static final Pattern GEO_NAME_PATTERN = Pattern.compile("^(\\d+).*");
 
+  private static transient DatabaseReader singletonGeoCityReader;
+  private static transient Set<Integer> singletonAllowedCities;
+
   private final ValueProvider<String> geoCityDatabase;
   private final ValueProvider<String> geoCityFilter;
 
@@ -59,6 +67,82 @@ public class GeoCityLookup
       ValueProvider<String> geoCityFilter) {
     this.geoCityDatabase = geoCityDatabase;
     this.geoCityFilter = geoCityFilter;
+  }
+
+  @VisibleForTesting
+  static synchronized void clearSingletonsForTests() {
+    singletonGeoCityReader = null;
+    singletonAllowedCities = null;
+  }
+
+  /**
+   * Returns a singleton object for reading from the GeoCity database.
+   *
+   * <p>We copy the configured database file to a static temp location so that the MaxMind API can
+   * save on heap usage by using memory mapping. The reader is threadsafe and this singleton pattern
+   * allows multiple worker threads on the same machine to share a single reader instance.
+   *
+   * <p>Note that we do not clean up the temp mmdb file, but it's a static path, so running locally
+   * will overwrite the existing path every time rather than creating an unbounded number of copies.
+   * This also assumes that only one JVM per machine is running this code. In the production case
+   * where this is running on Cloud Dataflow, we should always have a clean environment and the temp
+   * state will be cleaned up along with the workers once the job finishes. However, behavior is
+   * undefined if you run multiple local jobs concurrently.
+   *
+   * @throws IOException if the configured file path is not a valid .mmdb file
+   */
+  private static synchronized DatabaseReader getOrCreateSingletonGeoCityReader(
+      ValueProvider<String> geoCityDatabase) throws IOException {
+    if (singletonGeoCityReader == null) {
+      File mmdb;
+      try {
+        InputStream inputStream;
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityDatabase.get());
+        ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
+        inputStream = Channels.newInputStream(channel);
+        Path mmdbPath = Paths.get(System.getProperty("java.io.tmpdir"), "GeoCityLookup.mmdb");
+        Files.copy(inputStream, mmdbPath, StandardCopyOption.REPLACE_EXISTING);
+        mmdb = mmdbPath.toFile();
+      } catch (IOException e) {
+        throw new IOException("Exception thrown while fetching configured geoCityDatabase", e);
+      }
+      singletonGeoCityReader = new DatabaseReader.Builder(mmdb).withCache(new CHMCache()).build();
+    }
+    return singletonGeoCityReader;
+  }
+
+  /**
+   * Returns a singleton object describing allowed cities.
+   *
+   * @throws IOException if the configured file path does not exist or is in a bad format
+   */
+  private static synchronized Set<Integer> getOrCreateSingletonAllowedCities(
+      ValueProvider<String> geoCityFilter) throws IOException {
+    if (singletonAllowedCities == null) {
+      InputStream inputStream;
+      try {
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityFilter.get());
+        ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
+        inputStream = Channels.newInputStream(channel);
+      } catch (IOException e) {
+        throw new IOException("Exception thrown while fetching configured geoCityFilter", e);
+      }
+      singletonAllowedCities = new HashSet<>();
+      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+      while (reader.ready()) {
+        String line = reader.readLine();
+        Matcher matcher = GEO_NAME_PATTERN.matcher(line);
+        if (matcher.find()) {
+          Integer geoNameId = Integer.valueOf(matcher.group(1));
+          singletonAllowedCities.add(geoNameId);
+        } else {
+          throw new IllegalStateException(
+              "Line of geoCityFilter file does not begin with a geoName integer ID: " + line);
+
+        }
+      }
+    }
+    return singletonAllowedCities;
   }
 
   @VisibleForTesting
@@ -173,47 +257,10 @@ public class GeoCityLookup
       if (geoCityDatabase == null || !geoCityDatabase.isAccessible()) {
         throw new IllegalArgumentException("--geoCityDatabase must be defined for GeoCityLookup!");
       }
-      loadGeoIp2City();
+      geoIP2City = getOrCreateSingletonGeoCityReader(geoCityDatabase);
       if (geoCityFilter != null && geoCityFilter.isAccessible()
           && !Strings.isNullOrEmpty(geoCityFilter.get())) {
-        loadAllowedCities();
-      }
-    }
-
-    private void loadGeoIp2City() throws IOException {
-      InputStream inputStream;
-      try {
-        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityDatabase.get());
-        ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
-        inputStream = Channels.newInputStream(channel);
-      } catch (IOException e) {
-        throw new IOException("Exception thrown while fetching configured geoCityDatabase", e);
-      }
-      geoIP2City = new DatabaseReader.Builder(inputStream).withCache(new CHMCache()).build();
-    }
-
-    private void loadAllowedCities() throws IOException {
-      InputStream inputStream;
-      try {
-        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityFilter.get());
-        ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
-        inputStream = Channels.newInputStream(channel);
-      } catch (IOException e) {
-        throw new IOException("Exception thrown while fetching configured geoCityFilter", e);
-      }
-      allowedCities = new HashSet<>();
-      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-      while (reader.ready()) {
-        String line = reader.readLine();
-        Matcher matcher = GEO_NAME_PATTERN.matcher(line);
-        if (matcher.find()) {
-          Integer geoNameId = Integer.valueOf(matcher.group(1));
-          allowedCities.add(geoNameId);
-        } else {
-          throw new IllegalStateException(
-              "Line of geoCityFilter file does not begin with a geoName integer ID: " + line);
-
-        }
+        allowedCities = getOrCreateSingletonAllowedCities(geoCityFilter);
       }
     }
   }

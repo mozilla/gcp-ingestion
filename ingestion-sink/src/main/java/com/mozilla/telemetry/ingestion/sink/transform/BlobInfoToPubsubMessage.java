@@ -1,19 +1,20 @@
 package com.mozilla.telemetry.ingestion.sink.transform;
 
 import com.google.cloud.storage.BlobInfo;
-import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import java.nio.charset.StandardCharsets;
 
 public class BlobInfoToPubsubMessage {
+
+  public static final String BUCKET = "bucket";
+  public static final String NAME = "name";
+  public static final String SIZE = "size";
 
   /**
    * Read the contents of a GCS blob into a {@link PubsubMessage}.
    */
   public static PubsubMessage apply(BlobInfo blobInfo) {
-    return PubsubMessage.newBuilder()
-        .setData(ByteString.copyFrom(("gs://" + blobInfo.getBucket() + "/" + blobInfo.getName())
-            .getBytes(StandardCharsets.UTF_8)))
-        .putAttributes("size", blobInfo.getSize().toString()).build();
+    return PubsubMessage.newBuilder().putAttributes(BUCKET, blobInfo.getBucket())
+        .putAttributes(NAME, blobInfo.getName()).putAttributes(SIZE, blobInfo.getSize().toString())
+        .build();
   }
 }
