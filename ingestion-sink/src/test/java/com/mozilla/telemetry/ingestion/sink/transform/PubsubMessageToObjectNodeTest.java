@@ -11,7 +11,6 @@ import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
-@SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class PubsubMessageToObjectNodeTest {
 
   private static final PubsubMessageToObjectNode RAW_TRANSFORM = new PubsubMessageToObjectNode(
