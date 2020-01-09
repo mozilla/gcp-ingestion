@@ -273,6 +273,7 @@ public class SinkConfig {
             throw new IllegalArgumentException("Unsupported BIG_QUERY_OUTPUT_MODE: " + outputMode);
         }
       } else {
+        // default to bigQueryLoad because it's the only output without any required configs
         return OutputType.bigQueryLoad;
       }
     }
