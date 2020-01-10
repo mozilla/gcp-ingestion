@@ -208,15 +208,21 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
-    if (Objects.isNull(attributes.get(Attribute.CLIENT_ID))) {
-      // Try extracting variants of top-level client id and normalize UUID in JSON payload.
-      Stream.of(Attribute.CLIENT_ID, "clientId") //
-          .filter(v -> Objects.nonNull(ParsePayload.normalizeUuid(json.path(v).textValue()))) //
-          .findFirst() //
+    if (attributes.get(Attribute.CLIENT_ID) == null) {
+      Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
+          .map(ParsePayload::normalizeUuid) //
           .ifPresent(v -> {
-            final String normalizedUuid = ParsePayload.normalizeUuid(json.path(v).textValue());
-            json.put(v, normalizedUuid);
-            attributes.put(Attribute.CLIENT_ID, normalizedUuid);
+            attributes.put(Attribute.CLIENT_ID, v);
+            json.put(Attribute.CLIENT_ID, v);
+          });
+    }
+
+    if (attributes.get(Attribute.CLIENT_ID) == null) {
+      Optional.ofNullable(json.path("clientId").textValue()) //
+          .map(ParsePayload::normalizeUuid) //
+          .ifPresent(v -> {
+            attributes.put(Attribute.CLIENT_ID, v);
+            json.put("clientId", v);
           });
     }
 
