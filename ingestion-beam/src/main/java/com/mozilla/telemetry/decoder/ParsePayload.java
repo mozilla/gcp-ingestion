@@ -176,8 +176,12 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .filter(v -> !Strings.isNullOrEmpty(v))
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
       Optional.ofNullable(gleanClientInfo.path(Attribute.CLIENT_ID).textValue()) //
-          .filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .map(ParsePayload::normalizeUuid) //
+          .ifPresent(v -> {
+            attributes.put(Attribute.CLIENT_ID, v);
+            ((ObjectNode) gleanClientInfo).put(Attribute.CLIENT_ID, v);
+          });
     } else if (commonPingOs.isObject()) {
       // See common ping structure in:
       // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
@@ -204,14 +208,17 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
-    // Try extracting variants of top-level client id.
-    Stream
-        .of(attributes.get(Attribute.CLIENT_ID), json.path(Attribute.CLIENT_ID).textValue(),
-            json.path("clientId").textValue())
-        .map(ParsePayload::normalizeUuid) //
-        .filter(Objects::nonNull) //
-        .findFirst() //
-        .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
+    if (Objects.isNull(attributes.get(Attribute.CLIENT_ID))) {
+      // Try extracting variants of top-level client id and normalize UUID in JSON payload.
+      Stream.of(Attribute.CLIENT_ID, "clientId") //
+          .filter(v -> Objects.nonNull(ParsePayload.normalizeUuid(json.path(v).textValue()))) //
+          .findFirst() //
+          .ifPresent(v -> {
+            final String normalizedUuid = ParsePayload.normalizeUuid(json.path(v).textValue());
+            json.put(v, normalizedUuid);
+            attributes.put(Attribute.CLIENT_ID, normalizedUuid);
+          });
+    }
 
     // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
     // allow sampling on non-telemetry pings.
