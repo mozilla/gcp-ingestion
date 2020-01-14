@@ -76,17 +76,17 @@ public interface SinkOptions extends PipelineOptions {
       + " value is supported; a likely choice to limit partitions would be something like"
       + " \"CAST(submission_timestamp AS DATE) BETWEEN '2020-01-10' AND '2020-01-14'\"; see"
       + " https://cloud.google.com/bigquery/docs/reference/storage/rpc/google.cloud.bigquery.storage.v1beta1#tablereadoptions")
-  String getBqRowRestriction();
+  ValueProvider<String> getBqRowRestriction();
 
-  void setBqRowRestriction(String value);
+  void setBqRowRestriction(ValueProvider<String> value);
 
   @Description("When --bqReadMethod=storageapi, all fields of the input table are read by default,"
       + " but this option can take a comma-separated list of field names, in which case only the"
       + " listed fields will be read, saving costs; when reading decoded payload_bytes, none of the"
       + " metadata fields are needed, so setting --bqSelectedFields=payload is recommended")
-  List<String> getBqSelectedFields();
+  ValueProvider<List<String>> getBqSelectedFields();
 
-  void setBqSelectedFields(List<String> value);
+  void setBqSelectedFields(ValueProvider<List<String>> value);
 
   @Description("Name of time partitioning field of destination tables;"
       + " defaults to submission_timestamp")

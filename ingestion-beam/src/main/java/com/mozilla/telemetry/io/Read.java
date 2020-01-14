@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
-import com.google.cloud.bigquery.storage.v1beta1.ReadOptions.TableReadOptions;
 import com.mozilla.telemetry.heka.HekaIO;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
@@ -94,8 +93,8 @@ public abstract class Read
     private final ValueProvider<String> tableSpec;
     private final BigQueryReadMethod method;
     private final Source source;
-    private final String rowRestriction;
-    private final List<String> selectedFields;
+    private final ValueProvider<String> rowRestriction;
+    private final ValueProvider<List<String>> selectedFields;
 
     public enum Source {
       TABLE, QUERY
@@ -103,7 +102,7 @@ public abstract class Read
 
     /** Constructor. */
     public BigQueryInput(ValueProvider<String> tableSpec, BigQueryReadMethod method, Source source,
-        String rowRestriction, List<String> selectedFields) {
+        ValueProvider<String> rowRestriction, ValueProvider<List<String>> selectedFields) {
       this.tableSpec = tableSpec;
       this.method = method;
       this.source = source;
@@ -172,14 +171,12 @@ public abstract class Read
           read = read.fromQuery(tableSpec).usingStandardSql();
       }
       if (method == BigQueryReadMethod.storageapi) {
-        TableReadOptions.Builder builder = TableReadOptions.newBuilder();
         if (rowRestriction != null) {
-          builder.setRowRestriction(rowRestriction);
+          read = read.withRowRestriction(rowRestriction);
         }
-        if (selectedFields != null && selectedFields.size() > 0) {
-          builder.addAllSelectedFields(selectedFields);
+        if (selectedFields != null) {
+          read = read.withSelectedFields(selectedFields);
         }
-        read = read.withReadOptions(builder.build());
       }
       return input.apply(read).apply(ToPubsubMessageFrom.identity());
     }
