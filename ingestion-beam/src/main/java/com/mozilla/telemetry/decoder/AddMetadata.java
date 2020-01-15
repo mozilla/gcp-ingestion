@@ -204,7 +204,8 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     }
     // Write payload without leading `{`
     payloadWithMetadata.write(payload, 1, payload.length - 1);
-    return new PubsubMessage(payloadWithMetadata.toByteArray(), message.getAttributeMap());
+    return new PubsubMessage(payloadWithMetadata.toByteArray(), message.getAttributeMap(),
+        message.getMessageId());
   }
 
   ////////

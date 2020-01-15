@@ -83,7 +83,7 @@ public enum ErrorOutputType {
                     .map(ValueProvider::get).ifPresent(v -> attributes.put("input", v));
                 attributes.put("input_type", inputType);
                 attributes.put("job_name", jobName);
-                return new PubsubMessage(message.getPayload(), attributes);
+                return new PubsubMessage(message.getPayload(), attributes, message.getMessageId());
               }))
               .apply(new PubsubOutput(options.getErrorOutput(),
                   options.getErrorOutputPubsubCompression(),
@@ -128,13 +128,13 @@ public enum ErrorOutputType {
 
         @Override
         public Result<PDone> expand(PCollection<PubsubMessage> input) {
-          return input
-              .apply("remove stack_trace attributes",
-                  MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-                      .via(message -> new PubsubMessage(message.getPayload(),
-                          message.getAttributeMap().entrySet().stream()
-                              .filter(e -> !e.getKey().startsWith("stack_trace"))
-                              .collect(Collectors.toMap(Entry::getKey, Entry::getValue)))))
+          return input.apply("remove stack_trace attributes",
+              MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+                  .via(message -> new PubsubMessage(message.getPayload(),
+                      message.getAttributeMap().entrySet().stream()
+                          .filter(e -> !e.getKey().startsWith("stack_trace"))
+                          .collect(Collectors.toMap(Entry::getKey, Entry::getValue)),
+                      message.getMessageId())))
               .apply("WriteFailures", writeFailures(options));
         }
       };

@@ -25,7 +25,7 @@ public class FailureMessage {
       attributes.putAll(message.getAttributeMap());
     }
     attributes.putAll(errorAttributes(caller, e));
-    return new PubsubMessage(message.getPayload(), attributes);
+    return new PubsubMessage(message.getPayload(), attributes, message.getMessageId());
   }
 
   /**
@@ -39,7 +39,7 @@ public class FailureMessage {
    * Return a PubsubMessage wrapping a byte array payload with attributes describing the error.
    */
   public static PubsubMessage of(Object caller, byte[] payload, Throwable e) {
-    return new PubsubMessage(payload, errorAttributes(caller, e));
+    return new PubsubMessage(payload, errorAttributes(caller, e), null);
   }
 
   /**
@@ -48,7 +48,7 @@ public class FailureMessage {
   public static PubsubMessage of(Object caller, ReadableFile readableFile, Throwable e) {
     Map<String, String> attributes = errorAttributes(caller, e);
     attributes.put("readable_file", readableFile.toString());
-    return new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes);
+    return new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes, null);
   }
 
   private static Map<String, String> errorAttributes(Object caller, Throwable e) {

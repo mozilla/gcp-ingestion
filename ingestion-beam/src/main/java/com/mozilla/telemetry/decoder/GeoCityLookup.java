@@ -236,7 +236,7 @@ public class GeoCityLookup
         // remove null attributes because the coder can't handle them
         attributes.values().removeIf(Objects::isNull);
 
-        return new PubsubMessage(message.getPayload(), attributes);
+        return new PubsubMessage(message.getPayload(), attributes, message.getMessageId());
       } catch (IOException e) {
         // Re-throw unchecked, so that the pipeline will fail at run time if it occurs
         throw new UncheckedIOException(e);

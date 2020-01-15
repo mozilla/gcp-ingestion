@@ -21,7 +21,7 @@ import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesAndMessageIdCoder;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
@@ -158,7 +158,7 @@ public abstract class Read
                 });
             return new PubsubMessage(payload, attributes);
           }) //
-          .withCoder(PubsubMessageWithAttributesCoder.of()) //
+          .withCoder(PubsubMessageWithAttributesAndMessageIdCoder.of()) //
           .withTemplateCompatibility() //
           .withoutValidation() //
           .withMethod(method.method);
