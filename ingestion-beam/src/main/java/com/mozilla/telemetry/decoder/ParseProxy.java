@@ -79,7 +79,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       }
 
       // Return new message
-      return new PubsubMessage(message.getPayload(), attributes);
+      return new PubsubMessage(message.getPayload(), attributes, message.getMessageId());
     }
   }
 

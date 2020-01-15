@@ -19,10 +19,10 @@ public class DecompressPayloadTest {
   @Test
   public void testOutput() {
     final List<String> input = Arrays.asList(
-        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\",\"messageId\":\"\"}",
         // TODO calculate this compression for the test
         // payload="$(printf test | gzip -c | base64)"
-        "{\"payload\":\"H4sIAM1ekFsAAytJLS4BAAx+f9gEAAAA\"}");
+        "{\"payload\":\"H4sIAM1ekFsAAytJLS4BAAx+f9gEAAAA\",\"messageId\":\"\"}");
 
     final List<String> expected = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",

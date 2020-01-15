@@ -41,11 +41,13 @@ public class PubsubConstraints {
   /** Fills out empty payload and attributes if the message itself or components are null. */
   public static PubsubMessage ensureNonNull(PubsubMessage message) {
     if (message == null) {
-      return new PubsubMessage(new byte[] {}, new HashMap<>());
+      return new PubsubMessage(new byte[] {}, new HashMap<>(), message.getMessageId());
     } else if (message.getPayload() == null) {
-      return ensureNonNull(new PubsubMessage(new byte[] {}, message.getAttributeMap()));
+      return ensureNonNull(
+          new PubsubMessage(new byte[] {}, message.getAttributeMap(), message.getMessageId()));
     } else if (message.getAttributeMap() == null) {
-      return ensureNonNull(new PubsubMessage(message.getPayload(), new HashMap<>()));
+      return ensureNonNull(
+          new PubsubMessage(message.getPayload(), new HashMap<>(), message.getMessageId()));
     } else {
       return message;
     }
@@ -89,7 +91,7 @@ public class PubsubConstraints {
           }
           attributes.put(key, value);
         }
-        out.output(new PubsubMessage(message.getPayload(), attributes));
+        out.output(new PubsubMessage(message.getPayload(), attributes, message.getMessageId()));
       }
     }
   }

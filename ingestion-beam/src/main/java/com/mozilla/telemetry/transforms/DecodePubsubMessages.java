@@ -51,7 +51,7 @@ public abstract class DecodePubsubMessages
   public static class Text extends DecodePubsubMessages {
 
     protected PubsubMessage processElement(String element) {
-      return new PubsubMessage(element.getBytes(StandardCharsets.UTF_8), null);
+      return new PubsubMessage(element.getBytes(StandardCharsets.UTF_8), null, null);
     }
   }
 
@@ -76,7 +76,7 @@ public abstract class DecodePubsubMessages
         }
       });
       byte[] payload = (root.path("content").asText()).getBytes(StandardCharsets.UTF_8);
-      return new PubsubMessage(payload, attributes);
+      return new PubsubMessage(payload, attributes, null);
     }
   }
 
