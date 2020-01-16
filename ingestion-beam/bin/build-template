@@ -11,9 +11,15 @@ JOB_TYPE="${JOB_TYPE:?}"
 TEMPLATE_BUCKET="${TEMPLATE_BUCKET:?}"
 TEMP_BUCKET="${TEMP_BUCKET:?}"
 BUILD_ID="${BUILD_ID:?}"
+# standard or streaming
+BUILD_TYPE="${BUILD_TYPE:=standard}"
+# Specify region instead of zone with streaming engine
+REGION="${REGION:=us-west1}"
 
 OUTPUT_OPTS=""
 ERROR_OUTPUT_OPTS=""
+WORKER_OPTS=""
+STREAMING_OPTS=""
 
 # See https://github.com/mozilla/gcp-ingestion/issues/376 for some
 # discussion about the default values of these parameters
@@ -23,16 +29,31 @@ ERROR_NUM_SHARDS="${ERROR_NUM_SHARDS:=60}"
 NUM_SHARDS="${NUM_SHARDS:=200}"
 MAX_NUM_WORKERS="${MAX_NUM_WORKERS:=60}"
 SINK_DISK_SIZE="${SINK_DISK_SIZE:=500}"
-SINK_WORKER_MACHINE_TYPE="${SINK_WORKER_MACHINE_TYPE:=n1-standard-8}"
 
-WORKER_OPTS="--numWorkers=1 \
+DEFAULT_INSTANCE_TYPE="n1-standard-8"
+# Google recommends using standard instance types with streaming engine.
+# https://cloud.google.com/dataflow/docs/guides/deploying-a-pipeline#streaming-engine
+if [[ $BUILD_TYPE == "streaming" ]] ; then
+  DEFAULT_INSTANCE_TYPE="n1-standard-2"
+fi
+SINK_WORKER_MACHINE_TYPE="${SINK_WORKER_MACHINE_TYPE:=$DEFAULT_INSTANCE_TYPE}"
+SINK_OPTS="--workerMachineType=${SINK_WORKER_MACHINE_TYPE} \
+--outputNumShards=${NUM_SHARDS}"
+
+if [[ $BUILD_TYPE == "streaming" ]] ; then
+  STREAMING_OPTS="--enableStreamingEngine=true \
+--experiments=enable_conscrypt_security_provider \
+--region=${REGION}"
+else
+  # Only set numWorkers, autoscaling, and custom disk configuration when not
+  # using streaming engine.
+  WORKER_OPTS="${WORKER_OPTS} --numWorkers=1 \
 --maxNumWorkers=${MAX_NUM_WORKERS} \
 --autoscalingAlgorithm=THROUGHPUT_BASED"
-
-SINK_OPTS="--workerMachineType=${SINK_WORKER_MACHINE_TYPE} \
+  SINK_OPTS="${SINK_OPTS} \
 --workerDiskType='compute.googleapis.com/projects//zones//diskTypes/pd-ssd' \
---diskSizeGb=${SINK_DISK_SIZE} \
---outputNumShards=${NUM_SHARDS}"
+--diskSizeGb=${SINK_DISK_SIZE}"
+fi
 
 INPUT_OPTS="--inputFileFormat=json \
 --inputType=pubsub"
@@ -65,7 +86,7 @@ else
   exit 1
 fi
 
-TEMPLATE_LOCATION=gs://$TEMPLATE_BUCKET/$JOB_TYPE/templates/$BUILD_ID/template
+TEMPLATE_LOCATION=gs://$TEMPLATE_BUCKET/$JOB_TYPE/templates/$BUILD_ID/$BUILD_TYPE/template
 STAGE_LOCATION=gs://$TEMP_BUCKET/$JOB_TYPE/$BUILD_ID/stage
 TEMP_LOCATION=gs://$TEMP_BUCKET/$JOB_TYPE/$BUILD_ID/tmp
 
@@ -75,6 +96,7 @@ ${INPUT_OPTS} \
 ${OUTPUT_OPTS} \
 ${ERROR_OUTPUT_OPTS} \
 ${WORKER_OPTS} \
+${STREAMING_OPTS} \
 --templateLocation=${TEMPLATE_LOCATION} \
 --stagingLocation=${STAGE_LOCATION} \
 --tempLocation=${TEMP_LOCATION}"
