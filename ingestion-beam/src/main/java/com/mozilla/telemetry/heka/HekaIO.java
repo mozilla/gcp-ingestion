@@ -10,7 +10,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Optional;
 import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesAndMessageIdCoder;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
@@ -39,8 +39,7 @@ public class HekaIO {
     public Result<PCollection<PubsubMessage>> expand(PCollection<ReadableFile> input) {
       PCollectionTuple tuple = input.apply("ReadHekaFile",
           ParDo.of(new Fn()).withOutputTags(successTag, TupleTagList.of(failureTag)));
-      return Result.of(
-          tuple.get(successTag).setCoder(PubsubMessageWithAttributesAndMessageIdCoder.of()),
+      return Result.of(tuple.get(successTag).setCoder(PubsubMessageWithAttributesCoder.of()),
           tuple.get(failureTag));
     }
 

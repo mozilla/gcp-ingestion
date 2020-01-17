@@ -1,7 +1,7 @@
 package com.mozilla.telemetry.transforms;
 
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesAndMessageIdCoder;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
@@ -119,7 +119,7 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
     @Override
     public WithErrors.Result<PCollection<PubsubMessage>> expand(PCollection<InputT> input) {
       WithErrors.Result<PCollection<PubsubMessage>> result = super.expand(input);
-      result.output().setCoder(PubsubMessageWithAttributesAndMessageIdCoder.of());
+      result.output().setCoder(PubsubMessageWithAttributesCoder.of());
       return result;
     }
 

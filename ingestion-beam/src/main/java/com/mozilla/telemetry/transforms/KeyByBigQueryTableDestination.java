@@ -27,7 +27,7 @@ import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV3;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesAndMessageIdCoder;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
@@ -132,8 +132,8 @@ public class KeyByBigQueryTableDestination
       PCollection<PubsubMessage> input) {
     WithErrors.Result<PCollection<KV<TableDestination, PubsubMessage>>> result = super.expand(
         input);
-    result.output().setCoder(KvCoder.of(TableDestinationCoderV3.of(),
-        PubsubMessageWithAttributesAndMessageIdCoder.of()));
+    result.output()
+        .setCoder(KvCoder.of(TableDestinationCoderV3.of(), PubsubMessageWithAttributesCoder.of()));
     return result;
   }
 

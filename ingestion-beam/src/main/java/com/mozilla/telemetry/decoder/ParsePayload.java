@@ -152,7 +152,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     PerDocTypeCounter.inc(attributes, "valid_submission");
     PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
 
-    return new PubsubMessage(normalizedPayload, attributes, message.getMessageId());
+    return new PubsubMessage(normalizedPayload, attributes);
   }
 
   private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json) {
