@@ -58,7 +58,7 @@ public class CompressPayload
       truncationCounter.inc();
       compressedBytes = compress(truncated, compression.get());
     }
-    return new PubsubMessage(compressedBytes, message.getAttributeMap(), message.getMessageId());
+    return new PubsubMessage(compressedBytes, message.getAttributeMap());
   }
 
   @VisibleForTesting

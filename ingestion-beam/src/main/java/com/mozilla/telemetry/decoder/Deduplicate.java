@@ -117,7 +117,7 @@ public class Deduplicate {
                 .into(TypeDescriptor.of(PubsubMessage.class))
                 .via(message -> FailureMessage.of("Duplicate",
                     new PubsubMessage("".getBytes(StandardCharsets.UTF_8),
-                        message.getAttributeMap(), message.getMessageId()),
+                        message.getAttributeMap()),
                     new DuplicateIdException())));
         PCollection<PubsubMessage> errors = PCollectionList.of(tuple().get(errorTag()))
             .and(duplicateMetadata)

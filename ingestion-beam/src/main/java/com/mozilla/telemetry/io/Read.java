@@ -21,9 +21,11 @@ import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesAndMessageIdCoder;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 
@@ -46,8 +48,15 @@ public abstract class Read
     @Override
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
       return input //
-          .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(subscription))
-          .apply(ToPubsubMessageFrom.identity());
+          .apply(PubsubIO.readMessagesWithAttributesAndMessageId().fromSubscription(subscription))
+          .apply(MapElements.via(new SimpleFunction<PubsubMessage, PubsubMessage>() {
+
+            public PubsubMessage apply(PubsubMessage input) {
+              Map<String, String> attributesWithMessageId = input.getAttributeMap();
+              attributesWithMessageId.put("messageId", input.getMessageId());
+              return new PubsubMessage(input.getPayload(), attributesWithMessageId);
+            }
+          })).apply(ToPubsubMessageFrom.identity());
     }
   }
 
@@ -158,7 +167,7 @@ public abstract class Read
                 });
             return new PubsubMessage(payload, attributes);
           }) //
-          .withCoder(PubsubMessageWithAttributesAndMessageIdCoder.of()) //
+          .withCoder(PubsubMessageWithAttributesCoder.of()) //
           .withTemplateCompatibility() //
           .withoutValidation() //
           .withMethod(method.method);

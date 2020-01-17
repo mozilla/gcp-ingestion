@@ -47,7 +47,7 @@ import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesAndMessageIdCoder;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.transforms.Contextful;
@@ -463,7 +463,7 @@ public abstract class Write
                   TableRow row = bqie.getRow();
                   row.setFactory(JacksonFactory.getDefaultInstance());
                   byte[] payload = row.toString().getBytes(StandardCharsets.UTF_8);
-                  return new PubsubMessage(payload, attributes, null);
+                  return new PubsubMessage(payload, attributes);
                 })));
       });
 
@@ -507,7 +507,7 @@ public abstract class Write
 
     @Override
     public PCollection<PubsubMessage> expand(PBegin input) {
-      return input.apply(Create.empty(PubsubMessageWithAttributesAndMessageIdCoder.of()));
+      return input.apply(Create.empty(PubsubMessageWithAttributesCoder.of()));
     }
   }
 

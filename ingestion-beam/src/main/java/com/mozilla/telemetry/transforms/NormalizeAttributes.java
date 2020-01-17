@@ -158,7 +158,7 @@ public class NormalizeAttributes
           .map(NormalizeAttributes::normalizeCountryCode)
           .ifPresent(v -> attributes.put(Attribute.NORMALIZED_COUNTRY_CODE, v));
 
-      return new PubsubMessage(message.getPayload(), attributes, message.getMessageId());
+      return new PubsubMessage(message.getPayload(), attributes);
     }
   }
 

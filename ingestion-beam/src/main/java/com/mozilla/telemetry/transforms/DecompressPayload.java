@@ -60,8 +60,7 @@ public class DecompressPayload
           // Throws IOException
           IOUtils.copy(gzipStream, decompressedStream);
           compressedInput.inc();
-          return new PubsubMessage(decompressedStream.toByteArray(), message.getAttributeMap(),
-              message.getMessageId());
+          return new PubsubMessage(decompressedStream.toByteArray(), message.getAttributeMap());
         } catch (IOException ignore) {
           // payload wasn't valid gzip, assume it wasn't compressed
           uncompressedInput.inc();

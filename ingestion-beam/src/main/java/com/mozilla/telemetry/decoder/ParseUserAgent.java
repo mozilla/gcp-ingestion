@@ -236,7 +236,7 @@ public class ParseUserAgent
         }
       }
       // Return new message
-      return new PubsubMessage(message.getPayload(), attributes, message.getMessageId());
+      return new PubsubMessage(message.getPayload(), attributes);
     }
   }
 
