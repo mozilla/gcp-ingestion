@@ -38,7 +38,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
   @Test
   public void testOutput() {
     final List<String> validInput = Arrays.asList(//
-        "{\"attributeMap\":{},\"payload\":\"\",\"messageId\":\"0000000001\"}", //
+        "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
             + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
             + "},\"payload\":\"\"}",
@@ -276,7 +276,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
             "v7/" + String.join("/", Collections.nCopies(36, " ")), //
             "v8/" + String.join("/", Collections.nCopies(38, " ")), //
             "", "v6", "v7", "v8")))
-        .map(v -> "{\"attributeMap\":{\"messageId\":\"00000000001\",\"uri\":\"/stub/" + v
+        .map(v -> "{\"attributeMap\":{\"message_id\":\"00000000001\",\"uri\":\"/stub/" + v
             + "\"},\"payload\":\"\"}")
         .collect(Collectors.toList());
 
