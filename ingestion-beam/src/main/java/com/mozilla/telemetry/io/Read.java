@@ -25,9 +25,9 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
  * Implementations of reading from the sources enumerated in {@link
@@ -49,13 +49,10 @@ public abstract class Read
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
       return input //
           .apply(PubsubIO.readMessagesWithAttributesAndMessageId().fromSubscription(subscription))
-          .apply(MapElements.via(new SimpleFunction<PubsubMessage, PubsubMessage>() {
-
-            public PubsubMessage apply(PubsubMessage input) {
-              Map<String, String> attributesWithMessageId = input.getAttributeMap();
-              attributesWithMessageId.put("messageId", input.getMessageId());
-              return new PubsubMessage(input.getPayload(), attributesWithMessageId);
-            }
+          .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
+            Map<String, String> attributesWithMessageId = message.getAttributeMap();
+            attributesWithMessageId.put(Attribute.MESSAGE_ID, message.getMessageId());
+            return new PubsubMessage(message.getPayload(), attributesWithMessageId);
           })).apply(ToPubsubMessageFrom.identity());
     }
   }
