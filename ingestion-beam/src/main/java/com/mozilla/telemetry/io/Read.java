@@ -50,8 +50,9 @@ public abstract class Read
       return input //
           .apply(PubsubIO.readMessagesWithAttributesAndMessageId().fromSubscription(subscription))
           .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
-            message.getAttributeMap().put(Attribute.MESSAGE_ID, message.getMessageId());
-            return message;
+            Map<String, String> attributesWithMessageId = new HashMap<>(message.getAttributeMap());
+            attributesWithMessageId.put(Attribute.MESSAGE_ID, message.getMessageId());
+            return new PubsubMessage(message.getPayload(), attributesWithMessageId);
           })).apply(ToPubsubMessageFrom.identity());
     }
   }
