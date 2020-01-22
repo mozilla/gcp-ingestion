@@ -223,6 +223,7 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
         @JsonProperty("messageId") String messageId) {
     }
 
+    // Ignore messageId when serializing to JSON, but read during deserialization.
     @JsonIgnore
     abstract String getMessageId();
   }
