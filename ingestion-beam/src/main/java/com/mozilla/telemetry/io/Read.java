@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
-import com.mozilla.telemetry.heka.HekaIO;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
@@ -15,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
@@ -72,25 +70,6 @@ public abstract class Read
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
       return input.apply(TextIO.read().from(fileSpec)).apply(fileFormat.decode());
     }
-  }
-
-  /** Implementation of reading from heka blobs stored as files. */
-  public static class HekaInput extends Read {
-
-    private final ValueProvider<String> fileSpec;
-
-    public HekaInput(ValueProvider<String> fileSpec) {
-      this.fileSpec = fileSpec;
-    }
-
-    @Override
-    public Result<PCollection<PubsubMessage>> expand(PBegin input) {
-      return input //
-          .apply(FileIO.match().filepattern(fileSpec)) //
-          .apply(FileIO.readMatches()) //
-          .apply(HekaIO.readFiles());
-    }
-
   }
 
   /** Implementation of reading from BigQuery. */
