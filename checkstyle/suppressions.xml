@@ -16,10 +16,6 @@
     <suppress checks="IllegalImport"
               files="JsonValidator.java|JSONSchemaStore.java"/>
 
-    <!-- copied file from upstream apache/beam -->
-    <suppress checks=".*" files="DynamicDestinationsHelpers.java" />
-    <suppress checks=".*" files="WritePartition.java" />
-
     <!-- suppress all checks in the generated directories -->
     <suppress checks=".*" files=".+[\\\/]generated[\\\/].+\.java" />
     <suppress checks=".*" files=".+[\\\/]generated-sources[\\\/].+\.java" />
