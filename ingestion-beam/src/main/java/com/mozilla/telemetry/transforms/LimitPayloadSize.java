@@ -3,8 +3,15 @@ package com.mozilla.telemetry.transforms;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
+import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
-public class LimitPayloadSize extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+public class LimitPayloadSize extends
+    PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   /** Exception to throw for messages whose payloads exceed the configured size limit. */
   public static class PayloadTooLargeException extends Exception {
@@ -25,15 +32,21 @@ public class LimitPayloadSize extends MapElementsWithErrors.ToPubsubMessageFrom<
   }
 
   @Override
-  protected PubsubMessage processElement(PubsubMessage message) throws Exception {
-    message = PubsubConstraints.ensureNonNull(message);
-    int numBytes = message.getPayload().length;
-    if (numBytes > maxBytes) {
-      countPayloadTooLarge.inc();
-      throw new PayloadTooLargeException("Message payload is " + numBytes + "bytes, larger than the"
-          + " configured limit of " + maxBytes);
-    }
-    return message;
+  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
+      PCollection<PubsubMessage> elements) {
+    return elements.apply(
+        MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
+          message = PubsubConstraints.ensureNonNull(message);
+          int numBytes = message.getPayload().length;
+          if (numBytes > maxBytes) {
+            countPayloadTooLarge.inc();
+            throw new RuntimeException(new PayloadTooLargeException("Message payload is " + numBytes
+                + "bytes, larger than the" + " configured limit of " + maxBytes));
+          }
+          return message;
+        }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(this,
+                ee.element(), ee.exception())));
   }
 
   ////////

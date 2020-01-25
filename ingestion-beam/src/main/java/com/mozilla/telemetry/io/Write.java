@@ -371,7 +371,8 @@ public abstract class Write
           .of(tableSpecTemplate, partitioningField, clusteringFields);
 
       input = input //
-          .apply(LimitPayloadSize.toBytes(writeMethod.maxPayloadBytes)).errorsTo(errorCollections);
+          .apply(LimitPayloadSize.toBytes(writeMethod.maxPayloadBytes))
+          .failuresTo(errorCollections);
 
       // When writing to live tables, we expect the input is uncompressed and we partition to
       // streaming vs. file loads based on uncompressed size, but we then want to compress again
