@@ -14,7 +14,7 @@ public class LimitPayloadSize extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   /** Exception to throw for messages whose payloads exceed the configured size limit. */
-  public static class PayloadTooLargeException extends Exception {
+  public static class PayloadTooLargeException extends RuntimeException {
 
     public PayloadTooLargeException(String message) {
       super(message);
@@ -40,13 +40,18 @@ public class LimitPayloadSize extends
           int numBytes = message.getPayload().length;
           if (numBytes > maxBytes) {
             countPayloadTooLarge.inc();
-            throw new RuntimeException(new PayloadTooLargeException("Message payload is " + numBytes
-                + "bytes, larger than the" + " configured limit of " + maxBytes));
+            throw new PayloadTooLargeException("Message payload is " + numBytes
+                + "bytes, larger than the" + " configured limit of " + maxBytes);
           }
           return message;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(this,
-                ee.element(), ee.exception())));
+            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
+              try {
+                throw ee.exception();
+              } catch (PayloadTooLargeException e) {
+                return FailureMessage.of(this, ee.element(), ee.exception());
+              }
+            }));
   }
 
   ////////
