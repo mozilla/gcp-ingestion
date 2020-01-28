@@ -39,11 +39,23 @@ public class ParsePayloadTest {
   }
 
   @Test
+  public void testUppercaseUuidNormalization() {
+    final String lowercaseUuid = "90210716-99f8-0a4f-8119-9bfc16cd68a3";
+    final String lowercaseNormalizedUuid = ParsePayload.normalizeUuid(lowercaseUuid);
+    assertEquals(lowercaseNormalizedUuid, lowercaseUuid);
+
+    final String uppercaseUuid = "90210716-99F8-0A4F-8119-9BFC16CD68A3";
+    final String uppercaseNormalizedUuid = ParsePayload.normalizeUuid(uppercaseUuid);
+    assertEquals(uppercaseNormalizedUuid, lowercaseUuid);
+  }
+
+  @Test
   public void testOutput() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{",
         "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}",
+        "{\"clientId\":\"2907648D-711B-4E9F-94B5-52A2B40A44B1\"}",
         "{\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}", "{\"client_id\":\"n/a\"}",
         "{\"client_id\":\"n/a\",\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}");
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
@@ -57,6 +69,7 @@ public class ParsePayloadTest {
 
     final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}",
         "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}",
+        "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}",
         "{\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}", "{\"client_id\":\"n/a\"}",
         "{\"client_id\":\"n/a\",\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}");
     final PCollection<String> main = output.output().apply("encodeTextMain",
@@ -66,6 +79,9 @@ public class ParsePayloadTest {
     final List<String> expectedAttributes = Arrays.asList(
         "{\"document_namespace\":\"test\",\"document_version\":\"1\",\"document_type\":\"test\"}",
         "{\"document_namespace\":\"test\",\"document_version\":\"1\",\"document_type\":\"test\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"client_id\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\""
+            + ",\"document_type\":\"test\",\"sample_id\":\"67\"}",
         "{\"document_namespace\":\"test\",\"document_version\":\"1\""
             + ",\"client_id\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\""
             + ",\"document_type\":\"test\",\"sample_id\":\"67\"}",
@@ -179,5 +195,4 @@ public class ParsePayloadTest {
 
     pipeline.run();
   }
-
 }

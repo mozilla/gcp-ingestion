@@ -8,6 +8,10 @@ import org.apache.commons.io.IOUtils;
 
 public class GzipUtil {
 
+  /**
+   * If the input bytes are gzipped, return them decompressed; otherwise, return the input bytes
+   * unmodified.
+   */
   public static byte[] maybeDecompress(byte[] bytes) {
     try (ByteArrayInputStream payloadStream = new ByteArrayInputStream(bytes);
         GZIPInputStream gzipStream = new GZIPInputStream(payloadStream);

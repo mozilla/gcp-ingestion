@@ -96,6 +96,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       throw new MessageShouldBeDroppedException();
     }
 
+    // Potentially mutates the value of json to redact specific fields.
+    MessageScrubber.redact(attributes, json);
+
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {
       PerDocTypeCounter.inc(null, "error_invalid_doc_type");
@@ -173,8 +176,12 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .filter(v -> !Strings.isNullOrEmpty(v))
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
       Optional.ofNullable(gleanClientInfo.path(Attribute.CLIENT_ID).textValue()) //
-          .filter(v -> !Strings.isNullOrEmpty(v))
-          .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .map(ParsePayload::normalizeUuid) //
+          .ifPresent(v -> {
+            attributes.put(Attribute.CLIENT_ID, v);
+            ((ObjectNode) gleanClientInfo).put(Attribute.CLIENT_ID, v);
+          });
     } else if (commonPingOs.isObject()) {
       // See common ping structure in:
       // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
@@ -201,14 +208,23 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
-    // Try extracting variants of top-level client id.
-    Stream
-        .of(attributes.get(Attribute.CLIENT_ID), json.path(Attribute.CLIENT_ID).textValue(),
-            json.path("clientId").textValue())
-        .map(ParsePayload::normalizeUuid) //
-        .filter(Objects::nonNull) //
-        .findFirst() //
-        .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
+    if (attributes.get(Attribute.CLIENT_ID) == null) {
+      Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
+          .map(ParsePayload::normalizeUuid) //
+          .ifPresent(v -> {
+            attributes.put(Attribute.CLIENT_ID, v);
+            json.put(Attribute.CLIENT_ID, v);
+          });
+    }
+
+    if (attributes.get(Attribute.CLIENT_ID) == null) {
+      Optional.ofNullable(json.path("clientId").textValue()) //
+          .map(ParsePayload::normalizeUuid) //
+          .ifPresent(v -> {
+            attributes.put(Attribute.CLIENT_ID, v);
+            json.put("clientId", v);
+          });
+    }
 
     // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
     // allow sampling on non-telemetry pings.
@@ -232,7 +248,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     return crc32.getValue() % 100;
   }
 
-  private static String normalizeUuid(String v) {
+  @VisibleForTesting
+  static String normalizeUuid(String v) {
     if (v == null) {
       return null;
     }
@@ -241,7 +258,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     try {
       // Will raise an exception if not a valid UUID.
       UUID.fromString(v);
-      return v;
+      return v.toLowerCase();
     } catch (IllegalArgumentException ignore) {
       return null;
     }

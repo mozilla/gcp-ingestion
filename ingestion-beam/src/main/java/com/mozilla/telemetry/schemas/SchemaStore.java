@@ -8,8 +8,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.BubbleUpException;
-import com.mozilla.telemetry.util.SnakeCase;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,7 +37,11 @@ import org.apache.commons.text.StringSubstitutor;
 /** Reads schemas from a file and parses them into a map. */
 public abstract class SchemaStore<T> implements Serializable {
 
-  /** Return the parsed schema corresponding to a path underneath the schemas/ directory. */
+  /**
+   * Return the parsed schema corresponding to a path underneath the schemas/ directory.
+   *
+   * @throws SchemaNotFoundException if schema matching the attributes exists
+   */
   public T getSchema(String path) throws SchemaNotFoundException {
     ensureSchemasLoaded();
     T schema = schemas.get(getAndCacheNormalizedPath(path));
@@ -47,7 +51,11 @@ public abstract class SchemaStore<T> implements Serializable {
     return schema;
   }
 
-  /** Return the parsed schema corresponding to doctype and namespace parsed from attributes. */
+  /**
+   * Return the parsed schema corresponding to doctype and namespace parsed from attributes.
+   *
+   * @throws SchemaNotFoundException if schema matching the attributes exists
+   */
   public T getSchema(Map<String, String> attributes) throws SchemaNotFoundException {
     ensureSchemasLoaded();
     if (attributes == null) {

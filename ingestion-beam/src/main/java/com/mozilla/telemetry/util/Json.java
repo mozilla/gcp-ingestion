@@ -170,6 +170,7 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
    */
   public static PubsubMessage readPubsubMessage(String data) throws IOException {
     PubsubMessage output = MAPPER.readValue(data, PubsubMessage.class);
+
     if (output == null) {
       throw new IOException("not a valid PubsubMessage: null");
     } else if (output.getPayload() == null) {
@@ -180,6 +181,8 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
 
   /**
    * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   *
+   * @throws JsonProcessingException if the conversion is unsuccessful
    */
   public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
     return MAPPER.treeToValue(root, klass);
@@ -202,17 +205,12 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
    * {@code getAttributeMap} method returns the value for the {@code attributes} parameter.
    * Additionally jackson doesn't like that there are no setter methods on {@link PubsubMessage}.
    *
-   * <p>Beam 2.16 added the {@code messageId} field, which is not relevant for our purposes;
-   * we mark that field with {@link JsonIgnore} so that it is not serialized and we maintain
-   * compatibility with existing messages that our pipeline has persisted without {@code messageId}.
-   * </p>
-   *
    * <p>The default jackson output format for PubsubMessage, which we want to read, looks like:
    * <pre>
    * {
    *   "payload": "${base64 encoded byte array}",
    *   "attributeMap": {"${key}": "${value}"...},
-   *   "messageId": null
+   *   "messageId": "${id}"
    * }
    * </pre>
    */
@@ -221,12 +219,12 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
 
     @JsonCreator
     public PubsubMessageMixin(@JsonProperty("payload") byte[] payload,
-        @JsonProperty("attributeMap") Map<String, String> attributes) {
+        @JsonProperty("attributeMap") Map<String, String> attributes,
+        @JsonProperty("messageId") String messageId) {
     }
 
+    // Ignore messageId when serializing to JSON, but read during deserialization.
     @JsonIgnore
-    public String getMessageId() {
-      return null;
-    }
+    abstract String getMessageId();
   }
 }

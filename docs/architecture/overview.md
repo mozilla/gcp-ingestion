@@ -12,7 +12,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
   `Cloud Storage`
 - The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
   PubSub `Decoded Topics`
-   - The Dataflow `Decoder` job checks for existence of `document_id`s in
+    - The Dataflow `Decoder` job checks for existence of `document_id`s in
      `Cloud Memorystore` in order to deduplicate messages
 - The Dataflow `Republisher` job reads messages from PubSub `Decoded Topics`,
   marks them as seen in `Cloud Memorystore` and republishes them to various
@@ -32,54 +32,54 @@ This document specifies the architecture for GCP Ingestion as a whole.
    - Must attempt to deliver all new messages to PubSub before storing on disk
    - Must not be scaled down when there are messages on disk
 - Must respond server error if PubSub and disk are both unavailable
-   - Must use a 5XX error error code
+    - Must use a 5XX error error code
 - Must accept configuration mapping `uri` to PubSub Topic
-   - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
+    - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
 - Must accept configuration defining HTTP headers to capture
 
 ### Landfill Sink
 
 - Must copy messages from PubSub topics to Cloud Storage
-   - This copy may be for backfill, recovery, or testing
+    - This copy may be for backfill, recovery, or testing
 - Must not ack messages read from PubSub until they are delivered
 - Must accept configuration mapping PubSub topics to Cloud Storage locations
 - Should retry transient Cloud Storage errors indefinitely
-   - Should use exponential back-off to determine retry timing
+    - Should use exponential back-off to determine retry timing
 
 ### Decoder
 
 - Must decode messages from PubSub topics to PubSub topics
 - Must not ack messages read from PubSub until they are delivered
 - Must apply the following transforms in order
-  ([implementations here](../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/))
-   1. Parse `uri` attribute into multiple attributes
-   1. Gzip decompress `payload` if gzip compressed
-   1. Validate `payload` using a JSON Schema determined by attributes
-   1. Parse `x_pipeline_proxy` attribute; if present with a valid value in
-      [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format),
-      archive the value of `submission_timestamp` to `proxy_timestamp` and
-      replace with the `x_pipeline_proxy` value
-   1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
-      `geo_*` attributes
-   1. Parse `agent` attribute into `user_agent_*` attributes
-   1. Produce `normalized_` variants of select attributes
-   1. Inject `normalized_` attributes at the top level and other select
-      attributes into a nested `metadata` top level key in `payload`
+  ([implementations here](../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/)):
+    1. Parse `uri` attribute into multiple attributes
+    1. Gzip decompress `payload` if gzip compressed
+    1. Validate `payload` using a JSON Schema determined by attributes
+    1. Parse `x_pipeline_proxy` attribute; if present with a valid value in
+    [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format),
+    archive the value of `submission_timestamp` to `proxy_timestamp` and
+    replace with the `x_pipeline_proxy` value
+    1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
+    `geo_*` attributes
+    1. Parse `agent` attribute into `user_agent_*` attributes
+    1. Produce `normalized_` variants of select attributes
+    1. Inject `normalized_` attributes at the top level and other select
+    attributes into a nested `metadata` top level key in `payload`
 - Should deduplicate messages based on the `document_id` attribute using
   `Cloud MemoryStore`
-  - Must ensure at least once delivery, so deduplication is only "best effort"
-  - Should delay deduplication to the latest possible stage of the pipeline
+    - Must ensure at least once delivery, so deduplication is only "best effort"
+    - Should delay deduplication to the latest possible stage of the pipeline
     to minimize the time window between an ID being marked as seen in
     `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
-   - Must allow error destinations in PubSub and Cloud Storage
+    - Must allow error destinations in PubSub and Cloud Storage
 
 ### Republisher
 
 - Must copy messages from PubSub topics to PubSub topics
 - Must attempt to publish the `document_id` of each consumed message to
   `Cloud MemoryStore`
-  - ID publishing should be "best effort" but must not prevent the message
+    - ID publishing should be "best effort" but must not prevent the message
     proceeding to further steps in case of errors reaching `Cloud MemoryStore`
 - Must ack messages read from PubSub after they are delivered to all
   matching destinations
@@ -87,28 +87,28 @@ This document specifies the architecture for GCP Ingestion as a whole.
   matching destinations
 - Must accept configuration enabling republishing of messages to a debug
   topic if they contain an `x_debug_id` attribute
-  - Must accept a compile-time parameter enabling or disabling debug republishing
-  - Must accept a runtime parameter defining the destination topic
+    - Must accept a compile-time parameter enabling or disabling debug republishing
+    - Must accept a runtime parameter defining the destination topic
 - Must accept configuration enabling republishing of a random sample of the
   input stream
-  - Must accept a compile-time parameter setting the sample ratio
-  - Must accept a runtime parameter defining the destination topic
+    - Must accept a compile-time parameter setting the sample ratio
+    - Must accept a runtime parameter defining the destination topic
 - Must accept configuration mapping `document_type`s to PubSub topics
-  - Must accept a compile-time parameter defining a topic pattern string
+    - Must accept a compile-time parameter defining a topic pattern string
     (may be promoted to runtime if Dataflow adds support for PubSub topic
     names defined via `NestedValueProvider`)
-  - Must accept a compile-time parameter defining which `document_type`s
+    - Must accept a compile-time parameter defining which `document_type`s
     to republish
-  - Must only deliver messages with configured destinations
+    - Must only deliver messages with configured destinations
 - Must accept configuration mapping `document_namespace`s to PubSub topics
-  - Must accept a compile-time parameter defining a map from document
+    - Must accept a compile-time parameter defining a map from document
     namespaces to topics
-  - Must only deliver messages with configured destinations
+    - Must only deliver messages with configured destinations
 - Must accept optional configuration for sampling telemetry data
-  - Must accept a compile-time parameter defining a topic pattern string
+    - Must accept a compile-time parameter defining a topic pattern string
     (may be promoted to runtime if Dataflow adds support for PubSub topic
     names defined via `NestedValueProvider`)
-  - Must accept compile-time parameters defining the sampling ratio for
+    - Must accept compile-time parameters defining the sampling ratio for
     each channel (nightly, beta, and release)
 
 
@@ -124,16 +124,16 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must set [`ignoreUnknownValues`](https://beam.apache.org/releases/javadoc/2.7.0/org/apache/beam/sdk/io/gcp/bigquery/BigQueryIO.Write.html#ignoreUnknownValues--)
   to `true`
 - Should retry transient BigQuery errors indefinitely
-   - Should use exponential back-off to determine retry timing
+    - Should use exponential back-off to determine retry timing
 - Must send messages rejected by BigQuery to a configurable error destination
-   - Must allow error destinations in PubSub and Cloud Storage
+    - Must allow error destinations in PubSub and Cloud Storage
 
 ### Dataset Sink
 
 - Must copy messages from PubSub topics to Cloud Storage
-   - May be used to backfill BigQuery columns previously unspecified in the
+    - May be used to backfill BigQuery columns previously unspecified in the
      table schema
-   - May be used by BigQuery, Spark, and Dataflow to access columns missing
+    - May be used by BigQuery, Spark, and Dataflow to access columns missing
      from BigQuery Tables
 - Must not ack messages read from PubSub until they are delivered
 - Must store messages as newline delimited JSON
@@ -142,7 +142,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Should accept configuration mapping message attributes to Cloud Storage object
   names
 - Should retry transient Cloud Storage errors indefinitely
-   - Should use exponential back-off to determine retry timing
+    - Should use exponential back-off to determine retry timing
 
 ### Notes
 
@@ -214,10 +214,10 @@ view.
 
 ## Known Issues
 
- - Hard limit of 10,000 columns per table in BigQuery
- - Max of 100,000 streaming inserts per second per BigQuery table
- - A PubSub topic without any subscriptions drops all messages until a subscription is created
- - API Rate Limit: 20 req/sec
+- Hard limit of 10,000 columns per table in BigQuery
+- Max of 100,000 streaming inserts per second per BigQuery table
+- A PubSub topic without any subscriptions drops all messages until a subscription is created
+- API Rate Limit: 20 req/sec
 
 ## Further Reading
 

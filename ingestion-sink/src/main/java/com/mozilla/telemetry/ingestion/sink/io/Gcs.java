@@ -9,6 +9,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,7 +35,7 @@ public class Gcs {
       private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-          String batchKeyTemplate, Format format,
+          PubsubMessageToTemplatedString batchKeyTemplate, Format format,
           Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
         super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
         this.encoder = new PubsubMessageToObjectNode(format);
@@ -55,7 +56,8 @@ public class Gcs {
     private final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
 
     private Write(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-        String batchKeyTemplate, Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
+        PubsubMessageToTemplatedString batchKeyTemplate,
+        Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
       this.storage = storage;
       this.batchCloseHook = batchCloseHook;
@@ -68,16 +70,16 @@ public class Gcs {
 
     private static final String BUCKET = "bucket";
     private static final String NAME = "name";
-    private static final Pattern blobIdPattern = Pattern
+    private static final Pattern BLOB_ID_PATTERN = Pattern
         .compile("(gs://)?(?<" + BUCKET + ">[^/]+)(/(?<" + NAME + ">.*))?");
 
     @Override
     protected Batch getBatch(String gcsPrefix) {
-      final Matcher gcsPrefixMatcher = blobIdPattern.matcher(gcsPrefix);
+      final Matcher gcsPrefixMatcher = BLOB_ID_PATTERN.matcher(gcsPrefix);
       if (!gcsPrefixMatcher.matches()) {
         throw new IllegalArgumentException(
             String.format("Gcs prefix must match \"%s\" but got \"%s\" from: %s",
-                blobIdPattern.pattern(), gcsPrefix, batchKeyTemplate.template));
+                BLOB_ID_PATTERN.pattern(), gcsPrefix, batchKeyTemplate.template));
       }
       return new Batch(storage, gcsPrefixMatcher.group(BUCKET), gcsPrefixMatcher.group(NAME));
     }
@@ -106,7 +108,8 @@ public class Gcs {
         } catch (IOException e) {
           throw new UncheckedIOException(e);
         }
-        return batchCloseHook.apply(blobInfo);
+        BlobInfo blobInfoWithSize = storage.get(blobInfo.getBlobId());
+        return batchCloseHook.apply(blobInfoWithSize);
       }
 
       @Override

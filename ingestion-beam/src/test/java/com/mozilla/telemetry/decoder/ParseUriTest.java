@@ -39,14 +39,12 @@ public class ParseUriTest extends TestWithDeterministicJson {
   public void testOutput() {
     final List<String> validInput = Arrays.asList(//
         "{\"attributeMap\":{},\"payload\":\"\"}", //
-        "{\"attributeMap\":" //
-            + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
+        "{\"attributeMap\":{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
             + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
             + "},\"payload\":\"\"}",
         "{\"attributeMap\":"
             + "{\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\""
             + "},\"payload\":\"\"}");
-
     final List<String> invalidInput = Arrays.asList(//
         "{\"attributeMap\":" //
             + "{\"uri\":\"/nonexistent_prefix/ce39b608-f595-4c69-b6a6-f7a436604648" //
@@ -278,7 +276,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
             "v7/" + String.join("/", Collections.nCopies(36, " ")), //
             "v8/" + String.join("/", Collections.nCopies(38, " ")), //
             "", "v6", "v7", "v8")))
-        .map(v -> "{\"attributeMap\":{\"uri\":\"/stub/" + v + "\"},\"payload\":\"\"}")
+        .map(v -> "{\"attributeMap\":{\"message_id\":\"00000000001\",\"uri\":\"/stub/" + v
+            + "\"},\"payload\":\"\"}")
         .collect(Collectors.toList());
 
     final List<String> expectedPayloads = Streams.stream(Iterables.concat(//
@@ -288,7 +287,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
         .map(v -> sortJSON("{\"installer_type\":\"stub\",\"installer_version\":\"\"," + v + "}"))
         .collect(Collectors.toList());
     final List<String> expectedAttributes = Collections.nCopies(expectedPayloads.size(),
-        "{\"document_namespace\":\"firefox-installer\","
+        "{\"document_id\":\"d67f0826-d4c0-3a7e-bea5-861616a822b2\"," //
+            + "\"document_namespace\":\"firefox-installer\"," //
             + "\"document_type\":\"install\",\"document_version\":\"1\"}");
     final List<String> expectedExceptions = Arrays.asList(
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
@@ -306,8 +306,9 @@ public class ParseUriTest extends TestWithDeterministicJson {
     PCollection<PubsubMessage> output = parsed.output();
 
     PCollection<String> payloads = output //
-        .apply("PayloadString", MapElements.into(TypeDescriptors.strings())
-            .via(message -> sortJSON(new String(message.getPayload(), StandardCharsets.UTF_8))));
+        .apply("PayloadString", MapElements.into(TypeDescriptors.strings()).via(message -> {
+          return sortJSON(new String(message.getPayload(), StandardCharsets.UTF_8));
+        }));
     PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
     PCollection<String> attributesSansUri = output //

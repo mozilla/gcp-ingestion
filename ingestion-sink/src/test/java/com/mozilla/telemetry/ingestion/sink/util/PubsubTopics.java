@@ -28,35 +28,46 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
-public abstract class TestWithPubsubResources {
+/**
+ * JUnit Rule for reusing code to interact with Pub/Sub.
+ */
+public class PubsubTopics extends TestWatcher {
+
+  public int numTopics;
+
+  public PubsubTopics(int numTopics) {
+    this.numTopics = numTopics;
+  }
 
   private String projectId;
-  private List<Subscription> subscriptions;
   private TopicAdminClient topicAdminClient;
   private SubscriptionAdminClient subscriptionAdminClient;
   private SubscriberStub subscriber;
-
+  private List<Subscription> subscriptions;
   private List<Publisher> publishers;
-  protected final Optional<TransportChannelProvider> channelProvider = Optional
+
+  public Optional<TransportChannelProvider> channelProvider = Optional
       .ofNullable(System.getenv("PUBSUB_EMULATOR_HOST"))
       .map(t -> ManagedChannelBuilder.forTarget(t).usePlaintext().build())
       .map(GrpcTransportChannel::create).map(FixedTransportChannelProvider::create);
-  protected final NoCredentialsProvider noCredentialsProvider = NoCredentialsProvider.create();
 
-  protected abstract int numTopics();
+  public NoCredentialsProvider noCredentialsProvider = NoCredentialsProvider.create();
 
-  protected String getSubscription(int index) {
+  public String getSubscription(int index) {
     return subscriptions.get(index).getName();
   }
 
-  protected String getTopic(int index) {
+  public String getTopic(int index) {
     return subscriptions.get(index).getTopic();
   }
 
-  protected String publish(int index, PubsubMessage message) {
+  /**
+   * Publish a {@link PubsubMessage} to the topic indicated by {@code index}.
+   */
+  public String publish(int index, PubsubMessage message) {
     Publisher publisher = publishers.get(index);
     ApiFuture<String> future = publisher.publish(message);
     publisher.publishAllOutstanding();
@@ -67,7 +78,10 @@ public abstract class TestWithPubsubResources {
     }
   }
 
-  protected List<PubsubMessage> pull(int index, int maxMessages, boolean returnImmediately) {
+  /**
+   * Pull and ack {@link PubsubMessage}s from the subscription indicated by {@code index}.
+   */
+  public List<PubsubMessage> pull(int index, int maxMessages, boolean returnImmediately) {
     List<ReceivedMessage> response = subscriber.pullCallable()
         .call(PullRequest.newBuilder().setMaxMessages(maxMessages)
             .setReturnImmediately(returnImmediately).setSubscription(getSubscription(index))
@@ -85,9 +99,10 @@ public abstract class TestWithPubsubResources {
     return response.stream().map(ReceivedMessage::getMessage).collect(Collectors.toList());
   }
 
-  /** Create a Pub/Sub topic and subscription. */
-  @Before
-  public void initializePubsubResources() throws IOException {
+  /** Create a Pub/Sub topics and subscriptions. */
+  @Override
+  protected void starting(Description description) {
+
     TopicAdminSettings.Builder topicAdminSettings = TopicAdminSettings.newBuilder();
     SubscriptionAdminSettings.Builder subscriptionAdminSettings = SubscriptionAdminSettings
         .newBuilder();
@@ -107,21 +122,32 @@ public abstract class TestWithPubsubResources {
       projectId = ServiceOptions.getDefaultProjectId();
     }
 
-    subscriptions = IntStream.range(0, numTopics()).mapToObj(i -> Subscription.newBuilder()
+    // generate subscription configurations
+    subscriptions = IntStream.range(0, numTopics).mapToObj(i -> Subscription.newBuilder()
         .setName("projects/" + projectId + "/subscriptions/test-subscription-"
             + UUID.randomUUID().toString())
         .setTopic("projects/" + projectId + "/topics/test-topic-" + UUID.randomUUID().toString())
         .build()).collect(Collectors.toList());
 
-    topicAdminClient = TopicAdminClient.create(topicAdminSettings.build());
+    // create clients
+    try {
+      topicAdminClient = TopicAdminClient.create(topicAdminSettings.build());
+      subscriptionAdminClient = SubscriptionAdminClient.create(subscriptionAdminSettings.build());
+      subscriber = GrpcSubscriberStub.create(subscriberStubSettings.build());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    // create topics
     subscriptions.stream().parallel()
         .forEach(subscription -> topicAdminClient.createTopic(subscription.getTopic()));
 
-    subscriptionAdminClient = SubscriptionAdminClient.create(subscriptionAdminSettings.build());
+    // create subscriptions
     subscriptions.stream().parallel()
         .forEach(subscription -> subscriptionAdminClient.createSubscription(subscription.getName(),
             subscription.getTopic(), PushConfig.getDefaultInstance(), 0));
 
+    // create publishers
     publishers = subscriptions.stream().parallel().map(subscription -> {
       Publisher.Builder publisherBuilder = Publisher.newBuilder(subscription.getTopic());
       if (channelProvider.isPresent()) {
@@ -135,13 +161,11 @@ public abstract class TestWithPubsubResources {
         throw new UncheckedIOException(e);
       }
     }).collect(Collectors.toList());
-
-    subscriber = GrpcSubscriberStub.create(subscriberStubSettings.build());
   }
 
   /** Clean up all the Pub/Sub resources we created. */
-  @After
-  public void deletePubsubResources() {
+  @Override
+  protected void finished(Description description) {
     subscriptions.forEach(subscription -> topicAdminClient.deleteTopic(subscription.getTopic()));
     subscriptions.forEach(
         subscription -> subscriptionAdminClient.deleteSubscription(subscription.getName()));

@@ -14,7 +14,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.util.SnakeCase;
+import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +42,10 @@ public class KeyByBigQueryTableDestination
         clusteringFields);
   }
 
+  /**
+   * Return the appropriate table desination instance for the given document type and other
+   * attributes.
+   */
   public TableDestination getTableDestination(Map<String, String> attributes) {
     attributes = new HashMap<>(attributes);
 

@@ -3,7 +3,6 @@ package com.mozilla.telemetry.options;
 import com.mozilla.telemetry.io.Read;
 import com.mozilla.telemetry.io.Read.BigQueryInput;
 import com.mozilla.telemetry.io.Read.FileInput;
-import com.mozilla.telemetry.io.Read.HekaInput;
 import com.mozilla.telemetry.io.Read.PubsubInput;
 
 public enum InputType {
@@ -21,14 +20,6 @@ public enum InputType {
     /** Return a PTransform that reads from local or remote files. */
     public Read read(SinkOptions.Parsed options) {
       return new FileInput(options.getInput(), options.getInputFileFormat());
-    }
-  },
-
-  heka {
-
-    /** Return a PTransform that reads from local or remote heka-framed files. */
-    public Read read(SinkOptions.Parsed options) {
-      return new HekaInput(options.getInput());
     }
   },
 

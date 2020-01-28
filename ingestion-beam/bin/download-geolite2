@@ -5,7 +5,7 @@
 # This script downloads and extracts the free GeoLite2 city database
 # from MaxMind for use in development.
 BASE_DIR="$(dirname "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )")"
-DOWNLOAD_URL=http://geolite.maxmind.com/download/geoip/database/GeoLite2-City.mmdb.gz
+DOWNLOAD_URL="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&date=20200107&license_key=${MM_LICENSE_KEY}&suffix=tar.gz"
 LOCAL_ARCHIVE=/tmp/GeoLite2-City.mmdb.gz
 LOCAL_EXTRACTED=/tmp/GeoLite2-City.mmdb
 

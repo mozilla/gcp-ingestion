@@ -22,14 +22,6 @@ public enum InputFileFormat {
     public PTransform<PCollection<String>, WithErrors.Result<PCollection<PubsubMessage>>> decode() {
       return DecodePubsubMessages.json();
     }
-  },
-
-  sanitized_landfill {
-
-    /** Return a PTransform for decoding PubsubMessages from sanitized landfill JSON strings. */
-    public PTransform<PCollection<String>, WithErrors.Result<PCollection<PubsubMessage>>> decode() {
-      return DecodePubsubMessages.sanitizedLandfill();
-    }
   };
 
   public abstract PTransform<PCollection<String>, WithErrors.Result<PCollection<PubsubMessage>>> decode();

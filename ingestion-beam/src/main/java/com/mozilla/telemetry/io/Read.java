@@ -1,8 +1,6 @@
 package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
-import com.google.cloud.bigquery.storage.v1beta1.ReadOptions.TableReadOptions;
-import com.mozilla.telemetry.heka.HekaIO;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
@@ -16,7 +14,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.io.FileIO;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
@@ -24,9 +21,11 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
  * Implementations of reading from the sources enumerated in {@link
@@ -47,8 +46,12 @@ public abstract class Read
     @Override
     public Result<PCollection<PubsubMessage>> expand(PBegin input) {
       return input //
-          .apply(PubsubIO.readMessagesWithAttributes().fromSubscription(subscription))
-          .apply(ToPubsubMessageFrom.identity());
+          .apply(PubsubIO.readMessagesWithAttributesAndMessageId().fromSubscription(subscription))
+          .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
+            Map<String, String> attributesWithMessageId = new HashMap<>(message.getAttributeMap());
+            attributesWithMessageId.put(Attribute.MESSAGE_ID, message.getMessageId());
+            return new PubsubMessage(message.getPayload(), attributesWithMessageId);
+          })).apply(ToPubsubMessageFrom.identity());
     }
   }
 
@@ -69,40 +72,22 @@ public abstract class Read
     }
   }
 
-  /** Implementation of reading from heka blobs stored as files. */
-  public static class HekaInput extends Read {
-
-    private final ValueProvider<String> fileSpec;
-
-    public HekaInput(ValueProvider<String> fileSpec) {
-      this.fileSpec = fileSpec;
-    }
-
-    @Override
-    public Result<PCollection<PubsubMessage>> expand(PBegin input) {
-      return input //
-          .apply(FileIO.match().filepattern(fileSpec)) //
-          .apply(FileIO.readMatches()) //
-          .apply(HekaIO.readFiles());
-    }
-
-  }
-
   /** Implementation of reading from BigQuery. */
   public static class BigQueryInput extends Read {
 
     private final ValueProvider<String> tableSpec;
     private final BigQueryReadMethod method;
     private final Source source;
-    private final String rowRestriction;
-    private final List<String> selectedFields;
+    private final ValueProvider<String> rowRestriction;
+    private final ValueProvider<List<String>> selectedFields;
 
     public enum Source {
       TABLE, QUERY
     }
 
+    /** Constructor. */
     public BigQueryInput(ValueProvider<String> tableSpec, BigQueryReadMethod method, Source source,
-        String rowRestriction, List<String> selectedFields) {
+        ValueProvider<String> rowRestriction, ValueProvider<List<String>> selectedFields) {
       this.tableSpec = tableSpec;
       this.method = method;
       this.source = source;
@@ -171,14 +156,12 @@ public abstract class Read
           read = read.fromQuery(tableSpec).usingStandardSql();
       }
       if (method == BigQueryReadMethod.storageapi) {
-        TableReadOptions.Builder builder = TableReadOptions.newBuilder();
         if (rowRestriction != null) {
-          builder.setRowRestriction(rowRestriction);
+          read = read.withRowRestriction(rowRestriction);
         }
-        if (selectedFields != null && selectedFields.size() > 0) {
-          builder.addAllSelectedFields(selectedFields);
+        if (selectedFields != null) {
+          read = read.withSelectedFields(selectedFields);
         }
-        read = read.withReadOptions(builder.build());
       }
       return input.apply(read).apply(ToPubsubMessageFrom.identity());
     }

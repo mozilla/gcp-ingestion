@@ -5,6 +5,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Time {
 
+  /**
+   * Return a {@code java.time.Duration} from an ISO-8601 duration or from simple formats
+   * such as "5 seconds", "5sec", or "5s".
+   */
   public static java.time.Duration parseJavaDuration(String value) {
     checkNotNull(value, "The specified duration must be a non-null value!");
     java.time.Duration duration;

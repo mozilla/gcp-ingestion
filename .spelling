@@ -34,6 +34,7 @@ gcp-ingestion
 GCP
 GCS
 GeoIP
+GeoLite2
 GKE
 GroupByKey
 gzip
@@ -46,11 +47,15 @@ IAM
 IPs
 irc.mozilla.org
 Javadoc
+jenv
+JDK
+JDKs
 JSON
 JVM
 Kubernetes
 lookups
 MacOS
+MaxMind
 Memorystore
 metadata
 monorepo
