@@ -440,7 +440,9 @@ public class PubsubMessageToTableRow
         valueFieldOption = Optional.of(field.getSubFields().get(1));
       } else {
         valueFieldOption = Optional.empty();
-        props.putAll(map);
+        if (props != null) {
+          props.putAll(map);
+        }
       }
       List<Map<String, Object>> unmapped = map.entrySet().stream().map(entry -> {
         Map<String, Object> kv = new HashMap<>(2);

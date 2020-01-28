@@ -156,15 +156,19 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
 
   @Test
   public void testUnmapWithoutValue() throws Exception {
-    Map<String, Object> parent = new HashMap<>();
-    Map<String, Object> additionalProperties = new HashMap<>();
-    parent.put("mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4)));
     List<Field> bqFields = ImmutableList.of(MAP_FIELD_WITHOUT_VALUE);
     String expectedParent = "{\"map_field\":[{\"key\":\"bar\"},{\"key\":\"foo\"}]}";
     String expectedAdditional = "{\"mapField\":{\"bar\":4,\"foo\":3}}";
-    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
-    assertEquals(expectedParent, Json.asString(parent));
-    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+    for (boolean withAdditional : ImmutableList.of(true, false)) {
+      Map<String, Object> additionalProperties = withAdditional ? new HashMap<>() : null;
+      Map<String, Object> parent = new HashMap<>(
+          ImmutableMap.of("mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4))));
+      TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+      assertEquals(expectedParent, Json.asString(parent));
+      if (withAdditional) {
+        assertEquals(expectedAdditional, Json.asString(additionalProperties));
+      }
+    }
   }
 
   @Test
