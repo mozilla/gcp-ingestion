@@ -59,7 +59,7 @@ public class Decoder extends Sink {
             .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
             .apply(ParseUri.of()).errorsTo(errorCollections) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-            .apply(LimitPayloadSize.toMB(10)).failuresTo(errorCollections) //
+            .apply("LimitPayloadSize", LimitPayloadSize.toMB(10)).failuresTo(errorCollections) //
             .apply(
                 ParsePayload.of(options.getSchemasLocation(), options.getSchemaAliasesLocation()))
             .errorsTo(errorCollections) //
