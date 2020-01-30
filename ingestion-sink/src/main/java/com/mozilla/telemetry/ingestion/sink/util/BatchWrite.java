@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     implements Function<InputT, CompletableFuture<Void>> {
@@ -19,13 +20,32 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
   private final int maxMessages;
   private final long maxDelayMillis;
 
+  private final Supplier<long> getTimeoutMillis;
+
   /** Constructor. */
-  public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
+  public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay, Duration minDelay,
       PubsubMessageToTemplatedString batchKeyTemplate) {
     this.maxBytes = maxBytes;
     this.maxMessages = maxMessages;
     this.maxDelayMillis = maxDelay.toMillis();
+    if (minDelay != null) {
+      final long minDelayMillis = maxDelay.toMillis();
+      final long periodMillis = maxDelayMillis - minDelayMillis;
+      // timeout at the next interval of periodMillis between minDelayMillis and maxDelayMillis;
+      getTimeoutMillis = () -> {
+        long millis = maxDelayMillis - System.currentTimeMillis() % periodMillis;
+        return millis > minDelayMillis ? millis : millis + periodMillis;
+      };
+    } else {
+      getTimeoutMillis = () -> maxDelayMillis;
+    }
     this.batchKeyTemplate = batchKeyTemplate;
+  }
+
+  /** Constructor without minDelay. */
+  public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
+      PubsubMessageToTemplatedString batchKeyTemplate) {
+    this(maxBytes, maxMessages, maxDelay, null, batchKeyTemplate);
   }
 
   @VisibleForTesting
@@ -77,7 +97,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
 
     private void timeout() {
       try {
-        Thread.sleep(maxDelayMillis);
+        Thread.sleep(getTimeoutMillis.apply());
       } catch (InterruptedException e) {
         // this is fine
       }

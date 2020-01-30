@@ -26,6 +26,10 @@ public class SinkConfig {
   private static final String BATCH_MAX_BYTES = "BATCH_MAX_BYTES";
   private static final String BATCH_MAX_DELAY = "BATCH_MAX_DELAY";
   private static final String BATCH_MAX_MESSAGES = "BATCH_MAX_MESSAGES";
+  // When provided for Gcs output batches will timeout periodically, rather than always after max
+  // delay. Sets the lower bound on the delay before a batch will timeout to prevent batches
+  // triggered before BATCH_MAX_DELAY from being followed by very small batches.
+  private static final String BATCH_MIN_DELAY = "BATCH_MIN_DELAY";
   private static final String BIG_QUERY_OUTPUT_MODE = "BIG_QUERY_OUTPUT_MODE";
   private static final String LOAD_MAX_BYTES = "LOAD_MAX_BYTES";
   private static final String LOAD_MAX_DELAY = "LOAD_MAX_DELAY";
@@ -75,7 +79,7 @@ public class SinkConfig {
   // files this should be at minimum 1.8 seconds. Messages not delivered via streaming are expected
   // to have a total pipeline delay (including edge and decoder) of less than 1 hour, and ideally
   // less than 10 minutes, so this plus DEFAULT_LOAD_MAX_DELAY should be about 10 minutes.
-  private static final String DEFAULT_BATCH_MAX_DELAY = "1m"; // 1 minute
+  private static final String DEFAULT_BATCH_MAX_DELAY = "9m"; // 9 minutes
   // BigQuery Load API limits maximum bytes per request to 15TB, but load requests for clustered
   // tables fail when attempting to sort that much data, so to avoid that issue the default is lower
   private static final long DEFAULT_LOAD_MAX_BYTES = 100_000_000_000L; // 100GB
@@ -86,7 +90,7 @@ public class SinkConfig {
   // every 259.2 seconds or approximately 4.3 minutes. Messages not delivered via streaming are
   // expected to have a total pipeline delay (including edge and decoder) of less than 1 hour, and
   // ideally less than 10 minutes, so this plus DEFAULT_BATCH_MAX_DELAY should be about 10 minutes.
-  private static final String DEFAULT_LOAD_MAX_DELAY = "9m"; // 9 minutes
+  private static final String DEFAULT_LOAD_MAX_DELAY = "1m"; // 1 minute
   // BigQuery Load API limits maximum load requests per table per day to 1,000 but mixed mode
   // expects fewer than 1,000 messages per day to need file loads, so use streaming max delay.
   private static final String DEFAULT_STREAMING_LOAD_MAX_DELAY = DEFAULT_STREAMING_BATCH_MAX_DELAY;
@@ -133,6 +137,7 @@ public class SinkConfig {
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
+                env.optDuration(BATCH_MIN_DELAY).orNull(),
                 PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), getFormat(env),
                 ignore -> CompletableFuture.completedFuture(null)));
       }
@@ -171,6 +176,7 @@ public class SinkConfig {
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
+                env.optDuration(BATCH_MIN_DELAY).orNull(),
                 PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
                 getFormat(env),
                 // BigQuery Load API limits maximum load requests per table per day to 1,000 so send
@@ -219,6 +225,7 @@ public class SinkConfig {
             env.getLong(BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
             env.getInt(BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
             env.getDuration(BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
+            env.optDuration(BATCH_MIN_DELAY).orNull(),
             PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
             getFormat(env),
             blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)));

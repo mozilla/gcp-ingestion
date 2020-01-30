@@ -59,4 +59,8 @@ public class Env {
   public Duration getDuration(String key, String defaultValue) {
     return Time.parseJavaDuration(getString(key, defaultValue));
   }
+
+  public Optional<Duration> optDuration(String key) {
+    return optString(key).map(Time::parseJavaDuration);
+  }
 }

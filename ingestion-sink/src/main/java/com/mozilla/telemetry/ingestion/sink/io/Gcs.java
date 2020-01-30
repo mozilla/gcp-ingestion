@@ -35,9 +35,9 @@ public class Gcs {
       private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-          PubsubMessageToTemplatedString batchKeyTemplate, Format format,
+          Duration minDelay, PubsubMessageToTemplatedString batchKeyTemplate, Format format,
           Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
-        super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
+        super(storage, maxBytes, maxMessages, maxDelay, minDelay, batchKeyTemplate, batchCloseHook);
         this.encoder = new PubsubMessageToObjectNode(format);
       }
 
@@ -56,9 +56,9 @@ public class Gcs {
     private final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
 
     private Write(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-        PubsubMessageToTemplatedString batchKeyTemplate,
+        Duration minDelay, PubsubMessageToTemplatedString batchKeyTemplate,
         Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
-      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
+      super(maxBytes, maxMessages, maxDelay, minDelay, batchKeyTemplate);
       this.storage = storage;
       this.batchCloseHook = batchCloseHook;
     }
