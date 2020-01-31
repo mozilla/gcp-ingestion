@@ -46,7 +46,8 @@ public class LimitPayloadSize {
           try {
             throw ee.exception();
           } catch (PayloadTooLargeException e) {
-            return FailureMessage.of("LimitPayloadSize", ee.element(), ee.exception());
+            return FailureMessage.of(LimitPayloadSize.class.getSimpleName(), ee.element(),
+                ee.exception());
           }
         });
   }
