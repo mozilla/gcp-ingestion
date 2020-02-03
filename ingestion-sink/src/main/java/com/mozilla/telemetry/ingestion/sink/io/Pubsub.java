@@ -35,11 +35,13 @@ public class Pubsub {
 
     /** Constructor. */
     public <T> Read(String subscriptionName, Function<PubsubMessage, CompletableFuture<T>> output,
-        Function<Subscriber.Builder, Subscriber.Builder> config) {
+        Function<Subscriber.Builder, Subscriber.Builder> config,
+        Function<PubsubMessage, PubsubMessage> decompress) {
       ProjectSubscriptionName subscription = ProjectSubscriptionName.parse(subscriptionName);
       subscriber = config.apply(Subscriber.newBuilder(subscription,
-          (message, consumer) -> CompletableFuture.supplyAsync(() -> message)
-              .thenComposeAsync(output).whenCompleteAsync((result, exception) -> {
+          (message, consumer) -> CompletableFuture.completedFuture(message)
+              .thenApplyAsync(decompress).thenComposeAsync(output)
+              .whenCompleteAsync((result, exception) -> {
                 if (exception == null) {
                   consumer.ack();
                 } else {
@@ -65,15 +67,18 @@ public class Pubsub {
 
     private final Executor executor;
     private final Function<Publisher.Builder, Publisher.Builder> config;
+    private final Function<PubsubMessage, PubsubMessage> compress;
     private final PubsubMessageToTemplatedString topicTemplate;
     private final ConcurrentMap<String, Publisher> publishers = new ConcurrentHashMap<>();
 
     /** Constructor. */
     public Write(String topicTemplate, int numThreads,
-        Function<Publisher.Builder, Publisher.Builder> config) {
+        Function<Publisher.Builder, Publisher.Builder> config,
+        Function<PubsubMessage, PubsubMessage> compress) {
       executor = Executors.newFixedThreadPool(numThreads);
       this.topicTemplate = PubsubMessageToTemplatedString.of(topicTemplate);
       this.config = config;
+      this.compress = compress;
     }
 
     private Publisher getPublisher(PubsubMessage message) {
@@ -91,7 +96,8 @@ public class Pubsub {
 
     @Override
     public CompletableFuture<String> apply(PubsubMessage message) {
-      final ApiFuture<String> future = getPublisher(message).publish(message);
+      final PubsubMessage compressed = compress.apply(message);
+      final ApiFuture<String> future = getPublisher(message).publish(compressed);
       final CompletableFuture<String> result = new CompletableFuture<>();
       ApiFutures.addCallback(future, new ApiFutureCallback<String>() {
 
