@@ -81,7 +81,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
 
     WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline
         .apply(Create.of(Iterables.concat(validInput, invalidInput)))
-        .apply("DecodeJsonInput", InputFileFormat.json.decode()).output() //
+        .apply("DecodeJsonInput", InputFileFormat.json.decode()) //
         .apply(ParseUri.of());
 
     PCollection<String> output = parsed.output() //
@@ -300,7 +300,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException");
 
     WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline.apply(Create.of(input))
-        .apply("DecodeJsonInput", InputFileFormat.json.decode()).output() //
+        .apply("DecodeJsonInput", InputFileFormat.json.decode()) //
         .apply(ParseUri.of());
 
     PCollection<PubsubMessage> output = parsed.output();

@@ -55,7 +55,7 @@ public class Republisher extends Sink {
 
     // Trailing comments are used below to prevent rewrapping by google-java-format.
     PCollection<PubsubMessage> decoded = pipeline //
-        .apply(options.getInputType().read(options)).errorsTo(errorCollections);
+        .apply(options.getInputType().read(options));
 
     // Mark messages as seen in Redis.
     decoded //

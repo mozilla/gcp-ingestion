@@ -4,9 +4,6 @@ import com.google.api.services.bigquery.model.TableSchema;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.ToPubsubMessageFrom;
-import com.mozilla.telemetry.transforms.WithErrors;
-import com.mozilla.telemetry.transforms.WithErrors.Result;
 import com.mozilla.telemetry.util.Time;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -31,8 +28,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Implementations of reading from the sources enumerated in {@link
  * com.mozilla.telemetry.options.InputType}.
  */
-public abstract class Read
-    extends PTransform<PBegin, WithErrors.Result<PCollection<PubsubMessage>>> {
+public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>> {
 
   /** Implementation of reading from Pub/Sub. */
   public static class PubsubInput extends Read {
@@ -44,14 +40,14 @@ public abstract class Read
     }
 
     @Override
-    public Result<PCollection<PubsubMessage>> expand(PBegin input) {
+    public PCollection<PubsubMessage> expand(PBegin input) {
       return input //
           .apply(PubsubIO.readMessagesWithAttributesAndMessageId().fromSubscription(subscription))
           .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
             Map<String, String> attributesWithMessageId = new HashMap<>(message.getAttributeMap());
             attributesWithMessageId.put(Attribute.MESSAGE_ID, message.getMessageId());
             return new PubsubMessage(message.getPayload(), attributesWithMessageId);
-          })).apply(ToPubsubMessageFrom.identity());
+          }));
     }
   }
 
@@ -67,7 +63,7 @@ public abstract class Read
     }
 
     @Override
-    public Result<PCollection<PubsubMessage>> expand(PBegin input) {
+    public PCollection<PubsubMessage> expand(PBegin input) {
       return input.apply(TextIO.read().from(fileSpec)).apply(fileFormat.decode());
     }
   }
@@ -96,7 +92,7 @@ public abstract class Read
     }
 
     @Override
-    public Result<PCollection<PubsubMessage>> expand(PBegin input) {
+    public PCollection<PubsubMessage> expand(PBegin input) {
       BigQueryIO.TypedRead<PubsubMessage> read = BigQueryIO
           .read((SchemaAndRecord schemaAndRecord) -> {
             TableSchema tableSchema = schemaAndRecord.getTableSchema();
@@ -163,7 +159,7 @@ public abstract class Read
           read = read.withSelectedFields(selectedFields);
         }
       }
-      return input.apply(read).apply(ToPubsubMessageFrom.identity());
+      return input.apply(read);
     }
   }
 }

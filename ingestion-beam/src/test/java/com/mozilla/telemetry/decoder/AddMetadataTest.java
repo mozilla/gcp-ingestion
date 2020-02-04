@@ -38,7 +38,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
         .put("normalized_channel", "release").build();
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline //
         .apply(Create.of(input)) //
-        .apply("DecodeTextInput", InputFileFormat.text.decode()).output() //
+        .apply("DecodeTextInput", InputFileFormat.text.decode()) //
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(), attributes)))

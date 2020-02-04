@@ -91,7 +91,7 @@ public class ParseUserAgentTest extends TestWithDeterministicJson {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(ParseUserAgent.of()) //
         .apply(OutputFileFormat.json.encode());
 

@@ -30,7 +30,7 @@ public class DecompressPayloadTest {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(DecompressPayload.enabled(pipeline.newProvider(true))) //
         .apply(OutputFileFormat.json.encode());
 

@@ -3,57 +3,60 @@ package com.mozilla.telemetry.transforms;
 import com.mozilla.telemetry.matchers.Lines;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
+import java.io.UncheckedIOException;
 import java.util.List;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 public class DecodePubsubMessagesTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+
   @Test
   public void testText() {
     List<String> inputLines = Lines.resources("testdata/decode-pubsub-messages/input-*");
 
-    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline //
+    PCollection<String> result = pipeline //
         .apply(Create.of(inputLines)) //
-        .apply(InputFileFormat.text.decode());
+        .apply(InputFileFormat.text.decode()) //
+        .apply(OutputFileFormat.text.encode());
 
-    PCollection<String> encoded = decoded.output().apply(OutputFileFormat.text.encode());
-
-    PAssert.that(encoded).containsInAnyOrder(inputLines);
-    PAssert.that(decoded.errors()).empty();
+    PAssert.that(result).containsInAnyOrder(inputLines);
 
     pipeline.run();
   }
 
   @Test
   public void testJson() {
-    List<String> inputLines = Lines.resources("testdata/decode-pubsub-messages/input-*");
+    List<String> inputLines = Lines.resources("testdata/decode-pubsub-messages/input-valid*");
     List<String> validLines = Lines
         .resources("testdata/decode-pubsub-messages/output-normalized-json.ndjson");
-    List<String> invalidLines = Lines
-        .resources("testdata/decode-pubsub-messages/input-invalid-json.txt");
 
-    WithErrors.Result<PCollection<PubsubMessage>> decoded = pipeline //
+    PCollection<String> result = pipeline //
         .apply(Create.of(inputLines)) //
-        .apply(InputFileFormat.json.decode());
-
-    PCollection<String> encoded = decoded.output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply("EncodeJsonOutput", OutputFileFormat.json.encode());
 
-    PCollection<String> encodedErrors = decoded.errors() //
-        .apply("EncodeTextError", OutputFileFormat.text.encode());
+    PAssert.that(result).containsInAnyOrder(validLines);
 
-    PAssert.that(encoded).containsInAnyOrder(validLines);
-    PAssert.that(encodedErrors).containsInAnyOrder(invalidLines);
+    pipeline.run();
+  }
 
+  @Test
+  public void testJsonErrorThrows() {
+    List<String> inputLines = Lines.resources("testdata/decode-pubsub-messages/input-*");
+    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode());
+    thrown.expectCause(Matchers.isA(UncheckedIOException.class));
     pipeline.run();
   }
 

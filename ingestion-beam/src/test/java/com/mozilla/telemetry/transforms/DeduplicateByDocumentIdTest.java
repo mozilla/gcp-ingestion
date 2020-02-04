@@ -60,7 +60,7 @@ public class DeduplicateByDocumentIdTest {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(WithTimestamps
             .of(m -> Optional.ofNullable(m.getAttribute(Attribute.SUBMISSION_TIMESTAMP)).map(s -> {
               try {

@@ -1,56 +1,40 @@
 package com.mozilla.telemetry.transforms;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
- * Base class for decoding PubsubMessage from various input formats.
- *
- * <p>Subclasses are provided via static members fromText() and fromJson().
- * We also provide an alreadyDecoded() transform for creating a PCollectionTuple
- * analogous to fromText or fromJson to handle output from PubsubIO.
- *
- * <p>The packaging of subclasses here follows the style guidelines as captured in
- * https://beam.apache.org/contribute/ptransform-style-guide/#packaging-a-family-of-transforms
+ * Container for transforms that decode PubsubMessage from various input formats.
  */
-public abstract class DecodePubsubMessages
-    extends MapElementsWithErrors.ToPubsubMessageFrom<String> {
-
-  // Force use of static factory methods.
-  private DecodePubsubMessages() {
-  }
+public class DecodePubsubMessages {
 
   /*
    * Static factory methods.
    */
 
   /** Decoder from non-json text to PubsubMessage. */
-  public static Text text() {
-    return new Text();
+  public static PTransform<PCollection<? extends String>, PCollection<PubsubMessage>> text() {
+    return PTransform.compose("DecodePubsubMessages.Text",
+        input -> input.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via((String s) -> new PubsubMessage(s.getBytes(StandardCharsets.UTF_8), null))));
   }
 
   /** Decoder from json to PubsubMessage. */
-  public static Json json() {
-    return new Json();
-  }
-
-  /*
-   * Concrete subclasses.
-   */
-
-  public static class Text extends DecodePubsubMessages {
-
-    protected PubsubMessage processElement(String element) {
-      return new PubsubMessage(element.getBytes(StandardCharsets.UTF_8), null);
-    }
-  }
-
-  public static class Json extends DecodePubsubMessages {
-
-    protected PubsubMessage processElement(String element) throws IOException {
-      return com.mozilla.telemetry.util.Json.readPubsubMessage(element);
-    }
+  public static PTransform<PCollection<? extends String>, PCollection<PubsubMessage>> json() {
+    return PTransform.compose("DecodePubsubMessages.Json", input -> input
+        .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((String s) -> {
+          try {
+            return com.mozilla.telemetry.util.Json.readPubsubMessage(s);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        })));
   }
 
 }

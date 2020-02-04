@@ -72,7 +72,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(ParseProxy.of()) //
         .apply(OutputFileFormat.json.encode());
 
@@ -123,7 +123,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(ParseProxy.of()) //
         .apply(GeoCityLookup
             .of(pipeline.newProvider("src/test/resources/cityDB/GeoIP2-City-Test.mmdb"), null))

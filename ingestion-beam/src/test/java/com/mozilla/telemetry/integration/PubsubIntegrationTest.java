@@ -112,7 +112,7 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
     sinkOptions.setInput(pipeline.newProvider(subscriptionName.toString()));
 
-    PCollection<String> output = pipeline.apply(InputType.pubsub.read(sinkOptions)).output()
+    PCollection<String> output = pipeline.apply(InputType.pubsub.read(sinkOptions))
         .apply("encodeJson", OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(inputLines);
@@ -140,7 +140,7 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
     // accesses a method on the underlying enum value when defined via pipeline.newProvider.
     sinkOptions.setOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
 
-    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
+    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode())
         .apply(OutputType.pubsub.write(sinkOptions));
 
     final PipelineResult result = pipeline.run();
@@ -168,7 +168,7 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
     // accesses a method on the underlying enum value when defined via pipeline.newProvider.
     sinkOptions.setErrorOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
 
-    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
+    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode())
         .apply(ErrorOutputType.pubsub.write(sinkOptions));
 
     final PipelineResult result = pipeline.run();
@@ -191,7 +191,7 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
     sinkOptions.setOutput(pipeline.newProvider(topicName.toString()));
     SinkOptions.Parsed options = SinkOptions.parseSinkOptions(sinkOptions);
 
-    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode()).output()
+    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode())
         .apply(options.getOutputType().write(options));
 
     final PipelineResult result = pipeline.run();
@@ -230,20 +230,16 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
     ProjectSubscriptionName subscriptionName = ProjectSubscriptionName.of(projectId,
         subscriptionId);
 
-    MessageReceiver receiver = new MessageReceiver() {
-
-      @Override
-      public void receiveMessage(PubsubMessage message, AckReplyConsumer consumer) {
-        try {
-          String encoded = Json.asString(new org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage(
-              message.getData().toByteArray(), message.getAttributesMap()));
-          received.add(encoded);
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
-        consumer.ack();
+    MessageReceiver receiver = ((PubsubMessage message, AckReplyConsumer consumer) -> {
+      try {
+        String encoded = Json.asString(new org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage(
+            message.getData().toByteArray(), message.getAttributesMap()));
+        received.add(encoded);
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
       }
-    };
+      consumer.ack();
+    });
     Subscriber subscriber = Subscriber.newBuilder(subscriptionName, receiver).build();
     subscriber.startAsync();
     while (received.size() < expectedMessageCount) {
