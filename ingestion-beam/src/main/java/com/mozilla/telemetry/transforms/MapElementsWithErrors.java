@@ -123,24 +123,6 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
       return result;
     }
 
-    /*
-     * Static factory methods for subclasses.
-     */
-
-    public static Identity identity() {
-      return new Identity();
-    }
-
-    /*
-     * Static subclasses.
-     */
-
-    public static class Identity extends ToPubsubMessageFrom<PubsubMessage> {
-
-      protected PubsubMessage processElement(PubsubMessage element) {
-        return element;
-      }
-    }
   }
 
   /**
