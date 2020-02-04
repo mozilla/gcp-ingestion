@@ -28,6 +28,11 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
           Field.of("value", LegacySQLTypeName.INTEGER)) //
       .setMode(Mode.REPEATED).build();
 
+  private static final Field MAP_FIELD_WITHOUT_VALUE = Field //
+      .newBuilder("map_field", LegacySQLTypeName.RECORD, //
+          Field.of("key", LegacySQLTypeName.STRING)) //
+      .setMode(Mode.REPEATED).build();
+
   private static final KeyByBigQueryTableDestination KEY_BY = KeyByBigQueryTableDestination.of(
       StaticValueProvider.of("foo"), StaticValueProvider.of(null), StaticValueProvider.of(null));
 
@@ -147,6 +152,23 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
         + "[{\"key\":\"bar\",\"value\":4},{\"key\":\"foo\",\"value\":3}]}";
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
+  }
+
+  @Test
+  public void testUnmapWithoutValue() throws Exception {
+    List<Field> bqFields = ImmutableList.of(MAP_FIELD_WITHOUT_VALUE);
+    String expectedParent = "{\"map_field\":[{\"key\":\"bar\"},{\"key\":\"foo\"}]}";
+    String expectedAdditional = "{\"mapField\":{\"bar\":4,\"foo\":3}}";
+    for (boolean withAdditional : ImmutableList.of(true, false)) {
+      Map<String, Object> additionalProperties = withAdditional ? new HashMap<>() : null;
+      Map<String, Object> parent = new HashMap<>(
+          ImmutableMap.of("mapField", new HashMap<>(ImmutableMap.of("foo", 3, "bar", 4))));
+      TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+      assertEquals(expectedParent, Json.asString(parent));
+      if (withAdditional) {
+        assertEquals(expectedAdditional, Json.asString(additionalProperties));
+      }
+    }
   }
 
   @Test
