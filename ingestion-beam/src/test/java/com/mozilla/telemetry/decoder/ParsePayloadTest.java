@@ -135,9 +135,9 @@ public class ParsePayloadTest {
 
     PAssert.that(result.output()).empty();
     PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
-        "com.mozilla.telemetry.schemas.SchemaNotFoundException",
-        "com.mozilla.telemetry.schemas.SchemaNotFoundException",
-        "com.mozilla.telemetry.schemas.SchemaNotFoundException");
+        "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException",
+        "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException",
+        "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException");
 
     pipeline.run();
   }

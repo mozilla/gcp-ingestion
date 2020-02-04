@@ -7,12 +7,11 @@ import com.mozilla.telemetry.avro.BinaryRecordFormatter;
 import com.mozilla.telemetry.avro.GenericRecordBinaryEncoder;
 import com.mozilla.telemetry.avro.PubsubMessageRecordFormatter;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.schema.AvroSchemaStore;
 import com.mozilla.telemetry.ingestion.core.util.DerivedAttributesMap;
 import com.mozilla.telemetry.options.BigQueryWriteMethod;
 import com.mozilla.telemetry.options.InputType;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.schemas.AvroSchemaStore;
-import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.CompressPayload;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.KeyByBigQueryTableDestination;
@@ -21,6 +20,7 @@ import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.transforms.WithErrors;
+import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import com.mozilla.telemetry.util.NoColonFileNaming;
 import java.nio.charset.StandardCharsets;
@@ -58,8 +58,6 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Partition;
-import org.apache.beam.sdk.transforms.Requirements;
-import org.apache.beam.sdk.transforms.View;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
@@ -67,7 +65,6 @@ import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
-import org.apache.beam.sdk.values.PCollectionView;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
@@ -198,10 +195,16 @@ public abstract class Write
     private final ValueProvider<Integer> numShards;
     private final Compression compression;
     private final InputType inputType;
-    private final AvroSchemaStore schemaStore;
+    private final ValueProvider<String> schemasLocation;
+    private final ValueProvider<String> schemaAliasesLocation;
+    private final ValueProvider<DynamicPathTemplate> pathTemplate;
     private final PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     private final GenericRecordBinaryEncoder binaryEncoder = new GenericRecordBinaryEncoder();
     private final BinaryRecordFormatter binaryFormatter = new BinaryRecordFormatter();
+    private final TupleTag<PubsubMessage> successTag = new TupleTag<PubsubMessage>() {
+    };
+    private final TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>() {
+    };
 
     /** Public constructor. */
     public AvroOutput(ValueProvider<String> outputPrefix, Duration windowDuration,
@@ -212,13 +215,46 @@ public abstract class Write
       this.numShards = numShards;
       this.compression = compression;
       this.inputType = inputType;
-      this.schemaStore = AvroSchemaStore.of(schemasLocation, schemaAliasesLocation);
+      this.schemasLocation = schemasLocation;
+      this.schemaAliasesLocation = schemaAliasesLocation;
+      this.pathTemplate = NestedValueProvider.of(outputPrefix, DynamicPathTemplate::new);
+    }
+
+    class AvroEncoder extends DoFn<PubsubMessage, PubsubMessage> {
+
+      private transient AvroSchemaStore store;
+
+      private AvroSchemaStore getStore() {
+        if (store == null) {
+          store = AvroSchemaStore.of(schemasLocation.get(), schemaAliasesLocation.get(),
+              BeamFileInputStream::open);
+        }
+        return store;
+      }
+
+      @ProcessElement
+      public void processElement(ProcessContext ctx) {
+        PubsubMessage message = ctx.element();
+        Map<String, String> attributes = message.getAttributeMap();
+        try {
+          Schema schema = getStore().getSchema(attributes);
+          GenericRecord record = formatter.formatRecord(message, schema);
+          byte[] avroPayload = binaryEncoder.encodeRecord(record, schema);
+          ctx.output(successTag, new PubsubMessage(avroPayload, attributes));
+        } catch (Exception e) {
+          ctx.output(errorTag, FailureMessage.of(this, message, e));
+        }
+      }
+
+      private AvroIO.Sink<PubsubMessage> getSink(List<String> dest) {
+        Map<String, String> attributes = pathTemplate.get().getPlaceholderAttributes(dest);
+        Schema schema = getStore().getSchema(attributes);
+        return AvroIO.sinkViaGenericRecords(schema, binaryFormatter);
+      }
     }
 
     @Override
     public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
-      ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
-          DynamicPathTemplate::new);
       ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
           value -> value.staticPrefix);
 
@@ -229,45 +265,20 @@ public abstract class Write
             "Path template must contain document namespace, type, and version");
       }
 
-      final PCollectionView<AvroSchemaStore> schemaSideInput = input.getPipeline()
-          .apply(Create.of(schemaStore)).apply(View.asSingleton());
-
-      final TupleTag<PubsubMessage> successTag = new TupleTag<PubsubMessage>() {
-      };
-      final TupleTag<PubsubMessage> errorTag = new TupleTag<PubsubMessage>() {
-      };
+      AvroEncoder encoder = new AvroEncoder();
 
       // A ParDo is opted over a PTransform extending MapElementsWithErrors.
       // While this leads to manual error handling with output-tags, this allows
       // for side-input of the singleton SchemaStore PCollection.
-      ParDo.MultiOutput<PubsubMessage, PubsubMessage> encodePayloadAsAvro = ParDo
-          .of(new DoFn<PubsubMessage, PubsubMessage>() {
-
-            @ProcessElement
-            public void processElement(ProcessContext ctx) throws SchemaNotFoundException {
-              PubsubMessage message = ctx.element();
-              Map<String, String> attributes = message.getAttributeMap();
-              try {
-                Schema schema = ctx.sideInput(schemaSideInput).getSchema(attributes);
-                GenericRecord record = formatter.formatRecord(message, schema);
-                byte[] avroPayload = binaryEncoder.encodeRecord(record, schema);
-                ctx.output(successTag, new PubsubMessage(avroPayload, attributes));
-              } catch (Exception e) {
-                ctx.output(errorTag, FailureMessage.of(this, message, e));
-              }
-            }
-          }).withSideInputs(schemaSideInput).withOutputTags(successTag, TupleTagList.of(errorTag));
+      ParDo.MultiOutput<PubsubMessage, PubsubMessage> encodePayloadAsAvro = ParDo.of(encoder)
+          .withOutputTags(successTag, TupleTagList.of(errorTag));
 
       FileIO.Write<List<String>, PubsubMessage> write = FileIO
           .<List<String>, PubsubMessage>writeDynamic() //
           .by(message -> pathTemplate.get().extractValuesFrom(message.getAttributeMap()))
           .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())) //
           .withCompression(compression) //
-          .via(Contextful.fn((List<String> dest, Contextful.Fn.Context ctx) -> {
-            Map<String, String> attributes = pathTemplate.get().getPlaceholderAttributes(dest);
-            Schema schema = ctx.sideInput(schemaSideInput).getSchema(attributes);
-            return AvroIO.sinkViaGenericRecords(schema, binaryFormatter);
-          }, Requirements.requiresSideInputs(schemaSideInput))) //
+          .via(Contextful.fn(encoder::getSink)) //
           .to(staticPrefix) //
           .withNaming(placeholderValues -> NoColonFileNaming
               .defaultNaming(pathTemplate.get().replaceDynamicPart(placeholderValues), ".avro"));

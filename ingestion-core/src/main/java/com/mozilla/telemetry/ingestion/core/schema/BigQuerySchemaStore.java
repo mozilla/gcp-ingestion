@@ -1,9 +1,10 @@
-package com.mozilla.telemetry.schemas;
+package com.mozilla.telemetry.ingestion.core.schema;
 
 import com.google.cloud.bigquery.Schema;
-import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.ingestion.core.util.IOFunction;
+import com.mozilla.telemetry.ingestion.core.util.Json;
 import java.io.IOException;
-import org.apache.beam.sdk.options.ValueProvider;
+import java.io.InputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.io.IOUtils;
 
@@ -13,14 +14,14 @@ public class BigQuerySchemaStore extends SchemaStore<Schema> {
    * Returns a SchemaStore based on the contents of the archive at schemasLocation
    * with additional schemas aliased according to configuration.
    */
-  public static BigQuerySchemaStore of(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
-    return new BigQuerySchemaStore(schemasLocation, schemaAliasesLocation);
+  public static BigQuerySchemaStore of(String schemasLocation, String schemaAliasesLocation,
+      IOFunction<String, InputStream> open) {
+    return new BigQuerySchemaStore(schemasLocation, schemaAliasesLocation, open);
   }
 
-  protected BigQuerySchemaStore(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
-    super(schemasLocation, schemaAliasesLocation);
+  protected BigQuerySchemaStore(String schemasLocation, String schemaAliasesLocation,
+      IOFunction<String, InputStream> open) {
+    super(schemasLocation, schemaAliasesLocation, open);
   }
 
   @Override

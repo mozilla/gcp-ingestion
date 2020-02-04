@@ -5,8 +5,8 @@ import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Resources;
-import com.mozilla.telemetry.schemas.AvroSchemaStore;
-import com.mozilla.telemetry.schemas.SchemaNotFoundException;
+import com.mozilla.telemetry.ingestion.core.schema.AvroSchemaStore;
+import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,7 +22,6 @@ import org.apache.avro.file.DataFileReader;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.io.DatumReader;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -97,8 +96,7 @@ public class SinkAvroTest {
     assertThat("output count", getPrefixFileCount(outputPath, "namespace_0"),
         Matchers.greaterThan(0L));
 
-    AvroSchemaStore store = AvroSchemaStore.of(StaticValueProvider.of(schemas),
-        StaticValueProvider.of(null));
+    AvroSchemaStore store = AvroSchemaStore.of(schemas, null, null);
 
     List<Path> paths = Files.walk(Paths.get(outputPath)).filter(Files::isRegularFile)
         .collect(Collectors.toList());
@@ -109,7 +107,7 @@ public class SinkAvroTest {
       DatumReader<GenericRecord> reader = new GenericDatumReader<>(schema);
       DataFileReader<GenericRecord> fileReader = new DataFileReader<>(path.toFile(), reader);
       while (fileReader.hasNext()) {
-        GenericRecord record = (GenericRecord) fileReader.next();
+        GenericRecord record = fileReader.next();
         results.add((Integer) record.get("test_int"));
       }
       fileReader.close();
@@ -132,7 +130,7 @@ public class SinkAvroTest {
     DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(schema);
     try (DataFileReader<GenericRecord> fileReader = new DataFileReader<>(path.toFile(),
         datumReader)) {
-      return (GenericRecord) fileReader.next();
+      return fileReader.next();
     }
   }
 
@@ -158,8 +156,7 @@ public class SinkAvroTest {
     assertThat("baz output count", getPrefixFileCount(outputPath, "namespace_1.baz"),
         Matchers.greaterThan(0L));
 
-    AvroSchemaStore store = AvroSchemaStore.of(StaticValueProvider.of(schemas),
-        StaticValueProvider.of(null));
+    AvroSchemaStore store = AvroSchemaStore.of(schemas, null, null);
     assertEquals(1, readRecord(store, outputPath, "namespace_0.foo.1").get("test_int"));
     assertEquals(1, readRecord(store, outputPath, "namespace_0.bar.1").get("test_int"));
     assertEquals(null, readRecord(store, outputPath, "namespace_1.baz.1").get("test_null"));
@@ -203,7 +200,7 @@ public class SinkAvroTest {
     data = new String(Files.readAllBytes(getPath(outputPath + "/err", "namespace_57")));
     obj = Json.readObjectNode(data.getBytes(StandardCharsets.UTF_8));
     msg = obj.path("attributeMap").path("error_message").textValue();
-    assertThat(msg,
-        CoreMatchers.containsString("com.mozilla.telemetry.schemas.SchemaNotFoundException"));
+    assertThat(msg, CoreMatchers
+        .containsString("com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException"));
   }
 }

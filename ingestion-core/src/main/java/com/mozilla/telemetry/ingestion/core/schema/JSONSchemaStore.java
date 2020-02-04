@@ -1,8 +1,9 @@
-package com.mozilla.telemetry.schemas;
+package com.mozilla.telemetry.ingestion.core.schema;
 
-import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.ingestion.core.util.IOFunction;
+import com.mozilla.telemetry.ingestion.core.util.Json;
 import java.io.IOException;
-import org.apache.beam.sdk.options.ValueProvider;
+import java.io.InputStream;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.io.IOUtils;
 import org.everit.json.schema.Schema;
@@ -16,14 +17,14 @@ public class JSONSchemaStore extends SchemaStore<Schema> {
    * Returns a SchemaStore based on the contents of the archive at schemasLocation
    * with additional schemas aliased according to configuration.
    */
-  public static JSONSchemaStore of(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
-    return new JSONSchemaStore(schemasLocation, schemaAliasesLocation);
+  public static JSONSchemaStore of(String schemasLocation, String schemaAliasesLocation,
+      IOFunction<String, InputStream> open) {
+    return new JSONSchemaStore(schemasLocation, schemaAliasesLocation, open);
   }
 
-  protected JSONSchemaStore(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
-    super(schemasLocation, schemaAliasesLocation);
+  protected JSONSchemaStore(String schemasLocation, String schemaAliasesLocation,
+      IOFunction<String, InputStream> open) {
+    super(schemasLocation, schemaAliasesLocation, open);
   }
 
   @Override

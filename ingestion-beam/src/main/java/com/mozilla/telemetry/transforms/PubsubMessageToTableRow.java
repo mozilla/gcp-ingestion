@@ -19,9 +19,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.schema.BigQuerySchemaStore;
+import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
+import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
-import com.mozilla.telemetry.schemas.BigQuerySchemaStore;
-import com.mozilla.telemetry.schemas.SchemaNotFoundException;
+import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
@@ -193,7 +195,8 @@ public class PubsubMessageToTableRow
 
     if (schemaStore == null && schemasLocation != null && schemasLocation.isAccessible()
         && schemasLocation.get() != null) {
-      schemaStore = BigQuerySchemaStore.of(schemasLocation, schemaAliasesLocation);
+      schemaStore = BigQuerySchemaStore.of(schemasLocation.get(), schemaAliasesLocation.get(),
+          BeamFileInputStream::open);
     }
 
     // If a schemasLocation is configured, we pull the table schema from there;

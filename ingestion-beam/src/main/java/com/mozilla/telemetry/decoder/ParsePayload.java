@@ -6,11 +6,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
+import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
-import com.mozilla.telemetry.schemas.JSONSchemaStore;
-import com.mozilla.telemetry.schemas.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.JsonValidator;
 import java.io.IOException;
@@ -70,7 +71,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
     if (schemaStore == null) {
-      schemaStore = JSONSchemaStore.of(schemasLocation, schemaAliasesLocation);
+      schemaStore = JSONSchemaStore.of(schemasLocation.get(), schemaAliasesLocation.get(),
+          BeamFileInputStream::open);
     }
 
     final int submissionBytes = message.getPayload().length;

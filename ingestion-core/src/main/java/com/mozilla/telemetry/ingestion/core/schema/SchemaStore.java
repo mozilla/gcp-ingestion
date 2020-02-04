@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.schemas;
+package com.mozilla.telemetry.ingestion.core.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -8,15 +8,14 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
+import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.BubbleUpException;
 import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.io.UncheckedIOException;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,9 +24,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.apache.beam.sdk.io.FileSystems;
-import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -35,7 +31,7 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.text.StringSubstitutor;
 
 /** Reads schemas from a file and parses them into a map. */
-public abstract class SchemaStore<T> implements Serializable {
+public abstract class SchemaStore<T> {
 
   /**
    * Return the parsed schema corresponding to a path underneath the schemas/ directory.
@@ -88,11 +84,21 @@ public abstract class SchemaStore<T> implements Serializable {
 
   ////////
 
-  protected SchemaStore(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
+  protected SchemaStore(String schemasLocation, String schemaAliasesLocation,
+      IOFunction<String, InputStream> open) {
     this.schemasLocation = schemasLocation;
     this.schemaAliasesLocation = schemaAliasesLocation;
+    if (open == null) {
+      this.open = FileInputStream::new;
+    } else {
+      this.open = open;
+    }
   }
+
+  private final String schemasLocation;
+  @Nullable
+  private final String schemaAliasesLocation;
+  private final IOFunction<String, InputStream> open;
 
   /* Returns the expected suffix for a particular schema type e.g. `.schema.json` */
   protected abstract String schemaSuffix();
@@ -103,10 +109,6 @@ public abstract class SchemaStore<T> implements Serializable {
   ////////
 
   private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(SchemaStore.class);
-
-  private final ValueProvider<String> schemasLocation;
-  @Nullable
-  private final ValueProvider<String> schemaAliasesLocation;
   private transient Map<String, T> schemas;
   private transient Set<String> dirs;
   private transient Cache<String, String> normalizedNameCache;
@@ -122,9 +124,7 @@ public abstract class SchemaStore<T> implements Serializable {
     final Set<String> tempDirs = new HashSet<>();
     InputStream inputStream;
     try {
-      Metadata metadata = FileSystems.matchSingleFileSpec(schemasLocation.get());
-      ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
-      inputStream = Channels.newInputStream(channel);
+      inputStream = open.apply(schemasLocation);
     } catch (IOException e) {
       throw new IOException("Exception thrown while fetching from configured schemasLocation", e);
     }
@@ -161,11 +161,8 @@ public abstract class SchemaStore<T> implements Serializable {
     Multimap<String, String> schemaAliasesMap;
     try {
       Multimap<String, String> aliases = ArrayListMultimap.create();
-      if (schemaAliasesLocation != null && schemaAliasesLocation.isAccessible()
-          && !Strings.isNullOrEmpty(schemaAliasesLocation.get())) {
-        Metadata metadata = FileSystems.matchSingleFileSpec(schemaAliasesLocation.get());
-        InputStream configInputStream = Channels
-            .newInputStream(FileSystems.open(metadata.resourceId()));
+      if (!Strings.isNullOrEmpty(schemaAliasesLocation)) {
+        InputStream configInputStream = open.apply(schemaAliasesLocation);
 
         ObjectMapper objectMapper = new ObjectMapper();
         SchemaAliasingConfiguration aliasingConfig = objectMapper.readValue(configInputStream,
