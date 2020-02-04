@@ -470,7 +470,11 @@ public abstract class Write
 
       fileLoadsInput.ifPresent(messages -> {
         BigQueryIO.Write<KV<TableDestination, PubsubMessage>> fileLoadsWrite = baseWriteTransform
-            .withMethod(BigQueryWriteMethod.file_loads.method);
+            .withMethod(BigQueryWriteMethod.file_loads.method)
+            // When writing to main_v4 in batch mode, we sometimes see memory exceeded errors for
+            // BigQuery load jobs; we have found empirically that limiting the total data size per
+            // load job to 100 GB leads to reliable performance.
+            .withMaxBytesPerPartition(100 * (1L << 30));
         if (inputType == InputType.pubsub) {
           // When using the file_loads method of inserting to BigQuery, BigQueryIO requires
           // triggering frequency if the input PCollection is unbounded (which is the case for
