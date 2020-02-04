@@ -65,7 +65,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB), null))
         .apply(OutputFileFormat.json.encode());
 
@@ -98,7 +98,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB),
             pipeline.newProvider("src/test/resources/cityFilters/sacramento.txt")))
         .apply(OutputFileFormat.json.encode());
@@ -125,7 +125,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB),
             pipeline.newProvider("src/test/resources/cityFilters/milton.txt")))
         .apply(OutputFileFormat.json.encode());
@@ -145,7 +145,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(GeoCityLookup.of(pipeline.newProvider("missing-file.mmdb"), null));
 
     GeoCityLookup.clearSingletonsForTests();
@@ -161,7 +161,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(
             GeoCityLookup.of(pipeline.newProvider(MMDB), pipeline.newProvider("missing-file.txt")));
 
@@ -178,7 +178,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
 
     pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(GeoCityLookup.of(pipeline.newProvider(MMDB),
             pipeline.newProvider("src/test/resources/cityFilters/invalid.txt")));
 

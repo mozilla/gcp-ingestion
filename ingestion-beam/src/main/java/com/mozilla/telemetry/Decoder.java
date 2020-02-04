@@ -56,7 +56,11 @@ public class Decoder extends Sink {
     // We wrap pipeline in Optional for more convenience in chaining together transforms.
     Optional.of(pipeline) //
         .map(p -> p //
-            .apply(options.getInputType().read(options)).errorsTo(errorCollections) //
+            .apply(options.getInputType().read(options)) //
+            // We apply GeoCityLookup first so that IP address is already removed before any
+            // message gets routed to error output; see
+            // https://github.com/mozilla/gcp-ingestion/issues/1096
+            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(ParseUri.of()).errorsTo(errorCollections) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
             .apply("LimitPayloadSize", LimitPayloadSize.toMB(10)).failuresTo(errorCollections) //
@@ -64,7 +68,6 @@ public class Decoder extends Sink {
                 ParsePayload.of(options.getSchemasLocation(), options.getSchemaAliasesLocation()))
             .errorsTo(errorCollections) //
             .apply(ParseProxy.of()) //
-            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(ParseUserAgent.of()) //
             .apply(NormalizeAttributes.of()) //
             .apply(AddMetadata.of()).errorsTo(errorCollections) //

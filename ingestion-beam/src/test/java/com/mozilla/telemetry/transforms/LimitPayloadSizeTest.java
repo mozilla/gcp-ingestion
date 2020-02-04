@@ -29,7 +29,7 @@ public class LimitPayloadSizeTest {
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(Iterables.concat(passingPayloads, failingPayloads))) //
-        .apply(InputFileFormat.text.decode()).output() //
+        .apply(InputFileFormat.text.decode()) //
         .apply("LimitPayloadSize", LimitPayloadSize.toBytes(500));
 
     PAssert

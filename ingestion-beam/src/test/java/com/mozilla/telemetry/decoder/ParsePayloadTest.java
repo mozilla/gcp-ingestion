@@ -59,7 +59,7 @@ public class ParsePayloadTest {
         "{\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}", "{\"client_id\":\"n/a\"}",
         "{\"client_id\":\"n/a\",\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}");
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.text.decode()).output()
+        .apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
@@ -127,7 +127,7 @@ public class ParsePayloadTest {
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.json.decode()).output() //
+        .apply(InputFileFormat.json.decode()) //
         .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
@@ -153,7 +153,7 @@ public class ParsePayloadTest {
         + ",\"document_type\":\"main\"" + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.json.decode()).output()
+        .apply(InputFileFormat.json.decode())
         .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
@@ -179,7 +179,7 @@ public class ParsePayloadTest {
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(InputFileFormat.text.decode()).output() //
+        .apply(InputFileFormat.text.decode()) //
         .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
 
     PAssert.that(result.errors()).empty();

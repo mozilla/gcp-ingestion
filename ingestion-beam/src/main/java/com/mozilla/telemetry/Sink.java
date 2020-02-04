@@ -50,7 +50,7 @@ public class Sink {
     // We wrap pipeline in Optional for more convenience in chaining together transforms.
     Optional.of(pipeline) //
         .map(p -> p //
-            .apply(options.getInputType().read(options)).errorsTo(errorCollections)
+            .apply(options.getInputType().read(options)) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads()))
             .apply(PublishBundleMetrics.of())) //
         .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)

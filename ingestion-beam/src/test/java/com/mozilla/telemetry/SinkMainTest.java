@@ -104,28 +104,6 @@ public class SinkMainTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void canWriteErrorOutput() {
-    String inputPath = Resources.getResource("testdata").getPath();
-    String input = inputPath + "/basic-messages-*valid.ndjson";
-    String output = outputPath + "/valid/out";
-    String errorOutput = outputPath + "/error/out";
-
-    Sink.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--errorOutputType=file", "--errorOutput=" + errorOutput,
-        "--errorOutputFileCompression=UNCOMPRESSED", "--outputFileCompression=UNCOMPRESSED" });
-
-    List<String> validLines = Lines.resources("testdata/basic-messages-valid.ndjson");
-    List<String> invalidLines = Lines.resources("testdata/basic-messages-invalid.ndjson");
-
-    List<String> outputLines = Lines.files(outputPath + "/valid/out*.ndjson");
-    List<String> errorOutputLines = Lines.files(outputPath + "/error/out*.ndjson");
-
-    assertThat(outputLines, matchesInAnyOrder(validLines));
-    assertThat(errorOutputLines, Matchers.hasSize(invalidLines.size()));
-  }
-
-  @Test
   public void testTextToJson() {
     String input = Resources.getResource("testdata/basic-messages-payloads.txt").getPath();
     String output = outputPath + "/out";
