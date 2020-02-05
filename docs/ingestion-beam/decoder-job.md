@@ -6,16 +6,6 @@ A job for normalizing ingestion messages. Defined in the `com.mozilla.telemetry.
 
 These transforms are currently executed against each message in order.
 
-### Parse URI
-
-Attempt to extract attributes from `uri`, on failure send messages to the
-configured error output.
-
-### Decompress
-
-Attempt to decompress payload with gzip, on failure pass the message through
-unmodified.
-
 ### GeoIP Lookup
 
 1. Extract `ip` from the `x_forwarded_for` attribute
@@ -36,10 +26,37 @@ unmodified.
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
 1. Remove any `null` values added to attributes
 
+### Parse URI
+
+Attempt to extract attributes from `uri`, on failure send messages to the
+configured error output.
+
+### Decompress
+
+Attempt to decompress payload with gzip, on failure pass the message through
+unmodified.
+
+### Parse Payload
+
+1. Parse the message body as a `UTF-8` encoded JSON payload
+1. Drop specific fields or entire messages that match a specific set of signatures
+   for toxic data that we want to make sure we do not store
+   * Maintain counter metrics for each type of dropped message
+1. Validate the payload structure based on the JSON schema for the specified
+   document type
+   * Invalid messages are routed to error output
+1. Extract some additional attributes such as `client_id` and `os_name`
+   based on the payload contents
+
 ### Parse User Agent
 
 Attempt to extract browser, browser version, and os from the `user_agent`
 attribute, drop any nulls, and remove `user_agent` from attributes.
+
+### Write Metadata Into the Payload
+
+Add a nested `metadata` field and several `normalized_*` attributes into the
+payload body.
 
 ## Executing
 

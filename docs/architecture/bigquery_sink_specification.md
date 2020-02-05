@@ -1,4 +1,4 @@
-# BigQuery Sink Service Specification
+# Live Sink Service Specification
 
 This document specifies the behavior of the service that delivers decoded
 messages into BigQuery.
@@ -7,20 +7,21 @@ messages into BigQuery.
 
 ## Data Flow
 
-Consume messages from a PubSub topic or Cloud Storage location and insert them
-into BigQuery. Send errors to another PubSub topic or Cloud Storage location.
+Consume messages from a PubSub topic or Cloud Storage location or BigQuery table
+and insert them into BigQuery. Send errors to another configurable location.
 
 ### Implementation
 
-Execute this as an Apache Beam job.
+Execute this as an Apache Beam job. _Note:_ As of February 2020, we are
+transitioning this sink to a custom Java application running on GKE.
 
 ### Configuration
 
 Require configuration for:
 
- * The input PubSub topic or Cloud Storage location
+ * The input PubSub topic, Cloud Storage location, or BigQuery table
  * The route map from PubSub message attributes to output BigQuery table
- * The error output PubSub topic or Cloud Storage location
+ * The error output PubSub topic, Cloud Storage location, or BigQuery table
 
 Accept optional configuration for:
 
