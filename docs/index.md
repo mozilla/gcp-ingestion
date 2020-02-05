@@ -16,7 +16,7 @@ The components are:
   records to batch-oriented outputs like GCS or BigQuery
 
 The design behind the system along with various trade offs are documented in
-the architecture section.
+the [architecture section](./architecture/overview.md).
 
 Feel free to ask us in `#fx-metrics` on Slack or `#telemetry` on `chat.mozilla.org`
 if you have specific questions.
