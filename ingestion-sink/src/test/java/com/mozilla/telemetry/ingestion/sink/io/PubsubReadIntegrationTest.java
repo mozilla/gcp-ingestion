@@ -37,7 +37,8 @@ public class PubsubReadIntegrationTest {
         builder -> pubsub.channelProvider
             .map(channelProvider -> builder.setChannelProvider(channelProvider)
                 .setCredentialsProvider(pubsub.noCredentialsProvider))
-            .orElse(builder)));
+            .orElse(builder),
+        m -> m));
 
     input.get().run();
 
@@ -66,7 +67,8 @@ public class PubsubReadIntegrationTest {
         builder -> pubsub.channelProvider
             .map(channelProvider -> builder.setChannelProvider(channelProvider)
                 .setCredentialsProvider(pubsub.noCredentialsProvider))
-            .orElse(builder)));
+            .orElse(builder),
+        m -> m));
 
     input.get().run();
 

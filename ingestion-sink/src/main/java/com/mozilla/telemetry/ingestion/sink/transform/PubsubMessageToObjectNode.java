@@ -14,7 +14,7 @@ import java.util.function.Function;
 public class PubsubMessageToObjectNode implements Function<PubsubMessage, ObjectNode> {
 
   public enum Format {
-    raw, decoded, payload
+    RAW, DECODED, PAYLOAD
   }
 
   private static final String PAYLOAD = "payload";
@@ -29,11 +29,11 @@ public class PubsubMessageToObjectNode implements Function<PubsubMessage, Object
   @Override
   public ObjectNode apply(PubsubMessage message) {
     switch (format) {
-      case raw:
+      case RAW:
         return rawContents(message);
-      case decoded:
+      case DECODED:
         return decodedContents(message);
-      case payload:
+      case PAYLOAD:
       default:
         throw new IllegalArgumentException("Format not yet implemented: " + format.name());
     }

@@ -23,7 +23,7 @@ public class PubsubWriteIntegrationTest {
 
   @Test
   public void canWriteToStaticDestination() {
-    new Pubsub.Write(pubsub.getTopic(), 1, b -> b).apply(PubsubMessage.newBuilder()
+    new Pubsub.Write(pubsub.getTopic(), 1, b -> b, m -> m).apply(PubsubMessage.newBuilder()
         .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8))).build()).join();
     assertEquals(ImmutableList.of("test"), pubsub.pull(1, false).stream()
         .map(m -> m.getData().toStringUtf8()).collect(Collectors.toList()));
@@ -31,7 +31,7 @@ public class PubsubWriteIntegrationTest {
 
   @Test
   public void canWriteToDynamicDestination() {
-    new Pubsub.Write("${topic}", 1, b -> b).apply(PubsubMessage.newBuilder()
+    new Pubsub.Write("${topic}", 1, b -> b, m -> m).apply(PubsubMessage.newBuilder()
         .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8)))
         .putAttributes("topic", pubsub.getTopic()).build()).join();
     assertEquals(ImmutableList.of("test"), pubsub.pull(1, false).stream()

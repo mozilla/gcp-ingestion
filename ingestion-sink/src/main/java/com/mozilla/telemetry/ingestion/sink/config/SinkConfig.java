@@ -11,6 +11,8 @@ import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
+import com.mozilla.telemetry.ingestion.sink.transform.CompressPayload;
+import com.mozilla.telemetry.ingestion.sink.transform.DecompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
@@ -22,6 +24,7 @@ public class SinkConfig {
 
   public static final String OUTPUT_TABLE = "OUTPUT_TABLE";
 
+  private static final String INPUT_COMPRESSION = "INPUT_COMPRESSION";
   private static final String INPUT_SUBSCRIPTION = "INPUT_SUBSCRIPTION";
   private static final String BATCH_MAX_BYTES = "BATCH_MAX_BYTES";
   private static final String BATCH_MAX_DELAY = "BATCH_MAX_DELAY";
@@ -31,6 +34,7 @@ public class SinkConfig {
   private static final String LOAD_MAX_DELAY = "LOAD_MAX_DELAY";
   private static final String LOAD_MAX_FILES = "LOAD_MAX_FILES";
   private static final String OUTPUT_BUCKET = "OUTPUT_BUCKET";
+  private static final String OUTPUT_COMPRESSION = "OUTPUT_COMPRESSION";
   private static final String OUTPUT_FORMAT = "OUTPUT_FORMAT";
   private static final String OUTPUT_TOPIC = "OUTPUT_TOPIC";
   private static final String OUTPUT_TOPIC_EXECUTOR_THREADS = "OUTPUT_TOPIC_EXECUTOR_THREADS";
@@ -41,12 +45,12 @@ public class SinkConfig {
   private static final String STREAMING_BATCH_MAX_MESSAGES = "STREAMING_BATCH_MAX_MESSAGES";
   private static final String STREAMING_MESSAGE_MAX_BYTES = "STREAMING_MESSAGE_MAX_BYTES";
 
-  private static final List<String> INCLUDE_ENV_VARS = ImmutableList.of(INPUT_SUBSCRIPTION,
-      BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES, OUTPUT_BUCKET, OUTPUT_FORMAT,
-      BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_TABLE,
-      OUTPUT_TOPIC, OUTPUT_TOPIC_EXECUTOR_THREADS, MAX_OUTSTANDING_ELEMENT_COUNT,
-      MAX_OUTSTANDING_REQUEST_BYTES, STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY,
-      STREAMING_BATCH_MAX_MESSAGES, STREAMING_MESSAGE_MAX_BYTES);
+  private static final List<String> INCLUDE_ENV_VARS = ImmutableList.of(INPUT_COMPRESSION,
+      INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES, OUTPUT_BUCKET,
+      OUTPUT_COMPRESSION, OUTPUT_FORMAT, BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY,
+      LOAD_MAX_FILES, OUTPUT_TABLE, OUTPUT_TOPIC, OUTPUT_TOPIC_EXECUTOR_THREADS,
+      MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, STREAMING_BATCH_MAX_BYTES,
+      STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES, STREAMING_MESSAGE_MAX_BYTES);
 
   // BigQuery Streaming API Limits maximum row size to 1MiB. Row size is calculated for the
   // encoded row, which is within a few bytes of protobuf serialized size, so the default is
@@ -117,10 +121,17 @@ public class SinkConfig {
   enum OutputType {
     pubsub {
 
+      private CompressPayload getOutputCompression(Env env) {
+        return CompressPayload.valueOf(
+            env.getString(OUTPUT_COMPRESSION, CompressPayload.NONE.toString()).toUpperCase());
+      }
+
       @Override
       Output getOutput(Env env) {
-        return new Output(env, this, new Pubsub.Write(env.getString(OUTPUT_TOPIC),
-            env.getInt(OUTPUT_TOPIC_EXECUTOR_THREADS, 1), b -> b)::withoutResult);
+        return new Output(env, this,
+            new Pubsub.Write(env.getString(OUTPUT_TOPIC),
+                env.getInt(OUTPUT_TOPIC_EXECUTOR_THREADS, 1), b -> b,
+                getOutputCompression(env))::withoutResult);
       }
     },
 
@@ -288,7 +299,13 @@ public class SinkConfig {
   }
 
   private static PubsubMessageToObjectNode.Format getFormat(Env env) {
-    return PubsubMessageToObjectNode.Format.valueOf(env.getString(OUTPUT_FORMAT, "raw"));
+    return PubsubMessageToObjectNode.Format.valueOf(
+        env.getString(OUTPUT_FORMAT, PubsubMessageToObjectNode.Format.RAW.name()).toUpperCase());
+  }
+
+  private static DecompressPayload getInputCompression(Env env) {
+    return DecompressPayload
+        .valueOf(env.getString(INPUT_COMPRESSION, DecompressPayload.NONE.name()).toUpperCase());
   }
 
   private static String getGcsOutputBucket(Env env) {
@@ -326,7 +343,8 @@ public class SinkConfig {
         builder -> builder.setFlowControlSettings(FlowControlSettings.newBuilder()
             .setMaxOutstandingElementCount(output.type.getMaxOutstandingElementCount(output.env))
             .setMaxOutstandingRequestBytes(output.type.getMaxOutstandingRequestBytes(output.env))
-            .build()));
+            .build()),
+        getInputCompression(output.env));
     output.env.requireAllVarsUsed();
     return input;
   }

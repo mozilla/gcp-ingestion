@@ -14,9 +14,9 @@ import org.junit.Test;
 public class PubsubMessageToObjectNodeTest {
 
   private static final PubsubMessageToObjectNode RAW_TRANSFORM = new PubsubMessageToObjectNode(
-      Format.raw);
+      Format.RAW);
   private static final PubsubMessageToObjectNode DECODED_TRANSFORM = new PubsubMessageToObjectNode(
-      Format.decoded);
+      Format.DECODED);
   private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
 
   @Test
@@ -37,7 +37,7 @@ public class PubsubMessageToObjectNodeTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnUnimplementedFormat() {
-    new PubsubMessageToObjectNode(Format.payload).apply(EMPTY_MESSAGE);
+    new PubsubMessageToObjectNode(Format.PAYLOAD).apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = NullPointerException.class)

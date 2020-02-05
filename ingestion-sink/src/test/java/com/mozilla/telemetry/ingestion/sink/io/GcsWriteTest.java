@@ -50,7 +50,7 @@ public class GcsWriteTest {
     writer = mock(WriteChannel.class);
     when(storage.writer(any())).thenReturn(writer);
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
-        Format.raw, this::batchCloseHook);
+        Format.RAW, this::batchCloseHook);
   }
 
   @Test
@@ -64,7 +64,7 @@ public class GcsWriteTest {
   @Test
   public void canSendWithNoDelay() {
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
-        BATCH_KEY_TEMPLATE, Format.raw, this::batchCloseHook);
+        BATCH_KEY_TEMPLATE, Format.RAW, this::batchCloseHook);
     output.apply(EMPTY_MESSAGE).join();
     assertEquals(1, output.batches.get(BATCH_KEY).size);
     assertEquals(EMPTY_MESSAGE_SIZE, output.batches.get(BATCH_KEY).byteSize);
