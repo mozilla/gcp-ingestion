@@ -10,6 +10,9 @@ This document specifies the architecture for GCP Ingestion as a whole.
   Firefox) to PubSub `Raw Topics`
 - The Dataflow `Landfill Sink` job copies messages from PubSub `Raw Topics` to
   `Cloud Storage`
+- The Dataflow `EcosystemDecryptor` job reads from a `Raw Topic` specific to
+  Account Ecosystem Telemetry (AET), decrypting AET-specific identifiers
+  stored as attributes and republishing to a special decrypted `Raw Topic`
 - The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
   PubSub `Decoded Topics`
     - The Dataflow `Decoder` job checks for existence of `document_id`s in
@@ -45,6 +48,15 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must accept configuration mapping PubSub topics to Cloud Storage locations
 - Should retry transient Cloud Storage errors indefinitely
     - Should use exponential back-off to determine retry timing
+
+### `EcosystemDecoder`
+
+- Must have access restricted to a limited set of operators
+- Must load a bundle of private keys from Cloud KMS
+- Must replace attribute `x_ecosystem_anon_id` with the decrypted form
+  `ecosystem_user_id`
+- Must replace attribute `x_prev_ecosystem_anon_id` (if present) with the
+  decrypted form `prev_ecosystem_user_id`
 
 ### Decoder
 

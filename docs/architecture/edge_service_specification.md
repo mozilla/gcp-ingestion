@@ -50,6 +50,8 @@ required group attributes {
   optional string x_pingsender_version // example: "1.0"
   optional string x_debug_id           // example: "my_debug_session_1"
   optional string x_pipeline_proxy     // time that the AWS->GCP tee received the message, example: "2018-03-12T21:02:18.123456Z"
+  optional string x_ecosystem_anon_id  // Anonymized identifier for Account Ecosystem Telemetry
+  optional string x_prev_ecosystem_anon_id  // Previous anon_id value; sent when rotating identifiers
 }
 ```
 

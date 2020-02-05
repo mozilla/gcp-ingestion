@@ -41,6 +41,16 @@ unmodified.
 Attempt to extract browser, browser version, and os from the `user_agent`
 attribute, drop any nulls, and remove `user_agent` from attributes.
 
+### Parse Payload
+
+1. Parse the payload as a JSON object
+1. Validate that the parsed object matches the target schema
+    * send any non-validating messages to error output
+1. If present, move decrypted Account Ecosystem Telemetry identifiers into the payload
+    * values are taken from message attributes `ecosystem_user_id` and
+      `prev_ecosystem_user_id` and placed into the payload as top-level fields
+      `ecosystem_user_id` and `prev_ecosystem_user_id`
+
 ## Executing
 
 Decoder jobs are executed the [same way as sink jobs](../sink-job/#executing)
