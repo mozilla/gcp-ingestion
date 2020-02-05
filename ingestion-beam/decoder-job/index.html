@@ -153,12 +153,6 @@
 <p>A job for normalizing ingestion messages. Defined in the <code>com.mozilla.telemetry.Decoder</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java">source</a>).</p>
 <h2 id="transforms">Transforms</h2>
 <p>These transforms are currently executed against each message in order.</p>
-<h3 id="parse-uri">Parse URI</h3>
-<p>Attempt to extract attributes from <code>uri</code>, on failure send messages to the
-configured error output.</p>
-<h3 id="decompress">Decompress</h3>
-<p>Attempt to decompress payload with gzip, on failure pass the message through
-unmodified.</p>
 <h3 id="geoip-lookup">GeoIP Lookup</h3>
 <ol>
 <li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute<ul>
@@ -183,9 +177,30 @@ unmodified.</p>
 <li>Remove the <code>x_forwarded_for</code> and <code>remote_addr</code> attributes</li>
 <li>Remove any <code>null</code> values added to attributes</li>
 </ol>
+<h3 id="parse-uri">Parse URI</h3>
+<p>Attempt to extract attributes from <code>uri</code>, on failure send messages to the
+configured error output.</p>
+<h3 id="decompress">Decompress</h3>
+<p>Attempt to decompress payload with gzip, on failure pass the message through
+unmodified.</p>
+<h3 id="parse-payload">Parse Payload</h3>
+<ol>
+<li>Parse the message body as a <code>UTF-8</code> encoded JSON payload</li>
+<li>Drop specific fields or entire messages that match a specific set of signatures
+   for toxic data that we want to make sure we do not store</li>
+<li>Maintain counter metrics for each type of dropped message</li>
+<li>Validate the payload structure based on the JSON schema for the specified
+   document type</li>
+<li>Invalid messages are routed to error output</li>
+<li>Extract some additional attributes such as <code>client_id</code> and <code>os_name</code>
+   based on the payload contents</li>
+</ol>
 <h3 id="parse-user-agent">Parse User Agent</h3>
 <p>Attempt to extract browser, browser version, and os from the <code>user_agent</code>
 attribute, drop any nulls, and remove <code>user_agent</code> from attributes.</p>
+<h3 id="write-metadata-into-the-payload">Write Metadata Into the Payload</h3>
+<p>Add a nested <code>metadata</code> field and several <code>normalized_*</code> attributes into the
+payload body.</p>
 <h2 id="executing">Executing</h2>
 <p>Decoder jobs are executed the <a href="../sink-job/#executing">same way as sink jobs</a>
 but with a few extra flags:</p>

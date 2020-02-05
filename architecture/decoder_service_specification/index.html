@@ -155,10 +155,13 @@ in the Structured Ingestion pipeline.</p>
 <h2 id="data-flow">Data Flow</h2>
 <ol>
 <li>Consume messages from Google Cloud PubSub raw topic</li>
-<li>Decode the body from base64, optionally gzip, and JSON</li>
-<li>Validate the schema of the body</li>
 <li>Perform GeoIP lookup and drop <code>x_forwarded_for</code> and <code>remote_addr</code> and
    optionally <code>geo_city</code> based on population</li>
+<li>Parse the <code>uri</code> attribute to determine document type, etc.</li>
+<li>Decode the body from base64, optionally gzip, and JSON</li>
+<li>Validate the schema of the body</li>
+<li>Potentially drop the message or specific fields if it matches a known
+   signature for toxic data we do not want to store</li>
 <li>Extract user agent information and drop <code>user_agent</code></li>
 <li>Add metadata fields to message</li>
 <li>Deduplicate message by <code>docId</code></li>
@@ -247,7 +250,11 @@ method, to ensure ack'd messages are fully delivered.</p>
 rejected as a duplicate if we have completed delivery of a message with the
 same <code>docId</code>. Duplicates will be considered errors and sent to the error topic.
 "Exactly once" semantics can be applied to derived data sets using SQL in
-BigQuery, and GroupByKey in Beam and Spark.</p></div>
+BigQuery, and GroupByKey in Beam and Spark.</p>
+<p>Note that deduplication is only provided with a "best effort" quality of service.
+In the ideal case, we hold 24 hours of history for seen document IDs, but that
+buffer is allowed to degrade to a shorter time window when the pipeline is under
+high load.</p></div>
         </div>
 
         <footer class="col-md-12">

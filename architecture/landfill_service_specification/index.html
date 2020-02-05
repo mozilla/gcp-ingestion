@@ -142,32 +142,30 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#landfill-service-specification">Landfill Service Specification</a></li>
+        <li class="main active"><a href="#raw-sink-service-specification">Raw Sink Service Specification</a></li>
             <li><a href="#data-flow">Data Flow</a></li>
             <li><a href="#other-considerations">Other Considerations</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h1 id="landfill-service-specification">Landfill Service Specification</h1>
+<h1 id="raw-sink-service-specification">Raw Sink Service Specification</h1>
 <p>This document specifies the behavior of the service that batches raw messages
 into long term storage.</p>
 <h2 id="data-flow">Data Flow</h2>
 <p>Consume messages from a Google Cloud PubSub topic and write in batches to
-Google Cloud Storage. Split batches based by time windows based on when they
+BigQuery. Split batches based by time windows based on when they
 were retrieved from PubSub. Additionally, split batches when they reach a
 certain size, if possible.</p>
 <h3 id="implementation">Implementation</h3>
-<p>Execute this as an Apache Beam job.</p>
+<p>Execute this as a custom Java application running on GKE.</p>
 <h3 id="latency">Latency</h3>
-<p>Accept a configuration for batch window size. Deliver batches to Cloud Storage
+<p>Accept a configuration for batch window size. Deliver batches to BigQuery
 within 5 minutes of the batch window closing.</p>
 <h2 id="other-considerations">Other Considerations</h2>
 <h3 id="message-acks">Message Acks</h3>
 <p>Only acknowledge messages in the PubSub topic subscription after delivery to
-Cloud Storage. This is the default behavior for Beam as long as no shuffle
-operations are performed. For very long windows Beam should automatically
-extend the ack deadline of undelivered messages.</p></div>
+BigQuery.</p></div>
         </div>
 
         <footer class="col-md-12">

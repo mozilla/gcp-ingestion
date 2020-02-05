@@ -151,20 +151,21 @@
 <p><a href="https://github.com/mozilla/gcp-ingestion/">GCP Ingestion</a> is a monorepo for
 documentation and implementation of the Mozilla telemetry ingestion system
 deployed to Google Cloud Platform (GCP).</p>
-<p>There are currently two components:</p>
+<p>The components are:</p>
 <ul>
 <li><a href="ingestion-edge/">ingestion-edge</a>: a simple Python service for accepting HTTP
   messages and delivering to Google Cloud Pub/Sub</li>
 <li><a href="ingestion-beam">ingestion-beam</a>: a Java module defining
   <a href="https://beam.apache.org/">Apache Beam</a> jobs for streaming and batch
   transformations of ingested messages</li>
+<li>ingestion-sink (documentation pending): a Java application that runs
+  in Kubernetes, reading input from Google Cloud Pub/Sub and emitting
+  records to batch-oriented outputs like GCS or BigQuery</li>
 </ul>
 <p>The design behind the system along with various trade offs are documented in
-the architecture section. Note that as of this writing (August 2019) this
-GCP ingestion is changing quickly, so some parts of this documentation may be out
-of date.</p>
-<p>Feel free to ask us on irc.mozilla.org #datapipeline or #fx-metrics
-on slack if you have specific questions.</p></div>
+the architecture section.</p>
+<p>Feel free to ask us in <code>#fx-metrics</code> on Slack or <code>#telemetry</code> on <code>chat.mozilla.org</code>
+if you have specific questions.</p></div>
         </div>
 
         <footer class="col-md-12">
@@ -247,5 +248,5 @@ on slack if you have specific questions.</p></div>
 
 <!--
 MkDocs version : 1.0.4
-Build Date UTC : 2020-02-04 22:03:53
+Build Date UTC : 2020-02-05 18:40:23
 -->

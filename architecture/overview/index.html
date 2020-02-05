@@ -159,8 +159,8 @@
 <ul>
 <li>The Kubernetes <code>Ingestion Edge</code> sends messages from <code>Producers</code> (e.g.
   Firefox) to PubSub <code>Raw Topics</code></li>
-<li>The Dataflow <code>Landfill Sink</code> job copies messages from PubSub <code>Raw Topics</code> to
-  <code>Cloud Storage</code></li>
+<li>The <code>Raw Sink</code> job copies messages from PubSub <code>Raw Topics</code> to
+  <code>BigQuery</code></li>
 <li>The Dataflow <code>Decoder</code> job decodes messages from PubSub <code>Raw Topics</code> to
   PubSub <code>Decoded Topics</code><ul>
 <li>The Dataflow <code>Decoder</code> job checks for existence of <code>document_id</code>s in
@@ -171,10 +171,10 @@
   marks them as seen in <code>Cloud Memorystore</code> and republishes them to various
   lower volume derived topics including <code>Monitoring Sample Topics</code> and
   <code>Per DocType Topics</code></li>
-<li>The Dataflow <code>BigQuery Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
+<li>The Dataflow <code>Live Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
   to <code>BigQuery</code></li>
-<li>The Dataflow <code>Dataset Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
-  to <code>Cloud Storage</code></li>
+<li>The <code>Decoded Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
+  to <code>BigQuery</code></li>
 </ul>
 <h2 id="architecture-components">Architecture Components</h2>
 <h3 id="ingestion-edge">Ingestion Edge</h3>
@@ -193,14 +193,14 @@
 </li>
 <li>Must accept configuration defining HTTP headers to capture</li>
 </ul>
-<h3 id="landfill-sink">Landfill Sink</h3>
+<h3 id="raw-sink">Raw Sink</h3>
 <ul>
-<li>Must copy messages from PubSub topics to Cloud Storage<ul>
+<li>Must copy messages from PubSub topics to BigQuery<ul>
 <li>This copy may be for backfill, recovery, or testing</li>
 </ul>
 </li>
 <li>Must not ack messages read from PubSub until they are delivered</li>
-<li>Must accept configuration mapping PubSub topics to Cloud Storage locations</li>
+<li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
 <li>Should retry transient Cloud Storage errors indefinitely<ul>
 <li>Should use exponential back-off to determine retry timing</li>
 </ul>
@@ -212,6 +212,8 @@
 <li>Must not ack messages read from PubSub until they are delivered</li>
 <li>Must apply the following transforms in order
   (<a href="../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/">implementations here</a>):<ol>
+<li>Resolve GeoIP from <code>remote_addr</code> or <code>x_forwarded_for</code> attribute into
+<code>geo_*</code> attributes</li>
 <li>Parse <code>uri</code> attribute into multiple attributes</li>
 <li>Gzip decompress <code>payload</code> if gzip compressed</li>
 <li>Validate <code>payload</code> using a JSON Schema determined by attributes</li>
@@ -219,8 +221,6 @@
 <a href="https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format">the edge submission timestamp format</a>,
 archive the value of <code>submission_timestamp</code> to <code>proxy_timestamp</code> and
 replace with the <code>x_pipeline_proxy</code> value</li>
-<li>Resolve GeoIP from <code>remote_addr</code> or <code>x_forwarded_for</code> attribute into
-<code>geo_*</code> attributes</li>
 <li>Parse <code>agent</code> attribute into <code>user_agent_*</code> attributes</li>
 <li>Produce <code>normalized_</code> variants of select attributes</li>
 <li>Inject <code>normalized_</code> attributes at the top level and other select
@@ -236,7 +236,7 @@ to minimize the time window between an ID being marked as seen in
 </ul>
 </li>
 <li>Must send messages rejected by transforms to a configurable error destination<ul>
-<li>Must allow error destinations in PubSub and Cloud Storage</li>
+<li>Must allow error destination in BigQuery</li>
 </ul>
 </li>
 </ul>
@@ -289,7 +289,7 @@ each channel (nightly, beta, and release)</li>
 </ul>
 </li>
 </ul>
-<h3 id="bigquery-sink">BigQuery Sink</h3>
+<h3 id="live-sink">Live Sink</h3>
 <ul>
 <li>Must copy messages from PubSub topics to BigQuery</li>
 <li>Must not ack messages read from PubSub until they are delivered</li>
@@ -305,13 +305,13 @@ each channel (nightly, beta, and release)</li>
 </ul>
 </li>
 <li>Must send messages rejected by BigQuery to a configurable error destination<ul>
-<li>Must allow error destinations in PubSub and Cloud Storage</li>
+<li>Must allow error destinations in BigQuery</li>
 </ul>
 </li>
 </ul>
-<h3 id="dataset-sink">Dataset Sink</h3>
+<h3 id="decoded-sink">Decoded Sink</h3>
 <ul>
-<li>Must copy messages from PubSub topics to Cloud Storage<ul>
+<li>Must copy messages from PubSub topics to BigQuery<ul>
 <li>May be used to backfill BigQuery columns previously unspecified in the
  table schema</li>
 <li>May be used by BigQuery, Spark, and Dataflow to access columns missing
@@ -319,12 +319,8 @@ each channel (nightly, beta, and release)</li>
 </ul>
 </li>
 <li>Must not ack messages read from PubSub until they are delivered</li>
-<li>Must store messages as newline delimited JSON</li>
-<li>May compress Cloud Storage objects using gzip</li>
-<li>Must accept configuration mapping PubSub topics to Cloud Storage locations</li>
-<li>Should accept configuration mapping message attributes to Cloud Storage object
-  names</li>
-<li>Should retry transient Cloud Storage errors indefinitely<ul>
+<li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
+<li>Should retry transient BigQuery errors indefinitely<ul>
 <li>Should use exponential back-off to determine retry timing</li>
 </ul>
 </li>
@@ -333,7 +329,7 @@ each channel (nightly, beta, and release)</li>
 <p>PubSub stores unacknowledged messages for 7 days. Any PubSub subscription more
 than 7 days behind requires a backfill.</p>
 <p>Dataflow will extend ack deadlines indefinitely when consuming messages, and
-will not ack messages until they are processed by an output or GroupByKey
+will not ack messages until they are processed by an output or <code>GroupByKey</code>
 transform.</p>
 <p>Dataflow jobs achieve at least once delivery by <em>not</em> using GroupByKey
 transforms and <em>not</em> falling more than 7 days behind in processing.</p>
@@ -357,16 +353,16 @@ validation, hyperloglog functions, UDF support, and destination tables
 derived tables. Alternatives (such as Presto) would have more operational
 overhead and engineering effort for maintenance, while generally being less
 featureful.</p>
-<h3 id="save-messages-as-newline-delimited-json">Save messages as newline delimited JSON</h3>
+<h3 id="archive-messages-from-each-stage-of-the-pipeline-as-json-payloads-in-bigquery">Archive messages from each stage of the pipeline as JSON payloads in BigQuery</h3>
 <p>One of the primary challenges of building a real-world data pipeline is
 anticipating and adapting to changes in the schemas of messages flowing through
 the system. Strong schemas and structured data give us many usability and
 performance benefits, but changes to the schema at one point in the pipeline
 can lead to processing errors or dropped data further down the pipeline.</p>
-<p>Saving messages as newline delimited JSON allows us to gracefully handle new
-fields added upstream without needing to specify those fields completely before
-they are stored. New columns can be added to a table's schema and then restored
-via a BigQuery load operation.</p>
+<p>Saving JSON messages as compressed bytes fields in BigQuery tables allows
+use to gracefully handle new fields added upstream without needing to specify
+those fields completely before they are stored. New columns can be added to a
+table's schema and then restored via a backfill operation.</p>
 <h3 id="use-destination-tables">Use destination tables</h3>
 <p>For complex queries that are calculated over time-based windows of data, using
 destination tables allows us to save time and cost by only querying each new

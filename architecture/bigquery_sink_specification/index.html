@@ -142,27 +142,28 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
-        <li class="main active"><a href="#bigquery-sink-service-specification">BigQuery Sink Service Specification</a></li>
+        <li class="main active"><a href="#live-sink-service-specification">Live Sink Service Specification</a></li>
             <li><a href="#data-flow">Data Flow</a></li>
             <li><a href="#other-considerations">Other Considerations</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
-<h1 id="bigquery-sink-service-specification">BigQuery Sink Service Specification</h1>
+<h1 id="live-sink-service-specification">Live Sink Service Specification</h1>
 <p>This document specifies the behavior of the service that delivers decoded
 messages into BigQuery.</p>
 <h2 id="data-flow">Data Flow</h2>
-<p>Consume messages from a PubSub topic or Cloud Storage location and insert them
-into BigQuery. Send errors to another PubSub topic or Cloud Storage location.</p>
+<p>Consume messages from a PubSub topic or Cloud Storage location or BigQuery table
+and insert them into BigQuery. Send errors to another configurable location.</p>
 <h3 id="implementation">Implementation</h3>
-<p>Execute this as an Apache Beam job.</p>
+<p>Execute this as an Apache Beam job. <em>Note:</em> As of February 2020, we are
+transitioning this sink to a custom Java application running on GKE.</p>
 <h3 id="configuration">Configuration</h3>
 <p>Require configuration for:</p>
 <ul>
-<li>The input PubSub topic or Cloud Storage location</li>
+<li>The input PubSub topic, Cloud Storage location, or BigQuery table</li>
 <li>The route map from PubSub message attributes to output BigQuery table</li>
-<li>The error output PubSub topic or Cloud Storage location</li>
+<li>The error output PubSub topic, Cloud Storage location, or BigQuery table</li>
 </ul>
 <p>Accept optional configuration for:</p>
 <ul>
