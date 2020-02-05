@@ -33,6 +33,12 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setGeoCityFilter(ValueProvider<String> value);
 
+  @Description("Path (local or gs://) to GeoIP2-ISP.mmdb")
+  @Validation.Required
+  ValueProvider<String> getGeoIspDatabase();
+
+  void setGeoIspDatabase(ValueProvider<String> value);
+
   @Description("URI of a redis server that will be used for deduplication; leave null to disable")
   ValueProvider<String> getRedisUri();
 
