@@ -8,8 +8,8 @@ This document specifies the architecture for GCP Ingestion as a whole.
 
 - The Kubernetes `Ingestion Edge` sends messages from `Producers` (e.g.
   Firefox) to PubSub `Raw Topics`
-- The Dataflow `Landfill Sink` job copies messages from PubSub `Raw Topics` to
-  `Cloud Storage`
+- The `Raw Sink` job copies messages from PubSub `Raw Topics` to
+  `BigQuery`
 - The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
   PubSub `Decoded Topics`
     - The Dataflow `Decoder` job checks for existence of `document_id`s in
@@ -18,10 +18,10 @@ This document specifies the architecture for GCP Ingestion as a whole.
   marks them as seen in `Cloud Memorystore` and republishes them to various
   lower volume derived topics including `Monitoring Sample Topics` and
   `Per DocType Topics`
-- The Dataflow `BigQuery Sink` job copies messages from PubSub `Decoded Topics`
+- The Dataflow `Live Sink` job copies messages from PubSub `Decoded Topics`
   to `BigQuery`
-- The Dataflow `Dataset Sink` job copies messages from PubSub `Decoded Topics`
-  to `Cloud Storage`
+- The `Decoded Sink` job copies messages from PubSub `Decoded Topics`
+  to `BigQuery`
 
 ## Architecture Components
 
@@ -37,12 +37,12 @@ This document specifies the architecture for GCP Ingestion as a whole.
     - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
 - Must accept configuration defining HTTP headers to capture
 
-### Landfill Sink
+### Raw Sink
 
-- Must copy messages from PubSub topics to Cloud Storage
+- Must copy messages from PubSub topics to BigQuery
     - This copy may be for backfill, recovery, or testing
 - Must not ack messages read from PubSub until they are delivered
-- Must accept configuration mapping PubSub topics to Cloud Storage locations
+- Must accept configuration mapping PubSub topics to BigQuery tables
 - Should retry transient Cloud Storage errors indefinitely
     - Should use exponential back-off to determine retry timing
 
@@ -52,6 +52,8 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must not ack messages read from PubSub until they are delivered
 - Must apply the following transforms in order
   ([implementations here](../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/)):
+    1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
+    `geo_*` attributes
     1. Parse `uri` attribute into multiple attributes
     1. Gzip decompress `payload` if gzip compressed
     1. Validate `payload` using a JSON Schema determined by attributes
@@ -59,8 +61,6 @@ This document specifies the architecture for GCP Ingestion as a whole.
     [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format),
     archive the value of `submission_timestamp` to `proxy_timestamp` and
     replace with the `x_pipeline_proxy` value
-    1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
-    `geo_*` attributes
     1. Parse `agent` attribute into `user_agent_*` attributes
     1. Produce `normalized_` variants of select attributes
     1. Inject `normalized_` attributes at the top level and other select
@@ -72,7 +72,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
     to minimize the time window between an ID being marked as seen in
     `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
-    - Must allow error destinations in PubSub and Cloud Storage
+    - Must allow error destination in BigQuery
 
 ### Republisher
 
@@ -112,7 +112,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
     each channel (nightly, beta, and release)
 
 
-### BigQuery Sink
+### Live Sink
 
 - Must copy messages from PubSub topics to BigQuery
 - Must not ack messages read from PubSub until they are delivered
@@ -126,22 +126,18 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Should retry transient BigQuery errors indefinitely
     - Should use exponential back-off to determine retry timing
 - Must send messages rejected by BigQuery to a configurable error destination
-    - Must allow error destinations in PubSub and Cloud Storage
+    - Must allow error destinations in BigQuery
 
-### Dataset Sink
+### Decoded Sink
 
-- Must copy messages from PubSub topics to Cloud Storage
+- Must copy messages from PubSub topics to BigQuery
     - May be used to backfill BigQuery columns previously unspecified in the
      table schema
     - May be used by BigQuery, Spark, and Dataflow to access columns missing
      from BigQuery Tables
 - Must not ack messages read from PubSub until they are delivered
-- Must store messages as newline delimited JSON
-- May compress Cloud Storage objects using gzip
-- Must accept configuration mapping PubSub topics to Cloud Storage locations
-- Should accept configuration mapping message attributes to Cloud Storage object
-  names
-- Should retry transient Cloud Storage errors indefinitely
+- Must accept configuration mapping PubSub topics to BigQuery tables
+- Should retry transient BigQuery errors indefinitely
     - Should use exponential back-off to determine retry timing
 
 ### Notes
@@ -150,7 +146,7 @@ PubSub stores unacknowledged messages for 7 days. Any PubSub subscription more
 than 7 days behind requires a backfill.
 
 Dataflow will extend ack deadlines indefinitely when consuming messages, and
-will not ack messages until they are processed by an output or GroupByKey
+will not ack messages until they are processed by an output or `GroupByKey`
 transform.
 
 Dataflow jobs achieve at least once delivery by *not* using GroupByKey
@@ -183,7 +179,7 @@ derived tables. Alternatives (such as Presto) would have more operational
 overhead and engineering effort for maintenance, while generally being less
 featureful.
 
-### Save messages as newline delimited JSON
+### Archive messages from each stage of the pipeline as JSON payloads in BigQuery
 
 One of the primary challenges of building a real-world data pipeline is
 anticipating and adapting to changes in the schemas of messages flowing through
@@ -191,10 +187,10 @@ the system. Strong schemas and structured data give us many usability and
 performance benefits, but changes to the schema at one point in the pipeline
 can lead to processing errors or dropped data further down the pipeline.
 
-Saving messages as newline delimited JSON allows us to gracefully handle new
-fields added upstream without needing to specify those fields completely before
-they are stored. New columns can be added to a table's schema and then restored
-via a BigQuery load operation.
+Saving JSON messages as compressed bytes fields in BigQuery tables allows
+use to gracefully handle new fields added upstream without needing to specify
+those fields completely before they are stored. New columns can be added to a
+table's schema and then restored via a backfill operation.
 
 ### Use destination tables
 

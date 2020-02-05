@@ -6,10 +6,13 @@ in the Structured Ingestion pipeline.
 ## Data Flow
 
 1. Consume messages from Google Cloud PubSub raw topic
-1. Decode the body from base64, optionally gzip, and JSON
-1. Validate the schema of the body
 1. Perform GeoIP lookup and drop `x_forwarded_for` and `remote_addr` and
    optionally `geo_city` based on population
+1. Parse the `uri` attribute to determine document type, etc.
+1. Decode the body from base64, optionally gzip, and JSON
+1. Validate the schema of the body
+1. Potentially drop the message or specific fields if it matches a known
+   signature for toxic data we do not want to store
 1. Extract user agent information and drop `user_agent`
 1. Add metadata fields to message
 1. Deduplicate message by `docId`
@@ -118,3 +121,8 @@ rejected as a duplicate if we have completed delivery of a message with the
 same `docId`. Duplicates will be considered errors and sent to the error topic.
 "Exactly once" semantics can be applied to derived data sets using SQL in
 BigQuery, and GroupByKey in Beam and Spark.
+
+Note that deduplication is only provided with a "best effort" quality of service.
+In the ideal case, we hold 24 hours of history for seen document IDs, but that
+buffer is allowed to degrade to a shorter time window when the pipeline is under
+high load.
