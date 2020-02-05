@@ -208,10 +208,15 @@ comfortable that the new implementation is stable, we could cut users over to
 the new implementation by simply changing the definition of the user-facing
 view.
 
-## Known Issues
+## Limits
 
-- Hard limit of 10,000 columns per table in BigQuery
-- Max of 100,000 streaming inserts per second per BigQuery table
+- The maximum `Content-Length` accepted at the edge is 1 MB; larger payloads
+  will be dropped
+- The maximum payload size after being decompressed in the Decoder is 8 MB;
+  larger payloads will trigger a `PayloadTooLarge` exception and be sent to
+  error output
+- Hard limit of 10,000 columns per table in BigQuery (see [Load job limits](https://cloud.google.com/bigquery/quotas#load_jobs))
+- Max of 1,000,000 streaming inserts per second per BigQuery table, lower if we populate `insertId` (see [Streaming insert limits](https://cloud.google.com/bigquery/quotas#streaming_inserts))
 - A PubSub topic without any subscriptions drops all messages until a subscription is created
 - API Rate Limit: 20 req/sec
 
