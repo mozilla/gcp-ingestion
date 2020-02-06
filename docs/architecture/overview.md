@@ -49,7 +49,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Should retry transient Cloud Storage errors indefinitely
     - Should use exponential back-off to determine retry timing
 
-### `EcosystemDecoder`
+### `EcosystemDecryptor`
 
 - Must have access restricted to a limited set of operators
 - Must load a bundle of private keys from Cloud KMS
