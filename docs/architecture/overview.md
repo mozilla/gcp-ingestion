@@ -211,7 +211,7 @@ view.
 ## Limits
 
 - The maximum `Content-Length` accepted at the edge is 1 MB; larger payloads
-  will be dropped
+  will be dropped and [the request will return a 413 response code](https://mozilla.github.io/gcp-ingestion/architecture/edge_service_specification/#server-requestresponse)
 - The maximum payload size after being decompressed in the Decoder is 8 MB;
   larger payloads will trigger a `PayloadTooLarge` exception and be sent to
   error output
