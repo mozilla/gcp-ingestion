@@ -2,11 +2,11 @@
   "aliases": [
     {
       "alias": "some-product/baseline",
-      "base": "glean/glean"
+      "base": "namespace_1/baz"
     },
     {
       "alias": "some-product/some-doctype",
-      "base": "glean/glean"
+      "base": "namespace_1/baz"
     }
   ]
 }

@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.transforms;
 
+import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -130,18 +131,6 @@ public abstract class MapElementsWithErrors<InputT, OutputT>
    * signal that a given message should not be sent downstream to either success or error output.
    */
   public static class MessageShouldBeDroppedException extends Exception {
-  }
-
-  /**
-   * Special exception class that can be thrown from the body of a {@link MapElementsWithErrors}
-   * subclass to indicate that the pipeline should fail rather than sending the current message
-   * to error output.
-   */
-  public static class BubbleUpException extends RuntimeException {
-
-    public BubbleUpException(Throwable cause) {
-      super(cause);
-    }
   }
 
 }

@@ -14,6 +14,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import java.time.Duration;
 import java.util.HashMap;
