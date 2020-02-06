@@ -146,7 +146,7 @@
             <li><a href="#architecture-diagram">Architecture Diagram</a></li>
             <li><a href="#architecture-components">Architecture Components</a></li>
             <li><a href="#design-decisions">Design Decisions</a></li>
-            <li><a href="#known-issues">Known Issues</a></li>
+            <li><a href="#limits">Limits</a></li>
             <li><a href="#further-reading">Further Reading</a></li>
     </ul>
 </div></div>
@@ -375,10 +375,15 @@ and old definitions in parallel, writing to separate tables; when we’re
 comfortable that the new implementation is stable, we could cut users over to
 the new implementation by simply changing the definition of the user-facing
 view.</p>
-<h2 id="known-issues">Known Issues</h2>
+<h2 id="limits">Limits</h2>
 <ul>
-<li>Hard limit of 10,000 columns per table in BigQuery</li>
-<li>Max of 100,000 streaming inserts per second per BigQuery table</li>
+<li>The maximum <code>Content-Length</code> accepted at the edge is 1 MB; larger payloads
+  will be dropped and <a href="https://mozilla.github.io/gcp-ingestion/architecture/edge_service_specification/#server-requestresponse">the request will return a 413 response code</a></li>
+<li>The maximum payload size after being decompressed in the Decoder is 8 MB;
+  larger payloads will trigger a <code>PayloadTooLarge</code> exception and be sent to
+  error output</li>
+<li>Hard limit of 10,000 columns per table in BigQuery (see <a href="https://cloud.google.com/bigquery/quotas#load_jobs">Load job limits</a>)</li>
+<li>Max of 1,000,000 streaming inserts per second per BigQuery table, lower if we populate <code>insertId</code> (see <a href="https://cloud.google.com/bigquery/quotas#streaming_inserts">Streaming insert limits</a>)</li>
 <li>A PubSub topic without any subscriptions drops all messages until a subscription is created</li>
 <li>API Rate Limit: 20 req/sec</li>
 </ul>
