@@ -7,17 +7,6 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.IspResponse;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import org.apache.beam.sdk.io.FileSystems;
-import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.metrics.Counter;
-import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.SimpleFunction;
-import org.apache.beam.sdk.values.PCollection;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,9 +24,19 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.apache.beam.sdk.io.FileSystems;
+import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
+import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.values.PCollection;
 
 public class GeoIspLookup
-        extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+    extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
   public static GeoIspLookup of(ValueProvider<String> ispDatabase) {
     return new GeoIspLookup(ispDatabase);
@@ -59,7 +58,7 @@ public class GeoIspLookup
   }
 
   private static synchronized DatabaseReader getOrCreateSingletonIspReader(
-          ValueProvider<String> ispDatabase) throws IOException {
+      ValueProvider<String> ispDatabase) throws IOException {
     if (singletonIspReader == null) {
       File mmdb;
 
@@ -80,20 +79,23 @@ public class GeoIspLookup
 
   @VisibleForTesting
   public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
+
     private transient DatabaseReader ispReader;
 
     private final Counter foundIp = Metrics.counter(GeoCityLookup.Fn.class, "found_ip");
     private final Counter countIspAlreadyApplied = Metrics.counter(Fn.class, "isp_already_applied");
     private final Counter foundIsp = Metrics.counter(Fn.class, "found_isp");
-    private final Counter countIpForwarded = Metrics.counter(GeoCityLookup.Fn.class, "ip_from_x_forwarded_for");
-    private final Counter countIpRemoteAddr = Metrics.counter(GeoCityLookup.Fn.class, "ip_from_remote_addr");
+    private final Counter countIpForwarded = Metrics.counter(GeoCityLookup.Fn.class,
+        "ip_from_x_forwarded_for");
+    private final Counter countIpRemoteAddr = Metrics.counter(GeoCityLookup.Fn.class,
+        "ip_from_remote_addr");
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
       message = PubsubConstraints.ensureNonNull(message);
 
       try {
-        if (geoIspDatabase == null) {
+        if (ispReader == null) {
           loadResourcesOnFirstMessage();
         }
 
