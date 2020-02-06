@@ -1,6 +1,6 @@
-package com.mozilla.telemetry.schemas;
+package com.mozilla.telemetry.ingestion.core.schema;
 
-public class SchemaNotFoundException extends Exception {
+public class SchemaNotFoundException extends RuntimeException {
 
   public SchemaNotFoundException(String message) {
     super(message);

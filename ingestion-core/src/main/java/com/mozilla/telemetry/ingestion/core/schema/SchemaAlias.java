@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.schemas;
+package com.mozilla.telemetry.ingestion.core.schema;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

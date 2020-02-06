@@ -1,21 +1,22 @@
-package com.mozilla.telemetry.schemas;
+package com.mozilla.telemetry.ingestion.core.schema;
 
+import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import java.io.IOException;
+import java.io.InputStream;
 import org.apache.avro.Schema;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 
 public class AvroSchemaStore extends SchemaStore<Schema> {
 
   /** Returns a SchemaStore based on the contents of the archive at schemasLocation. */
-  public static AvroSchemaStore of(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
-    return new AvroSchemaStore(schemasLocation, schemaAliasesLocation);
+  public static AvroSchemaStore of(String schemasLocation, String schemaAliasesLocation,
+      IOFunction<String, InputStream> open) {
+    return new AvroSchemaStore(schemasLocation, schemaAliasesLocation, open);
   }
 
-  protected AvroSchemaStore(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
-    super(schemasLocation, schemaAliasesLocation);
+  protected AvroSchemaStore(String schemasLocation, String schemaAliasesLocation,
+      IOFunction<String, InputStream> open) {
+    super(schemasLocation, schemaAliasesLocation, open);
   }
 
   @Override

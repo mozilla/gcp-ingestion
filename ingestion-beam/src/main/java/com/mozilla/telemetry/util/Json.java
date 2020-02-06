@@ -11,20 +11,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableRow;
-import com.google.api.services.bigquery.model.TableSchema;
-import com.google.cloud.bigquery.Schema;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
@@ -38,15 +27,8 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
  */
 public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
 
-  static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
-
-  private static final Method SCHEMA_FROM_PB = Arrays.stream(Schema.class.getDeclaredMethods())
-      .filter(method -> "fromPb".equals(method.getName())).findFirst().get();
-
   static {
-    SCHEMA_FROM_PB.setAccessible(true);
     MAPPER.addMixIn(PubsubMessage.class, PubsubMessageMixin.class);
-    MAPPER.registerModule(new JsonOrgModule());
   }
 
   /**
@@ -80,43 +62,6 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
       throw new IOException("not a valid TableRow: null");
     }
     return output;
-  }
-
-  /**
-   * Read a {@link Schema} from a byte array.
-   *
-   * <p>{@link Schema} does not natively support Jackson deserialization, so we rely on a
-   * roundabout method inspired by https://github.com/googleapis/google-cloud-java/issues/2753.
-   *
-   * @exception IOException if {@code data} does not contain a valid {@link Schema}.
-   */
-  public static Schema readBigQuerySchema(byte[] data) throws IOException {
-    List<TableFieldSchema> fieldsList = (List<TableFieldSchema>) JSON_FACTORY //
-        .createJsonParser(new String(data, Charsets.UTF_8)) //
-        .parseArray(ArrayList.class, TableFieldSchema.class);
-    TableSchema tableSchema = new TableSchema().setFields(fieldsList);
-
-    try {
-      return (Schema) SCHEMA_FROM_PB.invoke(null, tableSchema);
-    } catch (IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Read an instance of {@code klass} from a byte array.
-   *
-   * @exception IOException if {@code data} does not contain a valid json object.
-   */
-  public static <T> T readValue(byte[] data, Class<T> klass) throws IOException {
-    // Read data into a tree
-    TreeNode tree = MAPPER.readTree(data);
-    // Check that we have an object, because treeToValue won't
-    if (tree == null || !tree.isObject()) {
-      throw new IOException("json value is not an object");
-    }
-    // Return a class instance created from the tree
-    return MAPPER.treeToValue(tree, klass);
   }
 
   /**
