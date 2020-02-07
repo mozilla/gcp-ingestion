@@ -9,6 +9,7 @@ import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
+import com.mozilla.telemetry.decoder.GeoIspLookup;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.DeduplicateByDocumentId;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;

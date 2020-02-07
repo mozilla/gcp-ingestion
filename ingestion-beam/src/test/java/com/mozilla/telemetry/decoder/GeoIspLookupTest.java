@@ -1,7 +1,8 @@
 package com.mozilla.telemetry.decoder;
 
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import com.google.common.collect.Lists;
 import com.mozilla.telemetry.options.InputFileFormat;
@@ -51,14 +52,17 @@ public class GeoIspLookupTest {
             + "{\"host\":\"test\"" //
             + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\"" //
             + "},\"payload\":\"dGVzdA==\"}", //
-        "{\"attributeMap\":" + "{\"isp_name\":\"Akamai Technologies\"" //
+        "{\"attributeMap\":" //
+            + "{\"isp_name\":\"Akamai Technologies\"" //
             + ",\"remote_addr\":\"10.0.0.2\"" //
             + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\"" //
+            + ",\"isp_asn\":\"35994\"" //
             + ",\"isp_organization\":\"Akamai Technologies\"" //
             + ",\"x_forwarded_for\":\"192.168.1.2, 23.32.32.1, 23.32.32.11\"}" //
             + ",\"payload\":\"\"}", //
-        "{\"attributeMap\":" + "{\"remote_addr\":\"24.38.243.141\""
-            + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\""
+        "{\"attributeMap\":" //
+            + "{\"remote_addr\":\"24.38.243.141\"" //
+            + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\"" //
             + ",\"isp_organization\":\"LAWN MULLEN & GOOD INTERNATIONAL\"}" + ",\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline //

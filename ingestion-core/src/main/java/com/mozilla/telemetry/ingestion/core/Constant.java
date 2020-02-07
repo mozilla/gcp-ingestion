@@ -28,6 +28,7 @@ public class Constant {
     public static final String GEO_SUBDIVISION2 = "geo_subdivision2";
     public static final String ISP_NAME = "isp_name";
     public static final String ISP_ORGANIZATION = "isp_organization";
+    public static final String ISP_ASN = "isp_asn";
     public static final String ISP_DB_VERSION = "isp_db_version";
     public static final String HOST = "host";
     public static final String MESSAGE_ID = "message_id";
