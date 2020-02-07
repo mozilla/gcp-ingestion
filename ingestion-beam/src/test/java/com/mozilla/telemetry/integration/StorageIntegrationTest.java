@@ -79,6 +79,7 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
         "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
         "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
 
     tempFolder.newFolder("out");
@@ -99,7 +100,7 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testCompileDataflowTemplate() throws Exception {
+  public void testCompileDataflowTemplate() {
     String gcsPath = "gs://" + bucket;
 
     Decoder.main(new String[] { "--runner=Dataflow", "--project=" + projectId,
@@ -108,7 +109,12 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
         "--inputType=file", "--outputFileFormat=json", "--outputType=file",
         "--errorOutputType=file",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+<<<<<<< HEAD
         "--schemasLocation=schemas.tar.gz" });
+=======
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--schemaAliasesLocation=" + aliases });
+>>>>>>> Update tests with ISP lookup
 
   }
 
@@ -119,7 +125,7 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
     storage.create(BlobInfo.newBuilder(BlobId.of(bucket, remotePath)).build(), content);
   }
 
-  private void downloadOutputFiles(String prefix) throws IOException {
+  private void downloadOutputFiles(String prefix) {
     Page<Blob> blobs = storage.list(bucket, BlobListOption.prefix(prefix));
     for (Blob blob : blobs.iterateAll()) {
       blob.downloadTo(Paths.get(tempFolder.getRoot().getPath(), blob.getName()));
