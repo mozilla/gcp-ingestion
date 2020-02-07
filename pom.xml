@@ -48,7 +48,7 @@
              check https://mvnrepository.com/artifact/org.apache.beam -->
         <google-cloud.version>1.61.0</google-cloud.version>
         <jackson.version>2.9.10</jackson.version>
-        <avro.version>1.8.2</avro.version>
+        <avro.version>1.9.1</avro.version>
 
         <!-- Keep this dependency version in sync with what is pulled in by jackson;
              check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.10 -->
