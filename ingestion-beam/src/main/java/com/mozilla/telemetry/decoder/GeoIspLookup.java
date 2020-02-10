@@ -7,14 +7,13 @@ import com.maxmind.geoip2.exception.GeoIp2Exception;
 import com.maxmind.geoip2.model.IspResponse;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.BeamFileInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,8 +23,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.beam.sdk.io.FileSystems;
-import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -63,9 +60,7 @@ public class GeoIspLookup
       File mmdb;
 
       try {
-        Metadata metadata = FileSystems.matchSingleFileSpec(ispDatabase.get());
-        ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
-        InputStream inputStream = Channels.newInputStream(channel);
+        InputStream inputStream = BeamFileInputStream.open(ispDatabase.get());
         Path mmdbPath = Paths.get(System.getProperty("java.io.tmpdir"), "GeoIspLookup.mmdb");
         Files.copy(inputStream, mmdbPath, StandardCopyOption.REPLACE_EXISTING);
         mmdb = mmdbPath.toFile();
