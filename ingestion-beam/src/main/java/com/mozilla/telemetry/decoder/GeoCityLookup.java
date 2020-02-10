@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.charset.MalformedInputException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -159,6 +160,7 @@ public class GeoCityLookup
     private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found_city_allowed");
     private final Counter foundGeo1 = Metrics.counter(Fn.class, "found_geo_subdivision_1");
     private final Counter foundGeo2 = Metrics.counter(Fn.class, "found_geo_subdivision_2");
+    private final Counter malformedInput = Metrics.counter(Fn.class, "malformed_input");
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
@@ -205,7 +207,7 @@ public class GeoCityLookup
           InetAddress ipAddress = InetAddress.getByName(ip);
           foundIp.inc();
 
-          // Throws GeoIp2Exception and IOException
+          // Throws GeoIp2Exception, MalformedInputException, and IOException
           CityResponse response = geoIP2City.city(ipAddress);
           foundCity.inc();
 
@@ -225,6 +227,8 @@ public class GeoCityLookup
           attributes.put(Attribute.GEO_SUBDIVISION2, subdivisions.get(1).getIsoCode());
           foundGeo2.inc();
 
+        } catch (MalformedInputException ignore) {
+          malformedInput.inc();
         } catch (UnknownHostException | GeoIp2Exception | IndexOutOfBoundsException ignore) {
           // ignore these exceptions
         }
