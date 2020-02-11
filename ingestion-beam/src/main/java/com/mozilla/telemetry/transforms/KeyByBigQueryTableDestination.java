@@ -23,19 +23,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
-import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV3;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.MapElements.MapWithFailures;
+import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.values.KV;
-import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptor;
+import org.apache.beam.sdk.values.TypeDescriptors;
 import org.apache.commons.text.StringSubstitutor;
 
-public class KeyByBigQueryTableDestination
-    extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, PubsubMessage>> {
+public class KeyByBigQueryTableDestination {
 
   public static KeyByBigQueryTableDestination of(ValueProvider<String> tableSpecTemplate,
       ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
@@ -44,7 +44,7 @@ public class KeyByBigQueryTableDestination
   }
 
   /**
-   * Return the appropriate table desination instance for the given document type and other
+   * Return the appropriate table destination instance for the given document type and other
    * attributes.
    */
   public TableDestination getTableDestination(Map<String, String> attributes) {
@@ -121,21 +121,19 @@ public class KeyByBigQueryTableDestination
     return tableDestination;
   }
 
-  @Override
-  protected KV<TableDestination, PubsubMessage> processElement(PubsubMessage message) {
-    message = PubsubConstraints.ensureNonNull(message);
-
-    return KV.of(getTableDestination(message.getAttributeMap()), message);
-  }
-
-  @Override
-  public WithErrors.Result<PCollection<KV<TableDestination, PubsubMessage>>> expand(
-      PCollection<PubsubMessage> input) {
-    WithErrors.Result<PCollection<KV<TableDestination, PubsubMessage>>> result = super.expand(
-        input);
-    result.output()
-        .setCoder(KvCoder.of(TableDestinationCoderV3.of(), PubsubMessageWithAttributesCoder.of()));
-    return result;
+  /**
+   * Returns a MapElements transform for retrieving the table destinations.
+   */
+  public MapWithFailures<PubsubMessage, KV<TableDestination, PubsubMessage>, PubsubMessage> map() {
+    return MapElements.into(TypeDescriptors.kvs(TypeDescriptor.of(TableDestination.class),
+        TypeDescriptor.of(PubsubMessage.class))).via((PubsubMessage msg) -> {
+          msg = PubsubConstraints.ensureNonNull(msg);
+          return KV.of(getTableDestination(msg.getAttributeMap()), msg);
+        }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
+            KeyByBigQueryTableDestination.class.getSimpleName(), //
+            ee.element(), //
+            ee.exception()));
   }
 
   ////
