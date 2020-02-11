@@ -18,7 +18,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.time.Duration;
 import java.util.List;
@@ -49,7 +49,7 @@ public class BigQueryTest {
     when(bigQuery.insertAll(any())).thenReturn(response);
     when(response.getErrorsFor(anyLong())).thenReturn(ImmutableList.of());
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
-        Format.RAW);
+        PubsubMessageToObjectNode.Raw.of());
   }
 
   @Test
@@ -60,7 +60,7 @@ public class BigQueryTest {
   @Test
   public void canSendWithNoDelay() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
-        BATCH_KEY_TEMPLATE, Format.RAW);
+        BATCH_KEY_TEMPLATE, PubsubMessageToObjectNode.Raw.of());
     output.apply(EMPTY_MESSAGE);
     assertEquals(1, output.batches.get(BATCH_KEY).size);
   }
@@ -110,7 +110,8 @@ public class BigQueryTest {
   @Test
   public void canHandleProjectInTableId() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        PubsubMessageToTemplatedString.forBigQuery("project.dataset.table"), Format.RAW);
+        PubsubMessageToTemplatedString.forBigQuery("project.dataset.table"),
+        PubsubMessageToObjectNode.Raw.of());
     output.apply(EMPTY_MESSAGE).join();
     assertNotNull(output.batches.get(TableId.of("project", "dataset", "table")));
   }
@@ -118,7 +119,7 @@ public class BigQueryTest {
   @Test
   public void canHandleDocumentId() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, BATCH_KEY_TEMPLATE,
-        Format.RAW);
+        PubsubMessageToObjectNode.Raw.of());
     output.apply(PubsubMessage.newBuilder().putAttributes("document_id", "id").build()).join();
     List<InsertAllRequest.RowToInsert> rows = ((BigQuery.Write.Batch) output.batches
         .get(BATCH_KEY)).builder.build().getRows();
@@ -131,7 +132,8 @@ public class BigQueryTest {
   @Test
   public void canHandleDynamicTableId() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        PubsubMessageToTemplatedString.forBigQuery("${dataset}.${table}"), Format.RAW);
+        PubsubMessageToTemplatedString.forBigQuery("${dataset}.${table}"),
+        PubsubMessageToObjectNode.Raw.of());
     output.apply(PubsubMessage.newBuilder().putAttributes("dataset", "dataset")
         .putAttributes("table", "table").build()).join();
     assertNotNull(output.batches.get(TableId.of("dataset", "table")));
@@ -140,7 +142,8 @@ public class BigQueryTest {
   @Test
   public void canHandleDynamicTableIdWithEmptyValues() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        PubsubMessageToTemplatedString.forBigQuery("${dataset}_.${table}_"), Format.RAW);
+        PubsubMessageToTemplatedString.forBigQuery("${dataset}_.${table}_"),
+        PubsubMessageToObjectNode.Raw.of());
     output.apply(
         PubsubMessage.newBuilder().putAttributes("dataset", "").putAttributes("table", "").build())
         .join();
@@ -151,7 +154,7 @@ public class BigQueryTest {
   public void canHandleDynamicTableIdWithDefaults() {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
         PubsubMessageToTemplatedString.forBigQuery("${dataset:-dataset}.${table:-table}"),
-        Format.RAW);
+        PubsubMessageToObjectNode.Raw.of());
     output.apply(EMPTY_MESSAGE).join();
     assertNotNull(output.batches.get(TableId.of("dataset", "table")));
   }
@@ -161,7 +164,7 @@ public class BigQueryTest {
     output = new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
         PubsubMessageToTemplatedString
             .forBigQuery("${document_namespace}.${document_type}_${suffix}"),
-        Format.RAW);
+        PubsubMessageToObjectNode.Raw.of());
     output.apply(PubsubMessage.newBuilder().putAttributes("document_namespace", "my-namespace")
         .putAttributes("document_type", "myDocType").putAttributes("suffix", "my-suffix").build())
         .join();
@@ -171,20 +174,15 @@ public class BigQueryTest {
   @Test(expected = IllegalArgumentException.class)
   public void failsOnMissingAttributes() {
     new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        PubsubMessageToTemplatedString.forBigQuery("${dataset}.${table}"), Format.RAW)
-            .apply(EMPTY_MESSAGE);
+        PubsubMessageToTemplatedString.forBigQuery("${dataset}.${table}"),
+        PubsubMessageToObjectNode.Raw.of()).apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void failsOnInvalidTable() {
     new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY,
-        PubsubMessageToTemplatedString.forBigQuery(""), Format.RAW).apply(EMPTY_MESSAGE);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnUnimplementedFormat() {
-    new BigQuery.Write(bigQuery, MAX_BYTES, MAX_MESSAGES, NO_DELAY, BATCH_KEY_TEMPLATE,
-        Format.PAYLOAD).apply(EMPTY_MESSAGE);
+        PubsubMessageToTemplatedString.forBigQuery(""), PubsubMessageToObjectNode.Raw.of())
+            .apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = NullPointerException.class)

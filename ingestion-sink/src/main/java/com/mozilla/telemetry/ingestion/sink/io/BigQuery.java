@@ -16,7 +16,6 @@ import com.mozilla.telemetry.ingestion.sink.config.SinkConfig;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToString;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.time.Duration;
@@ -67,10 +66,11 @@ public class BigQuery {
 
     /** Constructor. */
     public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
-        Duration maxDelay, PubsubMessageToTemplatedString batchKeyTemplate, Format format) {
+        Duration maxDelay, PubsubMessageToTemplatedString batchKeyTemplate,
+        PubsubMessageToObjectNode encoder) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
       this.bigQuery = bigQuery;
-      this.encoder = new PubsubMessageToObjectNode(format);
+      this.encoder = encoder;
     }
 
     @Override

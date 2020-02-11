@@ -2,6 +2,7 @@ package com.mozilla.telemetry.ingestion.sink.util;
 
 import com.mozilla.telemetry.ingestion.core.util.Time;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,11 @@ public class Env {
 
   public String getString(String key, String defaultValue) {
     return optString(key).orElse(defaultValue);
+  }
+
+  public List<String> getStrings(String key, List<String> defaultValue) {
+    return optString(key).filter(s -> !s.isEmpty()).map(s -> Arrays.asList(s.split(",")))
+        .orElse(defaultValue);
   }
 
   public Integer getInt(String key, Integer defaultValue) {

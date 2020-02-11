@@ -1,8 +1,11 @@
 package com.mozilla.telemetry.ingestion.core.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.client.json.JsonFactory;
@@ -13,8 +16,10 @@ import com.google.cloud.bigquery.Schema;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,6 +44,26 @@ public class Json {
   }
 
   /**
+   * Serialize {@link JsonNode} as a {@link String}.
+   */
+  public static String asString(JsonNode data) {
+    try {
+      return MAPPER.writeValueAsString(data);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  /**
+   * Serialize {@code data} as a {@link String}.
+   *
+   * @exception IOException if data cannot be encoded as json.
+   */
+  public static String asString(Object data) throws IOException {
+    return MAPPER.writeValueAsString(data);
+  }
+
+  /**
    * Serialize {@code data} as a {@code byte[]}.
    *
    * @exception IOException if data cannot be encoded as json.
@@ -58,8 +83,25 @@ public class Json {
    * Use {@code MAPPER} to convert {@link ObjectNode} to {@code Map<String, Object>}.
    */
   public static Map<String, Object> asMap(ObjectNode objectNode) {
-    return MAPPER.convertValue(objectNode, new TypeReference<Map<String, Object>>() {
+    return convertValue(objectNode, new TypeReference<Map<String, Object>>() {
     });
+  }
+
+  /**
+   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   *
+   * @throws JsonProcessingException if the conversion is unsuccessful
+   */
+  public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
+    return MAPPER.treeToValue(root, klass);
+  }
+
+  /**
+   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   */
+  @VisibleForTesting
+  public static <T> T convertValue(ObjectNode root, TypeReference<T> typeReference) {
+    return MAPPER.convertValue(root, typeReference);
   }
 
   /**
@@ -90,12 +132,74 @@ public class Json {
    */
   public static <T> T readValue(byte[] data, Class<T> klass) throws IOException {
     // Read data into a tree
-    TreeNode tree = MAPPER.readTree(data);
+    JsonNode tree = MAPPER.readTree(data);
     // Check that we have an object, because treeToValue won't
     if (tree == null || !tree.isObject()) {
       throw new IOException("json value is not an object");
     }
     // Return a class instance created from the tree
     return MAPPER.treeToValue(tree, klass);
+  }
+
+  /**
+   * Read bytes into a tree of {@link com.fasterxml.jackson.databind.JsonNode}.
+   *
+   * @exception IOException if {@code data} does not contain a valid json object.
+   */
+  public static ObjectNode readObjectNode(byte[] data) throws IOException {
+    // Read data into a tree
+    JsonNode root = MAPPER.readTree(data);
+    // Check that we have an object, because treeToValue won't
+    if (root == null || !root.isObject()) {
+      throw new IOException("json value is not an object");
+    }
+    return (ObjectNode) root;
+  }
+
+  public static ObjectNode readObjectNode(String data) throws IOException {
+    return readObjectNode(data.getBytes(StandardCharsets.UTF_8));
+  }
+
+  /**
+   * Read bytes into an {@link ArrayNode}.
+   *
+   * @exception IOException if {@code data} does not contain a valid json object.
+   */
+  public static ArrayNode readArrayNode(byte[] data) throws IOException {
+    // Read data into a tree
+    TreeNode root = MAPPER.readTree(data);
+    // Check that we have an array, because treeToValue won't
+    if (root == null || !root.isArray()) {
+      throw new IOException("json value is not an array");
+    }
+    return (ArrayNode) root;
+  }
+
+  /**
+   * Return a new, empty {@link ObjectNode}.
+   */
+  public static ObjectNode createObjectNode() {
+    return MAPPER.createObjectNode();
+  }
+
+  /**
+   * Return a new, empty {@link ArrayNode}.
+   */
+  public static ArrayNode createArrayNode() {
+    return MAPPER.createArrayNode();
+  }
+
+  /**
+   * Return true if {@link ObjectNode} is null or empty.
+   */
+  public static boolean isNullOrEmpty(ObjectNode node) {
+    return node == null || node.size() == 0;
+  }
+
+  /**
+   * Return true if {@link ObjectNode} is null or empty.
+   */
+  public static boolean isNullOrEmpty(JsonNode node) {
+    return node == null || node.isNull() || node.size() == 0;
   }
 }

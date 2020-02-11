@@ -1,0 +1,14 @@
+[
+  {
+    "name": "payload",
+    "type": "RECORD",
+    "mode": "NULLABLE",
+    "fields": [
+      {
+        "name": "test_int",
+        "type": "INT64",
+        "mode": "NULLABLE"
+      }
+    ]
+  }
+]

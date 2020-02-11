@@ -1,0 +1,153 @@
+[
+  {
+    "name": "test_map",
+    "mode": "REPEATED",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "key",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      },
+      {
+        "name": "value",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "test_map_without_value",
+    "mode": "REPEATED",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "key",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "test_repeated_record",
+    "mode": "REPEATED",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "field",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "test_record",
+    "mode": "NULLABLE",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "key",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "test_repeated_tuple",
+    "mode": "REPEATED",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "f0_",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      },
+      {
+        "name": "f1_",
+        "mode": "NULLABLE",
+        "type": "INT64"
+      },
+      {
+        "name": "f2_",
+        "mode": "NULLABLE",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "name": "test_tuple",
+    "mode": "NULLABLE",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "f0_",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      },
+      {
+        "name": "f1_",
+        "mode": "NULLABLE",
+        "type": "INT64"
+      },
+      {
+        "name": "f2_",
+        "mode": "NULLABLE",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "name": "test_nested_list",
+    "mode": "REPEATED",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "list",
+        "mode": "REPEATED",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "test_nested_csv",
+    "mode": "REPEATED",
+    "type": "RECORD",
+    "fields": [
+      {
+        "name": "list",
+        "mode": "NULLABLE",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "name": "test_list",
+    "mode": "REPEATED",
+    "type": "STRING"
+  },
+  {
+    "name": "test_string",
+    "mode": "NULLABLE",
+    "type": "STRING"
+  },
+  {
+    "name": "test_int64",
+    "mode": "NULLABLE",
+    "type": "INT64"
+  },
+  {
+    "name": "test_integer",
+    "mode": "NULLABLE",
+    "type": "INTEGER"
+  },
+  {
+    "name": "test_bool",
+    "mode": "NULLABLE",
+    "type": "BOOL"
+  },
+  {
+    "name": "test_boolean",
+    "mode": "NULLABLE",
+    "type": "BOOL"
+  }
+]

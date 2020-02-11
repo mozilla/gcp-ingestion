@@ -19,7 +19,7 @@ public class AddMetadata {
   private AddMetadata() {
   }
 
-  private static final String METADATA = "metadata";
+  public static final String METADATA = "metadata";
 
   private static final String GEO = "geo";
   private static final String GEO_PREFIX = GEO + "_";

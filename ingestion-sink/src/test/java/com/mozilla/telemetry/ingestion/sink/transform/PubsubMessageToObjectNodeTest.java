@@ -2,21 +2,33 @@ package com.mozilla.telemetry.ingestion.sink.transform;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
+import com.mozilla.telemetry.ingestion.core.schema.TestConstant;
+import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import com.mozilla.telemetry.ingestion.core.util.Json;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.Test;
 
 public class PubsubMessageToObjectNodeTest {
 
-  private static final PubsubMessageToObjectNode RAW_TRANSFORM = new PubsubMessageToObjectNode(
-      Format.RAW);
-  private static final PubsubMessageToObjectNode DECODED_TRANSFORM = new PubsubMessageToObjectNode(
-      Format.DECODED);
+  private static final PubsubMessageToObjectNode RAW_TRANSFORM = PubsubMessageToObjectNode.Raw.of();
+  private static final PubsubMessageToObjectNode DECODED_TRANSFORM = PubsubMessageToObjectNode //
+      .Decoded.of();
   private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
 
   @Test
@@ -33,11 +45,6 @@ public class PubsubMessageToObjectNodeTest {
   @Test
   public void canFormatAsRawWithEmptyValues() {
     assertEquals(ImmutableMap.of(), Json.asMap(RAW_TRANSFORM.apply(EMPTY_MESSAGE)));
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnUnimplementedFormat() {
-    new PubsubMessageToObjectNode(Format.PAYLOAD).apply(EMPTY_MESSAGE);
   }
 
   @Test(expected = NullPointerException.class)
@@ -181,5 +188,52 @@ public class PubsubMessageToObjectNodeTest {
             ImmutableMap.builder().put("geo", ImmutableMap.of()).put("header", ImmutableMap.of())
                 .put("user_agent", ImmutableMap.of()).build())
         .build(), Json.asMap(DECODED_TRANSFORM.apply(EMPTY_MESSAGE)));
+  }
+
+  private static TypeReference<Map<String, String>> stringMap = //
+      new TypeReference<Map<String, String>>() {
+      };
+
+  private static PubsubMessage asPubsubMessage(ObjectNode node) throws IOException {
+    return PubsubMessage.newBuilder()
+        .setData(ByteString.copyFrom(Json.asBytes(node.get(FieldName.PAYLOAD))))
+        .putAllAttributes(Json.convertValue((ObjectNode) node.get("attributeMap"), stringMap))
+        .build();
+  }
+
+  @Test
+  public void canFormatAsPayload() throws IOException {
+    PubsubMessageToObjectNode transform = PubsubMessageToObjectNode //
+        .Payload.of(ImmutableList.of("namespace_0/foo"), TestConstant.SCHEMAS_LOCATION,
+            TestConstant.SCHEMA_ALIASES_LOCATION, FileInputStream::new);
+
+    final List<PubsubMessage> input;
+    final String inputPath = Resources.getResource("testdata/payload-format-input.ndjson")
+        .getPath();
+    try (Stream<String> stream = Files.lines(Paths.get(inputPath))) {
+      input = stream.map(IOFunction.unchecked(Json::readObjectNode))
+          .map(IOFunction.unchecked(PubsubMessageToObjectNodeTest::asPubsubMessage))
+          .collect(Collectors.toList());
+    }
+
+    final List<Map<String, Object>> expected;
+    final String expectedPath = Resources.getResource("testdata/payload-format-expected.ndjson")
+        .getPath();
+    try (Stream<String> stream = Files.lines(Paths.get(expectedPath))) {
+      expected = stream.map(IOFunction.unchecked(Json::readObjectNode)).map(node -> {
+        // convert additional_properties to a json string if present
+        if (node.hasNonNull(FieldName.ADDITIONAL_PROPERTIES)) {
+          node.put(FieldName.ADDITIONAL_PROPERTIES,
+              Json.asString(node.get(FieldName.ADDITIONAL_PROPERTIES)));
+        }
+        return node;
+      }).map(IOFunction.unchecked(Json::asMap)).collect(Collectors.toList());
+    }
+
+    assertEquals(expected.size(), input.size());
+
+    for (int i = 0; i < expected.size(); i++) {
+      assertEquals(expected.get(i), Json.asMap(transform.apply(input.get(i))));
+    }
   }
 }
