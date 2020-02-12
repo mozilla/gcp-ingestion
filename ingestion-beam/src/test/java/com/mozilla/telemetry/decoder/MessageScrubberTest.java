@@ -2,12 +2,15 @@ package com.mozilla.telemetry.decoder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.mozilla.telemetry.decoder.MessageScrubber.AffectedByBugException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
 import com.mozilla.telemetry.util.Json;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -30,9 +33,12 @@ public class MessageScrubberTest {
         + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
         + "  },\n" //
         + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
-    assertTrue(MessageScrubber.scrub(attributes, bug1567596AffectedJson));
-    assertFalse(MessageScrubber.scrub(new HashMap<>(), bug1567596AffectedJson));
-    assertFalse(MessageScrubber.scrub(attributes, Json.createObjectNode()));
+
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, bug1567596AffectedJson));
+
+    MessageScrubber.scrub(new HashMap<>(), bug1567596AffectedJson);
+    MessageScrubber.scrub(attributes, Json.createObjectNode());
   }
 
   @Test
@@ -50,14 +56,16 @@ public class MessageScrubberTest {
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "crash")
         .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_VERSION, "68.0").build());
 
-    assertTrue(MessageScrubber.scrub(attributes, ping));
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, ping));
 
     attributes.put(Attribute.APP_UPDATE_CHANNEL, "beta");
     attributes.put(Attribute.APP_VERSION, "68");
-    assertTrue(MessageScrubber.scrub(attributes, ping));
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, ping));
 
     attributes.put(Attribute.APP_VERSION, "69");
-    assertFalse(MessageScrubber.scrub(attributes, ping));
+    MessageScrubber.scrub(attributes, ping);
   }
 
   @Test
@@ -76,7 +84,8 @@ public class MessageScrubberTest {
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "bhr")
         .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_VERSION, "68.0").build();
 
-    assertTrue(MessageScrubber.scrub(attributes, ping));
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, ping));
   }
 
   @Test
@@ -144,13 +153,14 @@ public class MessageScrubberTest {
         + "    },\n" //
         + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
         + "  },\n" //
-        + "  \"client_id\": \"c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0\"\n" + "}")
-            .getBytes(StandardCharsets.UTF_8));
+        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
 
-    Map<String, String> attributes = Maps.newHashMap(ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").build());
+    Map<String, String> attributes = Maps.newHashMap(
+        ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+            .put(Attribute.CLIENT_ID, "c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0").build());
 
-    MessageScrubber.writeToErrors(attributes, pingToBeScrubbed);
+    assertThrows(AffectedByBugException.class,
+        () -> MessageScrubber.writeToErrors(attributes, pingToBeScrubbed));
 
     ObjectNode validPing = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //
@@ -159,9 +169,9 @@ public class MessageScrubberTest {
         + "    },\n" //
         + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
         + "  },\n" //
-        + "  \"client_id\": \"2c3a0767-d84a-4d02-8a92-fa54a3376048\"\n" + "}")
-            .getBytes(StandardCharsets.UTF_8));
+        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
 
+    attributes.put(Attribute.CLIENT_ID, "f0ffeec0-ffee-c0ff-eec0-ffeec0ffeecc");
     MessageScrubber.writeToErrors(attributes, validPing);
   }
 }

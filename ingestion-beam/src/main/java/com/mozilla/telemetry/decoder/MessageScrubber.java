@@ -6,18 +6,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
 import org.apache.beam.sdk.metrics.Metrics;
 
 public class MessageScrubber {
+
   private enum ScrubAction {
-    DROP,
-    REDACT,
-    SEND_TO_ERRORS
+    DROP, REDACT, SEND_TO_ERRORS
   }
 
   /**
@@ -25,7 +23,9 @@ public class MessageScrubber {
    * be written to error output.
    */
   public static class AffectedByBugException extends Exception {
-    public AffectedByBugException(String bugNumber) {}
+
+    public AffectedByBugException(String bugNumber) {
+    }
   }
 
   /**
@@ -121,12 +121,13 @@ public class MessageScrubber {
   private static void handleBug(String bugNumber, ScrubAction action)
       throws MessageShouldBeDroppedException, AffectedByBugException {
     Metrics.counter(MessageScrubber.class, "bug_" + bugNumber).inc();
-    switch(action) {
+    switch (action) {
       case DROP:
         throw new MessageShouldBeDroppedException();
       case SEND_TO_ERRORS:
         throw new AffectedByBugException(bugNumber);
       case REDACT:
+      default:
     }
   }
 

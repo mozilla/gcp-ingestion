@@ -73,8 +73,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   }
 
   @Override
-  protected PubsubMessage processElement(PubsubMessage message)
-      throws SchemaNotFoundException, IOException, MessageShouldBeDroppedException, MessageScrubber.AffectedByBugException {
+  protected PubsubMessage processElement(PubsubMessage message) throws SchemaNotFoundException,
+      IOException, MessageShouldBeDroppedException, MessageScrubber.AffectedByBugException {
     message = PubsubConstraints.ensureNonNull(message);
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
