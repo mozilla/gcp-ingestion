@@ -5,4 +5,4 @@
 # remove .pyc files that appear to be relocated unless disabled
 if ${CLEAN_RELOCATES:-true}; then . bin/include/clean_relocates.sh; fi
 
-exec python3.7 -m pytest "$@"
+exec python3.8 -m pytest "$@"

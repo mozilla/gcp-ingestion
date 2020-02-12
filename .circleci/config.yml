@@ -11,7 +11,7 @@ jobs:
 
   docs:
     docker:
-    - image: circleci/python:3.7
+    - image: circleci/python:3.8
     steps:
     - checkout
     - run:
@@ -30,7 +30,7 @@ jobs:
   ingestion-edge:
     working_directory: /root/project/ingestion-edge
     docker:
-    - image: python:3.7
+    - image: python:3.8
     steps:
     - &checkout
       checkout:

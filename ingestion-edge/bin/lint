@@ -8,4 +8,4 @@ if ${CLEAN_RELOCATES:-true}; then . bin/include/clean_relocates.sh; fi
 # only run lint tests (-k "not test_")
 # cover tests/load because the actual test is disabled (-o "testpaths=")
 # run linters ("${LINT_ARGS[@]}")
-exec python3.7 -m pytest -k "not test_" -o "testpaths=" "${LINT_ARGS[@]}" "$@"
+exec python3.8 -m pytest -k "not test_" -o "testpaths=" "${LINT_ARGS[@]}" "$@"
