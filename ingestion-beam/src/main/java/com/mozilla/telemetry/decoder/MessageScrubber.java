@@ -18,6 +18,8 @@ public class MessageScrubber {
       "bug_1567596");
   private static final Counter countScrubbedBug1562011 = Metrics.counter(MessageScrubber.class,
       "bug_1562011");
+  private static final Counter countScrubbedBug1489560 = Metrics.counter(MessageScrubber.class,
+      "bug_1489560");
   private static final Counter countRedactedBug1602844 = Metrics.counter(MessageScrubber.class,
       "bug_1602844");
 
@@ -63,6 +65,14 @@ public class MessageScrubber {
             .filter(JsonNode::isTextual) //
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       countScrubbedBug1562011.inc();
+      return true;
+    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && Optional.of(json) // payload.metadata.RemoteType
+            .map(j -> j.path("client_id").textValue())
+            .filter(s -> s.equals("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
+            .isPresent()) {
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
+      countScrubbedBug1489560.inc();
       return true;
     } else {
       return false;

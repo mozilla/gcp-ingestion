@@ -135,4 +135,33 @@ public class MessageScrubberTest {
     assertEquals("0", json.path("tz").asText());
   }
 
+  @Test
+  public void testShouldScrubClientIdBug1489560() throws Exception {
+    ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
+        + "  \"payload\": {\n" //
+        + "    \"metadata\": {\n" //
+        + "      \"RemoteType\": \"webIsolated=foo\"\n" //
+        + "    },\n" //
+        + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
+        + "  },\n" //
+        + "  \"client_id\": \"c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0\"\n" + "}")
+            .getBytes(StandardCharsets.UTF_8));
+
+    Map<String, String> attributes = Maps.newHashMap(ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").build());
+
+    assertTrue(MessageScrubber.shouldScrub(attributes, pingToBeScrubbed));
+
+    ObjectNode validPing = Json.readObjectNode(("{\n" //
+        + "  \"payload\": {\n" //
+        + "    \"metadata\": {\n" //
+        + "      \"RemoteType\": \"webIsolated=foo\"\n" //
+        + "    },\n" //
+        + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
+        + "  },\n" //
+        + "  \"client_id\": \"2c3a0767-d84a-4d02-8a92-fa54a3376048\"\n" + "}")
+            .getBytes(StandardCharsets.UTF_8));
+
+    assertFalse(MessageScrubber.shouldScrub(attributes, validPing));
+  }
 }
