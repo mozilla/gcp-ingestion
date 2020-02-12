@@ -150,7 +150,7 @@ public class MessageScrubberTest {
     Map<String, String> attributes = Maps.newHashMap(ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").build());
 
-    assertTrue(MessageScrubber.shouldScrub(attributes, pingToBeScrubbed));
+    assertTrue(MessageScrubber.shouldScrubAndWriteToErrors(attributes, pingToBeScrubbed));
 
     ObjectNode validPing = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //
@@ -162,6 +162,6 @@ public class MessageScrubberTest {
         + "  \"client_id\": \"2c3a0767-d84a-4d02-8a92-fa54a3376048\"\n" + "}")
             .getBytes(StandardCharsets.UTF_8));
 
-    assertFalse(MessageScrubber.shouldScrub(attributes, validPing));
+    assertFalse(MessageScrubber.shouldScrubAndWriteToErrors(attributes, validPing));
   }
 }

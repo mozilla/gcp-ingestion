@@ -66,14 +66,6 @@ public class MessageScrubber {
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       countScrubbedBug1562011.inc();
       return true;
-    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
-        && Optional.of(json) // payload.metadata.RemoteType
-            .map(j -> j.path("client_id").textValue())
-            .filter(s -> s.equals("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
-            .isPresent()) {
-      // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
-      countScrubbedBug1489560.inc();
-      return true;
     } else {
       return false;
     }
@@ -103,6 +95,25 @@ public class MessageScrubber {
           countRedactedBug1602844.inc();
         }
       });
+    }
+  }
+
+  /**
+   * Inspect the contents of the payload and return true if the content matches a known pattern
+   * we want to scrub the message and write to errors.
+   */
+  public static boolean shouldScrubAndWriteToErrors(Map<String, String> attributes,
+      ObjectNode json) {
+    if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE)) //
+        && Optional.of(json) // payload.metadata.RemoteType
+            .map(j -> j.path("client_id").textValue())
+            .filter(s -> s.equals("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
+            .isPresent()) {
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
+      countScrubbedBug1489560.inc();
+      return true;
+    } else {
+      return false;
     }
   }
 
