@@ -74,7 +74,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
 
   @Override
   protected PubsubMessage processElement(PubsubMessage message)
-      throws SchemaNotFoundException, IOException, MessageShouldBeDroppedException {
+      throws SchemaNotFoundException, IOException, MessageShouldBeDroppedException, MessageScrubber.AffectedByBugException {
     message = PubsubConstraints.ensureNonNull(message);
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
@@ -101,15 +101,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // been applied, we strip out any existing metadata fields and put them into attributes.
     AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
-    if (MessageScrubber.shouldScrub(attributes, json)) {
-      // Prevent the message from going to success or error output.
-      throw new MessageShouldBeDroppedException();
-    }
-
-    if (MessageScrubber.shouldScrubAndWriteToErrors(attributes, json)) {
-      // Write the message to error output.
-      throw new MessageToErrorsException("Message should be scrubbed");
-    }
+    // Prevent message that need to be scrubbed from going to success or error output.
+    MessageScrubber.scrub(attributes, json);
 
     // Potentially mutates the value of json to redact specific fields.
     MessageScrubber.redact(attributes, json);
@@ -157,6 +150,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     }
 
     addAttributesFromPayload(attributes, json);
+
+    // Write messages that are affected by a specific bug to error output.
+    MessageScrubber.writeToErrors(attributes, json);
 
     // https://github.com/mozilla/gcp-ingestion/issues/780
     // We need to be careful to consistently use our util methods (which use Jackson) for

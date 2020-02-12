@@ -9,19 +9,24 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.apache.beam.sdk.metrics.Counter;
+
+import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
 import org.apache.beam.sdk.metrics.Metrics;
 
 public class MessageScrubber {
+  private enum ScrubAction {
+    DROP,
+    REDACT,
+    SEND_TO_ERRORS
+  }
 
-  private static final Counter countScrubbedBug1567596 = Metrics.counter(MessageScrubber.class,
-      "bug_1567596");
-  private static final Counter countScrubbedBug1562011 = Metrics.counter(MessageScrubber.class,
-      "bug_1562011");
-  private static final Counter countScrubbedBug1489560 = Metrics.counter(MessageScrubber.class,
-      "bug_1489560");
-  private static final Counter countRedactedBug1602844 = Metrics.counter(MessageScrubber.class,
-      "bug_1602844");
+  /**
+   * Special exception to signal that a message is affected by a specific bug and should
+   * be written to error output.
+   */
+  public static class AffectedByBugException extends Exception {
+    public AffectedByBugException(String bugNumber) {}
+  }
 
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
@@ -29,7 +34,8 @@ public class MessageScrubber {
    *
    * <p>This is usually due to some potential for PII having leaked into the payload.
    */
-  public static boolean shouldScrub(Map<String, String> attributes, ObjectNode json) {
+  public static void scrub(Map<String, String> attributes, ObjectNode json)
+      throws MessageShouldBeDroppedException, AffectedByBugException {
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1567596
     if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
         && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
@@ -39,8 +45,7 @@ public class MessageScrubber {
             .map(j -> j.path("payload").path("metadata").path("MozCrashReason").textValue())
             .filter(s -> s.contains("do not use eval with system privileges")) //
             .isPresent()) {
-      countScrubbedBug1567596.inc();
-      return true;
+      handleBug("1567596", ScrubAction.DROP);
     } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
         && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
         && (("nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
@@ -53,8 +58,7 @@ public class MessageScrubber {
             .filter(s -> s.startsWith("webIsolated=")) //
             .isPresent()) {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1562011
-      countScrubbedBug1562011.inc();
-      return true;
+      handleBug("1562011", ScrubAction.DROP);
     } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
         && "bhr".equals(attributes.get(Attribute.DOCUMENT_TYPE))
         && (attributes.get(Attribute.APP_VERSION).startsWith("68")
@@ -64,10 +68,7 @@ public class MessageScrubber {
             .map(Streams::stream).orElseGet(Stream::empty).map(j -> j.path("remoteType")) //
             .filter(JsonNode::isTextual) //
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
-      countScrubbedBug1562011.inc();
-      return true;
-    } else {
-      return false;
+      handleBug("1562011", ScrubAction.DROP);
     }
   }
 
@@ -86,13 +87,19 @@ public class MessageScrubber {
    * Redact fields that may contain unintended sensitive information, replacing with null or
    * other appropriate signifiers.
    */
-  public static void redact(Map<String, String> attributes, ObjectNode json) {
+  public static void redact(Map<String, String> attributes, ObjectNode json)
+      throws MessageShouldBeDroppedException, AffectedByBugException {
     if (bug1602844Affected(attributes)) {
       json.path("events").elements().forEachRemaining(event -> {
         JsonNode eventMapValues = event.path(5);
         if (eventMapValues.has("fxauid")) {
           ((ObjectNode) eventMapValues).replace("fxauid", NullNode.getInstance());
-          countRedactedBug1602844.inc();
+        }
+
+        try {
+          handleBug("1602844", ScrubAction.REDACT);
+        } catch (Exception e) {
+          // redactions don't throw exceptions, so this is just ignored
         }
       });
     }
@@ -102,18 +109,24 @@ public class MessageScrubber {
    * Inspect the contents of the payload and return true if the content matches a known pattern
    * we want to scrub the message and write to errors.
    */
-  public static boolean shouldScrubAndWriteToErrors(Map<String, String> attributes,
-      ObjectNode json) {
+  public static void writeToErrors(Map<String, String> attributes, ObjectNode json)
+      throws MessageShouldBeDroppedException, AffectedByBugException {
     if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE)) //
-        && Optional.of(json) // payload.metadata.RemoteType
-            .map(j -> j.path("client_id").textValue())
-            .filter(s -> s.equals("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
-            .isPresent()) {
+        && "c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0".equals(attributes.get(Attribute.CLIENT_ID))) {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
-      countScrubbedBug1489560.inc();
-      return true;
-    } else {
-      return false;
+      handleBug("1489560", ScrubAction.SEND_TO_ERRORS);
+    }
+  }
+
+  private static void handleBug(String bugNumber, ScrubAction action)
+      throws MessageShouldBeDroppedException, AffectedByBugException {
+    Metrics.counter(MessageScrubber.class, "bug_" + bugNumber).inc();
+    switch(action) {
+      case DROP:
+        throw new MessageShouldBeDroppedException();
+      case SEND_TO_ERRORS:
+        throw new AffectedByBugException(bugNumber);
+      case REDACT:
     }
   }
 

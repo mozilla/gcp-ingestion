@@ -30,9 +30,9 @@ public class MessageScrubberTest {
         + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
         + "  },\n" //
         + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
-    assertTrue(MessageScrubber.shouldScrub(attributes, bug1567596AffectedJson));
-    assertFalse(MessageScrubber.shouldScrub(new HashMap<>(), bug1567596AffectedJson));
-    assertFalse(MessageScrubber.shouldScrub(attributes, Json.createObjectNode()));
+    assertTrue(MessageScrubber.scrub(attributes, bug1567596AffectedJson));
+    assertFalse(MessageScrubber.scrub(new HashMap<>(), bug1567596AffectedJson));
+    assertFalse(MessageScrubber.scrub(attributes, Json.createObjectNode()));
   }
 
   @Test
@@ -50,14 +50,14 @@ public class MessageScrubberTest {
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "crash")
         .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_VERSION, "68.0").build());
 
-    assertTrue(MessageScrubber.shouldScrub(attributes, ping));
+    assertTrue(MessageScrubber.scrub(attributes, ping));
 
     attributes.put(Attribute.APP_UPDATE_CHANNEL, "beta");
     attributes.put(Attribute.APP_VERSION, "68");
-    assertTrue(MessageScrubber.shouldScrub(attributes, ping));
+    assertTrue(MessageScrubber.scrub(attributes, ping));
 
     attributes.put(Attribute.APP_VERSION, "69");
-    assertFalse(MessageScrubber.shouldScrub(attributes, ping));
+    assertFalse(MessageScrubber.scrub(attributes, ping));
   }
 
   @Test
@@ -76,7 +76,7 @@ public class MessageScrubberTest {
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "bhr")
         .put(Attribute.APP_UPDATE_CHANNEL, "nightly").put(Attribute.APP_VERSION, "68.0").build();
 
-    assertTrue(MessageScrubber.shouldScrub(attributes, ping));
+    assertTrue(MessageScrubber.scrub(attributes, ping));
   }
 
   @Test
@@ -150,7 +150,7 @@ public class MessageScrubberTest {
     Map<String, String> attributes = Maps.newHashMap(ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").build());
 
-    assertTrue(MessageScrubber.shouldScrubAndWriteToErrors(attributes, pingToBeScrubbed));
+    MessageScrubber.writeToErrors(attributes, pingToBeScrubbed);
 
     ObjectNode validPing = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //
@@ -162,6 +162,6 @@ public class MessageScrubberTest {
         + "  \"client_id\": \"2c3a0767-d84a-4d02-8a92-fa54a3376048\"\n" + "}")
             .getBytes(StandardCharsets.UTF_8));
 
-    assertFalse(MessageScrubber.shouldScrubAndWriteToErrors(attributes, validPing));
+    MessageScrubber.writeToErrors(attributes, validPing);
   }
 }
