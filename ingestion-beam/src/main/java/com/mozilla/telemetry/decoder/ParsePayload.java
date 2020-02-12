@@ -44,14 +44,6 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     return new ParsePayload(schemasLocation, schemaAliasesLocation);
   }
 
-  /** Exception to throw for messages whose payloads exceed the configured size limit. */
-  public static class MessageToErrorsException extends RuntimeException {
-
-    public MessageToErrorsException(String message) {
-      super(message);
-    }
-  }
-
   ////////
 
   private final Distribution parseTimer = Metrics.distribution(ParsePayload.class,
