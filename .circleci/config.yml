@@ -59,8 +59,8 @@ jobs:
         keys:
           # when lock files change, use increasingly general patterns to restore cache
           - &cache_key_edge
-            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.txt" }}-{{ checksum "constraints.txt" }}
-          - python-packages-v1-{{ .Branch }}-{{ checksum "requirements.txt" }}-
+            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
+          - python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-
           - python-packages-v1-{{ .Branch }}-
           - python-packages-v1-
     - run:
