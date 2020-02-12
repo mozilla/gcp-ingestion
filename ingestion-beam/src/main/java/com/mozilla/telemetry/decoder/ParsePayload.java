@@ -44,6 +44,14 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     return new ParsePayload(schemasLocation, schemaAliasesLocation);
   }
 
+  /** Exception to throw for messages whose payloads exceed the configured size limit. */
+  public static class MessageToErrorsException extends RuntimeException {
+
+    public MessageToErrorsException(String message) {
+      super(message);
+    }
+  }
+
   ////////
 
   private final Distribution parseTimer = Metrics.distribution(ParsePayload.class,
@@ -96,6 +104,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     if (MessageScrubber.shouldScrub(attributes, json)) {
       // Prevent the message from going to success or error output.
       throw new MessageShouldBeDroppedException();
+    }
+
+    if (MessageScrubber.shouldScrubAndWriteToErrors(attributes, json)) {
+      // Write the message to error output.
+      throw new MessageToErrorsException("Message should be scrubbed");
     }
 
     // Potentially mutates the value of json to redact specific fields.
