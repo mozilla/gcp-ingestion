@@ -446,7 +446,7 @@ public abstract class Write
       streamingInput.ifPresent(messages -> {
         WriteResult writeResult = messages //
             .apply(maybeCompress) //
-            .apply("KeyByBigQueryTableDestination", keyByBigQueryTableDestination.map()) //
+            .apply(keyByBigQueryTableDestination) //
             .failuresTo(errorCollections) //
             .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
@@ -495,7 +495,7 @@ public abstract class Write
         }
         messages //
             .apply(maybeCompress) //
-            .apply("KeyByBigQueryTableDestination", keyByBigQueryTableDestination.map()) //
+            .apply(keyByBigQueryTableDestination) //
             .failuresTo(errorCollections) //
             .apply(fileLoadsWrite);
       });

@@ -28,14 +28,17 @@ import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.transforms.MapElements.MapWithFailures;
+import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.KV;
+import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.apache.commons.text.StringSubstitutor;
 
-public class KeyByBigQueryTableDestination {
+public class KeyByBigQueryTableDestination extends PTransform<PCollection<PubsubMessage>, //
+    Result<PCollection<KV<TableDestination, PubsubMessage>>, PubsubMessage>> {
 
   public static KeyByBigQueryTableDestination of(ValueProvider<String> tableSpecTemplate,
       ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
@@ -121,19 +124,19 @@ public class KeyByBigQueryTableDestination {
     return tableDestination;
   }
 
-  /**
-   * Returns a MapElements transform for retrieving the table destinations.
-   */
-  public MapWithFailures<PubsubMessage, KV<TableDestination, PubsubMessage>, PubsubMessage> map() {
-    return MapElements.into(TypeDescriptors.kvs(TypeDescriptor.of(TableDestination.class),
-        TypeDescriptor.of(PubsubMessage.class))).via((PubsubMessage msg) -> {
-          msg = PubsubConstraints.ensureNonNull(msg);
-          return KV.of(getTableDestination(msg.getAttributeMap()), msg);
-        }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-            KeyByBigQueryTableDestination.class.getSimpleName(), //
-            ee.element(), //
-            ee.exception()));
+  @Override
+  public Result<PCollection<KV<TableDestination, PubsubMessage>>, PubsubMessage> expand(
+      PCollection<PubsubMessage> messages) {
+    return messages
+        .apply(MapElements.into(TypeDescriptors.kvs(TypeDescriptor.of(TableDestination.class),
+            TypeDescriptor.of(PubsubMessage.class))).via((PubsubMessage msg) -> {
+              msg = PubsubConstraints.ensureNonNull(msg);
+              return KV.of(getTableDestination(msg.getAttributeMap()), msg);
+            }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+            .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
+                KeyByBigQueryTableDestination.class.getSimpleName(), //
+                ee.element(), //
+                ee.exception())));
   }
 
   ////
@@ -172,5 +175,4 @@ public class KeyByBigQueryTableDestination {
       throw new BubbleUpException(e.getCause());
     }
   }
-
 }
