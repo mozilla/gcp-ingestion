@@ -171,14 +171,14 @@ public class MessageScrubberTest {
         ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, "glean").build());
 
     assertThrows(AffectedByBugException.class,
-        () -> MessageScrubber.writeToErrors(attributes, pingToBeScrubbed));
+        () -> MessageScrubber.scrub(attributes, pingToBeScrubbed));
 
     ObjectNode validPing = Json.readObjectNode(("{\n" //
         + "  \"client_info\": {\n" //
         + "    \"client_id\": null" //
         + "  }}").getBytes(StandardCharsets.UTF_8));
 
-    MessageScrubber.writeToErrors(attributes, validPing);
+    MessageScrubber.scrub(attributes, validPing);
   }
 
   @Test
@@ -189,13 +189,13 @@ public class MessageScrubberTest {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
-    final List<String> input = Arrays.asList("{\"attributeMap\":{" //
+    final List<String> input = Arrays.asList("{\"attributeMap\": {" //
         + "\"document_namespace\": \"glean\"" //
         + ",\"document_type\": \"glean\"" //
         + ",\"document_version\": \"1\"" //
         + "},\"payload\": \"eyJjbGllbnRfaW5mbyI6eyJjbGllbnRfaWQiOiJjMGZmZWVjMC"
         + "1mZmVlLWMwZmYtZWVjMC1mZmVlYzBmZmVlYzAifX0=\"}",
-        "{\"attributeMap\":{" //
+        "{\"attributeMap\": {" //
             + "\"document_namespace\": \"glean\"" //
             + ",\"document_type\": \"glean\"" //
             + ",\"document_version\": \"1\"" //

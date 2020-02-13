@@ -93,14 +93,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // been applied, we strip out any existing metadata fields and put them into attributes.
     AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
-    // Prevent message that need to be scrubbed from going to success or error output.
+    // Prevent message that need to be scrubbed from going to success.
     MessageScrubber.scrub(attributes, json);
 
     // Potentially mutates the value of json to redact specific fields.
     MessageScrubber.redact(attributes, json);
-
-    // Write messages that are affected by a specific bug to error output.
-    MessageScrubber.writeToErrors(attributes, json);
 
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {
