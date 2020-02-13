@@ -69,6 +69,18 @@ public class MessageScrubber {
             .filter(JsonNode::isTextual) //
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       handleBug("1562011", ScrubAction.DROP);
+    } else if ("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0".equals(attributes.get(Attribute.CLIENT_ID))
+        || Optional.of(json) // Glean pings: client_info.client_id
+            .map(j -> j.path("client_info").path("client_id").textValue())
+            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
+            .isPresent()
+        || Optional.of(json) // legacy telemetry pings: client_id
+            .map(j -> j.path("client_id").textValue())
+            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
+            .isPresent()) {
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
+      handleBug("1489560", ScrubAction.SEND_TO_ERRORS);
     }
   }
 
@@ -102,27 +114,6 @@ public class MessageScrubber {
           // redactions don't throw exceptions, so this is just ignored
         }
       });
-    }
-  }
-
-  /**
-   * Inspect the contents of the payload and return true if the content matches a known pattern
-   * we want to scrub the message and write to errors.
-   */
-  public static void writeToErrors(Map<String, String> attributes, ObjectNode json)
-      throws MessageShouldBeDroppedException, AffectedByBugException {
-    if ("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0".equals(attributes.get(Attribute.CLIENT_ID))
-        || Optional.of(json) // Glean pings: client_info.client_id
-            .map(j -> j.path("client_info").path("client_id").textValue())
-            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
-            .isPresent()
-        || Optional.of(json) // legacy telemetry pings: client_id
-            .map(j -> j.path("client_id").textValue())
-            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
-            .isPresent()) {
-      // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
-      // https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
-      handleBug("1489560", ScrubAction.SEND_TO_ERRORS);
     }
   }
 
