@@ -10,14 +10,30 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mozilla.telemetry.decoder.MessageScrubber.AffectedByBugException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
+import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Json;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider;
+import org.apache.beam.sdk.testing.PAssert;
+import org.apache.beam.sdk.testing.TestPipeline;
+import org.apache.beam.sdk.transforms.Create;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptors;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class MessageScrubberTest {
+
+  @Rule
+  public final transient TestPipeline pipeline = TestPipeline.create();
 
   @Test
   public void testShouldScrubBug1567596() throws Exception {
@@ -147,31 +163,62 @@ public class MessageScrubberTest {
   @Test
   public void testShouldScrubClientIdBug1489560() throws Exception {
     ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
-        + "  \"payload\": {\n" //
-        + "    \"metadata\": {\n" //
-        + "      \"RemoteType\": \"webIsolated=foo\"\n" //
-        + "    },\n" //
-        + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
-        + "  },\n" //
-        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
+        + "  \"client_info\": {\n" //
+        + "    \"client_id\": \"c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0\"" //
+        + "  }}").getBytes(StandardCharsets.UTF_8));
 
     Map<String, String> attributes = Maps.newHashMap(
-        ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
-            .put(Attribute.CLIENT_ID, "c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0").build());
+        ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, "glean").build());
 
     assertThrows(AffectedByBugException.class,
         () -> MessageScrubber.writeToErrors(attributes, pingToBeScrubbed));
 
     ObjectNode validPing = Json.readObjectNode(("{\n" //
-        + "  \"payload\": {\n" //
-        + "    \"metadata\": {\n" //
-        + "      \"RemoteType\": \"webIsolated=foo\"\n" //
-        + "    },\n" //
-        + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
-        + "  },\n" //
-        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
+        + "  \"client_info\": {\n" //
+        + "    \"client_id\": null" //
+        + "  }}").getBytes(StandardCharsets.UTF_8));
 
-    attributes.put(Attribute.CLIENT_ID, "f0ffeec0-ffee-c0ff-eec0-ffeec0ffeecc");
     MessageScrubber.writeToErrors(attributes, validPing);
+  }
+
+  @Test
+  public void testBug1489560MalformedPayload() {
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
+    // clients with client_id c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0 send malformed client_info
+
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
+
+    final List<String> input = Arrays.asList("{\"attributeMap\":{" //
+        + "\"document_namespace\": \"glean\"" //
+        + ",\"document_type\": \"glean\"" //
+        + ",\"document_version\": \"1\"" //
+        + "},\"payload\": \"eyJjbGllbnRfaW5mbyI6eyJjbGllbnRfaWQiOiJjMGZmZWVjMC"
+        + "1mZmVlLWMwZmYtZWVjMC1mZmVlYzBmZmVlYzAifX0=\"}",
+        "{\"attributeMap\":{" //
+            + "\"document_namespace\": \"glean\"" //
+            + ",\"document_type\": \"glean\"" //
+            + ",\"document_version\": \"1\"" //
+            + "},\"payload\": \"eyJjbGllbnRfaW5mbyI6eyJjbGllbnRfaWQiOiJmMGZmZWVjMC"
+            + "1mZmVlLWMwZmYtZWVjMC1mZmVlYzBmZmVlY2MifX0=\n\"}");
+
+    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.json.decode())
+        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
+
+    PCollection<String> exceptions = result.errors().apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+
+    PAssert.that(result.output()).empty();
+
+    final List<String> expectedError = Arrays.asList(
+        "com.mozilla.telemetry.decoder.MessageScrubber$AffectedByBugException",
+        "org.everit.json.schema.ValidationException");
+
+    // If we get a ValidationException here, it means we successfully extracted version from
+    // the payload and found a valid schema; we expect the payload to not validate.
+    PAssert.that(exceptions).containsInAnyOrder(expectedError);
+
+    pipeline.run();
   }
 }
