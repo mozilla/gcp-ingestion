@@ -135,11 +135,6 @@ public class GeoIspLookup
 
           attributes.put(Attribute.ISP_NAME, response.getIsp());
           attributes.put(Attribute.ISP_ORGANIZATION, response.getOrganization());
-
-          if (response.getAutonomousSystemNumber() != null) {
-            attributes.put(Attribute.ISP_ASN,
-                Integer.toString(response.getAutonomousSystemNumber()));
-          }
         } catch (UnknownHostException | GeoIp2Exception ignore) {
           // ignore these exceptions
         }

@@ -56,7 +56,6 @@ public class GeoIspLookupTest {
             + "{\"isp_name\":\"Akamai Technologies\"" //
             + ",\"remote_addr\":\"10.0.0.2\"" //
             + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\"" //
-            + ",\"isp_asn\":\"35994\"" //
             + ",\"isp_organization\":\"Akamai Technologies\"" //
             + ",\"x_forwarded_for\":\"192.168.1.2, 23.32.32.1, 23.32.32.11\"}" //
             + ",\"payload\":\"\"}", //
