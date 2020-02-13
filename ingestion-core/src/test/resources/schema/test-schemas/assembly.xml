@@ -1,0 +1,16 @@
+<assembly>
+    <id>test-schemas</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.testOutputDirectory}/schema/test-schemas</directory>
+            <outputDirectory>test-schemas</outputDirectory>
+            <excludes>
+                <exclude>assembly.xml</exclude>
+            </excludes>
+        </fileSet>
+    </fileSets>
+</assembly>

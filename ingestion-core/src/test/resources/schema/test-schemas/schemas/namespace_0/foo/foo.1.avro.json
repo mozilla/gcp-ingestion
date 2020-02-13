@@ -1,0 +1,1 @@
+{"type": "record", "name": "payload", "fields": [{"name": "test_int", "type": "int"}]}
