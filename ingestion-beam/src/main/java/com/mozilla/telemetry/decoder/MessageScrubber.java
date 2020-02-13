@@ -111,9 +111,17 @@ public class MessageScrubber {
    */
   public static void writeToErrors(Map<String, String> attributes, ObjectNode json)
       throws MessageShouldBeDroppedException, AffectedByBugException {
-    if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE)) //
-        && "c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0".equals(attributes.get(Attribute.CLIENT_ID))) {
+    if ("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0".equals(attributes.get(Attribute.CLIENT_ID))
+        || Optional.of(json) // Glean pings: client_info.client_id
+            .map(j -> j.path("client_info").path("client_id").textValue())
+            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
+            .isPresent()
+        || Optional.of(json) // legacy telemetry pings: client_id
+            .map(j -> j.path("client_id").textValue())
+            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
+            .isPresent()) {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
       handleBug("1489560", ScrubAction.SEND_TO_ERRORS);
     }
   }

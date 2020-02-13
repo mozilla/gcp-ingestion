@@ -148,9 +148,11 @@ public class ParsePayloadTest {
     ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
     // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
-    String input = "{\"attributeMap\":" + "{\"document_namespace\":\"telemetry\""
-        + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
-        + ",\"document_type\":\"main\"" + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
+    String input = "{\"attributeMap\":" //
+        + "{\"document_namespace\":\"telemetry\"" //
+        + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\"" //
+        + ",\"document_type\":\"main\"" //
+        + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.json.decode())

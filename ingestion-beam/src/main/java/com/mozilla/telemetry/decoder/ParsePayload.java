@@ -99,6 +99,9 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     // Potentially mutates the value of json to redact specific fields.
     MessageScrubber.redact(attributes, json);
 
+    // Write messages that are affected by a specific bug to error output.
+    MessageScrubber.writeToErrors(attributes, json);
+
     boolean validDocType = schemaStore.docTypeExists(attributes);
     if (!validDocType) {
       PerDocTypeCounter.inc(null, "error_invalid_doc_type");
@@ -142,9 +145,6 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     }
 
     addAttributesFromPayload(attributes, json);
-
-    // Write messages that are affected by a specific bug to error output.
-    MessageScrubber.writeToErrors(attributes, json);
 
     // https://github.com/mozilla/gcp-ingestion/issues/780
     // We need to be careful to consistently use our util methods (which use Jackson) for
