@@ -189,6 +189,9 @@ public class MessageScrubberTest {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
+    // payloads here are:
+    // {"client_info":{"client_id":"c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0"}}
+    // {"client_info":{"client_id":"f0ffeec0-ffee-c0ff-eec0-ffeec0ffeecc"}}
     final List<String> input = Arrays.asList("{\"attributeMap\": {" //
         + "\"document_namespace\": \"glean\"" //
         + ",\"document_type\": \"glean\"" //
