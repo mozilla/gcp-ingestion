@@ -69,19 +69,26 @@ public class MessageScrubber {
             .filter(JsonNode::isTextual) //
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       handleBug("1562011", ScrubAction.DROP);
-    } else if ("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0".equals(attributes.get(Attribute.CLIENT_ID))
-        || Optional.of(json) // Glean pings: client_info.client_id
-            .map(j -> j.path("client_info").path("client_id").textValue())
-            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
-            .isPresent()
-        || Optional.of(json) // legacy telemetry pings: client_id
-            .map(j -> j.path("client_id").textValue())
-            .filter(s -> s.contains("c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0")) //
-            .isPresent()) {
+    } else if (bug1489560Affected(attributes, json)) {
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
       handleBug("1489560", ScrubAction.SEND_TO_ERRORS);
     }
+  }
+
+  // see bug 1489560
+  private static boolean bug1489560Affected(Map<String, String> attributes, ObjectNode json) {
+    final String affectedClientId = "c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0";
+
+    return affectedClientId.equals(attributes.get(Attribute.CLIENT_ID))
+        // glean pings: client_info.client_id
+        || Optional.of(json).map(j -> j.path("client_info").path(Attribute.CLIENT_ID).textValue())
+            .filter(s -> s.contains(affectedClientId)) //
+            .isPresent()
+        // legacy telemetry pings: client_id
+        || Optional.of(json).map(j -> j.path(Attribute.CLIENT_ID).textValue())
+            .filter(s -> s.contains(affectedClientId)) //
+            .isPresent();
   }
 
   // See bug 1603487 for discussion of affected versions, etc.
