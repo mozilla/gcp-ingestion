@@ -37,6 +37,14 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setRedisUri(ValueProvider<String> value);
 
+  ValueProvider<String> getClientIpHashKey();
+
+  void setClientIpHashKey(ValueProvider<String> value);
+
+  ValueProvider<String> getClientIdHashKey();
+
+  void setClientIdHashKey(ValueProvider<String> value);
+
   /*
    * Subinterface and static methods.
    */
