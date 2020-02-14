@@ -175,13 +175,6 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       Optional.ofNullable(gleanClientInfo.path(Attribute.OS_VERSION).textValue()) //
           .filter(v -> !Strings.isNullOrEmpty(v))
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
-      Optional.ofNullable(gleanClientInfo.path(Attribute.CLIENT_ID).textValue()) //
-          .filter(v -> !Strings.isNullOrEmpty(v)) //
-          .map(ParsePayload::normalizeUuid) //
-          .ifPresent(v -> {
-            attributes.put(Attribute.CLIENT_ID, v);
-            ((ObjectNode) gleanClientInfo).put(Attribute.CLIENT_ID, v);
-          });
     } else if (commonPingOs.isObject()) {
       // See common ping structure in:
       // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/telemetry/data/common-ping.html
@@ -208,7 +201,38 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
+    ParsePayload.addClientIdFromPayload(attributes, json);
+
+    // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
+    // allow sampling on non-telemetry pings.
+    Stream.of(attributes.get(Attribute.CLIENT_ID),
+        // "impression_id" is a client_id-like identifier used in activity-stream ping
+        // that do not contain a client_id.
+        json.path("impression_id").textValue()) //
+        .map(ParsePayload::normalizeUuid) //
+        .filter(Objects::nonNull) //
+        .findFirst() //
+        .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
+  }
+
+  /** Extracts the client ID from the payload and adds it to `attributes`. */
+  public static void addClientIdFromPayload(Map<String, String> attributes, ObjectNode json) {
+    // Try to get glean-style client_info object.
+    JsonNode gleanClientInfo = json.path("client_info");
+
+    if (gleanClientInfo.isObject()) {
+      // from glean ping
+      Optional.ofNullable(gleanClientInfo.path(Attribute.CLIENT_ID).textValue()) //
+          .filter(v -> !Strings.isNullOrEmpty(v)) //
+          .map(ParsePayload::normalizeUuid) //
+          .ifPresent(v -> {
+            attributes.put(Attribute.CLIENT_ID, v);
+            ((ObjectNode) gleanClientInfo).put(Attribute.CLIENT_ID, v);
+          });
+    }
+
     if (attributes.get(Attribute.CLIENT_ID) == null) {
+      // from common ping
       Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
           .map(ParsePayload::normalizeUuid) //
           .ifPresent(v -> {
@@ -225,17 +249,6 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
             json.put("clientId", v);
           });
     }
-
-    // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
-    // allow sampling on non-telemetry pings.
-    Stream.of(attributes.get(Attribute.CLIENT_ID),
-        // "impression_id" is a client_id-like identifier used in activity-stream ping
-        // that do not contain a client_id.
-        json.path("impression_id").textValue()) //
-        .map(ParsePayload::normalizeUuid) //
-        .filter(Objects::nonNull) //
-        .findFirst() //
-        .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
   }
 
   @VisibleForTesting
