@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
@@ -79,16 +80,10 @@ public class MessageScrubber {
   // see bug 1489560
   private static boolean bug1489560Affected(Map<String, String> attributes, ObjectNode json) {
     final String affectedClientId = "c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0";
+    Map<String, String> tempAttributes = Maps.newHashMap();
+    ParsePayload.addClientIdFromPayload(tempAttributes, json);
 
-    return affectedClientId.equals(attributes.get(Attribute.CLIENT_ID))
-        // glean pings: client_info.client_id
-        || Optional.of(json).map(j -> j.path("client_info").path(Attribute.CLIENT_ID).textValue())
-            .filter(s -> s.contains(affectedClientId)) //
-            .isPresent()
-        // legacy telemetry pings: client_id
-        || Optional.of(json).map(j -> j.path(Attribute.CLIENT_ID).textValue())
-            .filter(s -> s.contains(affectedClientId)) //
-            .isPresent();
+    return affectedClientId.equals(tempAttributes.get(Attribute.CLIENT_ID));
   }
 
   // See bug 1603487 for discussion of affected versions, etc.
