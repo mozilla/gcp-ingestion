@@ -156,9 +156,8 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   }
 
   private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json) {
-
     // Try to get glean-style client_info object.
-    JsonNode gleanClientInfo = json.path("client_info");
+    JsonNode gleanClientInfo = getGleanClientInfo(json);
 
     // Try to get "common ping"-style os object.
     JsonNode commonPingOs = json.path("environment").path("system").path("os");
@@ -201,7 +200,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
           .ifPresent(v -> attributes.put(Attribute.OS_VERSION, v));
     }
 
-    ParsePayload.addClientIdFromPayload(attributes, json);
+    addClientIdFromPayload(attributes, json);
 
     // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
     // allow sampling on non-telemetry pings.
@@ -218,7 +217,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
   /** Extracts the client ID from the payload and adds it to `attributes`. */
   public static void addClientIdFromPayload(Map<String, String> attributes, ObjectNode json) {
     // Try to get glean-style client_info object.
-    JsonNode gleanClientInfo = json.path("client_info");
+    JsonNode gleanClientInfo = getGleanClientInfo(json);
 
     if (gleanClientInfo.isObject()) {
       // from glean ping
@@ -249,6 +248,11 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
             json.put("clientId", v);
           });
     }
+  }
+
+  /** Tries to extract glean-style client_info object from payload. */
+  private static JsonNode getGleanClientInfo(ObjectNode json) {
+    return json.path("client_info");
   }
 
   @VisibleForTesting
