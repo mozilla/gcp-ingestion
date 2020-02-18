@@ -9,7 +9,7 @@ app = create_app()
 
 
 def main():
-    """Main."""
+    """Run app on the host and port set in the environment."""
     if __name__ == "__main__":
         host = environ.get("HOST", "0.0.0.0")
         port = int(environ.get("PORT", 8000))
