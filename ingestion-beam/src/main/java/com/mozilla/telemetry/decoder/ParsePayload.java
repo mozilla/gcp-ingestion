@@ -214,7 +214,13 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
         .ifPresent(v -> attributes.put(Attribute.SAMPLE_ID, Long.toString(calculateSampleId(v))));
   }
 
-  /** Extracts the client ID from the payload and adds it to `attributes`. */
+  /**
+   * Extracts the client ID from the payload and adds it to `attributes`.
+   *
+   * <p>Side-effect: JSON payload is modified in this method. The client ID is normalized
+   * in place in the JSON payload to avoid code duplication when extracting information from
+   * different ping structures.
+   */
   public static void addClientIdFromPayload(Map<String, String> attributes, ObjectNode json) {
     // Try to get glean-style client_info object.
     JsonNode gleanClientInfo = getGleanClientInfo(json);
