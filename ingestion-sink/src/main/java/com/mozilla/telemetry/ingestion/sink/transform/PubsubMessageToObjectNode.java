@@ -104,8 +104,8 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
   public static class Payload extends PubsubMessageToObjectNode {
 
     public static Payload of(List<String> strictSchemaDocTypes, String schemasLocation,
-        String schemaAliasesLocation, IOFunction<String, InputStream> open) {
-      return new Payload(strictSchemaDocTypes, schemasLocation, schemaAliasesLocation, open);
+        IOFunction<String, InputStream> open) {
+      return new Payload(strictSchemaDocTypes, schemasLocation, open);
     }
 
     private final Cache<String, String> normalizedNameCache = CacheBuilder.newBuilder()
@@ -117,7 +117,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
      * Transform {@link PubsubMessage} into {@link ObjectNode} in live table format.
      */
     private Payload(List<String> strictSchemaDocTypes, String schemasLocation,
-        String schemaAliasesLocation, IOFunction<String, InputStream> open) {
+        IOFunction<String, InputStream> open) {
       if (strictSchemaDocTypes == null) {
         strictSchema = message -> false;
       } else {
@@ -128,7 +128,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
           return strictSchemaDocTypeSet.contains(namespace + "/" + docType);
         };
       }
-      schemaStore = BigQuerySchemaStore.of(schemasLocation, schemaAliasesLocation, open);
+      schemaStore = BigQuerySchemaStore.of(schemasLocation, null, open);
     }
 
     /** measure rate of CoercedToInt. */

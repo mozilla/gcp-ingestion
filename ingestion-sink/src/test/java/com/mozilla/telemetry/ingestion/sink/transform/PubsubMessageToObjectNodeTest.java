@@ -205,7 +205,7 @@ public class PubsubMessageToObjectNodeTest {
   public void canFormatAsPayload() throws IOException {
     PubsubMessageToObjectNode transform = PubsubMessageToObjectNode //
         .Payload.of(ImmutableList.of("namespace_0/foo"), TestConstant.SCHEMAS_LOCATION,
-            TestConstant.SCHEMA_ALIASES_LOCATION, FileInputStream::new);
+            FileInputStream::new);
 
     final List<PubsubMessage> input;
     final String inputPath = Resources.getResource("testdata/payload-format-input.ndjson")
