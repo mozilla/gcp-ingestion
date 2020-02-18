@@ -27,6 +27,7 @@ import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -55,7 +56,7 @@ import org.apache.beam.sdk.values.KV;
  * <p>We also perform some manipulation of the parsed JSON to match details of our table
  * schemas in BigQuery.
  */
-public class PubsubMessageToTableRow {
+public class PubsubMessageToTableRow implements Serializable {
 
   public static PubsubMessageToTableRow of(ValueProvider<List<String>> strictSchemaDocTypes,
       ValueProvider<String> schemasLocation, ValueProvider<String> schemasAliasesLocation,
