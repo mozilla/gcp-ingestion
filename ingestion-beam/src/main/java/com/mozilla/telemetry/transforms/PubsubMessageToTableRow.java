@@ -40,20 +40,17 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
+import org.apache.beam.sdk.io.gcp.bigquery.TableDestinationCoderV3;
+import org.apache.beam.sdk.io.gcp.bigquery.TableRowJsonCoder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.transforms.MapElements;
-import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.WithFailures;
-import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
-import org.apache.beam.sdk.values.TypeDescriptors;
 
 /**
  * Parses JSON payloads using Google's JSON API model library, emitting a BigQuery-specific
@@ -62,8 +59,8 @@ import org.apache.beam.sdk.values.TypeDescriptors;
  * <p>We also perform some manipulation of the parsed JSON to match details of our table
  * schemas in BigQuery.
  */
-public class PubsubMessageToTableRow extends PTransform<PCollection<PubsubMessage>, //
-    Result<PCollection<KV<TableDestination, TableRow>>, PubsubMessage>> {
+public class PubsubMessageToTableRow
+    extends MapElementsWithErrors<PubsubMessage, KV<TableDestination, TableRow>> {
 
   public static PubsubMessageToTableRow of(ValueProvider<List<String>> strictSchemaDocTypes,
       ValueProvider<String> schemasLocation, ValueProvider<String> schemasAliasesLocation,
@@ -122,21 +119,12 @@ public class PubsubMessageToTableRow extends PTransform<PCollection<PubsubMessag
   }
 
   @Override
-  public Result<PCollection<KV<TableDestination, TableRow>>, PubsubMessage> expand(
-      PCollection<PubsubMessage> messages) {
-    return messages
-        .apply(MapElements.into(TypeDescriptors.kvs(TypeDescriptor.of(TableDestination.class),
-            TypeDescriptor.of(TableRow.class))).via((PubsubMessage msg) -> {
-              msg = PubsubConstraints.ensureNonNull(msg);
-              TableDestination tableDestination = keyByBigQueryTableDestination
-                  .getTableDestination(msg.getAttributeMap());
-              final TableRow tableRow = kvToTableRow(KV.of(tableDestination, msg));
-              return KV.of(tableDestination, tableRow);
-            }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-                PubsubMessageToTableRow.class.getSimpleName(), //
-                ee.element(), //
-                ee.exception())));
+  protected KV<TableDestination, TableRow> processElement(PubsubMessage message) {
+    message = PubsubConstraints.ensureNonNull(message);
+    TableDestination tableDestination = keyByBigQueryTableDestination
+        .getTableDestination(message.getAttributeMap());
+    final TableRow tableRow = kvToTableRow(KV.of(tableDestination, message));
+    return KV.of(tableDestination, tableRow);
   }
 
   /**
@@ -160,6 +148,14 @@ public class PubsubMessageToTableRow extends PTransform<PCollection<PubsubMessag
           throw new UncheckedIOException(e);
         }
     }
+  }
+
+  @Override
+  public WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> expand(
+      PCollection<PubsubMessage> input) {
+    WithErrors.Result<PCollection<KV<TableDestination, TableRow>>> result = super.expand(input);
+    result.output().setCoder(KvCoder.of(TableDestinationCoderV3.of(), TableRowJsonCoder.of()));
+    return result;
   }
 
   /**
