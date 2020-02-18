@@ -101,8 +101,8 @@ public class BigQueryTest {
     }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnOversizedMessage() {
+  @Test
+  public void canHandleOversizeMessage() {
     output.apply(
         PubsubMessage.newBuilder().putAttributes("error", Strings.repeat(".", MAX_BYTES)).build());
   }

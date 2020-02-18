@@ -50,6 +50,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     });
 
     return Optional.ofNullable(output.get())
+        // this is only reachable if getBatch returns a closed batch,
         .orElseThrow(() -> new IllegalArgumentException("Empty batch rejected input"));
   }
 
@@ -58,7 +59,8 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     // block this batch from completing by timeout until this future is resolved
     final CompletableFuture<Void> init = new CompletableFuture<>();
 
-    private final CompletableFuture<Void> full;
+    @VisibleForTesting
+    final CompletableFuture<Void> full;
     private final CompletableFuture<BatchResultT> result;
 
     @VisibleForTesting
@@ -89,7 +91,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
       }
       int newSize = size + 1;
       long newByteSize = byteSize + getByteSize(encodedInput);
-      if (newSize > maxMessages || newByteSize > maxBytes) {
+      if (size > 0 && (newSize > maxMessages || newByteSize > maxBytes)) {
         this.full.complete(null);
         return Optional.empty();
       }

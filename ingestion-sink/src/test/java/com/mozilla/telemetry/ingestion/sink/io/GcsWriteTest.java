@@ -105,8 +105,8 @@ public class GcsWriteTest {
     }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnOversizedMessage() {
+  @Test
+  public void canHandleOversizeMessage() {
     output.apply(PubsubMessage.newBuilder().putAttributes("meta", "data").build());
   }
 }
