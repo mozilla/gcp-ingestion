@@ -339,9 +339,9 @@ pyflakes==2.1.1 \
     --hash=sha256:17dbeb2e3f4d772725c777fabc446d5634d1038f234e77343108ce445ea69ce0 \
     --hash=sha256:d976835886f8c5b31d47970ed689944a0262b5f3afa00a5a7b4dc81e5449f8a2 \
     # via flake8
-pyparsing==2.4.5 \
-    --hash=sha256:20f995ecd72f2a1f4bf6b072b63b22e2eb457836601e76d6e5dfcd75436acc1f \
-    --hash=sha256:4ca62001be367f01bd3e92ecbb79070272a9d4964dce6a48a82ff0b8bc7e683a \
+pyparsing==2.4.6 \
+    --hash=sha256:4c830582a84fb022400b85429791bc551f1f4871c33f23e44f353119e92f969f \
+    --hash=sha256:c342dccb5250c08d45fd6f8b4a559613ca603b57498511740e65cd11a2e7dcec \
     # via packaging
 pytest-black==0.3.7 \
     --hash=sha256:75bbeccfe23442a190164c0bf202d7498df25451fa4177b781cee20183e7fc0d
