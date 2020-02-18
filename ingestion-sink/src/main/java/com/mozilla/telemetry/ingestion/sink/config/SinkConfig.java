@@ -46,7 +46,6 @@ public class SinkConfig {
   private static final String STREAMING_BATCH_MAX_BYTES = "STREAMING_BATCH_MAX_BYTES";
   private static final String STREAMING_BATCH_MAX_DELAY = "STREAMING_BATCH_MAX_DELAY";
   private static final String STREAMING_BATCH_MAX_MESSAGES = "STREAMING_BATCH_MAX_MESSAGES";
-  private static final String STREAMING_MESSAGE_MAX_BYTES = "STREAMING_MESSAGE_MAX_BYTES";
   private static final String STRICT_SCHEMA_DOCTYPES = "STRICT_SCHEMA_DOCTYPES";
 
   private static final List<String> INCLUDE_ENV_VARS = ImmutableList.of(INPUT_COMPRESSION,
@@ -55,12 +54,8 @@ public class SinkConfig {
       LOAD_MAX_FILES, OUTPUT_TABLE, OUTPUT_TOPIC, OUTPUT_TOPIC_EXECUTOR_THREADS,
       MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMA_ALIASES_LOCATION,
       SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY,
-      STREAMING_BATCH_MAX_MESSAGES, STREAMING_MESSAGE_MAX_BYTES, STRICT_SCHEMA_DOCTYPES);
+      STREAMING_BATCH_MAX_MESSAGES, STRICT_SCHEMA_DOCTYPES);
 
-  // BigQuery Streaming API Limits maximum row size to 1MiB. Row size is calculated for the
-  // encoded row, which is within a few bytes of protobuf serialized size, so the default is
-  // 1MB to leave room for differences.
-  private static final long DEFAULT_STREAMING_MESSAGE_MAX_BYTES = 1_000_000L; // 1MB
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
   // 10MB API limit by default.
@@ -245,15 +240,18 @@ public class SinkConfig {
             env.getDuration(STREAMING_BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
             getFormat(env));
-        long maxStreamingSize = env.getLong(STREAMING_MESSAGE_MAX_BYTES,
-            DEFAULT_STREAMING_MESSAGE_MAX_BYTES);
-        return new Output(env, this, message -> {
-          if (message.getSerializedSize() > maxStreamingSize) {
-            return fileOutput.apply(message);
-          } else {
-            return streamingOutput.apply(message);
-          }
-        });
+        Function<PubsubMessage, CompletableFuture<Void>> mixedOutput = message -> streamingOutput
+            .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
+              if (t.getCause() instanceof BigQuery.WriteErrors) {
+                BigQuery.WriteErrors cause = (BigQuery.WriteErrors) t.getCause();
+                if (cause.errors.size() == 1 && cause.errors.get(0).getMessage()
+                    .startsWith("Maximum allowed row size exceeded")) {
+                  return fileOutput.apply(message);
+                }
+              }
+              throw (RuntimeException) t;
+            }).thenCompose(v -> v);
+        return new Output(env, this, mixedOutput);
       }
     };
 

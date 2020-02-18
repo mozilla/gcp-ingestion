@@ -57,24 +57,31 @@ public class SinkBigQueryStreamingIntegrationTest {
           Field.of("payload", LegacySQLTypeName.BYTES)))
       .toBuilder().setTimePartitioning(TIME_PARTITIONING).setClustering(CLUSTERING).build();
 
-  private static final String submissionTimestamp = ZonedDateTime.now(ZoneOffset.UTC)
+  static final String SUBMISSION_TIMESTAMP = ZonedDateTime.now(ZoneOffset.UTC)
       .format(DateTimeFormatter.ISO_DATE_TIME);
 
-  static final List<PubsubMessage> inputs = ImmutableList.of(
-      PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("stream")) //
-          .putAttributes("document_type", "test") //
-          .putAttributes("document_version", "1") //
-          .putAttributes("submission_timestamp", submissionTimestamp) //
-          .build(),
-      PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("file_load")) //
-          .putAttributes("document_type", "test") //
-          .putAttributes("document_version", "2") //
-          .putAttributes("submission_timestamp", submissionTimestamp) //
-          .build());
+  protected List<PubsubMessage> getInputs() {
+    return ImmutableList.of(//
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("data")) //
+            .putAttributes("document_type", "test") //
+            .putAttributes("document_version", "1") //
+            .putAttributes("submission_timestamp", SUBMISSION_TIMESTAMP) //
+            .build(),
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8("data2")) //
+            .putAttributes("document_type", "test") //
+            .putAttributes("document_version", "2") //
+            .putAttributes("submission_timestamp", SUBMISSION_TIMESTAMP) //
+            .build());
+  }
 
-  private static final List<List<String>> expected = ImmutableList.of(
-      ImmutableList.of("test", "1", submissionTimestamp, "stream", "test_v1"),
-      ImmutableList.of("test", "2", submissionTimestamp, "file_load", "test_v2"));
+  protected List<List<String>> getExpected() {
+    return ImmutableList.of(//
+        ImmutableList.of("test", "1", SUBMISSION_TIMESTAMP, "data", "test_v1"),
+        ImmutableList.of("test", "2", SUBMISSION_TIMESTAMP, "data2", "test_v2"));
+  }
+
+  final List<PubsubMessage> inputs = getInputs();
+  private final List<List<String>> expected = getExpected();
 
   void runTest() throws Exception {
     inputs.forEach(message -> {

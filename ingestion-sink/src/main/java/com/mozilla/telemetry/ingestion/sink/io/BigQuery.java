@@ -35,12 +35,12 @@ public class BigQuery {
   private BigQuery() {
   }
 
-  @VisibleForTesting
-  static class WriteErrors extends RuntimeException {
+  public static class WriteErrors extends RuntimeException {
 
     public final List<BigQueryError> errors;
 
     private WriteErrors(List<BigQueryError> errors) {
+      super(errors.toString());
       this.errors = errors;
     }
   }
@@ -124,7 +124,6 @@ public class BigQuery {
       protected void checkResultFor(InsertAllResponse batchResult, int index) {
         Optional.ofNullable(batchResult.getErrorsFor(index)).filter(errors -> !errors.isEmpty())
             .ifPresent(errors -> {
-              LOG.warn("Write errors: " + errors.toString());
               throw new WriteErrors(errors);
             });
       }
