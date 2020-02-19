@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.ByteArrayOutputStream;
@@ -15,6 +15,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.MapElements.MapWithFailures;
+import org.apache.beam.sdk.transforms.WithFailures;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
  * A {@code PTransform} that adds metadata from attributes into the JSON payload.
@@ -23,7 +27,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
  * "metadata" key in the payload has been removed. Otherwise, this transform could add a
  * duplicate key leading to invalid JSON.
  */
-public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+public class AddMetadata {
 
   public static final String METADATA = "metadata";
 
@@ -54,8 +58,48 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
 
   private static final List<String> TOP_LEVEL_INT_FIELDS = ImmutableList.of(Attribute.SAMPLE_ID);
 
-  public static AddMetadata of() {
-    return INSTANCE;
+  /** Factory method to create mapper instance. */
+  public static MapWithFailures<PubsubMessage, PubsubMessage, PubsubMessage> of() {
+    return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage msg) -> {
+      msg = PubsubConstraints.ensureNonNull(msg);
+      // Get payload
+      final byte[] payload = msg.getPayload();
+
+      byte[] metadata;
+
+      try {
+        // Get attributes as bytes, throws IOException
+        metadata = Json.asBytes(attributesToMetadataPayload(msg.getAttributeMap()));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
+      // Ensure that we have a json object with no leading whitespace
+      if (payload.length < 2 || payload[0] != '{') {
+        throw new RuntimeException(new IOException("invalid json object: must start with {"));
+      }
+
+      // Create an output stream for joining metadata with payload
+      final ByteArrayOutputStream payloadWithMetadata = new ByteArrayOutputStream(
+          metadata.length + payload.length);
+      // Write metadata without trailing `}`
+      payloadWithMetadata.write(metadata, 0, metadata.length - 1);
+
+      // Start next json field, unless object was empty
+      if (payload.length > 2) {
+        // Write comma to start the next field
+        payloadWithMetadata.write(',');
+      }
+
+      // Write payload without leading `{`
+      payloadWithMetadata.write(payload, 1, payload.length - 1);
+
+      return new PubsubMessage(payloadWithMetadata.toByteArray(), msg.getAttributeMap());
+    }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
+            AddMetadata.class.getSimpleName(), //
+            ee.element(), //
+            ee.exception()));
   }
 
   /**
@@ -181,38 +225,7 @@ public class AddMetadata extends MapElementsWithErrors.ToPubsubMessageFrom<Pubsu
     putAttributes(attributes, metadata, Attribute.URI, "");
   }
 
-  @Override
-  protected PubsubMessage processElement(PubsubMessage message) throws IOException {
-    message = PubsubConstraints.ensureNonNull(message);
-    // Get payload
-    final byte[] payload = message.getPayload();
-    // Get attributes as bytes, throws IOException
-    final byte[] metadata = Json.asBytes(attributesToMetadataPayload(message.getAttributeMap()));
-    // Ensure that we have a json object with no leading whitespace
-    if (payload.length < 2 || payload[0] != '{') {
-      throw new IOException("invalid json object: must start with {");
-    }
-    // Create an output stream for joining metadata with payload
-    final ByteArrayOutputStream payloadWithMetadata = new ByteArrayOutputStream(
-        metadata.length + payload.length);
-    // Write metadata without trailing `}`
-    payloadWithMetadata.write(metadata, 0, metadata.length - 1);
-    // Start next json field, unless object was empty
-    if (payload.length > 2) {
-      // Write comma to start the next field
-      payloadWithMetadata.write(',');
-    }
-    // Write payload without leading `{`
-    payloadWithMetadata.write(payload, 1, payload.length - 1);
-    return new PubsubMessage(payloadWithMetadata.toByteArray(), message.getAttributeMap());
-  }
-
   ////////
-
-  private static final AddMetadata INSTANCE = new AddMetadata();
-
-  private AddMetadata() {
-  }
 
   private static void putAttributes(Map<String, String> attributes, ObjectNode metadata,
       String nestingKey, String prefix) {
