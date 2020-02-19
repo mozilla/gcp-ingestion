@@ -5,7 +5,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
@@ -25,6 +24,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
@@ -79,7 +79,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
             + ",\"uri\":\"/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049\"" //
             + "},\"payload\":\"\"}");
 
-    WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> parsed = pipeline
         .apply(Create.of(Iterables.concat(validInput, invalidInput)))
         .apply("DecodeJsonInput", InputFileFormat.json.decode()) //
         .apply(ParseUri.of());
@@ -88,7 +88,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
         .apply("EncodeJsonOutput", OutputFileFormat.json.encode());
     PAssert.that(output).containsInAnyOrder(expected);
 
-    PCollection<String> exceptions = parsed.errors() //
+    PCollection<String> exceptions = parsed.failures() //
         .apply(MapElements.into(TypeDescriptors.strings())
             .via(message -> message.getAttribute("exception_class")));
     PAssert.that(exceptions).containsInAnyOrder(
@@ -299,8 +299,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException");
 
-    WithErrors.Result<PCollection<PubsubMessage>> parsed = pipeline.apply(Create.of(input))
-        .apply("DecodeJsonInput", InputFileFormat.json.decode()) //
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> parsed = pipeline
+        .apply(Create.of(input)).apply("DecodeJsonInput", InputFileFormat.json.decode()) //
         .apply(ParseUri.of());
 
     PCollection<PubsubMessage> output = parsed.output();
@@ -323,7 +323,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
         }));
     PAssert.that(attributesSansUri).containsInAnyOrder(expectedAttributes);
 
-    PCollection<String> uriExceptions = parsed.errors() //
+    PCollection<String> uriExceptions = parsed.failures() //
         .apply("ExceptionClass", MapElements.into(TypeDescriptors.strings())
             .via(message -> message.getAttribute("exception_class")));
     PAssert.that(uriExceptions).containsInAnyOrder(expectedExceptions);

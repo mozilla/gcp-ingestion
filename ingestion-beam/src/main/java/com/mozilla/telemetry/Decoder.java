@@ -62,7 +62,7 @@ public class Decoder extends Sink {
             // https://github.com/mozilla/gcp-ingestion/issues/1096
             .apply(ParseProxy.of()) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
-            .apply(ParseUri.of()).errorsTo(errorCollections) //
+            .apply("ParseUri", ParseUri.of()).failuresTo(errorCollections) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
             // See discussion in https://github.com/mozilla/gcp-ingestion/issues/776
             .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
