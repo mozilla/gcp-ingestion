@@ -1,6 +1,6 @@
 aiohttp==3.6.2
 dockerflow==2019.10.0
-google-cloud-container==0.3.0
+google-cloud-container==0.4.0
 google-cloud-monitoring==0.34.0
 google-cloud-pubsub==1.0.2
 gunicorn==20.0.4

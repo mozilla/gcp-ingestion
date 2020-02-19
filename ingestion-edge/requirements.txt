@@ -104,9 +104,9 @@ google-auth==1.11.0 \
     --hash=sha256:44549e69ac39acf41fdf47f3f39a06e4e68378476806760d94a2c6a361b2bb06 \
     --hash=sha256:b2d83edc02a9deeed9b1b839046671fd9eda223d21bd2dd50051559787032fd8 \
     # via google-api-core, kubernetes
-google-cloud-container==0.3.0 \
-    --hash=sha256:135d2d260bdf38a07125b199e5b35793e48b8eb771097fd4db72f520b02e4f3a \
-    --hash=sha256:90cceceb487f1f4f2336b3674d594bc5e492fadbe27a5f06ca056d7148fd90ba
+google-cloud-container==0.4.0 \
+    --hash=sha256:4da874deac3310df8bd76fa20b991b1aecfc3121e2ec35e8409da31f29e7f21f \
+    --hash=sha256:ec740f5978e74af393e9adc6e4e3767223585c2d5a3bf8967467cb65daf13c09
 google-cloud-monitoring==0.34.0 \
     --hash=sha256:0f9dea65e4b82c426dc9700cb6011ab4eac43394b38c4fd0b7045735ddb4a760 \
     --hash=sha256:75370af645dd815c234561e7b356fa5d99b0ee6448c0e5d013455c72af961d0b
