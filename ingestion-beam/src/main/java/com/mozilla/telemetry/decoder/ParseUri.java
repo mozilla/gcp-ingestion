@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors;
+import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
@@ -20,20 +20,14 @@ import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.MapElements.MapWithFailures;
+import org.apache.beam.sdk.transforms.WithFailures;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
-public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+public class ParseUri {
 
-  public static ParseUri of() {
-    return INSTANCE;
-  }
-
-  ////////
-
-  private static class InvalidUriException extends Exception {
-
-    InvalidUriException() {
-      super();
-    }
+  private static class InvalidUriException extends RuntimeException {
 
     InvalidUriException(String message) {
       super(message);
@@ -47,11 +41,6 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
           numUnexpectedElements));
     }
   }
-
-  private ParseUri() {
-  }
-
-  private static final ParseUri INSTANCE = new ParseUri();
 
   public static final String TELEMETRY = "telemetry";
 
@@ -76,48 +65,58 @@ public class ParseUri extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMe
     return map;
   }
 
-  @Override
-  protected PubsubMessage processElement(PubsubMessage message)
-      throws InvalidUriException, IOException {
-    message = PubsubConstraints.ensureNonNull(message);
-    // Copy attributes
-    final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-    byte[] payload = message.getPayload();
+  /** Factory method to create mapper instance. */
+  public static MapWithFailures<PubsubMessage, PubsubMessage, PubsubMessage> of() {
+    return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
+      message = PubsubConstraints.ensureNonNull(message);
+      // Copy attributes
+      final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+      byte[] payload = message.getPayload();
 
-    // parse uri based on prefix
-    final String uri = attributes.get("uri");
-    if (uri == null) {
-      // We should only have a missing uri attribute if we're replaying messages from decoded
-      // payloads in which case they already have parsed URI attributes encoded in the payload
-      // and these will be recovered in ParsePayload.
-      return message;
-    } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
-      // We don't yet have access to the version field, so we delay populating the document_version
-      // attribute until the ParsePayload step where we have map-like access to the JSON content.
-      attributes.put(Attribute.DOCUMENT_NAMESPACE, TELEMETRY);
-      attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
-          uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
-    } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
-      attributes.putAll(
-          zip(GENERIC_URI_SUFFIX_ELEMENTS, uri.substring(GENERIC_URI_PREFIX.length()).split("/")));
-    } else if (uri.startsWith(StubUri.PREFIX)) {
-      payload = StubUri.parse(uri, attributes);
+      // parse uri based on prefix
+      final String uri = attributes.get("uri");
+      if (uri == null) {
+        // We should only have a missing uri attribute if we're replaying messages from decoded
+        // payloads in which case they already have parsed URI attributes encoded in the payload
+        // and these will be recovered in ParsePayload.
+        return message;
+      } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
+        // We don't yet have access to the version field, so we delay populating the
+        // document_version
+        // attribute until the ParsePayload step where we have map-like access to the JSON content.
+        attributes.put(Attribute.DOCUMENT_NAMESPACE, TELEMETRY);
+        attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
+            uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
+      } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
+        attributes.putAll(zip(GENERIC_URI_SUFFIX_ELEMENTS,
+            uri.substring(GENERIC_URI_PREFIX.length()).split("/")));
+      } else if (uri.startsWith(StubUri.PREFIX)) {
+        try {
+          payload = StubUri.parse(uri, attributes);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
 
-      if (attributes.get(Attribute.MESSAGE_ID) != null) {
-        // convert PubSub message ID to document ID which will be a V3 UUID using a null namespace
-        // See https://stackoverflow.com/a/55296637
-        UUID documentId = UUID.nameUUIDFromBytes(
-            attributes.get(Attribute.MESSAGE_ID).getBytes(StandardCharsets.UTF_8));
-        attributes.put(Attribute.DOCUMENT_ID, documentId.toString().toLowerCase());
+        if (attributes.get(Attribute.MESSAGE_ID) != null) {
+          // convert PubSub message ID to document ID which will be a V3 UUID using a null namespace
+          // See https://stackoverflow.com/a/55296637
+          UUID documentId = UUID.nameUUIDFromBytes(
+              attributes.get(Attribute.MESSAGE_ID).getBytes(StandardCharsets.UTF_8));
+          attributes.put(Attribute.DOCUMENT_ID, documentId.toString().toLowerCase());
+        }
+      } else {
+        throw new InvalidUriException("Unknown URI prefix");
       }
-    } else {
-      throw new InvalidUriException("Unknown URI prefix");
-    }
 
-    // message ID can be removed since it's only used for generating document ID but not used any
-    // further
-    attributes.remove(Attribute.MESSAGE_ID);
-    return new PubsubMessage(payload, attributes);
+      // message ID can be removed since it's only used for generating document ID but not used any
+      // further
+      attributes.remove(Attribute.MESSAGE_ID);
+      return new PubsubMessage(payload, attributes);
+    }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
+            ParseUri.class.getSimpleName(), //
+            ee.element(), //
+            ee.exception()));
   }
 
   /**
