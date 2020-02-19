@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.ingestion.sink.config;
 
 import com.google.api.gax.batching.FlowControlSettings;
+import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -247,6 +248,9 @@ public class SinkConfig {
                     .startsWith("Maximum allowed row size exceeded")) {
                   return fileOutput.apply(message);
                 }
+              } else if (t.getCause() instanceof BigQueryException && t.getCause().getMessage()
+                  .startsWith("Request payload size exceeds the limit")) {
+                return fileOutput.apply(message);
               }
               throw (RuntimeException) t;
             }).thenCompose(v -> v);
@@ -308,7 +312,6 @@ public class SinkConfig {
       case "decoded":
         return PubsubMessageToObjectNode.Decoded.of();
       case "payload":
-        // TODO
         return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
             env.getString(SCHEMAS_LOCATION), FileInputStream::new);
       default:

@@ -11,7 +11,8 @@ import org.junit.Test;
 
 public class SinkBigQueryMixedIntegrationTest extends SinkBigQueryStreamingIntegrationTest {
 
-  private static final String FILE_LOAD_DATA = Strings.repeat("x", 2 * 1024 * 1024);
+  private static final String OVERSIZE_ROW_DATA = Strings.repeat("x", 2 * 1024 * 1024);
+  private static final String OVERSIZE_REQUEST_DATA = Strings.repeat("x", 8 * 1024 * 1024);
 
   @Rule
   public final GcsBucket gcs = new GcsBucket();
@@ -19,9 +20,14 @@ public class SinkBigQueryMixedIntegrationTest extends SinkBigQueryStreamingInteg
   @Override
   protected List<PubsubMessage> getInputs() {
     return ImmutableList.of(super.getInputs().get(0),
-        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8(FILE_LOAD_DATA)) //
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8(OVERSIZE_ROW_DATA)) //
             .putAttributes("document_type", "test") //
             .putAttributes("document_version", "2") //
+            .putAttributes("submission_timestamp", SUBMISSION_TIMESTAMP) //
+            .build(),
+        PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8(OVERSIZE_REQUEST_DATA)) //
+            .putAttributes("document_type", "test") //
+            .putAttributes("document_version", "3") //
             .putAttributes("submission_timestamp", SUBMISSION_TIMESTAMP) //
             .build());
   }
@@ -29,7 +35,8 @@ public class SinkBigQueryMixedIntegrationTest extends SinkBigQueryStreamingInteg
   @Override
   protected List<List<String>> getExpected() {
     return ImmutableList.of(super.getExpected().get(0),
-        ImmutableList.of("test", "2", SUBMISSION_TIMESTAMP, FILE_LOAD_DATA, "test_v2"));
+        ImmutableList.of("test", "2", SUBMISSION_TIMESTAMP, OVERSIZE_ROW_DATA, "test_v2"),
+        ImmutableList.of("test", "3", SUBMISSION_TIMESTAMP, OVERSIZE_REQUEST_DATA, "test_v3"));
   }
 
   @Test
