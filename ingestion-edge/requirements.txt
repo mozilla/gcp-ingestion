@@ -110,9 +110,9 @@ google-cloud-container==0.4.0 \
 google-cloud-monitoring==0.34.0 \
     --hash=sha256:0f9dea65e4b82c426dc9700cb6011ab4eac43394b38c4fd0b7045735ddb4a760 \
     --hash=sha256:75370af645dd815c234561e7b356fa5d99b0ee6448c0e5d013455c72af961d0b
-google-cloud-pubsub==1.0.2 \
-    --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
-    --hash=sha256:afb08eb558f3e4d836e6f77443f81555d6921ffc888c7c3085acd1205fba6e8c
+google-cloud-pubsub==1.2.0 \
+    --hash=sha256:7b1651a74866576c8ff27ce36285ac5f33df010a362058cae33a3023c62eedc7 \
+    --hash=sha256:9c28b44ab4cd51a807832e02b808716a3b4bd8f4906e09a1336586b07e824919
 googleapis-common-protos[grpc]==1.6.0 \
     --hash=sha256:e61b8ed5e36b976b487c6e7b15f31bb10c7a0ca7bd5c0e837f4afab64b53a0c6 \
     # via google-api-core, grpc-google-iam-v1
