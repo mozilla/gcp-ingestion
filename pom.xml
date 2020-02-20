@@ -169,8 +169,9 @@
                             <goal>single</goal>
                         </goals>
                         <configuration>
+                            <ignoreMissingDescriptor>true</ignoreMissingDescriptor>
                             <descriptors>
-                                <descriptor>${project.parent.basedir}/ingestion-core/src/test/resources/schema/test-schemas/assembly.xml</descriptor>
+                                <descriptor>${project.build.testOutputDirectory}/schema/test-schemas/assembly.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${project.build.testOutputDirectory}/schema</outputDirectory>
                             <finalName>test-schemas</finalName>
