@@ -4,12 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.common.annotations.VisibleForTesting;
@@ -65,50 +61,6 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   }
 
   /**
-   * Read bytes into a tree of {@link com.fasterxml.jackson.databind.JsonNode}.
-   *
-   * @exception IOException if {@code data} does not contain a valid json object.
-   */
-  public static ObjectNode readObjectNode(byte[] data) throws IOException {
-    // Read data into a tree
-    TreeNode root = MAPPER.readTree(data);
-    // Check that we have an object, because treeToValue won't
-    if (root == null || !root.isObject()) {
-      throw new IOException("json value is not an object");
-    }
-    return (ObjectNode) root;
-  }
-
-  /**
-   * Read bytes into an {@link ArrayNode}.
-   *
-   * @exception IOException if {@code data} does not contain a valid json object.
-   */
-  public static ArrayNode readArrayNode(byte[] data) throws IOException {
-    // Read data into a tree
-    TreeNode root = MAPPER.readTree(data);
-    // Check that we have an array, because treeToValue won't
-    if (root == null || !root.isArray()) {
-      throw new IOException("json value is not an array");
-    }
-    return (ArrayNode) root;
-  }
-
-  /**
-   * Return a new, empty {@link ObjectNode}.
-   */
-  public static ObjectNode createObjectNode() {
-    return MAPPER.createObjectNode();
-  }
-
-  /**
-   * Return a new, empty {@link ArrayNode}.
-   */
-  public static ArrayNode createArrayNode() {
-    return MAPPER.createArrayNode();
-  }
-
-  /**
    * Read a {@link PubsubMessage} from a string.
    *
    * @exception IOException if {@code data} does not contain a valid {@link PubsubMessage}.
@@ -122,24 +74,6 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
       throw new IOException("not a valid PubsubMessage.payload: null");
     }
     return output;
-  }
-
-  /**
-   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
-   *
-   * @throws JsonProcessingException if the conversion is unsuccessful
-   */
-  public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
-    return MAPPER.treeToValue(root, klass);
-  }
-
-  /**
-   * Serialize {@code data} as a {@link String}.
-   *
-   * @exception IOException if data cannot be encoded as json.
-   */
-  public static String asString(Object data) throws IOException {
-    return MAPPER.writeValueAsString(data);
   }
 
   /**

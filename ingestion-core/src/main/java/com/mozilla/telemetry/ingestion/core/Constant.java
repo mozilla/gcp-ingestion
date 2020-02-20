@@ -48,4 +48,15 @@ public class Constant {
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";
     public static final String X_PIPELINE_PROXY = "x_pipeline_proxy";
   }
+
+  public static class FieldName {
+
+    private FieldName() {
+    }
+
+    public static final String ADDITIONAL_PROPERTIES = "additional_properties";
+    public static final String KEY = "key";
+    public static final String LIST = "list";
+    public static final String PAYLOAD = "payload";
+  }
 }

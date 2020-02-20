@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.ingestion.sink.config;
 
 import com.google.api.gax.batching.FlowControlSettings;
+import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -16,6 +17,7 @@ import com.mozilla.telemetry.ingestion.sink.transform.DecompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
+import java.io.FileInputStream;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -40,22 +42,20 @@ public class SinkConfig {
   private static final String OUTPUT_TOPIC_EXECUTOR_THREADS = "OUTPUT_TOPIC_EXECUTOR_THREADS";
   private static final String MAX_OUTSTANDING_ELEMENT_COUNT = "MAX_OUTSTANDING_ELEMENT_COUNT";
   private static final String MAX_OUTSTANDING_REQUEST_BYTES = "MAX_OUTSTANDING_REQUEST_BYTES";
+  private static final String SCHEMAS_LOCATION = "SCHEMAS_LOCATION";
   private static final String STREAMING_BATCH_MAX_BYTES = "STREAMING_BATCH_MAX_BYTES";
   private static final String STREAMING_BATCH_MAX_DELAY = "STREAMING_BATCH_MAX_DELAY";
   private static final String STREAMING_BATCH_MAX_MESSAGES = "STREAMING_BATCH_MAX_MESSAGES";
-  private static final String STREAMING_MESSAGE_MAX_BYTES = "STREAMING_MESSAGE_MAX_BYTES";
+  private static final String STRICT_SCHEMA_DOCTYPES = "STRICT_SCHEMA_DOCTYPES";
 
   private static final List<String> INCLUDE_ENV_VARS = ImmutableList.of(INPUT_COMPRESSION,
       INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES, OUTPUT_BUCKET,
       OUTPUT_COMPRESSION, OUTPUT_FORMAT, BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY,
       LOAD_MAX_FILES, OUTPUT_TABLE, OUTPUT_TOPIC, OUTPUT_TOPIC_EXECUTOR_THREADS,
-      MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, STREAMING_BATCH_MAX_BYTES,
-      STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES, STREAMING_MESSAGE_MAX_BYTES);
+      MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION,
+      STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
+      STRICT_SCHEMA_DOCTYPES);
 
-  // BigQuery Streaming API Limits maximum row size to 1MiB. Row size is calculated for the
-  // encoded row, which is within a few bytes of protobuf serialized size, so the default is
-  // 1MB to leave room for differences.
-  private static final long DEFAULT_STREAMING_MESSAGE_MAX_BYTES = 1_000_000L; // 1MB
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
   // 10MB API limit by default.
@@ -240,15 +240,21 @@ public class SinkConfig {
             env.getDuration(STREAMING_BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
             getFormat(env));
-        long maxStreamingSize = env.getLong(STREAMING_MESSAGE_MAX_BYTES,
-            DEFAULT_STREAMING_MESSAGE_MAX_BYTES);
-        return new Output(env, this, message -> {
-          if (message.getSerializedSize() > maxStreamingSize) {
-            return fileOutput.apply(message);
-          } else {
-            return streamingOutput.apply(message);
-          }
-        });
+        Function<PubsubMessage, CompletableFuture<Void>> mixedOutput = message -> streamingOutput
+            .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
+              if (t.getCause() instanceof BigQuery.WriteErrors) {
+                BigQuery.WriteErrors cause = (BigQuery.WriteErrors) t.getCause();
+                if (cause.errors.size() == 1 && cause.errors.get(0).getMessage()
+                    .startsWith("Maximum allowed row size exceeded")) {
+                  return fileOutput.apply(message);
+                }
+              } else if (t.getCause() instanceof BigQueryException && t.getCause().getMessage()
+                  .startsWith("Request payload size exceeds the limit")) {
+                return fileOutput.apply(message);
+              }
+              throw (RuntimeException) t;
+            }).thenCompose(v -> v);
+        return new Output(env, this, mixedOutput);
       }
     };
 
@@ -298,9 +304,19 @@ public class SinkConfig {
     }
   }
 
-  private static PubsubMessageToObjectNode.Format getFormat(Env env) {
-    return PubsubMessageToObjectNode.Format.valueOf(
-        env.getString(OUTPUT_FORMAT, PubsubMessageToObjectNode.Format.RAW.name()).toUpperCase());
+  private static PubsubMessageToObjectNode getFormat(Env env) {
+    final String format = env.getString(OUTPUT_FORMAT, "raw").toLowerCase();
+    switch (format) {
+      case "raw":
+        return PubsubMessageToObjectNode.Raw.of();
+      case "decoded":
+        return PubsubMessageToObjectNode.Decoded.of();
+      case "payload":
+        return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
+            env.getString(SCHEMAS_LOCATION), FileInputStream::new);
+      default:
+        throw new IllegalArgumentException("Format not yet implemented: " + format);
+    }
   }
 
   private static DecompressPayload getInputCompression(Env env) {

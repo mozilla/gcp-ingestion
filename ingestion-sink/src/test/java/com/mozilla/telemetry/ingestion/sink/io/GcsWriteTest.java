@@ -13,7 +13,7 @@ import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
+import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -50,7 +50,7 @@ public class GcsWriteTest {
     writer = mock(WriteChannel.class);
     when(storage.writer(any())).thenReturn(writer);
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
-        Format.RAW, this::batchCloseHook);
+        PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
   }
 
   @Test
@@ -64,7 +64,7 @@ public class GcsWriteTest {
   @Test
   public void canSendWithNoDelay() {
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
-        BATCH_KEY_TEMPLATE, Format.RAW, this::batchCloseHook);
+        BATCH_KEY_TEMPLATE, PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
     output.apply(EMPTY_MESSAGE).join();
     assertEquals(1, output.batches.get(BATCH_KEY).size);
     assertEquals(EMPTY_MESSAGE_SIZE, output.batches.get(BATCH_KEY).byteSize);
@@ -105,8 +105,8 @@ public class GcsWriteTest {
     }
   }
 
-  @Test(expected = IllegalArgumentException.class)
-  public void failsOnOversizedMessage() {
+  @Test
+  public void canHandleOversizeMessage() {
     output.apply(PubsubMessage.newBuilder().putAttributes("meta", "data").build());
   }
 }

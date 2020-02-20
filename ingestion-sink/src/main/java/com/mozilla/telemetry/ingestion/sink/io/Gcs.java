@@ -8,7 +8,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode.Format;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.IOException;
@@ -35,10 +34,10 @@ public class Gcs {
       private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-          PubsubMessageToTemplatedString batchKeyTemplate, Format format,
+          PubsubMessageToTemplatedString batchKeyTemplate, PubsubMessageToObjectNode encoder,
           Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
         super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
-        this.encoder = new PubsubMessageToObjectNode(format);
+        this.encoder = encoder;
       }
 
       @Override

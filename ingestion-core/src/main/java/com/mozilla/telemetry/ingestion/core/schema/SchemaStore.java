@@ -131,7 +131,7 @@ public abstract class SchemaStore<T> {
     try (InputStream bi = new BufferedInputStream(inputStream);
         InputStream gzi = new GzipCompressorInputStream(bi);
         ArchiveInputStream i = new TarArchiveInputStream(gzi);) {
-      ArchiveEntry entry = null;
+      ArchiveEntry entry;
       while ((entry = i.getNextEntry()) != null) {
         if (!i.canReadEntryData(entry)) {
           LOG.warn("Unable to read tar file entry: " + entry.getName());

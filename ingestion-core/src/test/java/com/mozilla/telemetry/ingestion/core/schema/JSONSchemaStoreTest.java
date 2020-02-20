@@ -11,8 +11,8 @@ import org.junit.Test;
 @SuppressWarnings("checkstyle:AbbreviationAsWordInName")
 public class JSONSchemaStoreTest {
 
-  private static final JSONSchemaStore store = JSONSchemaStore.of(Constant.SCHEMAS_LOCATION,
-      Constant.SCHEMA_ALIASES_LOCATION, null);
+  private static final JSONSchemaStore store = JSONSchemaStore.of(TestConstant.SCHEMAS_LOCATION,
+      TestConstant.SCHEMA_ALIASES_LOCATION, null);
 
   @Test
   public void testNumSchemas() {
