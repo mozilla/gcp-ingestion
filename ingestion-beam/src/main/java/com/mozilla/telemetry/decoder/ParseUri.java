@@ -9,6 +9,7 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -74,7 +75,7 @@ public class ParseUri {
       byte[] payload = message.getPayload();
 
       // parse uri based on prefix
-      final String uri = attributes.get("uri");
+      final String uri = attributes.get(Attribute.URI);
       if (uri == null) {
         // We should only have a missing uri attribute if we're replaying messages from decoded
         // payloads in which case they already have parsed URI attributes encoded in the payload
@@ -94,7 +95,7 @@ public class ParseUri {
         try {
           payload = StubUri.parse(uri, attributes);
         } catch (IOException e) {
-          throw new RuntimeException(e);
+          throw new UncheckedIOException(e);
         }
 
         if (attributes.get(Attribute.MESSAGE_ID) != null) {
