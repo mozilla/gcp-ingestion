@@ -151,7 +151,7 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
         case QUERY:
           read = read.fromQuery(tableSpec).usingStandardSql();
       }
-      if (method == BigQueryReadMethod.storageapi) {
+      if (source == Source.TABLE && method == BigQueryReadMethod.storageapi) {
         if (rowRestriction != null) {
           read = read.withRowRestriction(rowRestriction);
         }
