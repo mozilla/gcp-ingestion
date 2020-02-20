@@ -71,7 +71,7 @@ public class Decoder extends Sink {
             .errorsTo(errorCollections) //
             .apply(ParseUserAgent.of()) //
             .apply(NormalizeAttributes.of()) //
-            .apply(AddMetadata.of()).errorsTo(errorCollections) //
+            .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
             .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
             .sendDuplicateMetadataToErrors().errorsTo(errorCollections)) //
         .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)

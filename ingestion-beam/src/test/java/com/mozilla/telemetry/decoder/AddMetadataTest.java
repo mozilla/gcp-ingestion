@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
@@ -20,6 +19,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.junit.Rule;
@@ -36,7 +36,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     Map<String, String> attributes = ImmutableMap.<String, String>builder().put("sample_id", "18")
         .put("geo_country", "CA").put("x_debug_id", "mysession")
         .put("normalized_channel", "release").build();
-    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline //
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline //
         .apply(Create.of(input)) //
         .apply("DecodeTextInput", InputFileFormat.text.decode()) //
         .apply("AddAttributes",
@@ -57,7 +57,7 @@ public class AddMetadataTest extends TestWithDeterministicJson {
             + ",\"sample_id\":18" //
             + ",\"id\":null}");
     final List<String> expectedError = Arrays.asList("{", "[]");
-    final PCollection<String> error = output.errors() //
+    final PCollection<String> error = output.failures() //
         .apply("EncodeTextError", OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 
