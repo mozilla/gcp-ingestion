@@ -12,6 +12,7 @@ import com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import com.google.common.util.concurrent.UncheckedExecutionException;
@@ -23,6 +24,13 @@ import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
+import io.opencensus.stats.Aggregation;
+import io.opencensus.stats.Measure.MeasureLong;
+import io.opencensus.stats.Stats;
+import io.opencensus.stats.StatsRecorder;
+import io.opencensus.stats.View;
+import io.opencensus.stats.View.Name;
+import io.opencensus.stats.ViewManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -103,9 +111,67 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
 
   public static class Payload extends PubsubMessageToObjectNode {
 
-    public static Payload of(List<String> strictSchemaDocTypes, String schemasLocation,
-        IOFunction<String, InputStream> open) {
-      return new Payload(strictSchemaDocTypes, schemasLocation, open);
+    public static class WithOpenCensusMetrics extends Payload {
+
+      public static WithOpenCensusMetrics of(List<String> strictSchemaDocTypes,
+          String schemasLocation, IOFunction<String, InputStream> open) {
+        return new WithOpenCensusMetrics(strictSchemaDocTypes, schemasLocation, open);
+      }
+
+      /**
+       * Measure transforming {@link PubsubMessage} into {@link ObjectNode} with OpenCensus metrics.
+       */
+      private WithOpenCensusMetrics(List<String> strictSchemaDocTypes, String schemasLocation,
+          IOFunction<String, InputStream> open) {
+        super(strictSchemaDocTypes, schemasLocation, open);
+        setupOpenCensus();
+      }
+
+      private static final MeasureLong COERCED_TO_INT = MeasureLong.create("coerced_to_int",
+          "The number of values coerced to integers", "1");
+      private static final MeasureLong NOT_COERCED_TO_INT = MeasureLong.create("not_coerced_to_int",
+          "The number of values that failed to be coerced to int", "1");
+      private static final MeasureLong NOT_COERCED_TO_BOOL = MeasureLong.create(
+          "not_coerced_to_bool", "The number of values that failed to be coerced to bool", "1");
+      private static final MeasureLong COERCION_FAILURE_IN_LIST = MeasureLong.create(
+          "coercion_failure_in_list", "The number of values that failed to be coerced in lists",
+          "1");
+      private static final Aggregation.Count COUNT_AGGREGATION = Aggregation.Count.create();
+      private static final StatsRecorder STATS_RECORDER = Stats.getStatsRecorder();
+
+      private static void setupOpenCensus() {
+        // Every meeasure must have a view or recorded metrics will be dropped and never exported
+        ViewManager viewManager = Stats.getViewManager();
+        for (MeasureLong measure : ImmutableList.of(COERCED_TO_INT, NOT_COERCED_TO_INT,
+            NOT_COERCED_TO_BOOL, COERCION_FAILURE_IN_LIST)) {
+          viewManager.registerView(View.create(Name.create(measure.getName()),
+              measure.getDescription(), measure, COUNT_AGGREGATION, ImmutableList.of()));
+        }
+      }
+
+      /** measure rate of CoercedToInt. */
+      @Override
+      protected void incrementCoercedToInt() {
+        STATS_RECORDER.newMeasureMap().put(COERCED_TO_INT, 1).record();
+      }
+
+      /** measure rate of NotCoercedToInt. */
+      @Override
+      protected void incrementNotCoercedToInt() {
+        STATS_RECORDER.newMeasureMap().put(NOT_COERCED_TO_INT, 1).record();
+      }
+
+      /** measure rate of NotCoercedToBool. */
+      @Override
+      protected void incrementNotCoercedToBool() {
+        STATS_RECORDER.newMeasureMap().put(NOT_COERCED_TO_BOOL, 1).record();
+      }
+
+      /** measure rate of CoercionFailureInList. */
+      @Override
+      protected void incrementCoercionFailureInList() {
+        STATS_RECORDER.newMeasureMap().put(COERCION_FAILURE_IN_LIST, 1).record();
+      }
     }
 
     private final Cache<String, String> normalizedNameCache = CacheBuilder.newBuilder()
@@ -132,27 +198,19 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     }
 
     /** measure rate of CoercedToInt. */
-    private void incrementCoercedToInt() {
-      // not yet implemented
-      // formerly coercedToInt.inc();
+    protected void incrementCoercedToInt() {
     }
 
     /** measure rate of NotCoercedToInt. */
-    private void incrementNotCoercedToInt() {
-      // not yet implemented
-      // formerly notCoercedToInt.inc();
+    protected void incrementNotCoercedToInt() {
     }
 
     /** measure rate of NotCoercedToBool. */
-    private void incrementNotCoercedToBool() {
-      // not yet implemented
-      // formerly notCoercedToBool.inc();
+    protected void incrementNotCoercedToBool() {
     }
 
     /** measure rate of CoercionFailureInList. */
-    private void incrementCoercionFailureInList() {
-      // not yet implemented
-      // formerly coercionFailureInList.inc()
+    protected void incrementCoercionFailureInList() {
     }
 
     /**

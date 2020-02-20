@@ -48,7 +48,7 @@ public class GcsWriteTest {
   public void mockBigQueryResponse() {
     storage = mock(Storage.class);
     writer = mock(WriteChannel.class);
-    when(storage.writer(any())).thenReturn(writer);
+    when(storage.writer(any(BlobInfo.class))).thenReturn(writer);
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
         PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
   }
