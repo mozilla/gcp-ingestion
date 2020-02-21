@@ -46,7 +46,7 @@
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
-        <google-cloud.version>1.61.0</google-cloud.version>
+        <google-cloud.version>1.103.0</google-cloud.version>
         <jackson.version>2.9.10</jackson.version>
         <avro.version>1.8.2</avro.version>
 
