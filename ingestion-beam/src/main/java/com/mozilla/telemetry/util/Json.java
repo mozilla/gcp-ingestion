@@ -77,6 +77,13 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   }
 
   /**
+   * Duplicate asString from core Json#asString to ensure PubsubMessageMixin has been applied.
+   */
+  public static String asString(Object data) throws IOException {
+    return MAPPER.writeValueAsString(data);
+  }
+
+  /**
    * Jackson mixin for decoding {@link PubsubMessage} from json.
    *
    * <p>This is necessary because jackson can automatically determine how to encode

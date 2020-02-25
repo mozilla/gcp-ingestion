@@ -26,6 +26,7 @@ public class MessageScrubber {
   public static class AffectedByBugException extends Exception {
 
     public AffectedByBugException(String bugNumber) {
+      super(bugNumber);
     }
   }
 
