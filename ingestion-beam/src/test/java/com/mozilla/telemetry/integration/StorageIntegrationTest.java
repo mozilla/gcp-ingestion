@@ -109,13 +109,8 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
         "--inputType=file", "--outputFileFormat=json", "--outputType=file",
         "--errorOutputType=file",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
-<<<<<<< HEAD
-        "--schemasLocation=schemas.tar.gz" });
-=======
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--schemaAliasesLocation=" + aliases });
->>>>>>> Update tests with ISP lookup
-
+        "--schemasLocation=schemas.tar.gz" });
   }
 
   private void uploadInputFile(String localPath) throws IOException {

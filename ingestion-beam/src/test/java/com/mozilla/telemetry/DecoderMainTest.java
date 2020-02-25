@@ -67,8 +67,6 @@ public class DecoderMainTest extends TestWithDeterministicJson {
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
 
-    System.out.println(outputLines);
-
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
     assertThat("Main output differed from expectation", outputLines,
         matchesInAnyOrder(expectedOutputLines));
