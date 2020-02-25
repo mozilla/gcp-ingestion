@@ -45,7 +45,8 @@ public class Pubsub {
                 if (exception == null) {
                   consumer.ack();
                 } else {
-                  LOG.warn("Exception while attempting to deliver message:", exception);
+                  // exception is always a CompletionException caused by the real exception
+                  LOG.warn("Exception while attempting to deliver message", exception.getCause());
                   consumer.nack();
                 }
               })))
