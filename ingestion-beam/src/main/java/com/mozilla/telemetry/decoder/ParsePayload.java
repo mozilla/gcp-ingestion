@@ -39,9 +39,8 @@ import org.everit.json.schema.ValidationException;
  */
 public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
 
-  public static ParsePayload of(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
-    return new ParsePayload(schemasLocation, schemaAliasesLocation);
+  public static ParsePayload of(ValueProvider<String> schemasLocation) {
+    return new ParsePayload(schemasLocation);
   }
 
   ////////
@@ -52,16 +51,13 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
       "json_validate_millis");
 
   private final ValueProvider<String> schemasLocation;
-  private final ValueProvider<String> schemaAliasesLocation;
 
   private transient JsonValidator validator;
   private transient JSONSchemaStore schemaStore;
   private transient CRC32 crc32;
 
-  private ParsePayload(ValueProvider<String> schemasLocation,
-      ValueProvider<String> schemaAliasesLocation) {
+  private ParsePayload(ValueProvider<String> schemasLocation) {
     this.schemasLocation = schemasLocation;
-    this.schemaAliasesLocation = schemaAliasesLocation;
   }
 
   @Override
@@ -71,8 +67,7 @@ public class ParsePayload extends MapElementsWithErrors.ToPubsubMessageFrom<Pubs
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
     if (schemaStore == null) {
-      schemaStore = JSONSchemaStore.of(schemasLocation.get(), schemaAliasesLocation.get(),
-          BeamFileInputStream::open);
+      schemaStore = JSONSchemaStore.of(schemasLocation.get(), BeamFileInputStream::open);
     }
 
     final int submissionBytes = message.getPayload().length;

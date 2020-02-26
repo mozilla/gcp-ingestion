@@ -9,14 +9,12 @@ import org.apache.commons.compress.archivers.ArchiveInputStream;
 public class AvroSchemaStore extends SchemaStore<Schema> {
 
   /** Returns a SchemaStore based on the contents of the archive at schemasLocation. */
-  public static AvroSchemaStore of(String schemasLocation, String schemaAliasesLocation,
-      IOFunction<String, InputStream> open) {
-    return new AvroSchemaStore(schemasLocation, schemaAliasesLocation, open);
+  public static AvroSchemaStore of(String schemasLocation, IOFunction<String, InputStream> open) {
+    return new AvroSchemaStore(schemasLocation, open);
   }
 
-  protected AvroSchemaStore(String schemasLocation, String schemaAliasesLocation,
-      IOFunction<String, InputStream> open) {
-    super(schemasLocation, schemaAliasesLocation, open);
+  protected AvroSchemaStore(String schemasLocation, IOFunction<String, InputStream> open) {
+    super(schemasLocation, open);
   }
 
   @Override

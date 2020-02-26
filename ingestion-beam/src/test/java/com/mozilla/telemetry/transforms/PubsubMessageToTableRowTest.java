@@ -37,7 +37,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
       StaticValueProvider.of("foo"), StaticValueProvider.of(null), StaticValueProvider.of(null));
 
   private static final PubsubMessageToTableRow TRANSFORM = PubsubMessageToTableRow.of(null, null,
-      null, StaticValueProvider.of(TableRowFormat.payload), KEY_BY);
+      StaticValueProvider.of(TableRowFormat.payload), KEY_BY);
 
   @Test
   public void testConvertFieldNameForBq() {

@@ -194,7 +194,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
           return strictSchemaDocTypeSet.contains(namespace + "/" + docType);
         };
       }
-      schemaStore = BigQuerySchemaStore.of(schemasLocation, null, open);
+      schemaStore = BigQuerySchemaStore.of(schemasLocation, open);
     }
 
     private Payload(Cache<String, String> normalizedNameCache,

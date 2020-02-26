@@ -11,17 +11,15 @@ import org.apache.commons.io.IOUtils;
 public class BigQuerySchemaStore extends SchemaStore<Schema> {
 
   /**
-   * Returns a SchemaStore based on the contents of the archive at schemasLocation
-   * with additional schemas aliased according to configuration.
+   * Returns a SchemaStore based on the contents of the archive at schemasLocation.
    */
-  public static BigQuerySchemaStore of(String schemasLocation, String schemaAliasesLocation,
+  public static BigQuerySchemaStore of(String schemasLocation,
       IOFunction<String, InputStream> open) {
-    return new BigQuerySchemaStore(schemasLocation, schemaAliasesLocation, open);
+    return new BigQuerySchemaStore(schemasLocation, open);
   }
 
-  protected BigQuerySchemaStore(String schemasLocation, String schemaAliasesLocation,
-      IOFunction<String, InputStream> open) {
-    super(schemasLocation, schemaAliasesLocation, open);
+  protected BigQuerySchemaStore(String schemasLocation, IOFunction<String, InputStream> open) {
+    super(schemasLocation, open);
   }
 
   @Override

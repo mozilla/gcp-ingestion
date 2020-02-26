@@ -101,8 +101,8 @@ public enum ErrorOutputType {
           options.getParsedErrorBqTriggeringFrequency(), options.getInputType(),
           options.getErrorBqNumFileShards(), StaticValueProvider.of(null),
           StaticValueProvider.of(null), options.getSchemasLocation(),
-          options.getSchemaAliasesLocation(), StaticValueProvider.of(TableRowFormat.raw),
-          options.getErrorBqPartitioningField(), options.getErrorBqClusteringFields());
+          StaticValueProvider.of(TableRowFormat.raw), options.getErrorBqPartitioningField(),
+          options.getErrorBqClusteringFields());
     }
   };
 

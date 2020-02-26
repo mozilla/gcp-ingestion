@@ -59,11 +59,10 @@ import org.apache.beam.sdk.values.KV;
 public class PubsubMessageToTableRow implements Serializable {
 
   public static PubsubMessageToTableRow of(ValueProvider<List<String>> strictSchemaDocTypes,
-      ValueProvider<String> schemasLocation, ValueProvider<String> schemasAliasesLocation,
-      ValueProvider<TableRowFormat> tableRowFormat,
+      ValueProvider<String> schemasLocation, ValueProvider<TableRowFormat> tableRowFormat,
       KeyByBigQueryTableDestination keyByBigQueryTableDestination) {
-    return new PubsubMessageToTableRow(strictSchemaDocTypes, schemasLocation,
-        schemasAliasesLocation, tableRowFormat, keyByBigQueryTableDestination);
+    return new PubsubMessageToTableRow(strictSchemaDocTypes, schemasLocation, tableRowFormat,
+        keyByBigQueryTableDestination);
   }
 
   public enum TableRowFormat {
@@ -93,7 +92,6 @@ public class PubsubMessageToTableRow implements Serializable {
 
   private final ValueProvider<List<String>> strictSchemaDocTypes;
   private final ValueProvider<String> schemasLocation;
-  private final ValueProvider<String> schemaAliasesLocation;
   private final ValueProvider<TableRowFormat> tableRowFormat;
   private final KeyByBigQueryTableDestination keyByBigQueryTableDestination;
 
@@ -104,12 +102,10 @@ public class PubsubMessageToTableRow implements Serializable {
   private transient BigQuery bqService;
 
   private PubsubMessageToTableRow(ValueProvider<List<String>> strictSchemaDocTypes,
-      ValueProvider<String> schemasLocation, ValueProvider<String> schemaAliasesLocation,
-      ValueProvider<TableRowFormat> tableRowFormat,
+      ValueProvider<String> schemasLocation, ValueProvider<TableRowFormat> tableRowFormat,
       KeyByBigQueryTableDestination keyByBigQueryTableDestination) {
     this.strictSchemaDocTypes = strictSchemaDocTypes;
     this.schemasLocation = schemasLocation;
-    this.schemaAliasesLocation = schemaAliasesLocation;
     this.tableRowFormat = tableRowFormat;
     this.keyByBigQueryTableDestination = keyByBigQueryTableDestination;
   }
@@ -174,8 +170,7 @@ public class PubsubMessageToTableRow implements Serializable {
 
     if (schemaStore == null && schemasLocation != null && schemasLocation.isAccessible()
         && schemasLocation.get() != null) {
-      schemaStore = BigQuerySchemaStore.of(schemasLocation.get(), schemaAliasesLocation.get(),
-          BeamFileInputStream::open);
+      schemaStore = BigQuerySchemaStore.of(schemasLocation.get(), BeamFileInputStream::open);
     }
 
     // If a schemasLocation is configured, we pull the table schema from there;

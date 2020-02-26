@@ -31,8 +31,7 @@ public class ParsePayloadTest {
   @Test
   public void testSampleId() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
-    ParsePayload transform = ParsePayload.of(schemasLocation, schemaAliasesLocation);
+    ParsePayload transform = ParsePayload.of(schemasLocation);
     assertEquals(67L, transform.calculateSampleId("2907648d-711b-4e9f-94b5-52a2b40a44b1"));
     assertEquals(17L, transform.calculateSampleId("90210716-99f8-0a4f-8119-9bfc16cd68a3"));
     assertEquals(0L, transform.calculateSampleId(""));
@@ -52,7 +51,6 @@ public class ParsePayloadTest {
   @Test
   public void testOutput() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{",
         "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}",
         "{\"clientId\":\"2907648D-711B-4E9F-94B5-52A2B40A44B1\"}",
@@ -60,12 +58,10 @@ public class ParsePayloadTest {
         "{\"client_id\":\"n/a\",\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}");
     WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
-        .apply("AddAttributes",
-            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-                .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of("document_namespace", "test", "document_type", "test",
-                        "document_version", "1"))))
-        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of(
+                "document_namespace", "test", "document_type", "test", "document_version", "1"))))
+        .apply(ParsePayload.of(schemasLocation));
 
     final List<String> expectedMain = Arrays.asList("{}", "{\"id\":null}",
         "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}",
@@ -112,7 +108,6 @@ public class ParsePayloadTest {
   @Test
   public void testErrors() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
     final List<String> input = Arrays.asList(
         // non-json payload
         "{\"attributeMap\":" + "{\"document_namespace\":\"eng-workflow\""
@@ -128,7 +123,7 @@ public class ParsePayloadTest {
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
+        .apply(ParsePayload.of(schemasLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
@@ -145,7 +140,6 @@ public class ParsePayloadTest {
   @Test
   public void testVersionInPayload() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
     // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
     String input = "{\"attributeMap\":" //
@@ -155,8 +149,7 @@ public class ParsePayloadTest {
         + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.json.decode())
-        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
+        .apply(InputFileFormat.json.decode()).apply(ParsePayload.of(schemasLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
@@ -173,7 +166,6 @@ public class ParsePayloadTest {
   @Test
   public void testMetadataInPayload() {
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
     String input = "{\"id\":null,\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
         + ",\"metadata\":{\"document_namespace\":\"test\",\"document_type\":\"test\""
@@ -182,7 +174,7 @@ public class ParsePayloadTest {
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.text.decode()) //
-        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
+        .apply(ParsePayload.of(schemasLocation));
 
     PAssert.that(result.errors()).empty();
 

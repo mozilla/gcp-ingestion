@@ -11,7 +11,7 @@ import org.junit.Test;
 public class AvroSchemaStoreTest {
 
   private static final AvroSchemaStore store = AvroSchemaStore.of(TestConstant.SCHEMAS_LOCATION,
-      null, null);
+      null);
 
   @Test
   public void testNumSchemas() {
