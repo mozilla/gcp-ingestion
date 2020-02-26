@@ -42,6 +42,7 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
+        <auto-value.version>1.7</auto-value.version>
         <beam.version>2.19.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
@@ -112,6 +113,16 @@
             <artifactId>avro</artifactId>
             <version>${avro.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value-annotations</artifactId>
+            <version>${auto-value.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+            <version>2.10.0</version>
+        </dependency>
         <!-- Following https://github.com/apache/beam/blob/v2.6.0/examples/java/build.gradle#L64 -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -139,6 +150,13 @@
                     <compilerArgument>-Xlint:all</compilerArgument>
                     <compilerArgument>-Xdoclint:all</compilerArgument>
                     <compilerArgument>-Werror</compilerArgument>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>com.google.auto.value</groupId>
+                            <artifactId>auto-value</artifactId>
+                            <version>${auto-value.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>
