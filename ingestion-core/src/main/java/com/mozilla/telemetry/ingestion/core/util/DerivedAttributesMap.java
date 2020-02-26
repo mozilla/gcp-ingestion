@@ -4,7 +4,7 @@ import com.google.common.collect.ForwardingMap;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
-import org.checkerframework.checker.nullness.qual.Nullable;
+import javax.annotation.Nullable;
 
 /**
  * Light wrapper for the attributes map of a PubsubMessage that supports retrieval of some
