@@ -74,8 +74,8 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
     private final ValueProvider<String> tableSpec;
     private final BigQueryReadMethod method;
     private final Source source;
-    private final ValueProvider<String> rowRestriction;
-    private final ValueProvider<List<String>> selectedFields;
+    private final String rowRestriction;
+    private final List<String> selectedFields;
 
     public enum Source {
       TABLE, QUERY
@@ -83,7 +83,7 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
 
     /** Constructor. */
     public BigQueryInput(ValueProvider<String> tableSpec, BigQueryReadMethod method, Source source,
-        ValueProvider<String> rowRestriction, ValueProvider<List<String>> selectedFields) {
+        String rowRestriction, List<String> selectedFields) {
       this.tableSpec = tableSpec;
       this.method = method;
       this.source = source;
