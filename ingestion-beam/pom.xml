@@ -25,13 +25,6 @@
     </repositories>
 
     <dependencies>
-        <!-- Include opencensus explicitly at the top of the dependency list
-             since the dataflow runner may pull in an old version transitively -->
-        <dependency>
-            <groupId>io.opencensus</groupId>
-            <artifactId>opencensus-api</artifactId>
-            <version>0.17.0</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-runners-direct-java</artifactId>
