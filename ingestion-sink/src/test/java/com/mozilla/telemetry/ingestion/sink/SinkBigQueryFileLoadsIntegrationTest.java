@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.ingestion.sink;
 
 import com.mozilla.telemetry.ingestion.sink.util.BoundedSink;
+import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.util.concurrent.CompletableFuture;
 import org.junit.Test;
 
@@ -21,6 +22,8 @@ public class SinkBigQueryFileLoadsIntegrationTest extends SinkBigQueryMixedInteg
         bq.project + "." + bq.dataset + ".${document_type}_v${document_version}");
     environmentVariables.set("OUTPUT_TOPIC", pubsub.getTopic(1));
     final CompletableFuture<Void> main = BoundedSink.runAsync(inputs.size());
+    // unregister OpenCensus stackdriver exporter so runTest() below can register a new one
+    StackdriverStatsExporter.unregister();
 
     environmentVariables.clear("BATCH_MAX_DELAY", "BIG_QUERY_OUTPUT_MODE", "OUTPUT_BUCKET",
         "OUTPUT_TABLE", "OUTPUT_TOPIC");

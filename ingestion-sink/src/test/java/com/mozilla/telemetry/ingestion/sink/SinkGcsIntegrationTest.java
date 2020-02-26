@@ -12,6 +12,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.BoundedSink;
 import com.mozilla.telemetry.ingestion.sink.util.GcsBucket;
 import com.mozilla.telemetry.ingestion.sink.util.SinglePubsubTopic;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -37,7 +38,7 @@ public class SinkGcsIntegrationTest {
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
   @Test
-  public void canSinkRawMessages() {
+  public void canSinkRawMessages() throws IOException {
     String submissionTimestamp = ZonedDateTime.now(ZoneOffset.UTC)
         .format(DateTimeFormatter.ISO_DATE_TIME);
     List<String> versions = ImmutableList.of("1", "2");

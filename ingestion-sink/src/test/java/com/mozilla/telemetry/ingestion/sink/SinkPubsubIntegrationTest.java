@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.BoundedSink;
 import com.mozilla.telemetry.ingestion.sink.util.PubsubTopics;
+import java.io.IOException;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +25,7 @@ public class SinkPubsubIntegrationTest {
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
   @Test
-  public void canRepublishMessages() {
+  public void canRepublishMessages() throws IOException {
     final List<Map<String, Object>> expected = IntStream.range(1, pubsub.numTopics)
         .mapToObj(index -> {
           String[] topicParts = pubsub.getTopic(index).split("/", 4);
