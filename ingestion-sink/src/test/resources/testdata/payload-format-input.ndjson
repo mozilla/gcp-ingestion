@@ -19,3 +19,4 @@
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_tuple":["string",5,true]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_tuple":[{"key":"value"},"x",6]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_nested_list":[["a","b","c"]],"test_nested_csv":[{"list":"a,b,c"}],"test_list":["a","b","c"]}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_record":null}}
