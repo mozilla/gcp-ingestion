@@ -45,7 +45,6 @@
             <version>1.7.30</version>
         </dependency>
         <dependency>
-        <dependency>
             <groupId>io.opencensus</groupId>
             <artifactId>opencensus-api</artifactId>
             <version>${opencensus.version}</version>
