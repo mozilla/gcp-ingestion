@@ -314,9 +314,8 @@ public class SinkConfig {
       case "decoded":
         return PubsubMessageToObjectNode.Decoded.of();
       case "payload":
-        return PubsubMessageToObjectNode.Payload.WithOpenCensusMetrics.of(
-            env.getStrings(STRICT_SCHEMA_DOCTYPES, null), env.getString(SCHEMAS_LOCATION),
-            FileInputStream::new);
+        return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
+            env.getString(SCHEMAS_LOCATION), FileInputStream::new).withOpenCensusMetrics();
       default:
         throw new IllegalArgumentException("Format not yet implemented: " + format);
     }
@@ -365,7 +364,8 @@ public class SinkConfig {
             .build()),
         getInputCompression(output.env));
     output.env.requireAllVarsUsed();
-    // Setup OpenCensus stackdriver exporter after all measurement views have been registered.
+    // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
+    // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
     StackdriverStatsExporter.createAndRegister();
     return input;
   }

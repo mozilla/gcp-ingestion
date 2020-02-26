@@ -113,17 +113,12 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
 
     public static class WithOpenCensusMetrics extends Payload {
 
-      public static WithOpenCensusMetrics of(List<String> strictSchemaDocTypes,
-          String schemasLocation, IOFunction<String, InputStream> open) {
-        return new WithOpenCensusMetrics(strictSchemaDocTypes, schemasLocation, open);
-      }
-
       /**
        * Measure transforming {@link PubsubMessage} into {@link ObjectNode} with OpenCensus metrics.
        */
-      private WithOpenCensusMetrics(List<String> strictSchemaDocTypes, String schemasLocation,
-          IOFunction<String, InputStream> open) {
-        super(strictSchemaDocTypes, schemasLocation, open);
+      private WithOpenCensusMetrics(Cache<String, String> normalizedNameCache,
+          Predicate<PubsubMessage> strictSchema, BigQuerySchemaStore schemaStore) {
+        super(normalizedNameCache, strictSchema, schemaStore);
         setupOpenCensus();
       }
 
@@ -174,8 +169,12 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       }
     }
 
-    private final Cache<String, String> normalizedNameCache = CacheBuilder.newBuilder()
-        .maximumSize(50_000).build();
+    public static Payload of(List<String> strictSchemaDocTypes, String schemasLocation,
+        IOFunction<String, InputStream> open) {
+      return new Payload(strictSchemaDocTypes, schemasLocation, open);
+    }
+
+    private final Cache<String, String> normalizedNameCache;
     private final BigQuerySchemaStore schemaStore;
     private final Predicate<PubsubMessage> strictSchema;
 
@@ -184,6 +183,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
      */
     private Payload(List<String> strictSchemaDocTypes, String schemasLocation,
         IOFunction<String, InputStream> open) {
+      normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
       if (strictSchemaDocTypes == null) {
         strictSchema = message -> false;
       } else {
@@ -195,6 +195,17 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
         };
       }
       schemaStore = BigQuerySchemaStore.of(schemasLocation, null, open);
+    }
+
+    private Payload(Cache<String, String> normalizedNameCache,
+        Predicate<PubsubMessage> strictSchema, BigQuerySchemaStore schemaStore) {
+      this.normalizedNameCache = normalizedNameCache;
+      this.strictSchema = strictSchema;
+      this.schemaStore = schemaStore;
+    }
+
+    public WithOpenCensusMetrics withOpenCensusMetrics() {
+      return new WithOpenCensusMetrics(normalizedNameCache, strictSchema, schemaStore);
     }
 
     /** measure rate of CoercedToInt. */
