@@ -17,7 +17,9 @@ import com.mozilla.telemetry.ingestion.sink.transform.DecompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
+import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -313,7 +315,7 @@ public class SinkConfig {
         return PubsubMessageToObjectNode.Decoded.of();
       case "payload":
         return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
-            env.getString(SCHEMAS_LOCATION), FileInputStream::new);
+            env.getString(SCHEMAS_LOCATION), FileInputStream::new).withOpenCensusMetrics();
       default:
         throw new IllegalArgumentException("Format not yet implemented: " + format);
     }
@@ -353,7 +355,7 @@ public class SinkConfig {
   }
 
   /** Return a configured input transform. */
-  public static Pubsub.Read getInput(Output output) {
+  public static Pubsub.Read getInput(Output output) throws IOException {
     // read pubsub messages from INPUT_SUBSCRIPTION
     Pubsub.Read input = new Pubsub.Read(output.env.getString(INPUT_SUBSCRIPTION), output,
         builder -> builder.setFlowControlSettings(FlowControlSettings.newBuilder()
@@ -362,6 +364,9 @@ public class SinkConfig {
             .build()),
         getInputCompression(output.env));
     output.env.requireAllVarsUsed();
+    // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
+    // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
+    StackdriverStatsExporter.createAndRegister();
     return input;
   }
 }
