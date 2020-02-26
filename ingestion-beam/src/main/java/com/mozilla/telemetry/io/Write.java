@@ -196,7 +196,6 @@ public abstract class Write
     private final Compression compression;
     private final InputType inputType;
     private final ValueProvider<String> schemasLocation;
-    private final ValueProvider<String> schemaAliasesLocation;
     private final ValueProvider<DynamicPathTemplate> pathTemplate;
     private final PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     private final GenericRecordBinaryEncoder binaryEncoder = new GenericRecordBinaryEncoder();
@@ -209,14 +208,13 @@ public abstract class Write
     /** Public constructor. */
     public AvroOutput(ValueProvider<String> outputPrefix, Duration windowDuration,
         ValueProvider<Integer> numShards, Compression compression, InputType inputType,
-        ValueProvider<String> schemasLocation, ValueProvider<String> schemaAliasesLocation) {
+        ValueProvider<String> schemasLocation) {
       this.outputPrefix = outputPrefix;
       this.windowDuration = windowDuration;
       this.numShards = numShards;
       this.compression = compression;
       this.inputType = inputType;
       this.schemasLocation = schemasLocation;
-      this.schemaAliasesLocation = schemaAliasesLocation;
       this.pathTemplate = NestedValueProvider.of(outputPrefix, DynamicPathTemplate::new);
     }
 
@@ -226,8 +224,7 @@ public abstract class Write
 
       private AvroSchemaStore getStore() {
         if (store == null) {
-          store = AvroSchemaStore.of(schemasLocation.get(), schemaAliasesLocation.get(),
-              BeamFileInputStream::open);
+          store = AvroSchemaStore.of(schemasLocation.get(), BeamFileInputStream::open);
         }
         return store;
       }
@@ -345,7 +342,6 @@ public abstract class Write
     private final ValueProvider<List<String>> streamingDocTypes;
     private final ValueProvider<List<String>> strictSchemaDocTypes;
     private final ValueProvider<String> schemasLocation;
-    private final ValueProvider<String> schemasAliasesLocation;
     private final ValueProvider<TableRowFormat> tableRowFormat;
     private final ValueProvider<String> partitioningField;
     private final ValueProvider<List<String>> clusteringFields;
@@ -355,8 +351,8 @@ public abstract class Write
         Duration triggeringFrequency, InputType inputType, int numShards,
         ValueProvider<List<String>> streamingDocTypes,
         ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-        ValueProvider<String> schemasAliasesLocation, ValueProvider<TableRowFormat> tableRowFormat,
-        ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
+        ValueProvider<TableRowFormat> tableRowFormat, ValueProvider<String> partitioningField,
+        ValueProvider<List<String>> clusteringFields) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
@@ -367,7 +363,6 @@ public abstract class Write
       this.strictSchemaDocTypes = NestedValueProvider.of(strictSchemaDocTypes,
           value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
       this.schemasLocation = schemasLocation;
-      this.schemasAliasesLocation = schemasAliasesLocation;
       this.tableRowFormat = tableRowFormat;
       this.partitioningField = NestedValueProvider.of(partitioningField,
           f -> f != null ? f : Attribute.SUBMISSION_TIMESTAMP);
@@ -393,9 +388,8 @@ public abstract class Write
           .of(NestedValueProvider.of(tableRowFormat,
               v -> v == TableRowFormat.payload ? Compression.GZIP : Compression.UNCOMPRESSED));
 
-      final PubsubMessageToTableRow pubsubMessageToTableRow = PubsubMessageToTableRow.of(
-          strictSchemaDocTypes, schemasLocation, schemasAliasesLocation, tableRowFormat,
-          keyByBigQueryTableDestination);
+      final PubsubMessageToTableRow pubsubMessageToTableRow = PubsubMessageToTableRow
+          .of(strictSchemaDocTypes, schemasLocation, tableRowFormat, keyByBigQueryTableDestination);
       final BigQueryIO.Write<KV<TableDestination, PubsubMessage>> baseWriteTransform = BigQueryIO //
           .<KV<TableDestination, PubsubMessage>>write() //
           .withFormatFunction(pubsubMessageToTableRow::kvToTableRow) //

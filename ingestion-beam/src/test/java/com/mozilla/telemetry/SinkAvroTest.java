@@ -96,7 +96,7 @@ public class SinkAvroTest {
     assertThat("output count", getPrefixFileCount(outputPath, "namespace_0"),
         Matchers.greaterThan(0L));
 
-    AvroSchemaStore store = AvroSchemaStore.of(schemas, null, null);
+    AvroSchemaStore store = AvroSchemaStore.of(schemas, null);
 
     List<Path> paths = Files.walk(Paths.get(outputPath)).filter(Files::isRegularFile)
         .collect(Collectors.toList());
@@ -156,7 +156,7 @@ public class SinkAvroTest {
     assertThat("baz output count", getPrefixFileCount(outputPath, "namespace_1.baz"),
         Matchers.greaterThan(0L));
 
-    AvroSchemaStore store = AvroSchemaStore.of(schemas, null, null);
+    AvroSchemaStore store = AvroSchemaStore.of(schemas, null);
     assertEquals(1, readRecord(store, outputPath, "namespace_0.foo.1").get("test_int"));
     assertEquals(1, readRecord(store, outputPath, "namespace_0.bar.1").get("test_int"));
     assertEquals(null, readRecord(store, outputPath, "namespace_1.baz.1").get("test_null"));

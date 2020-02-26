@@ -12,11 +12,11 @@ import org.junit.Test;
 public class JSONSchemaStoreTest {
 
   private static final JSONSchemaStore store = JSONSchemaStore.of(TestConstant.SCHEMAS_LOCATION,
-      TestConstant.SCHEMA_ALIASES_LOCATION, null);
+      null);
 
   @Test
   public void testNumSchemas() {
-    assertEquals(5, store.numLoadedSchemas());
+    assertEquals(3, store.numLoadedSchemas());
   }
 
   @Test
@@ -32,30 +32,6 @@ public class JSONSchemaStoreTest {
     attributes.put("document_namespace", "namespace_0");
     attributes.put("document_type", "bar");
     assertTrue(store.docTypeExists(attributes));
-  }
-
-  @Test
-  public void testAliasedDocTypeExists() {
-    assertTrue(store.docTypeExists("some-product", "baseline"));
-    assertTrue(store.docTypeExists("some-product", "some-doctype"));
-    assertTrue(store.docTypeExists("namespace_1", "baz"));
-  }
-
-  @Test
-  public void testAliasedSchemaExistsViaAttributes() throws SchemaNotFoundException {
-    Map<String, String> attributes = new HashMap<>();
-    attributes.put("document_namespace", "namespace_1");
-    attributes.put("document_type", "baz");
-    attributes.put("document_version", "1");
-
-    Map<String, String> aliasedAttributes = new HashMap<>();
-    aliasedAttributes.put("document_namespace", "some-product");
-    aliasedAttributes.put("document_type", "baseline");
-    aliasedAttributes.put("document_version", "1");
-
-    Schema baseSchema = store.getSchema(attributes);
-    Schema aliasedSchema = store.getSchema(aliasedAttributes);
-    assertEquals(baseSchema, aliasedSchema);
   }
 
   @Test

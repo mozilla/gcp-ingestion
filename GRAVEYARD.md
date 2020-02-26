@@ -1,5 +1,8 @@
 # Link to code removed from this repository
 
+- 2020-02-26 (available until [commit `6551bc7`](https://github.com/mozilla/gcp-ingestion/tree/6551bc737b2b3c9a3d49c6442d8a8bea2e62ef17))
+  - Remove support for schema aliases, including the `--schemaAliasesLocation`
+    parameter defined in `SinkOptions`.
 - 2020-02-04 (available until [commit `7e60dfc`](https://github.com/mozilla/gcp-ingestion/tree/7e60dfcd2dd8f67ca97e44b42468d8550960906f))
   - Remove patched `WritePartition.java` that limits the maximum number of bytes
     in a single BigQuery load job; Beam 2.19 exposes a configuration parameter

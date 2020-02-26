@@ -1,12 +1,8 @@
 package com.mozilla.telemetry.ingestion.core.schema;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.IOFunction;
@@ -23,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -84,10 +79,8 @@ public abstract class SchemaStore<T> {
 
   ////////
 
-  protected SchemaStore(String schemasLocation, String schemaAliasesLocation,
-      IOFunction<String, InputStream> open) {
+  protected SchemaStore(String schemasLocation, IOFunction<String, InputStream> open) {
     this.schemasLocation = schemasLocation;
-    this.schemaAliasesLocation = schemaAliasesLocation;
     if (open == null) {
       this.open = FileInputStream::new;
     } else {
@@ -96,8 +89,6 @@ public abstract class SchemaStore<T> {
   }
 
   private final String schemasLocation;
-  @Nullable
-  private final String schemaAliasesLocation;
   private final IOFunction<String, InputStream> open;
 
   /* Returns the expected suffix for a particular schema type e.g. `.schema.json` */
@@ -155,63 +146,10 @@ public abstract class SchemaStore<T> {
     dirs = tempDirs;
   }
 
-  private void loadSchemaAliases() throws IOException {
-    final Set<String> tempDirs = new HashSet<>();
-    final Map<String, T> tempSchemas = new HashMap<>();
-    Multimap<String, String> schemaAliasesMap;
-    try {
-      Multimap<String, String> aliases = ArrayListMultimap.create();
-      if (!Strings.isNullOrEmpty(schemaAliasesLocation)) {
-        InputStream configInputStream = open.apply(schemaAliasesLocation);
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        SchemaAliasingConfiguration aliasingConfig = objectMapper.readValue(configInputStream,
-            SchemaAliasingConfiguration.class);
-
-        aliasingConfig.aliases().forEach((e) -> {
-          aliases.put(getAndCacheNormalizedPath(e.base()), getAndCacheNormalizedPath(e.alias()));
-        });
-      }
-      schemaAliasesMap = aliases;
-    } catch (IOException e) {
-      throw new IOException("Exception thrown while fetching from configured schemaAliasesLocation",
-          e);
-    }
-
-    dirs.forEach(dir -> {
-      tempDirs.add(dir);
-      tempDirs.addAll(schemaAliasesMap.get(dir));
-    });
-
-    schemas.forEach((schemaName, schema) -> {
-      tempSchemas.put(schemaName, schema);
-
-      String[] components = schemaName.split("/");
-      String namespaceWithDocType = components[0] + "/" + components[1];
-      // if aliases are defined for current `schemaName`, assemble new aliasing path and put it to
-      // the map with original schema
-      if (schemaAliasesMap.containsKey(namespaceWithDocType)) {
-        for (String namespaceWithDocTypeAlias : schemaAliasesMap.get(namespaceWithDocType)) {
-          String docTypeWithVersion = components[components.length - 1];
-          String versionAndSuffix = docTypeWithVersion.substring(docTypeWithVersion.indexOf("."));
-
-          String docTypeAlias = namespaceWithDocTypeAlias.split("/")[1];
-          String docTypeWithVersionAlias = docTypeAlias + versionAndSuffix;
-
-          tempSchemas.put(namespaceWithDocTypeAlias + "/" + docTypeWithVersionAlias, schema);
-        }
-      }
-    });
-
-    schemas = tempSchemas;
-    dirs = tempDirs;
-  }
-
   private void ensureSchemasLoaded() {
     if (schemas == null) {
       try {
         loadAllSchemas();
-        loadSchemaAliases();
       } catch (IOException e) {
         throw new UncheckedIOException("Unexpected error while loading schemas", e);
       }

@@ -187,7 +187,6 @@ public class MessageScrubberTest {
     // clients with client_id c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0 send malformed client_info
 
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<String> schemaAliasesLocation = pipeline.newProvider(null);
 
     // payloads here are:
     // {"client_info":{"client_id":"c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0"}}
@@ -206,8 +205,7 @@ public class MessageScrubberTest {
             + "1mZmVlLWMwZmYtZWVjMC1mZmVlYzBmZmVlY2MifX0=\n\"}");
 
     WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.json.decode())
-        .apply(ParsePayload.of(schemasLocation, schemaAliasesLocation));
+        .apply(InputFileFormat.json.decode()).apply(ParsePayload.of(schemasLocation));
 
     PCollection<String> exceptions = result.errors().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
