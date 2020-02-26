@@ -50,10 +50,6 @@
         <jackson.version>2.9.10</jackson.version>
         <avro.version>1.8.2</avro.version>
 
-        <!-- Keep this dependency version in sync with what is pulled in by jackson;
-             check https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-json-org/2.9.10 -->
-        <org-json.version>20171018</org-json.version>
-
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
     </properties>
