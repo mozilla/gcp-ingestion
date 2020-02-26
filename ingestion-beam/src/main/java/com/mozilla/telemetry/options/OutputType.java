@@ -53,7 +53,7 @@ public enum OutputType {
     public Write write(SinkOptions.Parsed options) {
       return new AvroOutput(options.getOutput(), options.getParsedWindowDuration(),
           options.getOutputNumShards(), options.getOutputFileCompression(), options.getInputType(),
-          options.getSchemasLocation(), options.getSchemaAliasesLocation());
+          options.getSchemasLocation());
     }
   },
 
@@ -73,8 +73,8 @@ public enum OutputType {
           options.getParsedBqTriggeringFrequency(), options.getInputType(),
           options.getBqNumFileShards(), options.getBqStreamingDocTypes(),
           options.getBqStrictSchemaDocTypes(), options.getSchemasLocation(),
-          options.getSchemaAliasesLocation(), options.getOutputTableRowFormat(),
-          options.getBqPartitioningField(), options.getBqClusteringFields());
+          options.getOutputTableRowFormat(), options.getBqPartitioningField(),
+          options.getBqClusteringFields());
     }
   };
 

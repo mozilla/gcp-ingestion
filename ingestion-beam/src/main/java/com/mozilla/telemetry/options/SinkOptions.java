@@ -55,13 +55,6 @@ public interface SinkOptions extends PipelineOptions {
 
   void setSchemasLocation(ValueProvider<String> value);
 
-  @Description("Path (local or gs://) to a .json file containing list of schema aliases;"
-      + " see example in schemaAliasing/example-aliasing-config.json;"
-      + " if not specified, no schemas will be aliased")
-  ValueProvider<String> getSchemaAliasesLocation();
-
-  void setSchemaAliasesLocation(ValueProvider<String> value);
-
   @Description("Method of reading from BigQuery; the table will either be exported to GCS"
       + " (GA and free, but may take some time to export and may hit quotas) or accessed using the "
       + " BigQuery Storage API (beta and some cost, but faster and no quotas)")
