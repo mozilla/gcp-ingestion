@@ -222,11 +222,18 @@ public class SinkConfig {
       Output getOutput(Env env) {
         final com.google.cloud.bigquery.BigQuery bigQuery = getBigQueryService(env);
         final Storage storage = getGcsService(env);
-        Function<PubsubMessage, CompletableFuture<Void>> bigQueryLoad = new BigQuery.Load(bigQuery,
-            storage, env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
-            env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-            env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY),
-            BigQuery.Load.Delete.always); // files will be recreated if not successfully loaded
+        final Function<PubsubMessage, CompletableFuture<Void>> bigQueryLoad;
+        if (env.containsKey(OUTPUT_TOPIC)) {
+          // BigQuery Load API limits maximum load requests per table per day to 1,000 so if
+          // OUTPUT_TOPIC is present send blobInfo to pubsub and run load jobs separately
+          bigQueryLoad = pubsub.getOutput(env);
+        } else {
+          bigQueryLoad = new BigQuery.Load(bigQuery, storage,
+              env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
+              env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
+              env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY),
+              BigQuery.Load.Delete.always); // files will be recreated if not successfully loaded
+        }
         // Combine bigQueryFiles and bigQueryLoad without an intermediate PubSub topic
         Function<PubsubMessage, CompletableFuture<Void>> fileOutput = new Gcs.Write.Ndjson(storage,
             env.getLong(BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
