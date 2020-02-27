@@ -117,7 +117,7 @@ public class SinkBigQueryStreamingIntegrationTest {
   }
 
   @Test
-  public void canSinkRawMessages() throws Exception {
+  public void canSinkMessages() throws Exception {
     environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription(0));
     environmentVariables.set("OUTPUT_TABLE",
