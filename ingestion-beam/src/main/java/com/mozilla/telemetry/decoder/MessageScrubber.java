@@ -23,11 +23,18 @@ public class MessageScrubber {
    * Special exception to signal that a message is affected by a specific bug and should
    * be written to error output.
    */
-  public static class AffectedByBugException extends Exception {
+  public static class AffectedByBugException extends RuntimeException {
 
     public AffectedByBugException(String bugNumber) {
       super(bugNumber);
     }
+  }
+
+  /**
+   * Special exception class that signals that a given message should not be sent
+   * downstream to either success or error output.
+   */
+  public static class MessageShouldBeDroppedException extends RuntimeException {
   }
 
   /**
