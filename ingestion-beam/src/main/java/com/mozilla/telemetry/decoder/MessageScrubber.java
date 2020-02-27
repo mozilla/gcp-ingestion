@@ -7,35 +7,17 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
 
+/**
+ * This class is called in {@link ParsePayload} to check for known signatures of potentially
+ * harmful data. The {@link #scrub(Map, ObjectNode)} method may throw an exception as a signal
+ * to route the message to error output or to be dropped.
+ */
 public class MessageScrubber {
-
-  private enum ScrubAction {
-    DROP, REDACT, SEND_TO_ERRORS
-  }
-
-  /**
-   * Special exception to signal that a message is affected by a specific bug and should
-   * be written to error output.
-   */
-  public static class AffectedByBugException extends RuntimeException {
-
-    public AffectedByBugException(String bugNumber) {
-      super(bugNumber);
-    }
-  }
-
-  /**
-   * Special exception class that signals that a given message should not be sent
-   * downstream to either success or error output.
-   */
-  public static class MessageShouldBeDroppedException extends RuntimeException {
-  }
 
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
@@ -45,45 +27,123 @@ public class MessageScrubber {
    */
   public static void scrub(Map<String, String> attributes, ObjectNode json)
       throws MessageShouldBeDroppedException, AffectedByBugException {
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1567596
-    if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
-        && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
-        && "nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
-        && "20190719094503".equals(attributes.get(Attribute.APP_BUILD_ID)) //
+
+    String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
+    String docType = attributes.get(Attribute.DOCUMENT_TYPE);
+    String appVersion = attributes.get(Attribute.APP_VERSION);
+    String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
+    String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
+
+    // Check for toxic data that should be dropped without sending to error output.
+    if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
+        && "nightly".equals(appUpdateChannel) && "20190719094503".equals(appBuildId) //
         && Optional.of(json) // payload.metadata.MozCrashReason
             .map(j -> j.path("payload").path("metadata").path("MozCrashReason").textValue())
             .filter(s -> s.contains("do not use eval with system privileges")) //
             .isPresent()) {
-      handleBug("1567596", ScrubAction.DROP);
-    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
-        && "crash".equals(attributes.get(Attribute.DOCUMENT_TYPE))
-        && (("nightly".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
-            && (attributes.get(Attribute.APP_VERSION).startsWith("68")
-                || attributes.get(Attribute.APP_VERSION).startsWith("69")))
-            || ("beta".equals(attributes.get(Attribute.APP_UPDATE_CHANNEL))
-                && attributes.get(Attribute.APP_VERSION).startsWith("68")))
+      throw new MessageShouldBeDroppedException("1567596");
+    }
+    if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
+        && (("nightly".equals(appUpdateChannel)
+            && (appVersion.startsWith("68") || appVersion.startsWith("69")))
+            || ("beta".equals(appUpdateChannel) && appVersion.startsWith("68")))
         && Optional.of(json) // payload.metadata.RemoteType
             .map(j -> j.path("payload").path("metadata").path("RemoteType").textValue())
             .filter(s -> s.startsWith("webIsolated=")) //
             .isPresent()) {
-      // https://bugzilla.mozilla.org/show_bug.cgi?id=1562011
-      handleBug("1562011", ScrubAction.DROP);
-    } else if (ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
-        && "bhr".equals(attributes.get(Attribute.DOCUMENT_TYPE))
-        && (attributes.get(Attribute.APP_VERSION).startsWith("68")
-            || attributes.get(Attribute.APP_VERSION).startsWith("69"))
+      throw new MessageShouldBeDroppedException("1562011");
+    }
+    if (ParseUri.TELEMETRY.equals(namespace) && "bhr".equals(docType)
+        && (appVersion.startsWith("68") || appVersion.startsWith("69")) //
         && Optional.of(json) // payload.hangs[].remoteType
             .map(j -> j.path("payload").path("hangs").elements()) //
             .map(Streams::stream).orElseGet(Stream::empty).map(j -> j.path("remoteType")) //
             .filter(JsonNode::isTextual) //
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
-      handleBug("1562011", ScrubAction.DROP);
-    } else if (bug1489560Affected(attributes, json)) {
-      // https://bugzilla.mozilla.org/show_bug.cgi?id=1489560
-      // https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
-      handleBug("1489560", ScrubAction.SEND_TO_ERRORS);
+      throw new MessageShouldBeDroppedException("1562011");
+    }
+
+    // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
+    // ignored for most pipeline monitoring.
+    if ("com-turkcell-yaani".equals(namespace)) {
+      throw new UnwantedDataException("1612933");
+    }
+
+    // Check for other signatures that we want to send to error output, but which should appear
+    // in normal pipeline monitoring.
+    if (bug1489560Affected(attributes, json)) {
+      // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
+      throw new AffectedByBugException("1489560");
+    }
+
+    // Redactions (message is altered, but allowed through).
+    if (bug1602844Affected(attributes)) {
+      json.path("events").elements().forEachRemaining(event -> {
+        JsonNode eventMapValues = event.path(5);
+        if (eventMapValues.has("fxauid")) {
+          ((ObjectNode) eventMapValues).replace("fxauid", NullNode.getInstance());
+        }
+        markBugCounter("1602844");
+      });
+    }
+
+  }
+
+  private static void markBugCounter(String bugNumber) {
+    Metrics.counter(MessageScrubber.class, "bug_" + bugNumber).inc();
+  }
+
+  //// The set of exceptions thrown by MessageScrubber.
+
+  /**
+   * Base class for all exceptions thrown by this class.
+   *
+   * <p>Constructors are required to provide a bug number to aid interpretation of these
+   * errors. The constructor also increments a per-bug counter metric.
+   */
+  private abstract static class MessageScrubberException extends RuntimeException {
+
+    MessageScrubberException(String bugNumber) {
+      super(bugNumber);
+      markBugCounter(bugNumber);
     }
   }
+
+  /**
+   * Special exception to signal that a message matches a specific signature that we know we
+   * is data we never wanted to ingest in the first place; we send to error output out of caution,
+   * but pipeline monitoring will generally filter out this type of error.
+   */
+  static class UnwantedDataException extends MessageScrubberException {
+
+    UnwantedDataException(String bugNumber) {
+      super(bugNumber);
+    }
+  }
+
+  /**
+   * Special exception to signal that a message is affected by a specific bug and should
+   * be written to error output.
+   */
+  static class AffectedByBugException extends MessageScrubberException {
+
+    AffectedByBugException(String bugNumber) {
+      super(bugNumber);
+    }
+  }
+
+  /**
+   * Special exception class that signals that a given message should not be sent
+   * downstream to either success or error output.
+   */
+  static class MessageShouldBeDroppedException extends MessageScrubberException {
+
+    MessageShouldBeDroppedException(String bugNumber) {
+      super(bugNumber);
+    }
+  }
+
+  //// Private methods for checking for specific bug signatures.
 
   // see bug 1489560
   private static boolean bug1489560Affected(Map<String, String> attributes, ObjectNode json) {
@@ -103,41 +163,6 @@ public class MessageScrubber {
         && attributes.get(Attribute.APP_VERSION) != null
         && ("1.7.0".equals(attributes.get(Attribute.APP_VERSION))
             || attributes.get(Attribute.APP_VERSION).matches("1\\.[0-6][0-9.]*"));
-  }
-
-  /**
-   * Redact fields that may contain unintended sensitive information, replacing with null or
-   * other appropriate signifiers.
-   */
-  public static void redact(Map<String, String> attributes, ObjectNode json)
-      throws MessageShouldBeDroppedException, AffectedByBugException {
-    if (bug1602844Affected(attributes)) {
-      json.path("events").elements().forEachRemaining(event -> {
-        JsonNode eventMapValues = event.path(5);
-        if (eventMapValues.has("fxauid")) {
-          ((ObjectNode) eventMapValues).replace("fxauid", NullNode.getInstance());
-        }
-
-        try {
-          handleBug("1602844", ScrubAction.REDACT);
-        } catch (Exception e) {
-          // redactions don't throw exceptions, so this is just ignored
-        }
-      });
-    }
-  }
-
-  private static void handleBug(String bugNumber, ScrubAction action)
-      throws MessageShouldBeDroppedException, AffectedByBugException {
-    Metrics.counter(MessageScrubber.class, "bug_" + bugNumber).inc();
-    switch (action) {
-      case DROP:
-        throw new MessageShouldBeDroppedException();
-      case SEND_TO_ERRORS:
-        throw new AffectedByBugException(bugNumber);
-      case REDACT:
-      default:
-    }
   }
 
 }

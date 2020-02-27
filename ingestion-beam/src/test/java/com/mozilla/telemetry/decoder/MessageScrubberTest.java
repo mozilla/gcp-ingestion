@@ -152,7 +152,7 @@ public class MessageScrubberTest {
         + "}").getBytes(StandardCharsets.UTF_8));
 
     assertFalse(json.path("events").path(0).path(5).path("fxauid").isNull());
-    MessageScrubber.redact(attributes, json);
+    MessageScrubber.scrub(attributes, json);
 
     assertTrue(json.path("events").path(0).path(5).path("fxauid").isNull());
     assertFalse(json.path("events").path(0).path(5).path("fxauid").isMissingNode());
