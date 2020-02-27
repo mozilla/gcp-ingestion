@@ -19,3 +19,4 @@
 {"test_tuple":{"f0_":"string","f1_":5,"f2_":true}}
 {"additional_properties":{"test_tuple":[null,"x",6]},"test_tuple":{"f0_":"{\"key\":\"value\"}"}}
 {"test_nested_list":[{"list":["a","b","c"]}],"test_nested_csv":[{"list":"a,b,c"}],"test_list":["a","b","c"]}
+{}

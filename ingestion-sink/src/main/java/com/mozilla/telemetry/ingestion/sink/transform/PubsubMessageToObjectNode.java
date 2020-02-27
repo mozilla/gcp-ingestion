@@ -344,10 +344,14 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
           updateParent(parent, name, processTupleField(jsonFieldName, field.getSubFields(),
               (ArrayNode) value, additionalProperties));
         } else {
-          final ObjectNode props = additionalProperties == null ? null : Json.createObjectNode();
-          transformForBqSchema((ObjectNode) value, field.getSubFields(), props);
-          if (!Json.isNullOrEmpty(props)) {
-            additionalProperties.set(jsonFieldName, props);
+          // Only transform value if it is not null
+          if (value.isObject()) {
+            final ObjectNode props = (additionalProperties == null) ? null
+                : Json.createObjectNode();
+            transformForBqSchema((ObjectNode) value, field.getSubFields(), props);
+            if (!Json.isNullOrEmpty(props)) {
+              additionalProperties.set(jsonFieldName, props);
+            }
           }
           updateParent(parent, name, value);
         }
