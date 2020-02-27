@@ -47,21 +47,21 @@ public class Republisher extends Sink {
    * Execute an Apache Beam pipeline and return the {@code PipelineResult}.
    */
   public static PipelineResult run(RepublisherOptions.Parsed options) {
-    // We aren't decoding payloads, so no need to recompress when republishing.
+    // We aren't decoding payloads, so no need to re-compress when republishing.
     options.setOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
 
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    // Trailing comments are used below to prevent rewrapping by google-java-format.
+    // Trailing comments are used below to prevent re-wrapping by google-java-format.
     PCollection<PubsubMessage> decoded = pipeline //
         .apply(options.getInputType().read(options));
 
     // Mark messages as seen in Redis.
     decoded //
-        .apply(Deduplicate.markAsSeen(options.getParsedRedisUri(),
+        .apply("MarkAsSeen", Deduplicate.markAsSeen(options.getParsedRedisUri(),
             options.getDeduplicateExpireSeconds()))
-        .errorsTo(errorCollections);
+        .failuresTo(errorCollections);
 
     // Republish debug messages.
     if (options.getEnableDebugDestination()) {
