@@ -101,16 +101,15 @@ public class ParsePayload extends
           // been applied, we strip out any existing metadata fields and put them into attributes.
           AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
-          // Prevent message that need to be scrubbed from going to success.
+          // Check the contents of the message, potentially throwing an exception that causes the
+          // message to be dropped or routed to error output; may also also alter the payload to
+          // redact sensitive fields.
           try {
             MessageScrubber.scrub(attributes, json);
           } catch (MessageShouldBeDroppedException e) {
             // This message should go to no output, so we return an empty list immediately.
             return Collections.emptyList();
           }
-
-          // Potentially mutates the value of json to redact specific fields.
-          MessageScrubber.redact(attributes, json);
 
           boolean validDocType = schemaStore.docTypeExists(attributes);
           if (!validDocType) {
