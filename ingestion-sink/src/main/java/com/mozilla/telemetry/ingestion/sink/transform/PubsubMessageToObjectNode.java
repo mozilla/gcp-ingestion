@@ -345,8 +345,9 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
               (ArrayNode) value, additionalProperties));
         } else {
           // Only transform value if it is not null
-          if (!value.isNull()) {
-            final ObjectNode props = additionalProperties == null ? null : Json.createObjectNode();
+          if (value.isObject()) {
+            final ObjectNode props = (additionalProperties == null) ? null
+                : Json.createObjectNode();
             transformForBqSchema((ObjectNode) value, field.getSubFields(), props);
             if (!Json.isNullOrEmpty(props)) {
               additionalProperties.set(jsonFieldName, props);
