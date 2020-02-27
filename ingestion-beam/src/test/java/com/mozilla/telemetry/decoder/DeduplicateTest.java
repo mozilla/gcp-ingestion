@@ -12,6 +12,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
@@ -56,13 +57,13 @@ public class DeduplicateTest {
     final String invalidId = "foo";
 
     // mark messages as delivered
-    WithErrors.Result<PCollection<PubsubMessage>> seen = pipeline
+    Result<PCollection<PubsubMessage>, PubsubMessage> seen = pipeline
         .apply("delivered", Create.of(Arrays.asList(seenId, duplicatedId)))
         .apply("create seen messages", mapStringsToId).apply("record seen ids", Deduplicate
             .markAsSeen(options.getParsedRedisUri(), options.getDeduplicateExpireSeconds()));
 
     // errors is empty
-    PAssert.that(seen.errors()).empty();
+    PAssert.that(seen.failures()).empty();
 
     // mainTag contains seen ids
     final PCollection<String> seenMain = seen.output().apply("get seen ids", mapMessagesToId);

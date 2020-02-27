@@ -4,7 +4,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Time;
@@ -24,6 +23,8 @@ import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PCollectionTuple;
@@ -186,7 +187,8 @@ public class Deduplicate {
   /**
    * Implementation of {@link #markAsSeen(ValueProvider, ValueProvider)}.
    */
-  public static class MarkAsSeen extends MapElementsWithErrors.ToPubsubMessageFrom<PubsubMessage> {
+  public static class MarkAsSeen extends
+      PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
     // This needs to match the documented @Default annotation on getDeduplicateExpireDuration.
     private static final int DEFAULT_TTL = Ints.checkedCast(Time.parseSeconds("24h"));
@@ -215,13 +217,21 @@ public class Deduplicate {
     }
 
     @Override
-    protected PubsubMessage processElement(PubsubMessage element) {
-      element = PubsubConstraints.ensureNonNull(element);
-      if (uri != null && uri.isAccessible() && uri.get() != null) {
-        // Throws IllegalArgumentException if ID is present and invalid.
-        getId(element).ifPresent(id -> redisIdService.setWithExpiration(id, getTtlSeconds()));
-      }
-      return element;
+    public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
+        PCollection<PubsubMessage> elements) {
+      return elements.apply(
+          MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage el) -> {
+            el = PubsubConstraints.ensureNonNull(el);
+            if (uri != null && uri.isAccessible() && uri.get() != null) {
+              // Throws IllegalArgumentException if ID is present and invalid.
+              getId(el).ifPresent(id -> redisIdService.setWithExpiration(id, getTtlSeconds()));
+            }
+            return el;
+          }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+              .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
+                  Deduplicate.class.getSimpleName(), //
+                  ee.element(), //
+                  ee.exception())));
     }
   }
 
