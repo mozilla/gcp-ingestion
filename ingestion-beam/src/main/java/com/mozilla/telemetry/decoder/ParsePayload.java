@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
@@ -16,6 +17,7 @@ import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.JsonValidator;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -27,7 +29,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
@@ -70,8 +72,8 @@ public class ParsePayload extends
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
-    return messages.apply(
-        MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
+    return messages.apply(FlatMapElements.into(TypeDescriptor.of(PubsubMessage.class)) //
+        .via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
@@ -100,7 +102,12 @@ public class ParsePayload extends
           AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
           // Prevent message that need to be scrubbed from going to success.
-          MessageScrubber.scrub(attributes, json);
+          try {
+            MessageScrubber.scrub(attributes, json);
+          } catch (MessageShouldBeDroppedException e) {
+            // This message should go to no output, so we return an empty list immediately.
+            return Collections.emptyList();
+          }
 
           // Potentially mutates the value of json to redact specific fields.
           MessageScrubber.redact(attributes, json);
@@ -164,15 +171,15 @@ public class ParsePayload extends
             PerDocTypeCounter.inc(attributes, "valid_submission");
             PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
 
-            return new PubsubMessage(normalizedPayload, attributes);
+            return Collections.singletonList(new PubsubMessage(normalizedPayload, attributes));
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-                ParsePayload.class.getSimpleName(), //
-                ee.element(), //
-                ee.exception())));
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
+            ParsePayload.class.getSimpleName(), //
+            ee.element(), //
+            ee.exception())));
   }
 
   private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json) {
