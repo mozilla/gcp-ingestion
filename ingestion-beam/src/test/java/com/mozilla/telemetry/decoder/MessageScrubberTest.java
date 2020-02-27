@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mozilla.telemetry.decoder.MessageScrubber.AffectedByBugException;
 import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedException;
+import com.mozilla.telemetry.decoder.MessageScrubber.UnwantedDataException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.util.Json;
@@ -34,6 +35,16 @@ public class MessageScrubberTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
+
+  @Test
+  public void testUnwantedDataBug1612933() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "com-turkcell-yaani")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
 
   @Test
   public void testShouldScrubBug1567596() throws Exception {
