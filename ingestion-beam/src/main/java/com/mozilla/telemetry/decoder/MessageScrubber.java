@@ -110,7 +110,7 @@ public class MessageScrubber {
   }
 
   /**
-   * Special exception to signal that a message matches a specific signature that we know we
+   * Special exception to signal that a message matches a specific signature that we know
    * is data we never wanted to ingest in the first place; we send to error output out of caution,
    * but pipeline monitoring will generally filter out this type of error.
    */
