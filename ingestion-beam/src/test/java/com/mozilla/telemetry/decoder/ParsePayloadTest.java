@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -17,6 +16,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
@@ -56,7 +56,7 @@ public class ParsePayloadTest {
         "{\"clientId\":\"2907648D-711B-4E9F-94B5-52A2B40A44B1\"}",
         "{\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}", "{\"client_id\":\"n/a\"}",
         "{\"client_id\":\"n/a\",\"impression_id\":\"{2907648d-711b-4e9f-94b5-52a2b40a44b1}\"}");
-    WithErrors.Result<PCollection<PubsubMessage>> output = pipeline.apply(Create.of(input))
+    Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
             .via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of(
@@ -98,7 +98,7 @@ public class ParsePayloadTest {
     PAssert.that(attributes).containsInAnyOrder(expectedAttributes);
 
     final List<String> expectedError = Arrays.asList("[]", "{");
-    final PCollection<String> error = output.errors().apply("encodeTextError",
+    final PCollection<String> error = output.failures().apply("encodeTextError",
         OutputFileFormat.text.encode());
     PAssert.that(error).containsInAnyOrder(expectedError);
 
@@ -120,16 +120,16 @@ public class ParsePayloadTest {
         "{\"attributeMap\":{},\"payload\":\"e30K\"}",
         "{\"attributeMap\":null,\"payload\":\"e30K\"}");
 
-    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
         .apply(ParsePayload.of(schemasLocation));
 
-    PCollection<String> exceptions = result.errors().apply(MapElements
+    PCollection<String> exceptions = result.failures().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
 
     PAssert.that(result.output()).empty();
-    PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
+    PAssert.that(exceptions).containsInAnyOrder("java.lang.RuntimeException",
         "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException",
         "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException",
         "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException");
@@ -148,10 +148,10 @@ public class ParsePayloadTest {
         + ",\"document_type\":\"main\"" //
         + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
 
-    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.json.decode()).apply(ParsePayload.of(schemasLocation));
 
-    PCollection<String> exceptions = result.errors().apply(MapElements
+    PCollection<String> exceptions = result.failures().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
 
     PAssert.that(result.output()).empty();
@@ -171,12 +171,12 @@ public class ParsePayloadTest {
         + ",\"metadata\":{\"document_namespace\":\"test\",\"document_type\":\"test\""
         + ",\"document_version\":\"1\",\"geo\":{\"country\":\"FI\"}}}";
 
-    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline //
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.text.decode()) //
         .apply(ParsePayload.of(schemasLocation));
 
-    PAssert.that(result.errors()).empty();
+    PAssert.that(result.failures()).empty();
 
     final PCollection<Integer> attributeCounts = result.output().apply(MapElements
         .into(TypeDescriptors.integers()).via(message -> message.getAttributeMap().size()));

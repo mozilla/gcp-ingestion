@@ -9,10 +9,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mozilla.telemetry.decoder.MessageScrubber.AffectedByBugException;
+import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.options.InputFileFormat;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
-import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Json;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -25,6 +24,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
@@ -204,10 +204,10 @@ public class MessageScrubberTest {
             + "},\"payload\": \"eyJjbGllbnRfaW5mbyI6eyJjbGllbnRfaWQiOiJmMGZmZWVjMC"
             + "1mZmVlLWMwZmYtZWVjMC1mZmVlYzBmZmVlY2MifX0=\n\"}");
 
-    WithErrors.Result<PCollection<PubsubMessage>> result = pipeline.apply(Create.of(input))
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.json.decode()).apply(ParsePayload.of(schemasLocation));
 
-    PCollection<String> exceptions = result.errors().apply(MapElements
+    PCollection<String> exceptions = result.failures().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
 
     PAssert.that(result.output()).empty();

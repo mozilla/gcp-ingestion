@@ -66,7 +66,8 @@ public class Decoder extends Sink {
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
             // See discussion in https://github.com/mozilla/gcp-ingestion/issues/776
             .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
-            .apply(ParsePayload.of(options.getSchemasLocation())).errorsTo(errorCollections) //
+            .apply("ParsePayload", ParsePayload.of(options.getSchemasLocation())) //
+            .failuresTo(errorCollections) //
             .apply(ParseUserAgent.of()) //
             .apply(NormalizeAttributes.of()) //
             .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
