@@ -7,7 +7,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.transforms.MapElementsWithErrors.MessageShouldBeDroppedException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
