@@ -228,15 +228,15 @@
 <li>Must not ack messages read from PubSub until they are delivered</li>
 <li>Must apply the following transforms in order
   (<a href="../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/">implementations here</a>):<ol>
+<li>Parse <code>x_pipeline_proxy</code> attribute; if present with a valid value in
+<a href="https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format">the edge submission timestamp format</a>,
+archive the value of <code>submission_timestamp</code> to <code>proxy_timestamp</code> and
+replace with the <code>x_pipeline_proxy</code> value</li>
 <li>Resolve GeoIP from <code>remote_addr</code> or <code>x_forwarded_for</code> attribute into
 <code>geo_*</code> attributes</li>
 <li>Parse <code>uri</code> attribute into multiple attributes</li>
 <li>Gzip decompress <code>payload</code> if gzip compressed</li>
 <li>Validate <code>payload</code> using a JSON Schema determined by attributes</li>
-<li>Parse <code>x_pipeline_proxy</code> attribute; if present with a valid value in
-<a href="https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format">the edge submission timestamp format</a>,
-archive the value of <code>submission_timestamp</code> to <code>proxy_timestamp</code> and
-replace with the <code>x_pipeline_proxy</code> value</li>
 <li>Parse <code>agent</code> attribute into <code>user_agent_*</code> attributes</li>
 <li>Produce <code>normalized_</code> variants of select attributes</li>
 <li>Inject <code>normalized_</code> attributes at the top level and other select

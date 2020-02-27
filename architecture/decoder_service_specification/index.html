@@ -165,10 +165,11 @@ in the Structured Ingestion pipeline.</p>
 <li>Perform GeoIP lookup and drop <code>x_forwarded_for</code> and <code>remote_addr</code> and
    optionally <code>geo_city</code> based on population</li>
 <li>Parse the <code>uri</code> attribute to determine document type, etc.</li>
-<li>Decode the body from base64, optionally gzip, and JSON</li>
+<li>Decode the body from base64, optionally decompress, and parse as JSON</li>
+<li>Scrub the message, checking the content against a list of known signatures
+   that should cause the message to be dropped as toxic, sent to error output,
+   or to have specific fields redacted</li>
 <li>Validate the schema of the body</li>
-<li>Potentially drop the message or specific fields if it matches a known
-   signature for toxic data we do not want to store</li>
 <li>Extract user agent information and drop <code>user_agent</code></li>
 <li>Add metadata fields to message</li>
 <li>Deduplicate message by <code>docId</code></li>
