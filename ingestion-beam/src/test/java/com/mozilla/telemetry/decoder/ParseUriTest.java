@@ -329,7 +329,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
     PAssert.that(uriExceptions).containsInAnyOrder(expectedExceptions);
 
     ValueProvider<String> schemas = pipeline.newProvider("schemas.tar.gz");
-    PCollection<String> schemaExceptions = output.apply(ParsePayload.of(schemas)).errors()
+    PCollection<String> schemaExceptions = output.apply(ParsePayload.of(schemas)).failures()
         .apply("EncodeJsonErrors", OutputFileFormat.json.encode());
     PAssert.that(schemaExceptions).empty();
 

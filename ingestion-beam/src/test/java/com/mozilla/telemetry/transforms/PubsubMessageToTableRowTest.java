@@ -69,6 +69,18 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
   }
 
   @Test
+  public void testNullRecord() throws Exception {
+    Map<String, Object> parent = new HashMap<>();
+    Map<String, Object> additionalProperties = new HashMap<>();
+    parent.put("record", null);
+    List<Field> bqFields = ImmutableList.of(
+        Field.of("record", LegacySQLTypeName.RECORD, Field.of("field", LegacySQLTypeName.STRING)));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals("{\"record\":null}", Json.asString(parent));
+    assertEquals("{}", Json.asString(additionalProperties));
+  }
+
+  @Test
   public void testCoerceEmptyObjectToJsonString() throws Exception {
     Map<String, Object> parent = new HashMap<>();
     parent.put("payload", new HashMap<>());
