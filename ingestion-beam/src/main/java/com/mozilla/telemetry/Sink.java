@@ -45,7 +45,7 @@ public class Sink {
    */
   public static PipelineResult run(SinkOptions.Parsed options) {
     final Pipeline pipeline = Pipeline.create(options);
-    final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+    final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();
 
     // We wrap pipeline in Optional for more convenience in chaining together transforms.
     Optional.of(pipeline) //
@@ -55,10 +55,10 @@ public class Sink {
             .apply(PublishBundleMetrics.of())) //
         .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
         .map(p -> p //
-            .apply(options.getOutputType().write(options)).failuresTo(errorCollections));
+            .apply(options.getOutputType().write(options)).failuresTo(failureCollections));
 
-    PCollectionList.of(errorCollections) //
-        .apply("FlattenErrorCollections", Flatten.pCollections()) //
+    PCollectionList.of(failureCollections) //
+        .apply("FlattenFailureCollections", Flatten.pCollections()) //
         .apply("WriteErrorOutput", options.getErrorOutputType().write(options)) //
         .output();
 

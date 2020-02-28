@@ -51,7 +51,7 @@ public class Decoder extends Sink {
    */
   public static PipelineResult run(DecoderOptions.Parsed options) {
     final Pipeline pipeline = Pipeline.create(options);
-    final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+    final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();
 
     // We wrap pipeline in Optional for more convenience in chaining together transforms.
     Optional.of(pipeline) //
@@ -62,24 +62,24 @@ public class Decoder extends Sink {
             // https://github.com/mozilla/gcp-ingestion/issues/1096
             .apply(ParseProxy.of()) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
-            .apply("ParseUri", ParseUri.of()).failuresTo(errorCollections) //
+            .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
             // See discussion in https://github.com/mozilla/gcp-ingestion/issues/776
-            .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
+            .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(failureCollections) //
             .apply("ParsePayload", ParsePayload.of(options.getSchemasLocation())) //
-            .failuresTo(errorCollections) //
+            .failuresTo(failureCollections) //
             .apply(ParseUserAgent.of()) //
             .apply(NormalizeAttributes.of()) //
-            .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
+            .apply("AddMetadata", AddMetadata.of()).failuresTo(failureCollections) //
             .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-            .sendDuplicateMetadataToErrors().failuresTo(errorCollections)) //
+            .sendDuplicateMetadataToErrors().failuresTo(failureCollections)) //
         .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
         .map(p -> p //
-            .apply(options.getOutputType().write(options)).failuresTo(errorCollections));
+            .apply(options.getOutputType().write(options)).failuresTo(failureCollections));
 
     // Write error output collections.
-    PCollectionList.of(errorCollections) //
-        .apply("FlattenErrorCollections", Flatten.pCollections()) //
+    PCollectionList.of(failureCollections) //
+        .apply("FlattenFailureCollections", Flatten.pCollections()) //
         .apply("WriteErrorOutput", options.getErrorOutputType().write(options)) //
         .output();
 
