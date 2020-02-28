@@ -8,7 +8,6 @@ import com.mozilla.telemetry.io.Write.PrintOutput;
 import com.mozilla.telemetry.transforms.Println;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
-import com.mozilla.telemetry.transforms.WithErrors.Result;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -18,6 +17,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.beam.sdk.values.TypeDescriptor;
@@ -71,7 +71,7 @@ public enum ErrorOutputType {
       return new Write() {
 
         @Override
-        public Result<PDone> expand(PCollection<PubsubMessage> input) {
+        public Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
           // We write errors from many pipelines to a single error topic, so the topic name itself
           // does not tell us provenance and we must encode that as attributes; see
           // https://github.com/mozilla/gcp-ingestion/issues/756
@@ -127,7 +127,7 @@ public enum ErrorOutputType {
       return new Write() {
 
         @Override
-        public Result<PDone> expand(PCollection<PubsubMessage> input) {
+        public Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
           return input
               .apply("remove stack_trace attributes",
                   MapElements.into(TypeDescriptor.of(PubsubMessage.class))

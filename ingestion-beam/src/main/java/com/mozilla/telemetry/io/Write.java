@@ -19,7 +19,6 @@ import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
-import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.DynamicPathTemplate;
 import com.mozilla.telemetry.util.NoColonFileNaming;
@@ -58,6 +57,7 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.Partition;
+import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
@@ -77,7 +77,7 @@ import org.joda.time.Duration;
  * com.mozilla.telemetry.options.OutputType}.
  */
 public abstract class Write
-    extends PTransform<PCollection<PubsubMessage>, WithErrors.Result<PDone>> {
+    extends PTransform<PCollection<PubsubMessage>, WithFailures.Result<PDone, PubsubMessage>> {
 
   /** Implementation of printing to STDOUT or STDERR. */
   public static class PrintOutput extends Write {
@@ -91,11 +91,11 @@ public abstract class Write
     }
 
     @Override
-    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+    public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
       PDone output = input //
           .apply("endcode PubsubMessages as strings", format.encode()) //
           .apply("print", this.output);
-      return WithErrors.Result.of(output, EmptyErrors.in(input.getPipeline()));
+      return WithFailures.Result.of(output, EmptyErrors.in(input.getPipeline()));
     }
 
   }
@@ -107,8 +107,8 @@ public abstract class Write
     }
 
     @Override
-    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
-      return WithErrors.Result.of(PDone.in(input.getPipeline()),
+    public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
+      return WithFailures.Result.of(PDone.in(input.getPipeline()),
           EmptyErrors.in(input.getPipeline()));
     }
 
@@ -142,7 +142,7 @@ public abstract class Write
     }
 
     @Override
-    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+    public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
       ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
           DynamicPathTemplate::new);
       ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
@@ -177,7 +177,7 @@ public abstract class Write
               .withAllowedLateness(Duration.standardDays(7)) //
               .discardingFiredPanes())
           .apply(write);
-      return WithErrors.Result.of(PDone.in(input.getPipeline()),
+      return WithFailures.Result.of(PDone.in(input.getPipeline()),
           EmptyErrors.in(input.getPipeline()));
     }
   }
@@ -251,7 +251,7 @@ public abstract class Write
     }
 
     @Override
-    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+    public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
       ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
           value -> value.staticPrefix);
 
@@ -297,7 +297,7 @@ public abstract class Write
       PCollectionTuple results = input.apply("encodePayloadAsAvro", encodePayloadAsAvro);
       results.get(successTag).apply(window).apply(write);
 
-      return WithErrors.Result.of(PDone.in(input.getPipeline()), results.get(errorTag));
+      return WithFailures.Result.of(PDone.in(input.getPipeline()), results.get(errorTag));
     }
   }
 
@@ -322,12 +322,12 @@ public abstract class Write
     }
 
     @Override
-    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+    public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
       PDone done = input //
           .apply(CompressPayload.of(compression).withMaxCompressedBytes(maxCompressedBytes)) //
           .apply(PubsubConstraints.truncateAttributes()) //
           .apply(PubsubIO.writeMessages().to(topic));
-      return WithErrors.Result.of(done, EmptyErrors.in(input.getPipeline()));
+      return WithFailures.Result.of(done, EmptyErrors.in(input.getPipeline()));
     }
   }
 
@@ -371,7 +371,7 @@ public abstract class Write
     }
 
     @Override
-    public WithErrors.Result<PDone> expand(PCollection<PubsubMessage> input) {
+    public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
       final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
       KeyByBigQueryTableDestination keyByBigQueryTableDestination = KeyByBigQueryTableDestination
           .of(tableSpecTemplate, partitioningField, clusteringFields);
@@ -497,7 +497,7 @@ public abstract class Write
       PCollection<PubsubMessage> errorCollection = PCollectionList.of(errorCollections)
           .apply("Flatten bigquery errors", Flatten.pCollections());
 
-      return WithErrors.Result.of(PDone.in(input.getPipeline()), errorCollection);
+      return WithFailures.Result.of(PDone.in(input.getPipeline()), errorCollection);
     }
   }
 

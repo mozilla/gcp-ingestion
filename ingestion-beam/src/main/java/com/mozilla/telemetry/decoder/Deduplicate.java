@@ -5,7 +5,6 @@ import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.transforms.WithErrors;
 import com.mozilla.telemetry.util.Time;
 import java.io.Serializable;
 import java.net.URI;
@@ -23,6 +22,7 @@ import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
@@ -103,16 +103,16 @@ public class Deduplicate {
        * Ignore the collection of duplicates and return a {@link Result} of just the
        * non-duplicate output and the errors.
        */
-      public WithErrors.Result<PCollection<PubsubMessage>> ignoreDuplicates() {
-        return WithErrors.Result.of(tuple().get(outputTag()), outputTag(), tuple().get(errorTag()),
-            errorTag());
+      public WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> ignoreDuplicates() {
+        return WithFailures.Result.of(tuple().get(outputTag()), tuple().get(errorTag()));
       }
 
       /**
        * Strip the payload from duplicate messages and add them to the error collection, returning
        * a {@link Result} of the non-duplicate output and the error collection.
        */
-      public WithErrors.Result<PCollection<PubsubMessage>> sendDuplicateMetadataToErrors() {
+      public WithFailures.Result<PCollection<PubsubMessage>, //
+          PubsubMessage> sendDuplicateMetadataToErrors() {
         PCollection<PubsubMessage> duplicateMetadata = tuple().get(duplicateTag())
             .apply("DropDuplicatePayloads", MapElements //
                 .into(TypeDescriptor.of(PubsubMessage.class))
@@ -123,7 +123,7 @@ public class Deduplicate {
         PCollection<PubsubMessage> errors = PCollectionList.of(tuple().get(errorTag()))
             .and(duplicateMetadata)
             .apply("FlattenDuplicateMetadataAndErrors", Flatten.pCollections());
-        return WithErrors.Result.of(tuple().get(outputTag()), outputTag(), errors, errorTag());
+        return WithFailures.Result.of(tuple().get(outputTag()), errors);
       }
 
       @Override

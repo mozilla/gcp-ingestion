@@ -72,10 +72,10 @@ public class Decoder extends Sink {
             .apply(NormalizeAttributes.of()) //
             .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
             .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-            .sendDuplicateMetadataToErrors().errorsTo(errorCollections)) //
+            .sendDuplicateMetadataToErrors().failuresTo(errorCollections)) //
         .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
         .map(p -> p //
-            .apply(options.getOutputType().write(options)).errorsTo(errorCollections));
+            .apply(options.getOutputType().write(options)).failuresTo(errorCollections));
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //
