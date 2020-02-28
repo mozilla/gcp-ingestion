@@ -372,13 +372,13 @@ public abstract class Write
 
     @Override
     public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
-      final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+      final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();
       KeyByBigQueryTableDestination keyByBigQueryTableDestination = KeyByBigQueryTableDestination
           .of(tableSpecTemplate, partitioningField, clusteringFields);
 
       input = input //
           .apply("LimitPayloadSize", LimitPayloadSize.toBytes(writeMethod.maxPayloadBytes))
-          .failuresTo(errorCollections);
+          .failuresTo(failureCollections);
 
       // When writing to live tables, we expect the input is uncompressed and we partition to
       // streaming vs. file loads based on uncompressed size, but we then want to compress again
@@ -441,13 +441,13 @@ public abstract class Write
         WriteResult writeResult = messages //
             .apply(maybeCompress) //
             .apply(keyByBigQueryTableDestination) //
-            .failuresTo(errorCollections) //
+            .failuresTo(failureCollections) //
             .apply(baseWriteTransform //
                 .withMethod(BigQueryWriteMethod.streaming.method)
                 .withFailedInsertRetryPolicy(InsertRetryPolicy.retryTransientErrors()) //
                 .skipInvalidRows() //
                 .withExtendedErrorInfo());
-        errorCollections
+        failureCollections
             .add(writeResult.getFailedInsertsWithErr().apply("Process failed inserts", MapElements
                 .into(TypeDescriptor.of(PubsubMessage.class)).via((BigQueryInsertError bqie) -> {
                   Map<String, String> attributes = new HashMap<>();
@@ -490,14 +490,14 @@ public abstract class Write
         messages //
             .apply(maybeCompress) //
             .apply(keyByBigQueryTableDestination) //
-            .failuresTo(errorCollections) //
+            .failuresTo(failureCollections) //
             .apply(fileLoadsWrite);
       });
 
-      PCollection<PubsubMessage> errorCollection = PCollectionList.of(errorCollections)
+      PCollection<PubsubMessage> failureCollection = PCollectionList.of(failureCollections)
           .apply("Flatten bigquery errors", Flatten.pCollections());
 
-      return WithFailures.Result.of(PDone.in(input.getPipeline()), errorCollection);
+      return WithFailures.Result.of(PDone.in(input.getPipeline()), failureCollection);
     }
   }
 

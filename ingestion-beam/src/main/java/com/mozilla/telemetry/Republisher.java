@@ -51,7 +51,7 @@ public class Republisher extends Sink {
     options.setOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
 
     final Pipeline pipeline = Pipeline.create(options);
-    final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
+    final List<PCollection<PubsubMessage>> failuresCollections = new ArrayList<>();
 
     // Trailing comments are used below to prevent re-wrapping by google-java-format.
     PCollection<PubsubMessage> decoded = pipeline //
@@ -61,7 +61,7 @@ public class Republisher extends Sink {
     decoded //
         .apply("MarkAsSeen", Deduplicate.markAsSeen(options.getParsedRedisUri(),
             options.getDeduplicateExpireSeconds()))
-        .failuresTo(errorCollections);
+        .failuresTo(failuresCollections);
 
     // Republish debug messages.
     if (options.getEnableDebugDestination()) {
@@ -104,8 +104,8 @@ public class Republisher extends Sink {
     }
 
     // Write error output collections.
-    PCollectionList.of(errorCollections) //
-        .apply("FlattenErrorCollections", Flatten.pCollections()) //
+    PCollectionList.of(failuresCollections) //
+        .apply("FlattenFailureCollections", Flatten.pCollections()) //
         .apply("WriteErrorOutput", options.getErrorOutputType().write(options)) //
         .output();
 
