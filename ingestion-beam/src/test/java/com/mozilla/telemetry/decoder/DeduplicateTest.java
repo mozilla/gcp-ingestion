@@ -3,7 +3,6 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.rules.RedisServer;
-import com.mozilla.telemetry.transforms.WithErrors;
 import java.util.Arrays;
 import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -12,6 +11,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
@@ -78,8 +78,9 @@ public class DeduplicateTest {
         .apply("create messages", mapStringsToId)
         .apply("deduplicate", Deduplicate.removeDuplicates(options.getParsedRedisUri()));
 
-    WithErrors.Result<PCollection<PubsubMessage>> ignored = result.ignoreDuplicates();
-    WithErrors.Result<PCollection<PubsubMessage>> dupesAsErrors = result
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> ignored = result
+        .ignoreDuplicates();
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> dupesAsErrors = result
         .sendDuplicateMetadataToErrors();
 
     // mainTag contains new ids
@@ -87,12 +88,12 @@ public class DeduplicateTest {
     PAssert.that(main).containsInAnyOrder(newId);
 
     // errorTag contains only invalid ids when dupes are ignored
-    final PCollection<String> errorNoDupes = ignored.errors().apply("get invalid ids",
+    final PCollection<String> errorNoDupes = ignored.failures().apply("get invalid ids",
         mapMessagesToId);
     PAssert.that(errorNoDupes).containsInAnyOrder(invalidId);
 
     // errorTag contains duplicate ids when dupes are sent to errors
-    final PCollection<String> errorWithDupes = dupesAsErrors.errors().apply("get error ids",
+    final PCollection<String> errorWithDupes = dupesAsErrors.failures().apply("get error ids",
         mapMessagesToId);
     PAssert.that(errorWithDupes).containsInAnyOrder(invalidId, duplicatedId);
 

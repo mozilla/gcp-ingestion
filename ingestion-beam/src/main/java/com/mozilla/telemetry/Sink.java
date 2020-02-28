@@ -55,7 +55,7 @@ public class Sink {
             .apply(PublishBundleMetrics.of())) //
         .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
         .map(p -> p //
-            .apply(options.getOutputType().write(options)).errorsTo(errorCollections));
+            .apply(options.getOutputType().write(options)).failuresTo(errorCollections));
 
     PCollectionList.of(errorCollections) //
         .apply("FlattenErrorCollections", Flatten.pCollections()) //
