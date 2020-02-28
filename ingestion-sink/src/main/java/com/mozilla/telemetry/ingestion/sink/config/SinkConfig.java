@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.ingestion.sink.config;
 
+import com.google.api.MonitoredResource;
 import com.google.api.gax.batching.FlowControlSettings;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
@@ -17,6 +18,7 @@ import com.mozilla.telemetry.ingestion.sink.transform.DecompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
+import io.opencensus.exporter.stats.stackdriver.StackdriverStatsConfiguration;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -57,6 +59,10 @@ public class SinkConfig {
       MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION,
       STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
       STRICT_SCHEMA_DOCTYPES);
+
+  // Env vars that should be attached to metrics
+  private static final List<String> METRIC_LABELS = ImmutableList.of(BIG_QUERY_OUTPUT_MODE,
+      INPUT_SUBSCRIPTION, OUTPUT_FORMAT);
 
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
@@ -355,6 +361,15 @@ public class SinkConfig {
     return StorageOptions.getDefaultInstance().getService();
   }
 
+  private static void registerStackdriver(Env env) throws IOException {
+    MonitoredResource.Builder resource = MonitoredResource.getDefaultInstance().toBuilder();
+    // Add certain configs to custom metric labels
+    METRIC_LABELS
+        .forEach(key -> env.optString(key).ifPresent(value -> resource.putLabels(key, value)));
+    StackdriverStatsExporter.createAndRegister(
+        StackdriverStatsConfiguration.builder().setMonitoredResource(resource.build()).build());
+  }
+
   /** Return a configured output transform. */
   public static Output getOutput() {
     Env env = new Env(INCLUDE_ENV_VARS);
@@ -373,7 +388,7 @@ public class SinkConfig {
     output.env.requireAllVarsUsed();
     // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
     // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
-    StackdriverStatsExporter.createAndRegister();
+    registerStackdriver(output.env);
     return input;
   }
 }
