@@ -15,6 +15,7 @@ import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.CompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.DecompressPayload;
+import com.mozilla.telemetry.ingestion.sink.transform.DocumentTypePredicate;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class SinkConfig {
 
@@ -50,6 +52,7 @@ public class SinkConfig {
   private static final String STREAMING_BATCH_MAX_BYTES = "STREAMING_BATCH_MAX_BYTES";
   private static final String STREAMING_BATCH_MAX_DELAY = "STREAMING_BATCH_MAX_DELAY";
   private static final String STREAMING_BATCH_MAX_MESSAGES = "STREAMING_BATCH_MAX_MESSAGES";
+  private static final String STREAMING_DOCTYPES = "STREAMING_DOCTYPES";
   private static final String STRICT_SCHEMA_DOCTYPES = "STRICT_SCHEMA_DOCTYPES";
 
   private static final List<String> INCLUDE_ENV_VARS = ImmutableList.of(INPUT_COMPRESSION,
@@ -58,7 +61,7 @@ public class SinkConfig {
       LOAD_MAX_FILES, OUTPUT_TABLE, OUTPUT_TOPIC, OUTPUT_TOPIC_EXECUTOR_THREADS,
       MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION,
       STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
-      STRICT_SCHEMA_DOCTYPES);
+      STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
 
   // Env vars that should be attached to metrics
   private static final List<String> METRIC_LABELS = ImmutableList.of(BIG_QUERY_OUTPUT_MODE,
@@ -240,11 +243,25 @@ public class SinkConfig {
               env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY),
               BigQuery.Load.Delete.always); // files will be recreated if not successfully loaded
         }
+        final long defaultBatchMaxBytes;
+        final int defaultBatchMaxMessages;
+        final String defaultBatchMaxDelay;
+        if (env.containsKey(STREAMING_DOCTYPES)) {
+          // use non-streaming defaults for fileOutput because most messages go to there
+          defaultBatchMaxBytes = DEFAULT_BATCH_MAX_BYTES;
+          defaultBatchMaxMessages = DEFAULT_BATCH_MAX_MESSAGES;
+          defaultBatchMaxDelay = DEFAULT_BATCH_MAX_DELAY;
+        } else {
+          // use streaming defaults for fileOutput because only oversize messages go to there
+          defaultBatchMaxBytes = DEFAULT_STREAMING_BATCH_MAX_BYTES;
+          defaultBatchMaxMessages = DEFAULT_STREAMING_BATCH_MAX_MESSAGES;
+          defaultBatchMaxDelay = DEFAULT_STREAMING_BATCH_MAX_DELAY;
+        }
         // Combine bigQueryFiles and bigQueryLoad without an intermediate PubSub topic
         Function<PubsubMessage, CompletableFuture<Void>> fileOutput = new Gcs.Write.Ndjson(storage,
-            env.getLong(BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
-            env.getInt(BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
-            env.getDuration(BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
+            env.getLong(BATCH_MAX_BYTES, defaultBatchMaxBytes),
+            env.getInt(BATCH_MAX_MESSAGES, defaultBatchMaxMessages),
+            env.getDuration(BATCH_MAX_DELAY, defaultBatchMaxDelay),
             PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
             getFormat(env),
             blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)));
@@ -255,7 +272,8 @@ public class SinkConfig {
             env.getDuration(STREAMING_BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
             getFormat(env));
-        Function<PubsubMessage, CompletableFuture<Void>> mixedOutput = message -> streamingOutput
+        // fallbackOutput sends messages to fileOutput when rejected by streamingOutput due to size
+        Function<PubsubMessage, CompletableFuture<Void>> fallbackOutput = message -> streamingOutput
             .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
               if (t.getCause() instanceof BigQuery.WriteErrors) {
                 BigQuery.WriteErrors cause = (BigQuery.WriteErrors) t.getCause();
@@ -269,6 +287,20 @@ public class SinkConfig {
               }
               throw (RuntimeException) t;
             }).thenCompose(v -> v);
+        // Send messages not matched by STREAMING_DOCTYPES directly to fileOutput
+        final Function<PubsubMessage, CompletableFuture<Void>> mixedOutput;
+        if (env.containsKey(STREAMING_DOCTYPES)) {
+          Predicate<PubsubMessage> streamingDoctypes = DocumentTypePredicate
+              .of(env.getPattern(STREAMING_DOCTYPES));
+          mixedOutput = message -> {
+            if (streamingDoctypes.test(message)) {
+              return fallbackOutput.apply(message);
+            }
+            return fileOutput.apply(message);
+          };
+        } else {
+          mixedOutput = fallbackOutput;
+        }
         return new Output(env, this, mixedOutput);
       }
     };
