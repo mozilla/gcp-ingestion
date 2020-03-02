@@ -44,7 +44,7 @@ public class HashClientInfo
   }
 
   @VisibleForTesting
-  static class KeyLengthMismatchException extends Exception {
+  static class KeyLengthMismatchException extends RuntimeException {
 
     KeyLengthMismatchException(int keyLength) {
       super("Key length was " + keyLength + ", expected 32");
@@ -52,7 +52,7 @@ public class HashClientInfo
   }
 
   @VisibleForTesting
-  static class MissingKeyException extends Exception {
+  static class MissingKeyException extends RuntimeException {
 
     MissingKeyException() {
       super("Path to hash keys for client ip and client id must be provided to the pipeline");
@@ -60,7 +60,7 @@ public class HashClientInfo
   }
 
   @VisibleForTesting
-  static class IdenticalKeyException extends Exception {
+  static class IdenticalKeyException extends RuntimeException {
 
     IdenticalKeyException() {
       super("ip and id hash keys must not be identical");
@@ -85,7 +85,7 @@ public class HashClientInfo
   }
 
   @VisibleForTesting
-  byte[] getClientIdHashKey() throws IOException, KeyLengthMismatchException {
+  byte[] getClientIdHashKey() throws IOException {
     if (clientIdHashKey == null) {
       clientIdHashKey = readBytes(clientIdHashKeyPath.get());
     }
@@ -93,7 +93,7 @@ public class HashClientInfo
   }
 
   @VisibleForTesting
-  byte[] getClientIpHashKey() throws IOException, KeyLengthMismatchException {
+  byte[] getClientIpHashKey() throws IOException {
     if (clientIpHashKey == null) {
       clientIpHashKey = readBytes(clientIpHashKeyPath.get());
     }
@@ -101,7 +101,7 @@ public class HashClientInfo
   }
 
   @VisibleForTesting
-  byte[] readBytes(String uri) throws IOException, KeyLengthMismatchException {
+  byte[] readBytes(String uri) throws IOException {
     Metadata metadata = FileSystems.matchSingleFileSpec(uri);
     ReadableByteChannel inputChannel = FileSystems.open(metadata.resourceId());
     try (InputStream inputStream = Channels.newInputStream(inputChannel)) {
@@ -127,7 +127,7 @@ public class HashClientInfo
 
           if (!clientIdHashKeyPath.isAccessible() || clientIdHashKeyPath.get() == null
               || !clientIpHashKeyPath.isAccessible() || clientIpHashKeyPath.get() == null) {
-            throw new RuntimeException(new MissingKeyException());
+            throw new MissingKeyException();
           }
 
           String clientId = attributes.get(Attribute.CLIENT_ID);
@@ -139,12 +139,12 @@ public class HashClientInfo
           try {
             clientIdKey = getClientIdHashKey();
             clientIpKey = getClientIpHashKey();
-          } catch (KeyLengthMismatchException | IOException e) {
+          } catch (IOException e) {
             throw new RuntimeException(e);
           }
 
           if (Arrays.equals(clientIdKey, clientIpKey)) {
-            throw new RuntimeException(new IdenticalKeyException());
+            throw new IdenticalKeyException();
           }
           try {
             if (clientId != null && !isHashed(clientId)) {

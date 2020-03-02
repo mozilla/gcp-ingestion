@@ -1,10 +1,7 @@
 package com.mozilla.telemetry.decoder.ipprivacy;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
-import com.mozilla.telemetry.decoder.MessageScrubber;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
@@ -28,11 +25,11 @@ import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
-public class IpParsePayload extends
+public class ExtractClientIdAndDropPayload extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  public static IpParsePayload of() {
-    return new IpParsePayload();
+  public static ExtractClientIdAndDropPayload of() {
+    return new ExtractClientIdAndDropPayload();
   }
 
   ////////
@@ -57,17 +54,11 @@ public class IpParsePayload extends
             throw new RuntimeException(e);
           }
 
-          // Check the contents of the message, potentially throwing an exception that causes the
-          // message to be dropped or routed to error output; may also also alter the payload to
-          // redact sensitive fields.
-          try {
-            MessageScrubber.scrub(attributes, json);
-          } catch (RuntimeException e) {
-            // This message should go to no output, so we return an empty list immediately.
-            return Collections.emptyList();
+          if (attributes.get(Attribute.CLIENT_ID) == null) {
+            Optional.ofNullable(json.path("clientId").textValue())
+                .map(ExtractClientIdAndDropPayload::normalizeUuid)
+                .ifPresent(v -> attributes.put(Attribute.CLIENT_ID, v));
           }
-
-          addClientIdFromPayload(attributes, json);
 
           PerDocTypeCounter.inc(attributes, "valid_submission");
           PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
@@ -76,40 +67,7 @@ public class IpParsePayload extends
               .singletonList(new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes));
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> e) -> FailureMessage
-            .of(IpParsePayload.class.getSimpleName(), e.element(), e.exception())));
-  }
-
-  private void addClientIdFromPayload(Map<String, String> attributes, ObjectNode json) {
-
-    // Try to get glean-style client_info object.
-    JsonNode gleanClientInfo = json.path("client_info");
-
-    if (gleanClientInfo.isObject()) {
-      // See glean ping structure in:
-      // https://github.com/mozilla-services/mozilla-pipeline-schemas/blob/da4a1446efd948399eb9eade22f6fcbc5557f588/schemas/glean/baseline/baseline.1.schema.json
-      Optional.ofNullable(gleanClientInfo.path(Attribute.CLIENT_ID).textValue()) //
-          .filter(v -> !Strings.isNullOrEmpty(v)) //
-          .map(IpParsePayload::normalizeUuid) //
-          .ifPresent(v -> {
-            attributes.put(Attribute.CLIENT_ID, v);
-          });
-    }
-
-    if (attributes.get(Attribute.CLIENT_ID) == null) {
-      Optional.ofNullable(json.path(Attribute.CLIENT_ID).textValue()) //
-          .map(IpParsePayload::normalizeUuid) //
-          .ifPresent(v -> {
-            attributes.put(Attribute.CLIENT_ID, v);
-          });
-    }
-
-    if (attributes.get(Attribute.CLIENT_ID) == null) {
-      Optional.ofNullable(json.path("clientId").textValue()) //
-          .map(IpParsePayload::normalizeUuid) //
-          .ifPresent(v -> {
-            attributes.put(Attribute.CLIENT_ID, v);
-          });
-    }
+            .of(ExtractClientIdAndDropPayload.class.getSimpleName(), e.element(), e.exception())));
   }
 
   @VisibleForTesting

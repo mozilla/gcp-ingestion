@@ -1,18 +1,15 @@
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.decoder.DecoderOptions;
-import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
+import com.mozilla.telemetry.decoder.ipprivacy.ExtractClientIdAndDropPayload;
 import com.mozilla.telemetry.decoder.ipprivacy.HashClientInfo;
-import com.mozilla.telemetry.decoder.ipprivacy.IpParsePayload;
+import com.mozilla.telemetry.decoder.ipprivacy.IpPrivacyDecoderOptions;
 import com.mozilla.telemetry.decoder.ipprivacy.ParseIp;
 import com.mozilla.telemetry.decoder.ipprivacy.RemoveAttributes;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.DecompressPayload;
-import com.mozilla.telemetry.transforms.DeduplicateByDocumentId;
-import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,15 +45,16 @@ public class IpPrivacyDecoder extends Sink {
    */
   public static PipelineResult run(String[] args) {
     registerOptions(); // Defined in Sink.java
-    final DecoderOptions.Parsed options = DecoderOptions.parseDecoderOptions(
-        PipelineOptionsFactory.fromArgs(args).withValidation().as(DecoderOptions.class));
+    final IpPrivacyDecoderOptions.Parsed options = IpPrivacyDecoderOptions
+        .parseIpPrivacyDecoderOptions(PipelineOptionsFactory.fromArgs(args).withValidation()
+            .as(IpPrivacyDecoderOptions.class));
     return run(options);
   }
 
   /**
    * Execute an Apache Beam pipeline and return the {@code PipelineResult}.
    */
-  public static PipelineResult run(DecoderOptions.Parsed options) {
+  public static PipelineResult run(IpPrivacyDecoderOptions.Parsed options) {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
@@ -65,21 +63,16 @@ public class IpPrivacyDecoder extends Sink {
         .map(p -> p //
             .apply(options.getInputType().read(options)) //
             .apply(ParseUri.of()).failuresTo(errorCollections) //
-            .apply("RestrictToMainPings", Filter.by((message) -> {
-              String doctype = message.getAttribute(Attribute.DOCUMENT_TYPE);
-              return doctype != null && doctype.equals("main");
-            })).apply(ParseProxy.of()) //
+            .apply("RestrictToMainPings",
+                Filter
+                    .by((message) -> "main".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))))
+            .apply(ParseProxy.of()) //
             .apply(ParseIp.of()) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-            // See discussion in https://github.com/mozilla/gcp-ingestion/issues/776
-            .apply(LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
-            .apply(IpParsePayload.of()).failuresTo(errorCollections) //
+            .apply(ExtractClientIdAndDropPayload.of()).failuresTo(errorCollections) //
             .apply(HashClientInfo.of(options.getClientIdHashKey(), options.getClientIpHashKey())) //
-            .apply(NormalizeAttributes.of()) //
-            .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-            .sendDuplicateMetadataToErrors().errorsTo(errorCollections)) //
-        .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
+            .apply(NormalizeAttributes.of())) //
         .map(p -> p //
             .apply(RemoveAttributes.of()) //
             .apply(options.getOutputType().write(options)).errorsTo(errorCollections));
