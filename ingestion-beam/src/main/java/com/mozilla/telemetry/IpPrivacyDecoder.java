@@ -75,7 +75,7 @@ public class IpPrivacyDecoder extends Sink {
             .apply(NormalizeAttributes.of())) //
         .map(p -> p //
             .apply(RemoveAttributes.of()) //
-            .apply(options.getOutputType().write(options)).errorsTo(errorCollections));
+            .apply(options.getOutputType().write(options)).failuresTo(errorCollections));
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //
