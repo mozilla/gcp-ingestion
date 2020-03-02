@@ -24,6 +24,10 @@ public interface IpPrivacyDecoderOptions extends DecoderOptions, PipelineOptions
   interface Parsed extends IpPrivacyDecoderOptions, DecoderOptions.Parsed {
   }
 
+  /**
+   * Return the input {@link IpPrivacyDecoderOptions} instance promoted to a
+   * {@link IpPrivacyDecoderOptions.Parsed} and with all derived fields set.
+   */
   static Parsed parseIpPrivacyDecoderOptions(IpPrivacyDecoderOptions options) {
     final Parsed parsed = options.as(Parsed.class);
     DecoderOptions.enrichDecoderOptions(parsed);
