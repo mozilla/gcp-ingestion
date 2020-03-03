@@ -38,9 +38,9 @@ public class DocumentTypePredicate implements Predicate<PubsubMessage> {
 
   @Override
   public boolean test(PubsubMessage message) {
-    String doctype = template.apply(message);
+    String docType = template.apply(message);
     try {
-      return cache.get(doctype, () -> pattern.matcher(doctype.replaceAll("_", "-")).matches());
+      return cache.get(docType, () -> pattern.matcher(docType.replaceAll("_", "-")).matches());
     } catch (ExecutionException e) {
       throw new UncheckedExecutionException(e.getCause());
     }
