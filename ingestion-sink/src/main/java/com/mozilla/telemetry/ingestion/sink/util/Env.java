@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Env {
@@ -64,5 +65,9 @@ public class Env {
 
   public Duration getDuration(String key, String defaultValue) {
     return Time.parseJavaDuration(getString(key, defaultValue));
+  }
+
+  public Pattern getPattern(String key) {
+    return Pattern.compile(getString(key));
   }
 }
