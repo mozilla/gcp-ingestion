@@ -394,7 +394,8 @@ public class SinkConfig {
   }
 
   private static void registerStackdriver(Env env) throws IOException {
-    MonitoredResource.Builder resource = MonitoredResource.getDefaultInstance().toBuilder();
+    MonitoredResource.Builder resource = StackdriverStatsConfiguration.builder().build()
+        .getMonitoredResource().toBuilder();
     // Add certain configs to custom metric labels
     METRIC_LABELS
         .forEach(key -> env.optString(key).ifPresent(value -> resource.putLabels(key, value)));
