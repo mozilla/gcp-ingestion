@@ -36,7 +36,7 @@ public class Env {
     return env.containsKey(key);
   }
 
-  public Optional<String> optString(String key) {
+  private Optional<String> optString(String key) {
     unused.remove(key);
     return Optional.ofNullable(env.get(key));
   }
