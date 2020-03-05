@@ -13,6 +13,8 @@ import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
+import com.mozilla.telemetry.ingestion.sink.io.Input;
+import com.mozilla.telemetry.ingestion.sink.io.Pipe;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.CompressPayload;
@@ -22,7 +24,12 @@ import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedSt
 import com.mozilla.telemetry.ingestion.sink.util.Env;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -36,6 +43,7 @@ public class SinkConfig {
 
   private static final String INPUT_COMPRESSION = "INPUT_COMPRESSION";
   private static final String INPUT_PARALLELISM = "INPUT_PARALLELISM";
+  private static final String INPUT_PIPE = "INPUT_PIPE";
   private static final String INPUT_SUBSCRIPTION = "INPUT_SUBSCRIPTION";
   private static final String BATCH_MAX_BYTES = "BATCH_MAX_BYTES";
   private static final String BATCH_MAX_DELAY = "BATCH_MAX_DELAY";
@@ -49,6 +57,7 @@ public class SinkConfig {
   private static final String OUTPUT_COMPRESSION = "OUTPUT_COMPRESSION";
   private static final String OUTPUT_FORMAT = "OUTPUT_FORMAT";
   private static final String OUTPUT_PARALLELISM = "OUTPUT_PARALLELISM";
+  private static final String OUTPUT_PIPE = "OUTPUT_PIPE";
   private static final String OUTPUT_TOPIC = "OUTPUT_TOPIC";
   private static final String MAX_OUTSTANDING_ELEMENT_COUNT = "MAX_OUTSTANDING_ELEMENT_COUNT";
   private static final String MAX_OUTSTANDING_REQUEST_BYTES = "MAX_OUTSTANDING_REQUEST_BYTES";
@@ -60,12 +69,13 @@ public class SinkConfig {
   private static final String STRICT_SCHEMA_DOCTYPES = "STRICT_SCHEMA_DOCTYPES";
 
   private static final Set<String> INCLUDE_ENV_VARS = ImmutableSet.of(INPUT_COMPRESSION,
-      INPUT_PARALLELISM, INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES,
-      BIG_QUERY_OUTPUT_MODE, BIG_QUERY_DEFAULT_PROJECT, LOAD_MAX_BYTES, LOAD_MAX_DELAY,
-      LOAD_MAX_FILES, OUTPUT_BUCKET, OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_PARALLELISM,
-      OUTPUT_TABLE, OUTPUT_TOPIC, MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES,
-      SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY,
-      STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
+      INPUT_PARALLELISM, INPUT_PIPE, INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY,
+      BATCH_MAX_MESSAGES, BIG_QUERY_OUTPUT_MODE, BIG_QUERY_DEFAULT_PROJECT, LOAD_MAX_BYTES,
+      LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET, OUTPUT_COMPRESSION, OUTPUT_FORMAT,
+      OUTPUT_PARALLELISM, OUTPUT_PIPE, OUTPUT_TABLE, OUTPUT_TOPIC, MAX_OUTSTANDING_ELEMENT_COUNT,
+      MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES,
+      STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES,
+      STRICT_SCHEMA_DOCTYPES);
 
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
@@ -131,6 +141,38 @@ public class SinkConfig {
   }
 
   enum OutputType {
+    pipe {
+
+      @Override
+      Output getOutput(Env env, Executor executor) {
+        final String outputPipe = env.getString(OUTPUT_PIPE);
+        final PrintStream pipe;
+        switch (outputPipe) {
+          case "-":
+          case "1":
+          case "out":
+          case "stdout":
+          case "/dev/stdout":
+            pipe = System.out;
+            break;
+          case "2":
+          case "err":
+          case "stderr":
+          case "/dev/stderr":
+            pipe = System.err;
+            break;
+          default:
+            try {
+              pipe = new PrintStream(outputPipe);
+            } catch (FileNotFoundException e) {
+              throw new IllegalArgumentException(e);
+            }
+        }
+        return new Output(env, this, Pipe.Write.of(pipe, env.optString(OUTPUT_TABLE)
+            .map(PubsubMessageToTemplatedString::forBigQuery).orElse(null), getFormat(env)));
+      }
+    },
+
     pubsub {
 
       private CompressPayload getOutputCompression(Env env) {
@@ -322,7 +364,9 @@ public class SinkConfig {
 
     static OutputType get(Env env) {
       boolean hasBigQueryOutputMode = env.containsKey(BIG_QUERY_OUTPUT_MODE);
-      if (env.containsKey(OUTPUT_BUCKET) && !hasBigQueryOutputMode) {
+      if (env.containsKey(OUTPUT_PIPE)) {
+        return OutputType.pipe;
+      } else if (env.containsKey(OUTPUT_BUCKET) && !hasBigQueryOutputMode) {
         return OutputType.gcs;
       } else if (env.containsKey(OUTPUT_TOPIC) && !hasBigQueryOutputMode) {
         return OutputType.pubsub;
@@ -363,6 +407,8 @@ public class SinkConfig {
       case "payload":
         return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
             env.getString(SCHEMAS_LOCATION, null), FileInputStream::new).withOpenCensusMetrics();
+      case "beam":
+        return PubsubMessageToObjectNode.Beam.of();
       default:
         throw new IllegalArgumentException("Format not yet implemented: " + format);
     }
@@ -411,30 +457,50 @@ public class SinkConfig {
   }
 
   /** Return a configured input transform. */
-  public static Pubsub.Read getInput(Output output) throws IOException {
-    // read pubsub messages from INPUT_SUBSCRIPTION
-    Pubsub.Read input = new Pubsub.Read(output.env.getString(INPUT_SUBSCRIPTION), output,
-        builder -> builder
-            .setFlowControlSettings(FlowControlSettings.newBuilder()
-                .setMaxOutstandingElementCount(
-                    output.type.getMaxOutstandingElementCount(output.env))
-                .setMaxOutstandingRequestBytes(
-                    output.type.getMaxOutstandingRequestBytes(output.env))
-                .build())
-            // The number of streaming subscriber connections for reading from Pub/Sub.
-            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L141
-            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L318-L320
-            // The default number of executor threads is max(6, 2*parallelPullCount).
-            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
-            // Subscriber connections are expected to be CPU bound until flow control thresholds are
-            // reached, so parallelism should be no less than the number of available processors.
-            .setParallelPullCount(
-                output.env.getInt(INPUT_PARALLELISM, Runtime.getRuntime().availableProcessors())),
-        getInputCompression(output.env));
+  public static Input getInput(Output output) throws IOException {
+    final DecompressPayload decompress = getInputCompression(output.env);
+    final Input input;
+    if (output.env.containsKey(INPUT_PIPE)) {
+      final String inputPipe = output.env.getString(INPUT_PIPE);
+      final InputStream pipe;
+      switch (inputPipe) {
+        case "-":
+        case "0":
+        case "in":
+        case "stdin":
+        case "/dev/stdin":
+          pipe = System.in;
+          break;
+        default:
+          pipe = Files.newInputStream(Paths.get(output.env.getString(INPUT_PIPE)));
+      }
+      input = Pipe.Read.of(pipe, output.write, decompress);
+    } else {
+      // read pubsub messages from INPUT_SUBSCRIPTION
+      input = new Pubsub.Read(output.env.getString(INPUT_SUBSCRIPTION), output,
+          builder -> builder
+              .setFlowControlSettings(FlowControlSettings.newBuilder()
+                  .setMaxOutstandingElementCount(
+                      output.type.getMaxOutstandingElementCount(output.env))
+                  .setMaxOutstandingRequestBytes(
+                      output.type.getMaxOutstandingRequestBytes(output.env))
+                  .build())
+              // The number of streaming subscriber connections for reading from Pub/Sub.
+              // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L141
+              // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L318-L320
+              // The default number of executor threads is max(6, 2*parallelPullCount).
+              // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
+              // Subscriber connections are expected to be CPU bound until flow control thresholds
+              // are
+              // reached, so parallelism should be no less than the number of available processors.
+              .setParallelPullCount(
+                  output.env.getInt(INPUT_PARALLELISM, Runtime.getRuntime().availableProcessors())),
+          decompress);
+      // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
+      // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
+      StackdriverStatsExporter.createAndRegister();
+    }
     output.env.requireAllVarsUsed();
-    // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
-    // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
-    StackdriverStatsExporter.createAndRegister();
     return input;
   }
 }
