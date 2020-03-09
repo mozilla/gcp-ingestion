@@ -129,7 +129,7 @@ public class ParsePayloadTest {
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
 
     PAssert.that(result.output()).empty();
-    PAssert.that(exceptions).containsInAnyOrder("java.lang.RuntimeException",
+    PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
         "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException",
         "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException",
         "com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException");
