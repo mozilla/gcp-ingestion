@@ -395,7 +395,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       } else {
         final Optional<JsonNode> coerced = coerceToBqType(value, field);
         if (coerced.isPresent()) {
-          parent.set(name, coerced.get());
+          updateParent(parent, name, coerced.get());
         } else {
           // An empty coerced value means the actual type didn't match expected and we don't define
           // a coercion. We put the value to additional_properties instead.
@@ -529,7 +529,10 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     }
 
     private Optional<JsonNode> coerceSingleValueToBqType(JsonNode o, Field field) {
-      if (field.getType() == LegacySQLTypeName.STRING) {
+      if (o.isNull()) {
+        // null is valid for any type
+        return Optional.of(o);
+      } else if (field.getType() == LegacySQLTypeName.STRING) {
         if (o.isTextual()) {
           return Optional.of(o);
         } else if (o.isNull()) {

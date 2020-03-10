@@ -200,6 +200,6 @@ public class Json {
    * Return true if {@link ObjectNode} is null or empty.
    */
   public static boolean isNullOrEmpty(JsonNode node) {
-    return node == null || node.isNull() || node.size() == 0;
+    return node == null || node.isNull() || (!node.isValueNode() && node.size() == 0);
   }
 }
