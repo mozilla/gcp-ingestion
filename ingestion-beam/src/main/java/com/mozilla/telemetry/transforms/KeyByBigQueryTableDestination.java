@@ -14,8 +14,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -109,7 +109,7 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
         return tableSet;
       });
     } catch (ExecutionException | UncheckedExecutionException e) {
-      throw new BubbleUpException(e.getCause());
+      throw new RuntimeException(e);
     }
 
     // Send to error collection if dataset or table doesn't exist so BigQueryIO doesn't throw a
@@ -133,10 +133,16 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
               msg = PubsubConstraints.ensureNonNull(msg);
               return KV.of(getTableDestination(msg.getAttributeMap()), msg);
             }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-                KeyByBigQueryTableDestination.class.getSimpleName(), //
-                ee.element(), //
-                ee.exception())));
+            .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
+              if (ee.exception().getCause() instanceof ExecutionException
+                  || ee.exception().getCause() instanceof UncheckedIOException) {
+                throw ee.exception();
+              } else {
+                return FailureMessage.of(KeyByBigQueryTableDestination.class.getSimpleName(), //
+                    ee.element(), //
+                    ee.exception());
+              }
+            }));
   }
 
   ////
@@ -172,7 +178,7 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
     try {
       return normalizedNameCache.get(name, () -> SnakeCase.format(name));
     } catch (ExecutionException e) {
-      throw new BubbleUpException(e.getCause());
+      throw new RuntimeException(e);
     }
   }
 }
