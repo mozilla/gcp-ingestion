@@ -254,7 +254,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       if (metadata != null) {
         contents.set(AddMetadata.METADATA, metadata);
       }
-      if (!Json.isNullOrEmpty(additionalProperties)) {
+      if (additionalProperties != null) {
         contents.put(FieldName.ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
       }
       return contents;
