@@ -20,7 +20,6 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.BigQuerySchemaStore;
-import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
@@ -587,7 +586,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       try {
         return normalizedNameCache.get(name, () -> convertNameForBq(name));
       } catch (ExecutionException | UncheckedExecutionException e) {
-        throw new BubbleUpException(e.getCause());
+        throw new RuntimeException(e);
       }
     }
 
