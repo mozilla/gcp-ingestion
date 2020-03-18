@@ -586,7 +586,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       try {
         return normalizedNameCache.get(name, () -> convertNameForBq(name));
       } catch (ExecutionException | UncheckedExecutionException e) {
-        throw new RuntimeException(e);
+        throw new UncheckedExecutionException(e.getCause());
       }
     }
 

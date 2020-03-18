@@ -168,7 +168,7 @@ public abstract class SchemaStore<T> {
     try {
       return normalizedNameCache.get(name, () -> SnakeCase.format(name));
     } catch (ExecutionException | UncheckedExecutionException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedExecutionException(e.getCause());
     }
   }
 
