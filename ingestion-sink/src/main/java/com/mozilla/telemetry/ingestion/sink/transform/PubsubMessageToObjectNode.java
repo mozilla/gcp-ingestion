@@ -127,9 +127,6 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
           "The number of values that failed to be coerced to int", "1");
       private static final MeasureLong NOT_COERCED_TO_BOOL = MeasureLong.create(
           "not_coerced_to_bool", "The number of values that failed to be coerced to bool", "1");
-      private static final MeasureLong COERCION_FAILURE_IN_LIST = MeasureLong.create(
-          "coercion_failure_in_list", "The number of values that failed to be coerced in lists",
-          "1");
       private static final Aggregation.Count COUNT_AGGREGATION = Aggregation.Count.create();
       private static final StatsRecorder STATS_RECORDER = Stats.getStatsRecorder();
 
@@ -137,7 +134,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
         // Every meeasure must have a view or recorded metrics will be dropped and never exported
         ViewManager viewManager = Stats.getViewManager();
         for (MeasureLong measure : ImmutableList.of(COERCED_TO_INT, NOT_COERCED_TO_INT,
-            NOT_COERCED_TO_BOOL, COERCION_FAILURE_IN_LIST)) {
+            NOT_COERCED_TO_BOOL)) {
           viewManager.registerView(View.create(Name.create(measure.getName()),
               measure.getDescription(), measure, COUNT_AGGREGATION, ImmutableList.of()));
         }
@@ -159,12 +156,6 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       @Override
       protected void incrementNotCoercedToBool() {
         STATS_RECORDER.newMeasureMap().put(NOT_COERCED_TO_BOOL, 1).record();
-      }
-
-      /** measure rate of CoercionFailureInList. */
-      @Override
-      protected void incrementCoercionFailureInList() {
-        STATS_RECORDER.newMeasureMap().put(COERCION_FAILURE_IN_LIST, 1).record();
       }
     }
 
@@ -217,10 +208,6 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
 
     /** measure rate of NotCoercedToBool. */
     protected void incrementNotCoercedToBool() {
-    }
-
-    /** measure rate of CoercionFailureInList. */
-    protected void incrementCoercionFailureInList() {
     }
 
     /**
@@ -510,18 +497,13 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
         return Optional.of(o);
       } else if (field.getMode() == Field.Mode.REPEATED) {
         if (o.isArray()) {
+          // We have not yet observed a case where an array type contains values that cannot be
+          // coerced to appropriate values, but if it does this will throw NoSuchElementException
+          // and prevent the message from being delivered to BigQuery in a form that could lead to
+          // data being missed in additional_properties.
           return Optional.of(Json.createArrayNode()
               .addAll(Streams.stream(o).map(v -> coerceSingleValueToBqType(v, field))
-                  // We have not yet observed a case where an array type contains values that cannot
-                  // be coerced to appropriate values, so this filter should not be getting rid of
-                  // elements; a future improvement would be to refactor so that we can insert
-                  // non-coerceable values from a list into additional_properties.
-                  .filter(v -> {
-                    if (!v.isPresent()) {
-                      incrementCoercionFailureInList();
-                    }
-                    return v.isPresent();
-                  }).map(Optional::get).collect(Collectors.toList())));
+                  .map(Optional::get).collect(Collectors.toList())));
         } else {
           return Optional.empty();
         }
