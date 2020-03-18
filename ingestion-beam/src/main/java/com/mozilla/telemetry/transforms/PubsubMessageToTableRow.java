@@ -201,7 +201,7 @@ public class PubsubMessageToTableRow implements Serializable {
           }
         });
       } catch (ExecutionException e) {
-        throw new RuntimeException(e);
+        throw new UncheckedExecutionException(e.getCause());
       }
     }
 
@@ -554,7 +554,7 @@ public class PubsubMessageToTableRow implements Serializable {
     try {
       return normalizedNameCache.get(name, () -> convertNameForBq(name));
     } catch (ExecutionException | UncheckedExecutionException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedExecutionException(e.getCause());
     }
   }
 

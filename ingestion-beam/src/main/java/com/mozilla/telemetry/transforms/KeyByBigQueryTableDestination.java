@@ -15,7 +15,6 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -109,7 +108,7 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
         return tableSet;
       });
     } catch (ExecutionException | UncheckedExecutionException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedExecutionException(e.getCause());
     }
 
     // Send to error collection if dataset or table doesn't exist so BigQueryIO doesn't throw a
@@ -134,10 +133,9 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
               return KV.of(getTableDestination(msg.getAttributeMap()), msg);
             }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
-              if (ee.exception().getCause() instanceof ExecutionException
-                  || ee.exception().getCause() instanceof UncheckedIOException) {
+              try {
                 throw ee.exception();
-              } else {
+              } catch (IllegalArgumentException e) {
                 return FailureMessage.of(KeyByBigQueryTableDestination.class.getSimpleName(), //
                     ee.element(), //
                     ee.exception());
@@ -178,7 +176,7 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
     try {
       return normalizedNameCache.get(name, () -> SnakeCase.format(name));
     } catch (ExecutionException e) {
-      throw new RuntimeException(e);
+      throw new UncheckedExecutionException(e.getCause());
     }
   }
 }
