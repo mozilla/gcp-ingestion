@@ -228,10 +228,15 @@ public class Deduplicate {
             }
             return el;
           }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-              .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-                  Deduplicate.class.getSimpleName(), //
-                  ee.element(), //
-                  ee.exception())));
+              .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
+                try {
+                  throw ee.exception();
+                } catch (IllegalArgumentException e) {
+                  return FailureMessage.of(Deduplicate.class.getSimpleName(), //
+                      ee.element(), //
+                      ee.exception());
+                }
+              }));
     }
   }
 

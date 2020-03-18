@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.mozilla.telemetry.decoder.MessageScrubber.MessageScrubberException;
 import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
@@ -76,10 +77,16 @@ public class ParsePayload extends
     return messages.apply(FlatMapElements.into(TypeDescriptor.of(PubsubMessage.class)) //
         .via(new Fn()) //
         .exceptionsInto(TypeDescriptor.of(PubsubMessage.class)) //
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-            ParsePayload.class.getSimpleName(), //
-            ee.element(), //
-            ee.exception())));
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (IOException | SchemaNotFoundException | ValidationException
+              | MessageScrubberException e) {
+            return FailureMessage.of(ParsePayload.class.getSimpleName(), //
+                ee.element(), //
+                ee.exception());
+          }
+        }));
   }
 
   private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {

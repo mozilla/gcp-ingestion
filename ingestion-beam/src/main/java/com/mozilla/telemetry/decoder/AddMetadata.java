@@ -10,6 +10,7 @@ import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,12 +72,12 @@ public class AddMetadata {
         // Get attributes as bytes, throws IOException
         metadata = Json.asBytes(attributesToMetadataPayload(msg.getAttributeMap()));
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        throw new UncheckedIOException(e);
       }
 
       // Ensure that we have a json object with no leading whitespace
       if (payload.length < 2 || payload[0] != '{') {
-        throw new RuntimeException(new IOException("invalid json object: must start with {"));
+        throw new UncheckedIOException(new IOException("invalid json object: must start with {"));
       }
 
       // Create an output stream for joining metadata with payload
@@ -96,10 +97,15 @@ public class AddMetadata {
 
       return new PubsubMessage(payloadWithMetadata.toByteArray(), msg.getAttributeMap());
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-            AddMetadata.class.getSimpleName(), //
-            ee.element(), //
-            ee.exception()));
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException e) {
+            return FailureMessage.of(AddMetadata.class.getSimpleName(), //
+                ee.element(), //
+                ee.exception());
+          }
+        });
   }
 
   /**

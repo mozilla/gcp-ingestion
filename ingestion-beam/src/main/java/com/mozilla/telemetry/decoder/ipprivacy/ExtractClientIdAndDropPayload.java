@@ -9,6 +9,7 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,7 +52,7 @@ public class ExtractClientIdAndDropPayload extends
           try {
             json = parseTimed(message.getPayload());
           } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
           }
 
           if (attributes.get(Attribute.CLIENT_ID) == null) {
@@ -66,8 +67,14 @@ public class ExtractClientIdAndDropPayload extends
           return Collections
               .singletonList(new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes));
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> e) -> FailureMessage
-            .of(ExtractClientIdAndDropPayload.class.getSimpleName(), e.element(), e.exception())));
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException e) {
+            return FailureMessage.of(ExtractClientIdAndDropPayload.class.getSimpleName(),
+                ee.element(), ee.exception());
+          }
+        }));
   }
 
   @VisibleForTesting
