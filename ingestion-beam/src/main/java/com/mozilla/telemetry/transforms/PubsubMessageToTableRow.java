@@ -553,7 +553,7 @@ public class PubsubMessageToTableRow implements Serializable {
     }
     try {
       return normalizedNameCache.get(name, () -> convertNameForBq(name));
-    } catch (ExecutionException | UncheckedExecutionException e) {
+    } catch (ExecutionException e) {
       throw new UncheckedExecutionException(e.getCause());
     }
   }

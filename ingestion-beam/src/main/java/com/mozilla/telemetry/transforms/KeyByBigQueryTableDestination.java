@@ -107,7 +107,7 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
         }
         return tableSet;
       });
-    } catch (ExecutionException | UncheckedExecutionException e) {
+    } catch (ExecutionException e) {
       throw new UncheckedExecutionException(e.getCause());
     }
 
