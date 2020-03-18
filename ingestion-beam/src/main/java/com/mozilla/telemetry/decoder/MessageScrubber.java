@@ -101,7 +101,7 @@ public class MessageScrubber {
    * <p>Constructors are required to provide a bug number to aid interpretation of these
    * errors. The constructor also increments a per-bug counter metric.
    */
-  private abstract static class MessageScrubberException extends RuntimeException {
+  abstract static class MessageScrubberException extends RuntimeException {
 
     MessageScrubberException(String bugNumber) {
       super(bugNumber);
