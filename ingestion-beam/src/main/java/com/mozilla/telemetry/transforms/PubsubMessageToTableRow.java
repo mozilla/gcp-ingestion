@@ -21,7 +21,6 @@ import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.BigQuerySchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
-import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.GzipUtil;
@@ -202,7 +201,7 @@ public class PubsubMessageToTableRow implements Serializable {
           }
         });
       } catch (ExecutionException e) {
-        throw new BubbleUpException(e.getCause());
+        throw new UncheckedExecutionException(e.getCause());
       }
     }
 
@@ -554,8 +553,8 @@ public class PubsubMessageToTableRow implements Serializable {
     }
     try {
       return normalizedNameCache.get(name, () -> convertNameForBq(name));
-    } catch (ExecutionException | UncheckedExecutionException e) {
-      throw new BubbleUpException(e.getCause());
+    } catch (ExecutionException e) {
+      throw new UncheckedExecutionException(e.getCause());
     }
   }
 

@@ -4,7 +4,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
 import java.io.BufferedInputStream;
@@ -168,8 +167,8 @@ public abstract class SchemaStore<T> {
     }
     try {
       return normalizedNameCache.get(name, () -> SnakeCase.format(name));
-    } catch (ExecutionException | UncheckedExecutionException e) {
-      throw new BubbleUpException(e.getCause());
+    } catch (ExecutionException e) {
+      throw new UncheckedExecutionException(e.getCause());
     }
   }
 

@@ -20,7 +20,6 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.BigQuerySchemaStore;
-import com.mozilla.telemetry.ingestion.core.util.BubbleUpException;
 import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.core.util.SnakeCase;
@@ -241,7 +240,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       if (metadata != null) {
         contents.set(AddMetadata.METADATA, metadata);
       }
-      if (!Json.isNullOrEmpty(additionalProperties)) {
+      if (additionalProperties != null) {
         contents.put(FieldName.ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
       }
       return contents;
@@ -493,7 +492,10 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
      * field should be put to {@code additional_properties}.
      */
     private Optional<JsonNode> coerceToBqType(JsonNode o, Field field) {
-      if (field.getMode() == Field.Mode.REPEATED) {
+      if (o.isNull()) {
+        // null is valid for any type, just not as an element of a list
+        return Optional.of(o);
+      } else if (field.getMode() == Field.Mode.REPEATED) {
         if (o.isArray()) {
           // We have not yet observed a case where an array type contains values that cannot be
           // coerced to appropriate values, but if it does this will throw NoSuchElementException
@@ -511,14 +513,9 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     }
 
     private Optional<JsonNode> coerceSingleValueToBqType(JsonNode o, Field field) {
-      if (o.isNull()) {
-        // null is valid for any type
-        return Optional.of(o);
-      } else if (field.getType() == LegacySQLTypeName.STRING) {
+      if (field.getType() == LegacySQLTypeName.STRING) {
         if (o.isTextual()) {
           return Optional.of(o);
-        } else if (o.isNull()) {
-          return Optional.empty();
         } else {
           // If not already a string, we JSON-ify the value.
           // We have many fields that we expect to be coerced to string (histograms, userPrefs,
@@ -568,8 +565,8 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     private String getAndCacheBqName(String name) {
       try {
         return normalizedNameCache.get(name, () -> convertNameForBq(name));
-      } catch (ExecutionException | UncheckedExecutionException e) {
-        throw new BubbleUpException(e.getCause());
+      } catch (ExecutionException e) {
+        throw new UncheckedExecutionException(e.getCause());
       }
     }
 
