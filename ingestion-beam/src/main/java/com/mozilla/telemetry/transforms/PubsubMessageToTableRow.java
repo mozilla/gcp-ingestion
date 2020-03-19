@@ -184,7 +184,10 @@ public class PubsubMessageToTableRow implements Serializable {
       }
     } else {
       if (tableSchemaCache == null) {
-        tableSchemaCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(1))
+        // We need to be very careful about settings for the cache here. We have had significant
+        // issues in the past due to exceeding limits on BigQuery API requests; see
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1623000
+        tableSchemaCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(10))
             .build();
       }
       if (bqService == null) {
