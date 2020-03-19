@@ -114,10 +114,15 @@ public class ParseUri {
       attributes.remove(Attribute.MESSAGE_ID);
       return new PubsubMessage(payload, attributes);
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> FailureMessage.of(
-            ParseUri.class.getSimpleName(), //
-            ee.element(), //
-            ee.exception()));
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException | InvalidUriException e) {
+            return FailureMessage.of(ParseUri.class.getSimpleName(), //
+                ee.element(), //
+                ee.exception());
+          }
+        });
   }
 
   /**
