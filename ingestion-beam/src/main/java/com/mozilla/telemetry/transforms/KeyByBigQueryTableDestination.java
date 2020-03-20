@@ -93,6 +93,13 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
 
     // Get and cache a listing of table names for this dataset.
     Set<String> tablesInDataset;
+    if (tableListingCache == null) {
+      // We need to be very careful about settings for the cache here. We have had significant
+      // issues in the past due to exceeding limits on BigQuery API requests; see
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1623000
+      tableListingCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(10))
+          .build();
+    }
     try {
       tablesInDataset = tableListingCache.get(datasetRef, () -> {
         Set<String> tableSet = new HashSet<>();
@@ -146,15 +153,8 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
   private final ValueProvider<String> partitioningField;
   private final ValueProvider<List<String>> clusteringFields;
 
-  // We need to be very careful about settings for the cache here. We have had significant
-  // issues in the past due to exceeding limits on BigQuery API requests; see
-  // https://bugzilla.mozilla.org/show_bug.cgi?id=1623000
-  // This cache is a static field so that it can be shared between all threads on a worker,
-  // reducing the number of needed API calls.
-  private static final Cache<DatasetReference, Set<String>> tableListingCache = CacheBuilder
-      .newBuilder().expireAfterWrite(Duration.ofMinutes(10)).build();
-
   // We'll instantiate these on first use.
+  private transient Cache<DatasetReference, Set<String>> tableListingCache;
   private transient Cache<String, String> normalizedNameCache;
   private transient BigQuery bqService;
 

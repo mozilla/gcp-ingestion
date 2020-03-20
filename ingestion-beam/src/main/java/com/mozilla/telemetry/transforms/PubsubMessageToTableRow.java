@@ -94,15 +94,8 @@ public class PubsubMessageToTableRow implements Serializable {
   private final ValueProvider<TableRowFormat> tableRowFormat;
   private final KeyByBigQueryTableDestination keyByBigQueryTableDestination;
 
-  // We need to be very careful about settings for the cache here. We have had significant
-  // issues in the past due to exceeding limits on BigQuery API requests; see
-  // https://bugzilla.mozilla.org/show_bug.cgi?id=1623000
-  // This cache is a static field so that it can be shared between all threads on a worker,
-  // reducing the number of needed API calls.
-  private static final Cache<TableReference, Schema> tableSchemaCache = CacheBuilder.newBuilder()
-      .expireAfterWrite(Duration.ofMinutes(10)).build();
-
   // We'll instantiate these on first use.
+  private transient Cache<TableReference, Schema> tableSchemaCache;
   private transient Cache<String, String> normalizedNameCache;
   private transient BigQuerySchemaStore schemaStore;
   private transient BigQuery bqService;
@@ -190,6 +183,13 @@ public class PubsubMessageToTableRow implements Serializable {
             "The schema store does not contain a BigQuery schema for this table: " + tableSpec, e);
       }
     } else {
+      if (tableSchemaCache == null) {
+        // We need to be very careful about settings for the cache here. We have had significant
+        // issues in the past due to exceeding limits on BigQuery API requests; see
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1623000
+        tableSchemaCache = CacheBuilder.newBuilder().expireAfterWrite(Duration.ofMinutes(10))
+            .build();
+      }
       if (bqService == null) {
         bqService = BigQueryOptions.newBuilder().setProjectId(ref.getProjectId())
             .setRetrySettings(RETRY_SETTINGS).build().getService();
