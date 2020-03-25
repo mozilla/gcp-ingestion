@@ -7,6 +7,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -66,13 +67,18 @@ public class MessageScrubber {
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
-    if ("com-turkcell-yaani".equals(namespace)) {
-      throw new UnwantedDataException("1612933");
-    }
+    HashMap<String, String> ignoredNamespaces = new HashMap<String, String>() {
 
-    if ("org-mozilla-fenix-beta".equals(namespace)) {
-      // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1612934
-      throw new UnwantedDataException("1612934");
+      {
+        put("com-turkcell-yaani", "1612933");
+        put("org-mozilla-fenix-beta", "1612934");
+        put("org-mozilla-vrbrowser-dev", "1614410");
+        put("org-mozilla-fenix-performancetest", "1614412");
+      }
+    };
+
+    if (ignoredNamespaces.containsKey(namespace)) {
+      throw new UnwantedDataException(ignoredNamespaces.get(namespace));
     }
 
     if ("FirefoxOS".equals(appName)) {
