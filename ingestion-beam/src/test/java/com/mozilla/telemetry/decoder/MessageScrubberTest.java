@@ -67,9 +67,19 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testUnwantedDataBug1614412() {
+  public void testUnwantedDataBug1614411() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix-performancetest")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
+  public void testUnwantedDataBug1614412() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-vrbrowser-wavevr")
         .put(Attribute.DOCUMENT_TYPE, "baseline").build();
 
     assertThrows(UnwantedDataException.class,
@@ -83,6 +93,19 @@ public class MessageScrubberTest {
 
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
+  public void testUnwantedDataBug1592010() {
+    String[] unwantedApps = { "Ordissimo", "adloops", "agendissimo", "ZeroWeb", "CoreApp" };
+
+    for (String app : unwantedApps) {
+      Map<String, String> attributes = ImmutableMap.<String, String>builder()
+          .put(Attribute.APP_NAME, app).build();
+
+      assertThrows(UnwantedDataException.class,
+          () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+    }
   }
 
   @Test
