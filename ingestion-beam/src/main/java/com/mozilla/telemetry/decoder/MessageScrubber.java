@@ -20,6 +20,29 @@ import org.apache.beam.sdk.metrics.Metrics;
  */
 public class MessageScrubber {
 
+  static HashMap<String, String> ignoredNamespaces = new HashMap<String, String>() {
+
+    {
+      put("com-turkcell-yaani", "1612933");
+      put("org-mozilla-fenix-beta", "1612934");
+      put("org-mozilla-vrbrowser-dev", "1614410");
+      put("org-mozilla-fenix-performancetest", "1614412");
+      put("org-mozilla-vrbrowser-wavevr", "1614411");
+    }
+  };
+
+  static HashMap<String, String> ignoredApps = new HashMap<String, String>() {
+
+    {
+      put("FirefoxOS", "1618684");
+      put("Ordissimo", "1592010");
+      put("adloops", "1592010");
+      put("agendissimo", "1592010");
+      put("ZeroWeb", "1592010");
+      put("CoreApp", "1592010");
+    }
+  };
+
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
    * we want to scrub and the message should not be sent downstream.
@@ -67,32 +90,9 @@ public class MessageScrubber {
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
-    HashMap<String, String> ignoredNamespaces = new HashMap<String, String>() {
-
-      {
-        put("com-turkcell-yaani", "1612933");
-        put("org-mozilla-fenix-beta", "1612934");
-        put("org-mozilla-vrbrowser-dev", "1614410");
-        put("org-mozilla-fenix-performancetest", "1614412");
-        put("org-mozilla-vrbrowser-wavevr", "1614411");
-      }
-    };
-
     if (ignoredNamespaces.containsKey(namespace)) {
       throw new UnwantedDataException(ignoredNamespaces.get(namespace));
     }
-
-    HashMap<String, String> ignoredApps = new HashMap<String, String>() {
-
-      {
-        put("FirefoxOS", "1618684");
-        put("Ordissimo", "1592010");
-        put("adloops", "1592010");
-        put("agendissimo", "1592010");
-        put("ZeroWeb", "1592010");
-        put("CoreApp", "1592010");
-      }
-    };
 
     if (ignoredApps.containsKey(appName)) {
       throw new UnwantedDataException(ignoredApps.get(appName));
