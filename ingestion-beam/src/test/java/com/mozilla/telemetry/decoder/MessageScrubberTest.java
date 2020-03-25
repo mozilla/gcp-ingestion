@@ -47,6 +47,16 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testUnwantedDataBug1612934() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix-beta")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
   public void testUnwantedDataBug1618684() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.APP_NAME, "FirefoxOS").build();
