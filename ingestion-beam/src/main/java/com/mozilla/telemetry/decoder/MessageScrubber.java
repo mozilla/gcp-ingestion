@@ -70,6 +70,11 @@ public class MessageScrubber {
       throw new UnwantedDataException("1612933");
     }
 
+    if ("org-mozilla-fenix-beta".equals(namespace)) {
+      // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1612934
+      throw new UnwantedDataException("1612934");
+    }
+
     if ("FirefoxOS".equals(appName)) {
       // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1618684
       throw new UnwantedDataException("1618684");
