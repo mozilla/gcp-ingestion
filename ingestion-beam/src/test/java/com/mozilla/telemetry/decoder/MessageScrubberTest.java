@@ -57,6 +57,26 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testUnwantedDataBug1614410() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-vrbrowser-dev")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
+  public void testUnwantedDataBug1614412() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix-performancetest")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
   public void testUnwantedDataBug1618684() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.APP_NAME, "FirefoxOS").build();
