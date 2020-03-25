@@ -28,11 +28,12 @@ public class MessageScrubber {
   public static void scrub(Map<String, String> attributes, ObjectNode json)
       throws MessageShouldBeDroppedException, AffectedByBugException {
 
-    String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
-    String docType = attributes.get(Attribute.DOCUMENT_TYPE);
-    String appVersion = attributes.get(Attribute.APP_VERSION);
-    String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
-    String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
+    final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
+    final String docType = attributes.get(Attribute.DOCUMENT_TYPE);
+    final String appName = attributes.get(Attribute.APP_NAME);
+    final String appVersion = attributes.get(Attribute.APP_VERSION);
+    final String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
+    final String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
 
     // Check for toxic data that should be dropped without sending to error output.
     if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
@@ -67,6 +68,11 @@ public class MessageScrubber {
     // ignored for most pipeline monitoring.
     if ("com-turkcell-yaani".equals(namespace)) {
       throw new UnwantedDataException("1612933");
+    }
+
+    if ("FirefoxOS".equals(appName)) {
+      // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1618684
+      throw new UnwantedDataException("1618684");
     }
 
     // Check for other signatures that we want to send to error output, but which should appear
