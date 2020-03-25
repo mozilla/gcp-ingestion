@@ -74,6 +74,7 @@ public class MessageScrubber {
         put("org-mozilla-fenix-beta", "1612934");
         put("org-mozilla-vrbrowser-dev", "1614410");
         put("org-mozilla-fenix-performancetest", "1614412");
+        put("org-mozilla-vrbrowser-wavevr", "1614411");
       }
     };
 
@@ -81,9 +82,20 @@ public class MessageScrubber {
       throw new UnwantedDataException(ignoredNamespaces.get(namespace));
     }
 
-    if ("FirefoxOS".equals(appName)) {
-      // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1618684
-      throw new UnwantedDataException("1618684");
+    HashMap<String, String> ignoredApps = new HashMap<String, String>() {
+
+      {
+        put("FirefoxOS", "1618684");
+        put("Ordissimo", "1592010");
+        put("adloops", "1592010");
+        put("agendissimo", "1592010");
+        put("ZeroWeb", "1592010");
+        put("CoreApp", "1592010");
+      }
+    };
+
+    if (ignoredApps.containsKey(appName)) {
+      throw new UnwantedDataException(ignoredApps.get(appName));
     }
 
     // Check for other signatures that we want to send to error output, but which should appear
