@@ -47,6 +47,15 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testUnwantedDataBug1618684() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.APP_NAME, "FirefoxOS").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
   public void testShouldScrubBug1567596() throws Exception {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "telemetry").put(Attribute.DOCUMENT_TYPE, "crash")
