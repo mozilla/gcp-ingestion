@@ -71,10 +71,10 @@ public enum OutputType {
     public Write write(SinkOptions.Parsed options) {
       return new BigQueryOutput(options.getOutput(), options.getBqWriteMethod(),
           options.getParsedBqTriggeringFrequency(), options.getInputType(),
-          options.getBqNumFileShards(), options.getBqStreamingDocTypes(),
-          options.getBqStrictSchemaDocTypes(), options.getSchemasLocation(),
-          options.getOutputTableRowFormat(), options.getBqPartitioningField(),
-          options.getBqClusteringFields());
+          options.getBqNumFileShards(), options.getBqMaxBytesPerPartition(),
+          options.getBqStreamingDocTypes(), options.getBqStrictSchemaDocTypes(),
+          options.getSchemasLocation(), options.getOutputTableRowFormat(),
+          options.getBqPartitioningField(), options.getBqClusteringFields());
     }
   };
 

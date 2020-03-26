@@ -99,8 +99,8 @@ public enum ErrorOutputType {
     public Write writeFailures(SinkOptions.Parsed options) {
       return new BigQueryOutput(options.getErrorOutput(), options.getErrorBqWriteMethod(),
           options.getParsedErrorBqTriggeringFrequency(), options.getInputType(),
-          options.getErrorBqNumFileShards(), StaticValueProvider.of(null),
-          StaticValueProvider.of(null), options.getSchemasLocation(),
+          options.getErrorBqNumFileShards(), options.getBqMaxBytesPerPartition(),
+          StaticValueProvider.of(null), StaticValueProvider.of(null), options.getSchemasLocation(),
           StaticValueProvider.of(TableRowFormat.raw), options.getErrorBqPartitioningField(),
           options.getErrorBqClusteringFields());
     }

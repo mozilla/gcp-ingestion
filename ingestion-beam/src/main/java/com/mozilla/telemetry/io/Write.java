@@ -339,6 +339,7 @@ public abstract class Write
     private final Duration triggeringFrequency;
     private final InputType inputType;
     private final int numShards;
+    private final long maxBytesPerPartition;
     private final ValueProvider<List<String>> streamingDocTypes;
     private final ValueProvider<List<String>> strictSchemaDocTypes;
     private final ValueProvider<String> schemasLocation;
@@ -348,7 +349,7 @@ public abstract class Write
 
     /** Public constructor. */
     public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
-        Duration triggeringFrequency, InputType inputType, int numShards,
+        Duration triggeringFrequency, InputType inputType, int numShards, long maxBytesPerPartition,
         ValueProvider<List<String>> streamingDocTypes,
         ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
         ValueProvider<TableRowFormat> tableRowFormat, ValueProvider<String> partitioningField,
@@ -358,6 +359,7 @@ public abstract class Write
       this.triggeringFrequency = triggeringFrequency;
       this.inputType = inputType;
       this.numShards = numShards;
+      this.maxBytesPerPartition = maxBytesPerPartition;
       this.streamingDocTypes = NestedValueProvider.of(streamingDocTypes,
           value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
       this.strictSchemaDocTypes = NestedValueProvider.of(strictSchemaDocTypes,
@@ -476,10 +478,7 @@ public abstract class Write
       fileLoadsInput.ifPresent(messages -> {
         BigQueryIO.Write<KV<TableDestination, PubsubMessage>> fileLoadsWrite = baseWriteTransform
             .withMethod(BigQueryWriteMethod.file_loads.method)
-            // When writing to main_v4 in batch mode, we sometimes see memory exceeded errors for
-            // BigQuery load jobs; we have found empirically that limiting the total data size per
-            // load job to 100 GB leads to reliable performance.
-            .withMaxBytesPerPartition(100 * (1L << 30));
+            .withMaxBytesPerPartition(maxBytesPerPartition);
         if (inputType == InputType.pubsub) {
           // When using the file_loads method of inserting to BigQuery, BigQueryIO requires
           // triggering frequency if the input PCollection is unbounded (which is the case for
