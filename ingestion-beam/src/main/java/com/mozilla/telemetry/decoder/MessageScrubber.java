@@ -4,10 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -20,28 +20,22 @@ import org.apache.beam.sdk.metrics.Metrics;
  */
 public class MessageScrubber {
 
-  static HashMap<String, String> ignoredNamespaces = new HashMap<String, String>() {
+  private static final Map<String, String> IGNORED_NAMESPACES = ImmutableMap
+      .<String, String>builder().put("com-turkcell-yaani", "1612933") //
+      .put("org-mozilla-fenix-beta", "1612934") //
+      .put("org-mozilla-vrbrowser-dev", "1614410") //
+      .put("org-mozilla-fenix-performancetest", "1614412") //
+      .put("org-mozilla-vrbrowser-wavevr", "1614411") //
+      .build();
 
-    {
-      put("com-turkcell-yaani", "1612933");
-      put("org-mozilla-fenix-beta", "1612934");
-      put("org-mozilla-vrbrowser-dev", "1614410");
-      put("org-mozilla-fenix-performancetest", "1614412");
-      put("org-mozilla-vrbrowser-wavevr", "1614411");
-    }
-  };
-
-  static HashMap<String, String> ignoredApps = new HashMap<String, String>() {
-
-    {
-      put("FirefoxOS", "1618684");
-      put("Ordissimo", "1592010");
-      put("adloops", "1592010");
-      put("agendissimo", "1592010");
-      put("ZeroWeb", "1592010");
-      put("CoreApp", "1592010");
-    }
-  };
+  private static final Map<String, String> IGNORED_APPS = ImmutableMap.<String, String>builder()
+      .put("FirefoxOS", "1618684") //
+      .put("Ordissimo", "1592010") //
+      .put("adloops", "1592010") //
+      .put("agendissimo", "1592010") //
+      .put("ZeroWeb", "1592010") //
+      .put("CoreApp", "1592010") //
+      .build();
 
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
@@ -90,12 +84,12 @@ public class MessageScrubber {
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
-    if (ignoredNamespaces.containsKey(namespace)) {
-      throw new UnwantedDataException(ignoredNamespaces.get(namespace));
+    if (IGNORED_NAMESPACES.containsKey(namespace)) {
+      throw new UnwantedDataException(IGNORED_NAMESPACES.get(namespace));
     }
 
-    if (ignoredApps.containsKey(appName)) {
-      throw new UnwantedDataException(ignoredApps.get(appName));
+    if (IGNORED_APPS.containsKey(appName)) {
+      throw new UnwantedDataException(IGNORED_APPS.get(appName));
     }
 
     // Check for other signatures that we want to send to error output, but which should appear
