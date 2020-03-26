@@ -105,9 +105,6 @@ public interface SinkOptions extends PipelineOptions {
 
   void setBqTriggeringFrequency(String value);
 
-  // When writing to main_v4 in batch mode, we sometimes see memory exceeded errors for
-  // BigQuery load jobs; we have found empirically that limiting the total data size per
-  // load job to 100 GB leads to reliable performance.
   @Description("Maximum number of bytes to load into a single BigQuery table before rolling"
       + " to an additional partition; this is generally only relevant when writing main_v4 in batch"
       + " mode; we have found empirically that 500 GB per load job is low enough to avoid memory"
