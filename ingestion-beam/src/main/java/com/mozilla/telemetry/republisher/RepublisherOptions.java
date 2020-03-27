@@ -100,10 +100,8 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   void setPerNamespaceDestinations(Map<String, String> value);
 
-  @Description("A JSON-formatted map of document types to output topic names (assuming"
-      + " --outputType=pubsub) for per-namespace sampling; the verbose map representation is used"
-      + " here to support cases where the destination topics are heterogeneous and may live in"
-      + " different projects")
+  @Description("A JSON-formatted map of topic names  to output to document types (assuming"
+      + " --outputType=pubsub) for per-docType sampling")
   Map<String, List<String>> getPerDocTypeDestinations();
 
   void setPerDocTypeDestinations(Map<String, List<String>> value);
