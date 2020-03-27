@@ -12,21 +12,20 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.apache.beam.sdk.values.PDone;
 
-public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, PDone> {
+// Handles deprecated --perDocTypeDestination and --perDocTypeEnabledList options
+public class RepublishPerDocTypeEnabled extends PTransform<PCollection<PubsubMessage>, PDone> {
 
   private RepublisherOptions baseOptions;
 
-  public static RepublishPerDocType of(RepublisherOptions baseOptions) {
-    return new RepublishPerDocType(baseOptions);
+  public static RepublishPerDocTypeEnabled of(RepublisherOptions baseOptions) {
+    return new RepublishPerDocTypeEnabled(baseOptions);
   }
 
   @Override
   public PDone expand(PCollection<PubsubMessage> input) {
-    List<Destination> destinations = baseOptions.getPerDocTypeDestinations().entrySet().stream()
-        .flatMap(
-            entry -> entry.getValue().stream().map(value -> new Destination(entry.getKey(), value)))
+    List<Destination> destinations = baseOptions.getPerDocTypeEnabledList().stream()//
+        .map(Destination::new) //
         .collect(Collectors.toList());
-
     int numDestinations = destinations.size();
     int numPartitions = numDestinations + 1;
     PCollectionList<PubsubMessage> partitioned = input.apply("PartitionByDocType",
@@ -35,7 +34,14 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
     for (int i = 0; i < numDestinations; i++) {
       Destination destination = destinations.get(i);
       RepublisherOptions.Parsed opts = baseOptions.as(RepublisherOptions.Parsed.class);
-      opts.setOutput(StaticValueProvider.of(destination.dest));
+
+      // The destination pattern here must be compile-time due to a detail of Dataflow's
+      // streaming PubSub producer implementation; if that restriction is lifted in the future,
+      // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
+      opts.setOutput(StaticValueProvider.of(baseOptions.getPerDocTypeDestination()
+          .replace("${document_namespace}", destination.namespace.replace("-", "_"))
+          .replace("${document_type}", destination.docType.replace("-", "_"))));
+
       String name = String.join("_", "republish", destination.namespace, destination.docType);
       partitioned.get(i).apply(name, opts.getOutputType().write(opts));
     }
@@ -43,7 +49,7 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
     return PDone.in(input.getPipeline());
   }
 
-  private RepublishPerDocType(RepublisherOptions baseOptions) {
+  private RepublishPerDocTypeEnabled(RepublisherOptions baseOptions) {
     this.baseOptions = baseOptions;
   }
 
@@ -54,8 +60,8 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
     @Override
     public int partitionFor(PubsubMessage message, int numPartitions) {
       message = PubsubConstraints.ensureNonNull(message);
-      String docType = message.getAttribute("document_type");
       String namespace = message.getAttribute("document_namespace");
+      String docType = message.getAttribute("document_type");
       for (int i = 0; i < destinations.size(); i++) {
         if (destinations.get(i).matches(namespace, docType)) {
           return i;
@@ -73,12 +79,10 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
 
   private static class Destination implements Serializable {
 
-    final String docType;
-    final String dest;
     final String namespace;
+    final String docType;
 
-    public Destination(String dest, String entry) {
-      this.dest = dest;
+    public Destination(String entry) {
       final String[] components = entry.split("/");
       if (components.length != 2) {
         throw new IllegalArgumentException("Each entry of perDocTypeEnabledList must be in the"
@@ -91,5 +95,6 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
     public boolean matches(String namespaceToMatch, String docTypeToMatch) {
       return namespace.equals(namespaceToMatch) && docType.equals(docTypeToMatch);
     }
+
   }
 }
