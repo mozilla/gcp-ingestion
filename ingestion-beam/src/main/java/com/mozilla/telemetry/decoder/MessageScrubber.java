@@ -31,6 +31,9 @@ public class MessageScrubber {
       .put("org-mozilla-vrbrowser-wavevr", "1614411") //
       .build();
 
+  private static final Set<String> FIREFOX_ONLY_DOCTYPES = new HashSet<>(
+      Arrays.asList("event", "main", "modules"));
+
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
    * we want to scrub and the message should not be sent downstream.
@@ -86,9 +89,9 @@ public class MessageScrubber {
       throw new UnwantedDataException("1618684");
     }
 
-    // event, main, and modules are the only document types that will get aggregated
-    Set<String> docTypes = new HashSet<>(Arrays.asList("event", "main", "modules"));
-    if (ParseUri.TELEMETRY.equals(namespace) && docTypes.contains(docType)
+    // These document types receive a significant number of pings with malformed `build_id`s due to
+    // third-party builds where `appName != "Firefox"`
+    if (ParseUri.TELEMETRY.equals(namespace) && FIREFOX_ONLY_DOCTYPES.contains(docType)
         && !"Firefox".equals(appName)) {
       throw new UnwantedDataException("1592010");
     }
