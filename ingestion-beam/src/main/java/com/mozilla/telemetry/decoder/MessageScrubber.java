@@ -26,6 +26,8 @@ public class MessageScrubber {
       .put("org-mozilla-vrbrowser-dev", "1614410") //
       .put("org-mozilla-fenix-performancetest", "1614412") //
       .put("org-mozilla-vrbrowser-wavevr", "1614411") //
+      .put("default-browser-agent", "1626020") //
+      .put("META-INF", "1626022") //
       .build();
 
   private static final Map<String, String> IGNORED_APPS = ImmutableMap.<String, String>builder()
