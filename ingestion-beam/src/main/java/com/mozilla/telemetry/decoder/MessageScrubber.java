@@ -8,8 +8,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
 
@@ -26,26 +29,6 @@ public class MessageScrubber {
       .put("org-mozilla-vrbrowser-dev", "1614410") //
       .put("org-mozilla-fenix-performancetest", "1614412") //
       .put("org-mozilla-vrbrowser-wavevr", "1614411") //
-      .put("default-browser-agent", "1626020") //
-      .put("META-INF", "1626022") //
-      .build();
-
-  private static final Map<String, String> IGNORED_APPS = ImmutableMap.<String, String>builder()
-      .put("FirefoxOS", "1618684") //
-      .put("Ordissimo", "1592010") //
-      .put("adloops", "1592010") //
-      .put("agendissimo", "1592010") //
-      .put("ZeroWeb", "1592010") //
-      .put("CoreApp", "1592010") //
-      .put("webissimo3", "1592010") //
-      .put("Bitcentral%20Core", "1592010") //
-      .put("Zotero", "1592010") //
-      .put("adloops", "1592010") //
-      .put("facebook", "1592010") //
-      .put("vkb_browser", "1592010") //
-      .put("maps", "1592010") //
-      .put("gmail", "1592010") //
-      .put("selfcheckKiosk", "1592010") //
       .build();
 
   /**
@@ -99,8 +82,15 @@ public class MessageScrubber {
       throw new UnwantedDataException(IGNORED_NAMESPACES.get(namespace));
     }
 
-    if (IGNORED_APPS.containsKey(appName)) {
-      throw new UnwantedDataException(IGNORED_APPS.get(appName));
+    if ("FirefoxOS".equals(appName)) {
+      throw new UnwantedDataException("1618684");
+    }
+
+    // event, main, and modules are the only document types that will get aggregated
+    Set<String> docTypes = new HashSet<>(Arrays.asList("event", "main", "modules"));
+    if (ParseUri.TELEMETRY.equals(namespace) && docTypes.contains(docType)
+        && !"Firefox".equals(appName)) {
+      throw new UnwantedDataException("1592010");
     }
 
     // Check for other signatures that we want to send to error output, but which should appear

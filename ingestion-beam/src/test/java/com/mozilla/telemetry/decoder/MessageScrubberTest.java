@@ -87,26 +87,6 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testUnwantedDataBug1626020() {
-    Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "default-browser-agent")
-        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
-
-    assertThrows(UnwantedDataException.class,
-        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
-  }
-
-  @Test
-  public void testUnwantedDataBug1626022() {
-    Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "META-INF").put(Attribute.DOCUMENT_TYPE, "baseline")
-        .build();
-
-    assertThrows(UnwantedDataException.class,
-        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
-  }
-
-  @Test
   public void testUnwantedDataBug1618684() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.APP_NAME, "FirefoxOS").build();
@@ -121,7 +101,9 @@ public class MessageScrubberTest {
 
     for (String app : unwantedApps) {
       Map<String, String> attributes = ImmutableMap.<String, String>builder()
-          .put(Attribute.APP_NAME, app).build();
+          .put(Attribute.APP_NAME, app) //
+          .put(Attribute.DOCUMENT_NAMESPACE, "telemetry") //
+          .put(Attribute.DOCUMENT_TYPE, "main").build();
 
       assertThrows(UnwantedDataException.class,
           () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
