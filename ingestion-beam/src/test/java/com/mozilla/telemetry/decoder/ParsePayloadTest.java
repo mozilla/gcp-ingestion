@@ -144,6 +144,7 @@ public class ParsePayloadTest {
     // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
     String input = "{\"attributeMap\":" //
         + "{\"document_namespace\":\"telemetry\"" //
+        + ",\"app_name\":\"Firefox\"" //
         + ",\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\"" //
         + ",\"document_type\":\"main\"" //
         + "},\"payload\":\"eyJ2ZXJzaW9uIjo0fQ==\"}";
