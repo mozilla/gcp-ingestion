@@ -37,6 +37,15 @@ public class MessageScrubber {
       .put("agendissimo", "1592010") //
       .put("ZeroWeb", "1592010") //
       .put("CoreApp", "1592010") //
+      .put("webissimo3", "1592010") //
+      .put("Bitcentral%20Core", "1592010") //
+      .put("Zotero", "1592010") //
+      .put("adloops", "1592010") //
+      .put("facebook", "1592010") //
+      .put("vkb_browser", "1592010") //
+      .put("maps", "1592010") //
+      .put("gmail", "1592010") //
+      .put("selfcheckKiosk", "1592010") //
       .build();
 
   /**
