@@ -65,7 +65,7 @@
         <dependency>
             <groupId>nl.basjes.parse.useragent</groupId>
             <artifactId>yauaa</artifactId>
-            <version>5.15</version>
+            <version>5.16</version>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>
