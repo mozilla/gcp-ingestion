@@ -5,14 +5,12 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
 
@@ -31,8 +29,8 @@ public class MessageScrubber {
       .put("org-mozilla-vrbrowser-wavevr", "1614411") //
       .build();
 
-  private static final Set<String> FIREFOX_ONLY_DOCTYPES = new HashSet<>(
-      Arrays.asList("event", "main", "modules"));
+  private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
+      "modules");
 
   /**
    * Inspect the contents of the payload and return true if the content matches a known pattern
