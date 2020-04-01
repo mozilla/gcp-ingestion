@@ -78,20 +78,6 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   void setPerChannelDestination(String value);
 
-  @Description("A comma-separated list of docTypes that should be republished to individual"
-      + " topics; each docType must be qualified with a namespace like 'telemetry/event'")
-  List<String> getPerDocTypeEnabledList();
-
-  void setPerDocTypeEnabledList(List<String> value);
-
-  @Description("A pattern for output topic names (assuming --outputType=pubsub) for per-docType"
-      + " sampling; the pattern must contain a placeholder ${document_type} and may optionally"
-      + " contain a placeholder ${document_namespace} that will be filled in"
-      + " to give a distinct publisher per docType configured in --perDocTypeEnabledList")
-  String getPerDocTypeDestination();
-
-  void setPerDocTypeDestination(String value);
-
   @Description("A JSON-formatted map of document namespaces to output topic names (assuming"
       + " --outputType=pubsub) for per-namespace sampling; the verbose map representation is used"
       + " here to support cases where the destination topics are heterogeneous and may live in"
