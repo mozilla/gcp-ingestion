@@ -4,7 +4,6 @@ import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.republisher.RandomSampler;
 import com.mozilla.telemetry.republisher.RepublishPerChannel;
 import com.mozilla.telemetry.republisher.RepublishPerDocType;
-import com.mozilla.telemetry.republisher.RepublishPerDocTypeEnabled;
 import com.mozilla.telemetry.republisher.RepublishPerNamespace;
 import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -90,10 +89,7 @@ public class Republisher extends Sink {
     }
 
     // Republish to per-docType destinations.
-    if (options.getPerDocTypeEnabledList() != null) {
-      // todo: this will be removed
-      decoded.apply(RepublishPerDocTypeEnabled.of(options));
-    } else if (options.getPerDocTypeDestinations() != null) {
+    if (options.getPerDocTypeDestinations() != null) {
       decoded.apply(RepublishPerDocType.of(options));
     }
 

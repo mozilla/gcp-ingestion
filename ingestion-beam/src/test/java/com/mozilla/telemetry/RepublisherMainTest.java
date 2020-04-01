@@ -90,35 +90,6 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testPerDocTypeEnabled() throws Exception {
-    String outputPath = outputFolder.getRoot().getAbsolutePath();
-    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
-    String input = inputPath + "/*.ndjson";
-    String output = outputPath + "/out_${document_namespace}_${document_type}";
-
-    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
-        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
-        "--perDocTypeDestination=" + output, "--perDocTypeEnabledList=telemetry/event,bar/foo",
-        "--outputFileCompression=UNCOMPRESSED", "--redisUri=" + redis.uri,
-        "--errorOutputType=stderr" });
-
-    List<String> expectedLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
-    List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
-    assertThat("Only specified docTypes should be published", outputLines,
-        matchesInAnyOrder(expectedLines));
-
-    List<String> expectedLinesEvent = Lines.files(inputPath + "/per-doctype-event.ndjson");
-    List<String> outputLinesEvent = Lines.files(outputPath + "/out_telemetry_event*.ndjson");
-    assertThat("All docType=event messages are published", outputLinesEvent,
-        matchesInAnyOrder(expectedLinesEvent));
-
-    List<String> expectedLinesFoo = Lines.files(inputPath + "/per-doctype-foo.ndjson");
-    List<String> outputLinesFoo = Lines.files(outputPath + "/out_bar_foo*.ndjson");
-    assertThat("All docType=foo messages are published", outputLinesFoo,
-        matchesInAnyOrder(expectedLinesFoo));
-  }
-
-  @Test
   public void testPerNamespace() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
     String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
