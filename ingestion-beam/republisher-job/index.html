@@ -205,8 +205,7 @@ that determines the specific location (usually a topic name) for each publisher.
 </ul>
 <p>To enable per-<code>docType</code> republishing:</p>
 <ul>
-<li><code>--perDocTypeEnabledList=event,heartbeat</code> (compile-time)</li>
-<li><code>--perDocTypeDestination=/some/pubsub/topic/path/per-doctype-${document_namespace}-${document_type}</code> (compile-time)</li>
+<li><code>--perDocTypeDestination='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'</code> (compile-time)</li>
 </ul>
 <p>To enable per-channel sampled republishing:</p>
 <ul>
