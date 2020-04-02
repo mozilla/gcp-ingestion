@@ -3,6 +3,7 @@ package com.mozilla.telemetry.ingestion.sink.io;
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
+import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.common.annotations.VisibleForTesting;
@@ -17,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +35,23 @@ public class Pubsub {
     @VisibleForTesting
     public Subscriber subscriber;
 
+    /**
+     * Create a callback from an {@link AckReplyConsumer} without a {@link PubsubMessage} in scope.
+     *
+     * <p>This allows GC to clean up the {@link PubsubMessage} before the callback is executed.
+     */
+    private <T> BiConsumer<T, Throwable> asCallback(AckReplyConsumer consumer) {
+      return (result, exception) -> {
+        if (exception == null) {
+          consumer.ack();
+        } else {
+          // exception is always a CompletionException caused by the real exception
+          LOG.warn("Exception while attempting to deliver message", exception.getCause());
+          consumer.nack();
+        }
+      };
+    }
+
     /** Constructor. */
     public <T> Read(String subscriptionName, Function<PubsubMessage, CompletableFuture<T>> output,
         Function<Subscriber.Builder, Subscriber.Builder> config,
@@ -41,15 +60,7 @@ public class Pubsub {
       subscriber = config.apply(Subscriber.newBuilder(subscription,
           (message, consumer) -> CompletableFuture.completedFuture(message)
               .thenApplyAsync(decompress).thenComposeAsync(output)
-              .whenCompleteAsync((result, exception) -> {
-                if (exception == null) {
-                  consumer.ack();
-                } else {
-                  // exception is always a CompletionException caused by the real exception
-                  LOG.warn("Exception while attempting to deliver message", exception.getCause());
-                  consumer.nack();
-                }
-              })))
+              .whenCompleteAsync(asCallback(consumer))))
           .build();
     }
 
