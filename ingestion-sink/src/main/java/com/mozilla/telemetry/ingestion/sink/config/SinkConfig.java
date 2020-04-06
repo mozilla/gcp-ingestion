@@ -79,19 +79,20 @@ public class SinkConfig {
   // BigQuery Load API does not limit number of rows, but rows are generally over 100 bytes in size,
   // so setting this any higher than BATCH_MAX_BYTES/100 is expected to have no impact.
   private static final int DEFAULT_BATCH_MAX_MESSAGES = 1_000_000; // 1,000,000
-  // BigQuery Load API limits maximum files per request to 10,000, and at least 2 load requests are
-  // expected every DEFAULT_FILE_LOAD_MAX_DELAY, so 3 requests every 9 minutes and 100 sinks writing
-  // files this should be at minimum 1.8 seconds. Messages not delivered via streaming are expected
+  // BigQuery Load API limits maximum files per request to 10,000, and at least 3 load requests are
+  // expected every DEFAULT_FILE_LOAD_MAX_DELAY, so 3 requests every 9 minutes and 300 sinks writing
+  // files this should be at minimum 5.4 seconds. Messages not delivered via streaming are expected
   // to have a total pipeline delay (including edge and decoder) of less than 1 hour, and ideally
-  // less than 10 minutes, so this plus DEFAULT_LOAD_MAX_DELAY should be about 10 minutes.
-  private static final String DEFAULT_BATCH_MAX_DELAY = "1m"; // 1 minute
+  // less than 10 minutes, so this plus DEFAULT_LOAD_MAX_DELAY should be less than 10 minutes.
+  // Messages may be kept in memory until they ack or nack, so too much delay can cause OOM errors.
+  private static final String DEFAULT_BATCH_MAX_DELAY = "10s"; // 10 seconds
   // BigQuery Load API limits maximum bytes per request to 15TB, but load requests for clustered
-  // tables fail when attempting to sort that much data, so to avoid that issue the default is lower
+  // tables fail when sorting that much data, so to avoid that issue the default is lower.
   private static final long DEFAULT_LOAD_MAX_BYTES = 100_000_000_000L; // 100GB
-  // BigQuery Load API limits maximum files per request to 10,000
+  // BigQuery Load API limits maximum files per request to 10,000.
   private static final int DEFAULT_LOAD_MAX_FILES = 10_000; // 10,000
   // BigQuery Load API limits maximum load requests per table per day to 1,000, so with
-  // three instances for redundancy that means each instance should load at most once
+  // 3 instances for redundancy that means each instance should load at most once
   // every 259.2 seconds or approximately 4.3 minutes. Messages not delivered via streaming are
   // expected to have a total pipeline delay (including edge and decoder) of less than 1 hour, and
   // ideally less than 10 minutes, so this plus DEFAULT_BATCH_MAX_DELAY should be about 10 minutes.
@@ -152,16 +153,6 @@ public class SinkConfig {
                 PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), getFormat(env),
                 ignore -> CompletableFuture.completedFuture(null)));
       }
-
-      @Override
-      long getDefaultMaxOutstandingElementCount() {
-        return 1_000_000L; // 1M messages
-      }
-
-      @Override
-      long getDefaultMaxOutstandingRequestBytes() {
-        return 1_000_000_000L; // 1GB
-      }
     },
 
     bigQueryLoad {
@@ -192,16 +183,6 @@ public class SinkConfig {
                 // BigQuery Load API limits maximum load requests per table per day to 1,000 so send
                 // blobInfo to pubsub and require loads be run separately to reduce maximum latency
                 blobInfo -> pubsubWrite.apply(BlobInfoToPubsubMessage.apply(blobInfo))));
-      }
-
-      @Override
-      long getDefaultMaxOutstandingElementCount() {
-        return 10_000_000L; // 10M messages
-      }
-
-      @Override
-      long getDefaultMaxOutstandingRequestBytes() {
-        return 1_000_000_000L; // 1GB
       }
     },
 
@@ -237,25 +218,11 @@ public class SinkConfig {
               env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY),
               BigQuery.Load.Delete.always); // files will be recreated if not successfully loaded
         }
-        final long defaultBatchMaxBytes;
-        final int defaultBatchMaxMessages;
-        final String defaultBatchMaxDelay;
-        if (env.containsKey(STREAMING_DOCTYPES)) {
-          // use non-streaming defaults for fileOutput because most messages go to there
-          defaultBatchMaxBytes = DEFAULT_BATCH_MAX_BYTES;
-          defaultBatchMaxMessages = DEFAULT_BATCH_MAX_MESSAGES;
-          defaultBatchMaxDelay = DEFAULT_BATCH_MAX_DELAY;
-        } else {
-          // use streaming defaults for fileOutput because only oversize messages go to there
-          defaultBatchMaxBytes = DEFAULT_STREAMING_BATCH_MAX_BYTES;
-          defaultBatchMaxMessages = DEFAULT_STREAMING_BATCH_MAX_MESSAGES;
-          defaultBatchMaxDelay = DEFAULT_STREAMING_BATCH_MAX_DELAY;
-        }
         // Combine bigQueryFiles and bigQueryLoad without an intermediate PubSub topic
         Function<PubsubMessage, CompletableFuture<Void>> fileOutput = new Gcs.Write.Ndjson(storage,
-            env.getLong(BATCH_MAX_BYTES, defaultBatchMaxBytes),
-            env.getInt(BATCH_MAX_MESSAGES, defaultBatchMaxMessages),
-            env.getDuration(BATCH_MAX_DELAY, defaultBatchMaxDelay),
+            env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
+            env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
+            env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
             getFormat(env),
             blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)));
