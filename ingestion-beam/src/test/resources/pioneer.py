@@ -1,80 +1,84 @@
-#!/usr/bin/env
-"""Script for generating resources for Pioneer v2."""
-# ! pip install cryptography
-from base64 import b64encode, b64decode
-from pathlib import Path
-import json
-import gzip
-import os
+#!/usr/bin/env python3
+"""Script for generating resources for Pioneer v2.
 
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import serialization, hashes
+To install the appropriate dependencies for this script:
+
+    pip install jwcrypto
+"""
+import gzip
+import json
+from pathlib import Path
+
+from jwcrypto import jwe, jwk
 
 pioneer = Path(__file__).parent.resolve() / "pioneer"
 
 
-def generate_keypair(path: Path, name: str):
+def write_serialized(json_data, fp):
+    json.dump(json.loads(json_data), fp, indent=2)
+
+
+def generate_jwk(path: Path, name: str):
     """Generate a keypair.
     
-    https://cryptography.io/en/latest/hazmat/primitives/asymmetric/rsa
+    https://jwcrypto.readthedocs.io/en/stable/jwk.html
     """
-    private_key = rsa.generate_private_key(
-        public_exponent=65537, key_size=2048, backend=default_backend()
-    )
-    public_key = private_key.public_key()
+    private_path = path / f"{name}.private.json"
 
-    pvt_pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=serialization.NoEncryption(),
-    )
-    pub_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    )
+    if private_path.exists():
+        print(f"keys for {name} already exist, loading from file")
+        with private_path.open("r") as fp:
+            data = json.load(fp)
+        return jwk.JWK(**data)
+    else:
+        key = jwk.JWK.generate(kty="RSA", size=2048)
+        with (private_path).open("w") as fp:
+            write_serialized(key.export_private(), fp)
+        return key
 
-    with (path / name).open("wb") as fp:
-        fp.write(pvt_pem)
-    with (path / f"{name}.pub").open("wb") as fp:
-        fp.write(pub_pem)
 
-    return private_key
+def encrypt(payload, key: jwk.JWK, path: Path):
+    """Encrypt and assemble a payload.
+
+    https://jwcrypto.readthedocs.io/en/stable/jwe.html
+    """
+    if path.exists():
+        print(f"{path} already exists, skipping...")
+        return
+
+    public_key = jwk.JWK.from_json(key.export_public())
+    protected_header = {
+        "alg": "RSA-OAEP-256",
+        "enc": "A256CBC-HS512",
+        "typ": "JWE",
+        "kid": public_key.thumbprint(),
+    }
+    compressed = gzip.compress(json.dumps(payload).encode())
+    jwetoken = jwe.JWE(compressed, recipient=public_key, protected=protected_header)
+    with path.open("w") as fp:
+        write_serialized(jwetoken.serialize(), fp)
+
+
+def decrypt(key: jwk.JWK, path: Path):
+    jwetoken = jwe.JWE()
+    with path.open("rb") as fp:
+        jwetoken.deserialize(fp.read())
+    jwetoken.decrypt(key)
+    payload = gzip.decompress(jwetoken.payload).decode()
+    return json.loads(payload)
 
 
 def main():
-    pvtkey0 = generate_keypair(pioneer, "id_rsa_0")
+    key0 = generate_jwk(pioneer, "id_rsa_0")
     with (pioneer / "sample.cleartext.json").open("r") as fp:
         sample = json.load(fp)
     print(sample)
 
-    # based on the suggestions in the cryptography examples
-    ciphertext = pvtkey0.public_key().encrypt(
-        gzip.compress(json.dumps(sample).encode()),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None,
-        ),
-    )
-    message = {"payload": b64encode(ciphertext).decode()}
-    with (pioneer / "sample.ciphertext.json").open("w") as fp:
-        json.dump(message, fp)
+    path = pioneer / "sample.ciphertext.json"
+    encrypt(sample, key0, path)
+    result = decrypt(key0, path)
 
-    # decode the data and assert equivalence
-    with (pioneer / "sample.ciphertext.json").open("r") as fp:
-        message = json.load(fp)
-    ciphertext = b64decode(message["payload"])
-
-    compressed = pvtkey0.decrypt(
-        ciphertext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    print(gzip.decompress(compressed).decode())
+    assert sample == result, "payload does not match"
 
 
 if __name__ == "__main__":
