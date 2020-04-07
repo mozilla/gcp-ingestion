@@ -25,6 +25,12 @@ public class Env {
     unused = new HashSet<>(env.keySet());
   }
 
+  private void checkIncluded(String key) {
+    if (!include.contains(key)) {
+      throw new IllegalArgumentException("key missing from include: " + key);
+    }
+  }
+
   /**
    * Throw an {@link IllegalArgumentException} for any environment variables set but not used.
    */
@@ -35,13 +41,12 @@ public class Env {
   }
 
   public boolean containsKey(String key) {
+    checkIncluded(key);
     return env.containsKey(key);
   }
 
   private Optional<String> optString(String key) {
-    if (!include.contains(key)) {
-      throw new IllegalArgumentException("key missing from include: " + key);
-    }
+    checkIncluded(key);
     unused.remove(key);
     return Optional.ofNullable(env.get(key));
   }

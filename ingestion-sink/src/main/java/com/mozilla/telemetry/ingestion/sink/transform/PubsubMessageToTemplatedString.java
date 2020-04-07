@@ -34,6 +34,10 @@ public class PubsubMessageToTemplatedString implements Function<PubsubMessage, S
     return new PubsubMessageToTemplatedStringForBigQuery(template);
   }
 
+  public static PubsubMessageToTemplatedString forAmplitude() {
+    return new PubsubMessageToAmplitudeUserId();
+  }
+
   @Override
   public String apply(PubsubMessage message) {
     final String batchKey = StringSubstitutor.replace(template,
@@ -61,7 +65,7 @@ public class PubsubMessageToTemplatedString implements Function<PubsubMessage, S
       this.normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
     }
 
-    private String getAndCacheNormalizedName(String name) {
+    protected String getAndCacheNormalizedName(String name) {
       try {
         return normalizedNameCache.get(name, () -> SnakeCase.format(name));
       } catch (ExecutionException e) {
@@ -89,6 +93,19 @@ public class PubsubMessageToTemplatedString implements Function<PubsubMessage, S
           v -> v.replaceAll("-", "_"));
 
       return super.apply(PubsubMessage.newBuilder().putAllAttributes(attributes).build());
+    }
+  }
+
+  private static class PubsubMessageToAmplitudeUserId
+      extends PubsubMessageToTemplatedStringForBigQuery {
+
+    private PubsubMessageToAmplitudeUserId() {
+      super(null);
+    }
+
+    @Override
+    public String apply(PubsubMessage message) {
+      return message.getAttributesOrThrow(Attribute.CLIENT_ID);
     }
   }
 }

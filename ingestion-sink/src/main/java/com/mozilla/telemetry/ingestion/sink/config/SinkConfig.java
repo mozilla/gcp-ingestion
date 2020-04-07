@@ -9,6 +9,7 @@ import com.google.cloud.storage.StorageOptions;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.sink.io.Amplitude;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
@@ -34,6 +35,8 @@ public class SinkConfig {
 
   public static final String OUTPUT_TABLE = "OUTPUT_TABLE";
 
+  private static final String AMPLITUDE_API_KEY = "AMPLITUDE_API_KEY";
+  private static final String AMPLITUDE_SECRET_KEY = "AMPLITUDE_SECRET_KEY";
   private static final String INPUT_COMPRESSION = "INPUT_COMPRESSION";
   private static final String INPUT_PARALLELISM = "INPUT_PARALLELISM";
   private static final String INPUT_SUBSCRIPTION = "INPUT_SUBSCRIPTION";
@@ -58,13 +61,14 @@ public class SinkConfig {
   private static final String STREAMING_DOCTYPES = "STREAMING_DOCTYPES";
   private static final String STRICT_SCHEMA_DOCTYPES = "STRICT_SCHEMA_DOCTYPES";
 
-  private static final Set<String> INCLUDE_ENV_VARS = ImmutableSet.of(INPUT_COMPRESSION,
-      INPUT_PARALLELISM, INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES,
-      BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET,
-      OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_PARALLELISM, OUTPUT_TABLE, OUTPUT_TOPIC,
-      MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION,
-      STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
-      STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
+  private static final Set<String> INCLUDE_ENV_VARS = ImmutableSet.of(AMPLITUDE_API_KEY,
+      AMPLITUDE_SECRET_KEY, INPUT_COMPRESSION, INPUT_PARALLELISM, INPUT_SUBSCRIPTION,
+      BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES, BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES,
+      LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET, OUTPUT_COMPRESSION, OUTPUT_FORMAT,
+      OUTPUT_PARALLELISM, OUTPUT_TABLE, OUTPUT_TOPIC, MAX_OUTSTANDING_ELEMENT_COUNT,
+      MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES,
+      STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES,
+      STRICT_SCHEMA_DOCTYPES);
 
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
@@ -304,6 +308,25 @@ public class SinkConfig {
         }
         return new Output(env, this, mixedOutput);
       }
+    },
+
+    amplitudeDelete {
+
+      @Override
+      Output getOutput(Env env, Executor executor) {
+        return new Output(env, this, new Amplitude.Delete(
+            // TODO pass initialized amplitude service here
+            new Amplitude.Client(env.getString(AMPLITUDE_API_KEY),
+                env.getString(AMPLITUDE_SECRET_KEY)),
+            env.getLong(BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
+            // "Up to 100 users can be specified at a time"
+            // https://help.amplitude.com/hc/en-us/articles/360000398191-User-Privacy-API#h_a3b54ec9-27e9-4efa-8133-fce1bbd31800
+            env.getInt(BATCH_MAX_MESSAGES, 100),
+            // "The endpoint /api/2/deletions/users has a rate limit of 1 HTTP request per second",
+            // so batch up for 10 seconds to avoid hitting the rate limit.
+            // https://help.amplitude.com/hc/en-us/articles/360000398191-User-Privacy-API#h_2beded8a-5c39-4113-a847-551b7151339b
+            env.getDuration(BATCH_MAX_DELAY, "10s"), executor));
+      }
     };
 
     // Each case in the enum must implement this method to define how to write out messages.
@@ -337,6 +360,8 @@ public class SinkConfig {
           default:
             throw new IllegalArgumentException("Unsupported BIG_QUERY_OUTPUT_MODE: " + outputMode);
         }
+      } else if (env.containsKey(AMPLITUDE_API_KEY)) {
+        return OutputType.amplitudeDelete;
       } else {
         // default to bigQueryLoad because it's the only output without any required configs
         return OutputType.bigQueryLoad;

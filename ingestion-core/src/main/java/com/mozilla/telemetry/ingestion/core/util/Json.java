@@ -16,6 +16,7 @@ import com.google.cloud.bigquery.Schema;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -158,6 +159,10 @@ public class Json {
 
   public static ObjectNode readObjectNode(String data) throws IOException {
     return readObjectNode(data.getBytes(StandardCharsets.UTF_8));
+  }
+
+  public static JsonNode readJsonNode(InputStream data) throws IOException {
+    return MAPPER.readTree(data);
   }
 
   /**
