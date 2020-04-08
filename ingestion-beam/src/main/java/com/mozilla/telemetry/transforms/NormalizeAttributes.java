@@ -61,7 +61,8 @@ public class NormalizeAttributes
       return WINDOWS;
     } else if (name.startsWith("Darwin")) {
       return MAC;
-    } else if (name.contains("Linux") || name.contains("BSD") || name.contains("SunOS")) {
+    } else if (name.contains("Linux") || name.contains("BSD") || name.contains("SunOS")
+        || name.contains("Solaris")) {
       return LINUX;
     } else if (name.startsWith("iOS") || name.contains("iPhone")) {
       return IOS;
