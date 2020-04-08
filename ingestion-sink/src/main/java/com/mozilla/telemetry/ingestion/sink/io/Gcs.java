@@ -101,7 +101,7 @@ public class Gcs {
       }
 
       @Override
-      protected CompletableFuture<Void> close(Void ignore) {
+      protected CompletableFuture<Void> close() {
         try {
           writer.close();
         } catch (IOException e) {

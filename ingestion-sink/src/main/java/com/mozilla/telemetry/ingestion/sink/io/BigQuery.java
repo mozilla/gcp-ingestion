@@ -104,12 +104,12 @@ public class BigQuery {
       }
 
       @Override
-      protected synchronized CompletableFuture<InsertAllResponse> close(Void ignore) {
+      protected CompletableFuture<InsertAllResponse> close() {
         return CompletableFuture.completedFuture(bigQuery.insertAll(builder.build()));
       }
 
       @Override
-      protected synchronized void write(PubsubMessage input) {
+      protected void write(PubsubMessage input) {
         Map<String, Object> content = Json.asMap(encoder.apply(input));
         builder.addRow(content);
       }
@@ -198,7 +198,7 @@ public class BigQuery {
 
       //
       @Override
-      protected synchronized CompletableFuture<Void> close(Void ignore1) {
+      protected CompletableFuture<Void> close() {
         List<String> sourceUris = sourceBlobIds.stream().map(BlobIdToString::apply)
             .collect(Collectors.toList());
         boolean loadSuccess = true;
@@ -225,7 +225,7 @@ public class BigQuery {
       }
 
       @Override
-      protected synchronized void write(PubsubMessage input) {
+      protected void write(PubsubMessage input) {
         sourceBlobIds.add(BlobId.of(input.getAttributesOrThrow(BlobInfoToPubsubMessage.BUCKET),
             input.getAttributesOrThrow(BlobInfoToPubsubMessage.NAME)));
       }

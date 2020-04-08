@@ -73,8 +73,8 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     public Batch() {
       // wait for init then setup full indicator by timeout
       full = init.thenRunAsync(this::timeout).exceptionally(ignore -> null);
-      // wait for full then close
-      result = full.thenComposeAsync(this::close);
+      // wait for full then synchronize and close
+      result = full.thenComposeAsync(this::synchronousClose);
     }
 
     private void timeout() {
@@ -83,6 +83,13 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
       } catch (InterruptedException e) {
         // this is fine
       }
+    }
+
+    /**
+     * Call close from a synchronized context.
+     */
+    private synchronized CompletableFuture<BatchResultT> synchronousClose(Void ignore) {
+      return close();
     }
 
     private synchronized Optional<CompletableFuture<Void>> add(EncodedT encodedInput) {
@@ -105,7 +112,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     protected void checkResultFor(BatchResultT batchResult, int index) {
     }
 
-    protected abstract CompletableFuture<BatchResultT> close(Void ignore);
+    protected abstract CompletableFuture<BatchResultT> close();
 
     protected abstract void write(EncodedT encodedInput);
 

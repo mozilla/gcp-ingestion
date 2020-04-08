@@ -35,7 +35,7 @@ public class BatchWriteTest {
     class Batch extends BatchWrite<String, String, String, Void>.Batch {
 
       @Override
-      protected CompletableFuture<Void> close(Void ignore) {
+      protected CompletableFuture<Void> close() {
         return CompletableFuture.runAsync(() -> {
         });
       }
