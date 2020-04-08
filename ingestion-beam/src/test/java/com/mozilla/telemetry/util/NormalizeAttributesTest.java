@@ -52,6 +52,7 @@ public class NormalizeAttributesTest {
     assertEquals("Linux", NormalizeAttributes.normalizeOs("Linux"));
     assertEquals("Linux", NormalizeAttributes.normalizeOs("GNU/Linux"));
     assertEquals("Linux", NormalizeAttributes.normalizeOs("SunOS"));
+    assertEquals("Linux", NormalizeAttributes.normalizeOs("Solaris"));
     assertEquals("Linux", NormalizeAttributes.normalizeOs("FreeBSD"));
     assertEquals("Linux", NormalizeAttributes.normalizeOs("GNU/kFreeBSD"));
     assertEquals("Other", NormalizeAttributes.normalizeOs("AIX"));
