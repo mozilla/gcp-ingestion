@@ -130,8 +130,12 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       private static final Aggregation.Count COUNT_AGGREGATION = Aggregation.Count.create();
       private static final StatsRecorder STATS_RECORDER = Stats.getStatsRecorder();
 
+      /**
+       * Register a view for every measure.
+       *
+       * <p>If this is not called, e.g. during unit tests, recorded values will not be exported.
+       */
       private static void setupOpenCensus() {
-        // Every meeasure must have a view or recorded metrics will be dropped and never exported
         ViewManager viewManager = Stats.getViewManager();
         for (MeasureLong measure : ImmutableList.of(COERCED_TO_INT, NOT_COERCED_TO_INT,
             NOT_COERCED_TO_BOOL)) {

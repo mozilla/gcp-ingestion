@@ -151,7 +151,7 @@ public class SinkConfig {
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
                 PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), getFormat(env),
-                ignore -> CompletableFuture.completedFuture(null)));
+                ignore -> CompletableFuture.completedFuture(null)).withOpenCensusMetrics());
       }
     },
 
@@ -164,7 +164,8 @@ public class SinkConfig {
                 env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
                 env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
                 env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY),
-                BigQuery.Load.Delete.onSuccess)); // don't delete files until successfully loaded
+                // don't delete files until successfully loaded
+                BigQuery.Load.Delete.onSuccess).withOpenCensusMetrics());
       }
     },
 
@@ -182,7 +183,8 @@ public class SinkConfig {
                 getFormat(env),
                 // BigQuery Load API limits maximum load requests per table per day to 1,000 so send
                 // blobInfo to pubsub and require loads be run separately to reduce maximum latency
-                blobInfo -> pubsubWrite.apply(BlobInfoToPubsubMessage.apply(blobInfo))));
+                blobInfo -> pubsubWrite.apply(BlobInfoToPubsubMessage.apply(blobInfo)))
+                    .withOpenCensusMetrics());
       }
     },
 
@@ -196,7 +198,7 @@ public class SinkConfig {
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
                 PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
-                getFormat(env)));
+                getFormat(env)).withOpenCensusMetrics());
       }
     },
 
@@ -216,7 +218,8 @@ public class SinkConfig {
               env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
               env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
               env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY),
-              BigQuery.Load.Delete.always); // files will be recreated if not successfully loaded
+              // files will be recreated if not successfully loaded
+              BigQuery.Load.Delete.always).withOpenCensusMetrics();
         }
         // Combine bigQueryFiles and bigQueryLoad without an intermediate PubSub topic
         Function<PubsubMessage, CompletableFuture<Void>> fileOutput = new Gcs.Write.Ndjson(storage,
@@ -224,15 +227,15 @@ public class SinkConfig {
             env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
             env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
-            getFormat(env),
-            blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)));
+            getFormat(env), blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)))
+                .withOpenCensusMetrics();
         // Like bigQueryStreaming, but use STREAMING_ prefix env vars for batch configuration
         Function<PubsubMessage, CompletableFuture<Void>> streamingOutput = new BigQuery.Write(
             bigQuery, env.getLong(STREAMING_BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
             env.getInt(STREAMING_BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
             env.getDuration(STREAMING_BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
-            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
-            getFormat(env));
+            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)), getFormat(env))
+                .withOpenCensusMetrics();
         // fallbackOutput sends messages to fileOutput when rejected by streamingOutput due to size
         Function<PubsubMessage, CompletableFuture<Void>> fallbackOutput = message -> streamingOutput
             .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {

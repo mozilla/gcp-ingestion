@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
@@ -48,6 +49,12 @@ public class SinkBigQueryIntegrationTest {
 
   @Rule
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
+  @Before
+  public void unregisterStackdriver() {
+    // unregister stackdriver stats exporter in case a previous test already registered one.
+    StackdriverStatsExporter.unregister();
+  }
 
   private static final TimePartitioning TIME_PARTITIONING = TimePartitioning
       .newBuilder(TimePartitioning.Type.DAY).setField("submission_timestamp").build();
