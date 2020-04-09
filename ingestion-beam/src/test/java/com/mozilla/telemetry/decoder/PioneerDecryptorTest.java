@@ -7,6 +7,7 @@ import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -25,14 +26,22 @@ public class PioneerDecryptorTest extends TestWithDeterministicJson {
   @Test
   public void testOutput() {
     // minimal test for throughput of a single document
+    ValueProvider<String> keysLocation = pipeline
+        .newProvider("src/test/resources/pioneer/id_rsa_0.private.json");
     final List<String> input = Arrays.asList("{}");
     Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline
-        .apply(Create.of(input)).apply(
+        .apply(
+            Create.of(input))
+        .apply(
             InputFileFormat.text.decode())
-        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(
-            element -> new PubsubMessage(element.getPayload(), ImmutableMap.of("document_namespace",
-                "pioneer", "document_type", "test", "document_version", "1"))))
-        .apply(PioneerDecryptor.of());
+        .apply("AddAttributes",
+            MapElements
+                .into(
+                    TypeDescriptor.of(PubsubMessage.class))
+                .via(element -> new PubsubMessage(element.getPayload(),
+                    ImmutableMap.of("document_namespace", "pioneer", "document_type", "test",
+                        "document_version", "1"))))
+        .apply(PioneerDecryptor.of(keysLocation));
 
     final List<String> expectedMain = Arrays.asList("{}");
     final PCollection<String> main = output.output().apply("encodeTextMain",
