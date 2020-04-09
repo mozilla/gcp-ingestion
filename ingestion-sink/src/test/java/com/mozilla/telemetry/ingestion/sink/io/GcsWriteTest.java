@@ -7,16 +7,12 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -37,7 +33,6 @@ public class GcsWriteTest {
 
   private Storage storage;
   private Gcs.Write.Ndjson output;
-  private WriteChannel writer;
 
   private CompletableFuture<Void> batchCloseHook(BlobInfo ignore) {
     return CompletableFuture.completedFuture(null);
@@ -47,8 +42,6 @@ public class GcsWriteTest {
   @Before
   public void mockBigQueryResponse() {
     storage = mock(Storage.class);
-    writer = mock(WriteChannel.class);
-    when(storage.writer(any(BlobInfo.class))).thenReturn(writer);
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
         PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
   }
@@ -94,19 +87,21 @@ public class GcsWriteTest {
     assertThat((int) output.batches.get(BATCH_KEY).byteSize, lessThanOrEqualTo(MAX_BYTES));
   }
 
-  @Test(expected = UncheckedIOException.class)
-  public void failsOnInsertErrors() throws Throwable {
-    doThrow(new IOException()).when(writer).close();
-
+  @Test
+  public void failsOnInsertErrors() {
+    final Throwable expect = new RuntimeException("fail");
+    doThrow(expect).when(storage).create(any(BlobInfo.class), any(byte[].class));
+    Throwable cause = null;
     try {
       output.apply(EMPTY_MESSAGE).join();
     } catch (CompletionException e) {
-      throw e.getCause();
+      cause = e.getCause();
     }
+    assertEquals(expect, cause);
   }
 
   @Test
   public void canHandleOversizeMessage() {
-    output.apply(PubsubMessage.newBuilder().putAttributes("meta", "data").build());
+    output.apply(PubsubMessage.newBuilder().putAttributes("meta", "data").build()).join();
   }
 }
