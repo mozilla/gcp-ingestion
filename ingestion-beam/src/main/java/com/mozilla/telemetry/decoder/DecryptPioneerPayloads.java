@@ -1,8 +1,10 @@
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -20,6 +22,7 @@ import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.vendor.grpc.v1p21p0.io.grpc.internal.IoUtils;
+import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.lang.JoseException;
 
@@ -105,16 +108,23 @@ public class DecryptPioneerPayloads extends
   private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
 
     @Override
-    public Iterable<PubsubMessage> apply(PubsubMessage message) throws IOException {
+    public Iterable<PubsubMessage> apply(PubsubMessage message) throws IOException, JoseException {
       message = PubsubConstraints.ensureNonNull(message);
-      Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
       if (keyStore == null) {
         keyStore = new KeyStore(keysLocation.get());
       }
 
-      byte[] payload = message.getPayload();
-      return Collections.singletonList(new PubsubMessage(payload, attributes));
+      // TODO: count per doctype errors
+      ObjectNode json = Json.readObjectNode(message.getPayload());
+
+      PrivateKey key = keyStore.getKey("*");
+      JsonWebEncryption jwe = new JsonWebEncryption();
+      jwe.setKey(key);
+      jwe.setContentEncryptionKey(key.getEncoded());
+      jwe.setCompactSerialization(json.get("payload").asText());
+      return Collections
+          .singletonList(new PubsubMessage(jwe.getPlaintextBytes(), message.getAttributeMap()));
     }
   }
 }

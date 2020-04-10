@@ -8,7 +8,6 @@ To install the appropriate dependencies for this script:
 import gzip
 import json
 from pathlib import Path
-
 from jwcrypto import jwe, jwk
 
 pioneer = Path(__file__).parent.resolve() / "pioneer"
@@ -42,10 +41,6 @@ def encrypt(payload, key: jwk.JWK, path: Path):
 
     https://jwcrypto.readthedocs.io/en/stable/jwe.html
     """
-    if path.exists():
-        print(f"{path} already exists, skipping...")
-        return
-
     public_key = jwk.JWK.from_json(key.export_public())
     protected_header = {
         "alg": "RSA-OAEP-256",
@@ -55,14 +50,19 @@ def encrypt(payload, key: jwk.JWK, path: Path):
     }
     compressed = gzip.compress(json.dumps(payload).encode())
     jwetoken = jwe.JWE(compressed, recipient=public_key, protected=protected_header)
+
+    # ugly deserialization and serialization
+    envelope = {"payload": jwetoken.serialize(compact=True)}
     with path.open("w") as fp:
-        write_serialized(jwetoken.serialize(), fp)
+        write_serialized(json.dumps(envelope), fp)
 
 
 def decrypt(key: jwk.JWK, path: Path):
-    jwetoken = jwe.JWE()
+    """Decrypt and throw away envelope"""
     with path.open("rb") as fp:
-        jwetoken.deserialize(fp.read())
+        envelope = json.load(fp)
+    jwetoken = jwe.JWE()
+    jwetoken.deserialize(envelope["payload"])
     jwetoken.decrypt(key)
     payload = gzip.decompress(jwetoken.payload).decode()
     return json.loads(payload)
