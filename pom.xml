@@ -10,25 +10,36 @@
     <packaging>pom</packaging>
 
     <profiles>
+        <!-- Use profiles to skip submodules that don't exist, such as in Docker -->
         <profile>
-            <id>ingestion</id>
+            <id>ingestion-core</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <file>
+                    <exists>ingestion-core/pom.xml</exists>
+                </file>
             </activation>
             <modules>
                 <module>ingestion-core</module>
-                <module>ingestion-beam</module>
-                <module>ingestion-sink</module>
             </modules>
         </profile>
         <profile>
             <id>ingestion-beam</id>
+            <activation>
+                <file>
+                    <exists>ingestion-beam/pom.xml</exists>
+                </file>
+            </activation>
             <modules>
                 <module>ingestion-beam</module>
             </modules>
         </profile>
         <profile>
             <id>ingestion-sink</id>
+            <activation>
+                <file>
+                    <exists>ingestion-sink/pom.xml</exists>
+                </file>
+            </activation>
             <modules>
                 <module>ingestion-sink</module>
             </modules>
