@@ -23,17 +23,17 @@ import org.apache.beam.vendor.grpc.v1p21p0.io.grpc.internal.IoUtils;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.lang.JoseException;
 
-public class PioneerDecryptor extends
+public class DecryptPioneerPayloads extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   private final ValueProvider<String> keysLocation;
   private transient KeyStore keyStore;
 
-  public static PioneerDecryptor of(ValueProvider keysLocation) {
-    return new PioneerDecryptor(keysLocation);
+  public static DecryptPioneerPayloads of(ValueProvider keysLocation) {
+    return new DecryptPioneerPayloads(keysLocation);
   }
 
-  private PioneerDecryptor(ValueProvider<String> keysLocation) {
+  private DecryptPioneerPayloads(ValueProvider<String> keysLocation) {
     this.keysLocation = keysLocation;
   }
 
@@ -47,7 +47,7 @@ public class PioneerDecryptor extends
           try {
             throw ee.exception();
           } catch (IOException e) {
-            return FailureMessage.of(PioneerDecryptor.class.getSimpleName(), //
+            return FailureMessage.of(DecryptPioneerPayloads.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
           }

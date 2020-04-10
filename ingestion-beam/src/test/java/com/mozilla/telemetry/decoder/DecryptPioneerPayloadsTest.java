@@ -18,7 +18,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class PioneerDecryptorTest extends TestWithDeterministicJson {
+public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -30,18 +30,15 @@ public class PioneerDecryptorTest extends TestWithDeterministicJson {
         .newProvider("src/test/resources/pioneer/id_rsa_0.private.json");
     final List<String> input = Arrays.asList("{}");
     Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline
-        .apply(
-            Create.of(input))
-        .apply(
+        .apply(Create.of(input)).apply(
             InputFileFormat.text.decode())
         .apply("AddAttributes",
-            MapElements
-                .into(
-                    TypeDescriptor.of(PubsubMessage.class))
-                .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of("document_namespace", "pioneer", "document_type", "test",
-                        "document_version", "1"))))
-        .apply(PioneerDecryptor.of(keysLocation));
+            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+                .via(
+                    element -> new PubsubMessage(element.getPayload(),
+                        ImmutableMap.of("document_namespace", "pioneer", "document_type", "test",
+                            "document_version", "1"))))
+        .apply(DecryptPioneerPayloads.of(keysLocation));
 
     final List<String> expectedMain = Arrays.asList("{}");
     final PCollection<String> main = output.output().apply("encodeTextMain",
