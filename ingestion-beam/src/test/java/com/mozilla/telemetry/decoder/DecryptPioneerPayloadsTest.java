@@ -42,7 +42,7 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     }).toArray(String[]::new));
   }
 
-  final private static class ReformatJson
+  private static final class ReformatJson
       extends PTransform<PCollection<String>, PCollection<String>> {
 
     public static ReformatJson of() {
