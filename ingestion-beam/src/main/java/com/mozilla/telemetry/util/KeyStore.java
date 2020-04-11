@@ -16,6 +16,12 @@ import org.jose4j.lang.JoseException;
  */
 public class KeyStore {
 
+  /**
+   * Fetch a key from the store.
+   *
+   * @param path fully qualified path to the key
+   * @return private key for decryption
+   */
   public PrivateKey getKey(String path) {
     ensureKeysLoaded();
     PrivateKey key = keys.get(path);
