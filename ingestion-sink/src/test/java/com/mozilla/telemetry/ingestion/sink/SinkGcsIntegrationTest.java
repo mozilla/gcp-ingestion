@@ -12,6 +12,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.BoundedSink;
 import com.mozilla.telemetry.ingestion.sink.util.GcsBucket;
 import com.mozilla.telemetry.ingestion.sink.util.SinglePubsubTopic;
+import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
@@ -22,6 +23,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
@@ -36,6 +38,12 @@ public class SinkGcsIntegrationTest {
 
   @Rule
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
+
+  @Before
+  public void unregisterStackdriver() {
+    // unregister stackdriver stats exporter in case a previous test already registered one.
+    StackdriverStatsExporter.unregister();
+  }
 
   @Test
   public void canSinkRawMessages() throws IOException {
