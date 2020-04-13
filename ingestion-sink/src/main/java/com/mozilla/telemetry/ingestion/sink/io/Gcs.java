@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,9 +36,10 @@ public class Gcs {
       private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-          PubsubMessageToTemplatedString batchKeyTemplate, PubsubMessageToObjectNode encoder,
+          PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
+          PubsubMessageToObjectNode encoder,
           Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
-        super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
+        super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor, batchCloseHook);
         this.encoder = encoder;
       }
 
@@ -55,9 +57,9 @@ public class Gcs {
     private final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
 
     private Write(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-        PubsubMessageToTemplatedString batchKeyTemplate,
+        PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
         Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
-      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
+      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor);
       this.storage = storage;
       this.batchCloseHook = batchCloseHook;
     }

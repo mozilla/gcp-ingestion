@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class PubsubReadIntegrationTest {
             .map(channelProvider -> builder.setChannelProvider(channelProvider)
                 .setCredentialsProvider(pubsub.noCredentialsProvider))
             .orElse(builder),
-        m -> m));
+        m -> m, ForkJoinPool.commonPool()));
 
     input.get().run();
 
@@ -68,7 +69,7 @@ public class PubsubReadIntegrationTest {
             .map(channelProvider -> builder.setChannelProvider(channelProvider)
                 .setCredentialsProvider(pubsub.noCredentialsProvider))
             .orElse(builder),
-        m -> m));
+        m -> m, ForkJoinPool.commonPool()));
 
     input.get().run();
 
