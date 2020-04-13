@@ -18,6 +18,21 @@
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
 
+    <profiles>
+        <profile>
+            <!-- Enable this profile to add ingestion-core as a dependency for IDEs like Intellij
+                 that don't detect files added by build-helper-maven-plugin -->
+            <id>IDE</id>
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>ingestion-core</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
     <dependencies>
         <dependency>
             <groupId>com.google.cloud</groupId>
