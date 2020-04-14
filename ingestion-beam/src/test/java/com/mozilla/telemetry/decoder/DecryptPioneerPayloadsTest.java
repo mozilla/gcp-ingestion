@@ -64,8 +64,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testOutput() {
     // minimal test for throughput of a single document
-    ValueProvider<String> keysLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/id_rsa_0.private.json").getPath());
+    ValueProvider<String> metadataLocation = pipeline
+        .newProvider(Resources.getResource("pioneer/metadata-simple.json").getPath());
     final List<String> input = readTestFiles(Arrays.asList("pioneer/sample.ciphertext.json"));
 
     PCollection<String> output = pipeline.apply(Create.of(input))
@@ -75,7 +75,7 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
                 .via(element -> new PubsubMessage(element.getPayload(),
                     ImmutableMap.of("document_namespace", "pioneer", "document_type", "test",
                         "document_version", "1"))))
-        .apply(DecryptPioneerPayloads.of(keysLocation)).output()
+        .apply(DecryptPioneerPayloads.of(metadataLocation)).output()
         .apply(DecompressPayload.enabled(pipeline.newProvider(true)))
         .apply(OutputFileFormat.text.encode()).apply(ReformatJson.of());
 

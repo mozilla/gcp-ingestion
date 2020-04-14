@@ -1,14 +1,22 @@
 package com.mozilla.telemetry.util;
 
+import com.google.api.pathtemplate.ValidationException;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.io.Resources;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.security.PrivateKey;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.beam.vendor.grpc.v1p21p0.io.grpc.internal.IoUtils;
+import org.apache.commons.io.IOUtils;
+import org.everit.json.schema.Schema;
+import org.everit.json.schema.loader.SchemaLoader;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.lang.JoseException;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 /**
  * Store Private Keys derived from JSON Web Keys (JWK) decrypted via the GCP Key
@@ -28,30 +36,57 @@ public class KeyStore {
     return key;
   }
 
-  private final String keysLocation;
+  private final String metadataLocation;
   private transient Map<String, PrivateKey> keys;
 
-  // enable this to read from gcs via BeamFileInputStream
-  public KeyStore(String keysLocation) {
-    this.keysLocation = keysLocation;
+  public static KeyStore of(String metadataLocation) {
+    return new KeyStore(metadataLocation);
   }
 
-  private void loadAllKeys() throws IOException {
-    final Map<String, PrivateKey> tempKeys = new HashMap<>();
-    InputStream inputStream;
-    try {
-      inputStream = BeamFileInputStream.open(this.keysLocation);
-    } catch (IOException e) {
-      throw new IOException("Exception thrown while reading private key");
-    }
-    byte[] serializedKeyBytes = IoUtils.toByteArray(inputStream);
-    String serializedKey = new String(serializedKeyBytes);
+  private KeyStore(String metadataLocation) {
+    this.metadataLocation = metadataLocation;
+  }
 
-    try {
-      PublicJsonWebKey key = PublicJsonWebKey.Factory.newPublicJwk(serializedKey);
-      tempKeys.put("*", key.getPrivateKey());
-    } catch (JoseException e) {
-      throw new RuntimeException(e);
+  @VisibleForTesting
+  int numLoadedKeys() {
+    ensureKeysLoaded();
+    return keys.size();
+  }
+
+  private void loadAllKeys() throws IOException, ValidationException {
+    final Map<String, PrivateKey> tempKeys = new HashMap<>();
+
+    Schema schema;
+    try (InputStream inputStream = Resources.getResource("keystore-metadata.schema.json")
+        .openStream()) {
+      JSONObject schemaBytes = new JSONObject(new JSONTokener(inputStream));
+      schema = SchemaLoader.load(schemaBytes);
+    } catch (IOException e) {
+      throw new IOException("Exception thrown while reading metadata file");
+    }
+
+    JSONArray metadata;
+    try (InputStream inputStream = BeamFileInputStream.open(this.metadataLocation)) {
+      metadata = new JSONArray(new JSONTokener(inputStream));
+      schema.validate(metadata);
+    } catch (IOException e) {
+      throw new IOException("Exception thrown while reading keystore metadata schema.");
+    }
+
+    for (int i = 0; i < metadata.length(); i++) {
+      JSONObject entry = metadata.getJSONObject(i);
+      String namespace = entry.getString("document_namespace");
+      String privateKeyUri = entry.getString("private_key_uri");
+      try (InputStream inputStream = BeamFileInputStream.open(privateKeyUri)) {
+        String serializedKey = new String(IOUtils.toByteArray(inputStream));
+        PublicJsonWebKey key = PublicJsonWebKey.Factory.newPublicJwk(serializedKey);
+        tempKeys.put(namespace, key.getPrivateKey());
+      } catch (IOException e) {
+        // TODO: interpolate specific information from the metadata.
+        throw new IOException("Exception thrown while reading key specified by metadata.");
+      } catch (JoseException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     keys = tempKeys;
