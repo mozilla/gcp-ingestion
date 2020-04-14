@@ -14,7 +14,7 @@
 
     <!-- Confine use of JSONObject to only the JsonValidator class -->
     <suppress checks="IllegalImport"
-              files="JsonValidator.java|JSONSchemaStore.java"/>
+              files="JsonValidator.java|JSONSchemaStore.java|KeyStore.java"/>
 
     <!-- suppress all checks in the generated directories -->
     <suppress checks=".*" files=".+[\\\/]generated[\\\/].+\.java" />
