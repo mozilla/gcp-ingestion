@@ -496,7 +496,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
             Field.of("base_addr", LegacySQLTypeName.STRING)) //
         .setMode(Mode.REPEATED).build() //
     ); //
-    String expected = "{\"modules\":[{\"base_addr\":\"0x1390000\"}]}";
+    String expected = "{\"modules\":[{\"base_addr\":\"0x1390000\"},{}]}";
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
 

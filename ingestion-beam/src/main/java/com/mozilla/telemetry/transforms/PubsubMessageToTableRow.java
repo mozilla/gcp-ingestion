@@ -344,8 +344,10 @@ public class PubsubMessageToTableRow implements Serializable {
           records.set(i, (Object) m);
         }
       } else {
+        List<Object> filteredRecords = new ArrayList<>();
         records.forEach(untypedRecord -> {
           if (untypedRecord instanceof Map) {
+            filteredRecords.add(untypedRecord);
             Map<String, Object> record = (Map<String, Object>) untypedRecord;
             Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
             transformForBqSchema(record, field.getSubFields(), props);
@@ -355,13 +357,12 @@ public class PubsubMessageToTableRow implements Serializable {
               repeatedAdditionalProperties.add(Collections.emptyMap());
             }
           } else {
+            // BigQuery cannot load null values into an array, so we insert an empty object instead.
+            filteredRecords.add(Collections.emptyMap());
             repeatedAdditionalProperties.add(null);
           }
         });
-        // BigQuery cannot load null values into an array, so we must filter them out here, but
-        // additionalProperties will have a null in the correct place in the array.
-        parent.put(name,
-            records.stream().filter(Map.class::isInstance).collect(Collectors.toList()));
+        parent.put(name, filteredRecords);
       }
 
       if (!repeatedAdditionalProperties.stream().allMatch(m -> Collections.emptyMap().equals(m))) {

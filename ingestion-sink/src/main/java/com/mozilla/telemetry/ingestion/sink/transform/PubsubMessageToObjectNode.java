@@ -370,19 +370,20 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
           for (JsonNode record : value) {
             final ObjectNode props = additionalProperties == null ? null : Json.createObjectNode();
             if (record.isObject()) {
-              transformForBqSchema((ObjectNode) record, field.getSubFields(), props);
               filteredValue.add(record);
+              transformForBqSchema((ObjectNode) record, field.getSubFields(), props);
               if (!Json.isNullOrEmpty(props)) {
                 repeatedAdditionalProperties.add(props);
               } else {
                 repeatedAdditionalProperties.addObject();
               }
             } else {
+              // BigQuery cannot load null values into an array, so we insert an empty object
+              // instead.
+              filteredValue.addObject();
               repeatedAdditionalProperties.addNull();
             }
           }
-          // BigQuery cannot load null values into an array, so we must filter them out here, but
-          // additionalProperties will have a null in the correct place in the array.
           value = filteredValue;
         }
         if (!Streams.stream(repeatedAdditionalProperties).allMatch(EMPTY_OBJECT::equals)) {
