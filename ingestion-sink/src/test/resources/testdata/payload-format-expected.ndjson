@@ -13,8 +13,9 @@
 {"additional_properties":{"missingField":null}}
 {"additional_properties":{"test_map_without_value":{"key":"value"}},"test_map":[{"key":"key","value":"value"}],"test_map_without_value":[{"key":"key"}]}
 {"additional_properties":{},"test_repeated_record":[{"field":"value"}],"test_record":{"key":"value"}}
-{"additional_properties":{"test_repeated_record":[null,{"reject":"value","alsoReject":null},null]},"test_repeated_record":[{"field":"value"},{},{}]}
-{"additional_properties":{"test_repeated_record":[{"reject":"value"},null,{"reject":"value"}]},"test_repeated_record":[{},{"field":"value"},{}]}
+{"additional_properties":{"test_repeated_record":[{},{"reject":"value","alsoReject":null},{}]},"test_repeated_record":[{"field":"value"},{},{}]}
+{"additional_properties":{"test_repeated_record":[{"reject":"value"},{},{"reject":"value"}]},"test_repeated_record":[{},{"field":"value"},{}]}
+{"additional_properties":{"test_repeated_record":[null,{}]},"test_repeated_record":[{"field":"value"}]}
 {"additional_properties":{},"test_repeated_tuple":[{"f0_":"string","f1_":5,"f2_":true}]}
 {"additional_properties":{"test_repeated_tuple":[[null,"x",null,"extra"]]},"test_repeated_tuple":[{"f2_":false}]}
 {"additional_properties":{},"test_tuple":{"f0_":"string","f1_":5,"f2_":true}}

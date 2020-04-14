@@ -15,6 +15,7 @@
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"field":"value"}],"test_record":{"key":"value"}}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"field":"value"},{"reject":"value","alsoReject":null},{"field":null}]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"reject":"value"},{"field":"value"},{"reject":"value"}]}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[null,{"field":"value"}]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_tuple":[["string",5,true]]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_tuple":[[null,"x",false,"extra"]]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_tuple":["string",5,true]}}
