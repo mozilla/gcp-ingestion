@@ -23,15 +23,15 @@ import org.jose4j.lang.JoseException;
 public class DecryptPioneerPayloads extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  private final ValueProvider<String> keysLocation;
+  private final ValueProvider<String> metadataLocation;
   private transient KeyStore keyStore;
 
-  public static DecryptPioneerPayloads of(ValueProvider<String> keysLocation) {
-    return new DecryptPioneerPayloads(keysLocation);
+  public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation) {
+    return new DecryptPioneerPayloads(metadataLocation);
   }
 
-  private DecryptPioneerPayloads(ValueProvider<String> keysLocation) {
-    this.keysLocation = keysLocation;
+  private DecryptPioneerPayloads(ValueProvider<String> metadataLocation) {
+    this.metadataLocation = metadataLocation;
   }
 
   @Override
@@ -58,13 +58,13 @@ public class DecryptPioneerPayloads extends
       message = PubsubConstraints.ensureNonNull(message);
 
       if (keyStore == null) {
-        keyStore = new KeyStore(keysLocation.get());
+        keyStore = KeyStore.of(metadataLocation.get());
       }
 
       // TODO: count per doctype errors
       ObjectNode json = Json.readObjectNode(message.getPayload());
 
-      PrivateKey key = keyStore.getKey("*");
+      PrivateKey key = keyStore.getKey(message.getAttribute("document_namespace"));
       JsonWebEncryption jwe = new JsonWebEncryption();
       jwe.setKey(key);
       jwe.setContentEncryptionKey(key.getEncoded());
