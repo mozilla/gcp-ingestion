@@ -64,7 +64,7 @@ public class DecryptPioneerPayloads extends
       // TODO: count per doctype errors
       ObjectNode json = Json.readObjectNode(message.getPayload());
 
-      PrivateKey key = keyStore.getKey(message.getAttribute("document_namespace"));
+      PrivateKey key = keyStore.getKey(message.getAttribute(Attributes.DOCUMENT_NAMESPACE));
       JsonWebEncryption jwe = new JsonWebEncryption();
       jwe.setKey(key);
       jwe.setContentEncryptionKey(key.getEncoded());

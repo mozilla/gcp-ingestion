@@ -60,7 +60,7 @@ public class KeyStore {
         .openStream()) {
       schema = SchemaLoader.load(Json.readJsonObject(inputStream));
     } catch (IOException e) {
-      throw new IOException("Exception thrown while reading metadata file");
+      throw new IOException("Exception thrown while reading metadata file", e);
     }
 
     // required to validate Jackson objects
@@ -72,7 +72,7 @@ public class KeyStore {
       metadata = Json.readArrayNode(data);
       validator.validate(schema, metadata);
     } catch (IOException e) {
-      throw new IOException("Exception thrown while reading keystore metadata schema.");
+      throw new IOException("Exception thrown while reading keystore metadata schema.", e);
     }
 
     for (JsonNode element : metadata) {
