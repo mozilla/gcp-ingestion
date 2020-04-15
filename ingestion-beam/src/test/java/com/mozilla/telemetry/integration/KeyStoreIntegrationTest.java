@@ -24,7 +24,7 @@ import org.junit.rules.TemporaryFolder;
  * created in GCS. We programmatically generate a metadata file that we will
  * test. Finally we cover all code paths related to decrypting the private keys.
  */
-public class KeyStoreIntegrationTests extends TestWithDeterministicJson {
+public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
 
   private Storage storage;
   private String projectId;
