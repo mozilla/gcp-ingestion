@@ -47,6 +47,11 @@
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-kms</artifactId>
+            <version>0.81.0-beta</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-pubsub</artifactId>
             <version>${google-cloud.version}</version>
             <scope>test</scope>
