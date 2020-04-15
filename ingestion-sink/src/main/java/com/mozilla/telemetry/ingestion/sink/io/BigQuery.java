@@ -24,11 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BigQuery {
 
@@ -59,16 +58,14 @@ public class BigQuery {
   public static class Write
       extends BatchWrite<PubsubMessage, PubsubMessage, TableId, InsertAllResponse> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Write.class);
-
     private final com.google.cloud.bigquery.BigQuery bigQuery;
     private final PubsubMessageToObjectNode encoder;
 
     /** Constructor. */
     public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
-        Duration maxDelay, PubsubMessageToTemplatedString batchKeyTemplate,
+        Duration maxDelay, PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
         PubsubMessageToObjectNode encoder) {
-      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
+      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor);
       this.bigQuery = bigQuery;
       this.encoder = encoder;
     }
@@ -153,8 +150,8 @@ public class BigQuery {
 
     /** Constructor. */
     public Load(com.google.cloud.bigquery.BigQuery bigQuery, Storage storage, long maxBytes,
-        int maxFiles, Duration maxDelay, Delete delete) {
-      super(maxBytes, maxFiles, maxDelay, null);
+        int maxFiles, Duration maxDelay, Executor executor, Delete delete) {
+      super(maxBytes, maxFiles, maxDelay, null, executor);
       this.bigQuery = bigQuery;
       this.storage = storage;
       this.delete = delete;

@@ -16,7 +16,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,11 +35,11 @@ public class Pubsub {
     /** Constructor. */
     public <T> Read(String subscriptionName, Function<PubsubMessage, CompletableFuture<T>> output,
         Function<Subscriber.Builder, Subscriber.Builder> config,
-        Function<PubsubMessage, PubsubMessage> decompress) {
+        Function<PubsubMessage, PubsubMessage> decompress, Executor executor) {
       ProjectSubscriptionName subscription = ProjectSubscriptionName.parse(subscriptionName);
       subscriber = config.apply(Subscriber.newBuilder(subscription,
           (message, consumer) -> CompletableFuture.completedFuture(message)
-              .thenApplyAsync(decompress).thenComposeAsync(output)
+              .thenApplyAsync(decompress, executor).thenComposeAsync(output, executor)
               .whenCompleteAsync((result, exception) -> {
                 if (exception == null) {
                   consumer.ack();
@@ -49,7 +48,7 @@ public class Pubsub {
                   LOG.warn("Exception while attempting to deliver message", exception.getCause());
                   consumer.nack();
                 }
-              })))
+              }, executor)))
           .build();
     }
 
@@ -73,10 +72,10 @@ public class Pubsub {
     private final ConcurrentMap<String, Publisher> publishers = new ConcurrentHashMap<>();
 
     /** Constructor. */
-    public Write(String topicTemplate, int numThreads,
+    public Write(String topicTemplate, Executor executor,
         Function<Publisher.Builder, Publisher.Builder> config,
         Function<PubsubMessage, PubsubMessage> compress) {
-      executor = Executors.newFixedThreadPool(numThreads);
+      this.executor = executor;
       this.topicTemplate = PubsubMessageToTemplatedString.of(topicTemplate);
       this.config = config;
       this.compress = compress;
