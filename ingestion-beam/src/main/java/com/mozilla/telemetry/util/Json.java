@@ -10,8 +10,12 @@ import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 /**
  * Extends {@link com.mozilla.telemetry.ingestion.core.util.Json} with configuration and methods
@@ -81,6 +85,20 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
    */
   public static String asString(Object data) throws IOException {
     return MAPPER.writeValueAsString(data);
+  }
+
+  /**
+   * Read a org.json object for JSON validation.
+   */
+  public static JSONObject readJsonObject(InputStream inputStream) {
+    return new JSONObject(new JSONTokener(inputStream));
+  }
+
+  /**
+   * Read an org.json array for JSON validation.
+   */
+  public static JSONArray readJsonArray(InputStream inputStream) {
+    return new JSONArray(new JSONTokener(inputStream));
   }
 
   /**

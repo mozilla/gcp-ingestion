@@ -1,5 +1,7 @@
 package com.mozilla.telemetry.util;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.api.pathtemplate.ValidationException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Resources;
@@ -14,9 +16,6 @@ import org.everit.json.schema.Schema;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.lang.JoseException;
-import org.json.JSONArray;
-import org.json.JSONObject;
-import org.json.JSONTokener;
 
 /**
  * Store Private Keys derived from JSON Web Keys (JWK) decrypted via the GCP Key
@@ -59,31 +58,32 @@ public class KeyStore {
     Schema schema;
     try (InputStream inputStream = Resources.getResource("keystore-metadata.schema.json")
         .openStream()) {
-      JSONObject schemaBytes = new JSONObject(new JSONTokener(inputStream));
-      schema = SchemaLoader.load(schemaBytes);
+      schema = SchemaLoader.load(Json.readJsonObject(inputStream));
     } catch (IOException e) {
       throw new IOException("Exception thrown while reading metadata file");
     }
 
-    JSONArray metadata;
+    // required to validate Jackson objects
+    JsonValidator validator = new JsonValidator();
+
+    ArrayNode metadata;
     try (InputStream inputStream = BeamFileInputStream.open(this.metadataLocation)) {
-      metadata = new JSONArray(new JSONTokener(inputStream));
-      schema.validate(metadata);
+      byte[] data = IOUtils.toByteArray(inputStream);
+      metadata = Json.readArrayNode(data);
+      validator.validate(schema, metadata);
     } catch (IOException e) {
       throw new IOException("Exception thrown while reading keystore metadata schema.");
     }
 
-    for (int i = 0; i < metadata.length(); i++) {
-      JSONObject entry = metadata.getJSONObject(i);
-      String namespace = entry.getString("document_namespace");
-      String privateKeyUri = entry.getString("private_key_uri");
+    for (JsonNode element : metadata) {
+      String namespace = element.get("document_namespace").textValue();
+      String privateKeyUri = element.get("private_key_uri").textValue();
       try (InputStream inputStream = BeamFileInputStream.open(privateKeyUri)) {
         String serializedKey = new String(IOUtils.toByteArray(inputStream));
         PublicJsonWebKey key = PublicJsonWebKey.Factory.newPublicJwk(serializedKey);
         tempKeys.put(namespace, key.getPrivateKey());
       } catch (IOException e) {
-        // TODO: interpolate specific information from the metadata.
-        throw new IOException("Exception thrown while reading key specified by metadata.");
+        throw new IOException("Exception thrown while reading key specified by metadata.", e);
       } catch (JoseException e) {
         throw new RuntimeException(e);
       }
