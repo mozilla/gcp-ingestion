@@ -67,6 +67,9 @@
             <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
             <version>${beam.version}</version>
         </dependency>
+        <!-- The latest stable version of cloud kms is 1.38.0 at the time of writing. There are
+            conflicts in the dependencies (com.google.api.gax.grpc) that cause issues with
+            authentication. The latest beta resolves these issues. -->
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-kms</artifactId>
