@@ -378,10 +378,9 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
                 repeatedAdditionalProperties.addObject();
               }
             } else {
-              // BigQuery cannot load null values into an array, so we insert an empty object
-              // instead.
+              // BigQuery only allows objects in this array, so we insert an empty object instead.
               filteredValue.addObject();
-              repeatedAdditionalProperties.addNull();
+              repeatedAdditionalProperties.add(record);
             }
           }
           value = filteredValue;

@@ -357,9 +357,9 @@ public class PubsubMessageToTableRow implements Serializable {
               repeatedAdditionalProperties.add(Collections.emptyMap());
             }
           } else {
-            // BigQuery cannot load null values into an array, so we insert an empty object instead.
+            // BigQuery only allows maps in this array, so we insert an empty map instead.
             filteredRecords.add(Collections.emptyMap());
-            repeatedAdditionalProperties.add(null);
+            repeatedAdditionalProperties.add(untypedRecord);
           }
         });
         parent.put(name, filteredRecords);
