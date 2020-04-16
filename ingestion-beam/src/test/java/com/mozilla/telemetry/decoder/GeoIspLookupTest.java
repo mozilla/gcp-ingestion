@@ -79,7 +79,7 @@ public class GeoIspLookupTest {
             .addNameFilter(MetricNameFilter.inNamespace(GeoIspLookup.Fn.class)).build())
         .getCounters());
 
-    assertEquals(1, counters.size());
+    assertEquals(4, counters.size());
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
