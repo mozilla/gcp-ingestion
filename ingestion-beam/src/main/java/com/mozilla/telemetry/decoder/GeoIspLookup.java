@@ -77,12 +77,12 @@ public class GeoIspLookup
 
     private transient DatabaseReader ispReader;
 
-    private final Counter foundIp = Metrics.counter(GeoCityLookup.Fn.class, "found_ip");
+    private final Counter foundIp = Metrics.counter(GeoIspLookup.Fn.class, "found_ip");
     private final Counter countIspAlreadyApplied = Metrics.counter(Fn.class, "isp_already_applied");
     private final Counter foundIsp = Metrics.counter(Fn.class, "found_isp");
-    private final Counter countIpForwarded = Metrics.counter(GeoCityLookup.Fn.class,
+    private final Counter countIpForwarded = Metrics.counter(GeoIspLookup.Fn.class,
         "ip_from_x_forwarded_for");
-    private final Counter countIpRemoteAddr = Metrics.counter(GeoCityLookup.Fn.class,
+    private final Counter countIpRemoteAddr = Metrics.counter(GeoIspLookup.Fn.class,
         "ip_from_remote_addr");
 
     @Override
