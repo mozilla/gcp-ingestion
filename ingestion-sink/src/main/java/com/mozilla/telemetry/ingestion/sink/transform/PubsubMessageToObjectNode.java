@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
 public abstract class PubsubMessageToObjectNode implements Function<PubsubMessage, ObjectNode> {
 
   private static final Base64.Encoder BASE64_ENCODER = Base64.getEncoder();
+  private static final ObjectNode EMPTY_OBJECT = Json.createObjectNode();
 
   public static class Raw extends PubsubMessageToObjectNode {
 
@@ -361,22 +362,30 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
             if (!Json.isNullOrEmpty(props)) {
               repeatedAdditionalProperties.add(props.get(jsonFieldName));
             } else {
-              repeatedAdditionalProperties.addNull();
+              repeatedAdditionalProperties.addObject();
             }
           }
         } else {
+          ArrayNode filteredValue = Json.createArrayNode();
           for (JsonNode record : value) {
             final ObjectNode props = additionalProperties == null ? null : Json.createObjectNode();
-            transformForBqSchema((ObjectNode) record, field.getSubFields(), props);
-            if (!Json.isNullOrEmpty(props)) {
-              repeatedAdditionalProperties.add(props);
+            if (record.isObject()) {
+              filteredValue.add(record);
+              transformForBqSchema((ObjectNode) record, field.getSubFields(), props);
+              if (!Json.isNullOrEmpty(props)) {
+                repeatedAdditionalProperties.add(props);
+              } else {
+                repeatedAdditionalProperties.addObject();
+              }
             } else {
-              repeatedAdditionalProperties.addNull();
+              // BigQuery only allows objects in this array, so we insert an empty object instead.
+              filteredValue.addObject();
+              repeatedAdditionalProperties.add(record);
             }
           }
+          value = filteredValue;
         }
-
-        if (!Streams.stream(repeatedAdditionalProperties).allMatch(JsonNode::isNull)) {
+        if (!Streams.stream(repeatedAdditionalProperties).allMatch(EMPTY_OBJECT::equals)) {
           additionalProperties.set(jsonFieldName, repeatedAdditionalProperties);
         }
         updateParent(parent, name, value);

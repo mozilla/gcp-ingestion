@@ -394,7 +394,7 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
 
-    String expectedAdditional = "{\"payload\":[null,{\"b\":22},null]}";
+    String expectedAdditional = "{\"payload\":[{},{\"b\":22},{}]}";
     assertEquals(expectedAdditional, Json.asString(additionalProperties));
   }
 
@@ -482,7 +482,25 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
 
-    String expectedAdditional = "{\"payload\":[null,[null,{\"b\":4}]]}";
+    String expectedAdditional = "{\"payload\":[null,[{},{\"b\":4}]]}";
+    assertEquals(expectedAdditional, Json.asString(additionalProperties));
+  }
+
+  @Test
+  public void testListWithNulls() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(
+        ("{\"modules\":[{\"base_addr\":\"0x1390000\"},null]}").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field
+        .newBuilder("modules", LegacySQLTypeName.RECORD,
+            Field.of("base_addr", LegacySQLTypeName.STRING)) //
+        .setMode(Mode.REPEATED).build() //
+    ); //
+    String expected = "{\"modules\":[{\"base_addr\":\"0x1390000\"},{}]}";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+
+    String expectedAdditional = "{\"modules\":[{},null]}";
     assertEquals(expectedAdditional, Json.asString(additionalProperties));
   }
 
