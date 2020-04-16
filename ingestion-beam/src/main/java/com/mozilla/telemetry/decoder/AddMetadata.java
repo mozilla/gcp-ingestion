@@ -35,6 +35,9 @@ public class AddMetadata {
   private static final String GEO = "geo";
   private static final String GEO_PREFIX = GEO + "_";
 
+  private static final String ISP = "isp";
+  private static final String ISP_PREFIX = ISP + "_";
+
   private static final String USER_AGENT_PREFIX = Attribute.USER_AGENT + "_";
 
   private static final String HEADER = "header";
@@ -123,6 +126,7 @@ public class AddMetadata {
     // are not specifically Map<String, String>.
     ObjectNode metadata = Json.createObjectNode();
     metadata.set(GEO, geoFromAttributes(attributes));
+    metadata.set(ISP, ispFromAttributes(attributes));
     metadata.set(Attribute.USER_AGENT, userAgentFromAttributes(attributes));
     metadata.set(HEADER, headersFromAttributes(attributes));
     if (ParseUri.TELEMETRY.equals(namespace)) {
@@ -166,6 +170,7 @@ public class AddMetadata {
         .map(ObjectNode.class::cast) //
         .ifPresent(metadata -> {
           putGeoAttributes(attributes, metadata);
+          putIspAttributes(attributes, metadata);
           putUserAgentAttributes(attributes, metadata);
           putHeaderAttributes(attributes, metadata);
           putUriAttributes(attributes, metadata);
@@ -195,6 +200,18 @@ public class AddMetadata {
 
   static void putGeoAttributes(Map<String, String> attributes, ObjectNode metadata) {
     putAttributes(attributes, metadata, GEO, GEO_PREFIX);
+  }
+
+  private static ObjectNode ispFromAttributes(Map<String, String> attributes) {
+    ObjectNode isp = Json.createObjectNode();
+    attributes.keySet().stream() //
+        .filter(k -> k.startsWith(ISP_PREFIX)) //
+        .forEach(k -> isp.put(k.substring(4), attributes.get(k)));
+    return isp;
+  }
+
+  static void putIspAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, ISP, ISP_PREFIX);
   }
 
   static ObjectNode userAgentFromAttributes(Map<String, String> attributes) {
