@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +44,7 @@ public class GcsWriteTest {
   public void mockBigQueryResponse() {
     storage = mock(Storage.class);
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
-        PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
+        ForkJoinPool.commonPool(), PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
   }
 
   @Test
@@ -57,7 +58,8 @@ public class GcsWriteTest {
   @Test
   public void canSendWithNoDelay() {
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
-        BATCH_KEY_TEMPLATE, PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
+        BATCH_KEY_TEMPLATE, ForkJoinPool.commonPool(), PubsubMessageToObjectNode.Raw.of(),
+        this::batchCloseHook);
     output.apply(EMPTY_MESSAGE).join();
     assertEquals(1, output.batches.get(BATCH_KEY).size);
     assertEquals(EMPTY_MESSAGE_SIZE, output.batches.get(BATCH_KEY).byteSize);

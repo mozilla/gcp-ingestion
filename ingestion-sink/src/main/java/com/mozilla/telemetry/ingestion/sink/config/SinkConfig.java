@@ -23,6 +23,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -61,6 +63,10 @@ public class SinkConfig {
       STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
       STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
 
+  // Executor for CompletableFuture::*Async to use instead of ForkJoinPool.commonPool(), because
+  // the default parallelism is 1 in stage and prod.
+  private static final Executor DEFAULT_EXECUTOR = new ForkJoinPool(
+      Math.max(Runtime.getRuntime().availableProcessors() * 2, 10));
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
   // 10MB API limit by default.
@@ -85,7 +91,7 @@ public class SinkConfig {
   // to have a total pipeline delay (including edge and decoder) of less than 1 hour, and ideally
   // less than 10 minutes, so this plus DEFAULT_LOAD_MAX_DELAY should be less than 10 minutes.
   // Messages may be kept in memory until they ack or nack, so too much delay can cause OOM errors.
-  private static final String DEFAULT_BATCH_MAX_DELAY = "10s"; // 10 seconds
+  private static final String DEFAULT_BATCH_MAX_DELAY = "1m"; // 1 minute
   // BigQuery Load API limits maximum bytes per request to 15TB, but load requests for clustered
   // tables fail when sorting that much data, so to avoid that issue the default is lower.
   private static final long DEFAULT_LOAD_MAX_BYTES = 100_000_000_000L; // 100GB
@@ -134,10 +140,8 @@ public class SinkConfig {
 
       @Override
       Output getOutput(Env env) {
-        return new Output(env, this,
-            new Pubsub.Write(env.getString(OUTPUT_TOPIC),
-                env.getInt(OUTPUT_TOPIC_EXECUTOR_THREADS, 1), b -> b,
-                getOutputCompression(env))::withoutResult);
+        return new Output(env, this, new Pubsub.Write(env.getString(OUTPUT_TOPIC), DEFAULT_EXECUTOR,
+            b -> b, getOutputCompression(env))::withoutResult);
       }
     },
 
@@ -150,8 +154,9 @@ public class SinkConfig {
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
-                PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), getFormat(env),
-                ignore -> CompletableFuture.completedFuture(null)).withOpenCensusMetrics());
+                PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), DEFAULT_EXECUTOR,
+                getFormat(env), ignore -> CompletableFuture.completedFuture(null))
+                    .withOpenCensusMetrics());
       }
     },
 
@@ -163,7 +168,7 @@ public class SinkConfig {
             new BigQuery.Load(getBigQueryService(env), getGcsService(env),
                 env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
                 env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-                env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY),
+                env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), DEFAULT_EXECUTOR,
                 // don't delete files until successfully loaded
                 BigQuery.Load.Delete.onSuccess).withOpenCensusMetrics());
       }
@@ -180,7 +185,7 @@ public class SinkConfig {
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
                 PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
-                getFormat(env),
+                DEFAULT_EXECUTOR, getFormat(env),
                 // BigQuery Load API limits maximum load requests per table per day to 1,000 so send
                 // blobInfo to pubsub and require loads be run separately to reduce maximum latency
                 blobInfo -> pubsubWrite.apply(BlobInfoToPubsubMessage.apply(blobInfo)))
@@ -198,7 +203,7 @@ public class SinkConfig {
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
                 PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
-                getFormat(env)).withOpenCensusMetrics());
+                DEFAULT_EXECUTOR, getFormat(env)).withOpenCensusMetrics());
       }
     },
 
@@ -217,7 +222,7 @@ public class SinkConfig {
           bigQueryLoad = new BigQuery.Load(bigQuery, storage,
               env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
               env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-              env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY),
+              env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY), DEFAULT_EXECUTOR,
               // files will be recreated if not successfully loaded
               BigQuery.Load.Delete.always).withOpenCensusMetrics();
         }
@@ -227,15 +232,16 @@ public class SinkConfig {
             env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
             env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
-            getFormat(env), blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)))
+            DEFAULT_EXECUTOR, getFormat(env),
+            blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)))
                 .withOpenCensusMetrics();
         // Like bigQueryStreaming, but use STREAMING_ prefix env vars for batch configuration
         Function<PubsubMessage, CompletableFuture<Void>> streamingOutput = new BigQuery.Write(
             bigQuery, env.getLong(STREAMING_BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
             env.getInt(STREAMING_BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
             env.getDuration(STREAMING_BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
-            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)), getFormat(env))
-                .withOpenCensusMetrics();
+            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
+            DEFAULT_EXECUTOR, getFormat(env)).withOpenCensusMetrics();
         // fallbackOutput sends messages to fileOutput when rejected by streamingOutput due to size
         Function<PubsubMessage, CompletableFuture<Void>> fallbackOutput = message -> streamingOutput
             .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
@@ -371,7 +377,7 @@ public class SinkConfig {
             .setMaxOutstandingElementCount(output.type.getMaxOutstandingElementCount(output.env))
             .setMaxOutstandingRequestBytes(output.type.getMaxOutstandingRequestBytes(output.env))
             .build()),
-        getInputCompression(output.env));
+        getInputCompression(output.env), DEFAULT_EXECUTOR);
     output.env.requireAllVarsUsed();
     // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
     // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/

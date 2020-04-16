@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -80,18 +81,20 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
   private final MeasureLong totalMessages;
 
   protected final PubsubMessageToTemplatedString batchKeyTemplate;
+  protected final Executor executor;
 
   private final long maxBytes;
   private final int maxMessages;
-  private final long maxDelayMillis;
+  private final Duration maxDelay;
 
   /** Constructor. */
   public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
-      PubsubMessageToTemplatedString batchKeyTemplate) {
+      PubsubMessageToTemplatedString batchKeyTemplate, Executor executor) {
     this.maxBytes = maxBytes;
     this.maxMessages = maxMessages;
-    this.maxDelayMillis = maxDelay.toMillis();
+    this.maxDelay = maxDelay;
     this.batchKeyTemplate = batchKeyTemplate;
+    this.executor = executor;
 
     // create OpenCensus measures with a class name prefix
     final String shortClassName = this.getClass().getName().replaceAll(".*[.]", "");
@@ -164,17 +167,16 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
 
   public abstract class Batch {
 
-    // block this batch from completing by timeout until this future is resolved
+    // block this batch from completing by timeout until this future is completed
     final CompletableFuture<Void> init = new CompletableFuture<>();
 
-    // wait for init then setup full indicator by timeout
+    // wait for init then mark this batch full after maxDelay
     @VisibleForTesting
-    final CompletableFuture<Void> full = init.thenRunAsync(this::timeout)
-        .exceptionally(ignore -> null);
+    final CompletableFuture<Void> full = init.thenComposeAsync(v -> new TimedFuture(maxDelay));
 
     // wait for full then synchronize and close
     private final CompletableFuture<BatchResultT> result = full
-        .thenComposeAsync(this::synchronousClose);
+        .thenComposeAsync(this::synchronousClose, executor);
 
     @VisibleForTesting
     public int size = 0;
@@ -183,14 +185,6 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     public long byteSize = 0;
 
     private final long startNanos = System.nanoTime();
-
-    private void timeout() {
-      try {
-        Thread.sleep(maxDelayMillis);
-      } catch (InterruptedException e) {
-        // this is fine
-      }
-    }
 
     /**
      * Call close from a synchronized context.
@@ -214,7 +208,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
       byteSize = newByteSize;
       write(encodedInput);
       return Optional
-          .of(result.thenAcceptAsync(result -> this.checkResultFor(result, newSize - 1)));
+          .of(result.thenAcceptAsync(result -> this.checkResultFor(result, newSize - 1), executor));
     }
 
     protected void checkResultFor(BatchResultT batchResult, int index) {
