@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -exo pipefail
+
+PROJECT="moz-fx-data-backfill-14"
+JOB_NAME="direct-read-test1"
+
+mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.SimpleSink -Dexec.args="\
+    --runner=Dataflow \
+    --jobName=$JOB_NAME \
+    --project=$PROJECT  \
+    --inputType=bigquery_table \
+    --input=moz-fx-data-shared-prod:payload_bytes_decoded.telemetry_telemetry__main_v4 \
+    --bqReadMethod=storageapi \
+    --bqRowRestriction=\"CAST(submission_timestamp AS DATE) = '2020-04-15'\" \
+    --outputType=bigquery \
+    --bqWriteMethod=file_loads \
+    --bqClusteringFields=normalized_channel,sample_id \
+    --output=${PROJECT}:\${document_namespace}_stable.\${document_type}_v\${document_version} \
+    --outputTableRowFormat=payload \
+    --errorOutputType=bigquery \
+    --errorOutput=${PROJECT}:payload_bytes_error.telemetry \
+    --schemasLocation=gs://moz-fx-data-prod-dataflow/schemas/202004150152_0d9902a.tar.gz \
+    --experiments=shuffle_mode=service \
+    --region=us-central1 \
+    --usePublicIps=false \
+    --gcsUploadBufferSizeBytes=16777216 \
+"
