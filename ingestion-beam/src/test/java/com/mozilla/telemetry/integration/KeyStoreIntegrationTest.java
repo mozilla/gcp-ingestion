@@ -3,7 +3,6 @@ package com.mozilla.telemetry.integration;
 import static org.junit.Assert.assertEquals;
 
 import com.google.api.gax.rpc.NotFoundException;
-import com.google.cloud.kms.v1.AsymmetricDecryptResponse;
 import com.google.cloud.kms.v1.CryptoKey;
 import com.google.cloud.kms.v1.CryptoKeyName;
 import com.google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionAlgorithm;
@@ -40,8 +39,7 @@ import org.junit.rules.TemporaryFolder;
 /**
  * Test the KeyStore using Google Cloud KMS.
  *
- * <p>
- * First, resources are staged in a local temporary folder. Here, we encrypt the
+ * <p>First, resources are staged in a local temporary folder. Here, we encrypt the
  * keys using KMS. Then we synchronize the folder with a temporary bucket
  * created in GCS. We programmatically generate a metadata file that we will
  * test. Finally we cover all code paths related to decrypting the private keys.
@@ -51,6 +49,7 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
   private Storage storage;
   private String projectId;
   private String bucket;
+  private final String keyRingId = "test-ingestion-beam-integration";
 
   @Rule
   public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -71,8 +70,42 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
     RemoteStorageHelper.forceDelete(storage, bucket, 5, TimeUnit.SECONDS);
   }
 
+  private void ensureKmsResources(KeyManagementServiceClient client, String resourceId) {
+    CryptoKeyVersionName name = CryptoKeyVersionName.parse(resourceId);
+    assertEquals(projectId, name.getProject());
+    assertEquals("global", name.getLocation());
+    assertEquals(keyRingId, name.getKeyRing());
+
+    // getOrCreateKeyRing
+    KeyRingName keyRingName = KeyRingName.of(projectId, "global", name.getKeyRing());
+    try {
+      client.getKeyRing(keyRingName);
+    } catch (NotFoundException e) {
+      LocationName parent = LocationName.of(projectId, "global");
+      KeyRing request = KeyRing.newBuilder().build();
+      client.createKeyRing(parent, name.getCryptoKey(), request);
+    }
+
+    // getOrCreateCryptoKey
+    CryptoKeyName cryptoKeyName = CryptoKeyName.of(projectId, "global", name.getKeyRing(),
+        name.getCryptoKey());
+    try {
+      client.getCryptoKey(cryptoKeyName);
+    } catch (NotFoundException e) {
+      CryptoKey request = CryptoKey.newBuilder()
+          .setPurpose(CryptoKey.CryptoKeyPurpose.ASYMMETRIC_DECRYPT)
+          .setVersionTemplate(CryptoKeyVersionTemplate.newBuilder()
+              .setAlgorithm(CryptoKeyVersionAlgorithm.RSA_DECRYPT_OAEP_2048_SHA256))
+          .build();
+      client.createCryptoKey(keyRingName, name.getCryptoKey(), request);
+    }
+  }
+
   /**
-   * https://stackoverflow.com/questions/17110217/is-rsa-pkcs1-oaep-padding-supported-in-bouncycastle
+   * Encrypt data using another library since Cloud KMS does not support
+   * encryption using asymmetric keys.
+   *
+   * <p>https://stackoverflow.com/questions/17110217/is-rsa-pkcs1-oaep-padding-supported-in-bouncycastle
    * https://www.bouncycastle.org/docs/docs1.5on/index.html
    */
   private byte[] encrypt(PublicKey publicKey, byte[] data)
@@ -87,48 +120,28 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
     }
   }
 
+  /**
+   * Ensure KMS permissions are configured as expected. This ensures a key ring
+   * and crypto key exist. It then fetches the public key associated to the
+   * crypto key and encodes a small string. Then the KMS api is called to
+   * decrypt the message. This test (and following tests) require Cloud KMS
+   * Admin, CryptoKey Decrypter, and Public Key Viewer.
+   */
   @Test
-  public void testKeyRing() throws IOException, InvalidCipherTextException {
+  public void testKmsConfigured() throws IOException, InvalidCipherTextException {
     try (KeyManagementServiceClient client = KeyManagementServiceClient.create()) {
-      // Generate the keyring
-      // KeyRings and Keys cannot be deleted, so reuse resources
-      String keyRingId = "test-ingestion-beam-integration";
-      String keyName = "testing-key";
+      String plainText = "hello world!";
 
-      KeyRingName keyRingName = KeyRingName.of(projectId, "global", keyRingId);
-
-      try {
-        client.getKeyRing(keyRingName);
-      } catch (NotFoundException e) {
-        LocationName parent = LocationName.of(projectId, "global");
-        KeyRing request = KeyRing.newBuilder().build();
-        client.createKeyRing(parent, keyRingId, request);
-      }
-
-      try {
-        String resourceId = CryptoKeyName.of(projectId, "global", keyRingId, keyName).toString();
-        client.getCryptoKey(resourceId);
-      } catch (NotFoundException e) {
-        CryptoKey request = CryptoKey.newBuilder()
-            .setPurpose(CryptoKey.CryptoKeyPurpose.ASYMMETRIC_DECRYPT)
-            .setVersionTemplate(CryptoKeyVersionTemplate.newBuilder()
-                .setAlgorithm(CryptoKeyVersionAlgorithm.RSA_DECRYPT_OAEP_2048_SHA256))
-            .build();
-        client.createCryptoKey(keyRingName, keyName, request);
-      }
-
-      byte[] plaintext = "hello world".getBytes();
-      String resourceId = CryptoKeyVersionName.of(projectId, "global", keyRingId, keyName, "1")
+      String cryptoKeyId = "testing-key";
+      String resourceId = CryptoKeyVersionName.of(projectId, "global", keyRingId, cryptoKeyId, "1")
           .toString();
-      // Public key must be versioned, so always work with the first version of the key
-      // This requires viewPublicKey permission, not included as KMS admin
-      PublicKey publicKey = client.getPublicKey(resourceId);
-      byte[] ciphertext = encrypt(publicKey, plaintext);
+      ensureKmsResources(client, resourceId);
 
-      // decrypt the data
-      AsymmetricDecryptResponse decrypted = client.asymmetricDecrypt(resourceId,
-          ByteString.copyFrom(ciphertext));
-      assertEquals("hello world", decrypted.getPlaintext().toStringUtf8());
+      byte[] cipherText = encrypt(client.getPublicKey(resourceId), plainText.getBytes("UTF-8"));
+      String decrypted = client.asymmetricDecrypt(resourceId, ByteString.copyFrom(cipherText))
+          .getPlaintext().toStringUtf8();
+
+      assertEquals(plainText, decrypted);
     }
   }
 
