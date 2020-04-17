@@ -69,7 +69,7 @@ def decrypt(key: jwk.JWK, path: Path):
 
 
 def main():
-    for study_id in ["study_foo", "study_bar"]:
+    for study_id in ["study-foo", "study-bar"]:
         key = generate_jwk(pioneer, study_id)
 
         with (pioneer / "sample.plaintext.json").open("r") as fp:

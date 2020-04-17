@@ -10,14 +10,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.api.gax.rpc.NotFoundException;
 import com.google.cloud.kms.v1.CryptoKey;
 import com.google.cloud.kms.v1.CryptoKeyName;
-import com.google.cloud.kms.v1.CryptoKeyVersion.CryptoKeyVersionAlgorithm;
-import com.google.cloud.kms.v1.CryptoKeyVersionName;
-import com.google.cloud.kms.v1.CryptoKeyVersionTemplate;
 import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.cloud.kms.v1.KeyRing;
 import com.google.cloud.kms.v1.KeyRingName;
 import com.google.cloud.kms.v1.LocationName;
-import com.google.cloud.kms.v1.PublicKey;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.testing.RemoteStorageHelper;
@@ -29,27 +25,15 @@ import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.KeyStore;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.nio.charset.Charset;
 import java.security.PrivateKey;
 import java.util.concurrent.TimeUnit;
 import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.fs.ResourceId;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.util.MimeTypes;
-import org.apache.commons.io.IOUtils;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.encodings.OAEPEncoding;
-import org.bouncycastle.crypto.engines.RSAEngine;
-import org.bouncycastle.crypto.params.AsymmetricKeyParameter;
-import org.bouncycastle.crypto.util.PublicKeyFactory;
-import org.bouncycastle.util.io.pem.PemReader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -96,7 +80,7 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
    * this function with caution.
    */
   private void ensureKmsResources(KeyManagementServiceClient client, String resourceId) {
-    CryptoKeyVersionName name = CryptoKeyVersionName.parse(resourceId);
+    CryptoKeyName name = CryptoKeyName.parse(resourceId);
     assertEquals(projectId, name.getProject());
     assertEquals("global", name.getLocation());
     assertEquals(keyRingId, name.getKeyRing());
@@ -118,31 +102,19 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
       client.getCryptoKey(cryptoKeyName);
     } catch (NotFoundException e) {
       CryptoKey request = CryptoKey.newBuilder()
-          .setPurpose(CryptoKey.CryptoKeyPurpose.ASYMMETRIC_DECRYPT)
-          .setVersionTemplate(CryptoKeyVersionTemplate.newBuilder()
-              .setAlgorithm(CryptoKeyVersionAlgorithm.RSA_DECRYPT_OAEP_2048_SHA256))
-          .build();
+          .setPurpose(CryptoKey.CryptoKeyPurpose.ENCRYPT_DECRYPT).build();
       client.createCryptoKey(keyRingName, name.getCryptoKey(), request);
     }
   }
 
-  /**
-   * Encrypt data using another library since Cloud KMS does not support
-   * encryption using asymmetric keys.
-   *
-   * <p>https://stackoverflow.com/questions/17110217/is-rsa-pkcs1-oaep-padding-supported-in-bouncycastle
-   * https://www.bouncycastle.org/docs/docs1.5on/index.html
-   */
-  private byte[] encrypt(PublicKey publicKey, byte[] data)
-      throws IOException, InvalidCipherTextException {
-    try (InputStream inputStream = IOUtils.toInputStream(publicKey.getPem(), "UTF-8");
-        PemReader pemReader = new PemReader(new InputStreamReader(inputStream))) {
-      AsymmetricKeyParameter param = PublicKeyFactory
-          .createKey(pemReader.readPemObject().getContent());
-      OAEPEncoding cipher = new OAEPEncoding(new RSAEngine(), new SHA256Digest());
-      cipher.init(true, param);
-      return cipher.processBlock(data, 0, data.length);
-    }
+  private byte[] encrypt(KeyManagementServiceClient client, String resourceId, byte[] data)
+      throws Exception {
+    return client.encrypt(resourceId, ByteString.copyFrom(data)).getCiphertext().toByteArray();
+  }
+
+  private byte[] decrypt(KeyManagementServiceClient client, String resourceId, byte[] data)
+      throws Exception {
+    return client.decrypt(resourceId, ByteString.copyFrom(data)).getPlaintext().toByteArray();
   }
 
   /**
@@ -190,7 +162,7 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
       if (shouldEncrypt) {
         try (KeyManagementServiceClient client = KeyManagementServiceClient.create()) {
           ensureKmsResources(client, kmsResourceId);
-          byte[] encryptedKey = encrypt(client.getPublicKey(kmsResourceId), key);
+          byte[] encryptedKey = encrypt(client, kmsResourceId, key);
           writeToStorage(privateKeyUri, encryptedKey);
         }
       } else {
@@ -214,18 +186,15 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
    */
   @Test
   public void testKmsConfigured() throws Exception {
+    // encrypt a realistically sized payload
+    byte[] plainText = Resources
+        .toByteArray(Resources.getResource("pioneer/study-foo.private.json"));
+    String cryptoKeyId = "test-kms-configured";
+    String resourceId = CryptoKeyName.of(projectId, "global", keyRingId, cryptoKeyId).toString();
     try (KeyManagementServiceClient client = KeyManagementServiceClient.create()) {
-      String plainText = "hello world!";
-
-      String cryptoKeyId = "testing-key";
-      String resourceId = CryptoKeyVersionName.of(projectId, "global", keyRingId, cryptoKeyId, "1")
-          .toString();
       ensureKmsResources(client, resourceId);
-
-      byte[] cipherText = encrypt(client.getPublicKey(resourceId), plainText.getBytes("UTF-8"));
-      String decrypted = client.asymmetricDecrypt(resourceId, ByteString.copyFrom(cipherText))
-          .getPlaintext().toStringUtf8();
-
+      byte[] cipherText = encrypt(client, resourceId, plainText);
+      byte[] decrypted = decrypt(client, resourceId, cipherText);
       assertEquals(plainText, decrypted);
     }
   }
@@ -234,20 +203,19 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
   public void testKeyStoreReadsPlaintextPrivateKeyFromCloudStorage() throws Exception {
     String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json", false);
     KeyStore store = KeyStore.of(keyStoreMetadata);
-    assertNotEquals(null, store.getKey("study_foo"));
-    assertNotEquals(null, store.getKey("study_bar"));
+    assertNotEquals(null, store.getKey("study-foo"));
+    assertNotEquals(null, store.getKey("study-bar"));
   }
 
   @Test
   public void testKeyStoreEncryptedKeysCanDecryptPayload() throws Exception {
     String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json", true);
     KeyStore store = KeyStore.of(keyStoreMetadata);
-    PrivateKey key = store.getKey("study_foo");
-    String data = Resources.toString(Resources.getResource("pioneer/study_foo.ciphertext.json"),
-        Charset.defaultCharset());
-    String expect = Resources.toString(Resources.getResource("pioneer/study_foo.plaintext.json"),
-        Charset.defaultCharset());
-    String actual = new String(DecryptPioneerPayloads.decrypt(key, data));
+    PrivateKey key = store.getKey("study-foo");
+    byte[] data = Resources.toByteArray(Resources.getResource("pioneer/study-foo.ciphertext.json"));
+    byte[] expect = Resources
+        .toByteArray(Resources.getResource("pioneer/study-foo.plaintext.json"));
+    byte[] actual = DecryptPioneerPayloads.decrypt(key, new String(data));
     assertEquals(expect, actual);
   }
 }

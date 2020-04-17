@@ -1,12 +1,12 @@
 [
     {
         "document_namespace": "study_foo",
-        "kms_resource_id": "projects/DUMMY_PROJECT_ID/locations/global/keyRings/test-ingestion-beam-integration/cryptoKeys/study_foo/cryptoKeyVersions/1",
-        "private_key_uri": "src/test/resources/pioneer/study_foo.private.json"
+        "kms_resource_id": "projects/DUMMY_PROJECT_ID/locations/global/keyRings/test-ingestion-beam-integration/cryptoKeys/study-foo",
+        "private_key_uri": "src/test/resources/pioneer/study-foo.private.json"
     },
     {
         "document_namespace": "study_bar",
-        "kms_resource_id": "projects/DUMMY_PROJECT_ID/locations/global/keyRings/test-ingestion-beam-integration/cryptoKeys/study_bar/cryptoKeyVersions/1",
-        "private_key_uri": "src/test/resources/pioneer/study_bar.private.json"
+        "kms_resource_id": "projects/DUMMY_PROJECT_ID/locations/global/keyRings/test-ingestion-beam-integration/cryptoKeys/study-bar",
+        "private_key_uri": "src/test/resources/pioneer/study-bar.private.json"
     }
 ]

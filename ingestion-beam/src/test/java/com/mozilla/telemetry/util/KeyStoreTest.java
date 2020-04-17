@@ -28,9 +28,9 @@ public class KeyStoreTest {
   public void testGetKey() {
     String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
     KeyStore store = KeyStore.of(metadataLocation);
-    assertNotEquals(null, store.getKey("study_foo"));
-    assertNotEquals(null, store.getKey("study_bar"));
-    assertEquals(null, store.getKey("invalid_document_name"));
+    assertNotEquals(null, store.getKey("study-foo"));
+    assertNotEquals(null, store.getKey("study-bar"));
+    assertEquals(null, store.getKey("invalid-document-namespace"));
   }
 
 }

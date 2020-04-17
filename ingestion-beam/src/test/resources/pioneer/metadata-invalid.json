@@ -1,6 +1,6 @@
 [
     {
         "document_namespace": "pioneer",
-        "private_key_uri": "src/test/resources/pioneer/study_foo.private.json"
+        "private_key_uri": "src/test/resources/pioneer/study-foo.private.json"
     }
 ]
