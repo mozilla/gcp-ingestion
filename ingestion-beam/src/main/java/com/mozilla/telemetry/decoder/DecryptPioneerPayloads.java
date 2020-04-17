@@ -52,6 +52,17 @@ public class DecryptPioneerPayloads extends
         }));
   }
 
+  /**
+   * Decrypt a payload encoded in a compact serialization of JSON Web Encryption (JWE).
+   */
+  public static byte[] decrypt(PrivateKey key, String payload) throws JoseException {
+    JsonWebEncryption jwe = new JsonWebEncryption();
+    jwe.setKey(key);
+    jwe.setContentEncryptionKey(key.getEncoded());
+    jwe.setCompactSerialization(payload);
+    return jwe.getPlaintextBytes();
+  }
+
   private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
 
     @Override
@@ -62,16 +73,11 @@ public class DecryptPioneerPayloads extends
         keyStore = KeyStore.of(metadataLocation.get());
       }
 
-      // TODO: count per doctype errors
       ObjectNode json = Json.readObjectNode(message.getPayload());
-
       PrivateKey key = keyStore.getKey(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
-      JsonWebEncryption jwe = new JsonWebEncryption();
-      jwe.setKey(key);
-      jwe.setContentEncryptionKey(key.getEncoded());
-      jwe.setCompactSerialization(json.get("payload").asText());
-      return Collections
-          .singletonList(new PubsubMessage(jwe.getPlaintextBytes(), message.getAttributeMap()));
+
+      byte[] decrypted = decrypt(key, json.get("payload").asText());
+      return Collections.singletonList(new PubsubMessage(decrypted, message.getAttributeMap()));
     }
   }
 }
