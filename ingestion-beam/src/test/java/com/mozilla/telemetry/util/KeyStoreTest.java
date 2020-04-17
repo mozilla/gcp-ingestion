@@ -19,16 +19,17 @@ public class KeyStoreTest {
 
   @Test
   public void testNumKeys() {
-    String metadataLocation = Resources.getResource("pioneer/metadata-simple.json").getPath();
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
     KeyStore store = KeyStore.of(metadataLocation);
-    assertEquals(1, store.numLoadedKeys());
+    assertEquals(2, store.numLoadedKeys());
   }
 
   @Test
   public void testGetKey() {
-    String metadataLocation = Resources.getResource("pioneer/metadata-simple.json").getPath();
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
     KeyStore store = KeyStore.of(metadataLocation);
-    assertNotEquals(null, store.getKey("pioneer"));
+    assertNotEquals(null, store.getKey("study_foo"));
+    assertNotEquals(null, store.getKey("study_bar"));
     assertEquals(null, store.getKey("invalid_document_name"));
   }
 

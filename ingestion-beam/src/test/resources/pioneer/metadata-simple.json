@@ -1,7 +1,0 @@
-[
-    {
-        "document_namespace": "pioneer",
-        "kms_resource_id": "",
-        "private_key_uri": "src/test/resources/pioneer/id_rsa_0.private.json"
-    }
-]

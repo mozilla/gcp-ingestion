@@ -65,21 +65,21 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   public void testOutput() {
     // minimal test for throughput of a single document
     ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-simple.json").getPath());
-    final List<String> input = readTestFiles(Arrays.asList("pioneer/sample.ciphertext.json"));
+        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
+    final List<String> input = readTestFiles(Arrays.asList("pioneer/study_foo.ciphertext.json"));
 
     PCollection<String> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of("document_namespace", "pioneer", "document_type", "test",
+                    ImmutableMap.of("document_namespace", "study_foo", "document_type", "test",
                         "document_version", "1"))))
         .apply(DecryptPioneerPayloads.of(metadataLocation)).output()
         .apply(DecompressPayload.enabled(pipeline.newProvider(true)))
         .apply(OutputFileFormat.text.encode()).apply(ReformatJson.of());
 
-    final List<String> expectedMain = readTestFiles(Arrays.asList("pioneer/sample.cleartext.json"));
+    final List<String> expectedMain = readTestFiles(Arrays.asList("pioneer/sample.plaintext.json"));
     PAssert.that(output).containsInAnyOrder(expectedMain);
 
     pipeline.run();

@@ -69,16 +69,17 @@ def decrypt(key: jwk.JWK, path: Path):
 
 
 def main():
-    key0 = generate_jwk(pioneer, "id_rsa_0")
-    with (pioneer / "sample.cleartext.json").open("r") as fp:
-        sample = json.load(fp)
-    print(sample)
+    for study_id in ["study_foo", "study_bar"]:
+        key = generate_jwk(pioneer, study_id)
 
-    path = pioneer / "sample.ciphertext.json"
-    encrypt(sample, key0, path)
-    result = decrypt(key0, path)
+        with (pioneer / "sample.plaintext.json").open("r") as fp:
+            sample = json.load(fp)
 
-    assert sample == result, "payload does not match"
+        path = pioneer / f"{study_id}.ciphertext.json"
+        encrypt(sample, key, path)
+        result = decrypt(key, path)
+
+        assert sample == result, "payload does not match"
 
 
 if __name__ == "__main__":
