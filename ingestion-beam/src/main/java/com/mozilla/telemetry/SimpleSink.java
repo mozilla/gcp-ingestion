@@ -16,8 +16,12 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.TypeDescriptors;
 import org.apache.commons.compress.utils.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SimpleSink {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SimpleSink.class);
 
   /**
    * Execute an Apache Beam pipeline.
@@ -58,7 +62,10 @@ public class SimpleSink {
             // Throws IOException
             IOUtils.copy(gzipStream, decompressedStream);
             decompressedPayload = decompressedStream.toByteArray();
-          } catch (IOException ignore) {
+          } catch (IOException e) {
+            LOG.error("Exception raised while attempting to decompress payload with timestamp "
+                + message.getAttribute("submission_timestamp") + " and observed length "
+                + message.getPayload().length, e);
             decompressedPayload = message.getPayload();
           }
           final ObjectNode json;
@@ -67,7 +74,8 @@ public class SimpleSink {
           } catch (IOException e) {
             String b64 = Base64.getEncoder().encodeToString(decompressedPayload).substring(0, 80);
             throw new UncheckedIOException("Exception parsing payload with timestamp "
-                + message.getAttribute("submission_timestamp") + " starting with content: " + b64,
+                + message.getAttribute("submission_timestamp") + " and observed length "
+                + message.getPayload().length + " starting with content (base64-encoded): " + b64,
                 e);
           }
           return json.toString();

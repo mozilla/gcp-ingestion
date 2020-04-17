@@ -2,8 +2,8 @@
 
 set -exo pipefail
 
-PROJECT="moz-fx-data-backfill-14"
-JOB_NAME="direct-read-test1"
+PROJECT="moz-fx-data-backfill-15"
+JOB_NAME="export-test2"
 
 mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.SimpleSink -Dexec.args="\
     --runner=Dataflow \
@@ -11,8 +11,7 @@ mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.SimpleSink -Dexec.a
     --project=$PROJECT  \
     --inputType=bigquery_table \
     --input=moz-fx-data-shared-prod:payload_bytes_decoded.telemetry_telemetry__main_v4 \
-    --bqReadMethod=storageapi \
-    --bqRowRestriction=\"CAST(submission_timestamp AS DATE) = '2020-04-15'\" \
+    --bqReadMethod=export \
     --outputType=bigquery \
     --bqWriteMethod=file_loads \
     --bqClusteringFields=normalized_channel,sample_id \
