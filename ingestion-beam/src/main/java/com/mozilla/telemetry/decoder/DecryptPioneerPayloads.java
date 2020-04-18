@@ -25,14 +25,18 @@ public class DecryptPioneerPayloads extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   private final ValueProvider<String> metadataLocation;
+  private final ValueProvider<Boolean> kmsEnabled;
   private transient KeyStore keyStore;
 
-  public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation) {
-    return new DecryptPioneerPayloads(metadataLocation);
+  public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
+      ValueProvider<Boolean> kmsEnabled) {
+    return new DecryptPioneerPayloads(metadataLocation, kmsEnabled);
   }
 
-  private DecryptPioneerPayloads(ValueProvider<String> metadataLocation) {
+  private DecryptPioneerPayloads(ValueProvider<String> metadataLocation,
+      ValueProvider<Boolean> kmsEnabled) {
     this.metadataLocation = metadataLocation;
+    this.kmsEnabled = kmsEnabled;
   }
 
   @Override
@@ -70,7 +74,7 @@ public class DecryptPioneerPayloads extends
       message = PubsubConstraints.ensureNonNull(message);
 
       if (keyStore == null) {
-        keyStore = KeyStore.of(metadataLocation.get());
+        keyStore = KeyStore.of(metadataLocation.get(), kmsEnabled.get());
       }
 
       ObjectNode json = Json.readObjectNode(message.getPayload());

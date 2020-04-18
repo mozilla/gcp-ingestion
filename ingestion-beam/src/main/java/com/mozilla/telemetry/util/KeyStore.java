@@ -3,8 +3,11 @@ package com.mozilla.telemetry.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.api.pathtemplate.ValidationException;
+import com.google.cloud.kms.v1.DecryptResponse;
+import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Resources;
+import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -36,14 +39,16 @@ public class KeyStore {
   }
 
   private final String metadataLocation;
+  private final boolean kmsEnabled;
   private transient Map<String, PrivateKey> keys;
 
-  public static KeyStore of(String metadataLocation) {
-    return new KeyStore(metadataLocation);
+  public static KeyStore of(String metadataLocation, boolean kmsEnabled) {
+    return new KeyStore(metadataLocation, kmsEnabled);
   }
 
-  private KeyStore(String metadataLocation) {
+  private KeyStore(String metadataLocation, boolean kmsEnabled) {
     this.metadataLocation = metadataLocation;
+    this.kmsEnabled = kmsEnabled;
   }
 
   @VisibleForTesting
@@ -78,9 +83,22 @@ public class KeyStore {
     for (JsonNode element : metadata) {
       String namespace = element.get("document_namespace").textValue();
       String privateKeyUri = element.get("private_key_uri").textValue();
+      String kmsResourceId = element.get("kms_resource_id").textValue();
+
       try (InputStream inputStream = BeamFileInputStream.open(privateKeyUri)) {
-        String serializedKey = new String(IOUtils.toByteArray(inputStream));
-        PublicJsonWebKey key = PublicJsonWebKey.Factory.newPublicJwk(serializedKey);
+        byte[] keyData = IOUtils.toByteArray(inputStream);
+
+        PublicJsonWebKey key;
+        if (kmsEnabled) {
+          try (KeyManagementServiceClient client = KeyManagementServiceClient.create()) {
+            DecryptResponse response = client.decrypt(kmsResourceId, ByteString.copyFrom(keyData));
+            key = PublicJsonWebKey.Factory
+                .newPublicJwk(new String(response.getPlaintext().toByteArray()));
+          }
+        } else {
+          key = PublicJsonWebKey.Factory.newPublicJwk(new String(keyData));
+        }
+
         tempKeys.put(namespace, key.getPrivateKey());
       } catch (IOException e) {
         throw new IOException("Exception thrown while reading key specified by metadata.", e);

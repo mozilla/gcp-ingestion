@@ -12,7 +12,7 @@ public class KeyStoreTest {
   @Test(expected = ValidationException.class)
   public void testMetadataInvalidFormat() {
     String metadataLocation = Resources.getResource("pioneer/metadata-invalid.json").getPath();
-    KeyStore store = KeyStore.of(metadataLocation);
+    KeyStore store = KeyStore.of(metadataLocation, false);
     // force the store to load
     store.getKey("*");
   }
@@ -20,14 +20,14 @@ public class KeyStoreTest {
   @Test
   public void testNumKeys() {
     String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
-    KeyStore store = KeyStore.of(metadataLocation);
+    KeyStore store = KeyStore.of(metadataLocation, false);
     assertEquals(2, store.numLoadedKeys());
   }
 
   @Test
   public void testGetKey() {
     String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
-    KeyStore store = KeyStore.of(metadataLocation);
+    KeyStore store = KeyStore.of(metadataLocation, false);
     assertNotEquals(null, store.getKey("study-foo"));
     assertNotEquals(null, store.getKey("study-bar"));
     assertEquals(null, store.getKey("invalid-document-namespace"));

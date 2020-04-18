@@ -124,7 +124,7 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
     ResourceId resourceId = FileSystems.matchNewResource(path, false);
     try (ByteArrayInputStream inputStream = new ByteArrayInputStream(data);
         ReadableByteChannel readerChannel = Channels.newChannel(inputStream);
-        WritableByteChannel writerChannel = FileSystems.create(resourceId, MimeTypes.TEXT)) {
+        WritableByteChannel writerChannel = FileSystems.create(resourceId, MimeTypes.BINARY)) {
       ByteStreams.copy(readerChannel, writerChannel);
     }
   }
@@ -195,27 +195,37 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
       ensureKmsResources(client, resourceId);
       byte[] cipherText = encrypt(client, resourceId, plainText);
       byte[] decrypted = decrypt(client, resourceId, cipherText);
-      assertEquals(plainText, decrypted);
+      assertEquals(new String(plainText), new String(decrypted));
     }
   }
 
   @Test
   public void testKeyStoreReadsPlaintextPrivateKeyFromCloudStorage() throws Exception {
-    String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json", false);
-    KeyStore store = KeyStore.of(keyStoreMetadata);
-    assertNotEquals(null, store.getKey("study-foo"));
+    boolean kmsEnabled = false;
+    String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json",
+        kmsEnabled);
+    KeyStore store = KeyStore.of(keyStoreMetadata, kmsEnabled);
     assertNotEquals(null, store.getKey("study-bar"));
+    PrivateKey key = store.getKey("study-bar");
+    byte[] data = Resources.toByteArray(Resources.getResource("pioneer/study-bar.ciphertext.json"));
+    byte[] expect = Resources
+        .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
+    // TODO: json read
+    byte[] actual = DecryptPioneerPayloads.decrypt(key, new String(data));
+    assertEquals(new String(expect), new String(actual));
   }
 
   @Test
   public void testKeyStoreEncryptedKeysCanDecryptPayload() throws Exception {
-    String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json", true);
-    KeyStore store = KeyStore.of(keyStoreMetadata);
+    boolean kmsEnabled = true;
+    String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json",
+        kmsEnabled);
+    KeyStore store = KeyStore.of(keyStoreMetadata, kmsEnabled);
     PrivateKey key = store.getKey("study-foo");
     byte[] data = Resources.toByteArray(Resources.getResource("pioneer/study-foo.ciphertext.json"));
     byte[] expect = Resources
-        .toByteArray(Resources.getResource("pioneer/study-foo.plaintext.json"));
+        .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
     byte[] actual = DecryptPioneerPayloads.decrypt(key, new String(data));
-    assertEquals(expect, actual);
+    assertEquals(new String(expect), new String(actual));
   }
 }
