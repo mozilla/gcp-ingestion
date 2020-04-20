@@ -33,10 +33,9 @@ public class MessageScrubber {
       "modules");
 
   /**
-   * Inspect the contents of the payload and return true if the content matches a known pattern
-   * we want to scrub and the message should not be sent downstream.
+   * Inspect the contents of the message to check for known signatures of potentially harmful data.
    *
-   * <p>This is usually due to some potential for PII having leaked into the payload.
+   * <p>May throw an exception as a signal to route the message to error output or to be dropped.
    */
   public static void scrub(Map<String, String> attributes, ObjectNode json)
       throws MessageShouldBeDroppedException, AffectedByBugException {
