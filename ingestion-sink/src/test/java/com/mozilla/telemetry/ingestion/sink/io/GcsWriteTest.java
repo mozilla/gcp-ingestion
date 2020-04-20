@@ -92,7 +92,7 @@ public class GcsWriteTest {
   @Test
   public void failsOnInsertErrors() {
     final Throwable expect = new RuntimeException("fail");
-    doThrow(expect).when(storage).create(any(BlobInfo.class), any(byte[].class));
+    doThrow(expect).when(storage).create(any(BlobInfo.class), any(byte[].class), any());
     Throwable cause = null;
     try {
       output.apply(EMPTY_MESSAGE).join();
