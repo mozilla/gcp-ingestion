@@ -94,7 +94,7 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
     } catch (NotFoundException e) {
       LocationName parent = LocationName.of(projectId, "global");
       KeyRing request = KeyRing.newBuilder().build();
-      client.createKeyRing(parent, name.getCryptoKey(), request);
+      client.createKeyRing(parent, name.getKeyRing(), request);
     }
 
     // getOrCreateCryptoKey
