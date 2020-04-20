@@ -21,6 +21,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import com.google.protobuf.ByteString;
 import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
+import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.KeyStore;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
@@ -29,6 +30,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.security.PrivateKey;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.fs.ResourceId;
@@ -173,8 +175,23 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
         || nodes.asText().contains("DUMMY_BUCKET") || nodes.asText().contains("DUMMY_TEMP_FOLDER"));
 
     String keyStoreMetadata = String.format("gs://%s/metadata.json", bucket);
-    writeToStorage(keyStoreMetadata, nodes.toString().getBytes());
+    writeToStorage(keyStoreMetadata, nodes.toString().getBytes("UTF-8"));
     return keyStoreMetadata;
+  }
+
+  private void assertTestPayloadDecryption(String studyId, PrivateKey key) throws Exception {
+    String resource = String.format("pioneer/%s.ciphertext.json", studyId);
+    byte[] ciphertext = Resources.toByteArray(Resources.getResource(resource));
+    byte[] plaintext = Resources
+        .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
+
+    String payload = Json.readObjectNode(ciphertext).get("payload").textValue();
+    byte[] decrypted = DecryptPioneerPayloads.decrypt(key, payload);
+    byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
+
+    String actual = Json.readObjectNode(plaintext).toString();
+    String expect = Json.readObjectNode(decompressed).toString();
+    assertEquals(expect, actual);
   }
 
   /**
@@ -199,33 +216,35 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
     }
   }
 
+  /** Ensure KeyStore can read from `file://` and `gs://`. */
   @Test
-  public void testKeyStoreReadsPlaintextPrivateKeyFromCloudStorage() throws Exception {
+  public void testKeyStoreWithPlaintextPrivateKeys() throws Exception {
     boolean kmsEnabled = false;
     String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json",
         kmsEnabled);
     KeyStore store = KeyStore.of(keyStoreMetadata, kmsEnabled);
-    assertNotEquals(null, store.getKey("study-bar"));
-    PrivateKey key = store.getKey("study-bar");
-    byte[] data = Resources.toByteArray(Resources.getResource("pioneer/study-bar.ciphertext.json"));
-    byte[] expect = Resources
-        .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
-    // TODO: json read
-    byte[] actual = DecryptPioneerPayloads.decrypt(key, new String(data));
-    assertEquals(new String(expect), new String(actual));
+
+    // study-foo is read from the local filesystem
+    // study-bar is read from GCS
+    for (String studyId : Arrays.asList("study-foo", "study-bar")) {
+      PrivateKey key = store.getKey(studyId);
+      assertNotEquals(null, key);
+      assertTestPayloadDecryption(studyId, key);
+    }
   }
 
+  /** Ensure KeyStore can decrypt via KMS. */
   @Test
-  public void testKeyStoreEncryptedKeysCanDecryptPayload() throws Exception {
+  public void testKeyStoreWithEncryptedPrivateKeys() throws Exception {
     boolean kmsEnabled = true;
     String keyStoreMetadata = prepareKeyStoreMetadata("pioneer/metadata-integration.json",
         kmsEnabled);
     KeyStore store = KeyStore.of(keyStoreMetadata, kmsEnabled);
-    PrivateKey key = store.getKey("study-foo");
-    byte[] data = Resources.toByteArray(Resources.getResource("pioneer/study-foo.ciphertext.json"));
-    byte[] expect = Resources
-        .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
-    byte[] actual = DecryptPioneerPayloads.decrypt(key, new String(data));
-    assertEquals(new String(expect), new String(actual));
+
+    for (String studyId : Arrays.asList("study-foo", "study-bar")) {
+      PrivateKey key = store.getKey(studyId);
+      assertNotEquals(null, key);
+      assertTestPayloadDecryption(studyId, key);
+    }
   }
 }

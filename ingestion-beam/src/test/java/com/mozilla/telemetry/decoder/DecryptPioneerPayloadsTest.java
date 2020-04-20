@@ -7,8 +7,10 @@ import com.google.common.io.Resources;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
+import java.security.PrivateKey;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -21,6 +23,8 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
+import org.jose4j.jwk.PublicJsonWebKey;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -59,6 +63,30 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
         }
       }));
     }
+  }
+
+  /** Load a private key from a JWK. See the KeyStore for more details. */
+  private PrivateKey loadPrivateKey(String resourceLocation) throws Exception {
+    byte[] data = Resources.toByteArray(Resources.getResource(resourceLocation));
+    PublicJsonWebKey key = PublicJsonWebKey.Factory.newPublicJwk(new String(data));
+    return key.getPrivateKey();
+  }
+
+  @Test
+  public void testDecrypt() throws Exception {
+    PrivateKey key = loadPrivateKey("pioneer/study-foo.private.json");
+    byte[] ciphertext = Resources
+        .toByteArray(Resources.getResource("pioneer/study-foo.ciphertext.json"));
+    byte[] plaintext = Resources
+        .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
+
+    String payload = Json.readObjectNode(ciphertext).get("payload").textValue();
+    byte[] decrypted = DecryptPioneerPayloads.decrypt(key, payload);
+    byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
+
+    String actual = Json.readObjectNode(plaintext).toString();
+    String expect = Json.readObjectNode(decompressed).toString();
+    Assert.assertEquals(expect, actual);
   }
 
   @Test
