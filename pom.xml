@@ -53,16 +53,13 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
-        <beam.version>2.19.0</beam.version>
+        <beam.version>2.20.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
         <google-cloud.version>1.61.0</google-cloud.version>
-        <jackson.version>2.9.10</jackson.version>
+        <jackson.version>2.10.2</jackson.version>
         <avro.version>1.8.2</avro.version>
-        <!-- We pull in a unique version of jackson-databind to address CVEs;
-             this can be removed when beam 2.20 is released which uses jackson 2.10 -->
-        <jackson-databind.version>2.9.10.3</jackson-databind.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
@@ -85,7 +82,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson-databind.version}</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
