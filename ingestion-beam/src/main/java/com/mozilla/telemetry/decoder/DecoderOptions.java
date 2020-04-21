@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mozilla.telemetry.options.SinkOptions;
 import java.net.URI;
 import java.util.Optional;
+import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
@@ -36,6 +37,34 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   ValueProvider<String> getRedisUri();
 
   void setRedisUri(ValueProvider<String> value);
+
+  @Description("If set to true, enable decryption of Pioneer payloads.")
+  @Default.Boolean(false)
+  Boolean getPioneerEnabled();
+
+  void setPioneerEnabled(Boolean value);
+
+  @Description("Path (local or gs://) to JSON array of metadata entries enumerating encrypted"
+      + " private keys, Cloud KMS resource ids for decrypting those keys, and their corresponding"
+      + " document namespaces; leave null to disable.")
+  ValueProvider<String> getPioneerMetadataLocation();
+
+  void setPioneerMetadataLocation(ValueProvider<String> value);
+
+  @Description("If set to true, assume that all private keys are encrypted with the associated"
+      + " KMS resourceId. Otherwise ignore KMS and assume all private keys are stored in plaintext."
+      + " This may be used for debugging.")
+  @Default.Boolean(true)
+  ValueProvider<Boolean> getPioneerKmsEnabled();
+
+  void setPioneerKmsEnabled(ValueProvider<Boolean> value);
+
+  @Hidden
+  @Description("Decompress pioneer pings.")
+  @Default.Boolean(true)
+  ValueProvider<Boolean> getPioneerDecompressPayload();
+
+  void setPioneerDecompressPayload(ValueProvider<Boolean> value);
 
   /*
    * Subinterface and static methods.

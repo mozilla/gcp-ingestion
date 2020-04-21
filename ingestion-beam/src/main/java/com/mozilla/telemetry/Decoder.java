@@ -2,6 +2,7 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
+import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.ParsePayload;
@@ -63,7 +64,13 @@ public class Decoder extends Sink {
             .apply(ParseProxy.of()) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections) //
-            .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
+            .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())))
+        .map(p -> options.getPioneerEnabled() ? p
+            .apply(DecryptPioneerPayloads.of(options.getPioneerMetadataLocation(),
+                options.getPioneerKmsEnabled()))
+            .failuresTo(failureCollections) //
+            .apply(DecompressPayload.enabled(options.getPioneerDecompressPayload())) : p)
+        .map(p -> p //
             // See discussion in https://github.com/mozilla/gcp-ingestion/issues/776
             .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(failureCollections) //
             .apply("ParsePayload", ParsePayload.of(options.getSchemasLocation())) //

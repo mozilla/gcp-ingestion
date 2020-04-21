@@ -1,0 +1,8 @@
+[
+    {
+        "$comment": "This is associated with test input in resources/testdata/decoder-integration",
+        "document_namespace": "test",
+        "kms_resource_id": "projects/DUMMY_PROJECT_ID/locations/global/keyRings/test-ingestion-beam-integration/cryptoKeys/study-foo",
+        "private_key_uri": "src/test/resources/pioneer/study-foo.private.json"
+    }
+]
