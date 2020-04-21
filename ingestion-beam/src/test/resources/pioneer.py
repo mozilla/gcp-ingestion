@@ -17,6 +17,7 @@ pioneer = resources / "pioneer"
 
 def write_serialized(json_data, fp):
     json.dump(json.loads(json_data), fp, indent=2)
+    fp.write("\n")
 
 
 def generate_jwk(path: Path, name: str):
