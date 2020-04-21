@@ -1,5 +1,8 @@
 package com.mozilla.telemetry.ingestion.sink.io;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 
 import com.google.protobuf.ByteString;
@@ -11,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.logging.log4j.junit.LoggerContextRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -21,6 +25,9 @@ public class PubsubReadIntegrationTest {
 
   @Rule
   public final SinglePubsubTopic pubsub = new SinglePubsubTopic();
+
+  @Rule
+  public final LoggerContextRule logs = new LoggerContextRule("log4j2-test.yaml");
 
   @Test
   public void canReadOneMessage() {
@@ -48,7 +55,7 @@ public class PubsubReadIntegrationTest {
 
   @Test
   public void canRetryOnException() {
-    System.err.println("Causing Exception Warning...");
+
     String messageId = pubsub.publish(TEST_MESSAGE);
 
     List<PubsubMessage> received = new LinkedList<>();
@@ -76,5 +83,7 @@ public class PubsubReadIntegrationTest {
     assertEquals(messageId, received.get(0).getMessageId());
     assertEquals(messageId, received.get(1).getMessageId());
     assertEquals(2, received.size());
+    assertThat(logs.getListAppender("STDOUT").getMessages(),
+        containsInAnyOrder(containsString("java.lang.RuntimeException: test")));
   }
 }

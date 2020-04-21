@@ -14,6 +14,7 @@
     <packaging>jar</packaging>
 
     <properties>
+        <log4j.version>2.13.1</log4j.version>
         <opencensus.version>0.23.0</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
@@ -62,9 +63,18 @@
             <version>1.8</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
+            <!-- Use log4j implementation of slf4j -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <!-- Runtime dependency for log4j yaml config support
+                 https://logging.apache.org/log4j/2.x/runtime-dependencies.html#log4j-core -->
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.opencensus</groupId>
@@ -98,6 +108,13 @@
             <groupId>org.hamcrest</groupId>
             <artifactId>java-hamcrest</artifactId>
             <version>2.0.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
     </dependencies>
