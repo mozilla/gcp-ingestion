@@ -1,11 +1,12 @@
 package com.mozilla.telemetry.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import java.io.IOException;
-import java.io.InputStream;
-import org.apache.commons.io.IOUtils;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.Validator;
 import org.json.JSONArray;
@@ -34,8 +35,10 @@ public class JsonValidator {
    * type.
    */
   public void validate(Schema schema, ArrayNode json) throws JsonProcessingException, IOException {
-    InputStream serialized = IOUtils.toInputStream(json.toString(), "UTF-8");
-    JSONArray array = Json.readJsonArray(serialized);
-    validator.performValidation(schema, array);
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JsonOrgModule());
+    JsonNode root = mapper.valueToTree(json);
+    JSONArray jsonArray = mapper.treeToValue(root, JSONArray.class);
+    validator.performValidation(schema, jsonArray);
   }
 }
