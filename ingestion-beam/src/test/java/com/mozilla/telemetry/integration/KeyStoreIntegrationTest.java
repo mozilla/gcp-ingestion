@@ -156,9 +156,9 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
       ((ObjectNode) node).put("kms_resource_id", kmsResourceId);
       ((ObjectNode) node).put("private_key_uri", privateKeyUri);
 
-      String keyId = node.get("document_namespace").textValue();
-      byte[] key = Resources
-          .toByteArray(Resources.getResource(String.format("pioneer/%s.private.json", keyId)));
+      String privateKeyId = node.get("private_key_id").textValue();
+      byte[] key = Resources.toByteArray(
+          Resources.getResource(String.format("pioneer/%s.private.json", privateKeyId)));
 
       // optionally encrypt the private key resources and upload to testing location
       if (shouldEncrypt) {

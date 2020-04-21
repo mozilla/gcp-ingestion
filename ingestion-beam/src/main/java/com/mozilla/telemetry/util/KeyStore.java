@@ -81,7 +81,7 @@ public class KeyStore {
     }
 
     for (JsonNode element : metadata) {
-      String namespace = element.get("document_namespace").textValue();
+      String privateKeyId = element.get("private_key_id").textValue();
       String privateKeyUri = element.get("private_key_uri").textValue();
       String kmsResourceId = element.get("kms_resource_id").textValue();
 
@@ -99,7 +99,7 @@ public class KeyStore {
           key = PublicJsonWebKey.Factory.newPublicJwk(new String(keyData));
         }
 
-        tempKeys.put(namespace, key.getPrivateKey());
+        tempKeys.put(privateKeyId, key.getPrivateKey());
       } catch (IOException e) {
         throw new IOException("Exception thrown while reading key specified by metadata.", e);
       } catch (JoseException e) {
