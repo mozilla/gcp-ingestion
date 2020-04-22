@@ -3,6 +3,8 @@ package com.mozilla.telemetry.ingestion.core.schema;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.io.Resources;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.everit.json.schema.Schema;
@@ -13,6 +15,14 @@ public class JSONSchemaStoreTest {
 
   private static final JSONSchemaStore store = JSONSchemaStore.of(TestConstant.SCHEMAS_LOCATION,
       null);
+
+  @Test
+  public void testReadSchema() throws IOException {
+    byte[] data = Resources.toByteArray(
+        Resources.getResource("schema/test-schemas/schemas/namespace_0/foo/foo.1.schema.json"));
+    Schema schema = JSONSchemaStore.readSchema(data);
+    assertTrue(schema.definesProperty("payload"));
+  }
 
   @Test
   public void testNumSchemas() {

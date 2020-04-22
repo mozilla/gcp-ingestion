@@ -20,6 +20,14 @@ public class JSONSchemaStore extends SchemaStore<Schema> {
     return new JSONSchemaStore(schemasLocation, open);
   }
 
+  /**
+   * Return a Schema from bytes for use outside of the SchemaStore.
+   */
+  public static Schema readSchema(byte[] bytes) throws IOException {
+    JSONObject json = Json.readValue(bytes, JSONObject.class);
+    return SchemaLoader.load(json);
+  }
+
   protected JSONSchemaStore(String schemasLocation, IOFunction<String, InputStream> open) {
     super(schemasLocation, open);
   }
@@ -31,8 +39,6 @@ public class JSONSchemaStore extends SchemaStore<Schema> {
 
   @Override
   protected Schema loadSchemaFromArchive(ArchiveInputStream archive) throws IOException {
-    byte[] bytes = IOUtils.toByteArray(archive);
-    JSONObject json = Json.readValue(bytes, JSONObject.class);
-    return SchemaLoader.load(json);
+    return readSchema(IOUtils.toByteArray(archive));
   }
 }
