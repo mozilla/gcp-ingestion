@@ -3,6 +3,7 @@ package com.mozilla.telemetry.ingestion.sink.io;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
@@ -101,9 +102,15 @@ public class Gcs {
             .setContentType("application/json").build();
       }
 
+      /**
+       * Throws 'com.google.cloud.storage.StorageException: Precondition Failed'
+       * if blob already exists.
+       */
       @Override
       protected CompletableFuture<Void> close() {
-        return batchCloseHook.apply(storage.create(blobInfo, content.toByteArray()));
+
+        return batchCloseHook.apply(
+            storage.create(blobInfo, content.toByteArray(), BlobTargetOption.doesNotExist()));
       }
 
       @Override

@@ -102,6 +102,12 @@
             <artifactId>jedis</artifactId>
             <version>3.2.0</version>
         </dependency>
+        <!-- Following https://github.com/apache/beam/blob/v2.20.0/examples/java/build.gradle#L64 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>1.7.30</version>
+        </dependency>
         <dependency>
             <groupId>org.bitbucket.b_c</groupId>
             <artifactId>jose4j</artifactId>

@@ -5,11 +5,13 @@ import com.google.cloud.bigquery.FormatOptions;
 import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
 import com.google.cloud.bigquery.JobInfo;
+import com.google.cloud.bigquery.JobStatus;
 import com.google.cloud.bigquery.LoadJobConfiguration;
 import com.google.cloud.bigquery.TableId;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.config.SinkConfig;
@@ -34,11 +36,11 @@ public class BigQuery {
   private BigQuery() {
   }
 
-  public static class WriteErrors extends RuntimeException {
+  public static class BigQueryErrors extends RuntimeException {
 
     public final List<BigQueryError> errors;
 
-    private WriteErrors(List<BigQueryError> errors) {
+    private BigQueryErrors(List<BigQueryError> errors) {
       super(errors.toString());
       this.errors = errors;
     }
@@ -121,7 +123,7 @@ public class BigQuery {
       protected void checkResultFor(InsertAllResponse batchResult, int index) {
         Optional.ofNullable(batchResult.getErrorsFor(index)).filter(errors -> !errors.isEmpty())
             .ifPresent(errors -> {
-              throw new WriteErrors(errors);
+              throw new BigQueryErrors(errors);
             });
       }
     }
@@ -198,16 +200,24 @@ public class BigQuery {
       protected CompletableFuture<Void> close() {
         List<String> sourceUris = sourceBlobIds.stream().map(BlobIdToString::apply)
             .collect(Collectors.toList());
-        boolean loadSuccess = true;
+        boolean loadSuccess = false;
         try {
-          bigQuery
+          JobStatus status = bigQuery
               .create(JobInfo.of(LoadJobConfiguration.newBuilder(tableId, sourceUris)
                   .setCreateDisposition(JobInfo.CreateDisposition.CREATE_NEVER)
                   .setWriteDisposition(JobInfo.WriteDisposition.WRITE_APPEND)
-                  .setFormatOptions(FormatOptions.json()).setIgnoreUnknownValues(true).build()))
-              .waitFor();
+                  .setFormatOptions(FormatOptions.json()).setIgnoreUnknownValues(true)
+                  .setAutodetect(false).setMaxBadRecords(0).build()))
+              .waitFor().getStatus();
+          if (status.getError() != null) {
+            throw new BigQueryErrors(ImmutableList.of(status.getError()));
+          } else if (status.getExecutionErrors() != null
+              && status.getExecutionErrors().size() > 0) {
+            throw new BigQueryErrors(status.getExecutionErrors());
+          }
+          loadSuccess = true;
+          return CompletableFuture.completedFuture(null);
         } catch (InterruptedException e) {
-          loadSuccess = false;
           throw new RuntimeException(e);
         } finally {
           if (delete == Delete.always || (delete == Delete.onSuccess && loadSuccess)) {
@@ -218,7 +228,6 @@ public class BigQuery {
             }
           }
         }
-        return CompletableFuture.completedFuture(null);
       }
 
       @Override
