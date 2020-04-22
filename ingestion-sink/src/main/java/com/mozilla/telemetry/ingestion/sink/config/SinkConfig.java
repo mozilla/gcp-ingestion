@@ -9,6 +9,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
+import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
@@ -245,8 +246,8 @@ public class SinkConfig {
         // fallbackOutput sends messages to fileOutput when rejected by streamingOutput due to size
         Function<PubsubMessage, CompletableFuture<Void>> fallbackOutput = message -> streamingOutput
             .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
-              if (t.getCause() instanceof BigQuery.WriteErrors) {
-                BigQuery.WriteErrors cause = (BigQuery.WriteErrors) t.getCause();
+              if (t.getCause() instanceof BigQueryErrors) {
+                BigQueryErrors cause = (BigQueryErrors) t.getCause();
                 if (cause.errors.size() == 1 && cause.errors.get(0).getMessage()
                     .startsWith("Maximum allowed row size exceeded")) {
                   return fileOutput.apply(message);
