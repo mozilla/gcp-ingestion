@@ -2,7 +2,6 @@ package com.mozilla.telemetry.util;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.api.pathtemplate.ValidationException;
 import com.google.cloud.kms.v1.DecryptResponse;
 import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.common.annotations.VisibleForTesting;
@@ -11,6 +10,7 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.util.HashMap;
 import java.util.Map;
@@ -57,7 +57,7 @@ public class KeyStore {
     return keys.size();
   }
 
-  private void loadAllKeys() throws IOException, ValidationException {
+  private void loadAllKeys() throws IOException {
     final Map<String, PrivateKey> tempKeys = new HashMap<>();
 
     Schema schema;
@@ -65,7 +65,7 @@ public class KeyStore {
         .openStream()) {
       schema = SchemaLoader.load(Json.readJsonObject(inputStream));
     } catch (IOException e) {
-      throw new IOException("Exception thrown while reading metadata file", e);
+      throw new IOException("Error reading keystore metadata schema file", e);
     }
 
     // required to validate Jackson objects
@@ -77,7 +77,7 @@ public class KeyStore {
       metadata = Json.readArrayNode(data);
       validator.validate(schema, metadata);
     } catch (IOException e) {
-      throw new IOException("Exception thrown while reading keystore metadata schema.", e);
+      throw new IOException("Error reading keystore metadata schema.", e);
     }
 
     for (JsonNode element : metadata) {
@@ -92,16 +92,15 @@ public class KeyStore {
         if (kmsEnabled) {
           try (KeyManagementServiceClient client = KeyManagementServiceClient.create()) {
             DecryptResponse response = client.decrypt(kmsResourceId, ByteString.copyFrom(keyData));
-            key = PublicJsonWebKey.Factory
-                .newPublicJwk(new String(response.getPlaintext().toByteArray()));
+            key = PublicJsonWebKey.Factory.newPublicJwk(response.getPlaintext().toStringUtf8());
           }
         } else {
-          key = PublicJsonWebKey.Factory.newPublicJwk(new String(keyData));
+          key = PublicJsonWebKey.Factory.newPublicJwk(new String(keyData, StandardCharsets.UTF_8));
         }
 
         tempKeys.put(privateKeyId, key.getPrivateKey());
       } catch (IOException e) {
-        throw new IOException("Exception thrown while reading key specified by metadata.", e);
+        throw new IOException("Error reading key specified by metadata.", e);
       } catch (JoseException e) {
         throw new RuntimeException(e);
       }
@@ -115,7 +114,7 @@ public class KeyStore {
       try {
         loadAllKeys();
       } catch (IOException e) {
-        throw new UncheckedIOException("unexpected error while loading keys", e);
+        throw new UncheckedIOException(e);
       }
     }
   }
