@@ -91,7 +91,7 @@ public class BigQueryTest {
     assertThat((int) output.batches.get(BATCH_KEY).byteSize, lessThanOrEqualTo(MAX_BYTES));
   }
 
-  @Test(expected = BigQuery.WriteErrors.class)
+  @Test(expected = BigQuery.BigQueryErrors.class)
   public void failsOnInsertErrors() throws Throwable {
     when(response.getErrorsFor(0)).thenReturn(ImmutableList.of(new BigQueryError("", "", "")));
 
