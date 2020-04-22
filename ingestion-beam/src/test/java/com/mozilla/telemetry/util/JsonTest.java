@@ -2,10 +2,12 @@ package com.mozilla.telemetry.util;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import org.json.JSONArray;
 import org.junit.Test;
 
 public class JsonTest {
@@ -41,6 +43,14 @@ public class JsonTest {
         "[{\"mode\":\"NULLABLE\",\"name\":\"document_id\",\"type\": \"STRING\"}]"
             .getBytes(StandardCharsets.UTF_8));
     assertEquals(LegacySQLTypeName.STRING, schema.getFields().get(0).getType());
+  }
+
+  @Test
+  public void testConvertArrayNodeToJsonArray() throws Exception {
+    String input = "[1,2,3]";
+    ArrayNode arrayNode = Json.readArrayNode(input.getBytes(StandardCharsets.UTF_8));
+    JSONArray jsonArray = Json.convertValue(arrayNode, JSONArray.class);
+    assertEquals(input, jsonArray.toString());
   }
 
 }
