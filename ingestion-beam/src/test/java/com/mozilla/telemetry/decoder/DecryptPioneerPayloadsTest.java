@@ -20,6 +20,7 @@ import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
@@ -110,6 +111,34 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
 
     final List<String> expectedMain = readTestFiles(Arrays.asList("pioneer/sample.plaintext.json"));
     PAssert.that(output).containsInAnyOrder(expectedMain);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testErrors() {
+    // minimal test for throughput of a single document
+    ValueProvider<String> metadataLocation = pipeline
+        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
+    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
+    final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode())
+        .apply("AddAttributes",
+            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+                .via(element -> new PubsubMessage(element.getPayload(),
+                    // map the payload to the wrong key
+                    ImmutableMap.of("document_namespace", "study-bar", "document_type", "test",
+                        "document_version", "1"))))
+        .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled));
+
+    PAssert.that(result.output()).empty();
+
+    PCollection<String> exceptions = result.failures().apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+    // IntegrityException extends JoseException
+    PAssert.that(exceptions).containsInAnyOrder("org.jose4j.lang.IntegrityException");
 
     pipeline.run();
   }
