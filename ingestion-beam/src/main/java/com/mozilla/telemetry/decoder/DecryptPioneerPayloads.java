@@ -2,6 +2,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
@@ -80,7 +81,7 @@ public class DecryptPioneerPayloads extends
       ObjectNode json = Json.readObjectNode(message.getPayload());
       PrivateKey key = keyStore.getKey(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
 
-      byte[] decrypted = decrypt(key, json.get("payload").asText());
+      byte[] decrypted = decrypt(key, json.get(FieldName.PAYLOAD).asText());
       return Collections.singletonList(new PubsubMessage(decrypted, message.getAttributeMap()));
     }
   }

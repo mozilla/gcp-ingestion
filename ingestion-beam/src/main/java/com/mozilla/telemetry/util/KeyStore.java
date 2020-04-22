@@ -7,6 +7,7 @@ import com.google.cloud.kms.v1.KeyManagementServiceClient;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.io.Resources;
 import com.google.protobuf.ByteString;
+import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -16,7 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.everit.json.schema.Schema;
-import org.everit.json.schema.loader.SchemaLoader;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.lang.JoseException;
 
@@ -61,9 +61,9 @@ public class KeyStore {
     final Map<String, PrivateKey> tempKeys = new HashMap<>();
 
     Schema schema;
-    try (InputStream inputStream = Resources.getResource("keystore-metadata.schema.json")
-        .openStream()) {
-      schema = SchemaLoader.load(Json.readJsonObject(inputStream));
+    try {
+      byte[] data = Resources.toByteArray(Resources.getResource("keystore-metadata.schema.json"));
+      schema = JSONSchemaStore.readSchema(data);
     } catch (IOException e) {
       throw new IOException("Error reading keystore metadata schema file", e);
     }
