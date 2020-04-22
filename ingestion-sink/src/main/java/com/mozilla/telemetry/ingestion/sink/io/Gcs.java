@@ -102,8 +102,13 @@ public class Gcs {
             .setContentType("application/json").build();
       }
 
+      /**
+       * Throws 'com.google.cloud.storage.StorageException: Precondition Failed'
+       * if blob already exists.
+       */
       @Override
       protected CompletableFuture<Void> close() {
+
         return batchCloseHook.apply(
             storage.create(blobInfo, content.toByteArray(), BlobTargetOption.doesNotExist()));
       }
