@@ -13,7 +13,6 @@ import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
-import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.BigQueryDataset;
@@ -78,16 +77,18 @@ public class BigQueryLoadIntegrationTest {
   @Test
   public void failsOnMissingBlob() {
     final String outputTable = createTable();
-    final BlobInfo missingBlob = generateBlobId(outputTable);
+    // missingBlob must exist at first to be added to a batch
+    final BlobInfo missingBlob = createBlob(outputTable, "");
     final BlobInfo presentBlob = createBlob(outputTable, "{}");
     // load single batch with missing and present blobs
     final BigQuery.Load loader = new BigQuery.Load(bq.bigquery, gcs.storage, 10, 2,
         Duration.ofMillis(500), ForkJoinPool.commonPool(), BigQuery.Load.Delete.onSuccess);
     final CompletableFuture<Void> missing = loader
-        .apply(PubsubMessage.newBuilder().putAttributes("bucket", missingBlob.getBucket())
-            .putAttributes("name", missingBlob.getName()).putAttributes("size", "0").build());
+        .apply(BlobInfoToPubsubMessage.apply(missingBlob));
     final CompletableFuture<Void> present = loader
         .apply(BlobInfoToPubsubMessage.apply(presentBlob));
+    // delete missingBlob to induce BigQueryErrors
+    gcs.storage.delete(missingBlob.getBlobId());
     // require single batch of both messages
     assertEquals(ImmutableList.of(2),
         loader.batches.values().stream().map(b -> b.size).collect(Collectors.toList()));

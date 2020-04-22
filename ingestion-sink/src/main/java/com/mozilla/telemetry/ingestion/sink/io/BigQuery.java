@@ -200,7 +200,6 @@ public class BigQuery {
       protected CompletableFuture<Void> close() {
         List<String> sourceUris = sourceBlobIds.stream().map(BlobIdToString::apply)
             .collect(Collectors.toList());
-        boolean loadSuccess = false;
         try {
           JobStatus status = bigQuery
               .create(JobInfo.of(LoadJobConfiguration.newBuilder(tableId, sourceUris)
@@ -215,25 +214,36 @@ public class BigQuery {
               && status.getExecutionErrors().size() > 0) {
             throw new BigQueryErrors(status.getExecutionErrors());
           }
-          loadSuccess = true;
+          if (delete == Delete.onSuccess) {
+            delete();
+          }
           return CompletableFuture.completedFuture(null);
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         } finally {
-          if (delete == Delete.always || (delete == Delete.onSuccess && loadSuccess)) {
-            try {
-              storage.delete(sourceBlobIds);
-            } catch (RuntimeException ignore2) {
-              // don't fail batch when delete throws
-            }
+          if (delete == Delete.always) {
+            delete();
           }
+        }
+      }
+
+      private void delete() {
+        try {
+          storage.delete(sourceBlobIds);
+        } catch (RuntimeException ignore) {
+          // don't fail batch when delete throws
         }
       }
 
       @Override
       protected void write(PubsubMessage input) {
-        sourceBlobIds.add(BlobId.of(input.getAttributesOrThrow(BlobInfoToPubsubMessage.BUCKET),
-            input.getAttributesOrThrow(BlobInfoToPubsubMessage.NAME)));
+        BlobId blobId = BlobId.of(input.getAttributesOrThrow(BlobInfoToPubsubMessage.BUCKET),
+            input.getAttributesOrThrow(BlobInfoToPubsubMessage.NAME));
+        if (storage.get(blobId) == null) {
+          throw new IllegalArgumentException(
+              "blob not found: gs://" + blobId.getBucket() + "/" + blobId.getName());
+        }
+        sourceBlobIds.add(blobId);
       }
 
       @Override

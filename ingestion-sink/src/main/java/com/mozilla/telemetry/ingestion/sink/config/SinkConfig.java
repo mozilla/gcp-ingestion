@@ -67,7 +67,7 @@ public class SinkConfig {
   // Executor for CompletableFuture::*Async to use instead of ForkJoinPool.commonPool(), because
   // the default parallelism is 1 in stage and prod.
   private static final Executor DEFAULT_EXECUTOR = new ForkJoinPool(
-      Math.max(Runtime.getRuntime().availableProcessors() * 2, 10));
+      Math.max(Runtime.getRuntime().availableProcessors() * 20, 100));
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
   // 10MB API limit by default.
