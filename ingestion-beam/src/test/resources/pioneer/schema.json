@@ -1,0 +1,19 @@
+{
+    "type": "object",
+    "properties": {
+        "event": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "reason": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

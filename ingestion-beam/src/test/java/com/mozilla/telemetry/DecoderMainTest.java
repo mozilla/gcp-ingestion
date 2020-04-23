@@ -90,6 +90,65 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         matchesInAnyOrder(expectedOutputLines));
   }
 
+  /** Run the pipeline with the Pioneer decryption and decompression enabled. KMS is disabled since
+   * it requires access to an external service. See the KeyStore integration tests for decrypting
+   * private keys.
+   */
+  @Test
+  public void testEncryptedPioneerPayload() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
+    String input = resourceDir + "/pioneer.ndjson";
+    String output = outputPath + "/out/out";
+    String errorOutput = outputPath + "/error/error";
+    String pioneerMetadataLocation = Resources.getResource("pioneer/metadata-decoder.json")
+        .getPath();
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
+        "--errorOutput=" + errorOutput, "--includeStackTrace=false",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri, "--pioneerEnabled=true",
+        "--pioneerMetadataLocation=" + pioneerMetadataLocation, "--pioneerKmsEnabled=false" });
+
+    List<String> outputLines = Lines.files(output + "*.ndjson");
+    List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
+    assertThat("Main output differed from expectation", outputLines,
+        matchesInAnyOrder(expectedOutputLines));
+  }
+
+  /** Assert that the default value of --pioneerKms causes the unit test to fail
+   * due to either a lack of GOOGLE_APPLICATION_CREDENTIALS or by an invalid
+   * path to a KMS resource by the templating variables. Either of these cases
+   * can be verified manually by removing the expected Exception value. If
+   * GOOGLE_APPLICATION_CREDENTIALS is not set, then an IOException will be
+   * propagated while trying to authenticate: "java.io.IOException: The
+   * Application Default Credentials are not available." Otherwise a
+   * RuntimeException will be encountered: "io.grpc.StatusRuntimeException:
+   * NOT_FOUND: Project 'DUMMY_PROJECT_ID' not found."
+  */
+  @Test(expected = Exception.class)
+  public void testEncryptedPioneerPayloadFailureByDefaultKmsEnabledInLocalTesting()
+      throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
+    String input = resourceDir + "/pioneer.ndjson";
+    String output = outputPath + "/out/out";
+    String errorOutput = outputPath + "/error/error";
+    String pioneerMetadataLocation = Resources.getResource("pioneer/metadata-decoder.json")
+        .getPath();
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
+        "--errorOutput=" + errorOutput, "--includeStackTrace=false",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri, "--pioneerEnabled=true",
+        "--pioneerMetadataLocation=" + pioneerMetadataLocation });
+    // NOTE: equivalent to --pioneerKmsEnabled=true
+  }
+
   @Test
   public void testIdempotence() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
