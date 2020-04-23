@@ -75,6 +75,9 @@ public class DecryptPioneerPayloads extends
       message = PubsubConstraints.ensureNonNull(message);
 
       if (keyStore == null) {
+        // If configured resources aren't available, this throws UncheckedIOException;
+        // this is unretryable so we allow it to bubble up and kill the worker and eventually fail
+        // the pipeline.
         keyStore = KeyStore.of(metadataLocation.get(), kmsEnabled.get());
       }
 
