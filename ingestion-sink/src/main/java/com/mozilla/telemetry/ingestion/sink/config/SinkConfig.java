@@ -3,6 +3,7 @@ package com.mozilla.telemetry.ingestion.sink.config;
 import com.google.api.gax.batching.FlowControlSettings;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.annotations.VisibleForTesting;
@@ -12,7 +13,7 @@ import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
-import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
+import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.CompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.DecompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.DocumentTypePredicate;
@@ -165,13 +166,27 @@ public class SinkConfig {
 
       @Override
       Output getOutput(Env env) {
-        return new Output(env, this,
-            new BigQuery.Load(getBigQueryService(env), getGcsService(env),
-                env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
-                env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-                env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), DEFAULT_EXECUTOR,
-                // don't delete files until successfully loaded
-                BigQuery.Load.Delete.onSuccess).withOpenCensusMetrics());
+        final Storage storage = getGcsService(env);
+        final Function<Blob, CompletableFuture<Void>> bigQueryLoad = new BigQuery.Load(
+            getBigQueryService(env), storage, env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
+            env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
+            env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), DEFAULT_EXECUTOR,
+            // don't delete files until successfully loaded
+            BigQuery.Load.Delete.onSuccess).withOpenCensusMetrics();
+        return new Output(env, this, message -> {
+          // Messages may be delivered more than once, so check whether the blob has been deleted.
+          // The blob is never deleted in this mode unless it has already been successfully loaded
+          // to BigQuery. If the blob does not exist, it must have been deleted, because Cloud
+          // Storage provides strong global consistency for read-after-write operations.
+          // https://cloud.google.com/storage/docs/consistency
+          Blob blob = storage.get(BlobIdToPubsubMessage.decode(message));
+          if (blob == null) {
+            // blob was deleted, so ack this message by returning a successfully completed future
+            // TODO measure the frequency of this
+            return CompletableFuture.completedFuture(null);
+          }
+          return bigQueryLoad.apply(blob);
+        });
       }
     },
 
@@ -189,7 +204,7 @@ public class SinkConfig {
                 DEFAULT_EXECUTOR, getFormat(env),
                 // BigQuery Load API limits maximum load requests per table per day to 1,000 so send
                 // blobInfo to pubsub and require loads be run separately to reduce maximum latency
-                blobInfo -> pubsubWrite.apply(BlobInfoToPubsubMessage.apply(blobInfo)))
+                blobInfo -> pubsubWrite.apply(BlobIdToPubsubMessage.encode(blobInfo.getBlobId())))
                     .withOpenCensusMetrics());
       }
     },
@@ -214,11 +229,13 @@ public class SinkConfig {
       Output getOutput(Env env) {
         final com.google.cloud.bigquery.BigQuery bigQuery = getBigQueryService(env);
         final Storage storage = getGcsService(env);
-        final Function<PubsubMessage, CompletableFuture<Void>> bigQueryLoad;
+        final Function<Blob, CompletableFuture<Void>> bigQueryLoad;
         if (env.containsKey(OUTPUT_TOPIC)) {
           // BigQuery Load API limits maximum load requests per table per day to 1,000 so if
           // OUTPUT_TOPIC is present send blobInfo to pubsub and run load jobs separately
-          bigQueryLoad = pubsub.getOutput(env);
+          final Function<PubsubMessage, CompletableFuture<Void>> pubsubOutput = pubsub
+              .getOutput(env);
+          bigQueryLoad = blob -> pubsubOutput.apply(BlobIdToPubsubMessage.encode(blob.getBlobId()));
         } else {
           bigQueryLoad = new BigQuery.Load(bigQuery, storage,
               env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
@@ -233,9 +250,7 @@ public class SinkConfig {
             env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
             env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
-            DEFAULT_EXECUTOR, getFormat(env),
-            blobInfo -> bigQueryLoad.apply(BlobInfoToPubsubMessage.apply(blobInfo)))
-                .withOpenCensusMetrics();
+            DEFAULT_EXECUTOR, getFormat(env), bigQueryLoad).withOpenCensusMetrics();
         // Like bigQueryStreaming, but use STREAMING_ prefix env vars for batch configuration
         Function<PubsubMessage, CompletableFuture<Void>> streamingOutput = new BigQuery.Write(
             bigQuery, env.getLong(STREAMING_BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
