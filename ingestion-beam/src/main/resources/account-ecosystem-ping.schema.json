@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Format of Account Ecosystem Pings before decryption",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "ecosystem_anon_id": {
+                "description": "The current Account Ecosystem Telemetry anon_id value for this user; it must be a JOSE JWE objects in Compact Serialization form",
+                "type": "string"
+            },
+            "previous_ecosystem_anon_ids": {
+                "description": "Previous Account Ecosystem Telemetry anon_id values associated with this user",
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+        "required": [
+            "ecosystem_anon_id"
+        ],
+        "not": {
+            "required": [
+                "ecosystemAnonId",
+                "ecosystem_user_id",
+                "ecosystemUserId",
+                "previous_ecosystem_user_ids",
+                "previousEcosystemUserIds"
+            ]
+        }
+    }
+}

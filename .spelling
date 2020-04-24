@@ -6,6 +6,7 @@ ack
 ack'd
 acks
 ad-hoc
+AET
 API
 async
 AWS
@@ -18,6 +19,7 @@ cron
 Dataflow
 datapipeline
 dataset
+decryptor
 deduplicate
 deduplication
 DNS
@@ -52,6 +54,8 @@ JDK
 JDKs
 JSON
 JVM
+JWE
+KMS
 Kubernetes
 lookups
 MacOS
@@ -64,7 +68,9 @@ namespace
 namespaces
 natively
 nginx
+non-retryable
 ok
+pre-decryption
 pre-production
 protobuf
 PubSub

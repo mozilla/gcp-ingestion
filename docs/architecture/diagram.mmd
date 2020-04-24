@@ -9,6 +9,9 @@ graph TD
 
 f1(Producers) --> k1(Ingestion Edge)
 k1 --> p1(Raw Topics)
+k1 --> p11(Account Ecosystem Topics)
+p11 --> d11(Account Ecosystem Decryptor)
+d11 --> p1
 p1 --> k2(Raw Sink)
 k2 --> c1(BigQuery)
 p1 --> d2(Decoder)
@@ -41,7 +44,7 @@ classDef cyan fill:#eff,stroke:#099;
 classDef green fill:#efe,stroke:#090;
 classDef magenta fill:#fef,stroke:#909;
 classDef orange fill:#fee,stroke:#f90;
-class p,p0,p1,p2,p3,p4,p5,p6 cyan
-class d,d0,d2,d3,d5 green
+class p,p0,p1,p2,p3,p4,p5,p6,p11 cyan
+class d,d0,d2,d3,d5,d11 green
 class k,k0,k1,k2,k3 magenta
 class f,f1 orange

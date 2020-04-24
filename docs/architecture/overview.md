@@ -7,7 +7,15 @@ This document specifies the architecture for GCP Ingestion as a whole.
 ![diagram.mmd](diagram.svg "Architecture Diagram")
 
 - The Kubernetes `Ingestion Edge` sends messages from `Producers` (e.g.
-  Firefox) to PubSub `Raw Topics`
+  Firefox) to PubSub `Raw Topics` and `Account Ecosystem Topics`
+- The Dataflow `Account Ecosystem Decryptor` job loads decrypts a set of keys
+  on startup via Google Cloud KMS, then reads from `Account Ecosystem Topics`,
+  extracting `ecosystem_anon_id` values from the payload, replacing them with
+  decrypted `ecosystem_user_id` values, and publishes the modified payloads
+  to `Raw Topics`
+    - The `ecosystem_anon_id` values are sensitive and must never be written to
+      BigQuery; as such there is no error output here and we must throw out any
+      messages which fail with non-retryable errors, logging the event
 - The `Raw Sink` job copies messages from PubSub `Raw Topics` to
   `BigQuery`
 - The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
@@ -36,6 +44,25 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must accept configuration mapping `uri` to PubSub Topic
     - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
 - Must accept configuration defining HTTP headers to capture
+
+### Account Ecosystem Decryptor
+
+- Must have access restricted to a limited set of operators
+- Must have access to a set of encrypted private keys stored in
+  the source repository or on GCS
+- Must have access to KMS to decrypt the private keys on startup,
+  holding them in memory
+- Must throw away any payload that does not match expected structure
+  - The payload must contain valid JSON
+  - The payload may be compressed via `gzip`
+  - The payload must contain a top-level field called `ecosystem_anon_id`
+    and must _not_ contain top-level fields `ecosystem_user_id` or
+    `previous_ecosystem_user_ids` (which indicate a client not conforming
+    to Account Ecosystem Telemetry contracts)
+- Must replace field `ecosystem_anon_id` with the decrypted value in a
+  field called `ecosystem_user_id`
+- Must replace array-type field `previous_ecosystem_anon_ids` if it exists
+  with the decrypted values in a field called `previous_ecosystem_user_ids`
 
 ### Raw Sink
 
