@@ -13,6 +13,15 @@ services:
           "projects/test/topics/stub_installer",
           ["GET"]
         ],
+        # ## Proposed routes for account ecosystem telemetry
+        # [
+        #   "/submit/telemetry/<document_id:string>/<suffix:account-ecosystem.*>",
+        #   "projects/test/topics/telemetry-ecosystem"
+        # ],
+        # [
+        #   "/submit/<namespace:string>/<suffix:account-ecosystem.*>",
+        #   "projects/test/topics/structured-ecosystem"
+        # ],
         [
           "/submit/telemetry/<suffix:path>",
           "projects/test/topics/telemetry"
