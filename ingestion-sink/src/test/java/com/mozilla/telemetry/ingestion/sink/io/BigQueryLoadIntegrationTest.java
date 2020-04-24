@@ -11,11 +11,10 @@ import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardTableDefinition;
 import com.google.cloud.bigquery.TableId;
 import com.google.cloud.bigquery.TableInfo;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
-import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
-import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.BigQueryDataset;
 import com.mozilla.telemetry.ingestion.sink.util.GcsBucket;
 import java.nio.charset.StandardCharsets;
@@ -47,26 +46,21 @@ public class BigQueryLoadIntegrationTest {
     return tableId.getProject() + "." + tableId.getDataset() + "." + tableId.getTable();
   }
 
-  private BlobInfo generateBlobId(String outputTable) {
-    return BlobInfo
+  private Blob createBlob(String outputTable, String content) {
+    return gcs.storage.create(BlobInfo
         .newBuilder(BlobId.of(gcs.bucket,
             "OUTPUT_TABLE=" + outputTable + "/" + UUID.randomUUID().toString() + ".ndjson"))
-        .build();
-  }
-
-  private BlobInfo createBlob(String outputTable, String content) {
-    return gcs.storage.create(generateBlobId(outputTable),
-        content.getBytes(StandardCharsets.UTF_8));
+        .build(), content.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
   public void canLoad() throws Exception {
     final String outputTable = createTable();
-    final BlobInfo blobInfo = createBlob(outputTable, "{\"payload\":\"canLoad\"}");
+    final Blob blob = createBlob(outputTable, "{\"payload\":\"canLoad\"}");
     // load blob
     final BigQuery.Load loader = new BigQuery.Load(bq.bigquery, gcs.storage, 0, 0, Duration.ZERO,
         ForkJoinPool.commonPool(), BigQuery.Load.Delete.onSuccess);
-    loader.apply(BlobInfoToPubsubMessage.apply(blobInfo)).join();
+    loader.apply(blob).join();
     // check result
     final List<String> actual = StreamSupport
         .stream(bq.bigquery.query(QueryJobConfiguration.of("SELECT * FROM `" + outputTable + "`"))
@@ -78,16 +72,14 @@ public class BigQueryLoadIntegrationTest {
   @Test
   public void failsOnMissingBlob() {
     final String outputTable = createTable();
-    final BlobInfo missingBlob = generateBlobId(outputTable);
-    final BlobInfo presentBlob = createBlob(outputTable, "{}");
+    final Blob presentBlob = createBlob(outputTable, "{}");
+    final Blob missingBlob = createBlob(outputTable, "");
+    missingBlob.delete();
     // load single batch with missing and present blobs
     final BigQuery.Load loader = new BigQuery.Load(bq.bigquery, gcs.storage, 10, 2,
         Duration.ofMillis(500), ForkJoinPool.commonPool(), BigQuery.Load.Delete.onSuccess);
-    final CompletableFuture<Void> missing = loader
-        .apply(PubsubMessage.newBuilder().putAttributes("bucket", missingBlob.getBucket())
-            .putAttributes("name", missingBlob.getName()).putAttributes("size", "0").build());
-    final CompletableFuture<Void> present = loader
-        .apply(BlobInfoToPubsubMessage.apply(presentBlob));
+    final CompletableFuture<Void> present = loader.apply(presentBlob);
+    final CompletableFuture<Void> missing = loader.apply(missingBlob);
     // require single batch of both messages
     assertEquals(ImmutableList.of(2),
         loader.batches.values().stream().map(b -> b.size).collect(Collectors.toList()));

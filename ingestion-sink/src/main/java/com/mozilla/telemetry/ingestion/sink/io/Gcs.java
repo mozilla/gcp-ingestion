@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.ingestion.sink.io;
 
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -39,7 +40,7 @@ public class Gcs {
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
           PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
           PubsubMessageToObjectNode encoder,
-          Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
+          Function<Blob, CompletableFuture<Void>> batchCloseHook) {
         super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor, batchCloseHook);
         this.encoder = encoder;
       }
@@ -55,11 +56,11 @@ public class Gcs {
     }
 
     private final Storage storage;
-    private final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
+    private final Function<Blob, CompletableFuture<Void>> batchCloseHook;
 
     private Write(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
         PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
-        Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
+        Function<Blob, CompletableFuture<Void>> batchCloseHook) {
       super(maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor);
       this.storage = storage;
       this.batchCloseHook = batchCloseHook;
@@ -108,7 +109,6 @@ public class Gcs {
        */
       @Override
       protected CompletableFuture<Void> close() {
-
         return batchCloseHook.apply(
             storage.create(blobInfo, content.toByteArray(), BlobTargetOption.doesNotExist()));
       }

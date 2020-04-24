@@ -8,6 +8,7 @@ import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.JobStatus;
 import com.google.cloud.bigquery.LoadJobConfiguration;
 import com.google.cloud.bigquery.TableId;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
 import com.google.common.annotations.VisibleForTesting;
@@ -16,7 +17,6 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.config.SinkConfig;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToString;
-import com.mozilla.telemetry.ingestion.sink.transform.BlobInfoToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
@@ -138,7 +138,7 @@ public class BigQuery {
    * <p>GCS blobs should have a 7-day expiration policy if {@code Delete.onSuccess} is specified,
    * so that failed loads are deleted after they will no longer be retried.
    */
-  public static class Load extends BatchWrite<PubsubMessage, PubsubMessage, TableId, Void> {
+  public static class Load extends BatchWrite<Blob, Blob, TableId, Void> {
 
     public enum Delete {
       always, onSuccess
@@ -160,8 +160,8 @@ public class BigQuery {
     }
 
     @Override
-    protected TableId getBatchKey(PubsubMessage input) {
-      String sourceUri = input.getAttributesOrThrow(BlobInfoToPubsubMessage.NAME);
+    protected TableId getBatchKey(Blob input) {
+      String sourceUri = input.getName();
       final Matcher outputTableMatcher = OUTPUT_TABLE_PATTERN.matcher(sourceUri);
       if (!outputTableMatcher.matches()) {
         throw new IllegalArgumentException(
@@ -172,7 +172,7 @@ public class BigQuery {
     }
 
     @Override
-    protected PubsubMessage encodeInput(PubsubMessage input) {
+    protected Blob encodeInput(Blob input) {
       return input;
     }
 
@@ -182,7 +182,7 @@ public class BigQuery {
     }
 
     @VisibleForTesting
-    class Batch extends BatchWrite<PubsubMessage, PubsubMessage, TableId, Void>.Batch {
+    class Batch extends BatchWrite<Blob, Blob, TableId, Void>.Batch {
 
       @VisibleForTesting
       final List<BlobId> sourceBlobIds = new LinkedList<>();
@@ -231,15 +231,13 @@ public class BigQuery {
       }
 
       @Override
-      protected void write(PubsubMessage input) {
-        sourceBlobIds.add(BlobId.of(input.getAttributesOrThrow(BlobInfoToPubsubMessage.BUCKET),
-            input.getAttributesOrThrow(BlobInfoToPubsubMessage.NAME)));
+      protected void write(Blob input) {
+        sourceBlobIds.add(input.getBlobId());
       }
 
       @Override
-      protected long getByteSize(PubsubMessage input) {
-        // use blob size
-        return Integer.parseInt(input.getAttributesOrThrow(BlobInfoToPubsubMessage.SIZE));
+      protected long getByteSize(Blob input) {
+        return input.getSize();
       }
     }
   }
