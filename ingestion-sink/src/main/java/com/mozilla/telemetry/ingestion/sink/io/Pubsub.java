@@ -35,12 +35,14 @@ public class Pubsub {
     /** Constructor. */
     public <T> Read(String subscriptionName, Function<PubsubMessage, CompletableFuture<T>> output,
         Function<Subscriber.Builder, Subscriber.Builder> config,
-        Function<PubsubMessage, PubsubMessage> decompress, Executor executor) {
+        Function<PubsubMessage, PubsubMessage> decompress) {
       ProjectSubscriptionName subscription = ProjectSubscriptionName.parse(subscriptionName);
       subscriber = config.apply(Subscriber.newBuilder(subscription,
-          (message, consumer) -> CompletableFuture.completedFuture(message)
-              .thenApplyAsync(decompress, executor).thenComposeAsync(output, executor)
-              .whenCompleteAsync((result, exception) -> {
+          // Synchronous CompletableFuture methods are executed by the thread that completes the
+          // future, or the current thread if the future is already complete. Use that here to
+          // minimize memory usage by doing as much work as immediately possible.
+          (message, consumer) -> CompletableFuture.completedFuture(message).thenApply(decompress)
+              .thenCompose(output).whenComplete((result, exception) -> {
                 if (exception == null) {
                   consumer.ack();
                 } else {
@@ -48,7 +50,7 @@ public class Pubsub {
                   LOG.warn("Exception while attempting to deliver message", exception.getCause());
                   consumer.nack();
                 }
-              }, executor)))
+              })))
           .build();
     }
 

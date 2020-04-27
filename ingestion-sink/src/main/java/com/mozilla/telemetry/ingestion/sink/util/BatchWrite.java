@@ -207,8 +207,10 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
       size = newSize;
       byteSize = newByteSize;
       write(encodedInput);
-      return Optional
-          .of(result.thenAcceptAsync(result -> this.checkResultFor(result, newSize - 1), executor));
+      // Synchronous CompletableFuture methods are executed by the thread that completes the
+      // future, or the current thread if the future is already complete. Use that here to
+      // minimize memory usage by resolving the returned future as soon as possible.
+      return Optional.of(result.thenAccept(result -> this.checkResultFor(result, newSize - 1)));
     }
 
     protected void checkResultFor(BatchResultT batchResult, int index) {
