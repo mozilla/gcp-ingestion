@@ -1,0 +1,14 @@
+#!/bin/bash
+
+./bin/mvn compile exec:java \
+    -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator \
+    -Dexec.args="\
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=document_sample.ndjson \
+    --outputFileFormat=json \
+    --outputType=file \
+    --output=output/out \
+    --errorOutputType=file \
+    --errorOutput=tmp/error
+"
