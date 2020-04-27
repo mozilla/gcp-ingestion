@@ -97,7 +97,10 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
           .read((SchemaAndRecord schemaAndRecord) -> {
             TableSchema tableSchema = schemaAndRecord.getTableSchema();
             GenericRecord record = schemaAndRecord.getRecord();
-            byte[] payload = ((ByteBuffer) record.get("payload")).array();
+            ByteBuffer byteBuffer = (ByteBuffer) record.get("payload");
+            byteBuffer.array();
+            byte[] payload = new byte[byteBuffer.limit()];
+            byteBuffer.get(payload);
 
             // We populate attributes for all simple string and timestamp fields, which is complete
             // for raw and error tables.
