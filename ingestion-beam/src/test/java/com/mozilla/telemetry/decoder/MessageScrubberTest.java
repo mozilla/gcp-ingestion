@@ -297,4 +297,19 @@ public class MessageScrubberTest {
 
     pipeline.run();
   }
+
+  @Test
+  public void testBug1626020Affected() throws Exception {
+    ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
+        + "  \"client_info\": {\n" //
+        + "    \"client_id\": null" //
+        + "  }}").getBytes(StandardCharsets.UTF_8));
+
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "default-browser-agent")
+        .put(Attribute.DOCUMENT_TYPE, "1").build();
+
+    assertThrows(AffectedByBugException.class,
+        () -> MessageScrubber.scrub(attributes, pingToBeScrubbed));
+  }
 }
