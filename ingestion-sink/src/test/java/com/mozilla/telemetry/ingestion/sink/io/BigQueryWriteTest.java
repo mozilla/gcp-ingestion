@@ -27,7 +27,7 @@ import java.util.concurrent.ForkJoinPool;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BigQueryTest {
+public class BigQueryWriteTest {
 
   private static final PubsubMessage EMPTY_MESSAGE = PubsubMessage.newBuilder().build();
   private static final int MAX_BYTES = 100;
