@@ -26,6 +26,7 @@ def generate_jwk(path: Path, name: str):
     https://jwcrypto.readthedocs.io/en/stable/jwk.html
     """
     private_path = path / f"{name}.private.json"
+    public_path = path / f"{name}.public.json"
 
     if private_path.exists():
         print(f"keys for {name} already exist, loading from file")
@@ -33,9 +34,11 @@ def generate_jwk(path: Path, name: str):
             data = json.load(fp)
         return jwk.JWK(**data)
     else:
-        key = jwk.JWK.generate(kty="RSA", size=2048)
+        key = jwk.JWK.generate(kty="EC")
         with (private_path).open("w") as fp:
             write_serialized(key.export_private(), fp)
+        with (public_path).open("w") as fp:
+            write_serialized(key.export_public(), fp)
         return key
 
 
@@ -46,8 +49,8 @@ def encrypt(payload, key: jwk.JWK, path: Path = None):
     """
     public_key = jwk.JWK.from_json(key.export_public())
     protected_header = {
-        "alg": "RSA-OAEP-256",
-        "enc": "A256CBC-HS512",
+        "alg": "ECDH-ES",
+        "enc": "A256GCM",
         "typ": "JWE",
         "kid": public_key.thumbprint(),
     }
