@@ -22,10 +22,8 @@ jobs:
           "84:b0:66:dd:ec:68:b1:45:9d:5d:66:fd:4a:4f:1b:57"
     - run:
         name: Build and deploy docs
-        command: |
-          if [ $CIRCLE_BRANCH == "master" ]; then
-            mkdocs gh-deploy
-          fi
+        command:
+          mkdocs gh-deploy
 
   ingestion-edge:
     working_directory: /root/project/ingestion-edge
@@ -249,22 +247,25 @@ workflows:
   version: 2
   build:
     jobs:
-    - spelling
+    - spelling: &ignore-gh-pages
+        filters:
+          branches:
+            ignore: gh-pages
     - docs:
         filters:
-          tags:
-            only: /.*/
-    - ingestion-edge
+          branches:
+            only: master
+    - ingestion-edge: *ignore-gh-pages
     - ingestion-edge-release:
         filters:
           branches:
             only: master
           tags:
             only: /.*/
-    - ingestion-beam
-    - ingestion-beam-integration
-    - ingestion-sink
-    - ingestion-sink-integration
+    - ingestion-beam: *ignore-gh-pages
+    - ingestion-beam-integration: *ignore-gh-pages
+    - ingestion-sink: *ignore-gh-pages
+    - ingestion-sink-integration: *ignore-gh-pages
     - ingestion-sink-release:
         filters:
           branches:
