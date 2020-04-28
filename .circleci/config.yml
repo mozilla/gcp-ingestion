@@ -24,7 +24,7 @@ jobs:
         name: Build and deploy docs
         command: |
           if [ $CIRCLE_BRANCH == "master" ]; then
-            mkdocs gh-deploy
+            mkdocs gh-deploy -m "[ci skip] Deployed {sha} with MkDocs version: {version}"
           fi
 
   ingestion-edge:
