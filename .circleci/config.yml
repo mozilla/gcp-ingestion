@@ -23,9 +23,7 @@ jobs:
     - run:
         name: Build and deploy docs
         command: |
-          if [ $CIRCLE_BRANCH == "master" ]; then
-            mkdocs gh-deploy -m "[ci skip] Deployed {sha} with MkDocs version: {version}"
-          fi
+          mkdocs gh-deploy -m "[ci skip] Deployed {sha} with MkDocs version: {version}"
 
   ingestion-edge:
     working_directory: /root/project/ingestion-edge
@@ -252,8 +250,8 @@ workflows:
     - spelling
     - docs:
         filters:
-          tags:
-            only: /.*/
+          branches:
+            only: master
     - ingestion-edge
     - ingestion-edge-release:
         filters:
