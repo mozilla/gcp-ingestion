@@ -4,10 +4,12 @@
 
 # This script downloads and extracts the free GeoLite2 city database
 # from MaxMind for use in development.
+set -e
+
+: ${MM_LICENSE_KEY?"maxmind license must be set, see decoder docs for more details"}
 BASE_DIR="$(dirname "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )")"
 DOWNLOAD_URL="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=${MM_LICENSE_KEY}&suffix=tar.gz"
-
-set -e
+DB_NAME="GeoLite2-City.mmdb"
 
 # The GeoLite2-City archive is structured as follows:
 #
@@ -18,14 +20,14 @@ set -e
 #   x GeoLite2-City_20200428/LICENSE.txt
 #
 # Download and extract the mmdb into the current directory if it doesn't exist.
-test -f "$BASE_DIR/$(basename "$LOCAL_EXTRACTED")" || (
+test -f "$BASE_DIR/$DB_NAME" || (
     working=$(mktemp -d)
     cd "$working"
 
     archive=GeoLite2-City.mmdb.gz
     curl -o "$archive" "$DOWNLOAD_URL"
     tar -zxvf "$archive"
-    extracted=$(find "$working" -name '*.mmdb')
+    extracted=$(find "$working" -name "$DB_NAME")
 
     cd -
     mv "$extracted" "$BASE_DIR"
