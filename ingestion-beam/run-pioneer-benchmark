@@ -1,7 +1,11 @@
 #!/bin/bash
 
+set -e
+
 export MAVEN_OPTS="-Xms8g -Xmx8g"
 reset=${RESET:-false}
+
+cd "$(dirname "$0")/.."
 
 if [[ ! -f pioneer_benchmark_data.ndjson ]] || ${reset}; then
     # generate the data using the document sample
@@ -23,8 +27,6 @@ cd -
 rm -r benchmark_data
 mv $tmp_dir/benchmark_data/ benchmark_data/
 
-# unfortunately, it is not possible to run beam locally with the document sample due to OOM issues.
-
 # mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
 #     --geoCityDatabase=GeoLite2-City.mmdb \
 #     --geoCityFilter=cities15000.txt \
@@ -39,7 +41,7 @@ mv $tmp_dir/benchmark_data/ benchmark_data/
 #     --errorOutputType=stderr
 # "
 
-./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
     --geoCityDatabase=GeoLite2-City.mmdb \
     --geoCityFilter=cities15000.txt \
     --schemasLocation=schemas.tar.gz \
