@@ -1,6 +1,52 @@
 #!/bin/bash
 
 export MAVEN_OPTS="-Xms8g -Xmx8g"
+reset=${RESET:-false}
 
-mvn compile exec:java \
-    -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
+if [[ ! -f pioneer_benchmark_data.ndjson ]] || ${reset}; then
+    # generate the data using the document sample
+    mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
+fi
+
+# Shuffle the raw data to avoid data skew when splitting into smaller files.
+# Since the `split` command in BSD doesn't support the `-C` option to split
+# files by maximum size and ending line break, we'll shuffle the data and use
+# the `-l` option to limit by lines.
+tmp_dir=$(mktemp -d)
+shuf document_sample.ndjson > $tmp_dir/shuffled_sample
+cd $tmp_dir
+mkdir -p benchmark_data/raw
+lines=$(wc -l < shuffled_sample)
+chunk=$((lines / 6))
+split -l $chunk shuffled_sample benchmark_data/raw/part-
+cd -
+rm -r benchmark_data
+mv $tmp_dir/benchmark_data/ benchmark_data/
+
+# unfortunately, it is not possible to run beam locally with the document sample due to OOM issues.
+
+# mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+#     --geoCityDatabase=GeoLite2-City.mmdb \
+#     --geoCityFilter=cities15000.txt \
+#     --schemasLocation=schemas.tar.gz \
+#     --pioneerEnabled=true \
+#     --pioneerMetadataLocation=pioneer_benchmark_metadata.json \
+#     --pioneerDecompressPayload=false \
+#     --inputType=file \
+#     --input=pioneer_benchmark_data.json \
+#     --outputType=file \
+#     --output=pioneer_output \
+#     --errorOutputType=stderr
+# "
+
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+    --geoCityDatabase=GeoLite2-City.mmdb \
+    --geoCityFilter=cities15000.txt \
+    --schemasLocation=schemas.tar.gz \
+    --inputType=file \
+    --input='benchmark_data/raw/part-*' \
+    --outputType=file \
+    --output=benchmark_data/output/raw/ \
+    --errorOutputType=file \
+    --errorOutput=benchmark_data/error/
+"
