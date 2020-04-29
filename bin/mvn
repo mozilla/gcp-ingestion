@@ -36,6 +36,7 @@ docker run $INTERACTIVE_FLAGS --rm \
     -v "$GIT_TOPLEVEL":/var/maven/project \
     -w /var/maven/project/"$GIT_PREFIX" \
     -v ~/.m2:/var/maven/.m2 \
+    -e MAVEN_OPTS \
     -e MAVEN_CONFIG=/var/maven/.m2 \
     -e GOOGLE_APPLICATION_CREDENTIALS \
     $MOUNT_CREDENTIALS_FLAGS \
