@@ -1,54 +1,83 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 export MAVEN_OPTS="-Xms8g -Xmx8g"
 reset=${RESET:-false}
+project=$(gcloud config get-value project)
+bucket="gs://${BUCKET:-$project}"
+prefix="ingestion-beam-benchmark"
+staging=benchmark_staging
 
-cd "$(dirname "$0")/.."
 
 if [[ ! -f pioneer_benchmark_data.ndjson ]] || ${reset}; then
-    # generate the data using the document sample
-    mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
+    # generate the data using the document sample, this may take a while depending on your machine
+    ./bin/mvn clean compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
 fi
 
-# Shuffle the raw data to avoid data skew when splitting into smaller files.
-# Since the `split` command in BSD doesn't support the `-C` option to split
-# files by maximum size and ending line break, we'll shuffle the data and use
-# the `-l` option to limit by lines.
-tmp_dir=$(mktemp -d)
-shuf document_sample.ndjson > $tmp_dir/shuffled_sample
-cd $tmp_dir
-mkdir -p benchmark_data/raw
-lines=$(wc -l < shuffled_sample)
-chunk=$((lines / 6))
-split -l $chunk shuffled_sample benchmark_data/raw/part-
-cd -
-rm -r benchmark_data
-mv $tmp_dir/benchmark_data/ benchmark_data/
+# assert bucket can be read
+gsutil ls "$bucket" &> /dev/null
 
-# mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
-#     --geoCityDatabase=GeoLite2-City.mmdb \
-#     --geoCityFilter=cities15000.txt \
-#     --schemasLocation=schemas.tar.gz \
-#     --pioneerEnabled=true \
-#     --pioneerMetadataLocation=pioneer_benchmark_metadata.json \
-#     --pioneerDecompressPayload=false \
-#     --inputType=file \
-#     --input=pioneer_benchmark_data.json \
-#     --outputType=file \
-#     --output=pioneer_output \
-#     --errorOutputType=stderr
-# "
+# generate a new folder and sync it to gcs, assumes a bucket value
+if [[ ! -d $staging ]]; then
+    plaintext=$staging/input/plaintext
+    ciphertext=$staging/input/ciphertext
+    metadata=$staging/metadata
+    mkdir -p $plaintext
+    mkdir -p $ciphertext
+    mkdir -p $metadata
+    shuf document_sample.ndjson > $plaintext/part-0.ndjson
+    shuf pioneer_benchmark_data.ndjson > $ciphertext/part-0.ndjson
+    cp pioneer_benchmark_key.json $staging/metadata/key.json
+    # compute the location of the remote key and insert it into the metadata
+    remote_key="$bucket/$prefix/metadata/key.json"
+    jq "(.. | .private_key_uri?) |= \"$remote_key\"" pioneer_benchmark_metadata.json > $staging/metadata/metadata.json
+    cp schemas.tar.gz $metadata
+    cp cities15000.txt $metadata
+    cp GeoLite2-City.mmdb $metadata
+fi
+gsutil -m rsync -R -d $staging/ "$bucket/$prefix/"
 
-mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
-    --geoCityDatabase=GeoLite2-City.mmdb \
-    --geoCityFilter=cities15000.txt \
-    --schemasLocation=schemas.tar.gz \
+# plaintext
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+    --runner=Dataflow \
+    --profilingAgentConfiguration='{\"APICurated\": true}'
+    --project=$project \
+    --autoscalingAlgorithm=NONE \
+    --workerMachineType=n1-standard-1 \
+    --gcpTempLocation=$bucket/tmp \
+    --numWorkers=2 \
+    --geoCityDatabase=$bucket/$prefix/metadata/GeoLite2-City.mmdb \
+    --geoCityFilter=$bucket/$prefix/metadata/cities15000.txt \
+    --schemasLocation=$bucket/$prefix/metadata/schemas.tar.gz \
     --inputType=file \
-    --input='benchmark_data/raw/part-*' \
+    --input=$bucket/$prefix/input/plaintext/'part-*' \
     --outputType=file \
-    --output=benchmark_data/output/raw/ \
+    --output=$bucket/$prefix/output/plaintext/ \
     --errorOutputType=file \
-    --errorOutput=benchmark_data/error/
+    --errorOutput=$bucket/$prefix/error/plaintext/ \
+"
+
+# ciphertext
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+    --runner=Dataflow \
+    --profilingAgentConfiguration='{\"APICurated\": true}'
+    --project=$project \
+    --autoscalingAlgorithm=NONE \
+    --workerMachineType=n1-standard-1 \
+    --gcpTempLocation=$bucket/tmp \
+    --numWorkers=2 \
+    --pioneerEnabled=true \
+    --pioneerMetadataLocation=$bucket/$prefix/metadata/metadata.json \
+    --pioneerKmsEnabled=false \
+    --pioneerDecompressPayload=false \
+    --geoCityDatabase=$bucket/$prefix/metadata/GeoLite2-City.mmdb \
+    --geoCityFilter=$bucket/$prefix/metadata/cities15000.txt \
+    --schemasLocation=$bucket/$prefix/metadata/schemas.tar.gz \
+    --inputType=file \
+    --input=$bucket/$prefix/input/ciphertext/'part-*' \
+    --outputType=file \
+    --output=$bucket/$prefix/output/ciphertext/ \
+    --errorOutputType=file \
+    --errorOutput=$bucket/$prefix/error/ciphertext/ \
 "
