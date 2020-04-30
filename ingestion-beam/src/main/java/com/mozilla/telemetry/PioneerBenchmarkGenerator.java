@@ -23,10 +23,12 @@ import org.jose4j.jwk.JsonWebKey.OutputControlLevel;
 import org.jose4j.keys.EllipticCurves;
 import org.jose4j.lang.JoseException;
 
+/** Generate a dataset for benchmarking the DecryptPioneerPayloads transform. */
 public class PioneerBenchmarkGenerator {
 
-  final static ObjectMapper mapper = new ObjectMapper();
+  static final ObjectMapper mapper = new ObjectMapper();
 
+  /** Encrypt a payload using a public key and insert it into an envelope. */
   public static byte[] encrypt(byte[] data, PublicKey key) throws IOException, JoseException {
     JsonWebEncryption jwe = new JsonWebEncryption();
     jwe.setPayload(new String(data, Charsets.UTF_8));
@@ -39,6 +41,7 @@ public class PioneerBenchmarkGenerator {
     return Json.asString(node).getBytes(Charsets.UTF_8);
   }
 
+  /** Read a Pubsub ndjson message wrapping failures in an Optional. */
   public static Optional<PubsubMessage> parsePubsub(String data) {
     try {
       return Optional.of(Json.readPubsubMessage(data));
@@ -48,6 +51,7 @@ public class PioneerBenchmarkGenerator {
     }
   }
 
+  /** Encrypt the payload in a Pubsub message and place it into an envelope. */
   public static Optional<String> transform(PubsubMessage message, PublicKey key) {
     try {
       PubsubMessage encryptedMessage = new PubsubMessage(encrypt(message.getPayload(), key),
@@ -63,10 +67,10 @@ public class PioneerBenchmarkGenerator {
    * Pioneer parameters and envelope. Write out the relevant metadata files for
    * the single key in use. */
   public static void main(final String[] args) throws JoseException, IOException {
-    Path inputPath = Paths.get("document_sample.ndjson");
-    Path outputPath = Paths.get("pioneer_benchmark_data.ndjson");
-    Path keyPath = Paths.get("pioneer_benchmark_key.json");
-    Path metadataPath = Paths.get("pioneer_benchmark_metadata.json");
+    final Path inputPath = Paths.get("document_sample.ndjson");
+    final Path outputPath = Paths.get("pioneer_benchmark_data.ndjson");
+    final Path keyPath = Paths.get("pioneer_benchmark_key.json");
+    final Path metadataPath = Paths.get("pioneer_benchmark_metadata.json");
 
     EllipticCurveJsonWebKey key = EcJwkGenerator.generateJwk(EllipticCurves.P256);
     HashSet<String> namespaces = new HashSet<String>();
