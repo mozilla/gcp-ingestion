@@ -19,6 +19,7 @@ import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwe.KeyManagementAlgorithmIdentifiers;
 import org.jose4j.jwk.EcJwkGenerator;
 import org.jose4j.jwk.EllipticCurveJsonWebKey;
+import org.jose4j.jwk.JsonWebKey.OutputControlLevel;
 import org.jose4j.keys.EllipticCurves;
 import org.jose4j.lang.JoseException;
 
@@ -64,7 +65,7 @@ public class PioneerBenchmarkGenerator {
   public static void main(final String[] args) throws JoseException, IOException {
     Path inputPath = Paths.get("document_sample.ndjson");
     Path outputPath = Paths.get("pioneer_benchmark_data.ndjson");
-    Path keyPath = Paths.get("pioneer_benchmark_key.ndjson");
+    Path keyPath = Paths.get("pioneer_benchmark_key.json");
     Path metadataPath = Paths.get("pioneer_benchmark_metadata.json");
 
     EllipticCurveJsonWebKey key = EcJwkGenerator.generateJwk(EllipticCurves.P256);
@@ -84,7 +85,7 @@ public class PioneerBenchmarkGenerator {
     }
 
     // write out the key
-    Files.write(keyPath, key.toJson().getBytes(Charsets.UTF_8));
+    Files.write(keyPath, key.toJson(OutputControlLevel.INCLUDE_PRIVATE).getBytes(Charsets.UTF_8));
 
     // write out the metadata
     ArrayNode metadata = mapper.createArrayNode();
