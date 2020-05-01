@@ -82,10 +82,10 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
 
   protected final PubsubMessageToTemplatedString batchKeyTemplate;
   protected final Executor executor;
+  protected final Duration maxDelay;
 
   private final long maxBytes;
   private final int maxMessages;
-  private final Duration maxDelay;
 
   /** Constructor. */
   public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
@@ -165,17 +165,21 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
         .orElseThrow(() -> new IllegalArgumentException("Empty batch rejected input"));
   }
 
+  public void flush() {
+    batches.values().stream().map(Batch::flush).forEach(CompletableFuture::join);
+  }
+
   public abstract class Batch {
 
     // block this batch from completing by timeout until this future is completed
     final CompletableFuture<Void> init = new CompletableFuture<>();
 
-    // wait for init then mark this batch full after maxDelay
     @VisibleForTesting
-    final CompletableFuture<Void> full = init.thenComposeAsync(v -> new TimedFuture(maxDelay));
+    public final CompletableFuture<Void> full = init
+        .thenComposeAsync(v -> new TimedFuture(maxDelay));
 
-    // wait for full then synchronize and close
-    private final CompletableFuture<BatchResultT> result = full
+    @VisibleForTesting
+    public final CompletableFuture<BatchResultT> result = full
         .thenComposeAsync(this::synchronousClose, executor);
 
     @VisibleForTesting
@@ -194,6 +198,11 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
       return close();
     }
 
+    protected synchronized CompletableFuture<BatchResultT> flush() {
+      this.full.complete(null);
+      return result;
+    }
+
     private synchronized Optional<CompletableFuture<Void>> add(EncodedT encodedInput) {
       if (full.isDone()) {
         return Optional.empty();
@@ -201,7 +210,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
       int newSize = size + 1;
       long newByteSize = byteSize + getByteSize(encodedInput);
       if (size > 0 && (newSize > maxMessages || newByteSize > maxBytes)) {
-        this.full.complete(null);
+        flush();
         return Optional.empty();
       }
       size = newSize;

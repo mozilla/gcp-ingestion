@@ -1,7 +1,7 @@
 package com.mozilla.telemetry.ingestion.sink.util;
 
 import com.mozilla.telemetry.ingestion.sink.config.SinkConfig;
-import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
+import com.mozilla.telemetry.ingestion.sink.io.Input;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.IOException;
 import java.util.concurrent.CancellationException;
@@ -20,16 +20,16 @@ public class BoundedSink extends SinkConfig {
   public static CompletableFuture<Void> runAsync(int messageCount) throws IOException {
     final Output output = getOutput();
     final AtomicInteger counter = new AtomicInteger(0);
-    final AtomicReference<Pubsub.Read> input = new AtomicReference<>();
+    final AtomicReference<Input> input = new AtomicReference<>();
     input.set(getInput(output.via(message -> output.apply(message).thenApplyAsync(v -> {
       final int currentMessages = counter.incrementAndGet();
       if (currentMessages >= messageCount) {
-        input.get().subscriber.stopAsync();
+        input.get().stop();
         StackdriverStatsExporter.unregister();
       }
       return v;
     }))));
-    return CompletableFuture.completedFuture(input.get()).thenAcceptAsync(Pubsub.Read::run);
+    return CompletableFuture.completedFuture(input.get()).thenAcceptAsync(Input::run);
   }
 
   /**

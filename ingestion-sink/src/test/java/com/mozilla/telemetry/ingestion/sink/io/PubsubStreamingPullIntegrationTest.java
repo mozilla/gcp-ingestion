@@ -17,7 +17,7 @@ import org.apache.logging.log4j.junit.LoggerContextRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class PubsubReadIntegrationTest {
+public class PubsubStreamingPullIntegrationTest {
 
   private static final PubsubMessage TEST_MESSAGE = PubsubMessage.newBuilder()
       .setData(ByteString.copyFrom("test".getBytes(StandardCharsets.UTF_8))).build();
@@ -33,13 +33,13 @@ public class PubsubReadIntegrationTest {
     pubsub.publish(TEST_MESSAGE);
 
     AtomicReference<PubsubMessage> received = new AtomicReference<>();
-    AtomicReference<Pubsub.Read> input = new AtomicReference<>();
+    AtomicReference<Input> input = new AtomicReference<>();
 
-    input.set(new Pubsub.Read(pubsub.getSubscription(),
+    input.set(new Pubsub.StreamingPull(pubsub.getSubscription(),
         // handler
         message -> CompletableFuture.supplyAsync(() -> message) // create a future with message
             .thenAccept(received::set) // add message to received
-            .thenRun(() -> input.get().subscriber.stopAsync()), // stop the subscriber
+            .thenRun(() -> input.get().stop()), // stop the subscriber
         // config
         builder -> pubsub.channelProvider
             .map(channelProvider -> builder.setChannelProvider(channelProvider)
@@ -58,9 +58,9 @@ public class PubsubReadIntegrationTest {
     String messageId = pubsub.publish(TEST_MESSAGE);
 
     List<PubsubMessage> received = new LinkedList<>();
-    AtomicReference<Pubsub.Read> input = new AtomicReference<>();
+    AtomicReference<Input> input = new AtomicReference<>();
 
-    input.set(new Pubsub.Read(pubsub.getSubscription(),
+    input.set(new Pubsub.StreamingPull(pubsub.getSubscription(),
         // handler
         message -> CompletableFuture.completedFuture(message) // create a future with message
             .thenAccept(received::add) // add message to received
@@ -69,7 +69,7 @@ public class PubsubReadIntegrationTest {
               if (received.size() == 1) {
                 throw new RuntimeException("test");
               }
-            }).thenRun(() -> input.get().subscriber.stopAsync()), // stop the subscriber
+            }).thenRun(() -> input.get().stop()), // stop the subscriber
         // config
         builder -> pubsub.channelProvider
             .map(channelProvider -> builder.setChannelProvider(channelProvider)

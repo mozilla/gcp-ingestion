@@ -4,6 +4,9 @@ import com.google.api.gax.batching.FlowControlSettings;
 import com.google.api.gax.core.FixedExecutorProvider;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
+import com.google.cloud.pubsub.v1.stub.GrpcSubscriberStub;
+import com.google.cloud.pubsub.v1.stub.SubscriberStub;
+import com.google.cloud.pubsub.v1.stub.SubscriberStubSettings;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -13,6 +16,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
+import com.mozilla.telemetry.ingestion.sink.io.Input;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.CompressPayload;
@@ -21,6 +25,7 @@ import com.mozilla.telemetry.ingestion.sink.transform.DocumentTypePredicate;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
+import com.mozilla.telemetry.ingestion.sink.util.LeaseManager;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -43,6 +48,10 @@ public class SinkConfig {
   private static final String BATCH_MAX_DELAY = "BATCH_MAX_DELAY";
   private static final String BATCH_MAX_MESSAGES = "BATCH_MAX_MESSAGES";
   private static final String BIG_QUERY_OUTPUT_MODE = "BIG_QUERY_OUTPUT_MODE";
+  private static final String LEASE_MANAGER_ACK_DEADLINE = "LEASE_MANAGER_ACK_DEADLINE";
+  private static final String LEASE_MANAGER_BATCH_MAX_DELAY = "LEASE_MANAGER_BATCH_MAX_DELAY";
+  private static final String LEASE_MANAGER_MAX_API_DURATION = "LEASE_MANAGER_MAX_API_DURATION";
+  private static final String LEASE_MANAGER_PARALLELISM = "LEASE_MANAGER_PARALLELISM";
   private static final String LOAD_MAX_BYTES = "LOAD_MAX_BYTES";
   private static final String LOAD_MAX_DELAY = "LOAD_MAX_DELAY";
   private static final String LOAD_MAX_FILES = "LOAD_MAX_FILES";
@@ -62,12 +71,15 @@ public class SinkConfig {
 
   private static final Set<String> INCLUDE_ENV_VARS = ImmutableSet.of(INPUT_COMPRESSION,
       INPUT_PARALLELISM, INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES,
-      BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET,
-      OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_PARALLELISM, OUTPUT_TABLE, OUTPUT_TOPIC,
-      MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION,
-      STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
-      STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
+      BIG_QUERY_OUTPUT_MODE, LEASE_MANAGER_ACK_DEADLINE, LEASE_MANAGER_BATCH_MAX_DELAY,
+      LEASE_MANAGER_MAX_API_DURATION, LEASE_MANAGER_PARALLELISM, LOAD_MAX_BYTES, LOAD_MAX_DELAY,
+      LOAD_MAX_FILES, OUTPUT_BUCKET, OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_PARALLELISM,
+      OUTPUT_TABLE, OUTPUT_TOPIC, MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES,
+      SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY,
+      STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
 
+  // BigQuery ModifyAckDeadline API limits ack deadline seconds to between 10 and 600
+  private static final String DEFAULT_LEASE_MANAGER_ACK_DEADLINE = "600s";
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
   // 10MB API limit by default.
@@ -391,6 +403,10 @@ public class SinkConfig {
     return StorageOptions.getDefaultInstance().getService();
   }
 
+  private static SubscriberStub getPubsubSubscriberStub(Env env) throws IOException {
+    return GrpcSubscriberStub.create(SubscriberStubSettings.newBuilder().build());
+  }
+
   /** Return a configured output transform. */
   public static Output getOutput() {
     Env env = new Env(INCLUDE_ENV_VARS);
@@ -404,25 +420,45 @@ public class SinkConfig {
   }
 
   /** Return a configured input transform. */
-  public static Pubsub.Read getInput(Output output) throws IOException {
+  public static Input getInput(Output output) throws IOException {
     // read pubsub messages from INPUT_SUBSCRIPTION
-    Pubsub.Read input = new Pubsub.Read(output.env.getString(INPUT_SUBSCRIPTION), output,
-        builder -> builder
-            .setFlowControlSettings(FlowControlSettings.newBuilder()
-                .setMaxOutstandingElementCount(
-                    output.type.getMaxOutstandingElementCount(output.env))
-                .setMaxOutstandingRequestBytes(
-                    output.type.getMaxOutstandingRequestBytes(output.env))
-                .build())
-            // Executor to use for reading from Pub/Sub. Tasks executed are expected to be CPU bound
-            // until flow control thresholds are reached, so parallelism should be high enough to
-            // fully utilize all available processors. Parallelism defaults to 6 based on the SDK:
-            // https://github.com/googleapis/java-pubsub/blob/1.60.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L98-L99
-            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
-            .setExecutorProvider(FixedExecutorProvider
-                .create(Executors.newScheduledThreadPool(output.env.getInt(INPUT_PARALLELISM,
-                    Math.max(6, Runtime.getRuntime().availableProcessors() * 2))))),
-        getInputCompression(output.env));
+    final Input input;
+    String subscription = output.env.getString(INPUT_SUBSCRIPTION);
+    // Parallelism of executor to use for reading from Pub/Sub. Tasks executed are expected to be
+    // CPU bound until flow control thresholds are reached, so parallelism should be high enough to
+    // fully utilize all available processors. Parallelism defaults to 6 based on the SDK:
+    // https://github.com/googleapis/java-pubsub/blob/1.60.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L98-L99
+    // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
+    int inputParallelism = output.env.getInt(INPUT_PARALLELISM, 6);
+    if (output.type == OutputType.bigQueryLoad) {
+      // use custom subscriber implementation for bigQueryLoad
+      SubscriberStub client = getPubsubSubscriberStub(output.env);
+      input = new Pubsub.Pull(client, subscription, output, getInputCompression(output.env),
+          Executors.newFixedThreadPool(inputParallelism), inputParallelism,
+          output.type.getMaxOutstandingElementCount(output.env),
+          output.type.getMaxOutstandingRequestBytes(output.env),
+          new LeaseManager(client, subscription,
+              output.env.getDuration(LEASE_MANAGER_ACK_DEADLINE,
+                  DEFAULT_LEASE_MANAGER_ACK_DEADLINE),
+              output.env.getDuration(LEASE_MANAGER_BATCH_MAX_DELAY,
+                  DEFAULT_STREAMING_BATCH_MAX_DELAY),
+              output.env.getDuration(LEASE_MANAGER_MAX_API_DURATION,
+                  DEFAULT_STREAMING_BATCH_MAX_DELAY),
+              new ForkJoinPool(output.env.getInt(LEASE_MANAGER_PARALLELISM, 10)))
+                  .withOpenCensusMetrics());
+    } else {
+      input = new Pubsub.StreamingPull(subscription, output,
+          builder -> builder
+              .setFlowControlSettings(FlowControlSettings.newBuilder()
+                  .setMaxOutstandingElementCount(
+                      output.type.getMaxOutstandingElementCount(output.env))
+                  .setMaxOutstandingRequestBytes(
+                      output.type.getMaxOutstandingRequestBytes(output.env))
+                  .build())
+              .setExecutorProvider(
+                  FixedExecutorProvider.create(Executors.newScheduledThreadPool(inputParallelism))),
+          getInputCompression(output.env));
+    }
     output.env.requireAllVarsUsed();
     // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
     // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/

@@ -23,6 +23,7 @@ import com.mozilla.telemetry.ingestion.sink.util.BoundedSink;
 import com.mozilla.telemetry.ingestion.sink.util.GcsBucket;
 import com.mozilla.telemetry.ingestion.sink.util.PubsubTopics;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -94,7 +95,8 @@ public class SinkBigQueryIntegrationTest {
 
     // allow retries to handle possible delayed availability of streaming insert
     List<List<String>> actual = null;
-    for (int attempt = 0; attempt < 2; attempt++) {
+    int maxAttempts = 2;
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
       actual = StreamSupport
           .stream(bq.bigquery.query(QueryJobConfiguration.of(query)).iterateAll().spliterator(),
               false)
@@ -102,6 +104,9 @@ public class SinkBigQueryIntegrationTest {
           .collect(Collectors.toList());
       if (actual.size() == sorted.size()) {
         break;
+      } else if (attempt < maxAttempts - 1) {
+        // delay between read attempts
+        Thread.sleep(Duration.ofSeconds(1).toMillis());
       }
     }
 

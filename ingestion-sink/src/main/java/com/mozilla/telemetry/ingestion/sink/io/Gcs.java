@@ -67,6 +67,15 @@ public class Gcs {
     }
 
     @Override
+    public void flush() {
+      super.flush();
+      // propagate flush to batchCloseHook
+      if (batchCloseHook instanceof BatchWrite) {
+        ((BatchWrite) batchCloseHook).flush();
+      }
+    }
+
+    @Override
     protected String getBatchKey(PubsubMessage input) {
       return batchKeyTemplate.apply(input);
     }
