@@ -42,7 +42,7 @@ def generate_jwk(path: Path, name: str):
         return key
 
 
-def encrypt(payload, key: jwk.JWK, path: Path = None):
+def encrypt(payload, key: jwk.JWK, namespace: str, path: Path = None):
     """Encrypt and assemble a payload.
 
     https://jwcrypto.readthedocs.io/en/stable/jwe.html
@@ -57,8 +57,23 @@ def encrypt(payload, key: jwk.JWK, path: Path = None):
     compressed = gzip.compress(json.dumps(payload).encode())
     jwetoken = jwe.JWE(compressed, recipient=public_key, protected=protected_header)
 
-    # ugly deserialization and serialization
-    envelope = {"payload": jwetoken.serialize(compact=True)}
+    # load the envelope
+    with (pioneer / "telemetry.pioneer-study.4.sample.pass.json").open("r") as fp:
+        envelope = json.load(fp)
+
+    # by convention, the encryption key is the document namespace since each
+    # study is contained within a dataset
+    envelope["payload"] = {
+        **envelope["payload"],
+        **dict(
+            encryptedData=jwetoken.serialize(compact=True),
+            encryptionKeyId=namespace,
+            schemaNamespace=namespace,
+            schemaName="test",
+            schemaVersion=1,
+        ),
+    }
+
     if path:
         with path.open("w") as fp:
             write_serialized(json.dumps(envelope), fp)
@@ -70,7 +85,7 @@ def decrypt(key: jwk.JWK, path: Path):
     with path.open("rb") as fp:
         envelope = json.load(fp)
     jwetoken = jwe.JWE()
-    jwetoken.deserialize(envelope["payload"])
+    jwetoken.deserialize(envelope["payload"]["encryptedData"])
     jwetoken.decrypt(key)
     payload = gzip.decompress(jwetoken.payload).decode()
     return json.loads(payload)
@@ -100,7 +115,7 @@ def encrypt_decoder_integration_input(
     encrypted = []
     for line in lines:
         data = json.loads(line)
-        payload = encrypt(json.loads(b64decode(data["payload"])), key)
+        payload = encrypt(json.loads(b64decode(data["payload"])), key, "test")
         data["payload"] = b64encode(json.dumps(payload).encode()).decode()
         encrypted.append(data)
 
@@ -118,7 +133,7 @@ def main():
             sample = json.load(fp)
 
         path = pioneer / f"{study_id}.ciphertext.json"
-        encrypt(sample, key, path)
+        encrypt(sample, key, study_id, path)
         result = decrypt(key, path)
 
         assert sample == result, "payload does not match"
