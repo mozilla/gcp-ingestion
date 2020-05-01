@@ -7,13 +7,16 @@
 # Initial findings show that for every 1 minute spent on ParsePayload, there are
 # 3 minutes spend on DecryptPioneerPayloads. Peak throughput in ParsePayload
 # goes from 3360 elements/sec to 2466 elements/sec when adding encryption.
+#
+# This script requires the use of GNU Coreutils. This may be installed on MacOS
+# via homebrew: `brew install coreutils`.
 
 set -ex
 
 export MAVEN_OPTS="-Xms8g -Xmx8g"
 reset=${RESET:-false}
 project=$(gcloud config get-value project)
-bucket="gs://${BUCKET:-$project}"
+bucket="gs://${BUCKET?bucket value must be specified}"
 prefix="ingestion-beam-benchmark"
 staging="benchmark_staging"
 
@@ -24,7 +27,7 @@ if [[ ! -f document_sample.ndjson ]]; then
     exit 1
 fi
 
-if [[ ! -f pioneer_benchmark_data.ndjson ]] || ${reset}; then
+if [[ ! -f pioneer_benchmark_data.ndjson ]] || [[ ${reset} == "true" ]]; then
     # generate the data using the document sample, this may take a while depending on your machine
     ./bin/mvn clean compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
 fi
