@@ -54,6 +54,13 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     return json.toString();
   }
 
+  private String removeRequiredSchemaNamespace(String jsonData) throws Exception {
+    ObjectNode json = Json.readObjectNode(jsonData);
+    // This effectively turns the schema into a v1 pioneer-study ping
+    ((ObjectNode) json.get("payload")).remove("schemaNamespace");
+    return json.toString();
+  }
+
   private static final class ReformatJson
       extends PTransform<PCollection<String>, PCollection<String>> {
 
@@ -130,10 +137,11 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
         .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
 
-    final List<String> input = readTestFiles(
-        Arrays.asList("pioneer/study-foo.ciphertext.json", "pioneer/study-foo.ciphertext.json"));
+    final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json",
+        "pioneer/study-foo.ciphertext.json", "pioneer/study-foo.ciphertext.json"));
     input.set(0, modifyEncryptionKeyId(input.get(0), "invalid-key")); // IOException
     input.set(1, modifyEncryptionKeyId(input.get(1), "study-bar")); // JoseException
+    input.set(2, removeRequiredSchemaNamespace(input.get(2))); // ValidationException
 
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
@@ -151,7 +159,7 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
     // IntegrityException extends JoseException
     PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
-        "org.jose4j.lang.JoseException");
+        "org.jose4j.lang.JoseException", "org.everit.json.schema.ValidationException");
 
     pipeline.run();
   }

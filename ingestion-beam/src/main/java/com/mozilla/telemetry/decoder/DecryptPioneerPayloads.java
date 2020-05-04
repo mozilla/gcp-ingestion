@@ -58,7 +58,7 @@ public class DecryptPioneerPayloads extends
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (IOException | JoseException e) {
+          } catch (IOException | JoseException | ValidationException e) {
             return FailureMessage.of(DecryptPioneerPayloads.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
