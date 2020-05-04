@@ -47,6 +47,13 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     }).toArray(String[]::new));
   }
 
+  private String modifyEncryptionKeyId(String jsonData, String newEncryptionKeyId)
+      throws Exception {
+    ObjectNode json = Json.readObjectNode(jsonData);
+    ((ObjectNode) json.get("payload")).put("encryptionKeyId", newEncryptionKeyId);
+    return json.toString();
+  }
+
   private static final class ReformatJson
       extends PTransform<PCollection<String>, PCollection<String>> {
 
@@ -81,7 +88,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     byte[] plaintext = Resources
         .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
 
-    String payload = Json.readObjectNode(ciphertext).get("payload").textValue();
+    String payload = Json.readObjectNode(ciphertext).get("payload").get("encryptedData")
+        .textValue();
     byte[] decrypted = DecryptPioneerPayloads.decrypt(key, payload);
     byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
 
@@ -116,15 +124,16 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testErrors() {
+  public void testErrors() throws Exception {
     // minimal test for throughput of a single document
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
 
-    // TODO: this test is broken because the file must be modified to map the payload to the wrong
-    // key
-    final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"));
+    final List<String> input = readTestFiles(
+        Arrays.asList("pioneer/study-foo.ciphertext.json", "pioneer/study-foo.ciphertext.json"));
+    input.set(0, modifyEncryptionKeyId(input.get(0), "invalid-key")); // IOException
+    input.set(1, modifyEncryptionKeyId(input.get(1), "study-bar")); // JoseException
 
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
@@ -141,7 +150,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     PCollection<String> exceptions = result.failures().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
     // IntegrityException extends JoseException
-    PAssert.that(exceptions).containsInAnyOrder("org.jose4j.lang.IntegrityException");
+    PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
+        "org.jose4j.lang.JoseException");
 
     pipeline.run();
   }

@@ -105,14 +105,15 @@ public class DecryptPioneerPayloads extends
       String encryptionKeyId = payload.get("encryptionKeyId").asText();
       PrivateKey key = keyStore.getKey(encryptionKeyId);
       if (key == null) {
-        throw new RuntimeException(String.format("encryptionKeyId not found: %s", encryptionKeyId));
+        // Is this really an IOException?
+        throw new IOException(String.format("encryptionKeyId not found: %s", encryptionKeyId));
       }
 
       // NOTE: there could be a method for handling merging metadata like
       // application into the decrypted payload. More serialization and
       // deserialization could be detrimental to performance, and they payload
       // may be gzipped.
-      byte[] decrypted = decrypt(key, payload.get("encryptedData").asText());
+      final byte[] decrypted = decrypt(key, payload.get("encryptedData").asText());
 
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
