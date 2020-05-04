@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PublicKey;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -52,10 +54,24 @@ public class PioneerBenchmarkGenerator {
   }
 
   /** Encrypt the payload in a Pubsub message and place it into an envelope. */
-  public static Optional<String> transform(PubsubMessage message, PublicKey key) {
+  public static Optional<String> transform(PubsubMessage message, PublicKey key,
+      byte[] exampleData) {
     try {
-      PubsubMessage encryptedMessage = new PubsubMessage(encrypt(message.getPayload(), key),
-          message.getAttributeMap());
+      HashMap<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
+      ObjectNode node = Json.readObjectNode(exampleData);
+      ObjectNode payload = (ObjectNode) node.get("payload");
+
+      payload.put("encryptedData", new String(encrypt(message.getPayload(), key)));
+      payload.put("encryptionKeyId", attributes.get(Attribute.DOCUMENT_NAMESPACE));
+      payload.put("schemaNamespace", attributes.get(Attribute.DOCUMENT_NAMESPACE));
+      payload.put("schemaName", attributes.get(Attribute.DOCUMENT_TYPE));
+      payload.put("schemaVersion", attributes.get(Attribute.DOCUMENT_VERSION));
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, "telemetry");
+      attributes.put(Attribute.DOCUMENT_TYPE, "pioneer-study");
+      attributes.put(Attribute.DOCUMENT_VERSION, "4");
+
+      PubsubMessage encryptedMessage = new PubsubMessage(
+          Json.asString(node).getBytes(Charsets.UTF_8), attributes);
       return Optional.of(Json.asString(encryptedMessage));
     } catch (IOException | JoseException e) {
       e.printStackTrace();
@@ -71,6 +87,9 @@ public class PioneerBenchmarkGenerator {
     final Path outputPath = Paths.get("pioneer_benchmark_data.ndjson");
     final Path keyPath = Paths.get("pioneer_benchmark_key.json");
     final Path metadataPath = Paths.get("pioneer_benchmark_metadata.json");
+    final Path examplePath = Paths
+        .get("src/test/resources/pioneer/telemetry.pioneer-study.4.sample.pass.json");
+    final byte[] exampleData = Files.readAllBytes(examplePath);
 
     EllipticCurveJsonWebKey key = EcJwkGenerator.generateJwk(EllipticCurves.P256);
     HashSet<String> namespaces = new HashSet<String>();
@@ -82,7 +101,7 @@ public class PioneerBenchmarkGenerator {
           .filter(Optional::isPresent).map(Optional::get).map(message -> {
             // side-effects and side-input
             namespaces.add(message.getAttribute("document_namespace"));
-            return transform(message, key.getPublicKey());
+            return transform(message, key.getPublicKey(), exampleData);
           }).filter(Optional::isPresent).map(Optional::get)::iterator);
     } catch (IOException e) {
       e.printStackTrace();
