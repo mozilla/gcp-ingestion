@@ -30,17 +30,14 @@ public class PioneerBenchmarkGenerator {
 
   static final ObjectMapper mapper = new ObjectMapper();
 
-  /** Encrypt a payload using a public key and insert it into an envelope. */
-  public static byte[] encrypt(byte[] data, PublicKey key) throws IOException, JoseException {
+  /** Encrypt a payload using a public key. */
+  public static String encrypt(byte[] data, PublicKey key) throws IOException, JoseException {
     JsonWebEncryption jwe = new JsonWebEncryption();
     jwe.setPayload(new String(data, Charsets.UTF_8));
     jwe.setAlgorithmHeaderValue(KeyManagementAlgorithmIdentifiers.ECDH_ES);
     jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithmIdentifiers.AES_256_GCM);
     jwe.setKey(key);
-    String serializedJwe = jwe.getCompactSerialization();
-    ObjectNode node = mapper.createObjectNode();
-    node.put("payload", serializedJwe);
-    return Json.asString(node).getBytes(Charsets.UTF_8);
+    return jwe.getCompactSerialization();
   }
 
   /** Read a Pubsub ndjson message wrapping failures in an Optional. */
@@ -61,7 +58,7 @@ public class PioneerBenchmarkGenerator {
       ObjectNode node = Json.readObjectNode(exampleData);
       ObjectNode payload = (ObjectNode) node.get("payload");
 
-      payload.put("encryptedData", new String(encrypt(message.getPayload(), key)));
+      payload.put("encryptedData", encrypt(message.getPayload(), key));
       payload.put("encryptionKeyId", attributes.get(Attribute.DOCUMENT_NAMESPACE));
       payload.put("schemaNamespace", attributes.get(Attribute.DOCUMENT_NAMESPACE));
       payload.put("schemaName", attributes.get(Attribute.DOCUMENT_TYPE));
