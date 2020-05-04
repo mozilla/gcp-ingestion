@@ -100,6 +100,11 @@ public class MessageScrubber {
       throw new AffectedByBugException("1489560");
     }
 
+    // No such docType: default-browser-agent/1
+    if ("default-browser-agent".equals(namespace) && "1".equals(docType)) {
+      throw new AffectedByBugException("1626020");
+    }
+
     // Redactions (message is altered, but allowed through).
     if (bug1602844Affected(attributes)) {
       json.path("events").elements().forEachRemaining(event -> {
@@ -110,7 +115,6 @@ public class MessageScrubber {
         markBugCounter("1602844");
       });
     }
-
   }
 
   private static void markBugCounter(String bugNumber) {
