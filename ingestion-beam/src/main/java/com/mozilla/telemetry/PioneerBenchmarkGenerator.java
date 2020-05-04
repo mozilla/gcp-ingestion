@@ -65,7 +65,7 @@ public class PioneerBenchmarkGenerator {
       payload.put("encryptionKeyId", attributes.get(Attribute.DOCUMENT_NAMESPACE));
       payload.put("schemaNamespace", attributes.get(Attribute.DOCUMENT_NAMESPACE));
       payload.put("schemaName", attributes.get(Attribute.DOCUMENT_TYPE));
-      payload.put("schemaVersion", attributes.get(Attribute.DOCUMENT_VERSION));
+      payload.put("schemaVersion", Integer.parseInt(attributes.get(Attribute.DOCUMENT_VERSION)));
       attributes.put(Attribute.DOCUMENT_NAMESPACE, "telemetry");
       attributes.put(Attribute.DOCUMENT_TYPE, "pioneer-study");
       attributes.put(Attribute.DOCUMENT_VERSION, "4");
