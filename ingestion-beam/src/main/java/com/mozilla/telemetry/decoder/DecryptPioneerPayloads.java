@@ -1,15 +1,21 @@
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
+import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.JsonValidator;
 import com.mozilla.telemetry.util.KeyStore;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.FlatMapElements;
@@ -19,6 +25,8 @@ import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.everit.json.schema.Schema;
+import org.everit.json.schema.ValidationException;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.lang.JoseException;
 
@@ -28,6 +36,14 @@ public class DecryptPioneerPayloads extends
   private final ValueProvider<String> metadataLocation;
   private final ValueProvider<Boolean> kmsEnabled;
   private transient KeyStore keyStore;
+  private transient JsonValidator validator;
+  private transient Schema envelopeSchema;
+
+  public static final String ENCRYPTED_DATA = "encryptedData";
+  public static final String ENCRYPTION_KEY_ID = "encryptionKeyId";
+  public static final String SCHEMA_NAMESPACE = "schemaNamespace";
+  public static final String SCHEMA_NAME = "schemaName";
+  public static final String SCHEMA_VERSION = "schemaVersion";
 
   public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled) {
@@ -49,7 +65,7 @@ public class DecryptPioneerPayloads extends
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (IOException | JoseException e) {
+          } catch (IOException | JoseException | ValidationException e) {
             return FailureMessage.of(DecryptPioneerPayloads.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
@@ -71,7 +87,8 @@ public class DecryptPioneerPayloads extends
   private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
 
     @Override
-    public Iterable<PubsubMessage> apply(PubsubMessage message) throws IOException, JoseException {
+    public Iterable<PubsubMessage> apply(PubsubMessage message)
+        throws IOException, JoseException, ValidationException {
       message = PubsubConstraints.ensureNonNull(message);
 
       if (keyStore == null) {
@@ -81,11 +98,36 @@ public class DecryptPioneerPayloads extends
         keyStore = KeyStore.of(metadataLocation.get(), kmsEnabled.get());
       }
 
-      ObjectNode json = Json.readObjectNode(message.getPayload());
-      PrivateKey key = keyStore.getKey(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
+      if (validator == null) {
+        validator = new JsonValidator();
+        byte[] data = Resources
+            .toByteArray(Resources.getResource("telemetry.pioneer-study.4.schema.json"));
+        envelopeSchema = JSONSchemaStore.readSchema(data);
+      }
 
-      byte[] decrypted = decrypt(key, json.get(FieldName.PAYLOAD).asText());
-      return Collections.singletonList(new PubsubMessage(decrypted, message.getAttributeMap()));
+      ObjectNode json = Json.readObjectNode(message.getPayload());
+      validator.validate(envelopeSchema, json);
+      JsonNode payload = json.get(FieldName.PAYLOAD);
+
+      String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
+      PrivateKey key = keyStore.getKey(encryptionKeyId);
+      if (key == null) {
+        // Is this really an IOException?
+        throw new IOException(String.format("encryptionKeyId not found: %s", encryptionKeyId));
+      }
+
+      // NOTE: there could be a method for handling merging metadata like
+      // application into the decrypted payload. More serialization and
+      // deserialization could be detrimental to performance, and they payload
+      // may be gzipped.
+      final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
+
+      // Redirect messages via attributes
+      Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, payload.get(SCHEMA_NAMESPACE).asText());
+      attributes.put(Attribute.DOCUMENT_TYPE, payload.get(SCHEMA_NAME).asText());
+      attributes.put(Attribute.DOCUMENT_VERSION, payload.get(SCHEMA_VERSION).asText());
+      return Collections.singletonList(new PubsubMessage(decrypted, attributes));
     }
   }
 }
