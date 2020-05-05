@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -37,6 +38,12 @@ public class DecryptPioneerPayloads extends
   private transient KeyStore keyStore;
   private transient JsonValidator validator;
   private transient Schema envelopeSchema;
+
+  public static final String ENCRYPTED_DATA = "encryptedData";
+  public static final String ENCRYPTION_KEY_ID = "encryptionKeyId";
+  public static final String SCHEMA_NAMESPACE = "schemaNamespace";
+  public static final String SCHEMA_NAME = "schemaName";
+  public static final String SCHEMA_VERSION = "schemaVersion";
 
   public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled) {
@@ -100,9 +107,9 @@ public class DecryptPioneerPayloads extends
 
       ObjectNode json = Json.readObjectNode(message.getPayload());
       validator.validate(envelopeSchema, json);
-      JsonNode payload = json.get("payload");
+      JsonNode payload = json.get(FieldName.PAYLOAD);
 
-      String encryptionKeyId = payload.get("encryptionKeyId").asText();
+      String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
       PrivateKey key = keyStore.getKey(encryptionKeyId);
       if (key == null) {
         // Is this really an IOException?
@@ -113,13 +120,13 @@ public class DecryptPioneerPayloads extends
       // application into the decrypted payload. More serialization and
       // deserialization could be detrimental to performance, and they payload
       // may be gzipped.
-      final byte[] decrypted = decrypt(key, payload.get("encryptedData").asText());
+      final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
 
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
-      attributes.put(Attribute.DOCUMENT_NAMESPACE, payload.get("schemaNamespace").asText());
-      attributes.put(Attribute.DOCUMENT_TYPE, payload.get("schemaName").asText());
-      attributes.put(Attribute.DOCUMENT_VERSION, payload.get("schemaVersion").asText());
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, payload.get(SCHEMA_NAMESPACE).asText());
+      attributes.put(Attribute.DOCUMENT_TYPE, payload.get(SCHEMA_NAME).asText());
+      attributes.put(Attribute.DOCUMENT_VERSION, payload.get(SCHEMA_VERSION).asText());
       return Collections.singletonList(new PubsubMessage(decrypted, attributes));
     }
   }

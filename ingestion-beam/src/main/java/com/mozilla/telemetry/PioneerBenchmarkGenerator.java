@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -56,13 +58,16 @@ public class PioneerBenchmarkGenerator {
     try {
       HashMap<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
       ObjectNode node = Json.readObjectNode(exampleData);
-      ObjectNode payload = (ObjectNode) node.get("payload");
+      ObjectNode payload = (ObjectNode) node.get(FieldName.PAYLOAD);
 
-      payload.put("encryptedData", encrypt(message.getPayload(), key));
-      payload.put("encryptionKeyId", attributes.get(Attribute.DOCUMENT_NAMESPACE));
-      payload.put("schemaNamespace", attributes.get(Attribute.DOCUMENT_NAMESPACE));
-      payload.put("schemaName", attributes.get(Attribute.DOCUMENT_TYPE));
-      payload.put("schemaVersion", Integer.parseInt(attributes.get(Attribute.DOCUMENT_VERSION)));
+      payload.put(DecryptPioneerPayloads.ENCRYPTED_DATA, encrypt(message.getPayload(), key));
+      payload.put(DecryptPioneerPayloads.ENCRYPTION_KEY_ID,
+          attributes.get(Attribute.DOCUMENT_NAMESPACE));
+      payload.put(DecryptPioneerPayloads.SCHEMA_NAMESPACE,
+          attributes.get(Attribute.DOCUMENT_NAMESPACE));
+      payload.put(DecryptPioneerPayloads.SCHEMA_NAME, attributes.get(Attribute.DOCUMENT_TYPE));
+      payload.put(DecryptPioneerPayloads.SCHEMA_VERSION,
+          Integer.parseInt(attributes.get(Attribute.DOCUMENT_VERSION)));
       attributes.put(Attribute.DOCUMENT_NAMESPACE, "telemetry");
       attributes.put(Attribute.DOCUMENT_TYPE, "pioneer-study");
       attributes.put(Attribute.DOCUMENT_VERSION, "4");
@@ -97,7 +102,7 @@ public class PioneerBenchmarkGenerator {
       Files.write(outputPath, (Iterable<String>) stream.map(PioneerBenchmarkGenerator::parsePubsub)
           .filter(Optional::isPresent).map(Optional::get).map(message -> {
             // side-effects and side-input
-            namespaces.add(message.getAttribute("document_namespace"));
+            namespaces.add(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
             return transform(message, key.getPublicKey(), exampleData);
           }).filter(Optional::isPresent).map(Optional::get)::iterator);
     } catch (IOException e) {

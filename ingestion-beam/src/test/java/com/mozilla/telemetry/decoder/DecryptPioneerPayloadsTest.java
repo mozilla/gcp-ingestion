@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecompressPayload;
@@ -50,14 +52,15 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   private String modifyEncryptionKeyId(String jsonData, String newEncryptionKeyId)
       throws Exception {
     ObjectNode json = Json.readObjectNode(jsonData);
-    ((ObjectNode) json.get("payload")).put("encryptionKeyId", newEncryptionKeyId);
+    ((ObjectNode) json.get(FieldName.PAYLOAD)).put(DecryptPioneerPayloads.ENCRYPTION_KEY_ID,
+        newEncryptionKeyId);
     return json.toString();
   }
 
   private String removeRequiredSchemaNamespace(String jsonData) throws Exception {
     ObjectNode json = Json.readObjectNode(jsonData);
     // This effectively turns the schema into a v1 pioneer-study ping
-    ((ObjectNode) json.get("payload")).remove("schemaNamespace");
+    ((ObjectNode) json.get(FieldName.PAYLOAD)).remove(DecryptPioneerPayloads.SCHEMA_NAMESPACE);
     return json.toString();
   }
 
@@ -95,8 +98,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     byte[] plaintext = Resources
         .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
 
-    String payload = Json.readObjectNode(ciphertext).get("payload").get("encryptedData")
-        .textValue();
+    String payload = Json.readObjectNode(ciphertext).get("payload")
+        .get(DecryptPioneerPayloads.ENCRYPTED_DATA).textValue();
     byte[] decrypted = DecryptPioneerPayloads.decrypt(key, payload);
     byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
 
@@ -115,11 +118,10 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
 
     PCollection<String> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
-        .apply("AddAttributes",
-            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-                .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of("document_namespace", "telemetry", "document_type",
-                        "pioneer-study", "document_version", "4"))))
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
         .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled)).output()
         .apply(DecompressPayload.enabled(pipeline.newProvider(true)))
         .apply(OutputFileFormat.text.encode()).apply(ReformatJson.of());
@@ -145,12 +147,10 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
 
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
-        .apply("AddAttributes",
-            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-                .via(element -> new PubsubMessage(element.getPayload(),
-                    // map the payload to the wrong key
-                    ImmutableMap.of("document_namespace", "telemetry", "document_type",
-                        "pioneer-study", "document_version", "4"))))
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
         .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled));
 
     PAssert.that(result.output()).empty();
