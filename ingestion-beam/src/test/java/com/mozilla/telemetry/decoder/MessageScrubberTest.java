@@ -77,9 +77,19 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testUnwantedDataBug1614412() {
+  public void testUnwantedDataBug1635592() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-vrbrowser-wavevr")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
+  public void testUnwantedDataBug1614412() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fogotype")
         .put(Attribute.DOCUMENT_TYPE, "baseline").build();
 
     assertThrows(UnwantedDataException.class,
