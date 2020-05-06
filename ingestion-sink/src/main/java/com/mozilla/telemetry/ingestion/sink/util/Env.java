@@ -13,11 +13,13 @@ import java.util.stream.Collectors;
 
 public class Env {
 
+  private final Set<String> include;
   private final Map<String, String> env;
   private final Set<String> unused;
 
   /** Constructor. */
-  public Env(List<String> include) {
+  public Env(Set<String> include) {
+    this.include = include;
     env = include.stream().filter(key -> System.getenv(key) != null)
         .collect(Collectors.toMap(key -> key, System::getenv));
     unused = new HashSet<>(env.keySet());
@@ -37,6 +39,9 @@ public class Env {
   }
 
   private Optional<String> optString(String key) {
+    if (!include.contains(key)) {
+      throw new IllegalArgumentException("key missing from include: " + key);
+    }
     unused.remove(key);
     return Optional.ofNullable(env.get(key));
   }

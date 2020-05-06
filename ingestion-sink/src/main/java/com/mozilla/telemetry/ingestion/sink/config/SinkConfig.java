@@ -1,13 +1,14 @@
 package com.mozilla.telemetry.ingestion.sink.config;
 
 import com.google.api.gax.batching.FlowControlSettings;
+import com.google.api.gax.core.FixedExecutorProvider;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
@@ -23,9 +24,10 @@ import com.mozilla.telemetry.ingestion.sink.util.Env;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -35,6 +37,7 @@ public class SinkConfig {
   public static final String OUTPUT_TABLE = "OUTPUT_TABLE";
 
   private static final String INPUT_COMPRESSION = "INPUT_COMPRESSION";
+  private static final String INPUT_PARALLELISM = "INPUT_PARALLELISM";
   private static final String INPUT_SUBSCRIPTION = "INPUT_SUBSCRIPTION";
   private static final String BATCH_MAX_BYTES = "BATCH_MAX_BYTES";
   private static final String BATCH_MAX_DELAY = "BATCH_MAX_DELAY";
@@ -46,8 +49,8 @@ public class SinkConfig {
   private static final String OUTPUT_BUCKET = "OUTPUT_BUCKET";
   private static final String OUTPUT_COMPRESSION = "OUTPUT_COMPRESSION";
   private static final String OUTPUT_FORMAT = "OUTPUT_FORMAT";
+  private static final String OUTPUT_PARALLELISM = "OUTPUT_PARALLELISM";
   private static final String OUTPUT_TOPIC = "OUTPUT_TOPIC";
-  private static final String OUTPUT_TOPIC_EXECUTOR_THREADS = "OUTPUT_TOPIC_EXECUTOR_THREADS";
   private static final String MAX_OUTSTANDING_ELEMENT_COUNT = "MAX_OUTSTANDING_ELEMENT_COUNT";
   private static final String MAX_OUTSTANDING_REQUEST_BYTES = "MAX_OUTSTANDING_REQUEST_BYTES";
   private static final String SCHEMAS_LOCATION = "SCHEMAS_LOCATION";
@@ -57,18 +60,14 @@ public class SinkConfig {
   private static final String STREAMING_DOCTYPES = "STREAMING_DOCTYPES";
   private static final String STRICT_SCHEMA_DOCTYPES = "STRICT_SCHEMA_DOCTYPES";
 
-  private static final List<String> INCLUDE_ENV_VARS = ImmutableList.of(INPUT_COMPRESSION,
-      INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES, OUTPUT_BUCKET,
-      OUTPUT_COMPRESSION, OUTPUT_FORMAT, BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY,
-      LOAD_MAX_FILES, OUTPUT_TABLE, OUTPUT_TOPIC, OUTPUT_TOPIC_EXECUTOR_THREADS,
+  private static final Set<String> INCLUDE_ENV_VARS = ImmutableSet.of(INPUT_COMPRESSION,
+      INPUT_PARALLELISM, INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES,
+      BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET,
+      OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_PARALLELISM, OUTPUT_TABLE, OUTPUT_TOPIC,
       MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION,
       STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
       STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
 
-  // Executor for CompletableFuture::*Async to use instead of ForkJoinPool.commonPool(), because
-  // the default parallelism is 1 in stage and prod.
-  private static final Executor DEFAULT_EXECUTOR = new ForkJoinPool(
-      Math.max(Runtime.getRuntime().availableProcessors() * 2, 10));
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
   // 10MB API limit by default.
@@ -141,22 +140,22 @@ public class SinkConfig {
       }
 
       @Override
-      Output getOutput(Env env) {
-        return new Output(env, this, new Pubsub.Write(env.getString(OUTPUT_TOPIC), DEFAULT_EXECUTOR,
-            b -> b, getOutputCompression(env))::withoutResult);
+      Output getOutput(Env env, Executor executor) {
+        return new Output(env, this, new Pubsub.Write(env.getString(OUTPUT_TOPIC), executor, b -> b,
+            getOutputCompression(env))::withoutResult);
       }
     },
 
     gcs {
 
       @Override
-      Output getOutput(Env env) {
+      Output getOutput(Env env, Executor executor) {
         return new Output(env, this,
             new Gcs.Write.Ndjson(getGcsService(env),
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
-                PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), DEFAULT_EXECUTOR,
+                PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), executor,
                 getFormat(env), ignore -> CompletableFuture.completedFuture(null))
                     .withOpenCensusMetrics());
       }
@@ -165,12 +164,12 @@ public class SinkConfig {
     bigQueryLoad {
 
       @Override
-      Output getOutput(Env env) {
+      Output getOutput(Env env, Executor executor) {
         final Storage storage = getGcsService(env);
         final Function<Blob, CompletableFuture<Void>> bigQueryLoad = new BigQuery.Load(
             getBigQueryService(env), storage, env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
             env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-            env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), DEFAULT_EXECUTOR,
+            env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), executor,
             // don't delete files until successfully loaded
             BigQuery.Load.Delete.onSuccess).withOpenCensusMetrics();
         return new Output(env, this, message -> {
@@ -188,20 +187,33 @@ public class SinkConfig {
           return bigQueryLoad.apply(blob);
         });
       }
+
+      // Allow almost enough outstanding elements to fill one batch per table.
+      @Override
+      long getDefaultMaxOutstandingElementCount() {
+        return 1_000_000L; // 1M messages
+      }
+
+      @Override
+      long getDefaultMaxOutstandingRequestBytes() {
+        // Allow enough bytes to reach max outstanding element count. Average bytes per element is
+        // expected to be a little under 200 bytes.
+        return getDefaultMaxOutstandingElementCount() * 200; // 200MB
+      }
     },
 
     bigQueryFiles {
 
       @Override
-      Output getOutput(Env env) {
-        Output pubsubWrite = pubsub.getOutput(env);
+      Output getOutput(Env env, Executor executor) {
+        Output pubsubWrite = pubsub.getOutput(env, executor);
         return new Output(env, this,
             new Gcs.Write.Ndjson(getGcsService(env),
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
-                PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
-                DEFAULT_EXECUTOR, getFormat(env),
+                PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)), executor,
+                getFormat(env),
                 // BigQuery Load API limits maximum load requests per table per day to 1,000 so send
                 // blobInfo to pubsub and require loads be run separately to reduce maximum latency
                 blobInfo -> pubsubWrite.apply(BlobIdToPubsubMessage.encode(blobInfo.getBlobId())))
@@ -212,21 +224,21 @@ public class SinkConfig {
     bigQueryStreaming {
 
       @Override
-      Output getOutput(Env env) {
+      Output getOutput(Env env, Executor executor) {
         return new Output(env, this,
             new BigQuery.Write(getBigQueryService(env),
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
-                PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
-                DEFAULT_EXECUTOR, getFormat(env)).withOpenCensusMetrics());
+                PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)), executor,
+                getFormat(env)).withOpenCensusMetrics());
       }
     },
 
     bigQueryMixed {
 
       @Override
-      Output getOutput(Env env) {
+      Output getOutput(Env env, Executor executor) {
         final com.google.cloud.bigquery.BigQuery bigQuery = getBigQueryService(env);
         final Storage storage = getGcsService(env);
         final Function<Blob, CompletableFuture<Void>> bigQueryLoad;
@@ -234,13 +246,13 @@ public class SinkConfig {
           // BigQuery Load API limits maximum load requests per table per day to 1,000 so if
           // OUTPUT_TOPIC is present send blobInfo to pubsub and run load jobs separately
           final Function<PubsubMessage, CompletableFuture<Void>> pubsubOutput = pubsub
-              .getOutput(env);
+              .getOutput(env, executor);
           bigQueryLoad = blob -> pubsubOutput.apply(BlobIdToPubsubMessage.encode(blob.getBlobId()));
         } else {
           bigQueryLoad = new BigQuery.Load(bigQuery, storage,
               env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
               env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-              env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY), DEFAULT_EXECUTOR,
+              env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY), executor,
               // files will be recreated if not successfully loaded
               BigQuery.Load.Delete.always).withOpenCensusMetrics();
         }
@@ -249,15 +261,15 @@ public class SinkConfig {
             env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
             env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
             env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
-            PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)),
-            DEFAULT_EXECUTOR, getFormat(env), bigQueryLoad).withOpenCensusMetrics();
+            PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)), executor,
+            getFormat(env), bigQueryLoad).withOpenCensusMetrics();
         // Like bigQueryStreaming, but use STREAMING_ prefix env vars for batch configuration
         Function<PubsubMessage, CompletableFuture<Void>> streamingOutput = new BigQuery.Write(
             bigQuery, env.getLong(STREAMING_BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
             env.getInt(STREAMING_BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
             env.getDuration(STREAMING_BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
-            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)),
-            DEFAULT_EXECUTOR, getFormat(env)).withOpenCensusMetrics();
+            PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)), executor,
+            getFormat(env)).withOpenCensusMetrics();
         // fallbackOutput sends messages to fileOutput when rejected by streamingOutput due to size
         Function<PubsubMessage, CompletableFuture<Void>> fallbackOutput = message -> streamingOutput
             .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
@@ -292,11 +304,11 @@ public class SinkConfig {
     };
 
     // Each case in the enum must implement this method to define how to write out messages.
-    abstract Output getOutput(Env env);
+    abstract Output getOutput(Env env, Executor executor);
 
     // Cases in the enum may override this method set a more appropriate default.
     long getDefaultMaxOutstandingElementCount() {
-      return 50_000L; // 50K messages
+      return 40_000L; // 40K messages
     }
 
     // Cases in the enum may override this method set a more appropriate default.
@@ -382,18 +394,35 @@ public class SinkConfig {
   /** Return a configured output transform. */
   public static Output getOutput() {
     Env env = new Env(INCLUDE_ENV_VARS);
-    return OutputType.get(env).getOutput(env);
+    // Executor to use for CompletableFutures in outputs instead of ForkJoinPool.commonPool(),
+    // because the default parallelism is 1 in stage and prod. Parallelism should be more than one
+    // per batch key (i.e. output table), because this executor is used for batch close operations
+    // that may be slow synchronous IO. As of 2020-04-25 there are 89 tables for telemetry and 118
+    // tables for structured.
+    Executor executor = new ForkJoinPool(env.getInt(OUTPUT_PARALLELISM, 150));
+    return OutputType.get(env).getOutput(env, executor);
   }
 
   /** Return a configured input transform. */
   public static Pubsub.Read getInput(Output output) throws IOException {
     // read pubsub messages from INPUT_SUBSCRIPTION
     Pubsub.Read input = new Pubsub.Read(output.env.getString(INPUT_SUBSCRIPTION), output,
-        builder -> builder.setFlowControlSettings(FlowControlSettings.newBuilder()
-            .setMaxOutstandingElementCount(output.type.getMaxOutstandingElementCount(output.env))
-            .setMaxOutstandingRequestBytes(output.type.getMaxOutstandingRequestBytes(output.env))
-            .build()),
-        getInputCompression(output.env), DEFAULT_EXECUTOR);
+        builder -> builder
+            .setFlowControlSettings(FlowControlSettings.newBuilder()
+                .setMaxOutstandingElementCount(
+                    output.type.getMaxOutstandingElementCount(output.env))
+                .setMaxOutstandingRequestBytes(
+                    output.type.getMaxOutstandingRequestBytes(output.env))
+                .build())
+            // Executor to use for reading from Pub/Sub. Tasks executed are expected to be CPU bound
+            // until flow control thresholds are reached, so parallelism should be high enough to
+            // fully utilize all available processors. Parallelism defaults to 6 based on the SDK:
+            // https://github.com/googleapis/java-pubsub/blob/1.60.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L98-L99
+            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
+            .setExecutorProvider(FixedExecutorProvider
+                .create(Executors.newScheduledThreadPool(output.env.getInt(INPUT_PARALLELISM,
+                    Math.max(6, Runtime.getRuntime().availableProcessors() * 2))))),
+        getInputCompression(output.env));
     output.env.requireAllVarsUsed();
     // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
     // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
