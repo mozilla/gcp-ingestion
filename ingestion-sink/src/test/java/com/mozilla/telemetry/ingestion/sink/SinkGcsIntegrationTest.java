@@ -57,7 +57,7 @@ public class SinkGcsIntegrationTest {
         .putAttributes("submission_timestamp", submissionTimestamp).build()));
 
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription());
-    environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
+    environmentVariables.set("BATCH_MAX_DELAY", "0s");
     environmentVariables.set("OUTPUT_BUCKET",
         gcs.bucket + "/${document_namespace}/${document_type}_"
             + "v${document_version}/${submission_date}/${submission_hour}/");

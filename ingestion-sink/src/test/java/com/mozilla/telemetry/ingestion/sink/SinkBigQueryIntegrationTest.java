@@ -124,7 +124,7 @@ public class SinkBigQueryIntegrationTest {
   public void canStream() throws Exception {
     createTablesAndPublishInputs(ImmutableList.of(SIMPLE_MESSAGE));
 
-    environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
+    environmentVariables.set("BATCH_MAX_DELAY", "0s");
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription(0));
     environmentVariables.set("OUTPUT_TABLE",
         bq.project + "." + bq.dataset + ".${document_type}_v${document_version}");
@@ -137,7 +137,7 @@ public class SinkBigQueryIntegrationTest {
     createTablesAndPublishInputs(ImmutableList.of(SIMPLE_MESSAGE));
 
     Map<String, String> sinkEnv = ImmutableMap.<String, String>builder()
-        .put("BATCH_MAX_DELAY", "0.001s") //
+        .put("BATCH_MAX_DELAY", "0s") //
         .put("BIG_QUERY_OUTPUT_MODE", "file_loads") //
         .put("INPUT_SUBSCRIPTION", pubsub.getSubscription(0)) //
         .put("OUTPUT_BUCKET", gcs.bucket) //
@@ -151,7 +151,7 @@ public class SinkBigQueryIntegrationTest {
 
     sinkEnv.keySet().forEach(environmentVariables::clear);
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription(1));
-    environmentVariables.set("LOAD_MAX_DELAY", "0.001s");
+    environmentVariables.set("LOAD_MAX_DELAY", "0s");
     // unregister stackdriver stats exporter so BoundedSink can register another one
     StackdriverStatsExporter.unregister();
     BoundedSink.run(1, 30);
@@ -169,14 +169,14 @@ public class SinkBigQueryIntegrationTest {
         SIMPLE_MESSAGE.toBuilder().setData(ByteString.copyFromUtf8(OVERSIZE_REQUEST_DATA)).build());
     createTablesAndPublishInputs(input);
 
-    environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
+    environmentVariables.set("BATCH_MAX_DELAY", "0s");
     environmentVariables.set("BIG_QUERY_OUTPUT_MODE", "mixed");
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription(0));
-    environmentVariables.set("LOAD_MAX_DELAY", "0.001s");
+    environmentVariables.set("LOAD_MAX_DELAY", "0s");
     environmentVariables.set("OUTPUT_BUCKET", gcs.bucket);
     environmentVariables.set("OUTPUT_TABLE",
         bq.project + "." + bq.dataset + ".${document_type}_v${document_version}");
-    environmentVariables.set("STREAMING_BATCH_MAX_DELAY", "0.001s");
+    environmentVariables.set("STREAMING_BATCH_MAX_DELAY", "0s");
     BoundedSink.run(input.size(), 30);
     checkResult(ImmutableList.of(
         ImmutableList.of("bar", "1", SUBMISSION_TIMESTAMP, OVERSIZE_ROW_DATA, "bar_v1"),
@@ -211,14 +211,14 @@ public class SinkBigQueryIntegrationTest {
     createTablesAndPublishInputs(nonStreamingInput);
 
     Map<String, String> sinkEnv = ImmutableMap.<String, String>builder()
-        .put("BATCH_MAX_DELAY", "0.001s") //
+        .put("BATCH_MAX_DELAY", "0s") //
         .put("BIG_QUERY_OUTPUT_MODE", "mixed") //
         .put("INPUT_SUBSCRIPTION", pubsub.getSubscription(0)) //
         .put("OUTPUT_BUCKET", gcs.bucket) //
         .put("OUTPUT_TABLE",
             bq.project + "." + bq.dataset + ".${document_type}_v${document_version}") //
         .put("OUTPUT_TOPIC", pubsub.getTopic(1)) //
-        .put("STREAMING_BATCH_MAX_DELAY", "0.001s") //
+        .put("STREAMING_BATCH_MAX_DELAY", "0s") //
         .put("STREAMING_DOCTYPES", "namespace-0/.*|namespace-1/foo") //
         .build();
     sinkEnv.forEach(environmentVariables::set);
@@ -227,7 +227,7 @@ public class SinkBigQueryIntegrationTest {
 
     sinkEnv.keySet().forEach(environmentVariables::clear);
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription(1));
-    environmentVariables.set("LOAD_MAX_DELAY", "0.001s");
+    environmentVariables.set("LOAD_MAX_DELAY", "0s");
     // unregister stackdriver stats exporter so BoundedSink can register another one
     StackdriverStatsExporter.unregister();
     BoundedSink.run(nonStreamingInput.size(), 30);
