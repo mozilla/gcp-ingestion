@@ -1,3 +1,26 @@
 {
-  "payload": "eyJhbGciOiJSU0EtT0FFUC0yNTYiLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwia2lkIjoiakNHS0hYLVVBanVmUXRPNVpIYlpyTl9rWEJFalB2bmExRGpud21sbV9oSSIsInR5cCI6IkpXRSJ9.jvVUuXZLGhRb6HFkwqgNkiyu--RipjFmXtz4rn-tvCTpX5zXm6f-wD8RzoD_riSHAAsFO5xKAajlU6Wr7KmY9jvMmH5LjHxh_qCAaYVZEkkTZmdsLueEN98KjH5POETiT7OEafX28e6pGZ7BulGIt_OVNap0NA9x8H4mdhi8VQDZeOiwkbEA_a8rOpAUO49Vsnt9kCo2uEIlMb0yGRhz2rneb2lqFpXxeVTjPDvfk7g0XtkRsVD-Ax1V-NJOyNncC53xYq3dppJ1C4jx2Jyf2nK9HL03hyhUC8OGI2ysJMWEyVkz2ctItMeIpyivlniOHTMuD1GjmACYvwtNMbpKBQ.8TbIYmJmrXZzS18BqhU2CA.yuhXrp-dlFAgOV-DCzh1c1p001FMIk7BYfNEBjr_UaKn7zLorzxFZF0poqWhhb2cQSCxeH2hSm2wiShCGmMgLH7P7x2g6S6VBC7bgPKRRpE.7_EScai0en5UXS-bA8u8iZpZvshRAsu2UF1A2RPXcA0"
+  "type": "pioneer-study",
+  "id": "9af045aa-80ca-e743-92de-b31431abc547",
+  "creationDate": "2020-04-24T20:04:10.285Z",
+  "version": 4,
+  "application": {
+    "architecture": "x86-64",
+    "buildId": "20200415104457",
+    "name": "Firefox",
+    "version": "77.0a1",
+    "displayVersion": "77.0a1",
+    "vendor": "Mozilla",
+    "platformVersion": "77.0a1",
+    "xpcomAbi": "x86_64-gcc3",
+    "channel": "default"
+  },
+  "payload": {
+    "encryptedData": "eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6ImhXUWdlTTVWOXZid2ZfZFV4V3hwWFMxdmVIb2g3dHlmVUdhN3NBOFRzWnciLCJ5IjoiMVR0MXRqVDYxdzRyWm9sSllGd0djYnlQNkcxRjUtM0pMd2pfam1Ua1JKSSJ9LCJraWQiOiIzcDhTQ3R5cmEwdV9CLWhMRTdaTm5GcjNFZDBjMTVLdkNEcUxrN2Rpblc4IiwidHlwIjoiSldFIn0..tOiU2P5Fc3ER1U1Y.rrOuQai8iSTIcTT_OrvdGKNBj06Eu9KdM_ewjWZ8st0iEjT8Jsby1lsIjSQkwJsfWOoACZ2um-OBAAiFesIbesdWz0ldD9UTeSGcJQ6Uyw.-obDckIMilQ4WHYjeXUU9g",
+    "encryptionKeyId": "study-bar",
+    "schemaNamespace": "study-bar",
+    "schemaName": "test",
+    "schemaVersion": 1,
+    "pioneerId": "9af045aa-80ca-e743-92de-b31431abc547",
+    "studyName": "pioneer-v2-example@example.com"
+  }
 }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.transforms.DecompressPayload;
@@ -47,6 +49,21 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     }).toArray(String[]::new));
   }
 
+  private String modifyEncryptionKeyId(String jsonData, String newEncryptionKeyId)
+      throws Exception {
+    ObjectNode json = Json.readObjectNode(jsonData);
+    ((ObjectNode) json.get(FieldName.PAYLOAD)).put(DecryptPioneerPayloads.ENCRYPTION_KEY_ID,
+        newEncryptionKeyId);
+    return json.toString();
+  }
+
+  private String removeRequiredSchemaNamespace(String jsonData) throws Exception {
+    ObjectNode json = Json.readObjectNode(jsonData);
+    // This effectively turns the schema into a v1 pioneer-study ping
+    ((ObjectNode) json.get(FieldName.PAYLOAD)).remove(DecryptPioneerPayloads.SCHEMA_NAMESPACE);
+    return json.toString();
+  }
+
   private static final class ReformatJson
       extends PTransform<PCollection<String>, PCollection<String>> {
 
@@ -81,7 +98,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     byte[] plaintext = Resources
         .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
 
-    String payload = Json.readObjectNode(ciphertext).get("payload").textValue();
+    String payload = Json.readObjectNode(ciphertext).get("payload")
+        .get(DecryptPioneerPayloads.ENCRYPTED_DATA).textValue();
     byte[] decrypted = DecryptPioneerPayloads.decrypt(key, payload);
     byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
 
@@ -100,11 +118,10 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
 
     PCollection<String> output = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
-        .apply("AddAttributes",
-            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-                .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of("document_namespace", "study-foo", "document_type", "test",
-                        "document_version", "1"))))
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
         .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled)).output()
         .apply(DecompressPayload.enabled(pipeline.newProvider(true)))
         .apply(OutputFileFormat.text.encode()).apply(ReformatJson.of());
@@ -116,21 +133,24 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testErrors() {
+  public void testErrors() throws Exception {
     // minimal test for throughput of a single document
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"));
+
+    final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json",
+        "pioneer/study-foo.ciphertext.json", "pioneer/study-foo.ciphertext.json"));
+    input.set(0, modifyEncryptionKeyId(input.get(0), "invalid-key")); // IOException
+    input.set(1, modifyEncryptionKeyId(input.get(1), "study-bar")); // JoseException
+    input.set(2, removeRequiredSchemaNamespace(input.get(2))); // ValidationException
 
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
-        .apply("AddAttributes",
-            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-                .via(element -> new PubsubMessage(element.getPayload(),
-                    // map the payload to the wrong key
-                    ImmutableMap.of("document_namespace", "study-bar", "document_type", "test",
-                        "document_version", "1"))))
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
         .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled));
 
     PAssert.that(result.output()).empty();
@@ -138,7 +158,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     PCollection<String> exceptions = result.failures().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
     // IntegrityException extends JoseException
-    PAssert.that(exceptions).containsInAnyOrder("org.jose4j.lang.IntegrityException");
+    PAssert.that(exceptions).containsInAnyOrder("java.io.IOException",
+        "org.jose4j.lang.JoseException", "org.everit.json.schema.ValidationException");
 
     pipeline.run();
   }

@@ -185,7 +185,8 @@ public class KeyStoreIntegrationTest extends TestWithDeterministicJson {
     byte[] plaintext = Resources
         .toByteArray(Resources.getResource("pioneer/sample.plaintext.json"));
 
-    String payload = Json.readObjectNode(ciphertext).get("payload").textValue();
+    String payload = Json.readObjectNode(ciphertext).get("payload").get("encryptedData")
+        .textValue();
     byte[] decrypted = DecryptPioneerPayloads.decrypt(key, payload);
     byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
 
