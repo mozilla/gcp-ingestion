@@ -46,7 +46,7 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   @Description("Path (local or gs://) to JSON array of metadata entries enumerating encrypted"
       + " private keys, Cloud KMS resource ids for decrypting those keys, and their corresponding"
-      + " document namespaces; leave null to disable.")
+      + " document namespaces; this must be set if Pioneer is enabled.")
   ValueProvider<String> getPioneerMetadataLocation();
 
   void setPioneerMetadataLocation(ValueProvider<String> value);
