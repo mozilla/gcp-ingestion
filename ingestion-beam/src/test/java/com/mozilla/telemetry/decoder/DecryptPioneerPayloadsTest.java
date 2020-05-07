@@ -1,7 +1,11 @@
 package com.mozilla.telemetry.decoder;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
+
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -162,5 +166,24 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
         "org.jose4j.lang.JoseException", "org.everit.json.schema.ValidationException");
 
     pipeline.run();
+  }
+
+  @Test
+  public void testEmptyMetadataLocation() throws Exception {
+    // minimal test for throughput of a single document
+    ValueProvider<String> metadataLocation = pipeline.newProvider(null);
+    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
+
+    pipeline.apply(Create.of(readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"))))
+        .apply(InputFileFormat.text.decode())
+        .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled));
+
+    assertEquals(assertThrows(IllegalArgumentException.class, () -> {
+      try {
+        pipeline.run();
+      } catch (Exception e) {
+        throw Throwables.getRootCause(e);
+      }
+    }).getMessage(), "Metadata location is missing.");
   }
 }
