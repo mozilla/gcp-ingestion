@@ -176,7 +176,9 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
 
     // wait for full then synchronize and close
     private final CompletableFuture<BatchResultT> result = full
-        .thenComposeAsync(this::synchronousClose, executor);
+        .thenComposeAsync(this::synchronousClose, executor).exceptionally(exception -> {
+          throw BatchException.of((RuntimeException) exception.getCause(), this.size);
+        });
 
     @VisibleForTesting
     public int size = 0;

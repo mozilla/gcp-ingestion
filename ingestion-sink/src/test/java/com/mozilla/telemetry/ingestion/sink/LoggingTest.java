@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 public class LoggingTest {
 
   @Rule
-  public final LoggerContextRule logs = new LoggerContextRule("log4j2-test.yaml");
+  public final LoggerContextRule logs = new LoggerContextRule("log4j2-list.yaml");
 
   @Test
   public void canWriteLogs() {

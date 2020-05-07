@@ -26,7 +26,7 @@ public class PubsubReadIntegrationTest {
   public final SinglePubsubTopic pubsub = new SinglePubsubTopic();
 
   @Rule
-  public final LoggerContextRule logs = new LoggerContextRule("log4j2-test.yaml");
+  public final LoggerContextRule logs = new LoggerContextRule("log4j2-list.yaml");
 
   @Test
   public void canReadOneMessage() {
