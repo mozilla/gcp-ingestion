@@ -46,6 +46,8 @@ public class DecryptPioneerPayloads extends
   public static final String SCHEMA_NAMESPACE = "schemaNamespace";
   public static final String SCHEMA_NAME = "schemaName";
   public static final String SCHEMA_VERSION = "schemaVersion";
+  public static final String PIONEER_ID = "pioneerId";
+  public static final String STUDY_NAME = "studyName";
 
   public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
@@ -133,12 +135,18 @@ public class DecryptPioneerPayloads extends
         payloadData = decrypted;
       }
 
+      // insert top-level metadata into the payload
+      ObjectNode metadata = Json.createObjectNode();
+      metadata.put(PIONEER_ID, payload.get(PIONEER_ID).asText());
+      metadata.put(STUDY_NAME, payload.get(STUDY_NAME).asText());
+      final byte[] merged = AddMetadata.mergePayloadWithMetadata(payloadData, metadata);
+
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
       attributes.put(Attribute.DOCUMENT_NAMESPACE, payload.get(SCHEMA_NAMESPACE).asText());
       attributes.put(Attribute.DOCUMENT_TYPE, payload.get(SCHEMA_NAME).asText());
       attributes.put(Attribute.DOCUMENT_VERSION, payload.get(SCHEMA_VERSION).asText());
-      return Collections.singletonList(new PubsubMessage(payloadData, attributes));
+      return Collections.singletonList(new PubsubMessage(merged, attributes));
     }
   }
 }

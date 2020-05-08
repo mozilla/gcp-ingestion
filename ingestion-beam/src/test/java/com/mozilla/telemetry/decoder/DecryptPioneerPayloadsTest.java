@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.decoder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -67,6 +68,7 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     return json.toString();
   }
 
+  /** Reformat the document, and remove the expected metadata. */
   private static final class ReformatJson
       extends PTransform<PCollection<String>, PCollection<String>> {
 
@@ -78,7 +80,10 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     public PCollection<String> expand(PCollection<String> input) {
       return input.apply(MapElements.into(TypeDescriptors.strings()).via(s -> {
         try {
-          return Json.readObjectNode(s).toString();
+          ObjectNode node = Json.readObjectNode(s);
+          assertNotNull(node.remove(DecryptPioneerPayloads.PIONEER_ID));
+          assertNotNull(node.remove(DecryptPioneerPayloads.STUDY_NAME));
+          return node.toString();
         } catch (Exception e) {
           return null;
         }
@@ -112,7 +117,7 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testOutput() {
+  public void testOutput() throws Exception {
     // minimal test for throughput of a single document
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
