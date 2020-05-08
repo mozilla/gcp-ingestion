@@ -46,26 +46,60 @@
         </repository>
     </repositories>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Keep these dependency versions in sync with what is pulled in by beam;
+                 check https://mvnrepository.com/artifact/org.apache.beam/beam-sdks-java-io-google-cloud-platform/2.19.0
+
+                 Does not use libraries-bom to determine versions as of beam 2.19 because the lowest
+                 version available uses google-cloud-bom 0.84.0-alpha, but 0.79.0-alpha is needed to
+                 match what is pulled in by beam
+
+                 Does not use google-cloud-bom 0.79.0-alpha to determine versions as of beam 2.19
+                 because that causes integration tests to fail on dataflow with
+                 java.lang.NoSuchMethodError and java.lang.NoClassDefFoundError
+
+                 These versions are not shared via a property, because they are independently
+                 versioned and more recent versions do not match -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>google-cloud-bigquery</artifactId>
+                <version>1.61.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>google-cloud-pubsub</artifactId>
+                <version>1.61.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>google-cloud-storage</artifactId>
+                <version>1.61.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-runners-direct-java</artifactId>
-            <version>${beam.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-runners-google-cloud-dataflow-java</artifactId>
-            <version>${beam.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-extensions-json-jackson</artifactId>
-            <version>${beam.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
-            <version>${beam.version}</version>
+        </dependency>
+        <dependency>
+            <!-- redefine dep from parent pom.xml to use the version from dependencyManagement -->
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-bigquery</artifactId>
         </dependency>
         <!-- The latest stable version of cloud kms is 1.38.0 at the time of writing. There are
             conflicts in the dependencies (com.google.api.gax.grpc) that cause issues with
@@ -78,13 +112,11 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-pubsub</artifactId>
-            <version>${google-cloud.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-storage</artifactId>
-            <version>${google-cloud.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
