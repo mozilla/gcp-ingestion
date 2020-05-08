@@ -9,6 +9,11 @@ import org.junit.Test;
 
 public class KeyStoreTest {
 
+  @Test(expected = IllegalArgumentException.class)
+  public void testNullMetadataLocation() {
+    KeyStore.of(null, false);
+  }
+
   @Test(expected = ValidationException.class)
   public void testMetadataInvalidFormat() {
     String metadataLocation = Resources.getResource("pioneer/metadata-invalid.json").getPath();
