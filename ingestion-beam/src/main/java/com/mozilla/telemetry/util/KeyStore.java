@@ -47,13 +47,12 @@ public class KeyStore {
   }
 
   private KeyStore(String metadataLocation, boolean kmsEnabled) {
-    this.metadataLocation = metadataLocation;
-    this.kmsEnabled = kmsEnabled;
-
     // throw immediately if the keyStore is misconfigured
     if (metadataLocation == null) {
       throw new IllegalArgumentException("Metadata location is missing.");
     }
+    this.metadataLocation = metadataLocation;
+    this.kmsEnabled = kmsEnabled;
   }
 
   @VisibleForTesting
