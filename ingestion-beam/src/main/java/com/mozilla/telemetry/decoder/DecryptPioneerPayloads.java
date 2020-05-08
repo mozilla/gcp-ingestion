@@ -8,6 +8,7 @@ import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.JsonValidator;
 import com.mozilla.telemetry.util.KeyStore;
@@ -35,6 +36,7 @@ public class DecryptPioneerPayloads extends
 
   private final ValueProvider<String> metadataLocation;
   private final ValueProvider<Boolean> kmsEnabled;
+  private final ValueProvider<Boolean> decompressPayload;
   private transient KeyStore keyStore;
   private transient JsonValidator validator;
   private transient Schema envelopeSchema;
@@ -46,14 +48,15 @@ public class DecryptPioneerPayloads extends
   public static final String SCHEMA_VERSION = "schemaVersion";
 
   public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
-      ValueProvider<Boolean> kmsEnabled) {
-    return new DecryptPioneerPayloads(metadataLocation, kmsEnabled);
+      ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
+    return new DecryptPioneerPayloads(metadataLocation, kmsEnabled, decompressPayload);
   }
 
   private DecryptPioneerPayloads(ValueProvider<String> metadataLocation,
-      ValueProvider<Boolean> kmsEnabled) {
+      ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
     this.metadataLocation = metadataLocation;
     this.kmsEnabled = kmsEnabled;
+    this.decompressPayload = decompressPayload;
   }
 
   @Override
@@ -122,12 +125,20 @@ public class DecryptPioneerPayloads extends
       // may be gzipped.
       final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
 
+      byte[] payloadData;
+      if (decompressPayload.get()) {
+        payloadData = GzipUtil.maybeDecompress(decrypted);
+      } else {
+        // don't bother decompressing
+        payloadData = decrypted;
+      }
+
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
       attributes.put(Attribute.DOCUMENT_NAMESPACE, payload.get(SCHEMA_NAMESPACE).asText());
       attributes.put(Attribute.DOCUMENT_TYPE, payload.get(SCHEMA_NAME).asText());
       attributes.put(Attribute.DOCUMENT_VERSION, payload.get(SCHEMA_VERSION).asText());
-      return Collections.singletonList(new PubsubMessage(decrypted, attributes));
+      return Collections.singletonList(new PubsubMessage(payloadData, attributes));
     }
   }
 }
