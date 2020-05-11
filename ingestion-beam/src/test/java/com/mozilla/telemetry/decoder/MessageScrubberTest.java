@@ -123,11 +123,11 @@ public class MessageScrubberTest {
   @Test
   public void testUnwantedDataBug1637055() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
-      .put(Attribute.DOCUMENT_NAMESPACE, "com-pumabrowser-pumabrowser")
-      .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+        .put(Attribute.DOCUMENT_NAMESPACE, "com-pumabrowser-pumabrowser")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
 
     assertThrows(UnwantedDataException.class,
-                 () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
   }
 
   @Test
