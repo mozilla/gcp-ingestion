@@ -3,11 +3,16 @@ package com.mozilla.telemetry;
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
 import static org.junit.Assert.assertThat;
 
+import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.decoder.DecryptPioneerPayloadsTest;
 import com.mozilla.telemetry.matchers.Lines;
 import com.mozilla.telemetry.rules.RedisServer;
+import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
+import java.util.Arrays;
 import java.util.List;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -90,6 +95,22 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         matchesInAnyOrder(expectedOutputLines));
   }
 
+  /** Helper for testEncryptedPioneerPayloads. The pipeline will insert metadata
+   * during processing, which needs to be removed to match base payload. */
+  private List<String> removePioneerMetadata(List<String> lines) {
+    return Arrays.asList(lines.stream().map(data -> {
+      try {
+        PubsubMessage message = Json.readPubsubMessage(data);
+        String payload = DecryptPioneerPayloadsTest
+            .removePioneerMetadata(new String(message.getPayload(), Charsets.UTF_8));
+        return Json.asString(
+            new PubsubMessage(payload.getBytes(Charsets.UTF_8), message.getAttributeMap()));
+      } catch (Exception e) {
+        return null;
+      }
+    }).toArray(String[]::new));
+  }
+
   /** Run the pipeline with the Pioneer decryption and decompression enabled. KMS is disabled since
    * it requires access to an external service. See the KeyStore integration tests for decrypting
    * private keys.
@@ -112,7 +133,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri, "--pioneerEnabled=true",
         "--pioneerMetadataLocation=" + pioneerMetadataLocation, "--pioneerKmsEnabled=false" });
 
-    List<String> outputLines = Lines.files(output + "*.ndjson");
+    List<String> outputLines = removePioneerMetadata(Lines.files(output + "*.ndjson"));
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
     assertThat("Main output differed from expectation", outputLines,
         matchesInAnyOrder(expectedOutputLines));

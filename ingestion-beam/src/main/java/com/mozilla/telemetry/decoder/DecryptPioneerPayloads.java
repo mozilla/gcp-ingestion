@@ -121,10 +121,6 @@ public class DecryptPioneerPayloads extends
         throw new IOException(String.format("encryptionKeyId not found: %s", encryptionKeyId));
       }
 
-      // NOTE: there could be a method for handling merging metadata like
-      // application into the decrypted payload. More serialization and
-      // deserialization could be detrimental to performance, and they payload
-      // may be gzipped.
       final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
 
       byte[] payloadData;

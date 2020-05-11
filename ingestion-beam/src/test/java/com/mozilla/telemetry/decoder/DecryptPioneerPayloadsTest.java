@@ -68,6 +68,19 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     return json.toString();
   }
 
+  /** Remove metadata inserted by the pioneer pipeline and assert they existed.
+   * If the do not exist, return null. */
+  public static String removePioneerMetadata(String jsonData) {
+    try {
+      ObjectNode node = Json.readObjectNode(jsonData);
+      assertNotNull(node.remove(DecryptPioneerPayloads.PIONEER_ID));
+      assertNotNull(node.remove(DecryptPioneerPayloads.STUDY_NAME));
+      return node.toString();
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   /** Reformat the document, and remove the expected metadata. */
   private static final class ReformatJson
       extends PTransform<PCollection<String>, PCollection<String>> {
@@ -78,16 +91,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
 
     @Override
     public PCollection<String> expand(PCollection<String> input) {
-      return input.apply(MapElements.into(TypeDescriptors.strings()).via(s -> {
-        try {
-          ObjectNode node = Json.readObjectNode(s);
-          assertNotNull(node.remove(DecryptPioneerPayloads.PIONEER_ID));
-          assertNotNull(node.remove(DecryptPioneerPayloads.STUDY_NAME));
-          return node.toString();
-        } catch (Exception e) {
-          return null;
-        }
-      }));
+      return input
+          .apply(MapElements.into(TypeDescriptors.strings()).via(s -> removePioneerMetadata(s)));
     }
   }
 
