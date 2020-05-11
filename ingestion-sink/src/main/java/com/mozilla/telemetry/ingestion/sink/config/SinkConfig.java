@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.ingestion.sink.config;
 
 import com.google.api.gax.batching.FlowControlSettings;
-import com.google.api.gax.core.FixedExecutorProvider;
 import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.BigQueryOptions;
 import com.google.cloud.storage.Blob;
@@ -27,7 +26,6 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -414,14 +412,15 @@ public class SinkConfig {
                 .setMaxOutstandingRequestBytes(
                     output.type.getMaxOutstandingRequestBytes(output.env))
                 .build())
-            // Executor to use for reading from Pub/Sub. Tasks executed are expected to be CPU bound
-            // until flow control thresholds are reached, so parallelism should be high enough to
-            // fully utilize all available processors. Parallelism defaults to 6 based on the SDK:
-            // https://github.com/googleapis/java-pubsub/blob/1.60.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L98-L99
+            // The number of streaming subscriber connections for reading from Pub/Sub.
+            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L141
+            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L318-L320
+            // The default number of executor threads is max(6, 2*parallelPullCount).
             // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
-            .setExecutorProvider(FixedExecutorProvider
-                .create(Executors.newScheduledThreadPool(output.env.getInt(INPUT_PARALLELISM,
-                    Math.max(6, Runtime.getRuntime().availableProcessors() * 2))))),
+            // Subscriber connections are expected to be CPU bound until flow control thresholds are
+            // reached, so parallelism should be no less than the number of available processors.
+            .setParallelPullCount(
+                output.env.getInt(INPUT_PARALLELISM, Runtime.getRuntime().availableProcessors())),
         getInputCompression(output.env));
     output.env.requireAllVarsUsed();
     // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
