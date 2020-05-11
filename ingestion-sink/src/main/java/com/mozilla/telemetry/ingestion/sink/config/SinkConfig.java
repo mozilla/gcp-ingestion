@@ -170,20 +170,23 @@ public class SinkConfig {
             env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), executor,
             // don't delete files until successfully loaded
             BigQuery.Load.Delete.onSuccess).withOpenCensusMetrics();
-        return new Output(env, this, message -> {
-          // Messages may be delivered more than once, so check whether the blob has been deleted.
-          // The blob is never deleted in this mode unless it has already been successfully loaded
-          // to BigQuery. If the blob does not exist, it must have been deleted, because Cloud
-          // Storage provides strong global consistency for read-after-write operations.
-          // https://cloud.google.com/storage/docs/consistency
-          Blob blob = storage.get(BlobIdToPubsubMessage.decode(message));
-          if (blob == null) {
-            // blob was deleted, so ack this message by returning a successfully completed future
-            // TODO measure the frequency of this
-            return CompletableFuture.completedFuture(null);
-          }
-          return bigQueryLoad.apply(blob);
-        });
+        // Messages may be delivered more than once, so check whether the blob has been deleted.
+        // The blob is never deleted in this mode unless it has already been successfully loaded
+        // to BigQuery. If the blob does not exist, it must have been deleted, because Cloud
+        // Storage provides strong global consistency for read-after-write operations.
+        // https://cloud.google.com/storage/docs/consistency
+        return new Output(env, this,
+            message -> CompletableFuture.completedFuture(message)
+                .thenApply(BlobIdToPubsubMessage::decode)
+                // ApplyAsync for storage::get because it is a blocking IO operation
+                .thenApplyAsync(storage::get, executor).thenCompose(blob -> {
+                  if (blob == null) {
+                    // blob was deleted, so ack by returning a successfully completed future
+                    // TODO measure the frequency of this
+                    return CompletableFuture.completedFuture((Void) null);
+                  }
+                  return bigQueryLoad.apply(blob);
+                }));
       }
 
       // Allow almost enough outstanding elements to fill one batch per table.
