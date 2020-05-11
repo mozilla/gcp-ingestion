@@ -189,17 +189,17 @@ public class SinkConfig {
                 }));
       }
 
-      // Allow almost enough outstanding elements to fill one batch per table.
+      // Allow enough outstanding elements to fill one batch per table.
       @Override
       long getDefaultMaxOutstandingElementCount() {
-        return 1_000_000L; // 1M messages
+        return 1_500_000L; // 1.5M messages
       }
 
       @Override
       long getDefaultMaxOutstandingRequestBytes() {
         // Allow enough bytes to reach max outstanding element count. Average bytes per element is
         // expected to be a little under 200 bytes.
-        return getDefaultMaxOutstandingElementCount() * 200; // 200MB
+        return 300_000_000; // 300MB
       }
     },
 
@@ -314,7 +314,7 @@ public class SinkConfig {
 
     // Cases in the enum may override this method set a more appropriate default.
     long getDefaultMaxOutstandingRequestBytes() {
-      return 100_000_000L; // 100MB
+      return 30_000_000L; // 30MB
     }
 
     static OutputType get(Env env) {
