@@ -64,7 +64,7 @@ public class AddMetadata {
     return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage msg) -> {
       msg = PubsubConstraints.ensureNonNull(msg);
       ObjectNode metadata = attributesToMetadataPayload(msg.getAttributeMap());
-      byte[] mergedPayload = mergePayloadWithMetadata(msg.getPayload(), metadata);
+      byte[] mergedPayload = merge(msg.getPayload(), metadata);
       return new PubsubMessage(mergedPayload, msg.getAttributeMap());
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
@@ -79,7 +79,7 @@ public class AddMetadata {
   }
 
   /** Merge a JSON byte payload with a ObjectNode. */
-  public static byte[] mergePayloadWithMetadata(byte[] payload, ObjectNode metadataObject)
+  public static byte[] merge(byte[] payload, ObjectNode metadataObject)
       throws UncheckedIOException {
     byte[] metadata;
     try {

@@ -221,22 +221,22 @@ public class AddMetadataTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testMergePayloadWithMetadata() throws Exception {
+  public void testMerge() throws Exception {
     String expect = reformatJson("{\"test\":\"foo\"}");
 
     byte[] payload = "{}".getBytes(Charsets.UTF_8);
     ObjectNode node = Json.createObjectNode();
     node.put("test", "foo");
-    byte[] actual = AddMetadata.mergePayloadWithMetadata(payload, node);
+    byte[] actual = AddMetadata.merge(payload, node);
 
     assertEquals(expect, reformatJson(actual));
   }
 
   @Test(expected = UncheckedIOException.class)
-  public void testMergePayloadWithMetadataInvalidPayload() {
+  public void testMergeInvalidPayload() {
     byte[] payload = " {}".getBytes(Charsets.UTF_8);
     ObjectNode node = Json.createObjectNode();
-    AddMetadata.mergePayloadWithMetadata(payload, node);
+    AddMetadata.merge(payload, node);
   }
 
 }
