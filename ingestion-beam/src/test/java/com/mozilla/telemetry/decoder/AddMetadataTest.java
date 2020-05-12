@@ -3,6 +3,7 @@ package com.mozilla.telemetry.decoder;
 import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.options.InputFileFormat;
@@ -10,6 +11,7 @@ import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -208,6 +210,33 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     AddMetadata.stripPayloadMetadataToAttributes(attributes, payload);
     assertEquals(expected, attributes);
     assertEquals(mapToObjectNode(ImmutableMap.of("field1", 99)), payload);
+  }
+
+  private String reformatJson(byte[] data) throws Exception {
+    return Json.asString(Json.readObjectNode(data));
+  }
+
+  private String reformatJson(String data) throws Exception {
+    return reformatJson(data.getBytes(Charsets.UTF_8));
+  }
+
+  @Test
+  public void testMergedPayload() throws Exception {
+    String expect = reformatJson("{\"test\":\"foo\"}");
+
+    byte[] payload = "{}".getBytes(Charsets.UTF_8);
+    ObjectNode node = Json.createObjectNode();
+    node.put("test", "foo");
+    byte[] actual = AddMetadata.mergedPayload(payload, Json.asBytes(node));
+
+    assertEquals(expect, reformatJson(actual));
+  }
+
+  @Test(expected = UncheckedIOException.class)
+  public void testMergedPayloadInvalidPayload() throws Exception {
+    byte[] payload = " {}".getBytes(Charsets.UTF_8);
+    ObjectNode node = Json.createObjectNode();
+    AddMetadata.mergedPayload(payload, Json.asBytes(node));
   }
 
 }

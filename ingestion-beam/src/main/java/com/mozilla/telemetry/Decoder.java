@@ -67,9 +67,8 @@ public class Decoder extends Sink {
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())))
         .map(p -> options.getPioneerEnabled() ? p
             .apply(DecryptPioneerPayloads.of(options.getPioneerMetadataLocation(),
-                options.getPioneerKmsEnabled()))
-            .failuresTo(failureCollections) //
-            .apply(DecompressPayload.enabled(options.getPioneerDecompressPayload())) : p)
+                options.getPioneerKmsEnabled(), options.getPioneerDecompressPayload()))
+            .failuresTo(failureCollections) : p)
         .map(p -> p //
             // See discussion in https://github.com/mozilla/gcp-ingestion/issues/776
             .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(failureCollections) //
