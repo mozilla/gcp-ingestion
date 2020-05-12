@@ -135,7 +135,7 @@ public class DecryptPioneerPayloads extends
       ObjectNode metadata = Json.createObjectNode();
       metadata.put(PIONEER_ID, payload.get(PIONEER_ID).asText());
       metadata.put(STUDY_NAME, payload.get(STUDY_NAME).asText());
-      final byte[] merged = AddMetadata.mergePayload(payloadData, Json.asBytes(metadata));
+      final byte[] merged = AddMetadata.mergedPayload(payloadData, Json.asBytes(metadata));
 
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());

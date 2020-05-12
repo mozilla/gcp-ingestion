@@ -70,7 +70,7 @@ public class AddMetadata {
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
-      byte[] mergedPayload = mergePayload(msg.getPayload(), metadata);
+      byte[] mergedPayload = mergedPayload(msg.getPayload(), metadata);
       return new PubsubMessage(mergedPayload, msg.getAttributeMap());
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
@@ -85,7 +85,7 @@ public class AddMetadata {
   }
 
   /** Merge a JSON byte payload with a ObjectNode. */
-  public static byte[] mergePayload(byte[] payload, byte[] metadata) throws UncheckedIOException {
+  public static byte[] mergedPayload(byte[] payload, byte[] metadata) throws UncheckedIOException {
     // Ensure that we have a json object with no leading whitespace
     if (payload.length < 2 || payload[0] != '{') {
       throw new UncheckedIOException(new IOException("invalid json object: must start with {"));
