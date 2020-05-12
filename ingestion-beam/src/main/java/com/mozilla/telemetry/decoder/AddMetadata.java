@@ -63,8 +63,14 @@ public class AddMetadata {
   public static MapWithFailures<PubsubMessage, PubsubMessage, PubsubMessage> of() {
     return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage msg) -> {
       msg = PubsubConstraints.ensureNonNull(msg);
-      ObjectNode metadata = attributesToMetadataPayload(msg.getAttributeMap());
-      byte[] mergedPayload = merge(msg.getPayload(), metadata);
+      byte[] metadata;
+      try {
+        // Get attributes as bytes, throws IOException
+        metadata = Json.asBytes(attributesToMetadataPayload(msg.getAttributeMap()));
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
+      }
+      byte[] mergedPayload = mergePayload(msg.getPayload(), metadata);
       return new PubsubMessage(mergedPayload, msg.getAttributeMap());
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
@@ -79,16 +85,7 @@ public class AddMetadata {
   }
 
   /** Merge a JSON byte payload with a ObjectNode. */
-  public static byte[] merge(byte[] payload, ObjectNode metadataObject)
-      throws UncheckedIOException {
-    byte[] metadata;
-    try {
-      // Get attributes as bytes, throws IOException
-      metadata = Json.asBytes(metadataObject);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
+  public static byte[] mergePayload(byte[] payload, byte[] metadata) throws UncheckedIOException {
     // Ensure that we have a json object with no leading whitespace
     if (payload.length < 2 || payload[0] != '{') {
       throw new UncheckedIOException(new IOException("invalid json object: must start with {"));
