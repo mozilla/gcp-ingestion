@@ -29,6 +29,7 @@ public class MessageScrubber {
       .put("org-mozilla-vrbrowser-wavevr", "1614411") //
       .put("org-mozilla-fogotype", "1635592") //
       .put("com-pumabrowser-pumabrowser", "1637055") //
+      .put("org-mozilla-fenix-debug", "1614409") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
