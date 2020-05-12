@@ -516,6 +516,9 @@ public class PubsubMessageToTableRow implements Serializable {
     if (field.getType() == LegacySQLTypeName.STRING) {
       if (o instanceof String) {
         return Optional.of(o);
+      } else if (o instanceof Map && ((Map) o).containsKey("histogram_type")) {
+        // This is a histogram.
+        return Optional.of(encodedHistogram(o));
       } else {
         // If not already a string, we JSON-ify the value.
         // We have many fields that we expect to be coerced to string (histograms, userPrefs, etc.)
@@ -550,6 +553,18 @@ public class PubsubMessageToTableRow implements Serializable {
       }
     } else {
       return Optional.of(o);
+    }
+  }
+
+  private static String encodedHistogram(Object o) {
+    Map<String, Object> m = (Map) o;
+    try {
+      return String.format("%d;%d;%d;%s;%s", m.get("bucket_count"),
+          m.get("histogram_type"), m.get("sum"),
+          Json.asString(m.get("range")).replace("[", "").replace("]", ""),
+          Json.asString(m.get("values")).replace("\"", "").replace("{", "").replace("}", ""));
+    } catch (IOException ignore) {
+      return o.toString();
     }
   }
 

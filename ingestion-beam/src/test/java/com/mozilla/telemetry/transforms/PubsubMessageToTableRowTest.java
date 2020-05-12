@@ -522,4 +522,17 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
   }
+
+  @Test
+  public void testEncodedHistogram() throws Exception {
+    Map<String, Object> additionalProperties = new HashMap<>();
+    TableRow parent = Json.readTableRow(("{\n" //
+        + "  \"histogram\": {\"bucket_count\":50,\"histogram_type\":0,\"sum\":3454,\"range\":[1,10000],\"values\":{\"2\":0,\"3\":3,\"4\":8,\"5\":33,\"6\":41,\"7\":29,\"8\":25,\"10\":9,\"12\":5,\"14\":10,\"17\":5,\"20\":6,\"24\":2,\"29\":1,\"40\":1,\"48\":3,\"68\":1,\"114\":1,\"135\":1,\"226\":1,\"1062\":1,\"1262\":0}}\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("histogram", LegacySQLTypeName.STRING) //
+        .build()); //
+    String expected = "{\"histogram\":\"50;0;3454;1,10000;10:9,1062:1,114:1,12:5,1262:0,135:1,14:10,17:5,2:0,20:6,226:1,24:2,29:1,3:3,4:8,40:1,48:3,5:33,6:41,68:1,7:29,8:25\"";
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asString(parent));
+  }
 }
