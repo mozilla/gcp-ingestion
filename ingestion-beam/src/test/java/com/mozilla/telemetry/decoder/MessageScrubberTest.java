@@ -332,4 +332,14 @@ public class MessageScrubberTest {
     assertThrows(AffectedByBugException.class,
         () -> MessageScrubber.scrub(attributes, pingToBeScrubbed));
   }
+
+  @Test
+  public void testUnwantedDataBug1631849PioneerStudy() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry") //
+        .put(Attribute.DOCUMENT_TYPE, "pioneer-study").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
 }
