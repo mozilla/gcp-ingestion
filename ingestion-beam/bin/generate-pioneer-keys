@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import sys
+
+try:
+    from jwcrypto import jwk
+except ImportError as exc:
+    print(f"{exc.__class__.__name__}: run `pip install jwcrypto` and try again")
+    sys.exit(1)
+
+key = jwk.JWK.generate(kty="EC")
+print("# private key")
+print(key.export_private())
+print("# public key")
+print(key.export_public())
