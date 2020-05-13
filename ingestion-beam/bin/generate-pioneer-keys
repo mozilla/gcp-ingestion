@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import json
 
 try:
     from jwcrypto import jwk
@@ -9,7 +10,12 @@ except ImportError as exc:
     sys.exit(1)
 
 key = jwk.JWK.generate(kty="EC")
-print("# private key")
-print(key.export_private())
-print("# public key")
-print(key.export_public())
+
+print(
+    json.dumps(
+        {
+            "private_key": json.loads(key.export_private()),
+            "public_key": json.loads(key.export_public()),
+        }
+    )
+)
