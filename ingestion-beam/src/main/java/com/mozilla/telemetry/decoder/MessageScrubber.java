@@ -108,6 +108,13 @@ public class MessageScrubber {
       throw new AffectedByBugException("1626020");
     }
 
+    // Decommission pioneer-study ping. These pings should be rerouted to a
+    // Pioneer specific decoder, in which the payload should be decrypted at
+    // this point.
+    if ("telemetry".equals(namespace) && "pioneer-study".equals(docType)) {
+      throw new UnwantedDataException("1631849");
+    }
+
     // Redactions (message is altered, but allowed through).
     if (bug1602844Affected(attributes)) {
       json.path("events").elements().forEachRemaining(event -> {
