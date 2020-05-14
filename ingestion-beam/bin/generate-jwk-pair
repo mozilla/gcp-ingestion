@@ -31,11 +31,13 @@ if args.key_id and args.random_key_id:
 
 kwargs = dict(kty="EC", crv="P-256")
 if args.key_id:
-    kwargs["key_id"] = args.key_id
+    kwargs["kid"] = args.key_id
 if args.random_key_id:
-    kwargs["key_id"] = json.loads(jwk.JWK.generate(kty="EC").export_public())["x"]
+    kwargs["kid"] = json.loads(jwk.JWK.generate(kty="EC").export_public())["x"]
 
 key = jwk.JWK.generate(**kwargs)
+if args.key_id or args.random_key_id:
+    assert key.key_id
 
 print(
     json.dumps(
