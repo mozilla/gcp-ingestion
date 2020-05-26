@@ -51,7 +51,7 @@ elif [[ $JOB_TYPE == "gcssink" ]] ; then
 ${SINK_OPTS}"
   ERROR_OUTPUT_OPTS="--errorOutputType=file \
 --errorOutputNumShards=${ERROR_NUM_SHARDS}"
-elif [[ $JOB_TYPE == "decoder" ]] ; then
+elif [[ $JOB_TYPE =~ ^decoder.*$ ]] ; then
   JOB_CLASS="com.mozilla.telemetry.Decoder"
   OUTPUT_OPTS="--outputType=pubsub \
 --outputFileFormat=json \
