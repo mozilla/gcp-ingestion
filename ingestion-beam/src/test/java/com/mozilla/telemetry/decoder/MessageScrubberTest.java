@@ -342,4 +342,14 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
   }
+
+  @Test
+  public void testUnwantedDataBug1633525FrecencyUpdate() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+        .put(Attribute.DOCUMENT_TYPE, "frecency-update").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
 }
