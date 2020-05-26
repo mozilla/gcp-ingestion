@@ -32,6 +32,11 @@ public class MessageScrubber {
       .put("org-mozilla-fenix-debug", "1614409") //
       .build();
 
+  private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
+      .<String, String>builder().put("pioneer-study", "1631849")
+      .put("frecency-update", "1633525")
+      .build();
+
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
       "modules");
 
@@ -85,6 +90,10 @@ public class MessageScrubber {
       throw new UnwantedDataException(IGNORED_NAMESPACES.get(namespace));
     }
 
+    if (ParseUri.TELEMETRY.equals(namespace) && IGNORED_TELEMETRY_DOCTYPES.containsKey(docType)) {
+      throw new UnwantedDataException(IGNORED_TELEMETRY_DOCTYPES.get(docType));
+    }
+
     if ("FirefoxOS".equals(appName)) {
       throw new UnwantedDataException("1618684");
     }
@@ -106,18 +115,6 @@ public class MessageScrubber {
     // No such docType: default-browser-agent/1
     if ("default-browser-agent".equals(namespace) && "1".equals(docType)) {
       throw new AffectedByBugException("1626020");
-    }
-
-    // Decommission pioneer-study ping. These pings should be rerouted to a
-    // Pioneer specific decoder, in which the payload should be decrypted at
-    // this point.
-    if ("telemetry".equals(namespace) && "pioneer-study".equals(docType)) {
-      throw new UnwantedDataException("1631849");
-    }
-
-    // First Federated Learning experiment, decommissioned
-    if ("telemetry".equals(namespace) && "frecency-update".equals(docType)) {
-      throw new UnwantedDataException("1633525");
     }
 
     // Redactions (message is altered, but allowed through).
