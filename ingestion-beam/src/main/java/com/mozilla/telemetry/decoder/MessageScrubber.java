@@ -33,8 +33,8 @@ public class MessageScrubber {
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
-      .<String, String>builder().put("pioneer-study", "1631849")
-      .put("frecency-update", "1633525")
+      .<String, String>builder().put("pioneer-study", "1631849") //
+      .put("frecency-update", "1633525") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
