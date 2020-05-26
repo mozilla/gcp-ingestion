@@ -115,6 +115,11 @@ public class MessageScrubber {
       throw new UnwantedDataException("1631849");
     }
 
+    // First Federated Learning experiment, decommissioned
+    if ("telemetry".equals(namespace) && "frecency-update".equals(docType)) {
+      throw new UnwantedDataException("1633525");
+    }
+
     // Redactions (message is altered, but allowed through).
     if (bug1602844Affected(attributes)) {
       json.path("events").elements().forEachRemaining(event -> {
