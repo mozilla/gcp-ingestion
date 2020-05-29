@@ -2,5 +2,10 @@
 *.swo
 *.swp
 .DS_Store
+.classpath
+.factorypath
 .idea/
+.project
+.settings/
+.vscode/
 target/

@@ -1,0 +1,103 @@
+#!/bin/bash
+# Runs a benchmark that can be used to quantify the overhead of the
+# DecryptPioneerPayloads step. A document sample of ingested data is encrypted
+# using JOSE and is run through the Pioneer-enabled decoder. This is compared
+# against the plaintext data.
+#
+# Initial findings show that for every 1 minute spent on ParsePayload, there are
+# 3 minutes spend on DecryptPioneerPayloads. Peak throughput in ParsePayload
+# goes from 3360 elements/sec to 2466 elements/sec when adding encryption.
+#
+# This script requires the use of GNU Coreutils. This may be installed on MacOS
+# via homebrew: `brew install coreutils`.
+
+set -ex
+
+export MAVEN_OPTS="-Xms8g -Xmx8g"
+reset=${RESET:-false}
+project=$(gcloud config get-value project)
+bucket="gs://${BUCKET?bucket value must be specified}"
+prefix="ingestion-beam-benchmark"
+staging="benchmark_staging"
+
+cd "$(dirname "$0")/.."
+
+if [[ ! -f document_sample.ndjson ]]; then
+    echo "missing document_sample.ndjson, run download-document-sample"
+    exit 1
+fi
+
+if [[ ! -f pioneer_benchmark_data.ndjson ]] || [[ ${reset} == "true" ]]; then
+    # generate the data using the document sample, this may take a while depending on your machine
+    ./bin/mvn clean compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
+fi
+
+# assert bucket can be read
+gsutil ls "$bucket" &> /dev/null
+
+# generate a new folder and sync it to gcs, assumes a bucket value
+if [[ ! -d $staging ]]; then
+    plaintext=$staging/input/plaintext
+    ciphertext=$staging/input/ciphertext
+    metadata=$staging/metadata
+    mkdir -p $plaintext
+    mkdir -p $ciphertext
+    mkdir -p $metadata
+    # shuffle to avoid data skew, and to prepare for file splitting if necessary
+    shuf document_sample.ndjson > $plaintext/part-0.ndjson
+    shuf pioneer_benchmark_data.ndjson > $ciphertext/part-0.ndjson
+    cp pioneer_benchmark_key.json $staging/metadata/key.json
+    # compute the location of the remote key and insert it into the metadata
+    remote_key="$bucket/$prefix/metadata/key.json"
+    jq "(.. | .private_key_uri?) |= \"$remote_key\"" pioneer_benchmark_metadata.json > $staging/metadata/metadata.json
+    cp schemas.tar.gz $metadata
+    cp cities15000.txt $metadata
+    cp GeoLite2-City.mmdb $metadata
+fi
+
+# this can take a while, depending on your upload speed (~1 GB of data)
+gsutil -m rsync -R -d $staging/ "$bucket/$prefix/"
+
+# plaintext
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+    --runner=Dataflow \
+    --profilingAgentConfiguration='{\"APICurated\": true}'
+    --project=$project \
+    --autoscalingAlgorithm=NONE \
+    --workerMachineType=n1-standard-1 \
+    --gcpTempLocation=$bucket/tmp \
+    --numWorkers=2 \
+    --geoCityDatabase=$bucket/$prefix/metadata/GeoLite2-City.mmdb \
+    --geoCityFilter=$bucket/$prefix/metadata/cities15000.txt \
+    --schemasLocation=$bucket/$prefix/metadata/schemas.tar.gz \
+    --inputType=file \
+    --input=$bucket/$prefix/input/plaintext/'part-*' \
+    --outputType=file \
+    --output=$bucket/$prefix/output/plaintext/ \
+    --errorOutputType=file \
+    --errorOutput=$bucket/$prefix/error/plaintext/ \
+"
+
+# ciphertext
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+    --runner=Dataflow \
+    --profilingAgentConfiguration='{\"APICurated\": true}'
+    --project=$project \
+    --autoscalingAlgorithm=NONE \
+    --workerMachineType=n1-standard-1 \
+    --gcpTempLocation=$bucket/tmp \
+    --numWorkers=2 \
+    --pioneerEnabled=true \
+    --pioneerMetadataLocation=$bucket/$prefix/metadata/metadata.json \
+    --pioneerKmsEnabled=false \
+    --pioneerDecompressPayload=false \
+    --geoCityDatabase=$bucket/$prefix/metadata/GeoLite2-City.mmdb \
+    --geoCityFilter=$bucket/$prefix/metadata/cities15000.txt \
+    --schemasLocation=$bucket/$prefix/metadata/schemas.tar.gz \
+    --inputType=file \
+    --input=$bucket/$prefix/input/ciphertext/'part-*' \
+    --outputType=file \
+    --output=$bucket/$prefix/output/ciphertext/ \
+    --errorOutputType=file \
+    --errorOutput=$bucket/$prefix/error/ciphertext/ \
+"

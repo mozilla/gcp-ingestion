@@ -35,6 +35,9 @@ public class AddMetadata {
   private static final String GEO = "geo";
   private static final String GEO_PREFIX = GEO + "_";
 
+  private static final String ISP = "isp";
+  private static final String ISP_PREFIX = ISP + "_";
+
   private static final String USER_AGENT_PREFIX = Attribute.USER_AGENT + "_";
 
   private static final String HEADER = "header";
@@ -63,39 +66,15 @@ public class AddMetadata {
   public static MapWithFailures<PubsubMessage, PubsubMessage, PubsubMessage> of() {
     return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage msg) -> {
       msg = PubsubConstraints.ensureNonNull(msg);
-      // Get payload
-      final byte[] payload = msg.getPayload();
-
       byte[] metadata;
-
       try {
         // Get attributes as bytes, throws IOException
         metadata = Json.asBytes(attributesToMetadataPayload(msg.getAttributeMap()));
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
-
-      // Ensure that we have a json object with no leading whitespace
-      if (payload.length < 2 || payload[0] != '{') {
-        throw new UncheckedIOException(new IOException("invalid json object: must start with {"));
-      }
-
-      // Create an output stream for joining metadata with payload
-      final ByteArrayOutputStream payloadWithMetadata = new ByteArrayOutputStream(
-          metadata.length + payload.length);
-      // Write metadata without trailing `}`
-      payloadWithMetadata.write(metadata, 0, metadata.length - 1);
-
-      // Start next json field, unless object was empty
-      if (payload.length > 2) {
-        // Write comma to start the next field
-        payloadWithMetadata.write(',');
-      }
-
-      // Write payload without leading `{`
-      payloadWithMetadata.write(payload, 1, payload.length - 1);
-
-      return new PubsubMessage(payloadWithMetadata.toByteArray(), msg.getAttributeMap());
+      byte[] mergedPayload = mergedPayload(msg.getPayload(), metadata);
+      return new PubsubMessage(mergedPayload, msg.getAttributeMap());
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
@@ -106,6 +85,31 @@ public class AddMetadata {
                 ee.exception());
           }
         });
+  }
+
+  /** Merge a JSON byte payload with a ObjectNode. */
+  public static byte[] mergedPayload(byte[] payload, byte[] metadata) throws UncheckedIOException {
+    // Ensure that we have a json object with no leading whitespace
+    if (payload.length < 2 || payload[0] != '{') {
+      throw new UncheckedIOException(new IOException("invalid json object: must start with {"));
+    }
+
+    // Create an output stream for joining metadata with payload
+    final ByteArrayOutputStream payloadWithMetadata = new ByteArrayOutputStream(
+        metadata.length + payload.length);
+    // Write metadata without trailing `}`
+    payloadWithMetadata.write(metadata, 0, metadata.length - 1);
+
+    // Start next json field, unless object was empty
+    if (payload.length > 2) {
+      // Write comma to start the next field
+      payloadWithMetadata.write(',');
+    }
+
+    // Write payload without leading `{`
+    payloadWithMetadata.write(payload, 1, payload.length - 1);
+
+    return payloadWithMetadata.toByteArray();
   }
 
   /**
@@ -122,6 +126,7 @@ public class AddMetadata {
     // are not specifically Map<String, String>.
     ObjectNode metadata = Json.createObjectNode();
     metadata.set(GEO, geoFromAttributes(attributes));
+    metadata.set(ISP, ispFromAttributes(attributes));
     metadata.set(Attribute.USER_AGENT, userAgentFromAttributes(attributes));
     metadata.set(HEADER, headersFromAttributes(attributes));
     if (ParseUri.TELEMETRY.equals(namespace)) {
@@ -165,6 +170,7 @@ public class AddMetadata {
         .map(ObjectNode.class::cast) //
         .ifPresent(metadata -> {
           putGeoAttributes(attributes, metadata);
+          putIspAttributes(attributes, metadata);
           putUserAgentAttributes(attributes, metadata);
           putHeaderAttributes(attributes, metadata);
           putUriAttributes(attributes, metadata);
@@ -194,6 +200,18 @@ public class AddMetadata {
 
   static void putGeoAttributes(Map<String, String> attributes, ObjectNode metadata) {
     putAttributes(attributes, metadata, GEO, GEO_PREFIX);
+  }
+
+  private static ObjectNode ispFromAttributes(Map<String, String> attributes) {
+    ObjectNode isp = Json.createObjectNode();
+    attributes.keySet().stream() //
+        .filter(k -> k.startsWith(ISP_PREFIX)) //
+        .forEach(k -> isp.put(k.substring(4), attributes.get(k)));
+    return isp;
+  }
+
+  static void putIspAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, ISP, ISP_PREFIX);
   }
 
   static ObjectNode userAgentFromAttributes(Map<String, String> attributes) {

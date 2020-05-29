@@ -328,15 +328,6 @@ public class PubsubMessageToTableRow implements Serializable {
       List<Object> records = value.filter(List.class::isInstance).map(List.class::cast)
           .orElse(ImmutableList.of());
       List<Object> repeatedAdditionalProperties = new ArrayList<>();
-      records.stream().filter(Map.class::isInstance).map(Map.class::cast).forEach(record -> {
-        Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
-        transformForBqSchema(record, field.getSubFields(), props);
-        if (props != null && !props.isEmpty()) {
-          repeatedAdditionalProperties.add(props);
-        } else {
-          repeatedAdditionalProperties.add(null);
-        }
-      });
       // Arrays of tuples cannot be transformed in place, instead each element of the parent array
       // will need to reference a new transformed object.
       if (records.stream().allMatch(List.class::isInstance)) {
@@ -348,13 +339,33 @@ public class PubsubMessageToTableRow implements Serializable {
           if (props != null && !props.isEmpty()) {
             repeatedAdditionalProperties.add(props);
           } else {
-            repeatedAdditionalProperties.add(null);
+            repeatedAdditionalProperties.add(Collections.emptyMap());
           }
           records.set(i, (Object) m);
         }
+      } else {
+        List<Object> filteredRecords = new ArrayList<>();
+        records.forEach(untypedRecord -> {
+          if (untypedRecord instanceof Map) {
+            filteredRecords.add(untypedRecord);
+            Map<String, Object> record = (Map<String, Object>) untypedRecord;
+            Map<String, Object> props = additionalProperties == null ? null : new HashMap<>();
+            transformForBqSchema(record, field.getSubFields(), props);
+            if (props != null && !props.isEmpty()) {
+              repeatedAdditionalProperties.add(props);
+            } else {
+              repeatedAdditionalProperties.add(Collections.emptyMap());
+            }
+          } else {
+            // BigQuery only allows maps in this array, so we insert an empty map instead.
+            filteredRecords.add(Collections.emptyMap());
+            repeatedAdditionalProperties.add(untypedRecord);
+          }
+        });
+        parent.put(name, filteredRecords);
       }
 
-      if (!repeatedAdditionalProperties.stream().allMatch(Objects::isNull)) {
+      if (!repeatedAdditionalProperties.stream().allMatch(m -> Collections.emptyMap().equals(m))) {
         additionalProperties.put(jsonFieldName, repeatedAdditionalProperties);
       }
       // If we've made it here, we have a basic type or a list of basic types.

@@ -64,6 +64,8 @@ public class PubsubMessageToObjectNodeTest {
         .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
         .putAttributes("geo_subdivision1", "geo_subdivision1")
         .putAttributes("geo_subdivision2", "geo_subdivision2")
+        .putAttributes("isp_db_version", "isp_db_version").putAttributes("isp_name", "isp_name")
+        .putAttributes("isp_organization", "isp_organization")
         .putAttributes("user_agent_browser", "user_agent_browser")
         .putAttributes("user_agent_os", "user_agent_os")
         .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
@@ -91,6 +93,9 @@ public class PubsubMessageToObjectNodeTest {
                     ImmutableMap.builder().put("country", "geo_country").put("city", "geo_city")
                         .put("subdivision2", "geo_subdivision2")
                         .put("subdivision1", "geo_subdivision1").build())
+                .put("isp",
+                    ImmutableMap.builder().put("db_version", "isp_db_version")
+                        .put("name", "isp_name").put("organization", "isp_organization").build())
                 .put("user_agent",
                     ImmutableMap.builder().put("browser", "user_agent_browser")
                         .put("os", "user_agent_os").put("version", "user_agent_version").build())
@@ -121,6 +126,8 @@ public class PubsubMessageToObjectNodeTest {
         .putAttributes("geo_city", "geo_city").putAttributes("geo_country", "geo_country")
         .putAttributes("geo_subdivision1", "geo_subdivision1")
         .putAttributes("geo_subdivision2", "geo_subdivision2")
+        .putAttributes("isp_db_version", "isp_db_version").putAttributes("isp_name", "isp_name")
+        .putAttributes("isp_organization", "isp_organization")
         .putAttributes("user_agent_browser", "user_agent_browser")
         .putAttributes("user_agent_os", "user_agent_os")
         .putAttributes("user_agent_version", "user_agent_version").putAttributes("date", "date")
@@ -148,6 +155,9 @@ public class PubsubMessageToObjectNodeTest {
                     ImmutableMap.builder().put("country", "geo_country").put("city", "geo_city")
                         .put("subdivision2", "geo_subdivision2")
                         .put("subdivision1", "geo_subdivision1").build())
+                .put("isp",
+                    ImmutableMap.builder().put("db_version", "isp_db_version")
+                        .put("name", "isp_name").put("organization", "isp_organization").build())
                 .put("user_agent",
                     ImmutableMap.builder().put("browser", "user_agent_browser")
                         .put("os", "user_agent_os").put("version", "user_agent_version").build())
@@ -173,11 +183,10 @@ public class PubsubMessageToObjectNodeTest {
     final ObjectNode actual = DECODED_TRANSFORM
         .apply(PubsubMessage.newBuilder().putAttributes("document_namespace", "telemetry").build());
 
-    assertEquals(ImmutableMap.builder()
-        .put("metadata",
-            ImmutableMap.builder().put("document_namespace", "telemetry")
-                .put("geo", ImmutableMap.of()).put("header", ImmutableMap.of())
-                .put("user_agent", ImmutableMap.of()).put("uri", ImmutableMap.of()).build())
+    assertEquals(ImmutableMap.builder().put("metadata",
+        ImmutableMap.builder().put("document_namespace", "telemetry").put("geo", ImmutableMap.of())
+            .put("isp", ImmutableMap.of()).put("header", ImmutableMap.of())
+            .put("user_agent", ImmutableMap.of()).put("uri", ImmutableMap.of()).build())
         .build(), Json.asMap(actual));
   }
 
@@ -185,8 +194,8 @@ public class PubsubMessageToObjectNodeTest {
   public void canFormatNonTelemetryAsDecodedWithEmptyValues() {
     assertEquals(ImmutableMap.builder()
         .put("metadata",
-            ImmutableMap.builder().put("geo", ImmutableMap.of()).put("header", ImmutableMap.of())
-                .put("user_agent", ImmutableMap.of()).build())
+            ImmutableMap.builder().put("geo", ImmutableMap.of()).put("isp", ImmutableMap.of())
+                .put("header", ImmutableMap.of()).put("user_agent", ImmutableMap.of()).build())
         .build(), Json.asMap(DECODED_TRANSFORM.apply(EMPTY_MESSAGE)));
   }
 
