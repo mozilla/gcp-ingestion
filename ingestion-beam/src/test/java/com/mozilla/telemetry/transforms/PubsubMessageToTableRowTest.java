@@ -531,7 +531,10 @@ public class PubsubMessageToTableRowTest extends TestWithDeterministicJson {
         + "}\n").getBytes(StandardCharsets.UTF_8));
     List<Field> bqFields = ImmutableList.of(Field.newBuilder("histogram", LegacySQLTypeName.STRING) //
         .build()); //
-    String expected = "{\"histogram\":\"50;0;3454;1,10000;10:9,1062:1,114:1,12:5,1262:0,135:1,14:10,17:5,2:0,20:6,226:1,24:2,29:1,3:3,4:8,40:1,48:3,5:33,6:41,68:1,7:29,8:25\"";
+    String expected = "{\"histogram\":\"50;0;3454;1,10000;10:9,1062:1,114:1,12:5,1262:0,135:1,14:10,17:5,2:0,20:6,226:1,24:2,29:1,3:3,4:8,40:1,48:3,5:33,6:41,68:1,7:29,8:25\"}";
+    //String expected = "{\"histogram\":\"50;0;3454;1,10000;10:9,1062:1,114:1,12:5,135:1,14:10,17:5,20:6,226:1,24:2,29:1,3:3,4:8,40:1,48:3,5:33,6:41,68:1,7:29,8:25\"}";
+    //String expected = "{\"histogram\":\"50;0;3454;1,10000;0,3,8,33,41,29,25,9,5,10,5,6,2,1,1,3,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0\"}";
+    //String expected = "{\"histogram\":\"3454;1,10000;10:9,1062:1,114:1,12:5,1262:0,135:1,14:10,17:5,2:0,20:6,226:1,24:2,29:1,3:3,4:8,40:1,48:3,5:33,6:41,68:1,7:29,8:25\"}";
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asString(parent));
   }

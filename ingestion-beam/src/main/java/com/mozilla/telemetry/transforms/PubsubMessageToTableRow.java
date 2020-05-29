@@ -17,6 +17,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.UncheckedExecutionException;
+import com.google.protobuf.MapEntry;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.BigQuerySchemaStore;
@@ -39,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
@@ -559,10 +561,39 @@ public class PubsubMessageToTableRow implements Serializable {
   private static String encodedHistogram(Object o) {
     Map<String, Object> m = (Map) o;
     try {
-      return String.format("%d;%d;%d;%s;%s", m.get("bucket_count"),
-          m.get("histogram_type"), m.get("sum"),
-          Json.asString(m.get("range")).replace("[", "").replace("]", ""),
-          Json.asString(m.get("values")).replace("\"", "").replace("{", "").replace("}", ""));
+      Map<String, Object> values = (Map<String, Object>) m.get("values");
+      Map<String, Object> strippedValues = values.entrySet().stream().filter(e -> !"0".equals(e.getValue().toString())).collect(Collectors.toMap(
+          x -> x.getKey(), x -> x.getValue()));
+      ArrayList<Object> valuesOnly = new ArrayList<Object>();
+      for (Object v : values.values()) {
+        valuesOnly.add(v);
+      }
+      for (int i = 0; i < (Integer)m.get("bucket_count") - values.size(); i++) {
+        valuesOnly.add(0);
+      }
+      String histType = m.get("histogram_type").toString();
+      int nChars = Json.asString(o).length();
+      Metrics.counter(PubsubMessageToTableRow.class, "hist_count_" + histType).inc();
+      Metrics.counter(PubsubMessageToTableRow.class, "hist_bytes_" + histType).inc(nChars);
+      Metrics.distribution(PubsubMessageToTableRow.class, "zhist_dist_" + histType).update(nChars);
+      String valOnlyString = Json.asString(valuesOnly).replace("[", "").replace("]", "");
+      String valString = Json.asString(values).replace("{", "").replace("}", "").replace("\"", "");
+      if ("2".equals(histType)) {
+        return String.format("%d,%d", values.get("0"), values.get("1"));
+      } else if ("3".equals(histType)) {
+        return "1".equals(values.get("0")) ? "f" : "t";
+      } else if ("4".equals(histType)) {
+        return values.get("0").toString();
+      } else {
+        return String.format("%d;%d;%d;%s;%s", m.get("bucket_count"),
+            m.get("histogram_type"), m.get("sum"),
+            Json.asString(m.get("range")).replace("[", "").replace("]", ""),
+            valString);
+//      return String.format("%d;%s;%s",
+//          m.get("sum"),
+//          Json.asString(m.get("range")).replace("[", "").replace("]", ""),
+//          valString);
+      }
     } catch (IOException ignore) {
       return o.toString();
     }
