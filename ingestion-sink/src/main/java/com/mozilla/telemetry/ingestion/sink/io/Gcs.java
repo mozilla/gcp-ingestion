@@ -1,8 +1,10 @@
 package com.mozilla.telemetry.ingestion.sink.io;
 
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.util.Json;
@@ -16,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,9 +38,10 @@ public class Gcs {
       private final PubsubMessageToObjectNode encoder;
 
       public Ndjson(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-          PubsubMessageToTemplatedString batchKeyTemplate, PubsubMessageToObjectNode encoder,
-          Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
-        super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, batchCloseHook);
+          PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
+          PubsubMessageToObjectNode encoder,
+          Function<Blob, CompletableFuture<Void>> batchCloseHook) {
+        super(storage, maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor, batchCloseHook);
         this.encoder = encoder;
       }
 
@@ -52,12 +56,12 @@ public class Gcs {
     }
 
     private final Storage storage;
-    private final Function<BlobInfo, CompletableFuture<Void>> batchCloseHook;
+    private final Function<Blob, CompletableFuture<Void>> batchCloseHook;
 
     private Write(Storage storage, long maxBytes, int maxMessages, Duration maxDelay,
-        PubsubMessageToTemplatedString batchKeyTemplate,
-        Function<BlobInfo, CompletableFuture<Void>> batchCloseHook) {
-      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate);
+        PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
+        Function<Blob, CompletableFuture<Void>> batchCloseHook) {
+      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor);
       this.storage = storage;
       this.batchCloseHook = batchCloseHook;
     }
@@ -99,9 +103,14 @@ public class Gcs {
             .setContentType("application/json").build();
       }
 
+      /**
+       * Throws 'com.google.cloud.storage.StorageException: Precondition Failed'
+       * if blob already exists.
+       */
       @Override
       protected CompletableFuture<Void> close() {
-        return batchCloseHook.apply(storage.create(blobInfo, content.toByteArray()));
+        return batchCloseHook.apply(
+            storage.create(blobInfo, content.toByteArray(), BlobTargetOption.doesNotExist()));
       }
 
       @Override

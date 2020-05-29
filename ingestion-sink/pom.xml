@@ -14,25 +14,70 @@
     <packaging>jar</packaging>
 
     <properties>
-        <opencensus.version>0.23.0</opencensus.version>
+        <log4j.version>2.13.2</log4j.version>
+        <opencensus.version>0.26.0</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
+
+    <profiles>
+        <profile>
+            <!-- Enable this profile to add ingestion-core as a dependency for IDEs like Intellij
+                 that don't detect files added by build-helper-maven-plugin -->
+            <id>IDE</id>
+            <dependencies>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>ingestion-core</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>${project.groupId}</groupId>
+                    <artifactId>ingestion-core</artifactId>
+                    <version>${project.version}</version>
+                    <type>test-jar</type>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Use com.google.cloud/libraries-bom to ensure compatible versions of components from
+                 guava, protobuf, grpc-java, google-http-java-client and google-cloud-java
+
+                 https://github.com/GoogleCloudPlatform/cloud-opensource-java/wiki/The-Google-Cloud-Platform-Libraries-BOM#maven
+
+                 This cannot go in the parent pom.xml because it breaks beam -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>libraries-bom</artifactId>
+                <version>4.1.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-bom</artifactId>
+                <version>${log4j.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-pubsub</artifactId>
-            <version>${google-cloud.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-bigquery</artifactId>
-            <version>${google-cloud.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-storage</artifactId>
-            <version>${google-cloud.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -40,9 +85,16 @@
             <version>1.8</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.30</version>
+            <!-- Use log4j implementation of slf4j -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Runtime dependency for log4j yaml config support
+                 https://logging.apache.org/log4j/2.x/runtime-dependencies.html#log4j-core -->
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.opencensus</groupId>
@@ -76,6 +128,14 @@
             <groupId>org.hamcrest</groupId>
             <artifactId>java-hamcrest</artifactId>
             <version>2.0.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <!-- specify version because test-jars are not included in log4j-bom -->
+            <version>${log4j.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
     </dependencies>

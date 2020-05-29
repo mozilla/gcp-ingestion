@@ -4,6 +4,7 @@ import com.mozilla.telemetry.ingestion.sink.config.SinkConfig;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,7 +18,7 @@ public class BoundedSink extends SinkConfig {
   /**
    * Run async until {@code messageCount} messages have been delivered.
    */
-  public static CompletableFuture<Void> runAsync(int messageCount) throws IOException {
+  private static CompletableFuture<Void> runAsync(int messageCount) throws IOException {
     final Output output = getOutput();
     final AtomicInteger counter = new AtomicInteger(0);
     final AtomicReference<Pubsub.Read> input = new AtomicReference<>();
@@ -29,31 +30,17 @@ public class BoundedSink extends SinkConfig {
       }
       return v;
     }))));
-    return CompletableFuture.completedFuture(input.get()).thenAcceptAsync(Pubsub.Read::run);
+    return CompletableFuture.runAsync(input.get()::run);
   }
 
   /**
    * Wait up to {@code timeout} seconds for {@code messageCount} messages to be delivered.
    */
   public static void run(int messageCount, int timeout) throws IOException {
-    run(runAsync(messageCount), timeout);
-  }
-
-  /**
-   * Wait up to {@code timeout} seconds for {@code future} to complete.
-   */
-  public static void run(CompletableFuture<Void> future, int timeout) {
-    try {
-      synchronized (future) {
-        future.wait(timeout);
-      }
-    } catch (InterruptedException e) {
-      future.cancel(true);
-    }
-    try {
-      future.join();
-    } catch (CancellationException e) {
-      throw new RuntimeException("Failed to deliver messages in " + timeout + " seconds", e);
+    CompletableFuture<Void> future = runAsync(messageCount);
+    CompletableFuture.anyOf(future, new TimedFuture(Duration.ofSeconds(timeout))).join();
+    if (future.cancel(true)) {
+      throw new CancellationException("Failed to deliver messages in " + timeout + " seconds");
     }
   }
 }

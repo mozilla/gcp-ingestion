@@ -1,0 +1,15 @@
+Configuration:
+  appenders:
+    # append logs to a list instead of stdout for tests
+    List:
+      name: STDOUT
+      JSONLayout:
+        # https://logging.apache.org/log4j/2.x/manual/layouts.html#JSONLayout
+        compact: true
+        eventEol: true
+        stacktraceAsString: true
+  Loggers:
+    Root:
+      level: WARN
+      AppenderRef:
+        ref: STDOUT

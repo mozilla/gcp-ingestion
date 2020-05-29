@@ -77,9 +77,19 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testUnwantedDataBug1614412() {
+  public void testUnwantedDataBug1635592() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-vrbrowser-wavevr")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
+  public void testUnwantedDataBug1614412() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fogotype")
         .put(Attribute.DOCUMENT_TYPE, "baseline").build();
 
     assertThrows(UnwantedDataException.class,
@@ -108,6 +118,16 @@ public class MessageScrubberTest {
       assertThrows(UnwantedDataException.class,
           () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
     }
+  }
+
+  @Test
+  public void testUnwantedDataBug1637055() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "com-pumabrowser-pumabrowser")
+        .put(Attribute.DOCUMENT_TYPE, "baseline").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
   }
 
   @Test
@@ -296,5 +316,40 @@ public class MessageScrubberTest {
     PAssert.that(exceptions).containsInAnyOrder(expectedError);
 
     pipeline.run();
+  }
+
+  @Test
+  public void testBug1626020Affected() throws Exception {
+    ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
+        + "  \"client_info\": {\n" //
+        + "    \"client_id\": null" //
+        + "  }}").getBytes(StandardCharsets.UTF_8));
+
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "default-browser-agent")
+        .put(Attribute.DOCUMENT_TYPE, "1").build();
+
+    assertThrows(AffectedByBugException.class,
+        () -> MessageScrubber.scrub(attributes, pingToBeScrubbed));
+  }
+
+  @Test
+  public void testUnwantedDataBug1631849PioneerStudy() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry") //
+        .put(Attribute.DOCUMENT_TYPE, "pioneer-study").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
+
+  @Test
+  public void testUnwantedDataBug1633525FrecencyUpdate() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+        .put(Attribute.DOCUMENT_TYPE, "frecency-update").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
   }
 }

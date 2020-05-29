@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "properties": {
+    "application": {
+      "additionalProperties": false,
+      "properties": {
+        "architecture": {
+          "type": "string"
+        },
+        "buildId": {
+          "pattern": "^[0-9]{10}",
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "displayVersion": {
+          "pattern": "^[0-9]{2,3}\\.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "platformVersion": {
+          "pattern": "^[0-9]{2,3}\\.",
+          "type": "string"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^[0-9]{2,3}\\.",
+          "type": "string"
+        },
+        "xpcomAbi": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "architecture",
+        "buildId",
+        "channel",
+        "name",
+        "platformVersion",
+        "version",
+        "vendor",
+        "xpcomAbi"
+      ],
+      "type": "object"
+    },
+    "creationDate": {
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
+      "type": "string"
+    },
+    "payload": {
+      "description": "",
+      "properties": {
+        "encryptedData": {
+          "description": "JOSE/JWE encrypted payload.",
+          "type": "string"
+        },
+        "encryptionKeyId": {
+          "description": "JOSE/JWK key id, e.g. pioneer-20170520.",
+          "type": "string"
+        },
+        "pioneerId": {
+          "description": "Custom pioneer id, must not be Telemetry clientId",
+          "pattern": "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$",
+          "type": "string"
+        },
+        "schemaName": {
+          "description": "Name of a schema used for validation of the encryptedData",
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "type": "string"
+        },
+        "schemaNamespace": {
+          "description": "The namespace of the schema used for validation and routing to a dataset.",
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "type": "string"
+        },
+        "schemaVersion": {
+          "description": "Integer version number of the schema",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "studyName": {
+          "description": "Name of a particular study. Usually the addon_id.",
+          "maxLength": 100,
+          "minLength": 1,
+          "pattern": "^\\S+$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "encryptedData",
+        "encryptionKeyId",
+        "pioneerId",
+        "schemaNamespace",
+        "studyName",
+        "schemaName",
+        "schemaVersion"
+      ],
+      "title": "pioneer-study",
+      "type": "object"
+    },
+    "type": {
+      "description": "doc_type, restated",
+      "enum": [
+        "pioneer-study"
+      ],
+      "type": "string"
+    },
+    "version": {
+      "maximum": 4,
+      "minimum": 4,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "application",
+    "creationDate",
+    "id",
+    "payload",
+    "type",
+    "version"
+  ],
+  "title": "pioneer-study",
+  "type": "object"
+}

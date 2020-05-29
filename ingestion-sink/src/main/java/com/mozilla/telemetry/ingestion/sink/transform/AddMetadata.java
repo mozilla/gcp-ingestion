@@ -24,6 +24,9 @@ public class AddMetadata {
   private static final String GEO = "geo";
   private static final String GEO_PREFIX = GEO + "_";
 
+  private static final String ISP = "isp";
+  private static final String ISP_PREFIX = ISP + "_";
+
   private static final String USER_AGENT_PREFIX = Attribute.USER_AGENT + "_";
 
   private static final String HEADER = "header";
@@ -62,6 +65,7 @@ public class AddMetadata {
     // are not specifically Map<String, String>.
     Map<String, Object> metadata = new HashMap<>();
     metadata.put(GEO, geoFromAttributes(attributes));
+    metadata.put(ISP, ispFromAttributes(attributes));
     metadata.put(Attribute.USER_AGENT, userAgentFromAttributes(attributes));
     metadata.put(HEADER, headersFromAttributes(attributes));
     if ("telemetry".equals(namespace)) {
@@ -94,6 +98,14 @@ public class AddMetadata {
         .filter(k -> k.startsWith(GEO_PREFIX)) //
         .forEach(k -> geo.put(k.substring(4), attributes.get(k)));
     return geo;
+  }
+
+  private static Map<String, Object> ispFromAttributes(Map<String, String> attributes) {
+    HashMap<String, Object> isp = new HashMap<>();
+    attributes.keySet().stream() //
+        .filter(k -> k.startsWith(ISP_PREFIX)) //
+        .forEach(k -> isp.put(k.substring(4), attributes.get(k)));
+    return isp;
   }
 
   private static Map<String, Object> userAgentFromAttributes(Map<String, String> attributes) {

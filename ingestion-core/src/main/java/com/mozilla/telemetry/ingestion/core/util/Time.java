@@ -3,20 +3,23 @@ package com.mozilla.telemetry.ingestion.core.util;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
+
 public class Time {
 
   /**
    * Return a {@code java.time.Duration} from an ISO-8601 duration or from simple formats
    * such as "5 seconds", "5sec", or "5s".
    */
-  public static java.time.Duration parseJavaDuration(String value) {
+  public static Duration parseJavaDuration(String value) {
     checkNotNull(value, "The specified duration must be a non-null value!");
-    java.time.Duration duration;
+    Duration duration;
 
     try {
       // This is already an ISO-8601 duration.
-      duration = java.time.Duration.parse(value);
-    } catch (java.time.format.DateTimeParseException outer) {
+      duration = Duration.parse(value);
+    } catch (DateTimeParseException outer) {
       String modifiedValue = value.toLowerCase().replaceAll("seconds", "s")
           .replaceAll("second", "s").replaceAll("sec", "s").replaceAll("minutes", "m")
           .replaceAll("minute", "m").replaceAll("mins", "m").replaceAll("min", "m")
@@ -32,7 +35,7 @@ public class Time {
         modifiedValue += "0s";
       }
       try {
-        duration = java.time.Duration.parse(modifiedValue);
+        duration = Duration.parse(modifiedValue);
       } catch (java.time.format.DateTimeParseException e) {
         throw new IllegalArgumentException(
             "User-provided duration '" + value + "' was transformed to '" + modifiedValue
@@ -41,8 +44,15 @@ public class Time {
       }
     }
 
-    checkArgument(duration.toMillis() > 0, "The window duration must be greater than 0!");
+    return duration;
+  }
 
+  /**
+   * Perform {@code Time::parseJavaDuration} and require the result to be greater than 0.
+   */
+  public static Duration parsePositiveJavaDuration(String value) {
+    Duration duration = parseJavaDuration(value);
+    checkArgument(duration.toMillis() > 0, "The window duration must be greater than 0!");
     return duration;
   }
 }

@@ -15,6 +15,7 @@
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"field":"value"}],"test_record":{"key":"value"}}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"field":"value"},{"reject":"value","alsoReject":null},{"field":null}]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"reject":"value"},{"field":"value"},{"reject":"value"}]}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[null,{"field":"value"}]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_tuple":[["string",5,true]]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_tuple":[[null,"x",false,"extra"]]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_tuple":["string",5,true]}}
@@ -22,3 +23,5 @@
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_nested_list":[["a","b","c"]],"test_nested_csv":[{"list":"a,b,c"}],"test_list":["a","b","c"]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_list":null,"test_nested_list":[null],"test_record":null}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_record":{"key":null}}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_int64 ":null,"test_int64":7,"test_int64_":"invalid","test_int64+":8}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_map":{"key":null,"value":null,"other":"other"}}}
