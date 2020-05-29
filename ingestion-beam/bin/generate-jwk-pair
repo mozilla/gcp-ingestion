@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""Generate a JWK keypair for use in ingestion-beam."""
+
+import sys
+import json
+import argparse
+
+try:
+    from jwcrypto import jwk
+except ImportError as exc:
+    print(f"{exc.__class__.__name__}: run `pip install jwcrypto` and try again")
+    sys.exit(1)
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument(
+    "-k",
+    "--key-id",
+    help="Key ID (kid) parameter. See https://tools.ietf.org/html/rfc7517#section-4.5",
+)
+parser.add_argument(
+    "-r",
+    "--random-key-id",
+    action="store_true",
+    help="Use a random identifier for the Key ID (kid) parameter.",
+)
+args = parser.parse_args()
+
+if args.key_id and args.random_key_id:
+    print("Options --key-id and --random-key-id are mutally-exclusive")
+    sys.exit(1)
+
+kwargs = dict(kty="EC", crv="P-256")
+if args.key_id:
+    kwargs["kid"] = args.key_id
+if args.random_key_id:
+    kwargs["kid"] = json.loads(jwk.JWK.generate(kty="EC").export_public())["x"]
+
+key = jwk.JWK.generate(**kwargs)
+if args.key_id or args.random_key_id:
+    assert key.key_id
+
+print(
+    json.dumps(
+        {
+            "private_key": json.loads(key.export_private()),
+            "public_key": json.loads(key.export_public()),
+        }
+    )
+)

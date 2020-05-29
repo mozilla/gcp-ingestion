@@ -1,6 +1,6 @@
 package com.mozilla.telemetry.util;
 
-import static com.mozilla.telemetry.ingestion.core.util.Time.parseJavaDuration;
+import static com.mozilla.telemetry.ingestion.core.util.Time.parsePositiveJavaDuration;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -52,7 +52,7 @@ public class Time {
    * Like {@link #parseDuration(String)}, but returns the number of seconds in the parsed duration.
    */
   public static long parseSeconds(String value) {
-    return parseJavaDuration(value).getSeconds();
+    return parsePositiveJavaDuration(value).getSeconds();
   }
 
   /**
@@ -110,7 +110,7 @@ public class Time {
   }
 
   private static org.joda.time.Duration parseJodaDuration(String value) {
-    return toJoda(parseJavaDuration(value));
+    return toJoda(parsePositiveJavaDuration(value));
   }
 
 }

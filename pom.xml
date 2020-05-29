@@ -10,25 +10,36 @@
     <packaging>pom</packaging>
 
     <profiles>
+        <!-- Use profiles to skip submodules that don't exist, such as in Docker -->
         <profile>
-            <id>ingestion</id>
+            <id>ingestion-core</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <file>
+                    <exists>ingestion-core/pom.xml</exists>
+                </file>
             </activation>
             <modules>
                 <module>ingestion-core</module>
-                <module>ingestion-beam</module>
-                <module>ingestion-sink</module>
             </modules>
         </profile>
         <profile>
             <id>ingestion-beam</id>
+            <activation>
+                <file>
+                    <exists>ingestion-beam/pom.xml</exists>
+                </file>
+            </activation>
             <modules>
                 <module>ingestion-beam</module>
             </modules>
         </profile>
         <profile>
             <id>ingestion-sink</id>
+            <activation>
+                <file>
+                    <exists>ingestion-sink/pom.xml</exists>
+                </file>
+            </activation>
             <modules>
                 <module>ingestion-sink</module>
             </modules>
@@ -42,16 +53,12 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
-        <beam.version>2.19.0</beam.version>
+        <beam.version>2.20.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
-        <google-cloud.version>1.61.0</google-cloud.version>
-        <jackson.version>2.9.10</jackson.version>
+        <jackson.version>2.10.2</jackson.version>
         <avro.version>1.8.2</avro.version>
-        <!-- We pull in a unique version of jackson-databind to address CVEs;
-             this can be removed when beam 2.20 is released which uses jackson 2.10 -->
-        <jackson-databind.version>2.9.10.3</jackson-databind.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
@@ -64,6 +71,25 @@
         </repository>
     </repositories>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.beam</groupId>
+                <artifactId>beam-sdks-java-bom</artifactId>
+                <version>${beam.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <!-- dependencies for ingestion-core must be specified here -->
         <dependency>
@@ -74,12 +100,13 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson-databind.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-bigquery</artifactId>
-            <version>${google-cloud.version}</version>
+            <!-- This version is a placeholder that is overridden in downstream modules,
+                 and it should only ever be used when testing ingestion-core directly -->
+            <version>1.61.0</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -94,7 +121,6 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-json-org</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -111,10 +137,10 @@
             <artifactId>avro</artifactId>
             <version>${avro.version}</version>
         </dependency>
-        <!-- Following https://github.com/apache/beam/blob/v2.6.0/examples/java/build.gradle#L64 -->
         <dependency>
+            <!-- Use slf4j api for logging, but let submodules determine backend -->
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-jdk14</artifactId>
+            <artifactId>slf4j-api</artifactId>
             <version>1.7.30</version>
         </dependency>
         <dependency>
@@ -144,23 +170,6 @@
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.2.0</version>
                 <executions>
-                    <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <archive>
-                                <manifest>
-                                    <mainClass>${exec.mainClass}</mainClass>
-                                </manifest>
-                            </archive>
-                        </configuration>
-                    </execution>
                     <execution>
                         <id>create-schemas-tarball</id>
                         <phase>process-test-resources</phase>
@@ -196,6 +205,35 @@
                 <configuration>
                     <skip>true</skip>
                     <cleanupDaemonThreads>false</cleanupDaemonThreads>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/${project.build.finalName}.lib</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>${project.build.finalName}.lib/</classpathPrefix>
+                            <mainClass>${exec.mainClass}</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
             <plugin>

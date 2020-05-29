@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
 import org.junit.Test;
 
 public class BatchWriteTest {
@@ -13,7 +14,7 @@ public class BatchWriteTest {
     int batchCount = 0;
 
     private NoopBatchWrite(long maxBytes, int maxMessages, Duration maxDelay) {
-      super(maxBytes, maxMessages, maxDelay, null);
+      super(maxBytes, maxMessages, maxDelay, null, ForkJoinPool.commonPool());
     }
 
     @Override

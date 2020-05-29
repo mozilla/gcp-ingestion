@@ -27,16 +27,23 @@ public class MessageScrubber {
       .put("org-mozilla-vrbrowser-dev", "1614410") //
       .put("org-mozilla-fenix-performancetest", "1614412") //
       .put("org-mozilla-vrbrowser-wavevr", "1614411") //
+      .put("org-mozilla-fogotype", "1635592") //
+      .put("com-pumabrowser-pumabrowser", "1637055") //
+      .put("org-mozilla-fenix-debug", "1614409") //
+      .build();
+
+  private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
+      .<String, String>builder().put("pioneer-study", "1631849") //
+      .put("frecency-update", "1633525") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
       "modules");
 
   /**
-   * Inspect the contents of the payload and return true if the content matches a known pattern
-   * we want to scrub and the message should not be sent downstream.
+   * Inspect the contents of the message to check for known signatures of potentially harmful data.
    *
-   * <p>This is usually due to some potential for PII having leaked into the payload.
+   * <p>May throw an exception as a signal to route the message to error output or to be dropped.
    */
   public static void scrub(Map<String, String> attributes, ObjectNode json)
       throws MessageShouldBeDroppedException, AffectedByBugException {
@@ -83,6 +90,10 @@ public class MessageScrubber {
       throw new UnwantedDataException(IGNORED_NAMESPACES.get(namespace));
     }
 
+    if (ParseUri.TELEMETRY.equals(namespace) && IGNORED_TELEMETRY_DOCTYPES.containsKey(docType)) {
+      throw new UnwantedDataException(IGNORED_TELEMETRY_DOCTYPES.get(docType));
+    }
+
     if ("FirefoxOS".equals(appName)) {
       throw new UnwantedDataException("1618684");
     }
@@ -101,6 +112,11 @@ public class MessageScrubber {
       throw new AffectedByBugException("1489560");
     }
 
+    // No such docType: default-browser-agent/1
+    if ("default-browser-agent".equals(namespace) && "1".equals(docType)) {
+      throw new AffectedByBugException("1626020");
+    }
+
     // Redactions (message is altered, but allowed through).
     if (bug1602844Affected(attributes)) {
       json.path("events").elements().forEachRemaining(event -> {
@@ -111,7 +127,6 @@ public class MessageScrubber {
         markBugCounter("1602844");
       });
     }
-
   }
 
   private static void markBugCounter(String bugNumber) {

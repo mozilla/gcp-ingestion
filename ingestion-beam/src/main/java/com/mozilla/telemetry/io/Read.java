@@ -2,6 +2,7 @@ package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.util.Time;
@@ -97,7 +98,12 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
           .read((SchemaAndRecord schemaAndRecord) -> {
             TableSchema tableSchema = schemaAndRecord.getTableSchema();
             GenericRecord record = schemaAndRecord.getRecord();
-            byte[] payload = ((ByteBuffer) record.get("payload")).array();
+
+            // We have to take care not to read additional bytes; see
+            // https://github.com/mozilla/gcp-ingestion/issues/1266
+            ByteBuffer byteBuffer = (ByteBuffer) record.get(FieldName.PAYLOAD);
+            byte[] payload = new byte[byteBuffer.limit()];
+            byteBuffer.get(payload);
 
             // We populate attributes for all simple string and timestamp fields, which is complete
             // for raw and error tables.
