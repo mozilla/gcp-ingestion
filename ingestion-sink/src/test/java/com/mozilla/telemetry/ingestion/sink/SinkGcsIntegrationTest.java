@@ -1,8 +1,8 @@
 package com.mozilla.telemetry.ingestion.sink;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.Storage;
@@ -12,6 +12,7 @@ import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.util.BoundedSink;
 import com.mozilla.telemetry.ingestion.sink.util.GcsBucket;
 import com.mozilla.telemetry.ingestion.sink.util.SinglePubsubTopic;
+import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneOffset;
@@ -22,6 +23,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
@@ -37,6 +39,12 @@ public class SinkGcsIntegrationTest {
   @Rule
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
 
+  @Before
+  public void unregisterStackdriver() {
+    // unregister stackdriver stats exporter in case a previous test already registered one.
+    StackdriverStatsExporter.unregister();
+  }
+
   @Test
   public void canSinkRawMessages() throws IOException {
     String submissionTimestamp = ZonedDateTime.now(ZoneOffset.UTC)
@@ -49,7 +57,7 @@ public class SinkGcsIntegrationTest {
         .putAttributes("submission_timestamp", submissionTimestamp).build()));
 
     environmentVariables.set("INPUT_SUBSCRIPTION", pubsub.getSubscription());
-    environmentVariables.set("BATCH_MAX_DELAY", "0.001s");
+    environmentVariables.set("BATCH_MAX_DELAY", "0s");
     environmentVariables.set("OUTPUT_BUCKET",
         gcs.bucket + "/${document_namespace}/${document_type}_"
             + "v${document_version}/${submission_date}/${submission_hour}/");

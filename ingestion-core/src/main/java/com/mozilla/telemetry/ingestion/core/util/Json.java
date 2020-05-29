@@ -88,19 +88,19 @@ public class Json {
   }
 
   /**
-   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   * Use {@code MAPPER} to convert {@link TreeNode} to an arbitrary class.
    *
    * @throws JsonProcessingException if the conversion is unsuccessful
    */
-  public static <T> T convertValue(ObjectNode root, Class<T> klass) throws JsonProcessingException {
+  public static <T> T convertValue(TreeNode root, Class<T> klass) throws JsonProcessingException {
     return MAPPER.treeToValue(root, klass);
   }
 
   /**
-   * Use {@code MAPPER} to convert {@link ObjectNode} to an arbitrary class.
+   * Use {@code MAPPER} to convert {@link TreeNode} to an arbitrary class.
    */
   @VisibleForTesting
-  public static <T> T convertValue(ObjectNode root, TypeReference<T> typeReference) {
+  public static <T> T convertValue(TreeNode root, TypeReference<T> typeReference) {
     return MAPPER.convertValue(root, typeReference);
   }
 

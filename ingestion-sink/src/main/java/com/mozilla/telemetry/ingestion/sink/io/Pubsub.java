@@ -10,13 +10,13 @@ import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
+import com.mozilla.telemetry.ingestion.sink.util.BatchException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +39,24 @@ public class Pubsub {
         Function<PubsubMessage, PubsubMessage> decompress) {
       ProjectSubscriptionName subscription = ProjectSubscriptionName.parse(subscriptionName);
       subscriber = config.apply(Subscriber.newBuilder(subscription,
-          (message, consumer) -> CompletableFuture.completedFuture(message)
-              .thenApplyAsync(decompress).thenComposeAsync(output)
-              .whenCompleteAsync((result, exception) -> {
+          // Synchronous CompletableFuture methods are executed by the thread that completes the
+          // future, or the current thread if the future is already complete. Use that here to
+          // minimize memory usage by doing as much work as immediately possible.
+          (message, consumer) -> CompletableFuture.completedFuture(message).thenApply(decompress)
+              .thenCompose(output).whenComplete((result, exception) -> {
                 if (exception == null) {
                   consumer.ack();
                 } else {
-                  // exception is always a CompletionException caused by the real exception
-                  LOG.warn("Exception while attempting to deliver message", exception.getCause());
+                  // exception is always a CompletionException caused by another exception
+                  if (exception.getCause() instanceof BatchException) {
+                    // only log batch exception once
+                    ((BatchException) exception.getCause()).handle((batchExc) -> LOG.error(
+                        String.format("failed to deliver %d messages", batchExc.size),
+                        batchExc.getCause()));
+                  } else {
+                    // log exception specific to this message
+                    LOG.error("failed to deliver message", exception.getCause());
+                  }
                   consumer.nack();
                 }
               })))
@@ -73,10 +83,10 @@ public class Pubsub {
     private final ConcurrentMap<String, Publisher> publishers = new ConcurrentHashMap<>();
 
     /** Constructor. */
-    public Write(String topicTemplate, int numThreads,
+    public Write(String topicTemplate, Executor executor,
         Function<Publisher.Builder, Publisher.Builder> config,
         Function<PubsubMessage, PubsubMessage> compress) {
-      executor = Executors.newFixedThreadPool(numThreads);
+      this.executor = executor;
       this.topicTemplate = PubsubMessageToTemplatedString.of(topicTemplate);
       this.config = config;
       this.compress = compress;

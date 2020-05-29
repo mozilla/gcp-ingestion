@@ -1,0 +1,26 @@
+{
+  "type": "pioneer-study",
+  "id": "9af045aa-80ca-e743-92de-b31431abc547",
+  "creationDate": "2020-04-24T20:04:10.285Z",
+  "version": 4,
+  "application": {
+    "architecture": "x86-64",
+    "buildId": "20200415104457",
+    "name": "Firefox",
+    "version": "77.0a1",
+    "displayVersion": "77.0a1",
+    "vendor": "Mozilla",
+    "platformVersion": "77.0a1",
+    "xpcomAbi": "x86_64-gcc3",
+    "channel": "default"
+  },
+  "payload": {
+    "encryptedData": "eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6IlZuTllQN29BbTBMb0xTM3FDQWFiN3ItOVQyT2hUR0hhRnA1YmVFR3hiNXMiLCJ5IjoiQzFtRFk3VDNWb2p5RWNvVWJ2YzU3U2Y4Xzk4NXVGWHNZbmVlUHo1dzI3SSJ9LCJraWQiOiJJRGh0VmtTOURFaHUtVEVZR1ZqX0ZxMmRpUEdDdkt3bFEwZW14aTFFWWV3IiwidHlwIjoiSldFIn0..sqS5vgbScAInfqdZ.YhkQn9VoMdc5hKdF2twY72jX0bAq8UmBf_LGRfWkcKBbv9VIMnykRKGJ50bAaxOW8V_Mhd-W5Ynwsgh6W3UvMwVSOZkJFJgss7cZlkGfDg.nWsJBryP1QSkJp5DH-SS6g",
+    "encryptionKeyId": "study-foo",
+    "schemaNamespace": "study-foo",
+    "schemaName": "test",
+    "schemaVersion": 1,
+    "pioneerId": "9af045aa-80ca-e743-92de-b31431abc547",
+    "studyName": "pioneer-v2-example@example.com"
+  }
+}

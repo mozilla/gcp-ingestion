@@ -29,6 +29,8 @@ WORKER_OPTS="--numWorkers=1 \
 --maxNumWorkers=${MAX_NUM_WORKERS} \
 --autoscalingAlgorithm=THROUGHPUT_BASED"
 
+DECODER_OPTS="${DECODER_OPTS}"
+
 SINK_OPTS="--workerMachineType=${SINK_WORKER_MACHINE_TYPE} \
 --workerDiskType='compute.googleapis.com/projects//zones//diskTypes/pd-ssd' \
 --diskSizeGb=${SINK_DISK_SIZE} \
@@ -49,10 +51,11 @@ elif [[ $JOB_TYPE == "gcssink" ]] ; then
 ${SINK_OPTS}"
   ERROR_OUTPUT_OPTS="--errorOutputType=file \
 --errorOutputNumShards=${ERROR_NUM_SHARDS}"
-elif [[ $JOB_TYPE == "decoder" ]] ; then
+elif [[ $JOB_TYPE =~ ^decoder.*$ ]] ; then
   JOB_CLASS="com.mozilla.telemetry.Decoder"
   OUTPUT_OPTS="--outputType=pubsub \
---outputFileFormat=json"
+--outputFileFormat=json \
+${DECODER_OPTS}"
   ERROR_OUTPUT_OPTS="--errorOutputType=pubsub"
 elif [[ $JOB_TYPE =~ ^republisher_.*$ ]] ; then
   JOB_CLASS="com.mozilla.telemetry.Republisher"
