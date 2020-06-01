@@ -11,7 +11,6 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.transforms.DecompressPayload;
-import com.mozilla.telemetry.transforms.DeduplicateByDocumentId;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import java.util.ArrayList;
@@ -81,7 +80,6 @@ public class Decoder extends Sink {
             .apply("AddMetadata", AddMetadata.of()).failuresTo(failureCollections) //
             .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
             .sendDuplicateMetadataToErrors().failuresTo(failureCollections)) //
-        .map(p -> options.getDeduplicateByDocumentId() ? p.apply(DeduplicateByDocumentId.of()) : p)
         .map(p -> p //
             .apply(options.getOutputType().write(options)).failuresTo(failureCollections));
 
