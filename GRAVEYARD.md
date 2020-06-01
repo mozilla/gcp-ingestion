@@ -4,6 +4,10 @@
   - Remove `DeduplicateByDocumentId` transform, which was intended for use with
     the backfill from `heka` data, but did not perform well and was never used
     in production.
+  - Remove `PublishBundleMetrics` which was temporarily useful for investigation
+    into potential batch refactoring, but we were able to use that data to determine
+    that average bundle size is so small that it would not be reasonable to publish
+    individual GCS objects per bundle; see [#501](https://github.com/mozilla/gcp-ingestion/issues/501).
 - 2020-02-26 (available until [commit `6551bc7`](https://github.com/mozilla/gcp-ingestion/tree/6551bc737b2b3c9a3d49c6442d8a8bea2e62ef17))
   - Remove support for schema aliases, including the `--schemaAliasesLocation`
     parameter defined in `SinkOptions`.
