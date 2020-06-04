@@ -127,6 +127,14 @@ public class MessageScrubber {
         markBugCounter("1602844");
       });
     }
+
+    if (bug1162183Affected(attributes)) {
+      JsonNode payload = json.path("payload");
+      if (payload.has("slowSQL")) {
+        ((ObjectNode) payload).replace("slowSQL", NullNode.getInstance());
+        markBugCounter("1162183");
+      }
+    }
   }
 
   private static void markBugCounter(String bugNumber) {
@@ -205,4 +213,15 @@ public class MessageScrubber {
             || attributes.get(Attribute.APP_VERSION).matches("1\\.[0-6][0-9.]*"));
   }
 
+  // See bug 1162183 for discussion of affected versions, etc.
+  @VisibleForTesting
+  static boolean bug1162183Affected(Map<String, String> attributes) {
+    final ImmutableSet<String> affectedDocumentTypes = ImmutableSet.of("first-shutdown", "main",
+        "saved-session");
+
+    return ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && affectedDocumentTypes.contains(attributes.get(Attribute.DOCUMENT_TYPE))
+        && attributes.get(Attribute.APP_VERSION) != null
+        && attributes.get(Attribute.APP_VERSION).matches("([0-3][0-9]|4[0-1])\\..*"); // 41 or older
+  }
 }

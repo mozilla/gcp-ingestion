@@ -217,6 +217,41 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testBug1162183Affected() throws Exception {
+    Map<String, String> baseAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
+        .put(Attribute.DOCUMENT_TYPE, "saved-session").build();
+    assertFalse(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "60.6.1").build()));
+    assertFalse(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "42.1.0").build()));
+    assertTrue(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "39.0.1").build()));
+    assertTrue(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "40.0a2").build()));
+    assertTrue(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "41.0").build()));
+    assertTrue(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "41.0.2").build()));
+
+    baseAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
+        .put(Attribute.DOCUMENT_TYPE, "first-shutdown").build();
+    assertFalse(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "60.6.1").build()));
+    assertTrue(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "41.0.2").build()));
+
+    baseAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY).put(Attribute.DOCUMENT_TYPE, "main")
+        .build();
+    assertFalse(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "60.6.1").build()));
+    assertTrue(MessageScrubber.bug1162183Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "41.0.2").build()));
+  }
+
+  @Test
   public void testRedactForBug1602844() throws Exception {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
@@ -253,6 +288,29 @@ public class MessageScrubberTest {
     assertFalse(json.path("events").path(0).path(5).path("fxauid").isMissingNode());
     assertEquals("app", json.path("events").path(0).path(3).textValue());
     assertEquals("0", json.path("tz").asText());
+  }
+
+  @Test
+  public void testRedactForBug1162183() throws Exception {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
+        .put(Attribute.DOCUMENT_TYPE, "first-shutdown").put(Attribute.APP_VERSION, "41.0").build();
+    ObjectNode json = Json.readObjectNode(("{\n" //
+        + "  \"payload\": {\n" //
+        + "    \"slowSQL\": {\n" //
+        + "      \"mainThread\": {\n" //
+        + "         \"SELECT * FROM foo\": [1, 200, 2]\n" //
+        + "      }," //
+        + "      \"otherThreads\": {}\n" //
+        + "    },\n" //
+        + "    \"session_id\": \"ca98fe03-1248-448f-bbdf-59f97dba5a0e\"\n" //
+        + "  },\n" //
+        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
+
+    assertFalse(json.path("payload").path("slowSQL").isNull());
+    MessageScrubber.scrub(attributes, json);
+    assertTrue(json.path("payload").path("slowSQL").isNull());
+    assertFalse(json.path("payload").path("slowSQL").isMissingNode());
   }
 
   @Test
