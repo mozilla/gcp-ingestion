@@ -131,7 +131,7 @@ public class MessageScrubber {
     if (bug1162183Affected(attributes)) {
       JsonNode payload = json.path("payload");
       if (payload.has("slowSQL")) {
-        ((ObjectNode) payload).replace("slowSQL", NullNode.getInstance());
+        ((ObjectNode) payload).remove("slowSQL");
         markBugCounter("1162183");
       }
     }

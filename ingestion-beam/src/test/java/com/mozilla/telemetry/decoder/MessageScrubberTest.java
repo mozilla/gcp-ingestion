@@ -299,7 +299,7 @@ public class MessageScrubberTest {
         + "  \"payload\": {\n" //
         + "    \"slowSQL\": {\n" //
         + "      \"mainThread\": {\n" //
-        + "         \"SELECT * FROM foo\": [1, 200, 2]\n" //
+        + "         \"SELECT * FROM foo\": [1, 200]\n" //
         + "      }," //
         + "      \"otherThreads\": {}\n" //
         + "    },\n" //
@@ -308,9 +308,10 @@ public class MessageScrubberTest {
         + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
 
     assertFalse(json.path("payload").path("slowSQL").isNull());
+    assertTrue(json.path("payload").has("slowSQL"));
     MessageScrubber.scrub(attributes, json);
-    assertTrue(json.path("payload").path("slowSQL").isNull());
-    assertFalse(json.path("payload").path("slowSQL").isMissingNode());
+    assertFalse(json.path("payload").has("slowSQL"));
+    assertTrue(json.path("payload").path("slowSQL").isMissingNode());
   }
 
   @Test
