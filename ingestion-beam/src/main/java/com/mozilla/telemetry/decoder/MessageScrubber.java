@@ -31,6 +31,7 @@ public class MessageScrubber {
       .put("com-pumabrowser-pumabrowser", "1637055") //
       .put("org-mozilla-fenix-debug", "1614409") //
       .put("com-granitamalta-cloudbrowser", "1644200") //
+      .put("org-mozilla-fenix-tm", "1638902") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
