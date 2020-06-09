@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Format of Account Ecosystem pings from FxA before decryption",
+  "type": "object",
+  "properties": {
+    "ecosystem_client_id": {
+      "type": "string"
+    },
+    "ecosystem_device_id": {
+      "type": "string"
+    },
+    "ecosystem_anon_id": {
+      "description": "The current Account Ecosystem Telemetry anon_id value for this user; it must be a JOSE JWE objects in Compact Serialization form",
+      "type": "string"
+    },
+    "previous_ecosystem_anon_ids": {
+      "description": "Previous Account Ecosystem Telemetry anon_id values associated with this user",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ecosystemAnonId": false,
+    "ecosystem_user_id": false,
+    "ecosystemUserId": false,
+    "previous_ecosystem_user_ids": false,
+    "previousEcosystemUserIds": false
+  },
+  "required": [
+    "ecosystem_client_id",
+    "ecosystem_device_id"
+  ]
+}

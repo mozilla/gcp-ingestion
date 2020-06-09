@@ -72,6 +72,27 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setPioneerDecompressPayload(ValueProvider<Boolean> value);
 
+  @Description("If set to true, enable decryption of Account Ecosystem Telemetry identifiers.")
+  @Default.Boolean(false)
+  Boolean getAetEnabled();
+
+  void setAetEnabled(Boolean value);
+
+  @Description("Path (local or gs://) to JSON array of metadata entries enumerating encrypted"
+      + " private keys, Cloud KMS resource ids for decrypting those keys, and their corresponding"
+      + " document namespaces; this must be set if AET is enabled.")
+  ValueProvider<String> getAetMetadataLocation();
+
+  void setAetMetadataLocation(ValueProvider<String> value);
+
+  @Description("If set to true, assume that all private keys are encrypted with the associated"
+      + " KMS resourceId. Otherwise ignore KMS and assume all private keys are stored in plaintext."
+      + " This may be used for debugging.")
+  @Default.Boolean(true)
+  ValueProvider<Boolean> getAetKmsEnabled();
+
+  void setAetKmsEnabled(ValueProvider<Boolean> value);
+
   /*
    * Subinterface and static methods.
    */

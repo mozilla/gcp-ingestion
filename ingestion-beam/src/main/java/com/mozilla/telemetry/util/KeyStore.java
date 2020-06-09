@@ -30,12 +30,34 @@ public class KeyStore {
    * Fetch a key from the store.
    *
    * @param path fully qualified path to the key
-   * @return private key for decryption
+   * @return private key for decryption, or null if key is not found
    */
   public PrivateKey getKey(String path) {
     ensureKeysLoaded();
     PrivateKey key = keys.get(path);
     return key;
+  }
+
+  /**
+   * Fetch a key from the store.
+   *
+   * @param path fully qualified path to the key
+   * @return private key for decryption
+   * @throws KeyNotFoundException if key is not found
+   */
+  public PrivateKey getKeyOrThrow(String path) throws KeyNotFoundException {
+    PrivateKey key = getKey(path);
+    if (key == null) {
+      throw new KeyNotFoundException("No such entry in this KeyStore: " + path);
+    }
+    return key;
+  }
+
+  public static class KeyNotFoundException extends RuntimeException {
+
+    public KeyNotFoundException(String message) {
+      super(message);
+    }
   }
 
   private final String metadataLocation;

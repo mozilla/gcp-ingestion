@@ -1,5 +1,6 @@
 package com.mozilla.telemetry;
 
+import com.mozilla.telemetry.aet.DecryptAetIdentifiers;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
@@ -55,7 +56,9 @@ public class Decoder extends Sink {
     final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();
 
     // We wrap pipeline in Optional for more convenience in chaining together transforms.
-    Optional.of(pipeline) //
+    Optional.of(pipeline)
+
+        // Input
         .map(p -> p //
             .apply(options.getInputType().read(options)) //
             // We apply ParseProxy and GeoCityLookup and GeoIspLookup first so that IP
@@ -64,12 +67,24 @@ public class Decoder extends Sink {
             .apply(ParseProxy.of()) //
             .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
-            .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())))
+
+        // Special case: decryption of Account Ecosystem Telemetry identifiers
+        .map(p -> options.getAetEnabled() ? p
+            .apply(DecryptAetIdentifiers.of(options.getAetMetadataLocation(),
+                options.getAetKmsEnabled())) //
+            .failuresTo(failureCollections) : p)
+
+        // URI Parsing
+        .map(p -> p.apply("ParseUri", ParseUri.of()).failuresTo(failureCollections))
+
+        // Special case: decryption of Pioneer payloads
         .map(p -> options.getPioneerEnabled() ? p
             .apply(DecryptPioneerPayloads.of(options.getPioneerMetadataLocation(),
-                options.getPioneerKmsEnabled(), options.getPioneerDecompressPayload()))
+                options.getPioneerKmsEnabled(), options.getPioneerDecompressPayload())) //
             .failuresTo(failureCollections) : p)
+
+        // Main output
         .map(p -> p //
             // See discussion in https://github.com/mozilla/gcp-ingestion/issues/776
             .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(failureCollections) //
@@ -78,12 +93,11 @@ public class Decoder extends Sink {
             .apply(ParseUserAgent.of()) //
             .apply(NormalizeAttributes.of()) //
             .apply("AddMetadata", AddMetadata.of()).failuresTo(failureCollections) //
-            .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri()))
-            .sendDuplicateMetadataToErrors().failuresTo(failureCollections)) //
-        .map(p -> p //
+            .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri())) //
+            .sendDuplicateMetadataToErrors().failuresTo(failureCollections) //
             .apply(options.getOutputType().write(options)).failuresTo(failureCollections));
 
-    // Write error output collections.
+    // Error output
     PCollectionList.of(failureCollections) //
         .apply("FlattenFailureCollections", Flatten.pCollections()) //
         .apply("WriteErrorOutput", options.getErrorOutputType().write(options)) //
