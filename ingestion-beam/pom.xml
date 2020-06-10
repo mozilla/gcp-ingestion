@@ -49,7 +49,7 @@
     <dependencyManagement>
         <dependencies>
             <!-- Keep these dependency versions in sync with what is pulled in by beam;
-                 check https://mvnrepository.com/artifact/org.apache.beam/beam-sdks-java-io-google-cloud-platform/2.19.0
+                 check https://mvnrepository.com/artifact/org.apache.beam/beam-sdks-java-io-google-cloud-platform/2.22.0
 
                  Does not use libraries-bom to determine versions as of beam 2.19 because the lowest
                  version available uses google-cloud-bom 0.84.0-alpha, but 0.79.0-alpha is needed to
