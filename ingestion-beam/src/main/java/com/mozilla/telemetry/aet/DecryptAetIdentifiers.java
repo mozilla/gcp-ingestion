@@ -20,7 +20,6 @@ import com.mozilla.telemetry.util.KeyStore.KeyNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.PrivateKey;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,7 +28,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.transforms.FlatMapElements;
+import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ProcessFunction;
 import org.apache.beam.sdk.transforms.WithFailures;
@@ -57,8 +56,18 @@ public class DecryptAetIdentifiers extends
   private static final Pattern STRUCTURED_URI_PATTERN = Pattern
       .compile("/submit/[^/]+/account-ecosystem.*");
 
-  private final Counter nonAetDocType = Metrics.counter(DecryptAetIdentifiers.class,
-      "non_aet_doctype");
+  private final Counter unparsableAetPayload = Metrics.counter(DecryptAetIdentifiers.class,
+      "unparsable_aet_payload");
+  private final Counter illegalAetUri = Metrics.counter(DecryptAetIdentifiers.class,
+      "illegal_aet_uri");
+  private final Counter illegalAetPayload = Metrics.counter(DecryptAetIdentifiers.class,
+      "illegal_aet_payload");
+  private final Counter successTelemetry = Metrics.counter(DecryptAetIdentifiers.class,
+      "success_telemetry");
+  private final Counter successGlean = Metrics.counter(DecryptAetIdentifiers.class,
+      "success_glean");
+  private final Counter successStructured = Metrics.counter(DecryptAetIdentifiers.class,
+      "success_structured");
 
   public static DecryptAetIdentifiers of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled) {
@@ -76,6 +85,9 @@ public class DecryptAetIdentifiers extends
    */
   abstract static class DecryptAetPayloadException extends RuntimeException {
 
+    private DecryptAetPayloadException() {
+    }
+
     private DecryptAetPayloadException(Throwable cause) {
       super(cause);
     }
@@ -85,6 +97,12 @@ public class DecryptAetIdentifiers extends
 
     public UnparsableAetPayloadException(Exception cause) {
       super(cause);
+    }
+  }
+
+  public static class IllegalAetUriException extends DecryptAetPayloadException {
+
+    public IllegalAetUriException() {
     }
   }
 
@@ -143,7 +161,7 @@ public class DecryptAetIdentifiers extends
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
-    return messages.apply(FlatMapElements.into(TypeDescriptor.of(PubsubMessage.class)) //
+    return messages.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)) //
         .via(new Fn()) //
         .exceptionsInto(TypeDescriptor.of(PubsubMessage.class)) //
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
@@ -198,11 +216,10 @@ public class DecryptAetIdentifiers extends
     }
   }
 
-  private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
+  private class Fn implements ProcessFunction<PubsubMessage, PubsubMessage> {
 
     private void processDesktopTelemetryPayload(ObjectNode json) throws IOException, JoseException {
       validator.validate(telemetryAetSchema, json);
-      System.out.println("Go telemetry");
       ObjectNode payload = (ObjectNode) json.path(FieldName.PAYLOAD);
       JsonNode anonIdNode = payload.remove("ecosystemAnonId");
       if (anonIdNode != null) {
@@ -228,7 +245,7 @@ public class DecryptAetIdentifiers extends
     }
 
     @Override
-    public Iterable<PubsubMessage> apply(PubsubMessage message) {
+    public PubsubMessage apply(PubsubMessage message) {
       message = PubsubConstraints.ensureNonNull(message);
       String uri = Strings.nullToEmpty(message.getAttribute(Attribute.URI));
       String[] uriParts = uri.split("/");
@@ -257,32 +274,39 @@ public class DecryptAetIdentifiers extends
       try {
         json = Json.readObjectNode(message.getPayload());
       } catch (IOException e) {
+        unparsableAetPayload.inc();
         throw new UnparsableAetPayloadException(e);
       }
 
-      // Note that we must work with the raw URI because ParseUri can raise errors that would
-      // route payloads containing anon_id values to error output; this transform must be placed
-      // before ParseUri so that we can handle redacting anon_id values.
+      // This transform comes early in the Decoder job before ParseUri, so we must work with
+      // the raw URI rather than parsed namespace and doctype.
+      // In particular, ParseUri is the first transform that can send messages to error output;
+      // we risk spilling sensitive information if AET payloads get sent to an output before anon_id
+      // values are removed, so we must have this transform come before an error step so that we
+      // can handle sanitizing/dropping the payload before emitting errors.
       byte[] normalizedPayload;
       try {
         if (TELEMETRY_URI_PATTERN.matcher(uri).matches()) {
           processDesktopTelemetryPayload(json);
+          successTelemetry.inc();
         } else if (false) {
           // Placeholder condition for handling AET payloads coming from Glean-enabled applications;
           // design is evolving in https://bugzilla.mozilla.org/show_bug.cgi?id=1634468
+          successGlean.inc();
         } else if (STRUCTURED_URI_PATTERN.matcher(uri).matches()) {
           processStructuredIngestionPayload(json);
+          successStructured.inc();
         } else {
-          nonAetDocType.inc();
-          return Collections.singletonList(message);
+          illegalAetUri.inc();
+          throw new IllegalAetUriException();
         }
         normalizedPayload = Json.asBytes(json);
       } catch (IOException | JoseException | ValidationException | KeyNotFoundException e) {
+        illegalAetPayload.inc();
         throw new IllegalAetPayloadException(e);
       }
 
-      return Collections
-          .singletonList(new PubsubMessage(normalizedPayload, message.getAttributeMap()));
+      return new PubsubMessage(normalizedPayload, message.getAttributeMap());
     }
 
   }
