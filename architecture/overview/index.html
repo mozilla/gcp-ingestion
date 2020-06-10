@@ -255,6 +255,17 @@ to minimize the time window between an ID being marked as seen in
 <li>Must allow error destination in BigQuery</li>
 </ul>
 </li>
+<li>Must provide decryption support that can be enabled for specific use cases<ul>
+<li>The Pioneer project and Account Ecosystem Telemetry (AET) each have specific
+  requirements for decrypting values within the pipeline</li>
+<li>Private keys must be provided to the Decoder in encrypted form, to be decrypted
+  via Cloud KMS calls at startup and held only in memory</li>
+<li>Must remove or redact all AET <code>ecosystem_anon_id</code> values from the payload before
+  passing to any durable output, including errors</li>
+<li>Must have access restricted to a limited set of operators to avoid exposing private keys</li>
+<li>Encrypted fields must be JOSE JWE objects in Compact Serialization form</li>
+</ul>
+</li>
 </ul>
 <h3 id="republisher">Republisher</h3>
 <ul>
