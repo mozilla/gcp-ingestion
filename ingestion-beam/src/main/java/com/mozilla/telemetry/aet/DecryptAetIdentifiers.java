@@ -41,6 +41,24 @@ import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.jwx.JsonWebStructure;
 import org.jose4j.lang.JoseException;
 
+/**
+ * Provides pipeline support for Account Ecosystem Telemetry, decrypting ecosystem_anon_id
+ * values to ecosystem_user_id values.
+ *
+ * <p>Durable AET data stored in BigQuery and available for analysis should contain only
+ * ecosystem_user_id values. Conversely, FxA servers should only ever store and see the encrypted
+ * ecosystem_anon_id values. This way, someone with access to both BigQuery and FxA servers would
+ * still not be able to correlate AET activity with a particular FxA user.
+ *
+ * <p>This differs from many encryption scenarios in that the encrypted values (ecosystem_anon_id)
+ * are themselves sensitive and we must take care not to allow them to flow to BigQuery. The
+ * only places where an ecosystem_user_id value and the associated ecosystem_anon_id value can be
+ * known together is on the original client device and in this transform in the pipeline.
+ * Once we decrypt the value here, we must immediately throw away the ecosystem_anon_id value
+ * that was sent to the pipeline.
+ *
+ * <p>See https://docs.google.com/document/d/1zH3eVVI_28Afg1JXe_McDrW4MTYuWhiJMQR6AQbli8I/edit#heading=h.eo0wl228m5t2
+ */
 public class DecryptAetIdentifiers extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 

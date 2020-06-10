@@ -73,6 +73,15 @@ This document specifies the architecture for GCP Ingestion as a whole.
     `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
     - Must allow error destination in BigQuery
+- Must provide decryption support that can be enabled for specific use cases
+    - The Pioneer project and Account Ecosystem Telemetry (AET) each have specific
+      requirements for decrypting values within the pipeline
+    - Private keys must be provided to the Decoder in encrypted form, to be decrypted
+      via Cloud KMS calls at startup and held only in memory
+    - Must remove or redact all AET `ecosystem_anon_id` values from the payload before
+      passing to any durable output, including errors
+    - Must have access restricted to a limited set of operators to avoid exposing private keys
+    - Encrypted fields must be JOSE JWE objects in Compact Serialization form
 
 ### Republisher
 
