@@ -104,10 +104,10 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
     String gcsPath = "gs://" + bucket;
 
     Decoder.main(new String[] { "--runner=Dataflow", "--project=" + projectId,
-        "--templateLocation=" + gcsPath + "/templates/TestTemplate",
-        "--stagingLocation=" + gcsPath + "/temp/staging", "--inputFileFormat=json",
-        "--inputType=file", "--outputFileFormat=json", "--outputType=file",
-        "--errorOutputType=file",
+        "--templateLocation=" + gcsPath + "/templates/TestTemplate", //
+        "--stagingLocation=" + gcsPath + "/temp/staging", //
+        "--region=us-west2", "--inputFileFormat=json", "--inputType=file",
+        "--outputFileFormat=json", "--outputType=file", "--errorOutputType=file",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
         "--schemasLocation=schemas.tar.gz" });
