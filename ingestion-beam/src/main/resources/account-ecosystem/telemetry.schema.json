@@ -43,5 +43,8 @@
     "previous_ecosystem_user_ids": false,
     "ecosystem_anon_id": false,
     "previous_ecosystem_anon_ids": false
-  }
+  },
+  "required": [
+    "payload"
+  ]
 }

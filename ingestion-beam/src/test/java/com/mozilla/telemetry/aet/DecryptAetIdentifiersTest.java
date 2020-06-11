@@ -221,4 +221,32 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
     pipeline.run();
   }
 
+  @Test
+  public void testTelemetryErrorOutput() throws Exception {
+    // minimal test for throughput of a single document
+    ValueProvider<String> metadataLocation = pipeline
+        .newProvider(Resources.getResource("account-ecosystem/metadata-local.json").getPath());
+    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
+
+    List<String> input = ImmutableList.of("{}", "{\"payload\":{}}",
+        "{\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}");
+    List<String> expectedOutput = ImmutableList
+        .of("{\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}");
+    List<String> expectedError = ImmutableList.of("{}", "{\"payload\":{}}");
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode())
+        .apply("AddAttributes",
+            MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+                .via(element -> new PubsubMessage(element.getPayload(),
+                    ImmutableMap.of(Attribute.URI,
+                        "/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
+                            + "/account-ecosystem/Firefox/61.0a1/nightly/20180328030202"))))
+        .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
+    PAssert.that(result.output().apply("EncodeOutput", OutputFileFormat.text.encode()))
+        .containsInAnyOrder(expectedOutput);
+    PAssert.that(result.failures().apply("EncodeErrors", OutputFileFormat.text.encode()))
+        .containsInAnyOrder(expectedError);
+    pipeline.run();
+  }
+
 }
