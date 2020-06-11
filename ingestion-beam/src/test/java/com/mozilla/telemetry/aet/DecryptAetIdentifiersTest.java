@@ -228,11 +228,33 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
         .newProvider(Resources.getResource("account-ecosystem/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
 
+    String userId = "2ef67665ec7369ba0fab7f802a5e1e04";
+    String anonId = encryptWithTestPublicKey(userId);
+    List<String> prevUserIds = ImmutableList.of("3ef67665ec7369ba0fab7f802a5e1e04",
+        "4ef67665ec7369ba0fab7f802a5e1e04");
+    List<String> prevAnonIds = prevUserIds.stream().map(x -> {
+      try {
+        return encryptWithTestPublicKey(x);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }).collect(Collectors.toList());
     List<String> input = ImmutableList.of("{}", "{\"payload\":{}}",
-        "{\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}");
+        "{\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}",
+        Json.asString(ImmutableMap.of("payload",
+            ImmutableMap.builder().put("ecosystemAnonId", anonId)
+                .put("ecosystemClientId", "3ed15efab7e94757bf9e9ef5e844ada2")
+                .put("ecosystemDeviceId", "7ab4e373ce434b848a9d0946e388fee9")
+                // We incorrectly name the anonId field like structured to cause a failure.
+                .put("previous_ecosystem_anon_ids", prevAnonIds).build())));
     List<String> expectedOutput = ImmutableList
         .of("{\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}");
-    List<String> expectedError = ImmutableList.of("{}", "{\"payload\":{}}");
+    List<String> expectedError = ImmutableList.of("{}", "{\"payload\":{}}",
+        "{\"payload\":{\"ecosystemAnonId\":\"eyJr<435 characters redacted>\""
+            + ",\"ecosystemClientId\":\"3ed15efab7e94757bf9e9ef5e844ada2\""
+            + ",\"ecosystemDeviceId\":\"7ab4e373ce434b848a9d0946e388fee9\""
+            + ",\"previous_ecosystem_anon_ids\":[\"eyJr<435 characters redacted>\""
+            + ",\"eyJr<435 characters redacted>\"]}}");
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
