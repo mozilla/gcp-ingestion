@@ -7,21 +7,26 @@ This document specifies the architecture for GCP Ingestion as a whole.
 ![diagram.mmd](diagram.svg "Architecture Diagram")
 
 - The Kubernetes `Ingestion Edge` sends messages from `Producers` (e.g.
-  Firefox) to PubSub `Raw Topics`
-- The `Raw Sink` job copies messages from PubSub `Raw Topics` to
+  Firefox) to a set of PubSub `Raw Topics`, routing messages based on `uri`
+- `Raw Topics` are the first layer of a "pipeline family"; the diagram shows
+  only the "structured" pipeline family, but there are also deployments
+  for "telemetry", "stub-installer", and "pioneer"
+- The `Raw Sink` job copies messages from a PubSub `Raw Topic` to
   `BigQuery`
-- The Dataflow `Decoder` job decodes messages from PubSub `Raw Topics` to
-  PubSub `Decoded Topics`
-    - The Dataflow `Decoder` job checks for existence of `document_id`s in
+- The Dataflow `Decoder` job decodes messages from the PubSub `Raw Topic` to
+  the PubSub `Decoded Topic`
+    - Also checks for existence of `document_id`s in
      `Cloud Memorystore` in order to deduplicate messages
-- The Dataflow `Republisher` job reads messages from PubSub `Decoded Topics`,
+- The Dataflow `AET Decoder` job provides all the functionality of the `Decoder`
+  with additional decryption handling for Account Ecosystem Telemetry pings
+- The Dataflow `Republisher` job reads messages from the PubSub `Decoded Topic`,
   marks them as seen in `Cloud Memorystore` and republishes them to various
   lower volume derived topics including `Monitoring Sample Topics` and
   `Per DocType Topics`
-- The Dataflow `Live Sink` job copies messages from PubSub `Decoded Topics`
-  to `BigQuery`
-- The `Decoded Sink` job copies messages from PubSub `Decoded Topics`
-  to `BigQuery`
+- The Kubernetes `Decoded Sink` job copies messages from the PubSub `Decoded Topic`
+  to `BigQuery` with the payload encoded as JSON
+- The Kubernetes `Live Sink` job copies messages from the PubSub `Decoded Topic`
+  to `BigQuery` with the payload structure parsed out to individual fields
 
 ## Architecture Components
 
@@ -73,15 +78,21 @@ This document specifies the architecture for GCP Ingestion as a whole.
     `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
     - Must allow error destination in BigQuery
-- Must provide decryption support that can be enabled for specific use cases
-    - The Pioneer project and Account Ecosystem Telemetry (AET) each have specific
-      requirements for decrypting values within the pipeline
-    - Private keys must be provided to the Decoder in encrypted form, to be decrypted
-      via Cloud KMS calls at startup and held only in memory
-    - Must remove or redact all AET `ecosystem_anon_id` values from the payload before
-      passing to any durable output, including errors
-    - Must have access restricted to a limited set of operators to avoid exposing private keys
-    - Encrypted fields must be JOSE JWE objects in Compact Serialization form
+
+### AET Decoder
+
+The AET (Account Ecosystem Telemetry) Decoder is a modified version of the
+Decoder with the following properties:
+
+- The raw topic that feeds the AET Decoder must not be sent anywhere else;
+  the AET Decoder needs to either successfully decrypt or sanitize all AET
+  identifiers
+- Must load private keys from an encrypted blob in GCS
+- Must call Cloud KMS at startup to decrypt keys and store these only in memory
+- Must remove or redact all AET `ecosystem_anon_id` values from the payload before
+  passing to any durable output, including errors
+- Must have access restricted to a limited set of operators to avoid exposing private keys
+- Encrypted fields must be JOSE JWE objects in Compact Serialization form
 
 ### Republisher
 
