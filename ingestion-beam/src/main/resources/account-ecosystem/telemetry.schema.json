@@ -22,18 +22,18 @@
             "type": "string"
           },
           "type": "array"
-        }
+        },
+        "ecosystemUserId": false,
+        "previousEcosystemUserIds": false,
+        "ecosystem_user_id": false,
+        "previous_ecosystem_user_ids": false,
+        "ecosystem_anon_id": false,
+        "previous_ecosystem_anon_ids": false
       },
       "required": [
         "ecosystemClientId",
         "ecosystemDeviceId"
-      ],
-      "ecosystemUserId": false,
-      "previousEcosystemUserIds": false,
-      "ecosystem_user_id": false,
-      "previous_ecosystem_user_ids": false,
-      "ecosystem_anon_id": false,
-      "previous_ecosystem_anon_ids": false
+      ]
     },
     "ecosystemAnonId": false,
     "previousEcosystemAnonIds": false,
@@ -43,5 +43,8 @@
     "previous_ecosystem_user_ids": false,
     "ecosystem_anon_id": false,
     "previous_ecosystem_anon_ids": false
-  }
+  },
+  "required": [
+    "payload"
+  ]
 }
