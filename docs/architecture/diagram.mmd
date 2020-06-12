@@ -17,13 +17,13 @@ subgraph Pipeline Family: Structured
     k2 --> c1(BigQuery)
     p1 --> d2(Decoder)
     p1aet --> d2aet(AET Decoder)
-    d2aet --- m2(Cloud KMS)
+    d2aet -. Decrypt keys on startup .- m2(Cloud KMS)
     d2 --> p2(Decoded Topic)
-    d2 --> p2err(Error Topic)
+    d2 -.-> p2err(Error Topic)
     p2err --> d3err(Error Sink)
     d3err --> berr(BigQuery)
     d2aet --> p2
-    d2aet --> p2err
+    d2aet -.-> p2err
     p2 --> d3(Live Sink)
     d3 --> b1(BigQuery)
     p2 --> k3(Decoded Sink)
@@ -37,8 +37,8 @@ subgraph .
    p99 --> d99(...)
 end
 
-m1 --> d5
-m1(Cloud Memorystore) --- d2
+d5 -. Mark document as seen .-> m1
+m1(Cloud Memorystore) -. Document already seen? .-> d2
 
 subgraph Colors
     d(Dataflow jobs are green)
