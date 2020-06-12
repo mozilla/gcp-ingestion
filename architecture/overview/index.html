@@ -174,23 +174,28 @@
 <p><img alt="diagram.mmd" src="../diagram.svg" title="Architecture Diagram" /></p>
 <ul>
 <li>The Kubernetes <code>Ingestion Edge</code> sends messages from <code>Producers</code> (e.g.
-  Firefox) to PubSub <code>Raw Topics</code></li>
-<li>The <code>Raw Sink</code> job copies messages from PubSub <code>Raw Topics</code> to
+  Firefox) to a set of PubSub <code>Raw Topics</code>, routing messages based on <code>uri</code></li>
+<li><code>Raw Topics</code> are the first layer of a "pipeline family"; the diagram shows
+  only the "structured" pipeline family, but there are also deployments
+  for "telemetry", "stub-installer", and "pioneer"</li>
+<li>The <code>Raw Sink</code> job copies messages from a PubSub <code>Raw Topic</code> to
   <code>BigQuery</code></li>
-<li>The Dataflow <code>Decoder</code> job decodes messages from PubSub <code>Raw Topics</code> to
-  PubSub <code>Decoded Topics</code><ul>
-<li>The Dataflow <code>Decoder</code> job checks for existence of <code>document_id</code>s in
+<li>The Dataflow <code>Decoder</code> job decodes messages from the PubSub <code>Raw Topic</code> to
+  the PubSub <code>Decoded Topic</code><ul>
+<li>Also checks for existence of <code>document_id</code>s in
  <code>Cloud Memorystore</code> in order to deduplicate messages</li>
 </ul>
 </li>
-<li>The Dataflow <code>Republisher</code> job reads messages from PubSub <code>Decoded Topics</code>,
+<li>The Dataflow <code>AET Decoder</code> job provides all the functionality of the <code>Decoder</code>
+  with additional decryption handling for Account Ecosystem Telemetry pings</li>
+<li>The Dataflow <code>Republisher</code> job reads messages from the PubSub <code>Decoded Topic</code>,
   marks them as seen in <code>Cloud Memorystore</code> and republishes them to various
   lower volume derived topics including <code>Monitoring Sample Topics</code> and
   <code>Per DocType Topics</code></li>
-<li>The Dataflow <code>Live Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
-  to <code>BigQuery</code></li>
-<li>The <code>Decoded Sink</code> job copies messages from PubSub <code>Decoded Topics</code>
-  to <code>BigQuery</code></li>
+<li>The Kubernetes <code>Decoded Sink</code> job copies messages from the PubSub <code>Decoded Topic</code>
+  to <code>BigQuery</code> with the payload encoded as JSON</li>
+<li>The Kubernetes <code>Live Sink</code> job copies messages from the PubSub <code>Decoded Topic</code>
+  to <code>BigQuery</code> with the payload structure parsed out to individual fields</li>
 </ul>
 <h2 id="architecture-components">Architecture Components</h2>
 <h3 id="ingestion-edge">Ingestion Edge</h3>
@@ -255,17 +260,20 @@ to minimize the time window between an ID being marked as seen in
 <li>Must allow error destination in BigQuery</li>
 </ul>
 </li>
-<li>Must provide decryption support that can be enabled for specific use cases<ul>
-<li>The Pioneer project and Account Ecosystem Telemetry (AET) each have specific
-  requirements for decrypting values within the pipeline</li>
-<li>Private keys must be provided to the Decoder in encrypted form, to be decrypted
-  via Cloud KMS calls at startup and held only in memory</li>
+</ul>
+<h3 id="aet-decoder">AET Decoder</h3>
+<p>The AET (Account Ecosystem Telemetry) Decoder is a modified version of the
+Decoder with the following properties:</p>
+<ul>
+<li>The raw topic that feeds the AET Decoder must not be sent anywhere else;
+  the AET Decoder needs to either successfully decrypt or sanitize all AET
+  identifiers</li>
+<li>Must load private keys from an encrypted blob in GCS</li>
+<li>Must call Cloud KMS at startup to decrypt keys and store these only in memory</li>
 <li>Must remove or redact all AET <code>ecosystem_anon_id</code> values from the payload before
   passing to any durable output, including errors</li>
 <li>Must have access restricted to a limited set of operators to avoid exposing private keys</li>
 <li>Encrypted fields must be JOSE JWE objects in Compact Serialization form</li>
-</ul>
-</li>
 </ul>
 <h3 id="republisher">Republisher</h3>
 <ul>

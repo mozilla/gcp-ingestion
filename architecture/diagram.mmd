@@ -8,21 +8,37 @@
 graph TD
 
 f1(Producers) --> k1(Ingestion Edge)
-k1 --> p1(Raw Topics)
-p1 --> k2(Raw Sink)
-k2 --> c1(BigQuery)
-p1 --> d2(Decoder)
-m1(Cloud Memorystore) --- d2
-d2 --> p2(Decoded Topics)
-p2 --> d3(Live Sink)
-d3 --> b1(BigQuery)
-p2 --> k3(Decoded Sink)
-k3 --> c2(Cloud Storage)
-p2 --> d5(Republisher)
-m1 --> d5
-d5 --> p5(Per DocType Topics)
-d5 --> p6(Monitoring Sample Topics)
-d2 -.-> m2(Cloud KMS)
+k1 --> p1(Raw Topic)
+k1 --> p1aet(AET Raw Topic)
+k1 --> p99(...)
+
+subgraph Pipeline Family: Structured
+    p1 --> k2(Raw Sink)
+    k2 --> c1(BigQuery)
+    p1 --> d2(Decoder)
+    p1aet --> d2aet(AET Decoder)
+    d2aet -. Decrypt keys on startup .- m2(Cloud KMS)
+    d2 --> p2(Decoded Topic)
+    d2 -.-> p2err(Error Topic)
+    p2err --> d3err(Error Sink)
+    d3err --> berr(BigQuery)
+    d2aet --> p2
+    d2aet -.-> p2err
+    p2 --> d3(Live Sink)
+    d3 --> b1(BigQuery)
+    p2 --> k3(Decoded Sink)
+    k3 --> c2(BigQuery)
+    p2 --> d5(Republisher)
+    d5 --> p5(Per DocType Topics)
+    d5 --> p6(Monitoring Sample Topics)
+end
+
+subgraph .
+   p99 --> d99(...)
+end
+
+d5 -. Mark document as seen .-> m1
+m1(Cloud Memorystore) -. Document already seen? .-> d2
 
 subgraph Colors
     d(Dataflow jobs are green)
@@ -42,7 +58,7 @@ classDef cyan fill:#eff,stroke:#099;
 classDef green fill:#efe,stroke:#090;
 classDef magenta fill:#fef,stroke:#909;
 classDef orange fill:#fee,stroke:#f90;
-class p,p0,p1,p2,p3,p4,p5,p6 cyan
-class d,d0,d2,d3,d5 green
-class k,k0,k1,k2,k3 magenta
+class p,p0,p1,p1aet,p2,p2err,p3,p4,p5,p6,p99 cyan
+class d,d0,d2,d2aet,d5,d99 green
+class k,k0,k1,k2,k3,d3,d3err magenta
 class f,f1 orange
