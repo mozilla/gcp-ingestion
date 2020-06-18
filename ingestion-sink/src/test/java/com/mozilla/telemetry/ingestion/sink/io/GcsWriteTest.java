@@ -11,7 +11,7 @@ import static org.mockito.Mockito.mock;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.pubsub.v1.PubsubMessage;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
+import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

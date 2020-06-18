@@ -14,10 +14,10 @@ import com.google.cloud.storage.Storage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.config.SinkConfig;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToString;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.time.Duration;
@@ -109,7 +109,8 @@ public class BigQuery {
 
       @Override
       protected void write(PubsubMessage input) {
-        Map<String, Object> content = Json.asMap(encoder.apply(input));
+        Map<String, Object> content = Json
+            .asMap(encoder.apply(input.getAttributesMap(), input.getData().toByteArray()));
         builder.addRow(content);
       }
 

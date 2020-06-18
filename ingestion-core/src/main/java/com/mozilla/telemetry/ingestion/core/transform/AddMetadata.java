@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.ingestion.sink.transform;
+package com.mozilla.telemetry.ingestion.core.transform;
 
 import com.google.common.collect.ImmutableList;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;

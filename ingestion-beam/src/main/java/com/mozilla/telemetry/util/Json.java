@@ -4,8 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.common.annotations.VisibleForTesting;
@@ -81,6 +83,16 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
    */
   public static String asString(Object data) throws IOException {
     return MAPPER.writeValueAsString(data);
+  }
+
+  private static final TypeReference<TableRow> tableRowTypeRef = new TypeReference<TableRow>() {
+  };
+
+  /**
+   * Use {@code MAPPER} to convert {@link ObjectNode} to {@code Map<String, Object>}.
+   */
+  public static TableRow asTableRow(ObjectNode objectNode) {
+    return convertValue(objectNode, tableRowTypeRef);
   }
 
   /**
