@@ -137,6 +137,15 @@ public class MessageScrubber {
         markBugCounter("1162183");
       }
     }
+
+    if (bug1642386Affected(attributes)) {
+      json.path("payload").path("syncs").elements().forEachRemaining(syncItem -> {
+        syncItem.path("engines").elements().forEachRemaining(engine -> {
+          ((ObjectNode) engine).remove("outgoing");
+          markBugCounter("1642386");
+        });
+      });
+    }
   }
 
   private static void markBugCounter(String bugNumber) {
@@ -225,5 +234,13 @@ public class MessageScrubber {
         && affectedDocumentTypes.contains(attributes.get(Attribute.DOCUMENT_TYPE))
         && attributes.get(Attribute.APP_VERSION) != null
         && attributes.get(Attribute.APP_VERSION).matches("([0-3][0-9]|4[0-1])\\..*"); // 41 or older
+  }
+
+  // See bug 1642386 for discussion of affected versions, etc.
+  static boolean bug1642386Affected(Map<String, String> attributes) {
+    return ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && attributes.get(Attribute.DOCUMENT_TYPE).equals("sync")
+        && attributes.get(Attribute.APP_VERSION) != null
+        && attributes.get(Attribute.APP_VERSION).matches("(25|26)\\..*"); // 25 or 26
   }
 }

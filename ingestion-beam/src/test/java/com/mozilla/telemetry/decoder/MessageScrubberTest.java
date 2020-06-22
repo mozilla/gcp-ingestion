@@ -272,6 +272,20 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testBug1642386Affected() throws Exception {
+    Map<String, String> baseAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY).put(Attribute.DOCUMENT_TYPE, "sync")
+        .build();
+
+    assertFalse(MessageScrubber.bug1642386Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "60.6.1").build()));
+    assertTrue(MessageScrubber.bug1642386Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "25.0.1").build()));
+    assertTrue(MessageScrubber.bug1642386Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "26.1").build()));
+  }
+
+  @Test
   public void testRedactForBug1602844() throws Exception {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
@@ -332,6 +346,63 @@ public class MessageScrubberTest {
     MessageScrubber.scrub(attributes, json);
     assertFalse(json.path("payload").has("slowSQL"));
     assertTrue(json.path("payload").path("slowSQL").isMissingNode());
+  }
+
+  @Test
+  public void testRedactForBug1642386() throws Exception {
+    ObjectNode json = Json.readObjectNode(("{\n" //
+        + "  \"payload\": {\n" //
+        + "    \"syncs\": [{\n" //
+        + "      \"engines\": [" //
+        + "        {\n" //
+        + "          \"outgoing\": {\n" //
+        + "            \"failed\": 10,\n" //
+        + "            \"sent\": 23\n" //
+        + "          }\n" //
+        + "        },{\n" //
+        + "          \"outgoing\": {\n" //
+        + "            \"failed\": 2,\n" //
+        + "            \"sent\": 0\n" //
+        + "          }\n" //
+        + "        }\n" //
+        + "      ]}, {\n" //
+        + "      \"engines\": [" //
+        + "        {\n" //
+        + "          \"outgoing\": {\n" //
+        + "            \"failed\": 1,\n" //
+        + "            \"sent\": 3\n" //
+        + "          }\n" //
+        + "        },{\n" //
+        + "          \"outgoing\": {\n" //
+        + "            \"failed\": 28,\n" //
+        + "            \"sent\": 70\n" //
+        + "          }\n" //
+        + "        }\n" //
+        + "      ]}\n" //
+        + "    ]\n" //
+        + "  },\n" //
+        + "  \"client_id\": null\n" + "}").getBytes(StandardCharsets.UTF_8));
+    final Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY).put(Attribute.DOCUMENT_TYPE, "sync")
+        .put(Attribute.APP_VERSION, "25.1").build();
+
+    assertFalse(json.path("payload").path("syncs").path(0).path("engines").path(0).path("outgoing")
+        .isNull());
+    assertFalse(json.path("payload").path("syncs").path(0).path("engines").path(1).path("outgoing")
+        .isNull());
+    assertFalse(json.path("payload").path("syncs").path(1).path("engines").path(0).path("outgoing")
+        .isNull());
+    assertFalse(json.path("payload").path("syncs").path(1).path("engines").path(1).path("outgoing")
+        .isNull());
+    MessageScrubber.scrub(attributes, json);
+    assertTrue(json.path("payload").path("syncs").path(0).path("engines").path(0).path("outgoing")
+        .isMissingNode());
+    assertTrue(json.path("payload").path("syncs").path(0).path("engines").path(1).path("outgoing")
+        .isMissingNode());
+    assertFalse(json.path("payload").path("syncs").path(0).path("engines").path(0).has("outgoing"));
+    assertFalse(json.path("payload").path("syncs").path(0).path("engines").path(1).has("outgoing"));
+    assertFalse(json.path("payload").path("syncs").path(1).path("engines").path(0).has("outgoing"));
+    assertFalse(json.path("payload").path("syncs").path(1).path("engines").path(1).has("outgoing"));
   }
 
   @Test
