@@ -9,6 +9,7 @@ import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
+import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -38,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -46,11 +46,17 @@ import java.util.stream.Collectors;
 /**
  * Transform attributes and data into an {@link ObjectNode}.
  */
-public abstract class PubsubMessageToObjectNode
-    implements BiFunction<Map<String, String>, byte[], ObjectNode> {
+public abstract class PubsubMessageToObjectNode {
 
   private static final Base64.Encoder BASE64_ENCODER = Base64.getEncoder();
   private static final ObjectNode EMPTY_OBJECT = Json.createObjectNode();
+
+  public abstract ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data);
+
+  @VisibleForTesting
+  ObjectNode apply(Map<String, String> attributes, byte[] data) {
+    return apply(null, attributes, data);
+  }
 
   public static class Raw extends PubsubMessageToObjectNode {
 
@@ -70,7 +76,7 @@ public abstract class PubsubMessageToObjectNode
      * thrown away.
      */
     @Override
-    public ObjectNode apply(Map<String, String> attributes, byte[] data) {
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
       ObjectNode contents = Json.asObjectNode(attributes);
       // bytes must be formatted as base64 encoded string.
       Optional.of(BASE64_ENCODER.encodeToString(data))
@@ -97,7 +103,7 @@ public abstract class PubsubMessageToObjectNode
      * {@code "telemetry"}.
      */
     @Override
-    public ObjectNode apply(Map<String, String> attributes, byte[] data) {
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
       ObjectNode contents = Json.asObjectNode(AddMetadata.attributesToMetadataPayload(attributes));
       // bytes must be formatted as base64 encoded string.
       Optional.of(BASE64_ENCODER.encodeToString(data))
@@ -220,14 +226,17 @@ public abstract class PubsubMessageToObjectNode
     /**
      * Turn message data into an {@link ObjectNode}.
      *
-     * <p>{@code message} must not be compressed.
+     * <p>{@code data} must not be compressed.
      *
      * <p>We also perform some manipulation of the parsed JSON to match details of our table schemas
      * in BigQuery.
+     *
+     * <p>If {@code schemasLocation} wasn't provided then {@link TableId} is used to get schemas
+     * directly from BigQuery.
      */
     @Override
-    public ObjectNode apply(Map<String, String> attributes, byte[] data) {
-      final Schema schema = schemaStore.getSchema(attributes);
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
+      final Schema schema = schemaStore.getSchema(tableId, attributes);
 
       final ObjectNode contents;
       try {
@@ -263,7 +272,7 @@ public abstract class PubsubMessageToObjectNode
      *                             is "strict schema" mode and additional properties will be dropped
      */
     @VisibleForTesting
-    public void transformForBqSchema(ObjectNode parent, List<Field> bqFields,
+    void transformForBqSchema(ObjectNode parent, List<Field> bqFields,
         ObjectNode additionalProperties) {
       final Map<String, Field> bqFieldMap = bqFields.stream()
           .collect(Collectors.toMap(Field::getName, Function.identity()));

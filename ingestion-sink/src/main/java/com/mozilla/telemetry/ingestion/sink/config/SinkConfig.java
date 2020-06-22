@@ -361,7 +361,7 @@ public class SinkConfig {
         return PubsubMessageToObjectNode.Decoded.of();
       case "payload":
         return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
-            env.getString(SCHEMAS_LOCATION), FileInputStream::new).withOpenCensusMetrics();
+            env.getString(SCHEMAS_LOCATION, null), FileInputStream::new).withOpenCensusMetrics();
       default:
         throw new IllegalArgumentException("Format not yet implemented: " + format);
     }

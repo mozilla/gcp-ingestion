@@ -145,7 +145,7 @@ public abstract class SchemaStore<T> {
     dirs = tempDirs;
   }
 
-  private void ensureSchemasLoaded() {
+  protected void ensureSchemasLoaded() {
     if (schemas == null) {
       try {
         loadAllSchemas();

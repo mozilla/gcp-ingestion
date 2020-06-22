@@ -1,11 +1,16 @@
 package com.mozilla.telemetry.transforms;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
+import com.google.cloud.bigquery.TableId;
 import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.util.BeamFileInputStream;
+import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
@@ -53,8 +58,7 @@ public class PubsubMessageToTableRow implements Serializable {
         return PubsubMessageToObjectNode.Decoded.of();
       case payload:
       default:
-        return PayloadWithBeamMetrics.of(strictSchemaDocTypes.get(), schemasLocation.get(), null)
-            .withOpenCensusMetrics();
+        return PayloadWithBeam.of(strictSchemaDocTypes.get(), schemasLocation.get());
     }
   }
 
@@ -66,21 +70,22 @@ public class PubsubMessageToTableRow implements Serializable {
     if (format == null) {
       format = createFormat();
     }
-    PubsubMessage message = kv.getValue();
-    return Json.asTableRow(format.apply(message.getAttributeMap(), message.getPayload()));
+    final TableReference ref = kv.getKey().getTableReference();
+    final TableId tableId = TableId.of(ref.getProjectId(), ref.getDatasetId(), ref.getTableId());
+    final PubsubMessage message = kv.getValue();
+    return Json.asTableRow(format.apply(tableId, message.getAttributeMap(), message.getPayload()));
   }
 
-  public static class PayloadWithBeamMetrics extends PubsubMessageToObjectNode.Payload {
+  private static class PayloadWithBeam extends PubsubMessageToObjectNode.Payload {
 
     /**
      * Measure transform with Beam metrics.
      */
-    public static PayloadWithBeamMetrics of(List<String> strictSchemaDocTypes,
-        String schemasLocation) {
-      return new PayloadWithBeamMetrics(strictSchemaDocTypes, schemasLocation);
+    public static PayloadWithBeam of(List<String> strictSchemaDocTypes, String schemasLocation) {
+      return new PayloadWithBeam(strictSchemaDocTypes, schemasLocation);
     }
 
-    private PayloadWithBeamMetrics(List<String> strictSchemaDocTypes, String schemasLocation) {
+    private PayloadWithBeam(List<String> strictSchemaDocTypes, String schemasLocation) {
       super(strictSchemaDocTypes, schemasLocation, BeamFileInputStream::open);
     }
 
@@ -108,6 +113,12 @@ public class PubsubMessageToTableRow implements Serializable {
     @Override
     protected void incrementNotCoercedToBool() {
       notCoercedToBool.inc();
+    }
+
+    @Override
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
+      // attempt to decompress data that may have been compressed to minimize shuffle size
+      return super.apply(tableId, attributes, GzipUtil.maybeDecompress(data));
     }
   }
 }

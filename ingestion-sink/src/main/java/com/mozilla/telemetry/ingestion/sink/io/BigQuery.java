@@ -93,8 +93,11 @@ public class BigQuery {
       @VisibleForTesting
       final InsertAllRequest.Builder builder;
 
+      private final TableId tableId;
+
       private Batch(TableId tableId) {
         super();
+        this.tableId = tableId;
         builder = InsertAllRequest.newBuilder(tableId)
             // ignore row values for columns not present in the table
             .setIgnoreUnknownValues(true)
@@ -110,7 +113,7 @@ public class BigQuery {
       @Override
       protected void write(PubsubMessage input) {
         Map<String, Object> content = Json
-            .asMap(encoder.apply(input.getAttributesMap(), input.getData().toByteArray()));
+            .asMap(encoder.apply(tableId, input.getAttributesMap(), input.getData().toByteArray()));
         builder.addRow(content);
       }
 

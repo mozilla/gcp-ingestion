@@ -49,7 +49,8 @@ public class Gcs {
       protected byte[] encodeInput(PubsubMessage input) {
         try {
           return ArrayUtils.addAll(
-              Json.asBytes(encoder.apply(input.getAttributesMap(), input.getData().toByteArray())),
+              Json.asBytes(
+                  encoder.apply(null, input.getAttributesMap(), input.getData().toByteArray())),
               NEWLINE);
         } catch (IOException e) {
           throw new UncheckedIOException(e);
