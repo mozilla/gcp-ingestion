@@ -279,6 +279,8 @@ public class MessageScrubberTest {
 
     assertFalse(MessageScrubber.bug1642386Affected(ImmutableMap.<String, String>builder()
         .putAll(baseAttributes).put(Attribute.APP_VERSION, "60.6.1").build()));
+    assertFalse(MessageScrubber.bug1642386Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.APP_VERSION, "10.25.1").build()));
     assertTrue(MessageScrubber.bug1642386Affected(ImmutableMap.<String, String>builder()
         .putAll(baseAttributes).put(Attribute.APP_VERSION, "25.0.1").build()));
     assertTrue(MessageScrubber.bug1642386Affected(ImmutableMap.<String, String>builder()
