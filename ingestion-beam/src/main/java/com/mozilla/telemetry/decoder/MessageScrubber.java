@@ -242,6 +242,6 @@ public class MessageScrubber {
     return ParseUri.TELEMETRY.equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
         && attributes.get(Attribute.DOCUMENT_TYPE).equals("sync")
         && attributes.get(Attribute.APP_VERSION) != null
-        && attributes.get(Attribute.APP_VERSION).matches("^(25|26)\\..*"); // 25 or 26
+        && attributes.get(Attribute.APP_VERSION).matches("^([0-9]|[0-2][0-6])\\..*"); // <= 26
   }
 }
