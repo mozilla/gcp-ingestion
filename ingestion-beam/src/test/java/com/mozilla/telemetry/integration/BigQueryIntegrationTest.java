@@ -359,8 +359,9 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
             .put("host", "incoming.telemetry.mozilla.org").put("user_agent", "pingsender/1.0")
             .put("x_forwarded_for", "10.98.132.74, 103.3.237.12").put("x_pingsender_version", "1.0")
             .put("x_debug_id", "my_debug_session_1")
-            .put("x_pipeline_proxy", "2020-01-12T21:02:18.123456Z").put("payload", "dGVzdA==")
-            .build()),
+            .put("x_pipeline_proxy", "2020-01-12T21:02:18.123456Z")
+            // ensure this value stayed compressed when loaded
+            .put("payload", "H4sIAJBj8l4AAytJLS4BAAx+f9gEAAAA").build()),
         String.join("\n",
             stringValuesQueryWithRetries("SELECT TO_JSON_STRING(t) FROM " + tableSpec + " AS t")));
   }
@@ -441,7 +442,8 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
         .put("submission_timestamp", "2020-01-12T21:02:18.123456Z")
         .put("normalized_app_name", "Firefox").put("normalized_country_code", "US")
         .put("normalized_os", "Windows").put("normalized_os_version", "10").put("sample_id", 42)
-        .put("payload", "dGVzdA==").build();
+        // ensure this value stayed compressed when loaded
+        .put("payload", "H4sIAJBj8l4AAytJLS4BAAx+f9gEAAAA").build();
     expectedMap = new HashMap<>(expectedMap);
     expectedMap.put("normalized_channel", null);
     assertEquals(Json.asString(expectedMap), String.join("\n",
@@ -465,6 +467,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
         Json.asString(ImmutableMap.of("attributeMap",
             ImmutableMap.of("normalized_app_name", "Firefox", //
                 "submission_timestamp", "2020-01-12T21:02:18.123456Z"),
+            // ensure this value was decompressed when read
             "payload", "dGVzdA==")),
         outputLines.get(0));
   }
