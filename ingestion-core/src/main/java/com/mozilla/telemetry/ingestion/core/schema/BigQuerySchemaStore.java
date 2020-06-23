@@ -87,6 +87,10 @@ public class BigQuerySchemaStore extends SchemaStore<Schema> {
 
     @Override
     public Schema getSchema(TableId tableId, Map<String, String> attributes) {
+      if (tableId == null) {
+        // Always throws SchemaNotFoundException
+        return getSchema(attributes);
+      }
       if (tableSchemaCache == null) {
         // We need to be very careful about settings for the cache here. We have had significant
         // issues in the past due to exceeding limits on BigQuery API requests; see

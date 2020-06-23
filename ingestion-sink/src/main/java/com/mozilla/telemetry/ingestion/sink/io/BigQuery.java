@@ -46,7 +46,18 @@ public class BigQuery {
     }
   }
 
-  private static TableId getTableId(String input) {
+  private static final Pattern OUTPUT_TABLE_PATTERN = Pattern
+      .compile("(?:.*/)?" + SinkConfig.OUTPUT_TABLE + "=([^/]+)(?:/.*)?");
+
+  static TableId getTableId(String sourceUri) {
+    final Matcher outputTableMatcher = OUTPUT_TABLE_PATTERN.matcher(sourceUri);
+    if (!outputTableMatcher.matches()) {
+      return null;
+    }
+    return parseTableId(outputTableMatcher.group(1));
+  }
+
+  private static TableId parseTableId(String input) {
     final String[] tableSpecParts = input.replaceAll(":", ".").split("\\.", 3);
     if (tableSpecParts.length == 3) {
       return TableId.of(tableSpecParts[0], tableSpecParts[1], tableSpecParts[2]);
@@ -74,7 +85,7 @@ public class BigQuery {
 
     @Override
     protected TableId getBatchKey(PubsubMessage input) {
-      return getTableId(batchKeyTemplate.apply(input));
+      return parseTableId(batchKeyTemplate.apply(input));
     }
 
     @Override
@@ -151,8 +162,6 @@ public class BigQuery {
     private final com.google.cloud.bigquery.BigQuery bigQuery;
     private final Storage storage;
     private final Delete delete;
-    private static final Pattern OUTPUT_TABLE_PATTERN = Pattern
-        .compile("(?:.*/)?" + SinkConfig.OUTPUT_TABLE + "=([^/]+)/.*");
 
     /** Constructor. */
     public Load(com.google.cloud.bigquery.BigQuery bigQuery, Storage storage, long maxBytes,
@@ -165,14 +174,10 @@ public class BigQuery {
 
     @Override
     protected TableId getBatchKey(Blob input) {
-      String sourceUri = input.getName();
-      final Matcher outputTableMatcher = OUTPUT_TABLE_PATTERN.matcher(sourceUri);
-      if (!outputTableMatcher.matches()) {
-        throw new IllegalArgumentException(
-            String.format("Source URI must match \"%s\" but got \"%s\"",
-                OUTPUT_TABLE_PATTERN.pattern(), sourceUri));
-      }
-      return getTableId(outputTableMatcher.group(1));
+      return Optional.ofNullable(getTableId(input.getName()))
+          .orElseThrow(() -> new IllegalArgumentException(
+              String.format("Source URI must match \"%s\" but got \"%s\"",
+                  OUTPUT_TABLE_PATTERN.pattern(), input.getName())));
     }
 
     @Override
