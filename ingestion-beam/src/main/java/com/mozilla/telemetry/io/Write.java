@@ -391,7 +391,7 @@ public abstract class Write
               v -> v == TableRowFormat.payload ? Compression.GZIP : Compression.UNCOMPRESSED));
 
       final PubsubMessageToTableRow pubsubMessageToTableRow = PubsubMessageToTableRow
-          .of(strictSchemaDocTypes, schemasLocation, tableRowFormat, keyByBigQueryTableDestination);
+          .of(strictSchemaDocTypes, schemasLocation, tableRowFormat);
       final BigQueryIO.Write<KV<TableDestination, PubsubMessage>> baseWriteTransform = BigQueryIO //
           .<KV<TableDestination, PubsubMessage>>write() //
           .withFormatFunction(pubsubMessageToTableRow::kvToTableRow) //

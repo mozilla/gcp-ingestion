@@ -79,12 +79,15 @@ public class Json {
     return MAPPER.valueToTree(map);
   }
 
+  private static final TypeReference<Map<String, Object>> mapTypeRef = //
+      new TypeReference<Map<String, Object>>() {
+      };
+
   /**
    * Use {@code MAPPER} to convert {@link ObjectNode} to {@code Map<String, Object>}.
    */
   public static Map<String, Object> asMap(ObjectNode objectNode) {
-    return convertValue(objectNode, new TypeReference<Map<String, Object>>() {
-    });
+    return convertValue(objectNode, mapTypeRef);
   }
 
   /**
@@ -173,6 +176,15 @@ public class Json {
       throw new IOException("json value is not an array");
     }
     return (ArrayNode) root;
+  }
+
+  /**
+   * Read String into a {@code Map<String, ?>}.
+   *
+   * @exception IOException if {@code data} does not contain a valid json object.
+   */
+  public static Map<String, Object> readMap(String data) throws IOException {
+    return asMap(readObjectNode(data.getBytes(StandardCharsets.UTF_8)));
   }
 
   /**

@@ -9,6 +9,7 @@ import com.google.cloud.storage.StorageOptions;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery;
 import com.mozilla.telemetry.ingestion.sink.io.BigQuery.BigQueryErrors;
 import com.mozilla.telemetry.ingestion.sink.io.Gcs;
@@ -17,7 +18,6 @@ import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.CompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.DecompressPayload;
 import com.mozilla.telemetry.ingestion.sink.transform.DocumentTypePredicate;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.Env;
 import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
@@ -361,7 +361,7 @@ public class SinkConfig {
         return PubsubMessageToObjectNode.Decoded.of();
       case "payload":
         return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
-            env.getString(SCHEMAS_LOCATION), FileInputStream::new).withOpenCensusMetrics();
+            env.getString(SCHEMAS_LOCATION, null), FileInputStream::new).withOpenCensusMetrics();
       default:
         throw new IllegalArgumentException("Format not yet implemented: " + format);
     }

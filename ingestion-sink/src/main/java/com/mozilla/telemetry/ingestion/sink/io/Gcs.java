@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.ingestion.sink.io;
 
+import com.google.cloud.bigquery.TableId;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
@@ -7,8 +8,8 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.core.util.Json;
-import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.ByteArrayOutputStream;
@@ -29,7 +30,8 @@ public class Gcs {
   private Gcs() {
   }
 
-  public abstract static class Write extends BatchWrite<PubsubMessage, byte[], String, Void> {
+  public abstract static class Write
+      extends BatchWrite<PubsubMessage, Write.LazyEncodedInput, String, Void> {
 
     public static class Ndjson extends Write {
 
@@ -46,11 +48,27 @@ public class Gcs {
       }
 
       @Override
-      protected byte[] encodeInput(PubsubMessage input) {
-        try {
-          return ArrayUtils.addAll(Json.asBytes(encoder.apply(input)), NEWLINE);
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
+      protected LazyEncodedInput encodeInput(PubsubMessage input) {
+        return new LazyEncodedInput(input);
+      }
+
+      private class LazyEncodedInput extends Write.LazyEncodedInput {
+
+        private final PubsubMessage input;
+
+        private LazyEncodedInput(PubsubMessage input) {
+          this.input = input;
+        }
+
+        @Override
+        protected byte[] encode(TableId tableId) {
+          try {
+            return ArrayUtils.addAll(Json.asBytes(
+                encoder.apply(tableId, input.getAttributesMap(), input.getData().toByteArray())),
+                NEWLINE);
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
         }
       }
     }
@@ -87,16 +105,35 @@ public class Gcs {
       return new Batch(gcsPrefixMatcher.group(BUCKET), gcsPrefixMatcher.group(NAME));
     }
 
+    /**
+     * Delay encoding until {@link TableId} is available and cache the result.
+     */
+    private abstract class LazyEncodedInput {
+
+      private byte[] result = null;
+
+      protected abstract byte[] encode(TableId tableId);
+
+      public byte[] get(TableId tableId) {
+        if (result == null) {
+          result = encode(tableId);
+        }
+        return result;
+      }
+    }
+
     @VisibleForTesting
-    class Batch extends BatchWrite<PubsubMessage, byte[], String, Void>.Batch {
+    class Batch extends BatchWrite<PubsubMessage, LazyEncodedInput, String, Void>.Batch {
 
       @VisibleForTesting
       final BlobInfo blobInfo;
+      private final TableId tableId;
 
       private final ByteArrayOutputStream content = new ByteArrayOutputStream();
 
       private Batch(String bucket, String keyPrefix) {
         super();
+        tableId = BigQuery.getTableId(keyPrefix);
         // save blobInfo for batchCloseHook
         blobInfo = BlobInfo
             .newBuilder(BlobId.of(bucket, keyPrefix + UUID.randomUUID().toString() + ".ndjson"))
@@ -114,13 +151,14 @@ public class Gcs {
       }
 
       @Override
-      protected void write(byte[] encodedInput) {
-        content.write(encodedInput, 0, encodedInput.length);
+      protected void write(LazyEncodedInput encodedInput) {
+        byte[] result = encodedInput.get(tableId);
+        content.write(result, 0, result.length);
       }
 
       @Override
-      protected long getByteSize(byte[] encodedInput) {
-        return encodedInput.length;
+      protected long getByteSize(LazyEncodedInput encodedInput) {
+        return encodedInput.get(tableId).length;
       }
     }
   }

@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.ingestion.sink.transform;
+package com.mozilla.telemetry.ingestion.core.transform;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -9,6 +9,7 @@ import com.google.cloud.bigquery.Field;
 import com.google.cloud.bigquery.LegacySQLTypeName;
 import com.google.cloud.bigquery.Schema;
 import com.google.cloud.bigquery.StandardSQLTypeName;
+import com.google.cloud.bigquery.TableId;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -16,7 +17,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.common.util.concurrent.UncheckedExecutionException;
-import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.BigQuerySchemaStore;
@@ -44,12 +44,19 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
- * Transform a {@link PubsubMessage} into an {@link ObjectNode}.
+ * Transform attributes and data into an {@link ObjectNode}.
  */
-public abstract class PubsubMessageToObjectNode implements Function<PubsubMessage, ObjectNode> {
+public abstract class PubsubMessageToObjectNode {
 
   private static final Base64.Encoder BASE64_ENCODER = Base64.getEncoder();
   private static final ObjectNode EMPTY_OBJECT = Json.createObjectNode();
+
+  public abstract ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data);
+
+  @VisibleForTesting
+  ObjectNode apply(Map<String, String> attributes, byte[] data) {
+    return apply(null, attributes, data);
+  }
 
   public static class Raw extends PubsubMessageToObjectNode {
 
@@ -69,12 +76,13 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
      * thrown away.
      */
     @Override
-    public ObjectNode apply(PubsubMessage message) {
-      ObjectNode contents = Json.asObjectNode(message.getAttributesMap());
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
+      ObjectNode contents = Json.asObjectNode(attributes);
       // bytes must be formatted as base64 encoded string.
-      Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))
+      Optional.of(BASE64_ENCODER.encodeToString(data))
           // include payload if present.
-          .filter(data -> !data.isEmpty()).ifPresent(data -> contents.put(FieldName.PAYLOAD, data));
+          .filter(payload -> !payload.isEmpty())
+          .ifPresent(payload -> contents.put(FieldName.PAYLOAD, payload));
       return contents;
     }
   }
@@ -88,22 +96,22 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     }
 
     /**
-     * Like {@link Raw#apply(PubsubMessage)}, but uses the nested metadata format of decoded pings.
+     * Like {@link Raw}, but uses the nested metadata format of decoded pings.
      *
      * <p>We include most attributes as fields, but the nested metadata format does not include
      * error attributes and only includes {@code metadata.uri} when document namespace is
      * {@code "telemetry"}.
      */
     @Override
-    public ObjectNode apply(PubsubMessage message) {
-      ObjectNode contents = Json
-          .asObjectNode(AddMetadata.attributesToMetadataPayload(message.getAttributesMap()));
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
+      ObjectNode contents = Json.asObjectNode(AddMetadata.attributesToMetadataPayload(attributes));
       // bytes must be formatted as base64 encoded string.
-      Optional.of(BASE64_ENCODER.encodeToString(message.getData().toByteArray()))
+      Optional.of(BASE64_ENCODER.encodeToString(data))
           // include payload if present.
-          .filter(data -> !data.isEmpty()).ifPresent(data -> contents.put(FieldName.PAYLOAD, data));
+          .filter(payload -> !payload.isEmpty())
+          .ifPresent(payload -> contents.put(FieldName.PAYLOAD, payload));
       // Also include client_id if present.
-      Optional.ofNullable(message.getAttributesOrDefault(Attribute.CLIENT_ID, null))
+      Optional.ofNullable(attributes.getOrDefault(Attribute.CLIENT_ID, null))
           .ifPresent(clientId -> contents.put(Attribute.CLIENT_ID, clientId));
       return contents;
     }
@@ -114,10 +122,10 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     public static class WithOpenCensusMetrics extends Payload {
 
       /**
-       * Measure transforming {@link PubsubMessage} into {@link ObjectNode} with OpenCensus metrics.
+       * Measure transform with OpenCensus metrics.
        */
       private WithOpenCensusMetrics(Cache<String, String> normalizedNameCache,
-          Predicate<PubsubMessage> strictSchema, BigQuerySchemaStore schemaStore) {
+          Predicate<Map<String, String>> strictSchema, BigQuerySchemaStore schemaStore) {
         super(normalizedNameCache, strictSchema, schemaStore);
         setupOpenCensus();
       }
@@ -171,21 +179,21 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
 
     private final Cache<String, String> normalizedNameCache;
     private final BigQuerySchemaStore schemaStore;
-    private final Predicate<PubsubMessage> strictSchema;
+    private final Predicate<Map<String, String>> strictSchema;
 
     /**
-     * Transform {@link PubsubMessage} into {@link ObjectNode} in live table format.
+     * Transform attributes and data into {@link ObjectNode} in live table format.
      */
-    private Payload(List<String> strictSchemaDocTypes, String schemasLocation,
+    protected Payload(List<String> strictSchemaDocTypes, String schemasLocation,
         IOFunction<String, InputStream> open) {
       normalizedNameCache = CacheBuilder.newBuilder().maximumSize(50_000).build();
       if (strictSchemaDocTypes == null) {
-        strictSchema = message -> false;
+        strictSchema = attributes -> false;
       } else {
         final HashSet<String> strictSchemaDocTypeSet = new HashSet<>(strictSchemaDocTypes);
-        strictSchema = message -> {
-          String namespace = message.getAttributesOrDefault(Attribute.DOCUMENT_NAMESPACE, "");
-          String docType = message.getAttributesOrDefault(Attribute.DOCUMENT_TYPE, "");
+        strictSchema = attributes -> {
+          String namespace = attributes.getOrDefault(Attribute.DOCUMENT_NAMESPACE, "");
+          String docType = attributes.getOrDefault(Attribute.DOCUMENT_TYPE, "");
           return strictSchemaDocTypeSet.contains(namespace + "/" + docType);
         };
       }
@@ -193,7 +201,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     }
 
     private Payload(Cache<String, String> normalizedNameCache,
-        Predicate<PubsubMessage> strictSchema, BigQuerySchemaStore schemaStore) {
+        Predicate<Map<String, String>> strictSchema, BigQuerySchemaStore schemaStore) {
       this.normalizedNameCache = normalizedNameCache;
       this.strictSchema = strictSchema;
       this.schemaStore = schemaStore;
@@ -218,18 +226,21 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
     /**
      * Turn message data into an {@link ObjectNode}.
      *
-     * <p>{@code message} must not be compressed.
+     * <p>{@code data} must not be compressed.
      *
      * <p>We also perform some manipulation of the parsed JSON to match details of our table schemas
      * in BigQuery.
+     *
+     * <p>If {@code schemasLocation} wasn't provided then {@link TableId} is used to get schemas
+     * directly from BigQuery.
      */
     @Override
-    public ObjectNode apply(PubsubMessage message) {
-      final Schema schema = schemaStore.getSchema(message.getAttributesMap());
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
+      final Schema schema = schemaStore.getSchema(tableId, attributes);
 
       final ObjectNode contents;
       try {
-        contents = Json.readObjectNode(message.getData().toByteArray());
+        contents = Json.readObjectNode(data);
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
@@ -238,7 +249,7 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
       final JsonNode metadata = contents.remove(AddMetadata.METADATA);
 
       // Make BQ-specific transformations to the payload structure.
-      final ObjectNode additionalProperties = strictSchema.test(message) ? null
+      final ObjectNode additionalProperties = strictSchema.test(attributes) ? null
           : Json.createObjectNode();
       transformForBqSchema(contents, schema.getFields(), additionalProperties);
 
@@ -260,7 +271,8 @@ public abstract class PubsubMessageToObjectNode implements Function<PubsubMessag
      * @param additionalProperties a map for storing fields absent in the BQ schema; if null, this
      *                             is "strict schema" mode and additional properties will be dropped
      */
-    private void transformForBqSchema(ObjectNode parent, List<Field> bqFields,
+    @VisibleForTesting
+    void transformForBqSchema(ObjectNode parent, List<Field> bqFields,
         ObjectNode additionalProperties) {
       final Map<String, Field> bqFieldMap = bqFields.stream()
           .collect(Collectors.toMap(Field::getName, Function.identity()));
