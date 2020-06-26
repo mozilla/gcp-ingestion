@@ -9,9 +9,6 @@
         "ecosystemClientId": {
           "type": "string"
         },
-        "ecosystemDeviceId": {
-          "type": "string"
-        },
         "ecosystemAnonId": {
           "description": "The current Account Ecosystem Telemetry anon_id value for this user; it must be a JOSE JWE objects in Compact Serialization form",
           "type": "string"
@@ -31,8 +28,7 @@
         "previous_ecosystem_anon_ids": false
       },
       "required": [
-        "ecosystemClientId",
-        "ecosystemDeviceId"
+        "ecosystemClientId"
       ]
     },
     "ecosystemAnonId": false,
