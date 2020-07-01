@@ -654,26 +654,24 @@ public abstract class PubsubMessageToObjectNode {
      * as a JSON string if anything seems off.
      */
     private TextNode compactHistogramEncoding(JsonNode o, String fieldName) {
-      TextNode jsonEncoding = TextNode.valueOf(Json.asString(o));
-      int histogramType = o.path("histogram_type").asInt(-1);
+      final int histogramType = o.path("histogram_type").asInt(-1);
       if (histogramType < 0 || histogramType > 5) {
         incrementInvalidHistogramType();
-        return jsonEncoding;
+        return jsonHistogramEncoding(o);
       }
-      long sum = o.path("sum").asLong(-1);
+      final long sum = o.path("sum").asLong(-1);
       if (sum < 0) {
         incrementInvalidHistogramSum();
-        return jsonEncoding;
+        return jsonHistogramEncoding(o);
       }
-      JsonNode values = o.path("values");
-      if (histogramType == 4) {
-        // Type 4 histograms are "count" histograms representing only a single value.
-        return TextNode.valueOf(Long.toString(sum));
-      } else if (histogramType == 2 && fieldName.startsWith("use_counter2")) {
-        // "use counters" represent the bulk of histogram data sent in main pings, so we provide
-        // additional optimization for this case; although they are encoded as "boolean" histograms
-        // (type 2), the "0" (false) bucket is never populated, meaning they only encode a single
-        // value.
+      final JsonNode values = o.path("values");
+      if (histogramType == 4 || (histogramType == 2 && fieldName.startsWith("use_counter2"))) {
+        // Type 4 histograms are "count" histograms representing only a single value, so can be
+        // encoded as a textual representation of that single number.
+        // We also use this encoding for "use counters" which are reported as type 2 (boolean)
+        // histograms, but only ever have a non-zero value in the "1" (true) bucket.
+        // It's worth making this optimization for use counters because they constitute the
+        // majority of histogram fields in the main ping.
         return TextNode.valueOf(Long.toString(sum));
       } else if (histogramType == 2) {
         // Type 2 are "boolean" histograms where bucket "0" is a count of false values and
@@ -681,18 +679,24 @@ public abstract class PubsubMessageToObjectNode {
         return TextNode.valueOf(
             String.format("%d,%d", values.path("0").longValue(), values.path("1").longValue()));
       } else {
-        int bucketCount = o.path("bucket_count").asInt(-1);
-        long rangeLo = o.path("range").path(0).asLong(-1);
-        long rangeHi = o.path("range").path(1).asLong(-1);
-        String valString = Json.asString(values).replace("{", "").replace("}", "").replace("\"",
-            "");
+        final int bucketCount = o.path("bucket_count").asInt(-1);
+        final long rangeLo = o.path("range").path(0).asLong(-1);
+        final long rangeHi = o.path("range").path(1).asLong(-1);
+        final String valString = Json.asString(values) //
+            .replace("{", "") //
+            .replace("}", "") //
+            .replace("\"", "");
         if (bucketCount <= 0 || rangeLo < 0 || rangeHi < 0) {
           incrementInvalidHistogramRange();
-          return jsonEncoding;
+          return jsonHistogramEncoding(o);
         }
         return TextNode.valueOf(String.format("%d;%d;%d;%d,%d;%s", //
             bucketCount, histogramType, sum, rangeLo, rangeHi, valString));
       }
+    }
+
+    private static TextNode jsonHistogramEncoding(JsonNode o) {
+      return TextNode.valueOf(Json.asString(o));
     }
 
     /**
