@@ -111,7 +111,8 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
     String output = String.format("%s:%s", projectId, tableSpec);
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
-        "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=streaming",
+        "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=file_loads",
+        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
         "--schemasLocation=schemas.tar.gz", "--output=" + output, "--errorOutputType=stderr" });
 
     result.waitUntilFinish();
