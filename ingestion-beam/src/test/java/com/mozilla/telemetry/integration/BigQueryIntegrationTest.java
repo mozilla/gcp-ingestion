@@ -54,6 +54,9 @@ import org.junit.rules.TemporaryFolder;
  */
 public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
+  private static final String STATIC_TEST_TEMP = //
+      "gs://gcp-ingestion-static-test-bucket/temp/bq-loads";
+
   private BigQuery bigquery;
   private String projectId;
   private String dataset;
@@ -112,8 +115,8 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=file_loads",
-        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
-        "--schemasLocation=schemas.tar.gz", "--output=" + output, "--errorOutputType=stderr" });
+        "--tempLocation=" + STATIC_TEST_TEMP, "--schemasLocation=schemas.tar.gz",
+        "--output=" + output, "--errorOutputType=stderr" });
 
     result.waitUntilFinish();
 
@@ -179,9 +182,8 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output,
         "--bqWriteMethod=file_loads", "--errorOutputType=file",
-        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
-        "--schemasLocation=schemas.tar.gz", "--errorOutputFileCompression=UNCOMPRESSED",
-        "--errorOutput=" + errorOutput });
+        "--tempLocation=" + STATIC_TEST_TEMP, "--schemasLocation=schemas.tar.gz",
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 
@@ -217,9 +219,8 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--output=" + output, "--bqWriteMethod=mixed",
         "--bqStreamingDocTypes=" + streamingDocTypes, "--errorOutputType=file",
-        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
-        "--schemasLocation=schemas.tar.gz", "--errorOutputFileCompression=UNCOMPRESSED",
-        "--errorOutput=" + errorOutput });
+        "--tempLocation=" + STATIC_TEST_TEMP, "--schemasLocation=schemas.tar.gz",
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput });
 
     result.waitUntilFinish();
 
@@ -414,9 +415,9 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
     PipelineResult result = Sink.run(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputType=bigquery", "--bqWriteMethod=file_loads",
-        "--tempLocation=gs://gcp-ingestion-static-test-bucket/temp/bq-loads",
-        "--decompressInputPayloads=false", "--outputTableRowFormat=decoded",
-        "--output=" + fullyQualifiedTableSpec, "--errorOutputType=stderr" });
+        "--tempLocation=" + STATIC_TEST_TEMP, "--decompressInputPayloads=false",
+        "--outputTableRowFormat=decoded", "--output=" + fullyQualifiedTableSpec,
+        "--errorOutputType=stderr" });
 
     result.waitUntilFinish();
 
