@@ -41,6 +41,7 @@ public class SinkConfig {
   private static final String BATCH_MAX_DELAY = "BATCH_MAX_DELAY";
   private static final String BATCH_MAX_MESSAGES = "BATCH_MAX_MESSAGES";
   private static final String BIG_QUERY_OUTPUT_MODE = "BIG_QUERY_OUTPUT_MODE";
+  private static final String BIG_QUERY_DEFAULT_PROJECT = "BIG_QUERY_DEFAULT_PROJECT";
   private static final String LOAD_MAX_BYTES = "LOAD_MAX_BYTES";
   private static final String LOAD_MAX_DELAY = "LOAD_MAX_DELAY";
   private static final String LOAD_MAX_FILES = "LOAD_MAX_FILES";
@@ -60,11 +61,11 @@ public class SinkConfig {
 
   private static final Set<String> INCLUDE_ENV_VARS = ImmutableSet.of(INPUT_COMPRESSION,
       INPUT_PARALLELISM, INPUT_SUBSCRIPTION, BATCH_MAX_BYTES, BATCH_MAX_DELAY, BATCH_MAX_MESSAGES,
-      BIG_QUERY_OUTPUT_MODE, LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET,
-      OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_PARALLELISM, OUTPUT_TABLE, OUTPUT_TOPIC,
-      MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES, SCHEMAS_LOCATION,
-      STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
-      STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
+      BIG_QUERY_OUTPUT_MODE, BIG_QUERY_DEFAULT_PROJECT, LOAD_MAX_BYTES, LOAD_MAX_DELAY,
+      LOAD_MAX_FILES, OUTPUT_BUCKET, OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_PARALLELISM,
+      OUTPUT_TABLE, OUTPUT_TOPIC, MAX_OUTSTANDING_ELEMENT_COUNT, MAX_OUTSTANDING_REQUEST_BYTES,
+      SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY,
+      STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
 
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
@@ -386,8 +387,11 @@ public class SinkConfig {
     return getGcsOutputBucket(env) + OUTPUT_TABLE + "=" + env.getString(OUTPUT_TABLE) + "/";
   }
 
-  private static com.google.cloud.bigquery.BigQuery getBigQueryService(Env env) {
-    return BigQueryOptions.getDefaultInstance().getService();
+  @VisibleForTesting
+  static com.google.cloud.bigquery.BigQuery getBigQueryService(Env env) {
+    BigQueryOptions.Builder builder = BigQueryOptions.getDefaultInstance().toBuilder();
+    env.optString(BIG_QUERY_DEFAULT_PROJECT).ifPresent(builder::setProjectId);
+    return builder.build().getService();
   }
 
   private static Storage getGcsService(Env env) {

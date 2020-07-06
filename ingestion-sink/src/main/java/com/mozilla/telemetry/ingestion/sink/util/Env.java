@@ -38,7 +38,8 @@ public class Env {
     return env.containsKey(key);
   }
 
-  private Optional<String> optString(String key) {
+  /** Get the value of an optional environment variable. */
+  public Optional<String> optString(String key) {
     if (!include.contains(key)) {
       throw new IllegalArgumentException("key missing from include: " + key);
     }
