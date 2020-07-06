@@ -22,6 +22,6 @@
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_tuple":[{"key":"value"},"x",6]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_nested_list":[["a","b","c"]],"test_nested_csv":[{"list":"a,b,c"}],"test_list":["a","b","c"]}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_list":null,"test_nested_list":[null],"test_record":null}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_record":{"key":null}}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_record":{"key":null},"test_map":null}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_int64 ":null,"test_int64":7,"test_int64_":"invalid","test_int64+":8}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_map":{"key":null,"value":null,"other":"other"}}}
