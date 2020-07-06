@@ -142,6 +142,9 @@ public abstract class PubsubMessageToObjectNode {
       private static final MeasureLong INVALID_HISTOGRAM_SUM = MeasureLong.create(
           "invalid_histogram_sum", //
           "The number of parsed histograms with an invalid sum field", "1");
+      private static final MeasureLong INVALID_HISTOGRAM_USE_COUNTER = MeasureLong.create(
+          "invalid_histogram_use_counter", //
+          "The number of parsed histograms failing use counter invariants", "1");
       private static final MeasureLong INVALID_HISTOGRAM_RANGE = MeasureLong.create(
           "invalid_histogram_range", //
           "The number of parsed histograms with an invalid bucket_count or range field", "1");
@@ -190,14 +193,18 @@ public abstract class PubsubMessageToObjectNode {
       @Override
       protected void incrementInvalidHistogramSum() {
         STATS_RECORDER.newMeasureMap().put(INVALID_HISTOGRAM_SUM, 1).record();
+      }
 
+      /** measure rate of InvalidHistogramUseCounter. */
+      @Override
+      protected void incrementInvalidHistogramUseCounter() {
+        STATS_RECORDER.newMeasureMap().put(INVALID_HISTOGRAM_USE_COUNTER, 1).record();
       }
 
       /** measure rate of InvalidHistogramRange. */
       @Override
       protected void incrementInvalidHistogramRange() {
         STATS_RECORDER.newMeasureMap().put(INVALID_HISTOGRAM_RANGE, 1).record();
-
       }
 
     }
@@ -255,17 +262,18 @@ public abstract class PubsubMessageToObjectNode {
 
     /** measure rate of InvalidHistogramType. */
     protected void incrementInvalidHistogramType() {
-
     }
 
     /** measure rate of InvalidHistogramSum. */
     protected void incrementInvalidHistogramSum() {
+    }
 
+    /** measure rate of InvalidHistogramUseCounter. */
+    protected void incrementInvalidHistogramUseCounter() {
     }
 
     /** measure rate of InvalidHistogramRange. */
     protected void incrementInvalidHistogramRange() {
-
     }
 
     /**
@@ -665,13 +673,25 @@ public abstract class PubsubMessageToObjectNode {
         return jsonHistogramEncoding(o);
       }
       final JsonNode values = o.path("values");
-      if (histogramType == 4 || (histogramType == 2 && fieldName.startsWith("use_counter2"))) {
-        // Type 4 histograms are "count" histograms representing only a single value, so can be
-        // encoded as a textual representation of that single number.
-        // We also use this encoding for "use counters" which are reported as type 2 (boolean)
-        // histograms, but only ever have a non-zero value in the "1" (true) bucket.
-        // It's worth making this optimization for use counters because they constitute the
-        // majority of histogram fields in the main ping.
+      if (histogramType == 2 && fieldName.startsWith("use_counter2")) {
+        // Histograms named as "use_counter" are reported as type 2 (boolean), but only ever have
+        // a non-zero value in the "1" (true) bucket (and the "sum" field should match this count).
+        // They can be encoded as a textual representation of that single number without any loss
+        // of information, and since use counters make up the majority of histogram data volume,
+        // this optimization case is the most important one.
+        // See https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/collection/use-counters.html
+        if (sum == values.path("1").asLong(-1)) {
+          return TextNode.valueOf(Long.toString(sum));
+        } else {
+          incrementInvalidHistogramUseCounter();
+          return jsonHistogramEncoding(o);
+        }
+      }
+      return jsonHistogramEncoding(o);
+      // TODO: Uncomment the following section and related test cases once we have transitioned
+      // analysis use cases to tolerate the additional encodings.
+      /*
+      else if (histogramType == 4) {
         return TextNode.valueOf(Long.toString(sum));
       } else if (histogramType == 2) {
         // Type 2 are "boolean" histograms where bucket "0" is a count of false values and
@@ -693,6 +713,7 @@ public abstract class PubsubMessageToObjectNode {
         return TextNode.valueOf(String.format("%d;%d;%d;%d,%d;%s", //
             bucketCount, histogramType, sum, rangeLo, rangeHi, valString));
       }
+      */
     }
 
     private static TextNode jsonHistogramEncoding(JsonNode o) {

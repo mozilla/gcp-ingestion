@@ -12,6 +12,7 @@ import com.mozilla.telemetry.ingestion.core.util.Json;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PubsubMessageToObjectNodeBeamTest {
@@ -152,19 +153,20 @@ public class PubsubMessageToObjectNodeBeamTest {
   @Test
   public void testCoerceUseCounterHistogramToString() throws Exception {
     String mainPing = "{\"payload\":{\"histograms\":{\"use_counter2_css_property_all_page\":"
-        + "{\"bucket_count\":3,\"histogram_type\":2,\"sum\":1,\"range\":[1,2]"
-        + ",\"values\":{\"0\":0,\"1\":1,\"2\":0}}}}}";
+        + "{\"bucket_count\":3,\"histogram_type\":2,\"sum\":5,\"range\":[1,2]"
+        + ",\"values\":{\"0\":0,\"1\":5,\"2\":0}}}}}";
     ObjectNode parent = Json.readObjectNode(mainPing);
     ObjectNode additionalProperties = Json.createObjectNode();
     List<Field> bqFields = ImmutableList.of(Field.of("payload", LegacySQLTypeName.RECORD,
         Field.of("histograms", LegacySQLTypeName.RECORD,
             Field.of("use_counter2_css_property_all_page", LegacySQLTypeName.STRING))));
     Map<String, Object> expected = ImmutableMap.of("payload",
-        ImmutableMap.of("histograms", ImmutableMap.of("use_counter2_css_property_all_page", "1")));
+        ImmutableMap.of("histograms", ImmutableMap.of("use_counter2_css_property_all_page", "5")));
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asMap(parent));
   }
 
+  @Ignore("Waiting for full compact histogram encoding implementation; see bug 1646825")
   @Test
   public void testCoerceType2HistogramToString() throws Exception {
     String mainPing = "{\"payload\":{\"histograms\":{\"some_histo\":"
@@ -182,6 +184,7 @@ public class PubsubMessageToObjectNodeBeamTest {
     assertEquals(expected, Json.asMap(parent));
   }
 
+  @Ignore("Waiting for full compact histogram encoding implementation; see bug 1646825")
   @Test
   public void testCoerceType4HistogramToString() throws Exception {
     String mainPing = "{\"payload\":{\"histograms\":{\"some_histo\":"
@@ -198,6 +201,7 @@ public class PubsubMessageToObjectNodeBeamTest {
     assertEquals(expected, Json.asMap(parent));
   }
 
+  @Ignore("Waiting for full compact histogram encoding implementation; see bug 1646825")
   @Test
   public void testCoerceType1HistogramToString() throws Exception {
     String mainPing = "{\"payload\":{\"histograms\":{\"some_histo\":"
