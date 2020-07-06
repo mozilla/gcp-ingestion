@@ -33,11 +33,13 @@ services:
         ]
       ]
   pubsub:
+    build: .
     image: *image
     command: python -m pubsub_emulator
     environment:
       PORT: 8085
   test:
+    build: .
     image: *image
     command:
     - bin/pytest-all
