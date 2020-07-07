@@ -166,6 +166,22 @@ public class PubsubMessageToObjectNodeBeamTest {
     assertEquals(expected, Json.asMap(parent));
   }
 
+  @Test
+  public void testCoerceEmptyUseCounterHistogramToString() throws Exception {
+    String mainPing = "{\"payload\":{\"histograms\":{\"use_counter2_css_property_all_page\":"
+        + "{\"bucket_count\":3,\"histogram_type\":2,\"sum\":0,\"range\":[1,2]"
+        + ",\"values\":{}}}}}";
+    ObjectNode parent = Json.readObjectNode(mainPing);
+    ObjectNode additionalProperties = Json.createObjectNode();
+    List<Field> bqFields = ImmutableList.of(Field.of("payload", LegacySQLTypeName.RECORD,
+        Field.of("histograms", LegacySQLTypeName.RECORD,
+            Field.of("use_counter2_css_property_all_page", LegacySQLTypeName.STRING))));
+    Map<String, Object> expected = ImmutableMap.of("payload",
+        ImmutableMap.of("histograms", ImmutableMap.of("use_counter2_css_property_all_page", "0")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
   @Ignore("Waiting for full compact histogram encoding implementation; see bug 1646825")
   @Test
   public void testCoerceType2HistogramToString() throws Exception {

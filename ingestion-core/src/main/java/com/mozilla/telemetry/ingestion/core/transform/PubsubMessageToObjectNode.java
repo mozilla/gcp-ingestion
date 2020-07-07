@@ -680,7 +680,7 @@ public abstract class PubsubMessageToObjectNode {
         // of information, and since use counters make up the majority of histogram data volume,
         // this optimization case is the most important one.
         // See https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/collection/use-counters.html
-        if (sum == values.path("1").asLong(-1)) {
+        if (sum == values.path("1").asLong(0)) {
           return TextNode.valueOf(Long.toString(sum));
         } else {
           incrementInvalidHistogramUseCounter();
