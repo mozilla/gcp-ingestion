@@ -136,6 +136,18 @@ public abstract class PubsubMessageToObjectNode {
           "The number of values that failed to be coerced to int", "1");
       private static final MeasureLong NOT_COERCED_TO_BOOL = MeasureLong.create(
           "not_coerced_to_bool", "The number of values that failed to be coerced to bool", "1");
+      private static final MeasureLong INVALID_HISTOGRAM_TYPE = MeasureLong.create(
+          "invalid_histogram_type", //
+          "The number of parsed histograms with an invalid histogram_type", "1");
+      private static final MeasureLong INVALID_HISTOGRAM_SUM = MeasureLong.create(
+          "invalid_histogram_sum", //
+          "The number of parsed histograms with an invalid sum field", "1");
+      private static final MeasureLong INVALID_HISTOGRAM_USE_COUNTER = MeasureLong.create(
+          "invalid_histogram_use_counter", //
+          "The number of parsed histograms failing use counter invariants", "1");
+      private static final MeasureLong INVALID_HISTOGRAM_RANGE = MeasureLong.create(
+          "invalid_histogram_range", //
+          "The number of parsed histograms with an invalid bucket_count or range field", "1");
       private static final Aggregation.Count COUNT_AGGREGATION = Aggregation.Count.create();
       private static final StatsRecorder STATS_RECORDER = Stats.getStatsRecorder();
 
@@ -170,6 +182,31 @@ public abstract class PubsubMessageToObjectNode {
       protected void incrementNotCoercedToBool() {
         STATS_RECORDER.newMeasureMap().put(NOT_COERCED_TO_BOOL, 1).record();
       }
+
+      /** measure rate of InvalidHistogramType. */
+      @Override
+      protected void incrementInvalidHistogramType() {
+        STATS_RECORDER.newMeasureMap().put(INVALID_HISTOGRAM_TYPE, 1).record();
+      }
+
+      /** measure rate of InvalidHistogramSum. */
+      @Override
+      protected void incrementInvalidHistogramSum() {
+        STATS_RECORDER.newMeasureMap().put(INVALID_HISTOGRAM_SUM, 1).record();
+      }
+
+      /** measure rate of InvalidHistogramUseCounter. */
+      @Override
+      protected void incrementInvalidHistogramUseCounter() {
+        STATS_RECORDER.newMeasureMap().put(INVALID_HISTOGRAM_USE_COUNTER, 1).record();
+      }
+
+      /** measure rate of InvalidHistogramRange. */
+      @Override
+      protected void incrementInvalidHistogramRange() {
+        STATS_RECORDER.newMeasureMap().put(INVALID_HISTOGRAM_RANGE, 1).record();
+      }
+
     }
 
     public static Payload of(List<String> strictSchemaDocTypes, String schemasLocation,
@@ -221,6 +258,22 @@ public abstract class PubsubMessageToObjectNode {
 
     /** measure rate of NotCoercedToBool. */
     protected void incrementNotCoercedToBool() {
+    }
+
+    /** measure rate of InvalidHistogramType. */
+    protected void incrementInvalidHistogramType() {
+    }
+
+    /** measure rate of InvalidHistogramSum. */
+    protected void incrementInvalidHistogramSum() {
+    }
+
+    /** measure rate of InvalidHistogramUseCounter. */
+    protected void incrementInvalidHistogramUseCounter() {
+    }
+
+    /** measure rate of InvalidHistogramRange. */
+    protected void incrementInvalidHistogramRange() {
     }
 
     /**
@@ -541,6 +594,8 @@ public abstract class PubsubMessageToObjectNode {
       if (field.getType() == LegacySQLTypeName.STRING) {
         if (o.isTextual()) {
           return Optional.of(o);
+        } else if (o.isObject() && o.has("histogram_type")) {
+          return Optional.of(compactHistogramEncoding(o, field.getName()));
         } else {
           // If not already a string, we JSON-ify the value.
           // We have many fields that we expect to be coerced to string (histograms, userPrefs,
@@ -594,6 +649,76 @@ public abstract class PubsubMessageToObjectNode {
       } catch (ExecutionException e) {
         throw new UncheckedExecutionException(e.getCause());
       }
+    }
+
+    /**
+     * Encode the given JSON object as a compact string.
+     *
+     * <p>We maintain a BigQuery persistent UDF that can parse a variety of formats, so any format
+     * used here must first be supported in:
+     * https://github.com/mozilla/bigquery-etl/blob/master/mozfun/hist/extract/udf.sql
+     *
+     * <p>Schema validation should generally ensure that all histograms are well-formed, but we
+     * perform some light sanity checking on the values and fall back to encoding the histogram
+     * as a JSON string if anything seems off.
+     */
+    private TextNode compactHistogramEncoding(JsonNode o, String fieldName) {
+      final int histogramType = o.path("histogram_type").asInt(-1);
+      if (histogramType < 0 || histogramType > 5) {
+        incrementInvalidHistogramType();
+        return jsonHistogramEncoding(o);
+      }
+      final long sum = o.path("sum").asLong(-1);
+      if (sum < 0) {
+        incrementInvalidHistogramSum();
+        return jsonHistogramEncoding(o);
+      }
+      final JsonNode values = o.path("values");
+      if (histogramType == 2 && fieldName.startsWith("use_counter2")) {
+        // Histograms named as "use_counter" are reported as type 2 (boolean), but only ever have
+        // a non-zero value in the "1" (true) bucket (and the "sum" field should match this count).
+        // They can be encoded as a textual representation of that single number without any loss
+        // of information, and since use counters make up the majority of histogram data volume,
+        // this optimization case is the most important one.
+        // See https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/collection/use-counters.html
+        if (sum == values.path("1").asLong(0)) {
+          return TextNode.valueOf(Long.toString(sum));
+        } else {
+          incrementInvalidHistogramUseCounter();
+          return jsonHistogramEncoding(o);
+        }
+      }
+      return jsonHistogramEncoding(o);
+      // TODO: Uncomment the following section and related test cases once we have transitioned
+      // analysis use cases to tolerate the additional encodings.
+      /*
+      else if (histogramType == 4) {
+        return TextNode.valueOf(Long.toString(sum));
+      } else if (histogramType == 2) {
+        // Type 2 are "boolean" histograms where bucket "0" is a count of false values and
+        // bucket "1" is a count of true values.
+        return TextNode.valueOf(
+            String.format("%d,%d", values.path("0").longValue(), values.path("1").longValue()));
+      } else {
+        final int bucketCount = o.path("bucket_count").asInt(-1);
+        final long rangeLo = o.path("range").path(0).asLong(-1);
+        final long rangeHi = o.path("range").path(1).asLong(-1);
+        final String valString = Json.asString(values) //
+            .replace("{", "") //
+            .replace("}", "") //
+            .replace("\"", "");
+        if (bucketCount <= 0 || rangeLo < 0 || rangeHi < 0) {
+          incrementInvalidHistogramRange();
+          return jsonHistogramEncoding(o);
+        }
+        return TextNode.valueOf(String.format("%d;%d;%d;%d,%d;%s", //
+            bucketCount, histogramType, sum, rangeLo, rangeHi, valString));
+      }
+      */
+    }
+
+    private static TextNode jsonHistogramEncoding(JsonNode o) {
+      return TextNode.valueOf(Json.asString(o));
     }
 
     /**

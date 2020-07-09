@@ -96,6 +96,14 @@ public class PubsubMessageToTableRow implements Serializable {
         "not_coerced_to_int");
     private static final Counter notCoercedToBool = Metrics.counter(PubsubMessageToTableRow.class,
         "not_coerced_to_bool");
+    private static final Counter invalidHistogramType = Metrics
+        .counter(PubsubMessageToTableRow.class, "invalid_histogram_type");
+    private static final Counter invalidHistogramSum = Metrics
+        .counter(PubsubMessageToTableRow.class, "invalid_histogram_sum");
+    private static final Counter invalidHistogramUseCounter = Metrics
+        .counter(PubsubMessageToTableRow.class, "invalid_histogram_use_counter");
+    private static final Counter invalidHistogramRange = Metrics
+        .counter(PubsubMessageToTableRow.class, "invalid_histogram_range");
 
     /** measure rate of CoercedToInt. */
     @Override
@@ -113,6 +121,30 @@ public class PubsubMessageToTableRow implements Serializable {
     @Override
     protected void incrementNotCoercedToBool() {
       notCoercedToBool.inc();
+    }
+
+    /** measure rate of InvalidHistogramType. */
+    @Override
+    protected void incrementInvalidHistogramType() {
+      invalidHistogramType.inc();
+    }
+
+    /** measure rate of InvalidHistogramSum. */
+    @Override
+    protected void incrementInvalidHistogramSum() {
+      invalidHistogramSum.inc();
+    }
+
+    /** measure rate of InvalidHistogramUseCounter. */
+    @Override
+    protected void incrementInvalidHistogramUseCounter() {
+      invalidHistogramUseCounter.inc();
+    }
+
+    /** measure rate of InvalidHistogramRange. */
+    @Override
+    protected void incrementInvalidHistogramRange() {
+      invalidHistogramRange.inc();
     }
 
     @Override

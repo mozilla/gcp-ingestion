@@ -12,6 +12,7 @@ import com.mozilla.telemetry.ingestion.core.util.Json;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PubsubMessageToObjectNodeBeamTest {
@@ -147,6 +148,111 @@ public class PubsubMessageToObjectNodeBeamTest {
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
     assertEquals(expected, Json.asMap(parent));
     assertEquals(expectedAdditionalProperties, Json.asMap(additionalProperties));
+  }
+
+  @Test
+  public void testCoerceUseCounterHistogramToString() throws Exception {
+    String mainPing = "{\"payload\":{\"histograms\":{\"use_counter2_css_property_all_page\":"
+        + "{\"bucket_count\":3,\"histogram_type\":2,\"sum\":5,\"range\":[1,2]"
+        + ",\"values\":{\"0\":0,\"1\":5,\"2\":0}}}}}";
+    ObjectNode parent = Json.readObjectNode(mainPing);
+    ObjectNode additionalProperties = Json.createObjectNode();
+    List<Field> bqFields = ImmutableList.of(Field.of("payload", LegacySQLTypeName.RECORD,
+        Field.of("histograms", LegacySQLTypeName.RECORD,
+            Field.of("use_counter2_css_property_all_page", LegacySQLTypeName.STRING))));
+    Map<String, Object> expected = ImmutableMap.of("payload",
+        ImmutableMap.of("histograms", ImmutableMap.of("use_counter2_css_property_all_page", "5")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Test
+  public void testCoerceEmptyUseCounterHistogramToString() throws Exception {
+    String mainPing = "{\"payload\":{\"histograms\":{\"use_counter2_css_property_all_page\":"
+        + "{\"bucket_count\":3,\"histogram_type\":2,\"sum\":0,\"range\":[1,2]"
+        + ",\"values\":{}}}}}";
+    ObjectNode parent = Json.readObjectNode(mainPing);
+    ObjectNode additionalProperties = Json.createObjectNode();
+    List<Field> bqFields = ImmutableList.of(Field.of("payload", LegacySQLTypeName.RECORD,
+        Field.of("histograms", LegacySQLTypeName.RECORD,
+            Field.of("use_counter2_css_property_all_page", LegacySQLTypeName.STRING))));
+    Map<String, Object> expected = ImmutableMap.of("payload",
+        ImmutableMap.of("histograms", ImmutableMap.of("use_counter2_css_property_all_page", "0")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Ignore("Waiting for full compact histogram encoding implementation; see bug 1646825")
+  @Test
+  public void testCoerceType2HistogramToString() throws Exception {
+    String mainPing = "{\"payload\":{\"histograms\":{\"some_histo\":"
+        + "{\"bucket_count\":3,\"histogram_type\":2,\"sum\":1,\"range\":[1,2]"
+        + ",\"values\":{\"0\":0,\"1\":1,\"2\":0}}}}}";
+
+    ObjectNode parent = Json.readObjectNode(mainPing);
+    ObjectNode additionalProperties = Json.createObjectNode();
+    List<Field> bqFields = ImmutableList
+        .of(Field.of("payload", LegacySQLTypeName.RECORD, Field.of("histograms",
+            LegacySQLTypeName.RECORD, Field.of("some_histo", LegacySQLTypeName.STRING))));
+    Map<String, Object> expected = ImmutableMap.of("payload",
+        ImmutableMap.of("histograms", ImmutableMap.of("some_histo", "0,1")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Ignore("Waiting for full compact histogram encoding implementation; see bug 1646825")
+  @Test
+  public void testCoerceType4HistogramToString() throws Exception {
+    String mainPing = "{\"payload\":{\"histograms\":{\"some_histo\":"
+        + "{\"bucket_count\":3,\"histogram_type\":4,\"sum\":3,\"range\":[1,2]"
+        + ",\"values\":{\"0\":0,\"1\":3,\"2\":0}}}}}";
+    ObjectNode parent = Json.readObjectNode(mainPing);
+    ObjectNode additionalProperties = Json.createObjectNode();
+    List<Field> bqFields = ImmutableList
+        .of(Field.of("payload", LegacySQLTypeName.RECORD, Field.of("histograms",
+            LegacySQLTypeName.RECORD, Field.of("some_histo", LegacySQLTypeName.STRING))));
+    Map<String, Object> expected = ImmutableMap.of("payload",
+        ImmutableMap.of("histograms", ImmutableMap.of("some_histo", "3")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Ignore("Waiting for full compact histogram encoding implementation; see bug 1646825")
+  @Test
+  public void testCoerceType1HistogramToString() throws Exception {
+    String mainPing = "{\"payload\":{\"histograms\":{\"some_histo\":"
+        + "{\"bucket_count\":10,\"histogram_type\":1,\"sum\":2628,\"range\":[1,100]"
+        + ",\"values\":{\"0\":12434,\"1\":297,\"13\":8}}}}}";
+    ObjectNode parent = Json.readObjectNode(mainPing);
+    ObjectNode additionalProperties = Json.createObjectNode();
+    List<Field> bqFields = ImmutableList
+        .of(Field.of("payload", LegacySQLTypeName.RECORD, Field.of("histograms",
+            LegacySQLTypeName.RECORD, Field.of("some_histo", LegacySQLTypeName.STRING))));
+    Map<String, Object> expected = ImmutableMap.of("payload", ImmutableMap.of("histograms",
+        ImmutableMap.of("some_histo", "10;1;2628;1,100;0:12434,1:297,13:8")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Test
+  public void testCoerceHistogramFallback() throws Exception {
+    // We construct a histogram with invalid negative range to test that we fall back to
+    // writing out the JSON explicitly.
+    String mainPing = "{\"payload\":{\"histograms\":{\"some_histo\":"
+        + "{\"bucket_count\":10,\"histogram_type\":1,\"sum\":2628,\"range\":[-5,100]"
+        + ",\"values\":{\"0\":12434,\"1\":297,\"13\":8}}}}}";
+    ObjectNode parent = Json.readObjectNode(mainPing);
+    ObjectNode additionalProperties = Json.createObjectNode();
+    List<Field> bqFields = ImmutableList
+        .of(Field.of("payload", LegacySQLTypeName.RECORD, Field.of("histograms",
+            LegacySQLTypeName.RECORD, Field.of("some_histo", LegacySQLTypeName.STRING))));
+    Map<String, Object> expected = ImmutableMap.of("payload",
+        ImmutableMap.of("histograms",
+            ImmutableMap.of("some_histo",
+                "{\"bucket_count\":10,\"histogram_type\":1,\"sum\":2628,\"range\":[-5,100]"
+                    + ",\"values\":{\"0\":12434,\"1\":297,\"13\":8}}")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
   }
 
   @Test
