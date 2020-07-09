@@ -383,8 +383,12 @@ public abstract class PubsubMessageToObjectNode {
         ObjectNode additionalProperties) {
       final String bqFieldName = field.getName();
 
-      // A record of key and value indicates we need to transformForBqSchema a map to an array.
-      if (isMapType(field)) {
+      // null is valid for any type except an element of a list
+      if (value.isNull()) {
+        updateParent(parent, jsonFieldName, bqFieldName, value);
+
+        // A record of key and value indicates we need to transformForBqSchema a map to an array.
+      } else if (isMapType(field)) {
         expandMapType(jsonFieldName, (ObjectNode) value, field, parent, additionalProperties);
 
         // A record with a single "list" field and a list value should be expanded appropriately.
@@ -569,10 +573,7 @@ public abstract class PubsubMessageToObjectNode {
      * field should be put to {@code additional_properties}.
      */
     private Optional<JsonNode> coerceToBqType(JsonNode o, Field field) {
-      if (o.isNull()) {
-        // null is valid for any type, just not as an element of a list
-        return Optional.of(o);
-      } else if (field.getMode() == Field.Mode.REPEATED) {
+      if (field.getMode() == Field.Mode.REPEATED) {
         if (o.isArray()) {
           // We have not yet observed a case where an array type contains values that cannot be
           // coerced to appropriate values, but if it does this will throw NoSuchElementException
