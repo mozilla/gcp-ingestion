@@ -52,9 +52,15 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
-                <version>4.1.1</version>
+                <version>8.0.0</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- explicitly version PubSub Lite until it is included in libraries-bom. -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>google-cloud-pubsublite</artifactId>
+                <version>0.2.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
@@ -78,6 +84,17 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-storage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-pubsublite</artifactId>
+        </dependency>
+        <dependency>
+            <!-- runtime dependency required by pubsublite -->
+            <groupId>com.google.flogger</groupId>
+            <artifactId>flogger-system-backend</artifactId>
+            <version>0.5.1</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -136,6 +153,11 @@
             <!-- specify version because test-jars are not included in log4j-bom -->
             <version>${log4j.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-resourcemanager</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

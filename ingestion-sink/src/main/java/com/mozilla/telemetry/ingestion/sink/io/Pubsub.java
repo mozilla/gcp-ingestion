@@ -3,6 +3,7 @@ package com.mozilla.telemetry.ingestion.sink.io;
 import com.google.api.core.ApiFuture;
 import com.google.api.core.ApiFutureCallback;
 import com.google.api.core.ApiFutures;
+import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.common.annotations.VisibleForTesting;
@@ -26,6 +27,32 @@ public class Pubsub {
   private Pubsub() {
   }
 
+  static <T> MessageReceiver getConsumer(Logger logger,
+      Function<PubsubMessage, PubsubMessage> decompress,
+      Function<PubsubMessage, CompletableFuture<T>> output) {
+    // Synchronous CompletableFuture methods are executed by the thread that completes the
+    // future, or the current thread if the future is already complete. Use that here to
+    // minimize memory usage by doing as much work as immediately possible.
+    return (message, consumer) -> CompletableFuture.completedFuture(message).thenApply(decompress)
+        .thenCompose(output).whenComplete((result, exception) -> {
+          if (exception == null) {
+            consumer.ack();
+          } else {
+            // exception is always a CompletionException caused by another exception
+            if (exception.getCause() instanceof BatchException) {
+              // only log batch exception once
+              ((BatchException) exception.getCause()).handle((batchExc) -> logger.error(
+                  String.format("failed to deliver %d messages", batchExc.size),
+                  batchExc.getCause()));
+            } else {
+              // log exception specific to this message
+              logger.error("failed to deliver message", exception.getCause());
+            }
+            consumer.nack();
+          }
+        });
+  }
+
   public static class Read implements Input {
 
     private static final Logger LOG = LoggerFactory.getLogger(Read.class);
@@ -38,29 +65,8 @@ public class Pubsub {
         Function<Subscriber.Builder, Subscriber.Builder> config,
         Function<PubsubMessage, PubsubMessage> decompress) {
       ProjectSubscriptionName subscription = ProjectSubscriptionName.parse(subscriptionName);
-      subscriber = config.apply(Subscriber.newBuilder(subscription,
-          // Synchronous CompletableFuture methods are executed by the thread that completes the
-          // future, or the current thread if the future is already complete. Use that here to
-          // minimize memory usage by doing as much work as immediately possible.
-          (message, consumer) -> CompletableFuture.completedFuture(message).thenApply(decompress)
-              .thenCompose(output).whenComplete((result, exception) -> {
-                if (exception == null) {
-                  consumer.ack();
-                } else {
-                  // exception is always a CompletionException caused by another exception
-                  if (exception.getCause() instanceof BatchException) {
-                    // only log batch exception once
-                    ((BatchException) exception.getCause()).handle((batchExc) -> LOG.error(
-                        String.format("failed to deliver %d messages", batchExc.size),
-                        batchExc.getCause()));
-                  } else {
-                    // log exception specific to this message
-                    LOG.error("failed to deliver message", exception.getCause());
-                  }
-                  consumer.nack();
-                }
-              })))
-          .build();
+      subscriber = config
+          .apply(Subscriber.newBuilder(subscription, getConsumer(LOG, decompress, output))).build();
     }
 
     /** Run until stopAsync() is called. */

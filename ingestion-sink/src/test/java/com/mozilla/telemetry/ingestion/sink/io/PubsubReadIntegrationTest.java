@@ -2,17 +2,20 @@ package com.mozilla.telemetry.ingestion.sink.io;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.sink.util.BatchException;
 import com.mozilla.telemetry.ingestion.sink.util.SinglePubsubTopic;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.junit.LoggerContextRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,14 +35,14 @@ public class PubsubReadIntegrationTest {
   public void canReadOneMessage() {
     pubsub.publish(TEST_MESSAGE);
 
-    AtomicReference<PubsubMessage> received = new AtomicReference<>();
-    AtomicReference<Pubsub.Read> input = new AtomicReference<>();
+    final AtomicReference<PubsubMessage> received = new AtomicReference<>();
+    final AtomicReference<Pubsub.Read> input = new AtomicReference<>();
 
     input.set(new Pubsub.Read(pubsub.getSubscription(),
         // handler
         message -> CompletableFuture.supplyAsync(() -> message) // create a future with message
             .thenAccept(received::set) // add message to received
-            .thenRun(() -> input.get().subscriber.stopAsync()), // stop the subscriber
+            .thenRun(() -> input.get().stopAsync()), // stop the subscriber
         // config
         builder -> pubsub.channelProvider
             .map(channelProvider -> builder.setChannelProvider(channelProvider)
@@ -55,19 +58,27 @@ public class PubsubReadIntegrationTest {
   @Test
   public void canRetryOnException() {
 
-    String messageId = pubsub.publish(TEST_MESSAGE);
+    final String messageId = pubsub.publish(TEST_MESSAGE);
 
-    List<PubsubMessage> received = new LinkedList<>();
-    AtomicReference<Pubsub.Read> input = new AtomicReference<>();
+    final List<PubsubMessage> received = new LinkedList<>();
+    final AtomicReference<Pubsub.Read> input = new AtomicReference<>();
+
+    final BatchException batchException = (BatchException) BatchException
+        .of(new RuntimeException("batch"), 2);
+    final RuntimeException runtimeException = new RuntimeException("single");
 
     input.set(new Pubsub.Read(pubsub.getSubscription(),
         // handler
         message -> CompletableFuture.completedFuture(message) // create a future with message
             .thenAccept(received::add) // add message to received
             .thenRun(() -> {
-              // throw an error to nack the message the first time
-              if (received.size() == 1) {
-                throw new RuntimeException("test");
+              // throw the same batch exception to nack the message the first and second time
+              if (received.size() == 1 || received.size() == 2) {
+                throw batchException;
+              }
+              // throw a runtime exception to nack the message the third time
+              if (received.size() == 3 || received.size() == 4) {
+                throw runtimeException;
               }
             }).thenRun(() -> input.get().subscriber.stopAsync()), // stop the subscriber
         // config
@@ -79,10 +90,12 @@ public class PubsubReadIntegrationTest {
 
     input.get().run();
 
-    assertEquals(messageId, received.get(0).getMessageId());
-    assertEquals(messageId, received.get(1).getMessageId());
-    assertEquals(2, received.size());
+    assertEquals(Collections.nCopies(5, messageId),
+        received.stream().map(PubsubMessage::getMessageId).collect(Collectors.toList()));
+    // assert that batch exception logged once, and other exception logged every time
     assertThat(logs.getListAppender("STDOUT").getMessages(),
-        containsInAnyOrder(containsString("java.lang.RuntimeException: test")));
+        contains(containsString("java.lang.RuntimeException: batch"),
+            containsString("java.lang.RuntimeException: single"),
+            containsString("java.lang.RuntimeException: single")));
   }
 }
