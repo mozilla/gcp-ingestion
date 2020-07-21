@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flush-manager
+  namespace: default
+  labels: &labels
+    app: flush-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &match_labels
+      kubernetes.io/os: linux
+  template:
+    metadata:
+      labels:
+        <<: [*match_labels, *labels]
+    spec:
+      serviceAccountName: flush-manager
+      containers:
+      - name: flush-manager
+        image: '{image}'
+        imagePullPolicy: Always
+        command:
+        - python
+        - -m
+        - ingestion_edge.flush_manager
+        - --namespace=default
+        - --image={image}
+        - '--env=[{{"name":"QUEUE_PATH","value":"/data/queue"}},{{"name":"PUBSUB_EMULATOR_HOST","value":"emulator:8000"}}]'

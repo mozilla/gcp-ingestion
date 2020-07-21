@@ -79,10 +79,10 @@ async def submit(
     return response.text("")
 
 
-def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
-    """Initialize Sanic app with url rules."""
+def get_client(config: dict) -> PublisherClient:
+    """Create a pubsub client."""
     # Initialize PubSub client
-    timeout = app.config.get("PUBLISH_TIMEOUT_SECONDS", None)
+    timeout = config.get("PUBLISH_TIMEOUT_SECONDS", None)
     client = PublisherClient()
     client.api.publish = partial(
         client.api.publish,
@@ -90,16 +90,29 @@ def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
         timeout=timeout,
     )
     client._batch_class = AsyncioBatch
-    # Use a SQLiteAckQueue because:
-    # * we use acks to ensure messages only removed on success
-    # * persist-queue's SQLite*Queue is faster than its Queue
-    # * SQLite provides thread-safe and process-safe access
+    return client
+
+
+def get_queue(config: dict) -> SQLiteAckQueue:
+    """Create a SQLiteAckQueue.
+
+    Use a SQLiteAckQueue because:
+    * we use acks to ensure messages only removed on success
+    * persist-queue's SQLite*Queue is faster than its Queue
+    * SQLite provides thread-safe and process-safe access
+    """
     queue_config = {
         key[6:].lower(): value
-        for key, value in app.config.items()
+        for key, value in config.items()
         if key.startswith("QUEUE_")
     }
-    q = SQLiteAckQueue(**queue_config)
+    return SQLiteAckQueue(**queue_config)
+
+
+def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:
+    """Initialize Sanic app with url rules."""
+    client = get_client(app.config)
+    q = get_queue(app.config)
     # get metadata_headers config
     metadata_headers = app.config["METADATA_HEADERS"]
     # validate attribute keys

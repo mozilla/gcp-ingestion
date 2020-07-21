@@ -2,7 +2,7 @@ from .helpers import IntegrationTest
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from ingestion_edge.config import ROUTE_TABLE
-from typing import Generator, Tuple
+from typing import Iterator, Tuple
 import _pytest.fixtures  # importing from private module _pytest for types only
 import pytest
 import requests
@@ -20,9 +20,7 @@ def route(request: _pytest.fixtures.SubRequest) -> Tuple[str, str, str]:
 
 
 @pytest.fixture
-def topic(
-    publisher: PublisherClient, route: Tuple[str, str, str]
-) -> Generator[str, None, None]:
+def topic(publisher: PublisherClient, route: Tuple[str, str, str]) -> Iterator[str]:
     name = route[1]
     try:
         publisher.create_topic(name)
@@ -37,9 +35,7 @@ def topic(
 
 
 @pytest.fixture
-def subscription(
-    topic: str, subscriber: SubscriberClient
-) -> Generator[str, None, None]:
+def subscription(topic: str, subscriber: SubscriberClient) -> Iterator[str]:
     name = topic.replace("/topics/", "/subscriptions/")
     try:
         subscriber.create_subscription(name, topic)

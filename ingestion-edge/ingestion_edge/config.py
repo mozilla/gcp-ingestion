@@ -80,3 +80,8 @@ FLUSH_CONCURRENT_BYTES = int(environ.get("FLUSH_CONCURRENT_BYTES", 1e7))
 FLUSH_CONCURRENT_MESSAGES = int(environ.get("FLUSH_CONCURRENT_MESSAGES", 1000))
 
 FLUSH_SLEEP_SECONDS = float(environ.get("FLUSH_SLEEP_SECONDS", 1))
+
+
+def get_config_dict() -> dict:
+    """Return the config values from this module as a dict."""
+    return {key: value for key, value in globals().items() if key == key.upper()}

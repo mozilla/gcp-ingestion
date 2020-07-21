@@ -1,0 +1,4 @@
+[report]
+omit =
+  # flush manager tests are not run in CI, because they require GKE access
+  ingestion_edge/flush_manager.py
