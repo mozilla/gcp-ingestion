@@ -1,4 +1,3 @@
-
 def test_wsgi(mocker):
     # late import to allow pubsub emulator configuration
     from ingestion_edge import wsgi
