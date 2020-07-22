@@ -25,7 +25,7 @@ jobs:
         command: |
           mkdocs gh-deploy -m "[ci skip] Deployed {sha} with MkDocs version: {version}"
 
-  ingestion-edge:
+  ingestion-edge: &edge
     working_directory: /root/project/ingestion-edge
     docker:
     - image: python:3.8
@@ -77,6 +77,17 @@ jobs:
         paths:
         - ingestion-edge/venv/
         key: *cache_key_edge
+
+  ingestion-edge-verify-requirements:
+    <<: *edge
+    steps:
+      - *checkout
+      - run:
+          name: Verify that requirements.txt contains the right dependencies for this python version
+          command: |
+            pip install pip-tools
+            pip-compile --quiet --generate-hashes
+            git diff --exit-code requirements.txt
 
   ingestion-edge-release:
     working_directory: /root/project/ingestion-edge
@@ -253,6 +264,7 @@ workflows:
           branches:
             only: master
     - ingestion-edge
+    - ingestion-edge-verify-requirements
     - ingestion-edge-release:
         filters:
           branches:

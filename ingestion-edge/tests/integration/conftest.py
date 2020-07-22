@@ -38,7 +38,7 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
 
 @pytest.fixture(scope="session")
 def pubsub(
-    request: _pytest.fixtures.SubRequest
+    request: _pytest.fixtures.SubRequest,
 ) -> Generator[Union[str, PubsubEmulator], None, None]:
     if "PUBSUB_EMULATOR_HOST" in os.environ:
         yield "remote"
