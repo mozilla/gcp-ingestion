@@ -57,7 +57,7 @@ public class BigQuery {
     return parseTableId(outputTableMatcher.group(1));
   }
 
-  private static TableId parseTableId(String input) {
+  static TableId parseTableId(String input) {
     final String[] tableSpecParts = input.replaceAll(":", ".").split("\\.", 3);
     if (tableSpecParts.length == 3) {
       return TableId.of(tableSpecParts[0], tableSpecParts[1], tableSpecParts[2]);

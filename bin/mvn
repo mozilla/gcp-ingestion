@@ -15,7 +15,11 @@ mkdir -p ~/.m2
 
 INTERACTIVE_FLAGS=""
 if [ -z "$NONINTERACTIVE" ]; then
-    INTERACTIVE_FLAGS="-it"
+    if [ -t 0 ]; then
+        INTERACTIVE_FLAGS="-it"
+    else
+        INTERACTIVE_FLAGS="-i"
+    fi
 fi
 
 MOUNT_CREDENTIALS_FLAGS=""
@@ -39,6 +43,7 @@ docker run $INTERACTIVE_FLAGS --rm \
     -e MAVEN_OPTS \
     -e MAVEN_CONFIG=/var/maven/.m2 \
     -e GOOGLE_APPLICATION_CREDENTIALS \
+    $(for e in $PASS_ENV; do echo "-e $e"; done) \
     $MOUNT_CREDENTIALS_FLAGS \
     maven:3-jdk-8 \
     mvn -Duser.home=/var/maven "$@"

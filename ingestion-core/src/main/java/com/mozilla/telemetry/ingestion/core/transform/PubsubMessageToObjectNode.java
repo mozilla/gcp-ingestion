@@ -58,6 +58,39 @@ public abstract class PubsubMessageToObjectNode {
     return apply(null, attributes, data);
   }
 
+  public static class Beam extends PubsubMessageToObjectNode {
+
+    private static final Beam INSTANCE = new Beam();
+
+    public static Beam of() {
+      return INSTANCE;
+    }
+
+    /**
+     * Turn message into an {@link ObjectNode} in the json format used by ingestion-beam when
+     * writing files.
+     *
+     * <p>ingestion-beam uses the default jackson output format for apache beam's PubsubMessage,
+     * which looks like:
+     * <pre>
+     * {
+     *   "payload": "${base64 encoded byte array}",
+     *   "attributeMap": {"${key}": "${value}"...}
+     * }
+     * </pre>
+     */
+    @Override
+    public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
+      ObjectNode contents = Json.createObjectNode();
+      Optional.of(attributes).filter(map -> !map.isEmpty()).map(Json::asObjectNode)
+          .ifPresent(obj -> contents.set(FieldName.ATTRIBUTE_MAP, obj));
+      Optional.ofNullable(data).filter(bytes -> bytes.length > 0)
+          .map(BASE64_ENCODER::encodeToString)
+          .ifPresent(payload -> contents.put(FieldName.PAYLOAD, payload));
+      return contents;
+    }
+  }
+
   public static class Raw extends PubsubMessageToObjectNode {
 
     private static final Raw INSTANCE = new Raw();

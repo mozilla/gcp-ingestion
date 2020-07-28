@@ -84,6 +84,7 @@ sharding
 SQLite
 stderr
 stdout
+stdin
 sunsetting
 TCP
 templating

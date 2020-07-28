@@ -59,6 +59,7 @@ public class Constant {
     }
 
     public static final String ADDITIONAL_PROPERTIES = "additional_properties";
+    public static final String ATTRIBUTE_MAP = "attributeMap";
     public static final String KEY = "key";
     public static final String LIST = "list";
     public static final String PAYLOAD = "payload";

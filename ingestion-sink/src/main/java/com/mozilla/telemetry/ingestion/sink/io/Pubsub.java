@@ -26,7 +26,7 @@ public class Pubsub {
   private Pubsub() {
   }
 
-  public static class Read {
+  public static class Read implements Input {
 
     private static final Logger LOG = LoggerFactory.getLogger(Read.class);
 
@@ -63,7 +63,8 @@ public class Pubsub {
           .build();
     }
 
-    /** Run the subscriber until terminated. */
+    /** Run until stopAsync() is called. */
+    @Override
     public void run() {
       try {
         subscriber.startAsync();
@@ -71,6 +72,11 @@ public class Pubsub {
       } finally {
         subscriber.stopAsync();
       }
+    }
+
+    @Override
+    public void stopAsync() {
+      subscriber.stopAsync();
     }
   }
 

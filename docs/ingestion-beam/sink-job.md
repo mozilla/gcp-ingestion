@@ -2,6 +2,10 @@
 
 A job for delivering messages between Google Cloud services. Defined in the `com.mozilla.telemetry.Sink` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java)).
 
+## Deprecated
+
+This job has been replaced by [ingestion-sink](../ingestion-sink) for loading messages from Google Cloud PubSub into BigQuery.
+
 ## Supported Input and Outputs
 
 Supported inputs:
