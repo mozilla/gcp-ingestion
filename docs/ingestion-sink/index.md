@@ -141,7 +141,7 @@ on attribute names and default values used in placeholders:
 When writing messages to Google Cloud Storage or BigQuery, the message received
 from Google Cloud Pub/Sub will be encoded as a JSON object.
 
-When `OUTPUT_FORMAT` is unspecified or `raw` messages will have bytes encoded as
+When `OUTPUT_FORMAT` is unspecified or `raw`, messages will have bytes encoded as
 a `"payload"` field with base64 encoding, and each attribute encoded as field.
 This is the format used for `payload_bytes_raw.*` tables.
 
@@ -151,7 +151,7 @@ format of decoded pings. This is the format used for `payload_bytes_decoded.*`
 tables.
 
 When `OUTPUT_FORMAT` is `payload` messages will have bytes decoded as JSON, and
-transformed to coerce types and use snake case for compatibility with BigQuery.
+will be transformed to coerce types and use snake case for compatibility with BigQuery.
 This is the format used for `*_live.*` tables. This requires specifying a local
 path to a gzipped tar archive that contains BigQuery table schemas as
 `SCHEMAS_LOCATION`. If messages bytes are compressed then
@@ -203,7 +203,14 @@ PASS_ENV="INPUT_PIPE=tmp/input.ndjson OUTPUT_PIPE=tmp/output.ndjson" ./bin/mvn c
 cat tmp/output.ndjson
 
 # read message from stdin and write to stdout
-echo tmp/input.ndjson | PASS_ENV="INPUT_PIPE=- OUTPUT_PIPE=-" ./bin/mvn compile exec:java
+cat tmp/input.ndjson | PASS_ENV="INPUT_PIPE=- OUTPUT_PIPE=-" ./bin/mvn compile exec:java
+
+# read message from stdin and write to gcs
+# note that $ needs to be escaped with \ to prevent shell substitution
+cat tmp/input.ndjson | PASS_ENV="\
+  INPUT_PIPE=- \
+  OUTPUT_BUCKET=gs://my_bucket/\${document_type:-UNSPECIFIED}/ \
+" ./bin/mvn compile exec:java
 ```
 
 ### Locally without Docker
