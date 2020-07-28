@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        <meta name="author" content="Mozilla Data Platform Team">
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Ingestion Sink - GCP Ingestion</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+
+        <script src="../js/jquery-1.10.2.min.js" defer></script>
+        <script src="../js/bootstrap.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">GCP Ingestion</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../ingestion-edge/" class="nav-link">ingestion-edge</a>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">ingestion-beam <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../ingestion-beam/" class="dropdown-item">Overview</a>
+</li>
+                                    
+<li>
+    <a href="../ingestion-beam/sink-job/" class="dropdown-item">Sink Job</a>
+</li>
+                                    
+<li>
+    <a href="../ingestion-beam/decoder-job/" class="dropdown-item">Decoder Job</a>
+</li>
+                                    
+<li>
+    <a href="../ingestion-beam/republisher-job/" class="dropdown-item">Republisher Job</a>
+</li>
+                                    
+<li>
+    <a href="../ingestion-beam/ingestion_testing_workflow/" class="dropdown-item">Ingestion testing workflow</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">Architecture <b class="caret"></b></a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../architecture/overview/" class="dropdown-item">Overview</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/differences_from_aws/" class="dropdown-item">Differences from AWS</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/pain_points/" class="dropdown-item">Pain Points</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/edge_migration_plan/" class="dropdown-item">Edge Migration Plan</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/reliability/" class="dropdown-item">Reliability</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/test_requirements/" class="dropdown-item">Test requirements</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/landfill_service_specification/" class="dropdown-item">Landfill Service Specification</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/edge_service_specification/" class="dropdown-item">Edge Server Specification</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/bigquery_sink_specification/" class="dropdown-item">BigQuery Sink Specification</a>
+</li>
+                                    
+<li>
+    <a href="../architecture/decoder_service_specification/" class="dropdown-item">Decoder Service Specification</a>
+</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+
+                            <li class="nav-item">
+                                <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-sink/index.md" class="nav-link"><i class="fa fa-github"></i> Edit on GitHub</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#ingestion-sink" class="nav-link">Ingestion Sink</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#supported-input-and-outputs" class="nav-link">Supported Input and Outputs</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#configuration" class="nav-link">Configuration</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#output-specification" class="nav-link">Output Specification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#executing" class="nav-link">Executing</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="ingestion-sink">Ingestion Sink</h1>
+<p>A Java application that runs in Kubernetes, reading input from Google Cloud
+Pub/Sub and emitting records to batch-oriented outputs like GCS or BigQuery.
+Defined in the <code>ingestion-sink</code> package
+(<a href="https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-sink/">source</a>).</p>
+<h2 id="supported-input-and-outputs">Supported Input and Outputs</h2>
+<p>Supported inputs:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+</ul>
+<p>Supported outputs:</p>
+<ul>
+<li>Google Cloud PubSub</li>
+<li>Google Cloud Storage</li>
+<li>Google Cloud BigQuery</li>
+</ul>
+<h3 id="test-input-and-output">Test Input and Output</h3>
+<p>Test inputs will stop when an exception is raised or the end of the pipe or
+file is reached.  Supported test inputs:</p>
+<ul>
+<li><code>System.in</code> (stdin), by setting <code>INPUT_PIPE</code> to any of <code>-</code>, <code>0</code>, <code>in</code>,
+  <code>stdin</code>, <code>/dev/stdin</code></li>
+<li>A single file, by setting <code>INPUT_PIPE</code> to <code>/path/to/input_file</code></li>
+</ul>
+<p>Test outputs don't exercise batching and will write messages as newline
+delimited JSON in the order they are received. Supported test outputs:</p>
+<ul>
+<li><code>System.out</code> (stdout), by setting <code>OUTPUT_PIPE</code> to any of <code>-</code>, <code>1</code>, <code>out</code>,
+  <code>stdout</code>, <code>/dev/stdout</code></li>
+<li><code>System.err</code> (stderr), by setting <code>OUTPUT_PIPE</code> to any of <code>2</code>, <code>err</code>,
+  <code>stderr</code>, <code>/dev/stderr</code></li>
+<li>A single file, by setting <code>OUTPUT_PIPE</code> to <code>/path/to/output_file</code></li>
+</ul>
+<h2 id="configuration">Configuration</h2>
+<p>All configuration is controlled by environment variables.</p>
+<h2 id="output-specification">Output Specification</h2>
+<p>Depending on the environment variables provided, the application will
+automatically determine where to deliver messages.</p>
+<p>If <code>OUTPUT_BUCKET</code> is specified without <code>BIG_QUERY_OUTPUT_MODE</code>, then messages
+will be delivered to Google Cloud Storage.</p>
+<p>If <code>OUTPUT_TOPIC</code> is specified without <code>OUTPUT_BUCKET</code> or
+<code>BIG_QUERY_OUTPUT_MODE</code>, then messages will be delivered to Google Cloud
+Pub/Sub.</p>
+<p>If <code>OUTPUT_TABLE</code> is specified without <code>BIG_QUERY_OUTPUT_MODE</code> or with
+<code>BIG_QUERY_OUTPUT_MODE=streaming</code>, then messages will be delivered to BigQuery
+via the streaming API.</p>
+<p>If <code>OUTPUT_TABLE</code> is specified with <code>BIG_QUERY_OUTPUT_MODE=file_loads</code>, then
+messages will be delivered to Google Cloud Storage based on <code>OUTPUT_BUCKET</code> and
+for each blob a notification will be delivered to Google Cloud Pub/Sub based on
+<code>OUTPUT_TOPIC</code>. Separate instances of ingestion-sink must consume notifications
+from Google Cloud Pub/Sub and deliver messages to BigQuery via load jobs.</p>
+<p>If <code>OUTPUT_TABLE</code> is specified with <code>BIG_QUERY_OUTPUT_MODE=mixed</code>, then
+messages will be delivered to BigQuery via both the streaming API and load
+jobs, and <code>OUTPUT_BUCKET</code> is required. If <code>OUTPUT_TOPIC</code> is specified then it
+will be used the same as with <code>BIG_QUERY_OUTPUT_MODE=file_loads</code>, otherwise
+load jobs will be submitted by each running instance of ingestion-sink.</p>
+<p>If none of the above configuration options are provided, then messages must be
+notifications from <code>BIG_QUERY_OUTPUT_MODE=file_loads</code> or
+<code>BIG_QUERY_OUTPUT_MODE=mixed</code>, and the blobs they indicate will be submitted to
+BigQuery via load jobs.</p>
+<h3 id="bigquery">BigQuery</h3>
+<p><code>OUTPUT_TABLE</code> must be a <code>tableSpec</code> of form <code>dataset.tablename</code>
+or the more verbose <code>projectId.dataset.tablename</code>. The values can contain
+attribute placeholders of form <code>${attribute_name}</code>. To set dataset to the
+document namespace and table name to the document type, specify:</p>
+<pre><code>OUTPUT_TABLE='${document_namespace}.${document_type}'
+</code></pre>
+<p>All <code>-</code> characters in the attributes will be converted to <code>_</code> per BigQuery
+naming restrictions. Additionally, document namespace and type values will
+be processed to ensure they are in snake case format (<code>untrustedModules</code>
+becomes <code>untrusted_modules</code>).</p>
+<p>Defaults for the placeholders using <code>${attribute_name:-default_value}</code>
+are supported, but likely don't make much sense since it's unlikely that
+there is a default table whose schema is compatible with all potential
+payloads.</p>
+<h3 id="attribute-placeholders">Attribute placeholders</h3>
+<p>We support routing individual messages to different output locations based on
+the <code>PubsubMessage</code> attribute map. Routing is accomplished by adding
+placeholders of form <code>${attribute_name:-default_value}</code> to the path.</p>
+<p>For example, to route based on a <code>document_type</code> attribute, your path might
+look like:</p>
+<pre><code>OUTPUT_BUCKET=gs://mybucket/mydocs/${document_type:-UNSPECIFIED}/myfileprefix
+</code></pre>
+<p>Messages with <code>document_type</code> of "main" would be grouped together and end up in
+the following directory:</p>
+<pre><code>gs://mybucket/mydocs/main/
+</code></pre>
+<p>Messages with <code>document_type</code> set to <code>null</code> or missing that attribute
+completely would be grouped together and end up in directory:</p>
+<pre><code>gs://mybucket/mydocs/UNSPECIFIED/
+</code></pre>
+<p>Note that placeholders <em>must</em> specify a default value so that a poorly
+formatted message doesn't cause a pipeline exception. A placeholder without a
+default will result in an <code>IllegalArgumentException</code> on pipeline startup.</p>
+<p>File-based outputs support the additional <em>derived</em> attributes
+<code>"submission_date"</code> and <code>"submission_hour"</code> which will be parsed from the value
+of the <code>submission_timestamp</code> attribute if it exists.  These can be useful for
+making sure your output specification buckets messages into hourly directories.</p>
+<p>The templating and default syntax used here is based on the
+<a href="https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html">Apache commons-text <code>StringSubstitutor</code></a>,
+which in turn bases its syntax on common practice in bash and other Unix/Linux
+shells.  Beware the need for proper escaping on the command line (use <code>\$</code> in
+place of <code>$</code>), as your shell may try to substitute in values for your
+placeholders before they're passed to <code>Sink</code>.</p>
+<p><a href="https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage">Google's PubsubMessage format</a>
+allows arbitrary strings for attribute names and values. We place the following restrictions
+on attribute names and default values used in placeholders:</p>
+<ul>
+<li>attribute names may not contain the string <code>:-</code></li>
+<li>attribute names may not contain curly braces (<code>{</code> or <code>}</code>)</li>
+<li>default values may not contain curly braces (<code>{</code> or <code>}</code>)</li>
+</ul>
+<h3 id="encoding">Encoding</h3>
+<p>When writing messages to Google Cloud Storage or BigQuery, the message received
+from Google Cloud Pub/Sub will be encoded as a JSON object.</p>
+<p>When <code>OUTPUT_FORMAT</code> is unspecified or <code>raw</code>, messages will have bytes encoded as
+a <code>"payload"</code> field with base64 encoding, and each attribute encoded as field.
+This is the format used for <code>payload_bytes_raw.*</code> tables.</p>
+<p>When <code>OUTPUT_FORMAT</code> is <code>decoded</code> messages will have bytes encoded as with
+<code>OUTPUT_FORMAT=raw</code>, but attributes will be encoded using the nested metadata
+format of decoded pings. This is the format used for <code>payload_bytes_decoded.*</code>
+tables.</p>
+<p>When <code>OUTPUT_FORMAT</code> is <code>payload</code> messages will have bytes decoded as JSON, and
+will be transformed to coerce types and use snake case for compatibility with BigQuery.
+This is the format used for <code>*_live.*</code> tables. This requires specifying a local
+path to a gzipped tar archive that contains BigQuery table schemas as
+<code>SCHEMAS_LOCATION</code>. If messages bytes are compressed then
+<code>INPUT_COMPRESSION=gzip</code> must also be specified to ensure they are decompressed
+before they are decoded as JSON.</p>
+<p>When <code>OUTPUT_FORMAT</code> is <code>beam</code> messages will have bytes encoded as with
+<code>OUTPUT_FORMAT=raw</code>, but attributes will be encoded as an <code>"attributeMap"</code> field
+that contains a JSON object. This is the same format as produced by ingestion-beam
+ when using <code>--outputType=file</code> and <code>--outputFileFormat=json</code>.</p>
+<h3 id="google-cloud-storage-file-prefix">Google Cloud Storage file prefix</h3>
+<p>Google Cloud Storage files are named like:</p>
+<pre><code>$OUTPUT_BUCKET/{UUID.randomUUID().toString()}.ndjson
+</code></pre>
+<p>or if <code>OUTPUT_TABLE</code> and <code>BIG_QUERY_OUTPUT_MODE</code> are specified:</p>
+<pre><code>$OUTPUT_BUCKET/OUTPUT_TABLE=$OUTPUT_TABLE/{UUID.randomUUID().toString()}.ndjson
+</code></pre>
+<p>for example, with <code>OUTPUT_BUCKET=gs://test-bucket/test-output</code>:</p>
+<pre><code>gs://test-bucket/test-output/ad715b24-7500-45e2-9691-cb91e3b9c2cc.ndjson
+</code></pre>
+<p>or with <code>OUTPUT_BUCKET=gs://test-bucket/test-output</code>, <code>OUTPUT_TABLE=my_dataset.raw_table</code>, and
+<code>BIG_QUERY_OUTPUT_MODE=file_loads</code>:</p>
+<pre><code>gs://test-bucket/test-output/OUTPUT_TABLE=my_dataset.raw_table/3b17c648-f8b9-4250-bdc1-5c2e472fdc26.ndjson
+</code></pre>
+<h2 id="executing">Executing</h2>
+<h3 id="locally-with-docker">Locally with Docker</h3>
+<p>The provided <code>bin/mvn</code> script downloads and runs maven via docker so that less
+setup is needed on the local machine. For prolonged development performance is
+likely to be significantly better, especially in MacOS, if <code>mvn</code> is installed and
+run natively without docker.</p>
+<pre><code class="bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' &gt; tmp/input.ndjson
+
+# consume messages from the test file, decode and re-encode them, and write to a directory
+PASS_ENV=&quot;INPUT_PIPE=tmp/input.ndjson OUTPUT_PIPE=tmp/output.ndjson&quot; ./bin/mvn compile exec:java
+
+# check that the message was delivered
+cat tmp/output.ndjson
+
+# read message from stdin and write to stdout
+cat tmp/input.ndjson | PASS_ENV=&quot;INPUT_PIPE=- OUTPUT_PIPE=-&quot; ./bin/mvn compile exec:java
+
+# read message from stdin and write to gcs
+# note that $ needs to be escaped with \ to prevent shell substitution
+cat tmp/input.ndjson | PASS_ENV=&quot;\
+  INPUT_PIPE=- \
+  OUTPUT_BUCKET=gs://my_bucket/\${document_type:-UNSPECIFIED}/ \
+&quot; ./bin/mvn compile exec:java
+</code></pre>
+
+<h3 id="locally-without-docker">Locally without Docker</h3>
+<p>If you install Java and maven, you can invoke <code>VAR=... mvn</code> in the above commands
+instead of using <code>PASS_ENV="VAR=..." ./bin/mvn</code>. Be aware that Java 8 is the target JVM and some
+reflection warnings may be thrown on newer versions. Though these are generally
+harmless, you may need to comment out the
+<code>&lt;compilerArgument&gt;-Werror&lt;/compilerArgument&gt;</code> line in the <code>pom.xml</code> in the git
+root.</p>
+<pre><code class="bash"># consume messages from the test file, decode and re-encode them, and write to a directory
+INPUT_PIPE=tmp/input.ndjson OUTPUT_PIPE=tmp/output.ndjson mvn compile exec:java
+
+# read message from stdin and write to stdout
+cat tmp/input.ndjson | INPUT_PIPE=- OUTPUT_PIPE=- ./bin/mvn compile exec:java
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js" defer></script>
+        <script src="../search/main.js" defer></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

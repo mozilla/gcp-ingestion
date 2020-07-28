@@ -141,6 +141,10 @@
             
             <li class="nav-item" data-level="1"><a href="#sink-job" class="nav-link">Sink Job</a>
               <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#deprecated" class="nav-link">Deprecated</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-level="2"><a href="#supported-input-and-outputs" class="nav-link">Supported Input and Outputs</a>
               <ul class="nav flex-column">
               </ul>
@@ -166,6 +170,8 @@
 
 <h1 id="sink-job">Sink Job</h1>
 <p>A job for delivering messages between Google Cloud services. Defined in the <code>com.mozilla.telemetry.Sink</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java">source</a>).</p>
+<h2 id="deprecated">Deprecated</h2>
+<p>This job has been replaced by <a href="../ingestion-sink">ingestion-sink</a> for loading messages from Google Cloud PubSub into BigQuery.</p>
 <h2 id="supported-input-and-outputs">Supported Input and Outputs</h2>
 <p>Supported inputs:</p>
 <ul>
