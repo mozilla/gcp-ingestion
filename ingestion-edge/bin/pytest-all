@@ -6,4 +6,5 @@ if [ "$#" -gt 0 ]; then
     exit 1
 fi
 
-"$(dirname "$0")"/pytest --cov=./ingestion_edge/ && "$(dirname "$0")"/lint
+"$(dirname "$0")"/pytest --cov=./ingestion_edge/ --junitxml=test-results/pytest.xml && \
+  "$(dirname "$0")"/lint --junitxml=test-results/lint.xml

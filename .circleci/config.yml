@@ -69,6 +69,8 @@ jobs:
         command: bin/pytest-all
         environment:
           PYTEST_ADDOPTS: --cov-report=xml
+    - store_test_results:
+        path: test-results
     - &report_code_coverage
       run:
         name: Report code coverage
@@ -162,6 +164,9 @@ jobs:
         name: Maven Test
         command: |
           mvn clean test
+    - &store_maven_test_results
+      store_test_results:
+        path: target/surefire-reports
     - *report_code_coverage
     - save_cache:
         paths:
@@ -195,6 +200,7 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
           mvn clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
+    - *store_maven_test_results
     - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
 
@@ -217,6 +223,7 @@ jobs:
           - maven-repo-v1-sink-
           - maven-repo-v1-
     - *maven_test
+    - *store_maven_test_results
     - *report_code_coverage
     - save_cache:
         paths:
@@ -231,6 +238,7 @@ jobs:
     - *skip_unmodified
     - *sink_restore_cache
     - *maven_integration_test
+    - *store_maven_test_results
     - *report_code_coverage
 
   ingestion-sink-release:
