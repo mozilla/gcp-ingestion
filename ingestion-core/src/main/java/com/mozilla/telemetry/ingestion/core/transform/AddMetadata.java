@@ -231,7 +231,7 @@ public class AddMetadata {
         .ofNullable(metadata) //
         .map(m -> m.path(nestingKey).fields()) //
         .map(Streams::stream).orElseGet(Stream::empty) //
-        .filter(entry -> entry.getValue() != null) //
+        .filter(entry -> !entry.getValue().isNull()) //
         .forEach(entry -> attributes.put(prefix + entry.getKey(), entry.getValue().asText()));
   }
 

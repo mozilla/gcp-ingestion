@@ -29,8 +29,8 @@ public class AddMetadataTest {
 
   @Test
   public void testPutGeoAttributes() throws Exception {
-    ObjectNode metadata = mapToObjectNode(
-        ImmutableMap.of("geo", ImmutableMap.of("country", "CA", "city", "Whistler")));
+    ObjectNode metadata = Json.createObjectNode().set("geo", Json.createObjectNode()
+        .put("country", "CA").put("city", "Whistler").putNull("subdivision1"));
     Map<String, String> attributes = new HashMap<>();
     AddMetadata.putGeoAttributes(attributes, metadata);
     Map<String, String> expected = ImmutableMap.of("geo_country", "CA", "geo_city", "Whistler");
