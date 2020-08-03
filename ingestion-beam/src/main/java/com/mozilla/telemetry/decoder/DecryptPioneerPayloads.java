@@ -6,6 +6,7 @@ import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
+import com.mozilla.telemetry.ingestion.core.transform.AddMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.GzipUtil;

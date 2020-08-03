@@ -137,7 +137,7 @@ public abstract class PubsubMessageToObjectNode {
      */
     @Override
     public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
-      ObjectNode contents = Json.asObjectNode(AddMetadata.attributesToMetadataPayload(attributes));
+      ObjectNode contents = AddMetadata.attributesToMetadataPayload(attributes);
       // bytes must be formatted as base64 encoded string.
       Optional.of(BASE64_ENCODER.encodeToString(data))
           // include payload if present.
@@ -332,7 +332,7 @@ public abstract class PubsubMessageToObjectNode {
       }
 
       // Strip metadata so that it's not subject to transformation.
-      final JsonNode metadata = contents.remove(AddMetadata.METADATA);
+      final JsonNode metadata = contents.remove(FieldName.METADATA);
 
       // Make BQ-specific transformations to the payload structure.
       final ObjectNode additionalProperties = strictSchema.test(attributes) ? null
@@ -340,7 +340,7 @@ public abstract class PubsubMessageToObjectNode {
       transformForBqSchema(contents, schema.getFields(), additionalProperties);
 
       if (metadata != null) {
-        contents.set(AddMetadata.METADATA, metadata);
+        contents.set(FieldName.METADATA, metadata);
       }
       if (additionalProperties != null) {
         contents.put(FieldName.ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));

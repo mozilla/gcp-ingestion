@@ -1,11 +1,20 @@
 package com.mozilla.telemetry.ingestion.core.transform;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import java.util.HashMap;
+import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
+import com.mozilla.telemetry.ingestion.core.Constant.Namespace;
+import com.mozilla.telemetry.ingestion.core.util.Json;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * A {@code PTransform} that adds metadata from attributes into the JSON payload.
@@ -18,8 +27,6 @@ public class AddMetadata {
 
   private AddMetadata() {
   }
-
-  public static final String METADATA = "metadata";
 
   private static final String GEO = "geo";
   private static final String GEO_PREFIX = GEO + "_";
@@ -52,6 +59,31 @@ public class AddMetadata {
 
   private static final List<String> TOP_LEVEL_INT_FIELDS = ImmutableList.of(Attribute.SAMPLE_ID);
 
+  /** Merge a JSON byte payload with a ObjectNode. */
+  public static byte[] mergedPayload(byte[] payload, byte[] metadata) throws UncheckedIOException {
+    // Ensure that we have a json object with no leading whitespace
+    if (payload.length < 2 || payload[0] != '{') {
+      throw new UncheckedIOException(new IOException("invalid json object: must start with {"));
+    }
+
+    // Create an output stream for joining metadata with payload
+    final ByteArrayOutputStream payloadWithMetadata = new ByteArrayOutputStream(
+        metadata.length + payload.length);
+    // Write metadata without trailing `}`
+    payloadWithMetadata.write(metadata, 0, metadata.length - 1);
+
+    // Start next json field, unless object was empty
+    if (payload.length > 2) {
+      // Write comma to start the next field
+      payloadWithMetadata.write(',');
+    }
+
+    // Write payload without leading `{`
+    payloadWithMetadata.write(payload, 1, payload.length - 1);
+
+    return payloadWithMetadata.toByteArray();
+  }
+
   /**
    * Return a map that includes a nested "metadata" map and various top-level metadata fields.
    *
@@ -59,24 +91,24 @@ public class AddMetadata {
    * metadata/structured-ingestion JSON schemas.
    * See https://github.com/mozilla-services/mozilla-pipeline-schemas
    */
-  public static Map<String, Object> attributesToMetadataPayload(Map<String, String> attributes) {
+  public static ObjectNode attributesToMetadataPayload(Map<String, String> attributes) {
     final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
     // Currently, every entry in metadata is a Map<String, String>, but we keep Object as the
     // value type to support future evolution of the metadata structure to include fields that
     // are not specifically Map<String, String>.
-    Map<String, Object> metadata = new HashMap<>();
-    metadata.put(GEO, geoFromAttributes(attributes));
-    metadata.put(ISP, ispFromAttributes(attributes));
-    metadata.put(Attribute.USER_AGENT, userAgentFromAttributes(attributes));
-    metadata.put(HEADER, headersFromAttributes(attributes));
-    if ("telemetry".equals(namespace)) {
-      metadata.put(Attribute.URI, uriFromAttributes(attributes));
+    ObjectNode metadata = Json.createObjectNode();
+    metadata.set(GEO, geoFromAttributes(attributes));
+    metadata.set(ISP, ispFromAttributes(attributes));
+    metadata.set(Attribute.USER_AGENT, userAgentFromAttributes(attributes));
+    metadata.set(HEADER, headersFromAttributes(attributes));
+    if (Namespace.TELEMETRY.equals(namespace)) {
+      metadata.set(Attribute.URI, uriFromAttributes(attributes));
     }
     IDENTIFYING_FIELDS.forEach(name -> Optional //
         .ofNullable(attributes.get(name)) //
         .ifPresent(value -> metadata.put(name, value)));
-    Map<String, Object> payload = new HashMap<>();
-    payload.put(METADATA, metadata);
+    ObjectNode payload = Json.createObjectNode();
+    payload.set(FieldName.METADATA, metadata);
     TOP_LEVEL_STRING_FIELDS.forEach(name -> Optional //
         .ofNullable(attributes.get(name)) //
         .ifPresent(value -> payload.put(name, value)));
@@ -93,43 +125,113 @@ public class AddMetadata {
     return payload;
   }
 
-  private static Map<String, Object> geoFromAttributes(Map<String, String> attributes) {
-    HashMap<String, Object> geo = new HashMap<>();
+  /**
+   * Called from decoder {@code ParsePayload} where we have parsed the payload as {@link ObjectNode}
+   * for validation, we strip out any existing metadata fields (which might be present if this
+   * message went to error output and is now being reprocessed) to recover the original payload,
+   * storing the metadata as PubSubMessage attributes.
+   *
+   * @param attributes the map into which we insert attributes
+   * @param payload the json object from which we are stripping metadata fields
+   */
+  public static void stripPayloadMetadataToAttributes(Map<String, String> attributes,
+      ObjectNode payload) {
+    Optional //
+        .ofNullable(payload) //
+        .map(p -> p.remove(FieldName.METADATA)) //
+        .filter(JsonNode::isObject) //
+        .map(ObjectNode.class::cast) //
+        .ifPresent(metadata -> {
+          putGeoAttributes(attributes, metadata);
+          putIspAttributes(attributes, metadata);
+          putUserAgentAttributes(attributes, metadata);
+          putHeaderAttributes(attributes, metadata);
+          putUriAttributes(attributes, metadata);
+          IDENTIFYING_FIELDS.forEach(name -> Optional.of(metadata) //
+              .map(p -> metadata.remove(name)) //
+              .filter(JsonNode::isTextual) //
+              .ifPresent(value -> attributes.put(name, value.textValue())));
+        });
+    TOP_LEVEL_STRING_FIELDS.forEach(name -> Optional //
+        .ofNullable(payload) //
+        .map(p -> p.remove(name)) //
+        .filter(JsonNode::isTextual) //
+        .ifPresent(value -> attributes.put(name, value.textValue())));
+    TOP_LEVEL_INT_FIELDS.forEach(name -> Optional //
+        .ofNullable(payload) //
+        .map(p -> p.remove(name)) //
+        .ifPresent(value -> attributes.put(name, value.asText())));
+  }
+
+  static ObjectNode geoFromAttributes(Map<String, String> attributes) {
+    ObjectNode geo = Json.createObjectNode();
     attributes.keySet().stream() //
         .filter(k -> k.startsWith(GEO_PREFIX)) //
         .forEach(k -> geo.put(k.substring(4), attributes.get(k)));
     return geo;
   }
 
-  private static Map<String, Object> ispFromAttributes(Map<String, String> attributes) {
-    HashMap<String, Object> isp = new HashMap<>();
+  static void putGeoAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, GEO, GEO_PREFIX);
+  }
+
+  private static ObjectNode ispFromAttributes(Map<String, String> attributes) {
+    ObjectNode isp = Json.createObjectNode();
     attributes.keySet().stream() //
         .filter(k -> k.startsWith(ISP_PREFIX)) //
         .forEach(k -> isp.put(k.substring(4), attributes.get(k)));
     return isp;
   }
 
-  private static Map<String, Object> userAgentFromAttributes(Map<String, String> attributes) {
-    HashMap<String, Object> userAgent = new HashMap<>();
-    attributes.keySet().stream() //
-        .filter(k -> k.startsWith(USER_AGENT_PREFIX)) //
-        .forEach(k -> userAgent.put(k.substring(11), attributes.get(k)));
+  static void putIspAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, ISP, ISP_PREFIX);
+  }
+
+  static ObjectNode userAgentFromAttributes(Map<String, String> attributes) {
+    ObjectNode userAgent = Json.createObjectNode();
+    attributes.entrySet().stream() //
+        .filter(entry -> entry.getKey().startsWith(USER_AGENT_PREFIX)) //
+        .forEach(entry -> userAgent.put(entry.getKey().substring(USER_AGENT_PREFIX.length()),
+            entry.getValue()));
     return userAgent;
   }
 
-  private static Map<String, Object> headersFromAttributes(Map<String, String> attributes) {
-    HashMap<String, Object> header = new HashMap<>();
-    HEADER_ATTRIBUTES.stream().forEach(name -> Optional //
-        .ofNullable(attributes.get(name)) //
-        .ifPresent(value -> header.put(name, value)));
+  static void putUserAgentAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, Attribute.USER_AGENT, USER_AGENT_PREFIX);
+  }
+
+  static ObjectNode headersFromAttributes(Map<String, String> attributes) {
+    ObjectNode header = Json.createObjectNode();
+    attributes.entrySet().stream().filter(entry -> HEADER_ATTRIBUTES.contains(entry.getKey())) //
+        .forEach(entry -> header.put(entry.getKey(), entry.getValue()));
     return header;
   }
 
-  private static Map<String, Object> uriFromAttributes(Map<String, String> attributes) {
-    HashMap<String, Object> uri = new HashMap<>();
-    URI_ATTRIBUTES.stream().forEach(name -> Optional //
-        .ofNullable(attributes.get(name)) //
-        .ifPresent(value -> uri.put(name, value)));
+  static void putHeaderAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, HEADER, "");
+  }
+
+  static ObjectNode uriFromAttributes(Map<String, String> attributes) {
+    ObjectNode uri = Json.createObjectNode();
+    attributes.entrySet().stream().filter(entry -> URI_ATTRIBUTES.contains(entry.getKey())) //
+        .forEach(entry -> uri.put(entry.getKey(), entry.getValue()));
     return uri;
   }
+
+  static void putUriAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, Attribute.URI, "");
+  }
+
+  ////////
+
+  private static void putAttributes(Map<String, String> attributes, ObjectNode metadata,
+      String nestingKey, String prefix) {
+    Optional //
+        .ofNullable(metadata) //
+        .map(m -> m.path(nestingKey).fields()) //
+        .map(Streams::stream).orElseGet(Stream::empty) //
+        .filter(entry -> entry.getValue() != null) //
+        .forEach(entry -> attributes.put(prefix + entry.getKey(), entry.getValue().asText()));
+  }
+
 }

@@ -10,6 +10,7 @@ import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedExcep
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
+import com.mozilla.telemetry.ingestion.core.transform.AddMetadata;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
