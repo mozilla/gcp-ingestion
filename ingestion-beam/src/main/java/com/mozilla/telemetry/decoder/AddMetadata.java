@@ -8,9 +8,17 @@ import java.io.UncheckedIOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.MapElements.MapWithFailures;
+import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
+/**
+ * A {@link PTransform} that adds metadata from attributes into the JSON payload.
+ *
+ * <p>This transform must come after {@link ParsePayload} to ensure any existing
+ * "metadata" key in the payload has been removed. Otherwise, this transform could add a
+ * duplicate key leading to invalid JSON.
+ */
 public class AddMetadata {
 
   private AddMetadata() {

@@ -7,6 +7,8 @@ import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.Constant.Namespace;
+import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode.Decoded;
+import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode.Payload;
 import com.mozilla.telemetry.ingestion.core.util.Json;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,11 +19,10 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * A {@code PTransform} that adds metadata from attributes into the JSON payload.
+ * Transform metadata from attributes into the {@link Decoded} format.
  *
- * <p>This transform must come after {@code ParsePayload} to ensure any existing
- * "metadata" key in the payload has been removed. Otherwise, this transform could add a
- * duplicate key leading to invalid JSON.
+ * <p>Also used by {@code com.mozilla.telemetry.decoder.AddMetadata} to add metadata to the JSON
+ * payload, giving {@link Payload} the same metadata format.
  */
 public class AddMetadata {
 
