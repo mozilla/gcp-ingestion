@@ -126,18 +126,20 @@ public class AddMetadataTest extends TestWithDeterministicJson {
   public void testHeadersFromAttributes() throws Exception {
     Map<String, String> attributes = ImmutableMap.of("dnt", "1", //
         "sample_id", "18", //
+        "x_source_tags", "automation, perf", //
         "x_debug_id", "mysession");
     ObjectNode headers = AddMetadata.headersFromAttributes(attributes);
-    ObjectNode expected = mapToObjectNode(ImmutableMap.of("dnt", "1", "x_debug_id", "mysession"));
+    ObjectNode expected = mapToObjectNode(ImmutableMap.of("dnt", "1", "x_debug_id", "mysession",
+        "x_source_tags", "automation, perf"));
     assertEquals(expected, headers);
   }
 
   @Test
   public void testPutHeaderAttributes() throws Exception {
-    ObjectNode metadata = mapToObjectNode(
-        ImmutableMap.of("header", ImmutableMap.of("dnt", "1", "x_debug_id", "mysession")));
+    ObjectNode metadata = mapToObjectNode(ImmutableMap.of("header", ImmutableMap.of("dnt", "1",
+        "x_debug_id", "mysession", "x_source_tags", "automation, perf")));
     Map<String, String> expected = ImmutableMap.of("dnt", "1", //
-        "x_debug_id", "mysession");
+        "x_debug_id", "mysession", "x_source_tags", "automation, perf");
     Map<String, String> attributes = new HashMap<>();
     AddMetadata.putHeaderAttributes(attributes, (metadata));
     assertEquals(expected, attributes);
