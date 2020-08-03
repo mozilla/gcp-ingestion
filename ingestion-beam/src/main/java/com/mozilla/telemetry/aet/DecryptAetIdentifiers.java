@@ -302,7 +302,6 @@ public class DecryptAetIdentifiers extends
       // we risk spilling sensitive information if AET payloads get sent to an output before anon_id
       // values are removed, so we must have this transform come before an error step so that we
       // can handle sanitizing/dropping the payload before emitting errors.
-      byte[] normalizedPayload;
       try {
         if (TELEMETRY_URI_PATTERN.matcher(uri).matches()) {
           processDesktopTelemetryPayload(json);
@@ -318,13 +317,12 @@ public class DecryptAetIdentifiers extends
           illegalAetUri.inc();
           throw new IllegalAetUriException();
         }
-        normalizedPayload = Json.asBytes(json);
       } catch (IOException | JoseException | ValidationException | KeyNotFoundException e) {
         illegalAetPayload.inc();
         throw new IllegalAetPayloadException(e);
       }
 
-      return new PubsubMessage(normalizedPayload, message.getAttributeMap());
+      return new PubsubMessage(Json.asBytes(json), message.getAttributeMap());
     }
 
   }

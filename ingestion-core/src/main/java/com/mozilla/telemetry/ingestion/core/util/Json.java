@@ -49,7 +49,7 @@ public class Json {
   public static String asString(JsonNode data) {
     try {
       return MAPPER.writeValueAsString(data);
-    } catch (IOException e) {
+    } catch (JsonProcessingException e) {
       throw new UncheckedIOException(e);
     }
   }
@@ -59,8 +59,22 @@ public class Json {
    *
    * @exception IOException if data cannot be encoded as json.
    */
-  public static String asString(Object data) throws IOException {
+  public static String asString(Object data) throws JsonProcessingException {
     return MAPPER.writeValueAsString(data);
+  }
+
+  /**
+   * Serialize {@link JsonNode} as a {@code byte[]}.
+   *
+   * <p>This method exists to prevent untestable code in try/catch blocks where it is impossible or
+   * infeasible to induce {@link JsonProcessingException}.
+   */
+  public static byte[] asBytes(JsonNode data) {
+    try {
+      return MAPPER.writeValueAsBytes(data);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   /**
@@ -68,7 +82,7 @@ public class Json {
    *
    * @exception IOException if data cannot be encoded as json.
    */
-  public static byte[] asBytes(Object data) throws IOException {
+  public static byte[] asBytes(Object data) throws JsonProcessingException {
     return MAPPER.writeValueAsBytes(data);
   }
 

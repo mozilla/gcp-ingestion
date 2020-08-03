@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -81,7 +82,7 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
   /**
    * Duplicate asString from core Json#asString to ensure PubsubMessageMixin has been applied.
    */
-  public static String asString(Object data) throws IOException {
+  public static String asString(Object data) throws JsonProcessingException {
     return MAPPER.writeValueAsString(data);
   }
 
