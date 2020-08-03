@@ -24,9 +24,9 @@ import java.util.stream.Stream;
  * <p>Also used by {@code com.mozilla.telemetry.decoder.AddMetadata} to add metadata to the JSON
  * payload, giving {@link Payload} the same metadata format.
  */
-public class AddMetadata {
+public class NestedMetadata {
 
-  private AddMetadata() {
+  private NestedMetadata() {
   }
 
   private static final String GEO = "geo";

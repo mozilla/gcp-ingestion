@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.decoder;
 
+import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
@@ -31,13 +32,11 @@ public class AddMetadata {
       byte[] metadata;
       try {
         // Get attributes as bytes, throws IOException
-        metadata = Json.asBytes(com.mozilla.telemetry.ingestion.core.transform.AddMetadata
-            .attributesToMetadataPayload(msg.getAttributeMap()));
+        metadata = Json.asBytes(NestedMetadata.attributesToMetadataPayload(msg.getAttributeMap()));
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
-      byte[] mergedPayload = com.mozilla.telemetry.ingestion.core.transform.AddMetadata
-          .mergedPayload(msg.getPayload(), metadata);
+      byte[] mergedPayload = NestedMetadata.mergedPayload(msg.getPayload(), metadata);
       return new PubsubMessage(mergedPayload, msg.getAttributeMap());
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {

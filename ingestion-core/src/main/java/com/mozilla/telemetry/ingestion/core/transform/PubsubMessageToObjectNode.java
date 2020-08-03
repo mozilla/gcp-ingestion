@@ -137,7 +137,7 @@ public abstract class PubsubMessageToObjectNode {
      */
     @Override
     public ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data) {
-      ObjectNode contents = AddMetadata.attributesToMetadataPayload(attributes);
+      ObjectNode contents = NestedMetadata.attributesToMetadataPayload(attributes);
       // bytes must be formatted as base64 encoded string.
       Optional.of(BASE64_ENCODER.encodeToString(data))
           // include payload if present.

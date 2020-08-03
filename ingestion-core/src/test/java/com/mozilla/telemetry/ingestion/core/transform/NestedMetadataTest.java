@@ -2,6 +2,7 @@ package com.mozilla.telemetry.ingestion.core.transform;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
@@ -12,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
 
-public class AddMetadataTest {
+public class NestedMetadataTest {
 
   private ObjectNode mapToObjectNode(Map<String, Object> m) throws IOException {
     return Json.readObjectNode(Json.asBytes(m));
@@ -22,7 +23,7 @@ public class AddMetadataTest {
   public void testGeoFromAttributes() throws Exception {
     Map<String, String> attributes = ImmutableMap.of("geo_country", "CA", //
         "sample_id", "15", "geo_city", "Whistler");
-    ObjectNode geo = AddMetadata.geoFromAttributes(attributes);
+    ObjectNode geo = NestedMetadata.geoFromAttributes(attributes);
     ObjectNode expected = mapToObjectNode(ImmutableMap.of("country", "CA", "city", "Whistler"));
     assertEquals(expected, geo);
   }
@@ -32,7 +33,7 @@ public class AddMetadataTest {
     ObjectNode metadata = Json.createObjectNode().set("geo", Json.createObjectNode()
         .put("country", "CA").put("city", "Whistler").putNull("subdivision1"));
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putGeoAttributes(attributes, metadata);
+    NestedMetadata.putGeoAttributes(attributes, metadata);
     Map<String, String> expected = ImmutableMap.of("geo_country", "CA", "geo_city", "Whistler");
     assertEquals(expected, attributes);
   }
@@ -46,7 +47,7 @@ public class AddMetadataTest {
     ObjectNode expected = mapToObjectNode(ImmutableMap.of("browser", "Firefox", //
         "version", "63.0", //
         "os", "Macintosh"));
-    ObjectNode userAgent = AddMetadata.userAgentFromAttributes(attributes);
+    ObjectNode userAgent = NestedMetadata.userAgentFromAttributes(attributes);
     assertEquals(expected, userAgent);
   }
 
@@ -60,7 +61,7 @@ public class AddMetadataTest {
         "user_agent_version", "63.0", //
         "user_agent_os", "Macintosh");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putUserAgentAttributes(attributes, metadata);
+    NestedMetadata.putUserAgentAttributes(attributes, metadata);
     assertEquals(expected, attributes);
   }
 
@@ -70,7 +71,7 @@ public class AddMetadataTest {
         "sample_id", "18", //
         "x_source_tags", "automation, perf", //
         "x_debug_id", "mysession");
-    ObjectNode headers = AddMetadata.headersFromAttributes(attributes);
+    ObjectNode headers = NestedMetadata.headersFromAttributes(attributes);
     ObjectNode expected = mapToObjectNode(ImmutableMap.of("dnt", "1", "x_debug_id", "mysession",
         "x_source_tags", "automation, perf"));
     assertEquals(expected, headers);
@@ -83,7 +84,7 @@ public class AddMetadataTest {
     Map<String, String> expected = ImmutableMap.of("dnt", "1", //
         "x_debug_id", "mysession", "x_source_tags", "automation, perf");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putHeaderAttributes(attributes, (metadata));
+    NestedMetadata.putHeaderAttributes(attributes, (metadata));
     assertEquals(expected, attributes);
   }
 
@@ -94,7 +95,7 @@ public class AddMetadataTest {
             "app_name", "Firefox", //
             "sample_id", "18", //
             "app_update_channel", "release");
-    ObjectNode uri = AddMetadata.uriFromAttributes(attributes);
+    ObjectNode uri = NestedMetadata.uriFromAttributes(attributes);
     ObjectNode expected = mapToObjectNode(ImmutableMap //
         .of("uri", "/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049", //
             "app_name", "Firefox", "app_update_channel", "release"));
@@ -108,7 +109,7 @@ public class AddMetadataTest {
     Map<String, String> expected = ImmutableMap.of("app_name", "Firefox", //
         "app_update_channel", "release");
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.putUriAttributes(attributes, (metadata));
+    NestedMetadata.putUriAttributes(attributes, (metadata));
     assertEquals(expected, attributes);
   }
 
@@ -124,7 +125,7 @@ public class AddMetadataTest {
         .put("normalized_channel", "release") //
         .put("x_forwarded_for", "??") //
         .build();
-    ObjectNode payload = AddMetadata.attributesToMetadataPayload(attributes);
+    ObjectNode payload = NestedMetadata.attributesToMetadataPayload(attributes);
     ObjectNode expected = mapToObjectNode(ImmutableMap.<String, Object>builder() //
         .put("metadata", ImmutableMap.<String, Object>builder() //
             .put("document_namespace", "telemetry") //
@@ -138,6 +139,14 @@ public class AddMetadataTest {
         .put("sample_id", 18) //
         .build());
     assertEquals(expected, payload);
+  }
+
+  @Test
+  public void testIgnoreInvalidIntField() {
+    JsonNode missingNode = Json.createObjectNode().get("sample_id");
+    JsonNode actual = NestedMetadata
+        .attributesToMetadataPayload(ImmutableMap.of("sample_id", "1.0")).get("sample_id");
+    assertEquals(missingNode, actual);
   }
 
   @Test
@@ -155,7 +164,7 @@ public class AddMetadataTest {
         .put("sample_id", "18").put("geo_country", "CA").put("x_debug_id", "mysession")
         .put("normalized_channel", "release").build();
     Map<String, String> attributes = new HashMap<>();
-    AddMetadata.stripPayloadMetadataToAttributes(attributes, payload);
+    NestedMetadata.stripPayloadMetadataToAttributes(attributes, payload);
     assertEquals(expected, attributes);
     assertEquals(mapToObjectNode(ImmutableMap.of("field1", 99)), payload);
   }
@@ -175,7 +184,7 @@ public class AddMetadataTest {
     byte[] payload = "{}".getBytes(Charsets.UTF_8);
     ObjectNode node = Json.createObjectNode();
     node.put("test", "foo");
-    byte[] actual = AddMetadata.mergedPayload(payload, Json.asBytes(node));
+    byte[] actual = NestedMetadata.mergedPayload(payload, Json.asBytes(node));
 
     assertEquals(expect, reformatJson(actual));
   }
@@ -184,7 +193,7 @@ public class AddMetadataTest {
   public void testMergedPayloadInvalidPayload() throws Exception {
     byte[] payload = " {}".getBytes(Charsets.UTF_8);
     ObjectNode node = Json.createObjectNode();
-    AddMetadata.mergedPayload(payload, Json.asBytes(node));
+    NestedMetadata.mergedPayload(payload, Json.asBytes(node));
   }
 
 }
