@@ -31,7 +31,8 @@ public class AddMetadata {
 
   private static final String HEADER = "header";
   private static final List<String> HEADER_ATTRIBUTES = ImmutableList //
-      .of(Attribute.DATE, Attribute.DNT, Attribute.X_DEBUG_ID, Attribute.X_PINGSENDER_VERSION);
+      .of(Attribute.DATE, Attribute.DNT, Attribute.X_DEBUG_ID, Attribute.X_PINGSENDER_VERSION,
+          Attribute.X_SOURCE_TAGS);
 
   private static final List<String> URI_ATTRIBUTES = ImmutableList //
       .of(Attribute.URI, Attribute.APP_NAME, Attribute.APP_VERSION, Attribute.APP_UPDATE_CHANNEL,
