@@ -51,6 +51,7 @@ public class Constant {
     public static final String X_FORWARDED_FOR = "x_forwarded_for";
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";
     public static final String X_PIPELINE_PROXY = "x_pipeline_proxy";
+    public static final String X_SOURCE_TAGS = "x_source_tags";
   }
 
   public static class FieldName {
