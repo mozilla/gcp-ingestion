@@ -30,12 +30,12 @@ public class Json {
   /**
    * A Jackson ObjectMapper pre-configured for use in com.mozilla.telemetry.
    */
-  @VisibleForTesting
   protected static final ObjectMapper MAPPER = new ObjectMapper();
 
   private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
-  private static final Method SCHEMA_FROM_PB = Arrays.stream(Schema.class.getDeclaredMethods())
+  @VisibleForTesting
+  static final Method SCHEMA_FROM_PB = Arrays.stream(Schema.class.getDeclaredMethods())
       .filter(method -> "fromPb".equals(method.getName())).findFirst().get();
 
   static {
@@ -148,14 +148,7 @@ public class Json {
    * @exception IOException if {@code data} does not contain a valid json object.
    */
   public static <T> T readValue(byte[] data, Class<T> klass) throws IOException {
-    // Read data into a tree
-    JsonNode tree = MAPPER.readTree(data);
-    // Check that we have an object, because treeToValue won't
-    if (tree == null || !tree.isObject()) {
-      throw new IOException("json value is not an object");
-    }
-    // Return a class instance created from the tree
-    return MAPPER.treeToValue(tree, klass);
+    return MAPPER.treeToValue(readObjectNode(data), klass);
   }
 
   /**
@@ -167,7 +160,7 @@ public class Json {
     // Read data into a tree
     JsonNode root = MAPPER.readTree(data);
     // Check that we have an object, because treeToValue won't
-    if (root == null || !root.isObject()) {
+    if (!root.isObject()) {
       throw new IOException("json value is not an object");
     }
     return (ObjectNode) root;
@@ -186,7 +179,7 @@ public class Json {
     // Read data into a tree
     TreeNode root = MAPPER.readTree(data);
     // Check that we have an array, because treeToValue won't
-    if (root == null || !root.isArray()) {
+    if (!root.isArray()) {
       throw new IOException("json value is not an array");
     }
     return (ArrayNode) root;

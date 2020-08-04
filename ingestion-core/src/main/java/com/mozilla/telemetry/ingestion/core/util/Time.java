@@ -8,6 +8,9 @@ import java.time.format.DateTimeParseException;
 
 public class Time {
 
+  private Time() {
+  }
+
   /**
    * Return a {@code java.time.Duration} from an ISO-8601 duration or from simple formats
    * such as "5 seconds", "5sec", or "5s".
