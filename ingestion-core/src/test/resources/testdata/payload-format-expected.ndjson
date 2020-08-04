@@ -25,3 +25,4 @@
 {"additional_properties":{}}
 {"additional_properties":{"test_int64_":"invalid"},"test_int64":8}
 {"additional_properties":{},"test_map":[{"key":"key"},{"key":"value"},{"key":"other","value":"other"}]}
+{"additional_properties":{},"metadata":{"meta":"data","foo":null}}

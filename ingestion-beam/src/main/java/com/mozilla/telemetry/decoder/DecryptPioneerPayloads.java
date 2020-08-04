@@ -6,6 +6,7 @@ import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
+import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.GzipUtil;
@@ -135,7 +136,7 @@ public class DecryptPioneerPayloads extends
       ObjectNode metadata = Json.createObjectNode();
       metadata.put(PIONEER_ID, payload.get(PIONEER_ID).asText());
       metadata.put(STUDY_NAME, payload.get(STUDY_NAME).asText());
-      final byte[] merged = AddMetadata.mergedPayload(payloadData, Json.asBytes(metadata));
+      final byte[] merged = NestedMetadata.mergedPayload(payloadData, Json.asBytes(metadata));
 
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());

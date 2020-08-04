@@ -63,6 +63,15 @@ public class Constant {
     public static final String ATTRIBUTE_MAP = "attributeMap";
     public static final String KEY = "key";
     public static final String LIST = "list";
+    public static final String METADATA = "metadata";
     public static final String PAYLOAD = "payload";
+  }
+
+  public static class Namespace {
+
+    private Namespace() {
+    }
+
+    public static final String TELEMETRY = "telemetry";
   }
 }
