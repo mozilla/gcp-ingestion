@@ -13,8 +13,6 @@ import com.mozilla.telemetry.ingestion.core.util.Json;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
@@ -62,13 +60,10 @@ public class Gcs {
 
         @Override
         protected byte[] encode(TableId tableId) {
-          try {
-            return ArrayUtils.addAll(Json.asBytes(
-                encoder.apply(tableId, input.getAttributesMap(), input.getData().toByteArray())),
-                NEWLINE);
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
-          }
+          return ArrayUtils.addAll(
+              Json.asBytes(
+                  encoder.apply(tableId, input.getAttributesMap(), input.getData().toByteArray())),
+              NEWLINE);
         }
       }
     }
