@@ -6,6 +6,9 @@ import java.util.stream.Collectors;
 
 public class SnakeCase {
 
+  private SnakeCase() {
+  }
+
   private static Pattern REV_WORD_BOUND_PAT = Pattern.compile("" //
       + "\\b" // standard word boundary
       + "|(?<=[a-z][A-Z])(?=\\d*[A-Z])" // A7Aa -> A7|Aa boundary
