@@ -23,7 +23,16 @@
     "previous_ecosystem_user_ids": false,
     "previousEcosystemUserIds": false
   },
-  "required": [
-    "ecosystem_client_id"
+  "anyOf": [
+    {
+      "required": [
+        "ecosystem_client_id"
+      ]
+    },
+    {
+      "required": [
+        "ecosystem_anon_id"
+      ]
+    }
   ]
 }
