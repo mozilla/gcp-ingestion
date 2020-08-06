@@ -10,6 +10,7 @@ import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedExcep
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
+import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -117,7 +118,7 @@ public class ParsePayload extends
 
       // In case this message is being replayed from an error output where AddMetadata has already
       // been applied, we strip out any existing metadata fields and put them into attributes.
-      AddMetadata.stripPayloadMetadataToAttributes(attributes, json);
+      NestedMetadata.stripPayloadMetadataToAttributes(attributes, json);
 
       // Check the contents of the message, potentially throwing an exception that causes the
       // message to be dropped or routed to error output; may also also alter the payload to

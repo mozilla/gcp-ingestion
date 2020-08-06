@@ -30,12 +30,12 @@ public class Json {
   /**
    * A Jackson ObjectMapper pre-configured for use in com.mozilla.telemetry.
    */
-  @VisibleForTesting
   protected static final ObjectMapper MAPPER = new ObjectMapper();
 
   private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
-  private static final Method SCHEMA_FROM_PB = Arrays.stream(Schema.class.getDeclaredMethods())
+  @VisibleForTesting
+  static final Method SCHEMA_FROM_PB = Arrays.stream(Schema.class.getDeclaredMethods())
       .filter(method -> "fromPb".equals(method.getName())).findFirst().get();
 
   static {
@@ -49,7 +49,7 @@ public class Json {
   public static String asString(JsonNode data) {
     try {
       return MAPPER.writeValueAsString(data);
-    } catch (IOException e) {
+    } catch (JsonProcessingException e) {
       throw new UncheckedIOException(e);
     }
   }
@@ -59,8 +59,22 @@ public class Json {
    *
    * @exception IOException if data cannot be encoded as json.
    */
-  public static String asString(Object data) throws IOException {
+  public static String asString(Object data) throws JsonProcessingException {
     return MAPPER.writeValueAsString(data);
+  }
+
+  /**
+   * Serialize {@link JsonNode} as a {@code byte[]}.
+   *
+   * <p>This method exists to prevent untestable code in try/catch blocks where it is impossible or
+   * infeasible to induce {@link JsonProcessingException}.
+   */
+  public static byte[] asBytes(JsonNode data) {
+    try {
+      return MAPPER.writeValueAsBytes(data);
+    } catch (JsonProcessingException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   /**
@@ -68,7 +82,7 @@ public class Json {
    *
    * @exception IOException if data cannot be encoded as json.
    */
-  public static byte[] asBytes(Object data) throws IOException {
+  public static byte[] asBytes(Object data) throws JsonProcessingException {
     return MAPPER.writeValueAsBytes(data);
   }
 
@@ -134,14 +148,7 @@ public class Json {
    * @exception IOException if {@code data} does not contain a valid json object.
    */
   public static <T> T readValue(byte[] data, Class<T> klass) throws IOException {
-    // Read data into a tree
-    JsonNode tree = MAPPER.readTree(data);
-    // Check that we have an object, because treeToValue won't
-    if (tree == null || !tree.isObject()) {
-      throw new IOException("json value is not an object");
-    }
-    // Return a class instance created from the tree
-    return MAPPER.treeToValue(tree, klass);
+    return MAPPER.treeToValue(readObjectNode(data), klass);
   }
 
   /**
@@ -153,7 +160,7 @@ public class Json {
     // Read data into a tree
     JsonNode root = MAPPER.readTree(data);
     // Check that we have an object, because treeToValue won't
-    if (root == null || !root.isObject()) {
+    if (!root.isObject()) {
       throw new IOException("json value is not an object");
     }
     return (ObjectNode) root;
@@ -172,7 +179,7 @@ public class Json {
     // Read data into a tree
     TreeNode root = MAPPER.readTree(data);
     // Check that we have an array, because treeToValue won't
-    if (root == null || !root.isArray()) {
+    if (!root.isArray()) {
       throw new IOException("json value is not an array");
     }
     return (ArrayNode) root;
