@@ -6,5 +6,7 @@ if [ "$#" -gt 0 ]; then
     exit 1
 fi
 
+if ${REQUIRE_CODE_COVERAGE:-true}; then PYTEST_ADDOPTS+=" --cov-fail-under=100"; fi
+
 "$(dirname "$0")"/pytest --cov=./ingestion_edge/ --junitxml=test-results/pytest.xml && \
   "$(dirname "$0")"/lint --junitxml=test-results/lint.xml

@@ -9,7 +9,6 @@ import json
 import os
 
 from kubernetes.config import load_incluster_config
-from kubernetes.config.config_exception import ConfigException
 from kubernetes.client import (
     BatchV1Api,
     CoreV1Api,
@@ -38,6 +37,7 @@ from kubernetes.client.rest import ApiException
 
 from .config import get_config_dict, logger
 
+JOB_AND_PVC_PREFIX = "flush-"
 ALREADY_EXISTS = "AlreadyExists"
 CONFLICT = "Conflict"
 NOT_FOUND = "Not Found"
@@ -48,7 +48,7 @@ try:
         DEFAULT_IMAGE_VERSION = str(
             json.load(fp).get("version") or DEFAULT_IMAGE_VERSION
         )
-except (FileNotFoundError, json.decoder.JSONDecodeError):
+except (FileNotFoundError, json.decoder.JSONDecodeError):  # pragma: no cover
     pass  # use default
 
 DEFAULT_ENV = [
@@ -80,6 +80,18 @@ parser.add_argument(
     default="queue-",
     help="Prefix for the names of persistent volume claims to delete",
 )
+
+
+def _job_and_pvc_name_from_pv(pv: V1PersistentVolume) -> str:
+    return JOB_AND_PVC_PREFIX + pv.metadata.name
+
+
+def _pv_name_from_job(job: V1Job) -> str:
+    return job.metadata.name.replace(JOB_AND_PVC_PREFIX, "", 1)
+
+
+def _is_flush_job(job: V1Job) -> bool:
+    return job.metadata.name.startswith(JOB_AND_PVC_PREFIX)
 
 
 def _create_pvc(
@@ -140,7 +152,7 @@ def _create_flush_job(
     logger.info(f"creating job: {name}")
     try:
         return batch_api.create_namespaced_job(
-            namespace,
+            namespace=namespace,
             body=V1Job(
                 api_version="batch/v1",
                 kind="Job",
@@ -199,7 +211,7 @@ def flush_released_pvs(
         job.metadata.name for job in batch_api.list_namespaced_job(namespace).items
     }
     for pv in api.list_persistent_volume().items:
-        name = "flush-" + pv.metadata.name
+        name = _job_and_pvc_name_from_pv(pv)
         if (
             name not in existing_jobs
             and pv.spec.claim_ref
@@ -222,11 +234,11 @@ def delete_complete_jobs(api: CoreV1Api, batch_api: BatchV1Api, namespace: str):
             job.status.conditions
             and job.status.conditions[0].type == "Complete"
             and not job.metadata.deletion_timestamp
-            and job.metadata.name.startswith("flush-")
+            and _is_flush_job(job)
         ):
             logger.info(f"deleting complete job: {job.metadata.name}")
             # configure persistent volume claims to be deleted with the job
-            pv_name = job.metadata.name.split("flush-", 1).pop()
+            pv_name = _pv_name_from_job(job)
             logger.info(f"including pv in pvc delete: {pv_name}")
             api.patch_persistent_volume(
                 name=pv_name,
@@ -256,8 +268,8 @@ def delete_complete_jobs(api: CoreV1Api, batch_api: BatchV1Api, namespace: str):
             )
             try:
                 batch_api.delete_namespaced_job(
-                    job.metadata.name,
-                    namespace,
+                    name=job.metadata.name,
+                    namespace=namespace,
                     body=V1DeleteOptions(
                         grace_period_seconds=0,
                         propagation_policy="Foreground",
@@ -323,7 +335,7 @@ def delete_detached_pvcs(api: CoreV1Api, namespace: str, claim_prefix: str):
         for pod in api.list_namespaced_pod(namespace).items
         if not _unschedulable_due_to_pvc(pod) and pod.spec and pod.spec.volumes
         for volume in pod.spec.volumes
-        if volume.persistent_volume_claim and volume.persistent_volume_claim.claim_name
+        if volume.persistent_volume_claim
     }
     for pvc in api.list_namespaced_persistent_volume_claim(namespace).items:
         if (
@@ -334,8 +346,8 @@ def delete_detached_pvcs(api: CoreV1Api, namespace: str, claim_prefix: str):
             logger.info(f"deleting detached pvc: {pvc.metadata.name}")
             try:
                 api.delete_namespaced_persistent_volume_claim(
-                    pvc.metadata.name,
-                    namespace,
+                    name=pvc.metadata.name,
+                    namespace=namespace,
                     body=V1DeleteOptions(
                         grace_period_seconds=0,
                         propagation_policy="Background",
@@ -367,8 +379,8 @@ def delete_unschedulable_pods(api: CoreV1Api, namespace: str):
             logger.info(f"deleting unschedulable pod: {pod.metadata.name}")
             try:
                 api.delete_namespaced_pod(
-                    pod.metadata.name,
-                    namespace,
+                    name=pod.metadata.name,
+                    namespace=namespace,
                     body=V1DeleteOptions(
                         grace_period_seconds=0,
                         propagation_policy="Background",
@@ -398,10 +410,7 @@ def run_task(func: Callable[[], None]):
 def main():
     """Continuously flush and delete detached persistent volumes."""
     args = parser.parse_args()
-    try:
-        load_incluster_config()
-    except ConfigException:
-        raise
+    load_incluster_config()
     api = CoreV1Api()
     batch_api = BatchV1Api()
     tasks = [
@@ -421,5 +430,5 @@ def main():
         pool.map(run_task, tasks, chunksize=1)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
