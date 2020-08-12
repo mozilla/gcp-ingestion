@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: '{name}'
+spec:
+  accessModes:
+  - '{pvc.spec.access_modes[0]}'
+  capacity:
+    storage: '{pvc.spec.resources.requests[storage]}'
+  hostPath:
+    path: '/tmp/{name}'
+  claimRef:
+    apiVersion: '{pvc.api_version}'
+    kind: '{pvc.kind}'
+    name: '{pvc.metadata.name}'
+    namespace: '{pvc.metadata.namespace}'
+    resourceVersion: '{pvc.metadata.resource_version}'
+    uid: '{pvc.metadata.uid}'
+  storageClassName: '{pvc.spec.storage_class_name}'

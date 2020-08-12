@@ -1,9 +1,14 @@
 from functools import partial
 from google.api_core.exceptions import AlreadyExists
 from google.cloud.container_v1 import ClusterManagerClient
-from google.cloud.container_v1.types import Cluster, NodePool, Operation
+from google.cloud.container_v1.types import (
+    Cluster,
+    NodePool,
+    Operation,
+    GetOperationRequest,
+)
 from google.cloud.pubsub_v1 import PublisherClient
-from typing import Any, Callable, Dict, List, Generator
+from typing import Any, Callable, Dict, Iterator, List
 
 # importing from private module _pytest for types only
 import _pytest.config.argparsing
@@ -18,8 +23,9 @@ import yaml
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser):
+    group = parser.getgroup("load tests")
     # Test options
-    parser.addoption(
+    group.addoption(
         "--min-success-rate",
         dest="min_success_rate",
         default=1000,
@@ -27,7 +33,7 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         help="Minimum 200 responses per non-200 response to require during "
         "--test-period, default is 1000 (0.1%% errors)",
     )
-    parser.addoption(
+    group.addoption(
         "--min-throughput",
         dest="min_throughput",
         default=15000,
@@ -35,14 +41,14 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         help="Minimum 200 responses per second to require during --test-period, "
         "default is 15000",
     )
-    parser.addoption(
+    group.addoption(
         "--test-period",
         dest="test_period",
         default=1800,
         type=int,
         help="Number of seconds to evaluate after warmup, default is 1800 (30 minutes)",
     )
-    parser.addoption(
+    group.addoption(
         "--warmup-threshold",
         dest="warmup_threshold",
         default=15000,
@@ -50,7 +56,7 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         help="Minimum 200 responses per second that indicate warmup is complete, "
         "default is 15000",
     )
-    parser.addoption(
+    group.addoption(
         "--warmup-timeout",
         dest="warmup_timeout",
         default=600,
@@ -59,62 +65,62 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         "600 (10 minutes)",
     )
     # Cluster options
-    parser.addoption(
+    group.addoption(
         "--cluster",
         dest="cluster",
         default="load-test",
         help="Name of GKE cluster to create for test resources, default is 'load-test',"
         " ignored when --load-balancer and --no-traffic-generator are both specified",
     )
-    parser.addoption(
+    group.addoption(
         "--location",
         dest="location",
         default="us-west1",
         help="Location to use for --cluster, default is us-west1",
     )
-    parser.addoption(
+    group.addoption(
         "--preemptible",
         action="store_true",
         dest="preemptible",
         default=False,
         help="Use preemptible instances for --cluster, default is False",
     )
-    parser.addoption(
+    group.addoption(
         "--project",
         dest="project",
         default=None,
         help="Project to use for --cluster, default is from credentials",
     )
     # Server options
-    parser.addoption(
+    group.addoption(
         "--load-balancer",
         dest="load_balancer",
         default=None,
         help="Load Balancing url map to monitor, implies --no-generator when "
         "--server-uri is not specified, ignores --image and --no-emulator",
     )
-    parser.addoption(
+    group.addoption(
         "--server-uri",
         dest="server_uri",
         default=None,
         help="Server uri like 'https://edge.stage.domain.com/submit/telemetry/suffix', "
         "ignored when --no-generator is specified or --load-balancer is missing",
     )
-    parser.addoption(
+    group.addoption(
         "--image",
         dest="image",
         default="mozilla/ingestion-edge:latest",
         help="Docker image for server deployment, default is "
         "'mozilla/ingestion-edge:latest', ignored when --load-balancer is specified",
     )
-    parser.addoption(
+    group.addoption(
         "--no-emulator",
         action="store_false",
         dest="emulator",
         default=True,
         help="Don't use a PubSub emulator, ignored when --load-balancer is specified",
     )
-    parser.addoption(
+    group.addoption(
         "--topic",
         dest="topic",
         default="topic",
@@ -122,14 +128,14 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         "specified",
     )
     # Traffic generator options
-    parser.addoption(
+    group.addoption(
         "--no-generator",
         action="store_false",
         dest="generator",
         default=True,
         help="Don't deploy a traffic generator, ignore --script",
     )
-    parser.addoption(
+    group.addoption(
         "--script",
         dest="script",
         default="tests/load/wrk/telemetry.lua",
@@ -144,7 +150,7 @@ def options(request: _pytest.fixtures.SubRequest) -> Dict[str, Any]:
 
 
 @pytest.fixture
-def node_pools(options: Dict[str, Any]) -> Generator[List[str], None, None]:
+def node_pools(options: Dict[str, Any]) -> Iterator[List[str]]:
     credentials, project = google.auth.default()
     if options["project"] is None:
         options["project"] = project
@@ -178,8 +184,6 @@ def node_pools(options: Dict[str, Any]) -> Generator[List[str], None, None]:
         yield []  # nothing to create
     else:
         kwargs = {
-            "project_id": None,
-            "zone": None,
             "cluster": Cluster(
                 name=options["cluster"],
                 logging_service=None,
@@ -190,24 +194,28 @@ def node_pools(options: Dict[str, Any]) -> Generator[List[str], None, None]:
         }
         name = f"{kwargs['parent']}/clusters/{options['cluster']}"
         try:
-            response = gke.create_cluster(**kwargs)
+            operation = gke.create_cluster(**kwargs)
         except AlreadyExists:
             pass
         else:
             # wait for operation to complete
-            op = response.self_link.split("projects").pop()
-            while gke.get_operation(None, None, None, op).status <= Operation.RUNNING:
+            request = GetOperationRequest(
+                name=operation.self_link.split("projects").pop()
+            )
+            while gke.get_operation(request).status <= Operation.Status.RUNNING:
                 time.sleep(15)
         # set kube credentials
-        cluster = gke.get_cluster(None, None, None, name)
+        cluster = gke.get_cluster(name=name)
         config = kube.Configuration()
         config.host = f"https://{cluster.endpoint}:443"
         config.verify_ssl = False
         config.api_key = {"authorization": f"Bearer {credentials.token}"}
         kube.Configuration.set_default(config)
         # delete cluster after test completes
-        yield list(pools)
-        gke.delete_cluster(None, None, None, name)
+        try:
+            yield list(pools)
+        finally:
+            gke.delete_cluster(name=name)
 
 
 def kube_methods(path, **replace) -> Dict[str, Callable]:
@@ -243,9 +251,7 @@ def kube_apply(path, **kwargs):
 
 
 @pytest.fixture
-def emulator(
-    node_pools: List[str], options: Dict[str, Any]
-) -> Generator[str, None, None]:
+def emulator(node_pools: List[str], options: Dict[str, Any]) -> Iterator[str]:
     if "emulator" in node_pools:
         kube_apply("kube/emulator.deploy.yml", **options)
         kube_apply("kube/emulator.svc.yml")

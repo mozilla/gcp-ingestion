@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: emulator
+  namespace: default
+  labels: &labels
+    app: emulator
+spec:
+  ports:
+  - name: grpc
+    port: 8000
+    protocol: TCP
+    targetPort: grpc
+  selector: *labels
+  type: LoadBalancer

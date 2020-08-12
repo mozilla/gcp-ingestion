@@ -1,7 +1,7 @@
 from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
 from pubsub_emulator import PubsubEmulator
 from time import sleep
-from typing import Generator, Union
+from typing import Iterator, Optional, Tuple, Union
 
 # importing from private module _pytest for types only
 import _pytest.config.argparsing
@@ -39,7 +39,7 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
 @pytest.fixture(scope="session")
 def pubsub(
     request: _pytest.fixtures.SubRequest,
-) -> Generator[Union[str, PubsubEmulator], None, None]:
+) -> Iterator[Union[str, PubsubEmulator]]:
     if "PUBSUB_EMULATOR_HOST" in os.environ:
         yield "remote"
     elif request.config.getoption("server") is None:
@@ -79,10 +79,10 @@ def subscriber(pubsub: Union[str, PubsubEmulator]) -> SubscriberClient:
         return SubscriberClient()
 
 
-@pytest.fixture(scope="session")
-def server(
+@pytest.fixture
+def server_and_process(
     pubsub: Union[str, PubsubEmulator], request: _pytest.fixtures.SubRequest
-) -> Generator[str, None, None]:
+) -> Iterator[Tuple[str, Optional[subprocess.Popen]]]:
     _server = request.config.getoption("server")
     if _server is None:
         process = subprocess.Popen([sys.executable, "-u", "-m", "ingestion_edge.wsgi"])
@@ -96,7 +96,7 @@ def server(
                     break
                 sleep(0.1)
             assert process.poll() is None  # server still running
-            yield "http://localhost:%d" % ports.pop()
+            yield "http://localhost:%d" % ports.pop(), process
         finally:
             try:
                 # allow one second for graceful termination
@@ -107,7 +107,19 @@ def server(
                 process.kill()
                 process.wait()
     else:
-        yield _server
+        yield _server, None
+
+
+@pytest.fixture
+def server(server_and_process: Tuple[str, Optional[subprocess.Popen]]) -> str:
+    return server_and_process[0]
+
+
+@pytest.fixture
+def server_process(
+    server_and_process: Tuple[str, Optional[subprocess.Popen]]
+) -> Optional[subprocess.Popen]:
+    return server_and_process[1]
 
 
 @pytest.fixture

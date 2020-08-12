@@ -103,6 +103,11 @@ The `pytest` wrappers add these options via the environment:
 - `VENV` controls whether to use a python `venv` in `venv/$(uname)` in
   `bin/lint` and `bin/pytest`, and in `bin/build` to create and use that
   `venv`, defaults to `false` in `Dockerfile` and `true` otherwise
+- `REQUIRE_CODE_COVERAGE` controls whether `bin/pytest-all` will fail if
+  code coverage is less than 100%, defaults to `true`
+  - Use comments like `# pragma: no cov` to disable coverage for things that
+    cannot be reasonably covered in CircleCI, as described in the [`coverage.py`
+    docs](https://coverage.readthedocs.io/en/coverage-5.2/excluding.html)
 
 ### Style Checks
 

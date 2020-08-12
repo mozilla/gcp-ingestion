@@ -45,3 +45,4 @@ services:
     - bin/pytest-all
     environment:
     - *route_table
+    - REQUIRE_CODE_COVERAGE=false

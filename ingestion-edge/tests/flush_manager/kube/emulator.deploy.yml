@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emulator
+  namespace: default
+  labels: &labels
+    app: emulator
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &match_labels
+      kubernetes.io/os: linux
+  template:
+    metadata:
+      labels:
+        <<: [*match_labels, *labels]
+    spec:
+      containers:
+      - name: emulator
+        image: '{image}'
+        command:
+        - python
+        - -m
+        - pubsub_emulator
+        env:
+        - name: TOPICS
+          value: '["projects/{project}/topics/{topic}"]'
+        - name: LOG_LEVEL
+          value: INFO
+        ports:
+        - name: grpc
+          containerPort: 8000
+          protocol: TCP

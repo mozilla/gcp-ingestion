@@ -1,0 +1,13 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: flush-manager
+subjects:
+- kind: ServiceAccount
+  name: flush-manager
+  namespace: default
+roleRef:
+  kind: ClusterRole
+  name: flush-manager
+  apiGroup: rbac.authorization.k8s.io

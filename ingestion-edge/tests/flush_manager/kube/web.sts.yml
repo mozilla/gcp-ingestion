@@ -1,0 +1,57 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+  namespace: default
+  labels: &labels
+    app: web
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  serviceName: ingestion-edge
+  selector:
+    matchLabels: &match_labels
+      kubernetes.io/os: linux
+  template:
+    metadata:
+      labels:
+        <<: [*match_labels, *labels]
+    spec:
+      containers:
+      - name: web
+        image: '{image}'
+        imagePullPolicy: Always
+        command:
+        - python
+        - -m
+        - ingestion_edge.wsgi
+        env:
+        - name: ROUTE_TABLE
+          value: '[["/<suffix:path>", "projects/{project}/topics/{topic}"]]'
+        - name: QUEUE_PATH
+          value: '/data/queue'
+        - name: PUBSUB_EMULATOR_HOST
+          # Intentionally wrong, so that all messages must be delivered via flush
+          value: 'emulator:800'
+        - name: LOG_LEVEL
+          value: WARNING
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /data
+          name: queue
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 0
+  volumeClaimTemplates:
+  - metadata:
+      name: queue
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: web-sc
