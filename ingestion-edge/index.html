@@ -255,6 +255,11 @@ docker-compose run --rm test
 <li><code>VENV</code> controls whether to use a python <code>venv</code> in <code>venv/$(uname)</code> in
   <code>bin/lint</code> and <code>bin/pytest</code>, and in <code>bin/build</code> to create and use that
   <code>venv</code>, defaults to <code>false</code> in <code>Dockerfile</code> and <code>true</code> otherwise</li>
+<li><code>REQUIRE_CODE_COVERAGE</code> controls whether <code>bin/pytest-all</code> will fail if
+  code coverage is less than 100%, defaults to <code>true</code></li>
+<li>Use comments like <code># pragma: no cov</code> to disable coverage for things that
+    cannot be reasonably covered in CircleCI, as described in the <a href="https://coverage.readthedocs.io/en/coverage-5.2/excluding.html"><code>coverage.py</code>
+    docs</a></li>
 </ul>
 <h3 id="style-checks">Style Checks</h3>
 <p>Run style checks</p>
