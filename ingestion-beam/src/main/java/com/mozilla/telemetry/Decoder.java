@@ -7,6 +7,7 @@ import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GeoIspLookup;
+import com.mozilla.telemetry.decoder.ParseLogEntry;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -71,7 +72,8 @@ public class Decoder extends Sink {
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())))
 
         // Special case: decryption of Account Ecosystem Telemetry identifiers
-        .map(p -> options.getAetEnabled() ? p
+        .map(p -> options.getAetEnabled() ? p //
+            .apply(ParseLogEntry.of()) //
             .apply(DecryptAetIdentifiers.of(options.getAetMetadataLocation(),
                 options.getAetKmsEnabled())) //
             .failuresTo(failureCollections) : p)
