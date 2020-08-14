@@ -61,7 +61,6 @@ public class ParseLogEntry
       Optional.ofNullable(fields.path("userAgent").textValue())
           .ifPresent(v -> attributes.put(Attribute.USER_AGENT, v));
       String event = fields.path("event").asText();
-      json.put("event", event);
       String ecosystemAnonId = fields.path("ecosystemAnonId").textValue();
       attributes.put(Attribute.URI,
           String.format("/submit/firefox-accounts/account-ecosystem/1/%s", documentId));
@@ -77,6 +76,7 @@ public class ParseLogEntry
         throw new IllegalArgumentException(
             "Received an unexpected payload without submission_timestamp");
       }
+      json.put("event", event);
       return new PubsubMessage(Json.asBytes(json), attributes);
     }));
   }
