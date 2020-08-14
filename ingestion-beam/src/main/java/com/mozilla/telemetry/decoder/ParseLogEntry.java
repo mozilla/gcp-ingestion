@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
@@ -23,6 +25,9 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class ParseLogEntry
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
+  private final Counter logEntryPayload = Metrics.counter(ParseLogEntry.class,
+      "log_entry_payload");
+
   public static ParseLogEntry of() {
     return new ParseLogEntry();
   }
@@ -35,6 +40,7 @@ public class ParseLogEntry
         // server rather than a LogEntry from Cloud Logging, so we return immediately.
         return m;
       }
+      logEntryPayload.inc();
       ObjectNode logEntry;
       HashMap<String, String> attributes = new HashMap<>();
       ObjectNode json = Json.createObjectNode();
