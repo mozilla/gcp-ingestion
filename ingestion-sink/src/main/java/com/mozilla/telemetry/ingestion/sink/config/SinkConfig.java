@@ -40,6 +40,9 @@ import java.util.function.Predicate;
 
 public class SinkConfig {
 
+  private SinkConfig() {
+  }
+
   private static final String INPUT_COMPRESSION = "INPUT_COMPRESSION";
   private static final String INPUT_PARALLELISM = "INPUT_PARALLELISM";
   private static final String INPUT_PIPE = "INPUT_PIPE";
@@ -78,9 +81,9 @@ public class SinkConfig {
   private static final Set<String> OUTPUT_ENV_VARS = ImmutableSet.of(BATCH_MAX_BYTES,
       BATCH_MAX_DELAY, BATCH_MAX_MESSAGES, BIG_QUERY_OUTPUT_MODE, BIG_QUERY_DEFAULT_PROJECT,
       LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET, OUTPUT_COMPRESSION,
-      OUTPUT_FORMAT, OUTPUT_PARALLELISM, OUTPUT_PIPE, OUTPUT_TABLE, OUTPUT_TOPIC, SCHEMAS_LOCATION,
-      STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES,
-      STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
+      OUTPUT_FORMAT, OUTPUT_MAX_ATTEMPTS, OUTPUT_PARALLELISM, OUTPUT_PIPE, OUTPUT_TABLE,
+      OUTPUT_TOPIC, SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY,
+      STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
 
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
@@ -126,7 +129,7 @@ public class SinkConfig {
   private static final int DEFAULT_OUTPUT_MAX_ATTEMPTS = 3;
 
   @VisibleForTesting
-  protected static class Output implements Function<PubsubMessage, CompletableFuture<Void>> {
+  public static class Output implements Function<PubsubMessage, CompletableFuture<Void>> {
 
     private final OutputType type;
     private final Function<PubsubMessage, CompletableFuture<Void>> write;
@@ -254,6 +257,11 @@ public class SinkConfig {
         // expected to be a little under 200 bytes.
         return 300_000_000; // 300MB
       }
+
+      @Override
+      boolean validErrorOutput() {
+        return false;
+      }
     },
 
     bigQueryFiles {
@@ -272,11 +280,6 @@ public class SinkConfig {
                 // blobInfo to pubsub and require loads be run separately to reduce maximum latency
                 blobInfo -> pubsubWrite.apply(BlobIdToPubsubMessage.encode(blobInfo.getBlobId())))
                     .withOpenCensusMetrics());
-      }
-
-      @Override
-      boolean validErrorOutput() {
-        return false;
       }
     },
 
