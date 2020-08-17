@@ -26,8 +26,10 @@ public class ParseLogEntryTest extends TestWithDeterministicJson {
     String inputPath = Resources.getResource("testdata").getPath();
     String input = inputPath + "/logentry.ndjson";
 
-    String expected = Json
-        .asString(ImmutableMap.builder().put("ecosystem_anon_id", "fake").build());
+    String expected = Json.asString(ImmutableMap.builder() //
+        .put("event", "oauth.token.created") //
+        .put("ecosystem_anon_id", "fake") //
+        .build());
 
     PCollection<PubsubMessage> output = pipeline
         .apply(new FileInput(StaticValueProvider.of(input), InputFileFormat.json))
