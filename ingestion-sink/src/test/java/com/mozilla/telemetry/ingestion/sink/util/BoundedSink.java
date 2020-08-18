@@ -13,16 +13,16 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Utility for testing an unbounded {@link SinkConfig} with a termination condition.
  */
-public class BoundedSink extends SinkConfig {
+public class BoundedSink {
 
   /**
    * Run async until {@code messageCount} messages have been delivered.
    */
   private static CompletableFuture<Void> runAsync(int messageCount) throws IOException {
-    final Output output = getOutput();
+    final SinkConfig.Output output = SinkConfig.getOutput();
     final AtomicInteger counter = new AtomicInteger(0);
     final AtomicReference<Input> input = new AtomicReference<>();
-    input.set(getInput(output.via(message -> output.apply(message).thenApplyAsync(v -> {
+    input.set(SinkConfig.getInput(output.via(message -> output.apply(message).thenApplyAsync(v -> {
       final int currentMessages = counter.incrementAndGet();
       if (currentMessages >= messageCount) {
         input.get().stopAsync();

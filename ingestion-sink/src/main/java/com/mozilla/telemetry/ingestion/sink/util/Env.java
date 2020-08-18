@@ -14,14 +14,24 @@ import java.util.stream.Collectors;
 public class Env {
 
   private final Set<String> include;
+  private final String prefix;
   private final Map<String, String> env;
   private final Set<String> unused;
 
-  /** Constructor. */
+  /** Constructor with default empty prefix. */
   public Env(Set<String> include) {
+    this(include, "");
+  }
+
+  /** Add prefix to env vars and access values without the prefix.
+   *
+   * <p>This is used to allow identical options for output and error output.
+   */
+  public Env(Set<String> include, String prefix) {
     this.include = include;
-    env = include.stream().filter(key -> System.getenv(key) != null)
-        .collect(Collectors.toMap(key -> key, System::getenv));
+    this.prefix = prefix;
+    env = include.stream().filter(key -> System.getenv(prefix + key) != null)
+        .collect(Collectors.toMap(key -> key, key -> System.getenv(prefix + key)));
     unused = new HashSet<>(env.keySet());
   }
 
@@ -30,8 +40,14 @@ public class Env {
    */
   public void requireAllVarsUsed() {
     if (!unused.isEmpty()) {
-      throw new IllegalArgumentException("Env vars set but not used: " + unused.toString());
+      throw new IllegalArgumentException("Env vars set but not used: "
+          // add prefix back in to get actual env vars
+          + unused.stream().map(key -> prefix + key).collect(Collectors.toList()).toString());
     }
+  }
+
+  public boolean isEmpty() {
+    return env.isEmpty();
   }
 
   public boolean containsKey(String key) {
