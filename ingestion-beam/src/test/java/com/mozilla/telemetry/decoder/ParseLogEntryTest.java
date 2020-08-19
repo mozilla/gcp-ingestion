@@ -33,7 +33,7 @@ public class ParseLogEntryTest extends TestWithDeterministicJson {
 
     PCollection<PubsubMessage> output = pipeline
         .apply(new FileInput(StaticValueProvider.of(input), InputFileFormat.json))
-        .apply(ParseLogEntry.of());
+        .apply(ParseLogEntry.of()).output();
 
     PAssert.that(output.apply(OutputFileFormat.text.encode()))
         .containsInAnyOrder(ImmutableList.of(expected));
