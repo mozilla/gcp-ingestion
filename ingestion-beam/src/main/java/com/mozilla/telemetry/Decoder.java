@@ -1,13 +1,12 @@
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.aet.DecryptAetIdentifiers;
+import com.mozilla.telemetry.aet.AetProcessing;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
 import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GeoIspLookup;
-import com.mozilla.telemetry.decoder.ParseLogEntry;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -73,10 +72,8 @@ public class Decoder extends Sink {
 
         // Special case: decryption of Account Ecosystem Telemetry identifiers
         .map(p -> options.getAetEnabled() ? p //
-            .apply(ParseLogEntry.of()) //
-            .apply(DecryptAetIdentifiers.of(options.getAetMetadataLocation(),
-                options.getAetKmsEnabled())) //
-            .failuresTo(failureCollections) : p)
+            .apply(AetProcessing.of(options)).failuresTo(failureCollections) //
+            : p)
 
         // URI Parsing
         .map(p -> p //
@@ -84,10 +81,11 @@ public class Decoder extends Sink {
             .apply("RerouteDocuments", RerouteDocuments.of()))
 
         // Special case: decryption of Pioneer payloads
-        .map(p -> options.getPioneerEnabled() ? p
+        .map(p -> options.getPioneerEnabled() ? p //
             .apply(DecryptPioneerPayloads.of(options.getPioneerMetadataLocation(),
                 options.getPioneerKmsEnabled(), options.getPioneerDecompressPayload())) //
-            .failuresTo(failureCollections) : p)
+            .failuresTo(failureCollections) //
+            : p)
 
         // Main output
         .map(p -> p //
