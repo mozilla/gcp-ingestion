@@ -90,30 +90,30 @@ public class DecryptAetIdentifiers extends
   /**
    * Base class for all exceptions thrown by this class.
    */
-  abstract static class DecryptAetPayloadException extends RuntimeException {
+  abstract static class DecryptAetIdentifiersException extends RuntimeException {
 
-    private DecryptAetPayloadException() {
+    private DecryptAetIdentifiersException() {
     }
 
-    private DecryptAetPayloadException(Throwable cause) {
+    private DecryptAetIdentifiersException(Throwable cause) {
       super(cause);
     }
   }
 
-  public static class UnparsableAetPayloadException extends DecryptAetPayloadException {
+  public static class UnparsableAetPayloadException extends DecryptAetIdentifiersException {
 
     public UnparsableAetPayloadException(Exception cause) {
       super(cause);
     }
   }
 
-  public static class IllegalAetUriException extends DecryptAetPayloadException {
+  public static class IllegalAetUriException extends DecryptAetIdentifiersException {
 
     public IllegalAetUriException() {
     }
   }
 
-  public static class IllegalAetPayloadException extends DecryptAetPayloadException {
+  public static class IllegalAetPayloadException extends DecryptAetIdentifiersException {
 
     public IllegalAetPayloadException(Exception cause) {
       super(cause);
@@ -129,8 +129,8 @@ public class DecryptAetIdentifiers extends
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (DecryptAetPayloadException e) {
-            return FailureMessage.of(DecryptAetPayloadException.class.getSimpleName(), ee.element(),
+          } catch (DecryptAetIdentifiersException e) {
+            return FailureMessage.of(DecryptAetIdentifiers.class.getSimpleName(), ee.element(),
                 ee.exception());
           }
         }));
