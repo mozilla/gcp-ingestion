@@ -231,12 +231,6 @@ public class DecryptAetIdentifiers extends
       String namespace = message.getAttribute(Attribute.DOCUMENT_NAMESPACE);
       String docType = message.getAttribute(Attribute.DOCUMENT_TYPE);
 
-      // This transform comes early in the Decoder job before ParseUri, so we must work with
-      // the raw URI rather than parsed namespace and doctype.
-      // In particular, ParseUri is the first transform that can send messages to error output;
-      // we risk spilling sensitive information if AET payloads get sent to an output before anon_id
-      // values are removed, so we must have this transform come before an error step so that we
-      // can handle sanitizing/dropping the payload before emitting errors.
       try {
         if (Namespace.TELEMETRY.equals(namespace) && //
             docType != null && docType.startsWith("account-ecosystem")) {
