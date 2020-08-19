@@ -76,6 +76,8 @@ public class DecryptAetIdentifiers extends
   private final Counter successStructured = Metrics.counter(DecryptAetIdentifiers.class,
       "success_structured");
 
+  public static final String ACCOUNT_ECOSYSTEM = "account-ecosystem";
+
   public static DecryptAetIdentifiers of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled) {
     return new DecryptAetIdentifiers(metadataLocation, kmsEnabled);
@@ -233,14 +235,14 @@ public class DecryptAetIdentifiers extends
 
       try {
         if (Namespace.TELEMETRY.equals(namespace) && //
-            docType != null && docType.startsWith("account-ecosystem")) {
+            docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
           processDesktopTelemetryPayload(json);
           successTelemetry.inc();
         } else if (false) {
           // Placeholder condition for handling AET payloads coming from Glean-enabled applications;
           // design is evolving in https://bugzilla.mozilla.org/show_bug.cgi?id=1634468
           successGlean.inc();
-        } else if (docType != null && docType.startsWith("account-ecosystem")) {
+        } else if (docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
           processStructuredIngestionPayload(json);
           successStructured.inc();
         } else {
