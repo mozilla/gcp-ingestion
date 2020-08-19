@@ -2,6 +2,7 @@ package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
@@ -49,6 +50,7 @@ public class DecryptPioneerPayloads extends
   public static final String SCHEMA_VERSION = "schemaVersion";
   public static final String PIONEER_ID = "pioneerId";
   public static final String STUDY_NAME = "studyName";
+  public static final String DELETION_REQUEST_SCHEMA_NAME = "deletion-request";
 
   public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
@@ -115,21 +117,31 @@ public class DecryptPioneerPayloads extends
       validator.validate(envelopeSchema, json);
       JsonNode payload = json.get(FieldName.PAYLOAD);
 
-      String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
-      PrivateKey key = keyStore.getKey(encryptionKeyId);
-      if (key == null) {
-        // Is this really an IOException?
-        throw new IOException(String.format("encryptionKeyId not found: %s", encryptionKeyId));
-      }
-
-      final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
-
       byte[] payloadData;
-      if (decompressPayload.get()) {
-        payloadData = GzipUtil.maybeDecompress(decrypted);
+      if (payload.get(SCHEMA_NAME).equals(DELETION_REQUEST_SCHEMA_NAME)) {
+        // The deletion-request ping is special cased within the decryption
+        // pipeline. The Pioneer client requires an encrypted payload in the
+        // payload, and the server (this transform in particular) requires the
+        // payload to contain encrypted data. We only require the injected
+        // metadata from the envelope to shred all data related to a client, so
+        // the encrypted data in the deletion-request ping is thrown away.
+        payloadData = "{}".getBytes(Charsets.UTF_8);
       } else {
-        // don't bother decompressing
-        payloadData = decrypted;
+        String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
+        PrivateKey key = keyStore.getKey(encryptionKeyId);
+        if (key == null) {
+          // Is this really an IOException?
+          throw new IOException(String.format("encryptionKeyId not found: %s", encryptionKeyId));
+        }
+
+        final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
+
+        if (decompressPayload.get()) {
+          payloadData = GzipUtil.maybeDecompress(decrypted);
+        } else {
+          // don't bother decompressing
+          payloadData = decrypted;
+        }
       }
 
       // insert top-level metadata into the payload
