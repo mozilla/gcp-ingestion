@@ -46,7 +46,8 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
     return PublicJsonWebKey.Factory.newPublicJwk(new String(data));
   }
 
-  private static String encryptWithTestPublicKey(String payload) throws Exception {
+  /** Encrypt a string using a key stored in test resources. */
+  static String encryptWithTestPublicKey(String payload) throws Exception {
     PublicJsonWebKey key = loadPublicKey("account-ecosystem/testkey1.public.json");
     JsonWebEncryption jwe = new JsonWebEncryption();
     jwe.setKey(key.getKey());
