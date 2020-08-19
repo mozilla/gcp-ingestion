@@ -118,7 +118,7 @@ public class DecryptPioneerPayloads extends
       JsonNode payload = json.get(FieldName.PAYLOAD);
 
       byte[] payloadData;
-      if (payload.get(SCHEMA_NAME).equals(DELETION_REQUEST_SCHEMA_NAME)) {
+      if (payload.get(SCHEMA_NAME).asText().equals(DELETION_REQUEST_SCHEMA_NAME)) {
         // The deletion-request ping is special cased within the decryption
         // pipeline. The Pioneer client requires an encrypted payload in the
         // payload, and the server (this transform in particular) requires the

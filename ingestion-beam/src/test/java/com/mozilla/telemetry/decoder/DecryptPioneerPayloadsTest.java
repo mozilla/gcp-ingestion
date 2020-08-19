@@ -163,12 +163,15 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
         .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload));
 
     PAssert.that(result.failures()).empty();
+    // pipeline run must be called for each one of these branches, otherwise it
+    // will skip over each of the intermediate collections and just go to last
+    // seen collection.
+    pipeline.run();
+
     PCollection<String> output = result.output().apply(OutputFileFormat.text.encode())
         .apply(ReformatJson.of());
-
     final List<String> expectedMain = Arrays.asList("{}");
     PAssert.that(output).containsInAnyOrder(expectedMain);
-
     pipeline.run();
   }
 
@@ -195,6 +198,7 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
         .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload));
 
     PAssert.that(result.output()).empty();
+    pipeline.run();
 
     PCollection<String> exceptions = result.failures().apply(MapElements
         .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
