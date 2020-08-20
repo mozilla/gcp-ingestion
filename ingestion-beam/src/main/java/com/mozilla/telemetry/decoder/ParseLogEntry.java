@@ -3,9 +3,9 @@ package com.mozilla.telemetry.decoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
@@ -15,6 +15,7 @@ import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
@@ -23,8 +24,8 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  *
  * <p>Messages sent from the telemetry edge service are passed on without transformation.
  */
-public class ParseLogEntry
-    extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+public class ParseLogEntry extends
+    PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   private final Counter countLogEntryPayload = Metrics.counter(ParseLogEntry.class,
       "log_entry_payload");
@@ -33,9 +34,21 @@ public class ParseLogEntry
     return new ParseLogEntry();
   }
 
+  /**
+   * Base class for all exceptions thrown by this class.
+   */
+  public static class InvalidLogEntryException extends RuntimeException {
+
+    InvalidLogEntryException(String message) {
+      super(message);
+    }
+  }
+
   @Override
-  public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> input) {
-    return input.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(m -> {
+  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
+      PCollection<PubsubMessage> input) {
+    TypeDescriptor<PubsubMessage> td = TypeDescriptor.of(PubsubMessage.class);
+    return input.apply(MapElements.into(td).via((PubsubMessage m) -> {
       if (m.getAttribute(Attribute.SUBMISSION_TIMESTAMP) != null) {
         // If this message has submission_timestamp set, it is a normal message from the edge
         // server rather than a LogEntry from Cloud Logging, so we return immediately.
@@ -48,7 +61,8 @@ public class ParseLogEntry
       try {
         logEntry = Json.readObjectNode(m.getPayload());
       } catch (IOException e) {
-        throw new UncheckedIOException(e);
+        throw new InvalidLogEntryException(
+            "Message has no submission_timestamp but could not be parsed as LogEntry JSON");
       }
       JsonNode fields = logEntry.path("jsonPayload").path("Fields");
       String documentId = Optional.ofNullable(logEntry.path("insertId").textValue())
@@ -73,11 +87,17 @@ public class ParseLogEntry
         Optional.ofNullable(logEntry.path("current").textValue())
             .ifPresent(v -> json.set("previous_ecosystem_anon_ids", Json.createArrayNode().add(v)));
       } else {
-        throw new IllegalArgumentException(
-            "Received an unexpected payload without submission_timestamp");
+        throw new InvalidLogEntryException(
+            "Message has no submission_timestamp but is not in a known LogEntry format");
       }
       json.put("event", event);
       return new PubsubMessage(Json.asBytes(json), attributes);
+    }).exceptionsInto(td).exceptionsVia(ee -> {
+      try {
+        throw ee.exception();
+      } catch (InvalidLogEntryException e) {
+        return FailureMessage.of(ParseLogEntry.class.getSimpleName(), ee.element(), ee.exception());
+      }
     }));
   }
 }
