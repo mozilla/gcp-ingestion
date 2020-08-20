@@ -120,11 +120,11 @@ public class DecryptPioneerPayloads extends
       byte[] payloadData;
       if (payload.get(SCHEMA_NAME).asText().equals(DELETION_REQUEST_SCHEMA_NAME)) {
         // The deletion-request ping is special cased within the decryption
-        // pipeline. The Pioneer client requires an encrypted payload in the
-        // payload, and the server (this transform in particular) requires the
-        // payload to contain encrypted data. We only require the injected
-        // metadata from the envelope to shred all data related to a client, so
-        // the encrypted data in the deletion-request ping is thrown away.
+        // pipeline. The Pioneer client requires a JWE payload to exist before
+        // it can be sent. The encrypted data is the empty string encoded with a
+        // throwaway key, in order to satisfy these requirements. We only need
+        // the envelope metadata to shred all client data in a study, so the
+        // encrypted data in the deletion-request ping is thrown away.
         payloadData = "{}".getBytes(Charsets.UTF_8);
       } else {
         String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
