@@ -46,7 +46,8 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
     return PublicJsonWebKey.Factory.newPublicJwk(new String(data));
   }
 
-  private static String encryptWithTestPublicKey(String payload) throws Exception {
+  /** Encrypt a string using a key stored in test resources. */
+  static String encryptWithTestPublicKey(String payload) throws Exception {
     PublicJsonWebKey key = loadPublicKey("account-ecosystem/testkey1.public.json");
     JsonWebEncryption jwe = new JsonWebEncryption();
     jwe.setKey(key.getKey());
@@ -66,18 +67,6 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
     String actual = DecryptAetIdentifiers.decrypt(keyStore, TextNode.valueOf(encrypted))
         .textValue();
     assertEquals(expected, actual);
-  }
-
-  @Test
-  public void testSanitizeJsonNode() throws Exception {
-    String userId = "2ef67665ec7369ba0fab7f802a5e1e04";
-    String anonId = encryptWithTestPublicKey(userId);
-    ObjectNode json = Json.asObjectNode(
-        ImmutableMap.of("payload", ImmutableMap.of("myList", ImmutableList.of("foo", anonId))));
-    ObjectNode expected = Json.asObjectNode(ImmutableMap.of("payload",
-        ImmutableMap.of("myList", ImmutableList.of("foo", "eyJr<435 characters redacted>"))));
-    DecryptAetIdentifiers.sanitizeJsonNode(json);
-    assertEquals(Json.asString(expected), Json.asString(json));
   }
 
   @Test(expected = ValidationException.class)
@@ -124,9 +113,8 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of(Attribute.URI,
-                        "/submit/firefox-accounts/account-ecosystem/1/"
-                            + "8299c050-6be8-4197-8a0b-fd1062a11da4"))))
+                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "firefox-accounts",
+                        Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
         .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
     PAssert.that(result.failures()).empty();
     PAssert.that(result.output().apply(OutputFileFormat.text.encode()))
@@ -167,9 +155,8 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of(Attribute.URI,
-                        "/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
-                            + "/account-ecosystem/Firefox/61.0a1/nightly/20180328030202"))))
+                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry",
+                        Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
         .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
     PAssert.that(result.failures()).empty();
     PAssert.that(result.output().apply(OutputFileFormat.text.encode()))
@@ -211,13 +198,12 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of(Attribute.URI,
-                        "/submit/firefox-accounts/account-ecosystem/1/"
-                            + "8299c050-6be8-4197-8a0b-fd1062a11da4"))))
+                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "firefox-accounts",
+                        Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
         .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
     PAssert.that(result.output()).empty();
-    PAssert.that(result.failures().apply(OutputFileFormat.text.encode()))
-        .containsInAnyOrder(ImmutableList.of(expected));
+    PAssert.that(result.failures().apply("Sanitize", SanitizeJsonPayload.of())
+        .apply(OutputFileFormat.text.encode())).containsInAnyOrder(ImmutableList.of(expected));
     pipeline.run();
   }
 
@@ -260,14 +246,13 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of(Attribute.URI,
-                        "/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
-                            + "/account-ecosystem/Firefox/61.0a1/nightly/20180328030202"))))
+                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry",
+                        Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
         .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
     PAssert.that(result.output().apply("EncodeOutput", OutputFileFormat.text.encode()))
         .containsInAnyOrder(expectedOutput);
-    PAssert.that(result.failures().apply("EncodeErrors", OutputFileFormat.text.encode()))
-        .containsInAnyOrder(expectedError);
+    PAssert.that(result.failures().apply("Sanitize", SanitizeJsonPayload.of()).apply("EncodeErrors",
+        OutputFileFormat.text.encode())).containsInAnyOrder(expectedError);
     pipeline.run();
   }
 
