@@ -7,7 +7,6 @@ import com.mozilla.telemetry.io.Read.FileInput;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
@@ -16,7 +15,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ParseLogEntryTest extends TestWithDeterministicJson {
+public class ParseLogEntryTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -27,8 +26,10 @@ public class ParseLogEntryTest extends TestWithDeterministicJson {
     String input = inputPath + "/logentry.ndjson";
 
     String expected = Json.asString(ImmutableMap.builder() //
-        .put("event", "oauth.token.created") //
         .put("ecosystem_anon_id", "fake") //
+        .put("event", "oauth.token.created") //
+        .put("country", "United States") //
+        .put("region", "Virginia") //
         .build());
 
     PCollection<PubsubMessage> output = pipeline
