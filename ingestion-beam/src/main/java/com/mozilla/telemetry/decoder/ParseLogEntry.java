@@ -55,6 +55,8 @@ public class ParseLogEntry extends
         return m;
       }
       countLogEntryPayload.inc();
+
+      // Initialize attributes and payload.
       ObjectNode logEntry;
       HashMap<String, String> attributes = new HashMap<>();
       ObjectNode json = Json.createObjectNode();
@@ -64,6 +66,8 @@ public class ParseLogEntry extends
         throw new InvalidLogEntryException(
             "Message has no submission_timestamp but could not be parsed as LogEntry JSON");
       }
+
+      // Extract relevant data and attributes based on the LogEntry content.
       JsonNode fields = logEntry.path("jsonPayload").path("Fields");
       String documentId = Optional.ofNullable(logEntry.path("insertId").textValue())
           .map(id -> attributes.put(Attribute.DOCUMENT_ID,
@@ -74,11 +78,12 @@ public class ParseLogEntry extends
           .ifPresent(v -> attributes.put(Attribute.SUBMISSION_TIMESTAMP, v));
       Optional.ofNullable(fields.path("userAgent").textValue())
           .ifPresent(v -> attributes.put(Attribute.USER_AGENT, v));
-      String event = fields.path("event").asText();
+      String event = fields.path("event").textValue();
       String ecosystemAnonId = fields.path("ecosystemAnonId").textValue();
       attributes.put(Attribute.URI,
           String.format("/submit/firefox-accounts/account-ecosystem/1/%s", documentId));
-      // TODO: Parse geo info
+
+      // Event-specific logic.
       if ("oauth.token.created".equals(event) && ecosystemAnonId != null) {
         json.put("ecosystem_anon_id", ecosystemAnonId);
       } else if ("account.updateEcosystemAnonId.complete".equals(event)) {
@@ -90,7 +95,13 @@ public class ParseLogEntry extends
         throw new InvalidLogEntryException(
             "Message has no submission_timestamp but is not in a known LogEntry format");
       }
+
+      // Add some additional fields if present.
       json.put("event", event);
+      Optional.ofNullable(fields.path("country").textValue())
+          .ifPresent(v -> json.put("country", v));
+      Optional.ofNullable(fields.path("region").textValue()).ifPresent(v -> json.put("region", v));
+
       return new PubsubMessage(Json.asBytes(json), attributes);
     }).exceptionsInto(td).exceptionsVia(ee -> {
       try {
