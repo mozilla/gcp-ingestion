@@ -18,7 +18,7 @@ public class BatchException extends RuntimeException {
     if (e instanceof BatchException || size == 1) {
       return e;
     }
-    throw new BatchException(e, size);
+    return new BatchException(e, size);
   }
 
   private AtomicBoolean handled = new AtomicBoolean(false);
