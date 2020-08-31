@@ -14,7 +14,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <log4j.version>2.13.2</log4j.version>
+        <log4j.version>2.13.3</log4j.version>
         <opencensus.version>0.26.0</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
