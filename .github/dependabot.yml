@@ -1,0 +1,39 @@
+version: 2
+updates:
+- package-ecosystem: maven
+  directory: /
+  schedule:
+    interval: daily
+  reviewers:
+  - relud
+  - jklukas
+  labels:
+  - dependencies
+  - java
+- package-ecosystem: maven
+  directory: /ingestion-beam
+  schedule:
+    interval: daily
+  reviewers:
+  - jklukas
+  labels:
+  - dependencies
+  - java
+- package-ecosystem: maven
+  directory: /ingestion-sink
+  schedule:
+    interval: daily
+  reviewers:
+  - relud
+  labels:
+  - dependencies
+  - java
+- package-ecosystem: pip
+  directory: /ingestion-edge
+  schedule:
+    interval: daily
+  reviewers:
+  - relud
+  labels:
+  - dependencies
+  - python
