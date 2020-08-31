@@ -14,8 +14,8 @@
     <packaging>jar</packaging>
 
     <properties>
-        <log4j.version>2.13.2</log4j.version>
-        <opencensus.version>0.26.0</opencensus.version>
+        <log4j.version>2.13.3</log4j.version>
+        <opencensus.version>0.27.0</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
 
@@ -52,7 +52,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
-                <version>8.0.0</version>
+                <version>10.0.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -167,7 +167,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>3.0.0</version>
                 <configuration>
                     <skip>false</skip>
                 </configuration>
