@@ -355,9 +355,9 @@ pyparsing==2.4.7 \
 pytest-black==0.3.10 \
     --hash=sha256:5f3c0cfee9b41e6281a9e52e2987f4c90ec4a13a92bbf2f249d26d7b58747437 \
     # via -r requirements.in
-pytest-cov==2.10.0 \
-    --hash=sha256:1a629dc9f48e53512fcbfda6b07de490c374b0c83c55ff7a1720b3fccff0ac87 \
-    --hash=sha256:6e6d18092dce6fad667cd7020deed816f858ad3b49d5b5e2b1cc1c97a4dba65c \
+pytest-cov==2.10.1 \
+    --hash=sha256:45ec2d5182f89a81fc3eb29e3d1ed3113b9e9a873bcddb2a71faaab066110191 \
+    --hash=sha256:47bd0ce14056fdd79f93e1713f88fad7bdcc583dcd7783da86ef2f085a0bb88e \
     # via -r requirements.in
 pytest-docstyle==2.0.1 \
     --hash=sha256:66b523677d8ed5f5b061ba0d216d46420ec85b492083e8e80bc6ea5fd6164f3b \
