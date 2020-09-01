@@ -6,10 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import nl.basjes.shaded.org.springframework.core.io.Resource;
-import nl.basjes.shaded.org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 /**
  * Utilities for reading files and Java resources and for comparing whether line sets match.
