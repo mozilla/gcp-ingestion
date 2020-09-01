@@ -6,11 +6,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.Constant.Namespace;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
+import com.mozilla.telemetry.ingestion.core.schema.PmdStore;
+import com.mozilla.telemetry.ingestion.core.schema.PmdStore.JweMapping;
+import com.mozilla.telemetry.ingestion.core.schema.PmdStore.PipelineMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.JsonValidator;
 import com.mozilla.telemetry.util.KeyStore;
@@ -18,6 +21,8 @@ import com.mozilla.telemetry.util.KeyStore.KeyNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.security.PrivateKey;
+import java.util.HashMap;
+import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -56,9 +61,11 @@ import org.jose4j.lang.JoseException;
 public class DecryptAetIdentifiers extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
+  private final ValueProvider<String> schemasLocation;
   private final ValueProvider<String> metadataLocation;
   private final ValueProvider<Boolean> kmsEnabled;
   private transient KeyStore keyStore;
+  private transient PmdStore pipelineMetadataStore;
   private transient JsonValidator validator;
   private transient Schema telemetryAetSchema;
   private transient Schema structuredAetSchema;
@@ -78,13 +85,16 @@ public class DecryptAetIdentifiers extends
 
   public static final String ACCOUNT_ECOSYSTEM = "account-ecosystem";
 
-  public static DecryptAetIdentifiers of(ValueProvider<String> metadataLocation,
+  public static DecryptAetIdentifiers of(ValueProvider<String> schemasLocation,
+      ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled) {
-    return new DecryptAetIdentifiers(metadataLocation, kmsEnabled);
+    return new DecryptAetIdentifiers(schemasLocation, metadataLocation, kmsEnabled);
   }
 
-  private DecryptAetIdentifiers(ValueProvider<String> metadataLocation,
+  private DecryptAetIdentifiers(ValueProvider<String> schemasLocation,
+      ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled) {
+    this.schemasLocation = schemasLocation;
     this.metadataLocation = metadataLocation;
     this.kmsEnabled = kmsEnabled;
   }
@@ -170,37 +180,26 @@ public class DecryptAetIdentifiers extends
     }
   }
 
+  public static void decrypt(KeyStore keyStore, JsonNode json, List<JweMapping> mappings)
+  throws JoseException, KeyNotFoundException {
+    for (JweMapping mapping : mappings
+    ) {
+      JsonNode sourceNode = json.at(mapping.source_field_path());
+      JsonNode destinationParent = json.at(mapping.decrypted_field_path().head());
+      ((ObjectNode) destinationParent).set(mapping.decrypted_field_path().last().getMatchingProperty(),
+          decrypt(keyStore, sourceNode));
+    }
+  }
+
   private class Fn implements ProcessFunction<PubsubMessage, PubsubMessage> {
-
-    private void processDesktopTelemetryPayload(ObjectNode json) throws IOException, JoseException {
-      validator.validate(telemetryAetSchema, json);
-      ObjectNode payload = (ObjectNode) json.path(FieldName.PAYLOAD);
-      JsonNode anonIdNode = payload.remove("ecosystemAnonId");
-      if (anonIdNode != null) {
-        payload.set("ecosystemUserId", decrypt(keyStore, anonIdNode));
-      }
-      ArrayNode prevAnonIdsNode = (ArrayNode) payload.remove("previousEcosystemAnonIds");
-      if (prevAnonIdsNode != null) {
-        payload.set("previousEcosystemUserIds", decrypt(keyStore, prevAnonIdsNode));
-      }
-    }
-
-    private void processStructuredIngestionPayload(ObjectNode json)
-        throws IOException, JoseException {
-      validator.validate(structuredAetSchema, json);
-      JsonNode anonIdNode = json.remove("ecosystem_anon_id");
-      if (anonIdNode != null) {
-        json.set("ecosystem_user_id", decrypt(keyStore, anonIdNode));
-      }
-      ArrayNode prevAnonIdsNode = (ArrayNode) json.remove("previous_ecosystem_anon_ids");
-      if (prevAnonIdsNode != null) {
-        json.set("previous_ecosystem_user_ids", decrypt(keyStore, prevAnonIdsNode));
-      }
-    }
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
       message = PubsubConstraints.ensureNonNull(message);
+
+      if (pipelineMetadataStore == null) {
+        pipelineMetadataStore = PmdStore.of(schemasLocation.get(), BeamFileInputStream::open);
+      }
 
       if (keyStore == null) {
         // If configured resources aren't available, this throws UncheckedIOException;
@@ -232,22 +231,32 @@ public class DecryptAetIdentifiers extends
 
       String namespace = message.getAttribute(Attribute.DOCUMENT_NAMESPACE);
       String docType = message.getAttribute(Attribute.DOCUMENT_TYPE);
+      HashMap<String, String> attributes = new HashMap<>(message.getAttributeMap());
+      attributes.putIfAbsent(Attribute.DOCUMENT_VERSION, "4");
+
+      PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
+      if (meta.jwe_mappings().isEmpty()) {
+        illegalAetUri.inc();
+        throw new IllegalAetUriException();
+      }
 
       try {
         if (Namespace.TELEMETRY.equals(namespace) && //
             docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
-          processDesktopTelemetryPayload(json);
+          validator.validate(telemetryAetSchema, json);
+          decrypt(keyStore, json, meta.jwe_mappings());
           successTelemetry.inc();
-        } else if (false) {
-          // Placeholder condition for handling AET payloads coming from Glean-enabled applications;
-          // design is evolving in https://bugzilla.mozilla.org/show_bug.cgi?id=1634468
-          successGlean.inc();
-        } else if (docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
-          processStructuredIngestionPayload(json);
+        } else if ("firefox-accounts".equals(namespace) && //
+            docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
+          validator.validate(structuredAetSchema, json);
+          decrypt(keyStore, json, meta.jwe_mappings());
           successStructured.inc();
         } else {
-          illegalAetUri.inc();
-          throw new IllegalAetUriException();
+          // This must be a Glean docType where we don't need extra validation;
+          // JWE values are too large to be passed as a normal string value in Glean
+          // so we are guaranteed that JWE types must have a registered mapping.
+          decrypt(keyStore, json, meta.jwe_mappings());
+          successGlean.inc();
         }
       } catch (IOException | JoseException | ValidationException | KeyNotFoundException e) {
         illegalAetPayload.inc();

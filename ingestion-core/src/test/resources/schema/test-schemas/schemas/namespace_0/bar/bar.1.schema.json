@@ -1,12 +1,26 @@
 {
   "$schema" : "http://json-schema.org/draft-04/schema#",
   "type" : "object",
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "namespace_0",
+    "bq_metadata_format": "structured",
+    "bq_table": "bar_v1",
+    "jwe_mappings": [
+      {
+        "source_field_path": "/payload/test_jwe",
+        "decrypted_field_path": "/payload/foo/bar/test_string"
+      }
+    ]
+  },
   "properties" : {
     "payload": {
       "type": "object",
       "properties" : {
         "test_int": {
           "type": "integer"
+        },
+        "test_string": {
+          "type": "string"
         }
       },
       "required" : []
