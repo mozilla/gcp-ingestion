@@ -381,9 +381,9 @@ pytest-sanic==1.6.1 \
     --hash=sha256:99e02c28cfa18a0a9af0cd151dddf0eca373279b9bac808733746f7ed7030ecc \
     --hash=sha256:f258c7e34818d316ff75882f865a8b08714c732461fad2d54fbe7bc7c266e6c7 \
     # via -r requirements.in
-pytest-timeout==1.3.4 \
-    --hash=sha256:80faa19cd245a42b87a51699d640c00d937c02b749052bfca6bae8bdbe12c48e \
-    --hash=sha256:95ca727d4a1dace6ec5f0534d2940b8417ff8b782f7eef0ea09240bdd94d95c2 \
+pytest-timeout==1.4.2 \
+    --hash=sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76 \
+    --hash=sha256:541d7aa19b9a6b4e475c759fd6073ef43d7cdc9a92d95644c260076eb257a063 \
     # via -r requirements.in
 pytest==5.4.3 \
     --hash=sha256:5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1 \
