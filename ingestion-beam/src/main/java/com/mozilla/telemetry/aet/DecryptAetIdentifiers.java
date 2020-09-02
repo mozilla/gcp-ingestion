@@ -2,15 +2,18 @@ package com.mozilla.telemetry.aet;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.google.common.io.Resources;
+import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.Namespace;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.PmdStore;
 import com.mozilla.telemetry.ingestion.core.schema.PmdStore.JweMapping;
 import com.mozilla.telemetry.ingestion.core.schema.PmdStore.PipelineMetadata;
+import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
@@ -86,14 +89,12 @@ public class DecryptAetIdentifiers extends
   public static final String ACCOUNT_ECOSYSTEM = "account-ecosystem";
 
   public static DecryptAetIdentifiers of(ValueProvider<String> schemasLocation,
-      ValueProvider<String> metadataLocation,
-      ValueProvider<Boolean> kmsEnabled) {
+      ValueProvider<String> metadataLocation, ValueProvider<Boolean> kmsEnabled) {
     return new DecryptAetIdentifiers(schemasLocation, metadataLocation, kmsEnabled);
   }
 
   private DecryptAetIdentifiers(ValueProvider<String> schemasLocation,
-      ValueProvider<String> metadataLocation,
-      ValueProvider<Boolean> kmsEnabled) {
+      ValueProvider<String> metadataLocation, ValueProvider<Boolean> kmsEnabled) {
     this.schemasLocation = schemasLocation;
     this.metadataLocation = metadataLocation;
     this.kmsEnabled = kmsEnabled;
@@ -174,20 +175,33 @@ public class DecryptAetIdentifiers extends
         userIds.add(decrypt(keyStore, node));
       }
       return userIds;
+    } else if (anonIdNode.isNull()) {
+      return NullNode.getInstance();
     } else {
       throw new IllegalArgumentException(
           "Argument to decrypt must be a TextNode or ArrayNode, but got " + anonIdNode);
     }
   }
 
-  public static void decrypt(KeyStore keyStore, JsonNode json, List<JweMapping> mappings)
-  throws JoseException, KeyNotFoundException {
-    for (JweMapping mapping : mappings
-    ) {
+  private static void decryptAndReplace(KeyStore keyStore, JsonNode json, List<JweMapping> mappings)
+      throws JoseException, KeyNotFoundException {
+    for (JweMapping mapping : mappings) {
       JsonNode sourceNode = json.at(mapping.source_field_path());
+      if (sourceNode.isMissingNode()) {
+        continue;
+      }
+      JsonNode decrypted = decrypt(keyStore, sourceNode);
+      ObjectNode sourceParent = (ObjectNode) json.at(mapping.source_field_path().head());
+      sourceParent.remove(mapping.source_field_path().last().getMatchingProperty());
       JsonNode destinationParent = json.at(mapping.decrypted_field_path().head());
-      ((ObjectNode) destinationParent).set(mapping.decrypted_field_path().last().getMatchingProperty(),
-          decrypt(keyStore, sourceNode));
+      if (destinationParent.isObject()) {
+        ((ObjectNode) destinationParent)
+            .set(mapping.decrypted_field_path().last().getMatchingProperty(), decrypted);
+      } else {
+        throw new IllegalArgumentException(
+            "Payload is missing parent object for destination field: "
+                + mapping.decrypted_field_path());
+      }
     }
   }
 
@@ -232,7 +246,15 @@ public class DecryptAetIdentifiers extends
       String namespace = message.getAttribute(Attribute.DOCUMENT_NAMESPACE);
       String docType = message.getAttribute(Attribute.DOCUMENT_TYPE);
       HashMap<String, String> attributes = new HashMap<>(message.getAttributeMap());
-      attributes.putIfAbsent(Attribute.DOCUMENT_VERSION, "4");
+
+      try {
+        if (!attributes.containsKey(Attribute.DOCUMENT_VERSION)) {
+          String version = ParsePayload.getVersionFromTelemetryPayload(json);
+          attributes.put(Attribute.DOCUMENT_VERSION, version);
+        }
+      } catch (SchemaNotFoundException e) {
+        throw new IllegalAetPayloadException(e);
+      }
 
       PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
       if (meta.jwe_mappings().isEmpty()) {
@@ -244,27 +266,27 @@ public class DecryptAetIdentifiers extends
         if (Namespace.TELEMETRY.equals(namespace) && //
             docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
           validator.validate(telemetryAetSchema, json);
-          decrypt(keyStore, json, meta.jwe_mappings());
+          decryptAndReplace(keyStore, json, meta.jwe_mappings());
           successTelemetry.inc();
         } else if ("firefox-accounts".equals(namespace) && //
             docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
           validator.validate(structuredAetSchema, json);
-          decrypt(keyStore, json, meta.jwe_mappings());
+          decryptAndReplace(keyStore, json, meta.jwe_mappings());
           successStructured.inc();
         } else {
           // This must be a Glean docType where we don't need extra validation;
           // JWE values are too large to be passed as a normal string value in Glean
           // so we are guaranteed that JWE types must have a registered mapping.
-          decrypt(keyStore, json, meta.jwe_mappings());
+          decryptAndReplace(keyStore, json, meta.jwe_mappings());
           successGlean.inc();
         }
-      } catch (IOException | JoseException | ValidationException | KeyNotFoundException e) {
+      } catch (IOException | JoseException | ValidationException | KeyNotFoundException
+          | IllegalArgumentException e) {
         illegalAetPayload.inc();
         throw new IllegalAetPayloadException(e);
       }
 
       return new PubsubMessage(Json.asBytes(json), message.getAttributeMap());
     }
-
   }
 }

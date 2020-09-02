@@ -140,18 +140,14 @@ public class ParsePayload extends
 
       // If no "document_version" attribute was parsed from the URI, this element must be from the
       // /submit/telemetry endpoint and we now need to grab version from the payload.
-      if (!attributes.containsKey("document_version")) {
-        Optional<JsonNode> version = Stream.of(json.path("version"), json.path("v"))
-            .filter(JsonNode::isValueNode).findFirst();
-        if (version.isPresent()) {
-          attributes.put(Attribute.DOCUMENT_VERSION, version.get().asText());
-        } else {
+      if (!attributes.containsKey(Attribute.DOCUMENT_VERSION)) {
+        try {
+          String version = getVersionFromTelemetryPayload(json);
+          attributes.put(Attribute.DOCUMENT_VERSION, version);
+        } catch (SchemaNotFoundException e) {
           PerDocTypeCounter.inc(attributes, "error_missing_version");
           PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-          throw new SchemaNotFoundException(
-              "Element was assumed to be a telemetry message because it contains no"
-                  + " document_version attribute, but the payload does not include"
-                  + " the top-level 'version' or 'v' field expected for a telemetry document");
+          throw e;
         }
       }
 
@@ -186,6 +182,22 @@ public class ParsePayload extends
       PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
 
       return Collections.singletonList(new PubsubMessage(normalizedPayload, attributes));
+    }
+  }
+
+  /**
+   * Return value of top-level "version" or "v" field in JSON payload.
+   */
+  public static String getVersionFromTelemetryPayload(JsonNode json) {
+    Optional<JsonNode> version = Stream.of(json.path("version"), json.path("v"))
+        .filter(JsonNode::isValueNode).findFirst();
+    if (version.isPresent()) {
+      return version.get().asText();
+    } else {
+      throw new SchemaNotFoundException(
+          "Element was assumed to be a telemetry message because it contains no"
+              + " document_version attribute, but the payload does not include"
+              + " the top-level 'version' or 'v' field expected for a telemetry document");
     }
   }
 

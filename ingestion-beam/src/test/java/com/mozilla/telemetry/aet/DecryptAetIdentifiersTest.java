@@ -85,6 +85,7 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
   @Test
   public void testOutputStructured() throws Exception {
     // minimal test for throughput of a single document
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("account-ecosystem/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
@@ -114,8 +115,9 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
                     ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "firefox-accounts",
-                        Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
-        .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
+                        Attribute.DOCUMENT_TYPE, "account-ecosystem", Attribute.DOCUMENT_VERSION,
+                        "1"))))
+        .apply(DecryptAetIdentifiers.of(schemasLocation, metadataLocation, kmsEnabled));
     PAssert.that(result.failures()).empty();
     PAssert.that(result.output().apply(OutputFileFormat.text.encode()))
         .containsInAnyOrder(ImmutableList.of(expected));
@@ -125,6 +127,7 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
   @Test
   public void testOutputTelemetry() throws Exception {
     // minimal test for throughput of a single document
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("account-ecosystem/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
@@ -140,12 +143,12 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
         throw new RuntimeException(e);
       }
     }).collect(Collectors.toList());
-    String input = Json.asString(ImmutableMap.of("payload",
+    String input = Json.asString(ImmutableMap.of("version", "4", "payload",
         ImmutableMap.builder().put("ecosystemAnonId", anonId)
             .put("ecosystemClientId", "3ed15efab7e94757bf9e9ef5e844ada2")
             .put("ecosystemDeviceId", "7ab4e373ce434b848a9d0946e388fee9")
             .put("previousEcosystemAnonIds", prevAnonIds).build()));
-    String expected = Json.asString(ImmutableMap.of("payload",
+    String expected = Json.asString(ImmutableMap.of("version", "4", "payload",
         ImmutableMap.builder().put("ecosystemUserId", userId)
             .put("ecosystemClientId", "3ed15efab7e94757bf9e9ef5e844ada2")
             .put("ecosystemDeviceId", "7ab4e373ce434b848a9d0946e388fee9")
@@ -157,7 +160,7 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
                 .via(element -> new PubsubMessage(element.getPayload(),
                     ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry",
                         Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
-        .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
+        .apply(DecryptAetIdentifiers.of(schemasLocation, metadataLocation, kmsEnabled));
     PAssert.that(result.failures()).empty();
     PAssert.that(result.output().apply(OutputFileFormat.text.encode()))
         .containsInAnyOrder(ImmutableList.of(expected));
@@ -167,6 +170,7 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
   @Test
   public void testErrorOutput() throws Exception {
     // minimal test for throughput of a single document
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("account-ecosystem/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
@@ -200,7 +204,7 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
                 .via(element -> new PubsubMessage(element.getPayload(),
                     ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "firefox-accounts",
                         Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
-        .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
+        .apply(DecryptAetIdentifiers.of(schemasLocation, metadataLocation, kmsEnabled));
     PAssert.that(result.output()).empty();
     PAssert.that(result.failures().apply("Sanitize", SanitizeJsonPayload.of())
         .apply(OutputFileFormat.text.encode())).containsInAnyOrder(ImmutableList.of(expected));
@@ -210,6 +214,7 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
   @Test
   public void testTelemetryErrorOutput() throws Exception {
     // minimal test for throughput of a single document
+    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("account-ecosystem/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
@@ -225,22 +230,24 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
         throw new RuntimeException(e);
       }
     }).collect(Collectors.toList());
-    List<String> input = ImmutableList.of("{}", "{\"payload\":{}}",
-        "{\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}",
-        Json.asString(ImmutableMap.of("payload",
+    // "version":"4"
+    List<String> input = ImmutableList.of("{}", "{\"version\":\"4\",\"payload\":{}}",
+        "{\"version\":\"4\""
+            + ",\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}",
+        Json.asString(ImmutableMap.of("version", "4", "payload",
             ImmutableMap.builder().put("ecosystemAnonId", anonId)
                 .put("ecosystemClientId", "3ed15efab7e94757bf9e9ef5e844ada2")
                 .put("ecosystemDeviceId", "7ab4e373ce434b848a9d0946e388fee9")
                 // We incorrectly name the anonId field like structured to cause a failure.
                 .put("previous_ecosystem_anon_ids", prevAnonIds).build())));
-    List<String> expectedOutput = ImmutableList
-        .of("{\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}");
-    List<String> expectedError = ImmutableList.of("{}", "{\"payload\":{}}",
+    List<String> expectedOutput = ImmutableList.of("{\"version\":\"4\""
+        + ",\"payload\":{\"ecosystemClientId\":\"foo\",\"ecosystemDeviceId\":\"bar\"}}");
+    List<String> expectedError = ImmutableList.of("{}", "{\"version\":\"4\",\"payload\":{}}",
         "{\"payload\":{\"ecosystemAnonId\":\"eyJr<435 characters redacted>\""
             + ",\"ecosystemClientId\":\"3ed15efab7e94757bf9e9ef5e844ada2\""
             + ",\"ecosystemDeviceId\":\"7ab4e373ce434b848a9d0946e388fee9\""
             + ",\"previous_ecosystem_anon_ids\":[\"eyJr<435 characters redacted>\""
-            + ",\"eyJr<435 characters redacted>\"]}}");
+            + ",\"eyJr<435 characters redacted>\"]},\"version\":\"4\"}");
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
@@ -248,7 +255,7 @@ public class DecryptAetIdentifiersTest extends TestWithDeterministicJson {
                 .via(element -> new PubsubMessage(element.getPayload(),
                     ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry",
                         Attribute.DOCUMENT_TYPE, "account-ecosystem"))))
-        .apply(DecryptAetIdentifiers.of(metadataLocation, kmsEnabled));
+        .apply(DecryptAetIdentifiers.of(schemasLocation, metadataLocation, kmsEnabled));
     PAssert.that(result.output().apply("EncodeOutput", OutputFileFormat.text.encode()))
         .containsInAnyOrder(expectedOutput);
     PAssert.that(result.failures().apply("Sanitize", SanitizeJsonPayload.of()).apply("EncodeErrors",

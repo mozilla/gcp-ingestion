@@ -44,8 +44,8 @@ public class AetProcessing extends PTransform<PCollection<PubsubMessage>, //
         // but we have a redundant step here so that if there's a failure, we're able to
         // sanitize the payload before sending to error output.
         .apply("AetParseUri", ParseUri.of()).failuresTo(failureCollections) //
-        .apply(DecryptAetIdentifiers //
-            .of(options.getAetMetadataLocation(), options.getAetKmsEnabled())) //
+        .apply(DecryptAetIdentifiers.of(options.getSchemasLocation(),
+            options.getAetMetadataLocation(), options.getAetKmsEnabled())) //
         .failuresTo(failureCollections);
 
     // Flatten and sanitize error collections.

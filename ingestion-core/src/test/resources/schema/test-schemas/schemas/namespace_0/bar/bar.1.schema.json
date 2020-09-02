@@ -7,8 +7,8 @@
     "bq_table": "bar_v1",
     "jwe_mappings": [
       {
-        "source_field_path": "/payload/test_jwe",
-        "decrypted_field_path": "/payload/foo/bar/test_string"
+        "source_field_path": "/test_jwe",
+        "decrypted_field_path": "/test_string"
       }
     ]
   },

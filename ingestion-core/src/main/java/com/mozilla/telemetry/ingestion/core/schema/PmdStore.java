@@ -1,9 +1,7 @@
 package com.mozilla.telemetry.ingestion.core.schema;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.auto.value.AutoValue;
@@ -27,6 +25,7 @@ public class PmdStore extends SchemaStore<PmdStore.PipelineMetadata> {
     }
 
     public abstract JsonPointer source_field_path();
+
     public abstract JsonPointer decrypted_field_path();
 
     @AutoValue.Builder
@@ -34,6 +33,7 @@ public class PmdStore extends SchemaStore<PmdStore.PipelineMetadata> {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public abstract static class Builder {
       public abstract Builder source_field_path(JsonPointer value);
+
       public abstract Builder decrypted_field_path(JsonPointer value);
 
       public abstract JweMapping build();
@@ -54,6 +54,7 @@ public class PmdStore extends SchemaStore<PmdStore.PipelineMetadata> {
 
     public abstract String bq_metadata_format();
 
+    @Nullable
     public abstract List<JweMapping> jwe_mappings();
 
     @AutoValue.Builder
