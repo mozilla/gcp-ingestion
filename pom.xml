@@ -57,7 +57,7 @@
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
-        <jackson.version>2.10.2</jackson.version>
+        <jackson.version>2.11.2</jackson.version>
         <avro.version>1.8.2</avro.version>
 
         <!-- Set empty default. -->
