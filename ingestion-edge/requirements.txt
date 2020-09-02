@@ -114,9 +114,9 @@ google-auth==1.19.2 \
     --hash=sha256:15b42d57d6c3d868d318e8273c06b2692fc5aad1bc45989a4f68f1fee05d41b2 \
     --hash=sha256:f404448f3d3c91944b1d907427d4a0c48f465898e9dbacf1bdebf95c5fe03273 \
     # via google-api-core, kubernetes
-google-cloud-container==2.0.0 \
-    --hash=sha256:737707cd83e51bf6d52dec8e2884463bd02233bef685a08bcc288646c91f33e6 \
-    --hash=sha256:fee1240bac1dc3fd08b5bc5bff597ea92d693d0e739bc9826d16b800ba648927 \
+google-cloud-container==2.0.1 \
+    --hash=sha256:0692306ea01fc17810761d39b67156b4bf85dd61ea25b54acfe2df558dd57a24 \
+    --hash=sha256:6f714e3d427e2b36d1365fc400f4d379972529fb40f798d9c0e06c7c3418fc89 \
     # via -r requirements.in
 google-cloud-monitoring==1.1.0 \
     --hash=sha256:30632fa7aad044a3b4e2b662e6ba99f29f60064c1cfc88bbf4d175c1a12ced66 \
@@ -355,9 +355,9 @@ pyparsing==2.4.7 \
 pytest-black==0.3.10 \
     --hash=sha256:5f3c0cfee9b41e6281a9e52e2987f4c90ec4a13a92bbf2f249d26d7b58747437 \
     # via -r requirements.in
-pytest-cov==2.10.0 \
-    --hash=sha256:1a629dc9f48e53512fcbfda6b07de490c374b0c83c55ff7a1720b3fccff0ac87 \
-    --hash=sha256:6e6d18092dce6fad667cd7020deed816f858ad3b49d5b5e2b1cc1c97a4dba65c \
+pytest-cov==2.10.1 \
+    --hash=sha256:45ec2d5182f89a81fc3eb29e3d1ed3113b9e9a873bcddb2a71faaab066110191 \
+    --hash=sha256:47bd0ce14056fdd79f93e1713f88fad7bdcc583dcd7783da86ef2f085a0bb88e \
     # via -r requirements.in
 pytest-docstyle==2.0.1 \
     --hash=sha256:66b523677d8ed5f5b061ba0d216d46420ec85b492083e8e80bc6ea5fd6164f3b \
@@ -381,9 +381,9 @@ pytest-sanic==1.6.1 \
     --hash=sha256:99e02c28cfa18a0a9af0cd151dddf0eca373279b9bac808733746f7ed7030ecc \
     --hash=sha256:f258c7e34818d316ff75882f865a8b08714c732461fad2d54fbe7bc7c266e6c7 \
     # via -r requirements.in
-pytest-timeout==1.3.4 \
-    --hash=sha256:80faa19cd245a42b87a51699d640c00d937c02b749052bfca6bae8bdbe12c48e \
-    --hash=sha256:95ca727d4a1dace6ec5f0534d2940b8417ff8b782f7eef0ea09240bdd94d95c2 \
+pytest-timeout==1.4.2 \
+    --hash=sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76 \
+    --hash=sha256:541d7aa19b9a6b4e475c759fd6073ef43d7cdc9a92d95644c260076eb257a063 \
     # via -r requirements.in
 pytest==5.4.3 \
     --hash=sha256:5c0db86b698e8f170ba4582a492248919255fcd4c79b1ee64ace34301fb589a1 \
