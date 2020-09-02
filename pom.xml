@@ -338,7 +338,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.0</version>
                 <executions>
                     <!-- add ingestion-core/src to all modules -->
                     <execution>
