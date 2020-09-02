@@ -10,9 +10,9 @@ import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.Namespace;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
-import com.mozilla.telemetry.ingestion.core.schema.PmdStore;
-import com.mozilla.telemetry.ingestion.core.schema.PmdStore.JweMapping;
-import com.mozilla.telemetry.ingestion.core.schema.PmdStore.PipelineMetadata;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.JweMapping;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -68,7 +68,7 @@ public class DecryptAetIdentifiers extends
   private final ValueProvider<String> metadataLocation;
   private final ValueProvider<Boolean> kmsEnabled;
   private transient KeyStore keyStore;
-  private transient PmdStore pipelineMetadataStore;
+  private transient PipelineMetadataStore pipelineMetadataStore;
   private transient JsonValidator validator;
   private transient Schema telemetryAetSchema;
   private transient Schema structuredAetSchema;
@@ -212,7 +212,8 @@ public class DecryptAetIdentifiers extends
       message = PubsubConstraints.ensureNonNull(message);
 
       if (pipelineMetadataStore == null) {
-        pipelineMetadataStore = PmdStore.of(schemasLocation.get(), BeamFileInputStream::open);
+        pipelineMetadataStore = PipelineMetadataStore.of(schemasLocation.get(),
+            BeamFileInputStream::open);
       }
 
       if (keyStore == null) {

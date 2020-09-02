@@ -2,7 +2,7 @@ package com.mozilla.telemetry.ingestion.core.schema;
 
 import static org.junit.Assert.assertEquals;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
 import org.junit.Test;
 
 public class PipelineMetadataStoreTest {
@@ -12,10 +12,9 @@ public class PipelineMetadataStoreTest {
 
   @Test
   public void testGetPipelineMetadata() throws SchemaNotFoundException {
-    JsonNode meta = store.getSchema("namespace_0/bar/bar.1.schema.json");
-    assertEquals("namespace_0", meta.path("bq_dataset_family").textValue());
-    assertEquals("bar_v1", meta.path("bq_table").textValue());
-    assertEquals(1, meta.path("jwe_mappings").size());
+    PipelineMetadata meta = store.getSchema("namespace_0/bar/bar.1.schema.json");
+    assertEquals("namespace_0", meta.bq_dataset_family());
+    assertEquals("/test_string", meta.jwe_mappings().get(0).decrypted_field_path().toString());
   }
 
 }
