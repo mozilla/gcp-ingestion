@@ -14,6 +14,11 @@ import javax.annotation.Nullable;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.io.IOUtils;
 
+/**
+ * This schema store uses the same mozilla-pipeline-schemas tarball as JSONSchemaStore,
+ * but instead of returning Schema instances to be used for validation, it returns
+ * {@link PipelineMetadata} objects parsed from each schema's "mozPipelineMetadata" entry.
+ */
 public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.PipelineMetadata> {
 
   @AutoValue
