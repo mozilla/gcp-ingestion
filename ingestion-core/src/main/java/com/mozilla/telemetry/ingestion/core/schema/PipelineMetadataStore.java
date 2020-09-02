@@ -24,6 +24,7 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
   @AutoValue
   @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_JweMapping.Builder.class)
   public abstract static class JweMapping {
+
     public static Builder builder() {
       return new AutoValue_PipelineMetadataStore_JweMapping.Builder();
     }
@@ -36,6 +37,7 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     @JsonPOJOBuilder(withPrefix = "")
     @JsonIgnoreProperties(ignoreUnknown = true)
     public abstract static class Builder {
+
       public abstract Builder source_field_path(JsonPointer value);
 
       public abstract Builder decrypted_field_path(JsonPointer value);
@@ -48,6 +50,7 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
   @AutoValue
   @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_PipelineMetadata.Builder.class)
   public abstract static class PipelineMetadata {
+
     public static Builder builder() {
       return new AutoValue_PipelineMetadataStore_PipelineMetadata.Builder();
     }
@@ -65,6 +68,7 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     @JsonPOJOBuilder(withPrefix = "")
     @JsonIgnoreProperties(ignoreUnknown = true)
     public abstract static class Builder {
+
       public abstract Builder bq_dataset_family(String value);
 
       public abstract Builder bq_table(String value);
@@ -80,6 +84,7 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
   @AutoValue
   @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_Container.Builder.class)
   public abstract static class Container {
+
     public static Builder builder() {
       return new AutoValue_PipelineMetadataStore_Container.Builder();
     }
@@ -91,6 +96,7 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     @JsonPOJOBuilder(withPrefix = "")
     @JsonIgnoreProperties(ignoreUnknown = true)
     public abstract static class Builder {
+
       public abstract Builder mozPipelineMetadata(PipelineMetadata value);
 
       public abstract Container build();
