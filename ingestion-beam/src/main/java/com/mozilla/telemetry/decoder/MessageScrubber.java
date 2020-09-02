@@ -32,6 +32,8 @@ public class MessageScrubber {
       .put("org-mozilla-fenix-debug", "1614409") //
       .put("com-granitamalta-cloudbrowser", "1644200") //
       .put("org-mozilla-fenix-tm", "1638902") //
+      .put("network-novak-iceweasel", "1662737") //
+      .put("skipity-web-browser-ios", "1662737") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
