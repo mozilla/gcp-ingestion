@@ -514,4 +514,14 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
   }
+
+  @Test
+  public void testUnwantedDataBug1656910SavedSession() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+        .put(Attribute.DOCUMENT_TYPE, "saved-session").build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
+  }
 }
