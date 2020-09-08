@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import avro.shaded.com.google.common.collect.ImmutableList;
 import com.google.cloud.bigquery.BigQueryError;
 import com.google.cloud.bigquery.Job;
 import com.google.cloud.bigquery.JobInfo;
@@ -13,6 +12,7 @@ import com.google.cloud.bigquery.JobStatus;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
+import com.google.common.collect.ImmutableList;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;

@@ -32,11 +32,14 @@ public class MessageScrubber {
       .put("org-mozilla-fenix-debug", "1614409") //
       .put("com-granitamalta-cloudbrowser", "1644200") //
       .put("org-mozilla-fenix-tm", "1638902") //
+      .put("network-novak-iceweasel", "1662737") //
+      .put("skipity-web-browser-ios", "1662737") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
       .<String, String>builder().put("pioneer-study", "1631849") //
       .put("frecency-update", "1633525") //
+      .put("saved-session", "1656910") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
