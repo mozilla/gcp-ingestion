@@ -35,6 +35,7 @@ public class AetProcessingTest extends TestWithDeterministicJson {
     // minimal test for throughput of a single document
     DecoderOptions decoderOptions = pipeline.getOptions().as(DecoderOptions.class);
     decoderOptions.setAetEnabled(true);
+    decoderOptions.setSchemasLocation(pipeline.newProvider("schemas.tar.gz"));
     decoderOptions.setAetMetadataLocation(pipeline
         .newProvider(Resources.getResource("account-ecosystem/metadata-local.json").getPath()));
     decoderOptions.setAetKmsEnabled(pipeline.newProvider(false));
@@ -50,12 +51,12 @@ public class AetProcessingTest extends TestWithDeterministicJson {
         throw new RuntimeException(e);
       }
     }).collect(Collectors.toList());
-    String input = Json.asString(ImmutableMap.of("payload",
+    String input = Json.asString(ImmutableMap.of("version", "4", "payload",
         ImmutableMap.builder().put("ecosystemAnonId", anonId)
             .put("ecosystemClientId", "3ed15efab7e94757bf9e9ef5e844ada2")
             .put("ecosystemDeviceId", "7ab4e373ce434b848a9d0946e388fee9")
             .put("previousEcosystemAnonIds", prevAnonIds).build()));
-    String expected = Json.asString(ImmutableMap.of("payload",
+    String expected = Json.asString(ImmutableMap.of("version", "4", "payload",
         ImmutableMap.builder().put("ecosystemUserId", userId)
             .put("ecosystemClientId", "3ed15efab7e94757bf9e9ef5e844ada2")
             .put("ecosystemDeviceId", "7ab4e373ce434b848a9d0946e388fee9")
