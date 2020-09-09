@@ -34,7 +34,7 @@ public class PubsubLite {
             .create(
                 config
                     .apply(SubscriberSettings.newBuilder()
-                        .setSubscriptionPath(SubscriptionPath.of(subscription))
+                        .setSubscriptionPath(SubscriptionPath.parse(subscription))
                         .setReceiver(Pubsub.getConsumer(LOG, decompress, output))
                         .setPerPartitionFlowControlSettings(FlowControlSettings.builder()
                             .setMessagesOutstanding(messagesOutstanding)
