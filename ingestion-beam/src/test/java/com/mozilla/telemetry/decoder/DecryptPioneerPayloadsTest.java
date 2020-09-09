@@ -146,14 +146,15 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testOutputDeletionRequest() throws Exception {
+  public void testOutputDeletionAndEnrollment() throws Exception {
     // minimal test for throughput of a single document
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
-    final List<String> input = readTestFiles(Arrays.asList("pioneer/deletion-request.sample.json"));
+    final List<String> input = readTestFiles(
+        Arrays.asList("pioneer/deletion-request.sample.json", "pioneer/enrollment.sample.json"));
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
@@ -170,7 +171,7 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
 
     PCollection<String> output = result.output().apply(OutputFileFormat.text.encode())
         .apply(ReformatJson.of());
-    final List<String> expectedMain = Arrays.asList("{}");
+    final List<String> expectedMain = Arrays.asList("{}", "{}");
     PAssert.that(output).containsInAnyOrder(expectedMain);
     pipeline.run();
   }

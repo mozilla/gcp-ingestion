@@ -1,0 +1,27 @@
+{
+    "type": "pioneer-study",
+    "id": "716a5d6f-3a68-da42-8a1e-2a220960f72b",
+    "creationDate": "2020-08-19T20:49:43.382Z",
+    "version": 4,
+    "application": {
+      "architecture": "x86-64",
+      "buildId": "20200819100116",
+      "name": "Firefox",
+      "version": "81.0a1",
+      "displayVersion": "81.0a1",
+      "vendor": "Mozilla",
+      "platformVersion": "81.0a1",
+      "xpcomAbi": "x86_64-gcc3",
+      "channel": "default"
+    },
+    "payload": {
+      "encryptedData": "eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6IjNyTXBPRnlCVHFzMXBseUF1cFo0dGYzS0JiQ0hMU0lQTlNWZVROdl9ZblkiLCJ5IjoieWg5bzJrZmhGU2FKd2RzQ1ZQZHdJb1N1QmhPbHU2MkF4X1NlWjV3ZFQ3VSJ9fQ..7-fq-hzz5nuiUk-h.UkNtJDV8ZJX5VlvEiDJObVhY3Ghrxv_111luHBOZhSOwUwwEkwqqhK_xHuF1x-YnPgagafl2tbnIn5Dy3kq79xCOyGmyqaJpTDmalg.0qmesf29ki5HV5S5waiViA",
+      "schemaVersion": 1,
+      "schemaName": "enrollment",
+      "schemaNamespace": "pioneer-debug",
+      "encryptionKeyId": "debug",
+      "pioneerId": "64a7f717-e2ce-0d4b-a36d-91c860345082",
+      "studyName": "pioneer-v2-example@mozilla.org"
+    }
+  }
+  

@@ -51,6 +51,7 @@ public class DecryptPioneerPayloads extends
   public static final String PIONEER_ID = "pioneerId";
   public static final String STUDY_NAME = "studyName";
   public static final String DELETION_REQUEST_SCHEMA_NAME = "deletion-request";
+  public static final String ENROLLMENT_SCHEMA_NAME = "enrollment";
 
   public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
@@ -118,13 +119,15 @@ public class DecryptPioneerPayloads extends
       JsonNode payload = json.get(FieldName.PAYLOAD);
 
       byte[] payloadData;
-      if (payload.get(SCHEMA_NAME).asText().equals(DELETION_REQUEST_SCHEMA_NAME)) {
-        // The deletion-request ping is special cased within the decryption
-        // pipeline. The Pioneer client requires a JWE payload to exist before
-        // it can be sent. The encrypted data is the empty string encoded with a
-        // throwaway key, in order to satisfy these requirements. We only need
-        // the envelope metadata to shred all client data in a study, so the
-        // encrypted data in the deletion-request ping is thrown away.
+      if (payload.get(SCHEMA_NAME).asText().equals(DELETION_REQUEST_SCHEMA_NAME)
+          || payload.get(SCHEMA_NAME).asText().equals(ENROLLMENT_SCHEMA_NAME)) {
+        // The deletion-request and enrollment pings are special cased within
+        // the decryption pipeline. The Pioneer client requires a JWE payload to
+        // exist before it can be sent. The encrypted data is the empty string
+        // encoded with a throwaway key in order to satisfy these requirements.
+        // We only need the envelope metadata to shred all client data in a
+        // study, so the encrypted data in the deletion-request ping is thrown
+        // away. Likewise, the enrollment ping only requires envelope metadata.
         payloadData = "{}".getBytes(Charsets.UTF_8);
       } else {
         String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
