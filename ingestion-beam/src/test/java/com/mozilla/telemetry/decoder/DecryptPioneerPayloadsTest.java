@@ -153,8 +153,8 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
-    final List<String> input = readTestFiles(
-        Arrays.asList("pioneer/deletion-request.sample.json", "pioneer/enrollment.sample.json"));
+    final List<String> input = readTestFiles(Arrays.asList("pioneer/deletion-request.sample.json",
+        "pioneer/pioneer-enrollment.sample.json"));
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
