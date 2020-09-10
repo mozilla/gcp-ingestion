@@ -3,8 +3,6 @@
 This document specifies the behavior of the service that batches raw messages
 into long term storage.
 
-
-
 ## Data Flow
 
 Consume messages from a Google Cloud PubSub topic and write in batches to

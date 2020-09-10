@@ -19,7 +19,7 @@ how software engineers respond to Downtime.
 ## Reliability Target
 
 | Component      | Biweekly Uptime Percentage |
-|----------------|----------------------------|
+| -------------- | -------------------------- |
 | ingestion-edge | 99.99%                     |
 | ingestion-beam | 99.5%                      |
 
@@ -47,7 +47,7 @@ and postmortem, where each engineer is assigned Stability Work. The length of
 the Stability Work Period is determined below.
 
 | Component      | Biweekly Uptime Percentage | Length of Stability Work Period |
-|----------------|----------------------------|---------------------------------|
+| -------------- | -------------------------- | ------------------------------- |
 | ingestion-edge | 99.9% to < 99.99%          | 2 weeks                         |
 | ingestion-edge | 99% to < 99.9%             | 4 weeks                         |
 | ingestion-edge | < 99%                      | 12 weeks                        |
@@ -64,7 +64,7 @@ ingestion-edge caused by PubSub.
 ## Additional Information
 
 | Biweekly Uptime Percentage | Downtime per Two Weeks |
-|----------------------------|------------------------|
+| -------------------------- | ---------------------- |
 | 99.99%                     | 2 minutes              |
 | 99.9%                      | 20 minutes             |
 | 99.5%                      | 1 hour 40 minutes      |

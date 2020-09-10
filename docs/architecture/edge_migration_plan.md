@@ -2,8 +2,6 @@
 
 This document outlines plans to migrate edge traffic from AWS to GCP using the code in this repository.
 
-
-
 ## Current state
 
 Today, data producers send data to the ingestion stack on AWS as described [here](https://github.com/mozilla/firefox-data-docs/blob/042fddcbf27aa5993ee5578224200a3ef65fd7c7/src/concepts/pipeline/data_pipeline_detail.md#ingestion).
@@ -46,7 +44,7 @@ Data Producers -> AWS Tee -> AWS Edge
 
 This is how we did the last major migration from [`Heka`](https://hekad.readthedocs.io/en/v0.10.0/) to [`Hindsight`](http://mozilla-services.github.io/hindsight/).
 
-This architecture introduces risk of data loss, so should be considered more dangerous than previous phases. This is why we are not planning on doing this until we're reasonably confident in the efficacy of the GCP infrastructure. In active tee mode, the client will be affected by GCP edge processing, particularly in request processing time and potentially by its status code. Depending on how we configure the tee, the AWS data ingestion infrastructure is susceptible to data duplication or loss due to client retry behavior. 
+This architecture introduces risk of data loss, so should be considered more dangerous than previous phases. This is why we are not planning on doing this until we're reasonably confident in the efficacy of the GCP infrastructure. In active tee mode, the client will be affected by GCP edge processing, particularly in request processing time and potentially by its status code. Depending on how we configure the tee, the AWS data ingestion infrastructure is susceptible to data duplication or loss due to client retry behavior.
 
 We should ensure that we are sufficiently confident in the behavior, performance, and stability of the GCP Edge before we move to this phase to ensure things don't go south. The previous phases are safer and should let us discover any major issues before we proceed to this phase.
 

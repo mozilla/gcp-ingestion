@@ -55,7 +55,7 @@ public class PubsubLiteReadTest {
     final AtomicReference<Input> input = new AtomicReference<>();
     final AtomicReference<SubscriberSettings.Builder> settingsBuilder = new AtomicReference<>();
 
-    input.set(new PubsubLite.Read("projects/1/locations/x-x-x/subscriptions/test", 1L, 1L,
+    input.set(new PubsubLite.Read("projects/x/locations/x-x-x/subscriptions/test", 1L, 1L,
         // handler
         message -> CompletableFuture.completedFuture(message) // create a future with message
             .thenAccept(received::set) // add message to received

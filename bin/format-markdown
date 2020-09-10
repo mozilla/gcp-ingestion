@@ -1,0 +1,12 @@
+#!/bin/bash
+# Formats markdown files with prettier
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+docker run -it --rm \
+    --volume $PWD:/gcp-ingestion \
+    --workdir /gcp-ingestion \
+    node:alpine \
+    sh -c 'npm install -g prettier && npx prettier -w "**/*.md"'

@@ -10,23 +10,23 @@ This job has been replaced by [ingestion-sink](../ingestion-sink) for loading me
 
 Supported inputs:
 
- * Google Cloud PubSub
- * Google Cloud Storage
+- Google Cloud PubSub
+- Google Cloud Storage
 
 Supported outputs:
 
- * Google Cloud PubSub
- * Google Cloud Storage
- * Google Cloud BigQuery
- * stdout
- * stderr
+- Google Cloud PubSub
+- Google Cloud Storage
+- Google Cloud BigQuery
+- stdout
+- stderr
 
 Supported error outputs, must include attributes and must not validate messages:
 
- * Google Cloud PubSub
- * Google Cloud Storage with JSON encoding
- * stdout with JSON encoding
- * stderr with JSON encoding
+- Google Cloud PubSub
+- Google Cloud Storage with JSON encoding
+- stdout with JSON encoding
+- stderr with JSON encoding
 
 ## Encoding
 
@@ -93,7 +93,7 @@ will be redirected to error output if no default is provided.
 
 ### Protocol
 
-When `--outputType=file`, `--output` may be prefixed by a protocol specifier 
+When `--outputType=file`, `--output` may be prefixed by a protocol specifier
 to determine the
 target data store. Without a protocol prefix, the output path is assumed
 to be a relative or absolute path on the filesystem. To write to Google
@@ -159,7 +159,7 @@ the "File naming" section of Beam's
 
 In our case, `$prefix` is determined from the last `/`-delimited piece of the `--output`
 path. If you specify a path ending in `/`, you'll end up with an empty prefix
-and your file names will begin with `-`. This is probably not what you want, 
+and your file names will begin with `-`. This is probably not what you want,
 so it's recommended to end your output path with a non-empty file prefix. We replace `:`
 with `-` because [Hadoop can't handle `:` in file names](https://stackoverflow.com/q/48909921).
 

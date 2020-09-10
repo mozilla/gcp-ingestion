@@ -524,9 +524,8 @@ public class SinkConfig {
       final String subscription = env.getString(INPUT_SUBSCRIPTION);
       final long messagesOutstanding = output.type.getMaxOutstandingElementCount(env);
       final long bytesOutstanding = output.type.getMaxOutstandingRequestBytes(env);
-      // Pub/Sub lite subscriptions use project number and specify a zone,
-      // otherwise treat it as a standard pubsub subscription
-      if (subscription.matches("projects/[0-9]+/locations/.*")) {
+      // Pub/Sub Lite subscriptions specify a zone, otherwise it is a standard Pub/Sub subscription
+      if (subscription.matches(".*/locations/.*")) {
         input = new PubsubLite.Read(subscription, messagesOutstanding, bytesOutstanding,
             output.write, builder -> builder, decompress);
       } else {

@@ -52,14 +52,14 @@ Uses HTTPS JSON API, which increases message payload size vs protobuf by 25%
 for base64 encoding and causes some messages to exceed the 10MB request size
 limit that otherwise would not.
 
-[`NestedValueProvider`]: https://beam.apache.org/releases/javadoc/2.0.0/org/apache/beam/sdk/options/ValueProvider.NestedValueProvider.html
+[`nestedvalueprovider`]: https://beam.apache.org/releases/javadoc/2.0.0/org/apache/beam/sdk/options/ValueProvider.NestedValueProvider.html
 
 ## Templates
 
 Does not support repeated parameters via `ValueProvider<List<...>>`, as
 described in [Dataflow Java SDK #632]
 
-[GoogleCloudPlatform/DataflowJavaSDK#632]: https://github.com/GoogleCloudPlatform/DataflowJavaSDK/issues/632
+[googlecloudplatform/dataflowjavasdk#632]: https://github.com/GoogleCloudPlatform/DataflowJavaSDK/issues/632
 
 # PubSub
 
