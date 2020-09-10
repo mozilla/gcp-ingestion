@@ -1,11 +1,11 @@
 {
   "type": "pioneer-study",
-  "id": "33e2e069-5e2d-594e-aa6a-550a6658a292",
-  "creationDate": "2020-09-10T14:57:32.978Z",
+  "id": "1ea27071-3cb6-d741-9273-ec6815cd6347",
+  "creationDate": "2020-09-10T22:35:21.798Z",
   "version": 4,
   "application": {
     "architecture": "x86-64",
-    "buildId": "20200908215255",
+    "buildId": "20200910152110",
     "name": "Firefox",
     "version": "82.0a1",
     "displayVersion": "82.0a1",
@@ -15,11 +15,12 @@
     "channel": "default"
   },
   "payload": {
-    "encryptedData": "eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6InpLTVh5MEc3b29KZUZSemFzMExrWUVaSHhsdDItbVpxeTJYaXozaGc0cVEiLCJ5IjoiRjM5VGNmaVVmYy1nbTF0SzdfanN6UFIwLU9PTlJjc05fT1BoMzlGclpFOCJ9fQ..gLKT9-4In03MgAVa._PA.acqVLNR2jDMaE357tWc1XQ",
+    "encryptedData": "eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6ImdBQzRSVEVRVlo0QURFTm9yako0aEJjVThsYjJrV1dMYUIxOEdDcDZ2bmsiLCJ5IjoiX1k2RkdlamhseGtKMVVMU05XV2ZER3lCS2g0MWtQZmFxY3d1V1hUejljRSJ9fQ..SKCODugev0CJ7WXI.BYs.jJ8Yn_P8GY5ORl3NUsXb3A",
     "schemaVersion": 1,
     "schemaName": "pioneer-enrollment",
     "schemaNamespace": "pioneer-meta",
     "encryptionKeyId": "debug",
-    "pioneerId": "044b75c0-3741-2f44-b7d2-8f4db030071d"
+    "pioneerId": "f59c3d8c-8385-de40-be5d-c08fe0983d97",
+    "studyName": "pioneer-meta"
   }
 }
