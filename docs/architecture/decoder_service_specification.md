@@ -17,7 +17,7 @@ in the Structured Ingestion pipeline.
 1. Extract user agent information and drop `user_agent`
 1. Add metadata fields to message
 1. Deduplicate message by `docId`
-   * Generate `docId` for submission types that don't have one
+   - Generate `docId` for submission types that don't have one
 1. Write message to PubSub decoded topic based on `namespace` and `docType`
 
 ### Implementation

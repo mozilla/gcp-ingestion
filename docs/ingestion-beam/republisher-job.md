@@ -46,7 +46,7 @@ See the `--help` output for details on format.
 Republisher jobs are executed the [same way as sink jobs](../sink-job/#executing)
 but with a few differences in flags. You'll need to set the `mainClass`:
 
- * `-Dexec.mainClass=com.mozilla.telemetry.Republisher`
+- `-Dexec.mainClass=com.mozilla.telemetry.Republisher`
 
 The `--outputType` flag is still required as in the sink, but the `--output`
 configuration is ignored for the Republisher. Instead, there is a separate
@@ -57,17 +57,17 @@ that determines the specific location (usually a topic name) for each publisher.
 
 To enable debug republishing:
 
- * `--enableDebugDestination` (compile-time)
- * `--debugDestination=/some/pubsub/topic/path`
+- `--enableDebugDestination` (compile-time)
+- `--debugDestination=/some/pubsub/topic/path`
 
 To enable per-`docType` republishing:
 
- * `--perDocTypeDestination='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'` (compile-time)
+- `--perDocTypeDestination='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'` (compile-time)
 
 To enable per-channel sampled republishing:
 
- * `--perChannelSampleRatios='{"nightly":1.0,"beta":0.1,"release":0.01}'` (compile-time)
- * `--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}` (compile-time)
+- `--perChannelSampleRatios='{"nightly":1.0,"beta":0.1,"release":0.01}'` (compile-time)
+- `--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}` (compile-time)
 
 Example:
 

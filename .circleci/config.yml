@@ -9,6 +9,18 @@ jobs:
         name: Spell Check
         command: mdspell --ignore-numbers --en-us --report '**/*.md'
 
+  prettier:
+    docker:
+    - image: node:alpine
+    steps:
+    - checkout
+    - run:
+        name: Install prettier
+        command: npm install prettier
+    - run:
+        name: Check markdown is formatted with prettier
+        command: npx prettier -c '**/*.md'
+
   docs:
     docker:
     - image: circleci/python:3.8
@@ -267,6 +279,7 @@ workflows:
   build:
     jobs:
     - spelling
+    - prettier
     - docs:
         filters:
           branches:

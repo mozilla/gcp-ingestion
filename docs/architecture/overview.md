@@ -15,8 +15,8 @@ This document specifies the architecture for GCP Ingestion as a whole.
   `BigQuery`
 - The Dataflow `Decoder` job decodes messages from the PubSub `Raw Topic` to
   the PubSub `Decoded Topic`
-    - Also checks for existence of `document_id`s in
-     `Cloud Memorystore` in order to deduplicate messages
+  - Also checks for existence of `document_id`s in
+    `Cloud Memorystore` in order to deduplicate messages
 - The Dataflow `AET Decoder` job provides all the functionality of the `Decoder`
   with additional decryption handling for Account Ecosystem Telemetry pings
 - The Dataflow `Republisher` job reads messages from the PubSub `Decoded Topic`,
@@ -34,22 +34,22 @@ This document specifies the architecture for GCP Ingestion as a whole.
 
 - Must send messages from producers to PubSub topics
 - Must store messages on disk when PubSub is unavailable
-   - Must attempt to deliver all new messages to PubSub before storing on disk
-   - Must not be scaled down when there are messages on disk
+  - Must attempt to deliver all new messages to PubSub before storing on disk
+  - Must not be scaled down when there are messages on disk
 - Must respond server error if PubSub and disk are both unavailable
-    - Must use a 5XX error error code
+  - Must use a 5XX error error code
 - Must accept configuration mapping `uri` to PubSub Topic
-    - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
+  - Expected initial topics are Structured Ingestion, Telemetry, and Pioneer
 - Must accept configuration defining HTTP headers to capture
 
 ### Raw Sink
 
 - Must copy messages from PubSub topics to BigQuery
-    - This copy may be for backfill, recovery, or testing
+  - This copy may be for backfill, recovery, or testing
 - Must not ack messages read from PubSub until they are delivered
 - Must accept configuration mapping PubSub topics to BigQuery tables
 - Should retry transient Cloud Storage errors indefinitely
-    - Should use exponential back-off to determine retry timing
+  - Should use exponential back-off to determine retry timing
 
 ### Decoder
 
@@ -57,27 +57,27 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must not ack messages read from PubSub until they are delivered
 - Must apply the following transforms in order
   ([implementations here](../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/)):
-    1. Parse `x_pipeline_proxy` attribute; if present with a valid value in
-    [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format),
-    archive the value of `submission_timestamp` to `proxy_timestamp` and
-    replace with the `x_pipeline_proxy` value
-    1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
-    `geo_*` attributes
-    1. Parse `uri` attribute into multiple attributes
-    1. Gzip decompress `payload` if gzip compressed
-    1. Validate `payload` using a JSON Schema determined by attributes
-    1. Parse `agent` attribute into `user_agent_*` attributes
-    1. Produce `normalized_` variants of select attributes
-    1. Inject `normalized_` attributes at the top level and other select
-    attributes into a nested `metadata` top level key in `payload`
+  1. Parse `x_pipeline_proxy` attribute; if present with a valid value in
+     [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format),
+     archive the value of `submission_timestamp` to `proxy_timestamp` and
+     replace with the `x_pipeline_proxy` value
+  1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
+     `geo_*` attributes
+  1. Parse `uri` attribute into multiple attributes
+  1. Gzip decompress `payload` if gzip compressed
+  1. Validate `payload` using a JSON Schema determined by attributes
+  1. Parse `agent` attribute into `user_agent_*` attributes
+  1. Produce `normalized_` variants of select attributes
+  1. Inject `normalized_` attributes at the top level and other select
+     attributes into a nested `metadata` top level key in `payload`
 - Should deduplicate messages based on the `document_id` attribute using
   `Cloud MemoryStore`
-    - Must ensure at least once delivery, so deduplication is only "best effort"
-    - Should delay deduplication to the latest possible stage of the pipeline
+  - Must ensure at least once delivery, so deduplication is only "best effort"
+  - Should delay deduplication to the latest possible stage of the pipeline
     to minimize the time window between an ID being marked as seen in
     `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
-    - Must allow error destination in BigQuery
+  - Must allow error destination in BigQuery
 
 ### AET Decoder
 
@@ -99,7 +99,7 @@ Decoder with the following properties:
 - Must copy messages from PubSub topics to PubSub topics
 - Must attempt to publish the `document_id` of each consumed message to
   `Cloud MemoryStore`
-    - ID publishing should be "best effort" but must not prevent the message
+  - ID publishing should be "best effort" but must not prevent the message
     proceeding to further steps in case of errors reaching `Cloud MemoryStore`
 - Must ack messages read from PubSub after they are delivered to all
   matching destinations
@@ -107,30 +107,29 @@ Decoder with the following properties:
   matching destinations
 - Must accept configuration enabling republishing of messages to a debug
   topic if they contain an `x_debug_id` attribute
-    - Must accept a compile-time parameter enabling or disabling debug republishing
-    - Must accept a runtime parameter defining the destination topic
+  - Must accept a compile-time parameter enabling or disabling debug republishing
+  - Must accept a runtime parameter defining the destination topic
 - Must accept configuration enabling republishing of a random sample of the
   input stream
-    - Must accept a compile-time parameter setting the sample ratio
-    - Must accept a runtime parameter defining the destination topic
+  - Must accept a compile-time parameter setting the sample ratio
+  - Must accept a runtime parameter defining the destination topic
 - Must accept configuration mapping `document_type`s to PubSub topics
-    - Must accept a compile-time parameter defining a topic pattern string
+  - Must accept a compile-time parameter defining a topic pattern string
     (may be promoted to runtime if Dataflow adds support for PubSub topic
     names defined via `NestedValueProvider`)
-    - Must accept a compile-time parameter defining which `document_type`s
+  - Must accept a compile-time parameter defining which `document_type`s
     to republish
-    - Must only deliver messages with configured destinations
+  - Must only deliver messages with configured destinations
 - Must accept configuration mapping `document_namespace`s to PubSub topics
-    - Must accept a compile-time parameter defining a map from document
+  - Must accept a compile-time parameter defining a map from document
     namespaces to topics
-    - Must only deliver messages with configured destinations
+  - Must only deliver messages with configured destinations
 - Must accept optional configuration for sampling telemetry data
-    - Must accept a compile-time parameter defining a topic pattern string
+  - Must accept a compile-time parameter defining a topic pattern string
     (may be promoted to runtime if Dataflow adds support for PubSub topic
     names defined via `NestedValueProvider`)
-    - Must accept compile-time parameters defining the sampling ratio for
+  - Must accept compile-time parameters defining the sampling ratio for
     each channel (nightly, beta, and release)
-
 
 ### Live Sink
 
@@ -144,21 +143,21 @@ Decoder with the following properties:
 - Must set [`ignoreUnknownValues`](https://beam.apache.org/releases/javadoc/2.7.0/org/apache/beam/sdk/io/gcp/bigquery/BigQueryIO.Write.html#ignoreUnknownValues--)
   to `true`
 - Should retry transient BigQuery errors indefinitely
-    - Should use exponential back-off to determine retry timing
+  - Should use exponential back-off to determine retry timing
 - Must send messages rejected by BigQuery to a configurable error destination
-    - Must allow error destinations in BigQuery
+  - Must allow error destinations in BigQuery
 
 ### Decoded Sink
 
 - Must copy messages from PubSub topics to BigQuery
-    - May be used to backfill BigQuery columns previously unspecified in the
-     table schema
-    - May be used by BigQuery, Spark, and Dataflow to access columns missing
-     from BigQuery Tables
+  - May be used to backfill BigQuery columns previously unspecified in the
+    table schema
+  - May be used by BigQuery, Spark, and Dataflow to access columns missing
+    from BigQuery Tables
 - Must not ack messages read from PubSub until they are delivered
 - Must accept configuration mapping PubSub topics to BigQuery tables
 - Should retry transient BigQuery errors indefinitely
-    - Should use exponential back-off to determine retry timing
+  - Should use exponential back-off to determine retry timing
 
 ### Notes
 
@@ -169,8 +168,8 @@ Dataflow will extend ack deadlines indefinitely when consuming messages, and
 will not ack messages until they are processed by an output or `GroupByKey`
 transform.
 
-Dataflow jobs achieve at least once delivery by *not* using GroupByKey
-transforms and *not* falling more than 7 days behind in processing.
+Dataflow jobs achieve at least once delivery by _not_ using GroupByKey
+transforms and _not_ falling more than 7 days behind in processing.
 
 ## Design Decisions
 

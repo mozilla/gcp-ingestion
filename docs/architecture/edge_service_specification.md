@@ -57,19 +57,19 @@ required group attributes {
 
 ### GET Request
 
-| Endpoint           | Description
-| ------------------ | -----------
-| `/__heartbeat__`   | check if service is healthy, and can reach PubSub or has space to store requests on disk
-| `/__lbheartbeat__` | check if service is running
-| `/__version__`     | return Dockerflow [version object](https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md)
+| Endpoint           | Description                                                                                                           |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `/__heartbeat__`   | check if service is healthy, and can reach PubSub or has space to store requests on disk                              |
+| `/__lbheartbeat__` | check if service is running                                                                                           |
+| `/__version__`     | return Dockerflow [version object](https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md) |
 
 ### GET Response codes
 
-* *200* - ok, check succeeded
-* *204* - ok, check succeeded, no response body
-* *404* - not found, check doesn't exist
-* *500* - all is not well
-* *507* - insufficient storage, should occur at some configurable limit before disk is full
+- _200_ - ok, check succeeded
+- _204_ - ok, check succeeded, no response body
+- _404_ - not found, check doesn't exist
+- _500_ - all is not well
+- _507_ - insufficient storage, should occur at some configurable limit before disk is full
 
 ### POST/PUT Request
 
@@ -94,7 +94,7 @@ Specific non-Telemetry example:
 `/submit/eng-workflow/hgpush/1/2c3a0767-d84a-4d02-8a92-fa54a3376049`
 
 Note that `docId` above is a unique document ID, which is used for de-duping
-submissions. This is *not* intended to be the `clientId` field from Telemetry.
+submissions. This is _not_ intended to be the `clientId` field from Telemetry.
 `docId` is required and must be a [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier).
 
 #### Legacy Systems
@@ -110,18 +110,18 @@ even though this endpoint is for GET requests.
 
 ### POST/PUT Response codes
 
-* *200* - ok, request accepted into the pipeline
-* *400* - bad request, for example an unencoded space in the URL
-* *404* - not found, for example using a telemetry format URL in a non-telemetry namespace or vice-versa
-* *411* - missing content-length header
-* *413* - request body too large (note that if we have badly-behaved clients that retry on `4XX`, we should send back 202 on body/path too long).
-* *414* - request path too long (see above)
-* *500* - internal error
-* *507* - insufficient storage, request failed because disk is full
+- _200_ - ok, request accepted into the pipeline
+- _400_ - bad request, for example an unencoded space in the URL
+- _404_ - not found, for example using a telemetry format URL in a non-telemetry namespace or vice-versa
+- _411_ - missing content-length header
+- _413_ - request body too large (note that if we have badly-behaved clients that retry on `4XX`, we should send back 202 on body/path too long).
+- _414_ - request path too long (see above)
+- _500_ - internal error
+- _507_ - insufficient storage, request failed because disk is full
 
 ### Other Response codes
 
-* *405* - wrong request type (anything other than GET|POST|PUT)
+- _405_ - wrong request type (anything other than GET|POST|PUT)
 
 ## Other Considerations
 
