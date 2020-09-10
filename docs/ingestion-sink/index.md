@@ -9,31 +9,31 @@ Defined in the `ingestion-sink` package
 
 Supported inputs:
 
- * Google Cloud PubSub
+- Google Cloud PubSub
 
 Supported outputs:
 
- * Google Cloud PubSub
- * Google Cloud Storage
- * Google Cloud BigQuery
+- Google Cloud PubSub
+- Google Cloud Storage
+- Google Cloud BigQuery
 
 ### Test Input and Output
 
 Test inputs will stop when an exception is raised or the end of the pipe or
-file is reached.  Supported test inputs:
+file is reached. Supported test inputs:
 
-* `System.in` (stdin), by setting `INPUT_PIPE` to any of `-`, `0`, `in`,
+- `System.in` (stdin), by setting `INPUT_PIPE` to any of `-`, `0`, `in`,
   `stdin`, `/dev/stdin`
-* A single file, by setting `INPUT_PIPE` to `/path/to/input_file`
+- A single file, by setting `INPUT_PIPE` to `/path/to/input_file`
 
 Test outputs don't exercise batching and will write messages as newline
 delimited JSON in the order they are received. Supported test outputs:
 
-* `System.out` (stdout), by setting `OUTPUT_PIPE` to any of `-`, `1`, `out`,
+- `System.out` (stdout), by setting `OUTPUT_PIPE` to any of `-`, `1`, `out`,
   `stdout`, `/dev/stdout`
-* `System.err` (stderr), by setting `OUTPUT_PIPE` to any of `2`, `err`,
+- `System.err` (stderr), by setting `OUTPUT_PIPE` to any of `2`, `err`,
   `stderr`, `/dev/stderr`
-* A single file, by setting `OUTPUT_PIPE` to `/path/to/output_file`
+- A single file, by setting `OUTPUT_PIPE` to `/path/to/output_file`
 
 ## Configuration
 
@@ -118,13 +118,13 @@ default will result in an `IllegalArgumentException` on pipeline startup.
 
 File-based outputs support the additional _derived_ attributes
 `"submission_date"` and `"submission_hour"` which will be parsed from the value
-of the `submission_timestamp` attribute if it exists.  These can be useful for
+of the `submission_timestamp` attribute if it exists. These can be useful for
 making sure your output specification buckets messages into hourly directories.
 
 The templating and default syntax used here is based on the
 [Apache commons-text `StringSubstitutor`](https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html),
 which in turn bases its syntax on common practice in bash and other Unix/Linux
-shells.  Beware the need for proper escaping on the command line (use `\$` in
+shells. Beware the need for proper escaping on the command line (use `\$` in
 place of `$`), as your shell may try to substitute in values for your
 placeholders before they're passed to `Sink`.
 
@@ -161,7 +161,7 @@ before they are decoded as JSON.
 When `OUTPUT_FORMAT` is `beam` messages will have bytes encoded as with
 `OUTPUT_FORMAT=raw`, but attributes will be encoded as an `"attributeMap"` field
 that contains a JSON object. This is the same format as produced by ingestion-beam
- when using `--outputType=file` and `--outputFileFormat=json`.
+when using `--outputType=file` and `--outputFileFormat=json`.
 
 ### Google Cloud Storage file prefix
 

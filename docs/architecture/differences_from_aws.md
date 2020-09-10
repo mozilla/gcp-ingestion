@@ -34,7 +34,7 @@ number of factors informed the decision to rewrite the edge, including:
   stores unacknowledged messages for 7 days
 - We can simplify disaster recovery by Ensuring that all data eventually flows
   through PubSub
-   - In the AWS edge data only flows to at least one of Kafka or landfill
+  - In the AWS edge data only flows to at least one of Kafka or landfill
 - We can allow Kubernetes to auto scale when PubSub is available by only
   queuing requests to disk only when they cannot be delivered to PubSub
 - We can ensure that data is not lost on shutdown by disabling auto scaling
@@ -45,7 +45,7 @@ number of factors informed the decision to rewrite the edge, including:
 Comparison:
 
 |                | Kafka in AWS Data Pipeline        | PubSub                      |
-|----------------|-----------------------------------|-----------------------------|
+| -------------- | --------------------------------- | --------------------------- |
 | Managed by     | Ops                               | Google                      |
 | Access control | Security groups, all-or-nothing   | Cloud IAM, per-topic        |
 | Scaling        | Manual                            | Automatic                   |

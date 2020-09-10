@@ -3,8 +3,6 @@
 This document specifies the behavior of the service that delivers decoded
 messages into BigQuery.
 
-
-
 ## Data Flow
 
 Consume messages from a PubSub topic or Cloud Storage location or BigQuery table
@@ -19,18 +17,18 @@ transitioning this sink to a custom Java application running on GKE.
 
 Require configuration for:
 
- * The input PubSub topic, Cloud Storage location, or BigQuery table
- * The route map from PubSub message attributes to output BigQuery table
- * The error output PubSub topic, Cloud Storage location, or BigQuery table
+- The input PubSub topic, Cloud Storage location, or BigQuery table
+- The route map from PubSub message attributes to output BigQuery table
+- The error output PubSub topic, Cloud Storage location, or BigQuery table
 
 Accept optional configuration for:
 
- * The fallback output PubSub topic for messages with no route
- * The output mode for BigQuery, default to `mixed`
- * List of document types to opt-in for streaming when running in `mixed`
-   output mode
- * The triggering frequency for writing to BigQuery, when output mode is
-   `file_loads`
+- The fallback output PubSub topic for messages with no route
+- The output mode for BigQuery, default to `mixed`
+- List of document types to opt-in for streaming when running in `mixed`
+  output mode
+- The triggering frequency for writing to BigQuery, when output mode is
+  `file_loads`
 
 ### Coerce Types
 
@@ -40,12 +38,12 @@ destination table found in BigQuery as codified by the
 
 Support the following logical transformations:
 
-  * Transform key names to replace `-` and `.` with `_`
-  * Transform key names beginning with a number by prefixing with `_`
-  * Transform map types to arrays of key/value maps when the destination
-    field is a repeated `STRUCT<key, value>`
-  * Transform complex types to JSON strings when the destination field
-    in BigQuery expects a string
+- Transform key names to replace `-` and `.` with `_`
+- Transform key names beginning with a number by prefixing with `_`
+- Transform map types to arrays of key/value maps when the destination
+  field is a repeated `STRUCT<key, value>`
+- Transform complex types to JSON strings when the destination field
+  in BigQuery expects a string
 
 ### Accumulate Unknown Values As `additional_properties`
 

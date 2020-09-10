@@ -10,10 +10,10 @@ subdirectory of the gcp-ingestion repository.
 There are currently three jobs defined, please see the respective sections on them in the
 documentation:
 
-* [Sink job](./sink-job.md): A job for delivering messages between Google Cloud services
-  * deprecated in favor of [ingestion-sink](../ingestion-sink)
-* [Decoder job](./decoder-job.md): A job for normalizing ingestion messages
-* [Republisher job](./republisher-job.md): A job for republishing subsets of decoded messages to new destinations
+- [Sink job](./sink-job.md): A job for delivering messages between Google Cloud services
+  - deprecated in favor of [ingestion-sink](../ingestion-sink)
+- [Decoder job](./decoder-job.md): A job for normalizing ingestion messages
+- [Republisher job](./republisher-job.md): A job for republishing subsets of decoded messages to new destinations
 
 ## Building
 

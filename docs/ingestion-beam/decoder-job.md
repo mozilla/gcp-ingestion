@@ -9,20 +9,20 @@ These transforms are currently executed against each message in order.
 ### GeoIP Lookup
 
 1. Extract `ip` from the `x_forwarded_for` attribute
-    * when the `x_pipeline_proxy` attribute is not present, use the
+   - when the `x_pipeline_proxy` attribute is not present, use the
      second-to-last value (since the last value is a forwarding rule IP
      added by Google load balancer)
-    * when the `x_pipeline_proxy` attribute is present, use the third-to-last
+   - when the `x_pipeline_proxy` attribute is present, use the third-to-last
      value (since the tee introduces an additional proxy IP)
-    * fall back to the `remote_addr` attribute, then to an empty string
+   - fall back to the `remote_addr` attribute, then to an empty string
 1. Execute the following steps until one fails and ignore the exception
-    1. Parse `ip` using `InetAddress.getByName`
-    1. Lookup `ip` in the configured `GeoIP2City.mmdb`
-    1. Extract `country.iso_code` as `geo_country`
-    1. Extract `city.name` as `geo_city` if `cities15000.txt` is not configured
-       or `city.geo_name_id` is in the configured `cities15000.txt`
-    1. Extract `subdivisions[0].iso_code` as `geo_subdivision1`
-    1. Extract `subdivisions[1].iso_code` as `geo_subdivision2`
+   1. Parse `ip` using `InetAddress.getByName`
+   1. Lookup `ip` in the configured `GeoIP2City.mmdb`
+   1. Extract `country.iso_code` as `geo_country`
+   1. Extract `city.name` as `geo_city` if `cities15000.txt` is not configured
+      or `city.geo_name_id` is in the configured `cities15000.txt`
+   1. Extract `subdivisions[0].iso_code` as `geo_subdivision1`
+   1. Extract `subdivisions[1].iso_code` as `geo_subdivision2`
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
 1. Remove any `null` values added to attributes
 
@@ -41,10 +41,10 @@ unmodified.
 1. Parse the message body as a `UTF-8` encoded JSON payload
 1. Drop specific fields or entire messages that match a specific set of signatures
    for toxic data that we want to make sure we do not store
-   * Maintain counter metrics for each type of dropped message
+   - Maintain counter metrics for each type of dropped message
 1. Validate the payload structure based on the JSON schema for the specified
    document type
-   * Invalid messages are routed to error output
+   - Invalid messages are routed to error output
 1. Extract some additional attributes such as `client_id` and `os_name`
    based on the payload contents
 
@@ -63,13 +63,13 @@ payload body.
 Decoder jobs are executed the [same way as sink jobs](../sink-job/#executing)
 but with a few extra flags:
 
- * `-Dexec.mainClass=com.mozilla.telemetry.Decoder`
- * `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
- * `--geoCityFilter=/path/to/cities15000.txt` (optional)
+- `-Dexec.mainClass=com.mozilla.telemetry.Decoder`
+- `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
+- `--geoCityFilter=/path/to/cities15000.txt` (optional)
 
 To download the [GeoLite2 database](https://dev.maxmind.com/geoip/geoip2/geolite2/),
 you need to [register for a MaxMind account](https://www.maxmind.com/en/geolite2/signup)
-to obtain a license key. After generating a new license key, set `MM_LICENSE_KEY` to 
+to obtain a license key. After generating a new license key, set `MM_LICENSE_KEY` to
 your license key.
 
 Example:
