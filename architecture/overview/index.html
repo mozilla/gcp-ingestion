@@ -181,11 +181,9 @@
 <li>The <code>Raw Sink</code> job copies messages from a PubSub <code>Raw Topic</code> to
   <code>BigQuery</code></li>
 <li>The Dataflow <code>Decoder</code> job decodes messages from the PubSub <code>Raw Topic</code> to
-  the PubSub <code>Decoded Topic</code><ul>
+  the PubSub <code>Decoded Topic</code></li>
 <li>Also checks for existence of <code>document_id</code>s in
- <code>Cloud Memorystore</code> in order to deduplicate messages</li>
-</ul>
-</li>
+    <code>Cloud Memorystore</code> in order to deduplicate messages</li>
 <li>The Dataflow <code>AET Decoder</code> job provides all the functionality of the <code>Decoder</code>
   with additional decryption handling for Account Ecosystem Telemetry pings</li>
 <li>The Dataflow <code>Republisher</code> job reads messages from the PubSub <code>Decoded Topic</code>,
@@ -204,62 +202,48 @@
 <li>Must store messages on disk when PubSub is unavailable</li>
 <li>Must attempt to deliver all new messages to PubSub before storing on disk</li>
 <li>Must not be scaled down when there are messages on disk</li>
-<li>Must respond server error if PubSub and disk are both unavailable<ul>
+<li>Must respond server error if PubSub and disk are both unavailable</li>
 <li>Must use a 5XX error error code</li>
-</ul>
-</li>
-<li>Must accept configuration mapping <code>uri</code> to PubSub Topic<ul>
+<li>Must accept configuration mapping <code>uri</code> to PubSub Topic</li>
 <li>Expected initial topics are Structured Ingestion, Telemetry, and Pioneer</li>
-</ul>
-</li>
 <li>Must accept configuration defining HTTP headers to capture</li>
 </ul>
 <h3 id="raw-sink">Raw Sink</h3>
 <ul>
-<li>Must copy messages from PubSub topics to BigQuery<ul>
+<li>Must copy messages from PubSub topics to BigQuery</li>
 <li>This copy may be for backfill, recovery, or testing</li>
-</ul>
-</li>
 <li>Must not ack messages read from PubSub until they are delivered</li>
 <li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
-<li>Should retry transient Cloud Storage errors indefinitely<ul>
+<li>Should retry transient Cloud Storage errors indefinitely</li>
 <li>Should use exponential back-off to determine retry timing</li>
-</ul>
-</li>
 </ul>
 <h3 id="decoder">Decoder</h3>
 <ul>
 <li>Must decode messages from PubSub topics to PubSub topics</li>
 <li>Must not ack messages read from PubSub until they are delivered</li>
 <li>Must apply the following transforms in order
-  (<a href="../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/">implementations here</a>):<ol>
+  (<a href="../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/">implementations here</a>):</li>
 <li>Parse <code>x_pipeline_proxy</code> attribute; if present with a valid value in
-<a href="https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format">the edge submission timestamp format</a>,
-archive the value of <code>submission_timestamp</code> to <code>proxy_timestamp</code> and
-replace with the <code>x_pipeline_proxy</code> value</li>
+     <a href="https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format">the edge submission timestamp format</a>,
+     archive the value of <code>submission_timestamp</code> to <code>proxy_timestamp</code> and
+     replace with the <code>x_pipeline_proxy</code> value</li>
 <li>Resolve GeoIP from <code>remote_addr</code> or <code>x_forwarded_for</code> attribute into
-<code>geo_*</code> attributes</li>
+     <code>geo_*</code> attributes</li>
 <li>Parse <code>uri</code> attribute into multiple attributes</li>
 <li>Gzip decompress <code>payload</code> if gzip compressed</li>
 <li>Validate <code>payload</code> using a JSON Schema determined by attributes</li>
 <li>Parse <code>agent</code> attribute into <code>user_agent_*</code> attributes</li>
 <li>Produce <code>normalized_</code> variants of select attributes</li>
 <li>Inject <code>normalized_</code> attributes at the top level and other select
-attributes into a nested <code>metadata</code> top level key in <code>payload</code></li>
-</ol>
-</li>
+     attributes into a nested <code>metadata</code> top level key in <code>payload</code></li>
 <li>Should deduplicate messages based on the <code>document_id</code> attribute using
-  <code>Cloud MemoryStore</code><ul>
+  <code>Cloud MemoryStore</code></li>
 <li>Must ensure at least once delivery, so deduplication is only "best effort"</li>
 <li>Should delay deduplication to the latest possible stage of the pipeline
-to minimize the time window between an ID being marked as seen in
-<code>Republisher</code> and it being checked in <code>Decoder</code></li>
-</ul>
-</li>
-<li>Must send messages rejected by transforms to a configurable error destination<ul>
+    to minimize the time window between an ID being marked as seen in
+    <code>Republisher</code> and it being checked in <code>Decoder</code></li>
+<li>Must send messages rejected by transforms to a configurable error destination</li>
 <li>Must allow error destination in BigQuery</li>
-</ul>
-</li>
 </ul>
 <h3 id="aet-decoder">AET Decoder</h3>
 <p>The AET (Account Ecosystem Telemetry) Decoder is a modified version of the
@@ -279,50 +263,38 @@ Decoder with the following properties:</p>
 <ul>
 <li>Must copy messages from PubSub topics to PubSub topics</li>
 <li>Must attempt to publish the <code>document_id</code> of each consumed message to
-  <code>Cloud MemoryStore</code><ul>
+  <code>Cloud MemoryStore</code></li>
 <li>ID publishing should be "best effort" but must not prevent the message
-proceeding to further steps in case of errors reaching <code>Cloud MemoryStore</code></li>
-</ul>
-</li>
+    proceeding to further steps in case of errors reaching <code>Cloud MemoryStore</code></li>
 <li>Must ack messages read from PubSub after they are delivered to all
   matching destinations</li>
 <li>Must not ack messages read from PubSub before they are delivered to all
   matching destinations</li>
 <li>Must accept configuration enabling republishing of messages to a debug
-  topic if they contain an <code>x_debug_id</code> attribute<ul>
+  topic if they contain an <code>x_debug_id</code> attribute</li>
 <li>Must accept a compile-time parameter enabling or disabling debug republishing</li>
 <li>Must accept a runtime parameter defining the destination topic</li>
-</ul>
-</li>
 <li>Must accept configuration enabling republishing of a random sample of the
-  input stream<ul>
+  input stream</li>
 <li>Must accept a compile-time parameter setting the sample ratio</li>
 <li>Must accept a runtime parameter defining the destination topic</li>
-</ul>
-</li>
-<li>Must accept configuration mapping <code>document_type</code>s to PubSub topics<ul>
+<li>Must accept configuration mapping <code>document_type</code>s to PubSub topics</li>
 <li>Must accept a compile-time parameter defining a topic pattern string
-(may be promoted to runtime if Dataflow adds support for PubSub topic
-names defined via <code>NestedValueProvider</code>)</li>
+    (may be promoted to runtime if Dataflow adds support for PubSub topic
+    names defined via <code>NestedValueProvider</code>)</li>
 <li>Must accept a compile-time parameter defining which <code>document_type</code>s
-to republish</li>
+    to republish</li>
 <li>Must only deliver messages with configured destinations</li>
-</ul>
-</li>
-<li>Must accept configuration mapping <code>document_namespace</code>s to PubSub topics<ul>
+<li>Must accept configuration mapping <code>document_namespace</code>s to PubSub topics</li>
 <li>Must accept a compile-time parameter defining a map from document
-namespaces to topics</li>
+    namespaces to topics</li>
 <li>Must only deliver messages with configured destinations</li>
-</ul>
-</li>
-<li>Must accept optional configuration for sampling telemetry data<ul>
+<li>Must accept optional configuration for sampling telemetry data</li>
 <li>Must accept a compile-time parameter defining a topic pattern string
-(may be promoted to runtime if Dataflow adds support for PubSub topic
-names defined via <code>NestedValueProvider</code>)</li>
+    (may be promoted to runtime if Dataflow adds support for PubSub topic
+    names defined via <code>NestedValueProvider</code>)</li>
 <li>Must accept compile-time parameters defining the sampling ratio for
-each channel (nightly, beta, and release)</li>
-</ul>
-</li>
+    each channel (nightly, beta, and release)</li>
 </ul>
 <h3 id="live-sink">Live Sink</h3>
 <ul>
@@ -335,30 +307,22 @@ each channel (nightly, beta, and release)</li>
   expected by the <a href="https://github.com/mozilla/jsonschema-transpiler"><code>jsonschema-transpiler</code></a></li>
 <li>Must set <a href="https://beam.apache.org/releases/javadoc/2.7.0/org/apache/beam/sdk/io/gcp/bigquery/BigQueryIO.Write.html#ignoreUnknownValues--"><code>ignoreUnknownValues</code></a>
   to <code>true</code></li>
-<li>Should retry transient BigQuery errors indefinitely<ul>
+<li>Should retry transient BigQuery errors indefinitely</li>
 <li>Should use exponential back-off to determine retry timing</li>
-</ul>
-</li>
-<li>Must send messages rejected by BigQuery to a configurable error destination<ul>
+<li>Must send messages rejected by BigQuery to a configurable error destination</li>
 <li>Must allow error destinations in BigQuery</li>
-</ul>
-</li>
 </ul>
 <h3 id="decoded-sink">Decoded Sink</h3>
 <ul>
-<li>Must copy messages from PubSub topics to BigQuery<ul>
+<li>Must copy messages from PubSub topics to BigQuery</li>
 <li>May be used to backfill BigQuery columns previously unspecified in the
- table schema</li>
+    table schema</li>
 <li>May be used by BigQuery, Spark, and Dataflow to access columns missing
- from BigQuery Tables</li>
-</ul>
-</li>
+    from BigQuery Tables</li>
 <li>Must not ack messages read from PubSub until they are delivered</li>
 <li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
-<li>Should retry transient BigQuery errors indefinitely<ul>
+<li>Should retry transient BigQuery errors indefinitely</li>
 <li>Should use exponential back-off to determine retry timing</li>
-</ul>
-</li>
 </ul>
 <h3 id="notes">Notes</h3>
 <p>PubSub stores unacknowledged messages for 7 days. Any PubSub subscription more

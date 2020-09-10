@@ -162,25 +162,21 @@
 <p>These transforms are currently executed against each message in order.</p>
 <h3 id="geoip-lookup">GeoIP Lookup</h3>
 <ol>
-<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute<ul>
+<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute</li>
 <li>when the <code>x_pipeline_proxy</code> attribute is not present, use the
- second-to-last value (since the last value is a forwarding rule IP
- added by Google load balancer)</li>
+     second-to-last value (since the last value is a forwarding rule IP
+     added by Google load balancer)</li>
 <li>when the <code>x_pipeline_proxy</code> attribute is present, use the third-to-last
- value (since the tee introduces an additional proxy IP)</li>
+     value (since the tee introduces an additional proxy IP)</li>
 <li>fall back to the <code>remote_addr</code> attribute, then to an empty string</li>
-</ul>
-</li>
-<li>Execute the following steps until one fails and ignore the exception<ol>
+<li>Execute the following steps until one fails and ignore the exception</li>
 <li>Parse <code>ip</code> using <code>InetAddress.getByName</code></li>
 <li>Lookup <code>ip</code> in the configured <code>GeoIP2City.mmdb</code></li>
 <li>Extract <code>country.iso_code</code> as <code>geo_country</code></li>
 <li>Extract <code>city.name</code> as <code>geo_city</code> if <code>cities15000.txt</code> is not configured
-   or <code>city.geo_name_id</code> is in the configured <code>cities15000.txt</code></li>
+      or <code>city.geo_name_id</code> is in the configured <code>cities15000.txt</code></li>
 <li>Extract <code>subdivisions[0].iso_code</code> as <code>geo_subdivision1</code></li>
 <li>Extract <code>subdivisions[1].iso_code</code> as <code>geo_subdivision2</code></li>
-</ol>
-</li>
 <li>Remove the <code>x_forwarded_for</code> and <code>remote_addr</code> attributes</li>
 <li>Remove any <code>null</code> values added to attributes</li>
 </ol>
@@ -218,7 +214,7 @@ but with a few extra flags:</p>
 </ul>
 <p>To download the <a href="https://dev.maxmind.com/geoip/geoip2/geolite2/">GeoLite2 database</a>,
 you need to <a href="https://www.maxmind.com/en/geolite2/signup">register for a MaxMind account</a>
-to obtain a license key. After generating a new license key, set <code>MM_LICENSE_KEY</code> to 
+to obtain a license key. After generating a new license key, set <code>MM_LICENSE_KEY</code> to
 your license key.</p>
 <p>Example:</p>
 <pre><code class="bash"># create a test input file

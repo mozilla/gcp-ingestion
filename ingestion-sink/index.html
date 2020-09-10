@@ -182,7 +182,7 @@ Defined in the <code>ingestion-sink</code> package
 </ul>
 <h3 id="test-input-and-output">Test Input and Output</h3>
 <p>Test inputs will stop when an exception is raised or the end of the pipe or
-file is reached.  Supported test inputs:</p>
+file is reached. Supported test inputs:</p>
 <ul>
 <li><code>System.in</code> (stdin), by setting <code>INPUT_PIPE</code> to any of <code>-</code>, <code>0</code>, <code>in</code>,
   <code>stdin</code>, <code>/dev/stdin</code></li>
@@ -260,12 +260,12 @@ formatted message doesn't cause a pipeline exception. A placeholder without a
 default will result in an <code>IllegalArgumentException</code> on pipeline startup.</p>
 <p>File-based outputs support the additional <em>derived</em> attributes
 <code>"submission_date"</code> and <code>"submission_hour"</code> which will be parsed from the value
-of the <code>submission_timestamp</code> attribute if it exists.  These can be useful for
+of the <code>submission_timestamp</code> attribute if it exists. These can be useful for
 making sure your output specification buckets messages into hourly directories.</p>
 <p>The templating and default syntax used here is based on the
 <a href="https://commons.apache.org/proper/commons-text/javadocs/api-release/org/apache/commons/text/StringSubstitutor.html">Apache commons-text <code>StringSubstitutor</code></a>,
 which in turn bases its syntax on common practice in bash and other Unix/Linux
-shells.  Beware the need for proper escaping on the command line (use <code>\$</code> in
+shells. Beware the need for proper escaping on the command line (use <code>\$</code> in
 place of <code>$</code>), as your shell may try to substitute in values for your
 placeholders before they're passed to <code>Sink</code>.</p>
 <p><a href="https://cloud.google.com/pubsub/docs/reference/rest/v1/PubsubMessage">Google's PubsubMessage format</a>
@@ -296,7 +296,7 @@ before they are decoded as JSON.</p>
 <p>When <code>OUTPUT_FORMAT</code> is <code>beam</code> messages will have bytes encoded as with
 <code>OUTPUT_FORMAT=raw</code>, but attributes will be encoded as an <code>"attributeMap"</code> field
 that contains a JSON object. This is the same format as produced by ingestion-beam
- when using <code>--outputType=file</code> and <code>--outputFileFormat=json</code>.</p>
+when using <code>--outputType=file</code> and <code>--outputFileFormat=json</code>.</p>
 <h3 id="google-cloud-storage-file-prefix">Google Cloud Storage file prefix</h3>
 <p>Google Cloud Storage files are named like:</p>
 <pre><code>$OUTPUT_BUCKET/{UUID.randomUUID().toString()}.ndjson

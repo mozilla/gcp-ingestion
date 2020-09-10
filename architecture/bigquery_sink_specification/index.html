@@ -177,9 +177,9 @@ transitioning this sink to a custom Java application running on GKE.</p>
 <li>The fallback output PubSub topic for messages with no route</li>
 <li>The output mode for BigQuery, default to <code>mixed</code></li>
 <li>List of document types to opt-in for streaming when running in <code>mixed</code>
-   output mode</li>
+  output mode</li>
 <li>The triggering frequency for writing to BigQuery, when output mode is
-   <code>file_loads</code></li>
+  <code>file_loads</code></li>
 </ul>
 <h3 id="coerce-types">Coerce Types</h3>
 <p>Reprocess the JSON payload in each message to match the schema of the
@@ -190,9 +190,9 @@ destination table found in BigQuery as codified by the
 <li>Transform key names to replace <code>-</code> and <code>.</code> with <code>_</code></li>
 <li>Transform key names beginning with a number by prefixing with <code>_</code></li>
 <li>Transform map types to arrays of key/value maps when the destination
-    field is a repeated <code>STRUCT&lt;key, value&gt;</code></li>
+  field is a repeated <code>STRUCT&lt;key, value&gt;</code></li>
 <li>Transform complex types to JSON strings when the destination field
-    in BigQuery expects a string</li>
+  in BigQuery expects a string</li>
 </ul>
 <h3 id="accumulate-unknown-values-as-additional_properties">Accumulate Unknown Values As <code>additional_properties</code></h3>
 <p>Accumulate values that are not present in the destination BigQuery table

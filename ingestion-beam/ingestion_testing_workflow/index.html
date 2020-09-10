@@ -173,46 +173,34 @@ about the sandbox environment that is provided by data operations.</p>
 <ul>
 <li>Install the <a href="https://cloud.google.com/sdk/">Google Cloud SDK</a></li>
 <li>Navigate to the <a href="https://cloud.google.com/sdk/">Google Cloud Console</a></li>
-<li>Create a new project under <code>firefox.gcp.mozilla.com/dataops/sandbox</code><ul>
+<li>Create a new project under <code>firefox.gcp.mozilla.com/dataops/sandbox</code></li>
 <li><code>gcloud config set project &lt;PROJECT&gt;</code></li>
-</ul>
-</li>
 <li>Create a PubSub subscription (see <code>gcp-quickstart/pubsub.sh</code>)</li>
-<li>Create a GCS bucket<ul>
+<li>Create a GCS bucket</li>
 <li><code>gsutil mb gs://&lt;PROJECT&gt;</code></li>
-</ul>
-</li>
 <li>Enable the <a href="https://console.cloud.google.com/marketplace/details/google/dataflow.googleapis.com">Dataflow API</a></li>
 <li>Create a service account and store the key locally</li>
 </ul>
 <h2 id="bootstrapping-schemas-from-mozilla-pipeline-schemas">Bootstrapping schemas from <code>mozilla-pipeline-schemas</code></h2>
 <ul>
-<li>Download the latest schemas from <code>mozilla-pipeline-schemas</code> using <code>bin/download-schemas</code>.<ul>
+<li>Download the latest schemas from <code>mozilla-pipeline-schemas</code> using <code>bin/download-schemas</code>.</li>
 <li>This script may also inject testing resources into the resulting archive.</li>
 <li>A <code>schemas.tar.gz</code> will appear at the project root.</li>
-</ul>
-</li>
-<li>Copy generated BigQuery schemas using <code>bin/copy-bq-schemas</code>.<ul>
+<li>Copy generated BigQuery schemas using <code>bin/copy-bq-schemas</code>.</li>
 <li>Schemas will be written to <code>bq-schemas/</code> with a <code>.bq</code> extension</li>
 <li>Schemas can be generated directly from JSON Schema using <code>bin/generate-bq-schemas</code>
-<code>bq-schemas/
-├── activity-stream.impression-stats.1.bq
-├── coverage.coverage.1.bq
-├── edge-validator.error-report.1.bq
-├── eng-workflow.bmobugs.1.bq
-....</code></li>
-</ul>
-</li>
-<li>Update the BigQuery table in the current project using <code>bin/update-bq-table</code>.<ul>
+  <code>bq-schemas/
+  ├── activity-stream.impression-stats.1.bq
+  ├── coverage.coverage.1.bq
+  ├── edge-validator.error-report.1.bq
+  ├── eng-workflow.bmobugs.1.bq
+  ....</code></li>
+<li>Update the BigQuery table in the current project using <code>bin/update-bq-table</code>.</li>
 <li>This may take several minutes. Read the script for usage information.</li>
 <li>Each namespace will be given its own dataset and each document type its own table.</li>
-</ul>
-</li>
 <li>Verify that tables have been updated by viewing the BigQuery console.</li>
-<li>Download a copy of sampled documents using <code>bin/download-document-sample</code><ul>
+<li>Download a copy of sampled documents using <code>bin/download-document-sample</code></li>
 <li>Upload this to your project's data bucket e.g. <code>gs://$PROJECT/data/</code></li>
-</ul>
-</li>
 </ul>
 <h2 id="building-the-project">Building the project</h2>
 <p>Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.</p>

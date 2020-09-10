@@ -243,7 +243,7 @@ payloads.
 Instead, records missing an attribute required by a placeholder
 will be redirected to error output if no default is provided.</p>
 <h3 id="protocol">Protocol</h3>
-<p>When <code>--outputType=file</code>, <code>--output</code> may be prefixed by a protocol specifier 
+<p>When <code>--outputType=file</code>, <code>--output</code> may be prefixed by a protocol specifier
 to determine the
 target data store. Without a protocol prefix, the output path is assumed
 to be a relative or absolute path on the filesystem. To write to Google
@@ -298,7 +298,7 @@ the "File naming" section of Beam's
 </code></pre>
 <p>In our case, <code>$prefix</code> is determined from the last <code>/</code>-delimited piece of the <code>--output</code>
 path. If you specify a path ending in <code>/</code>, you'll end up with an empty prefix
-and your file names will begin with <code>-</code>. This is probably not what you want, 
+and your file names will begin with <code>-</code>. This is probably not what you want,
 so it's recommended to end your output path with a non-empty file prefix. We replace <code>:</code>
 with <code>-</code> because <a href="https://stackoverflow.com/q/48909921">Hadoop can't handle <code>:</code> in file names</a>.</p>
 <p>For example, given:</p>
