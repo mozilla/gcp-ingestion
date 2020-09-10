@@ -51,7 +51,7 @@ public class DecryptPioneerPayloads extends
   public static final String PIONEER_ID = "pioneerId";
   public static final String STUDY_NAME = "studyName";
   public static final String DELETION_REQUEST_SCHEMA_NAME = "deletion-request";
-  public static final String ENROLLMENT_SCHEMA_NAME = "enrollment";
+  public static final String ENROLLMENT_SCHEMA_NAME = "pioneer-enrollment";
 
   public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
       ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
