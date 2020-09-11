@@ -19,7 +19,7 @@
     "schemaVersion": 1,
     "schemaName": "pioneer-enrollment",
     "schemaNamespace": "pioneer-meta",
-    "encryptionKeyId": "debug",
+    "encryptionKeyId": "discarded",
     "pioneerId": "f59c3d8c-8385-de40-be5d-c08fe0983d97",
     "studyName": "pioneer-meta"
   }
