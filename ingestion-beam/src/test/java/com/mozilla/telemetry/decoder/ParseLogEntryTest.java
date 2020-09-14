@@ -27,6 +27,7 @@ public class ParseLogEntryTest {
 
     String expected = Json.asString(ImmutableMap.builder() //
         .put("ecosystem_anon_id", "fake") //
+        .put("oauth_client_id", "2882386c6d801776") //
         .put("event", "oauth.token.created") //
         .put("country", "United States") //
         .put("region", "Virginia") //
