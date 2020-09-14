@@ -1,0 +1,26 @@
+{
+  "type": "pioneer-study",
+  "id": "1ea27071-3cb6-d741-9273-ec6815cd6347",
+  "creationDate": "2020-09-10T22:35:21.798Z",
+  "version": 4,
+  "application": {
+    "architecture": "x86-64",
+    "buildId": "20200910152110",
+    "name": "Firefox",
+    "version": "82.0a1",
+    "displayVersion": "82.0a1",
+    "vendor": "Mozilla",
+    "platformVersion": "82.0a1",
+    "xpcomAbi": "x86_64-gcc3",
+    "channel": "default"
+  },
+  "payload": {
+    "encryptedData": "eyJhbGciOiJFQ0RILUVTIiwiZW5jIjoiQTI1NkdDTSIsImVwayI6eyJjcnYiOiJQLTI1NiIsImt0eSI6IkVDIiwieCI6ImdBQzRSVEVRVlo0QURFTm9yako0aEJjVThsYjJrV1dMYUIxOEdDcDZ2bmsiLCJ5IjoiX1k2RkdlamhseGtKMVVMU05XV2ZER3lCS2g0MWtQZmFxY3d1V1hUejljRSJ9fQ..SKCODugev0CJ7WXI.BYs.jJ8Yn_P8GY5ORl3NUsXb3A",
+    "schemaVersion": 1,
+    "schemaName": "pioneer-enrollment",
+    "schemaNamespace": "pioneer-meta",
+    "encryptionKeyId": "discarded",
+    "pioneerId": "f59c3d8c-8385-de40-be5d-c08fe0983d97",
+    "studyName": "pioneer-meta"
+  }
+}
