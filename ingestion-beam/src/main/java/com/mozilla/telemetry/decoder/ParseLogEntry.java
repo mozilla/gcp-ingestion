@@ -85,7 +85,11 @@ public class ParseLogEntry extends
 
       // Event-specific logic.
       if ("oauth.token.created".equals(event) && ecosystemAnonId != null) {
+        // See https://github.com/mozilla/fxa/pull/5929
         json.put("ecosystem_anon_id", ecosystemAnonId);
+        // See https://github.com/mozilla/fxa/pull/6410
+        Optional.ofNullable(fields.path("clientId").textValue())
+            .ifPresent(v -> json.put("oauth_client_id", v));
       } else if ("account.updateEcosystemAnonId.complete".equals(event)) {
         Optional.ofNullable(logEntry.path("next").textValue())
             .ifPresent(v -> json.put("ecosystem_anon_id", v));
