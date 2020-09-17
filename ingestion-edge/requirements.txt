@@ -114,9 +114,9 @@ google-auth==1.19.2 \
     --hash=sha256:15b42d57d6c3d868d318e8273c06b2692fc5aad1bc45989a4f68f1fee05d41b2 \
     --hash=sha256:f404448f3d3c91944b1d907427d4a0c48f465898e9dbacf1bdebf95c5fe03273 \
     # via google-api-core, kubernetes
-google-cloud-container==2.0.1 \
-    --hash=sha256:0692306ea01fc17810761d39b67156b4bf85dd61ea25b54acfe2df558dd57a24 \
-    --hash=sha256:6f714e3d427e2b36d1365fc400f4d379972529fb40f798d9c0e06c7c3418fc89 \
+google-cloud-container==2.1.0 \
+    --hash=sha256:982f643a3c01c981446619e4aec73dfdd9f65e1289df40a23b4b95fa421d913c \
+    --hash=sha256:fd800230f51484d2ad59b7a6daea85c5497cf412c6b5623d53cafd4418c12c1f \
     # via -r requirements.in
 google-cloud-monitoring==1.1.0 \
     --hash=sha256:30632fa7aad044a3b4e2b662e6ba99f29f60064c1cfc88bbf4d175c1a12ced66 \
@@ -287,9 +287,8 @@ pluggy==0.13.1 \
     --hash=sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0 \
     --hash=sha256:966c145cd83c96502c3c3868f50408687b38434af77734af1e9ca461a4081d2d \
     # via pytest
-proto-plus==1.3.2 \
-    --hash=sha256:4431646c13288dd3c5fb3ce3644a67da0aab13714f76150c583b97fc1c6d1427 \
-    --hash=sha256:957d87f13ce2207fb5aa56dc33d941a1eed61bd57205a95b1315ba45be7710ce \
+proto-plus==1.9.1 \
+    --hash=sha256:2028b1466bff50cda055bdaaa069511e119d933e3c2af21b4002a1d13ff4ac68 \
     # via google-cloud-container
 protobuf==3.12.2 \
     --hash=sha256:304e08440c4a41a0f3592d2a38934aad6919d692bb0edfb355548786728f9a5e \
