@@ -107,7 +107,7 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-kms</artifactId>
-            <version>0.81.0-beta</version>
+            <version>1.40.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
