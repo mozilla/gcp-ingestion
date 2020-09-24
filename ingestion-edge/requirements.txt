@@ -376,9 +376,9 @@ pytest-mypy==0.7.0 \
     --hash=sha256:5a667d9a2b66bf98b3a494411f221923a6e2c3eafbe771104951aaec8985673d \
     --hash=sha256:e0505ace48d2b19fe686366fce6b4a2ac0d090423736bb6aa2e39554d18974b7 \
     # via -r requirements.in
-pytest-sanic==1.6.1 \
-    --hash=sha256:99e02c28cfa18a0a9af0cd151dddf0eca373279b9bac808733746f7ed7030ecc \
-    --hash=sha256:f258c7e34818d316ff75882f865a8b08714c732461fad2d54fbe7bc7c266e6c7 \
+pytest-sanic==1.6.2 \
+    --hash=sha256:6428ed8cc2e6cfa05b92689a8589149aacdc1f0640fcf9673211aa733e6a5209 \
+    --hash=sha256:982fa2ca879130fda9066b6051c7d232bf433dcc1bbac324e17ee49a8f7a92b1 \
     # via -r requirements.in
 pytest-timeout==1.4.2 \
     --hash=sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76 \
