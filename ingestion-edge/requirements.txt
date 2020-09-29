@@ -200,9 +200,9 @@ httptools==0.1.1 \
     --hash=sha256:fa3cd71e31436911a44620473e873a256851e1f53dee56669dae403ba41756a4 \
     --hash=sha256:fea04e126014169384dee76a153d4573d90d0cbd1d12185da089f73c78390437 \
     # via sanic
-httpx==0.9.3 \
-    --hash=sha256:1291c5ad8c872668549abb99bf8d25d25bbcac4bac13863dee54252d66e90e6f \
-    --hash=sha256:b06753331906495b76f3feee654d1f430e61eb1c72d2fff9604c37af83878fc9 \
+httpx==0.11.1 \
+    --hash=sha256:1d3893d3e4244c569764a6bae5c5a9fbbc4a6ec3825450b5696602af7a275576 \
+    --hash=sha256:7d2bfb726eeed717953d15dddb22da9c2fcf48a4d70ba1456aa0a7faeda33cf7 \
     # via sanic
 hyperframe==5.2.0 \
     --hash=sha256:5187962cb16dcc078f23cb5a4b110098d546c3f41ff2d4038a9896893bbd0b40 \
@@ -448,9 +448,9 @@ rsa==4.6 \
     --hash=sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa \
     --hash=sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233 \
     # via google-auth
-sanic==19.12.2 \
-    --hash=sha256:0760b568245917481d65456721c1c50ba72e53e15a191392277751377f2cf770 \
-    --hash=sha256:18350ed6e264631260044f6253f139f1ac83c4ce8a0202ec900ec5b50c5370ab \
+sanic==20.6.3 \
+    --hash=sha256:202b75fbf334140cffe559f18772c08263ad97e3534cda3597bc7c3446311526 \
+    --hash=sha256:30e83d9f677b609d6b8ccab7c9551ca7e9a5f19ac0579f5aa10199ab6d4138ed \
     # via -r requirements.in
 six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
@@ -523,7 +523,7 @@ ujson==3.0.0 \
 urllib3==1.25.10 \
     --hash=sha256:91056c15fa70756691db97756772bb1eb9678fa585d9184f24534b100dc60f4a \
     --hash=sha256:e7983572181f5e1522d9c98453462384ee92a0be7fac5f1413a1e35c56cc0461 \
-    # via kubernetes, requests
+    # via httpx, kubernetes, requests
 uvloop==0.14.0 \
     --hash=sha256:08b109f0213af392150e2fe6f81d33261bb5ce968a288eb698aad4f46eb711bd \
     --hash=sha256:123ac9c0c7dd71464f58f1b4ee0bbd81285d96cdda8bc3519281b8973e3a461e \
