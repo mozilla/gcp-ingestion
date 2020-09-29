@@ -2,7 +2,7 @@ aiohttp==3.6.2
 dockerflow==2020.06.0
 google-cloud-container==2.1.0
 google-cloud-monitoring==1.1.0
-google-cloud-pubsub==1.0.2
+google-cloud-pubsub==2.1.0
 gunicorn==20.0.4
 kubernetes==11.0.0
 persist-queue==0.5.0
