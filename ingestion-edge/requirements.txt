@@ -342,7 +342,7 @@ pycodestyle==2.6.0 \
 pydocstyle==5.0.2 \
     --hash=sha256:da7831660b7355307b32778c4a0dbfb137d89254ef31a2b2978f50fc0b4d7586 \
     --hash=sha256:f4f5d210610c2d153fae39093d44224c17429e2ad7da12a8b419aba5c2f614b5 \
-    # via pytest-docstyle
+    # via pytest-pydocstyle
 pyflakes==2.2.0 \
     --hash=sha256:0d94e0e05a19e57a99444b6ddcf9a6eb2e5c68d3ca1e98e90707af8152c90a92 \
     --hash=sha256:35b2d75ee967ea93b55750aa9edbbf72813e06a66ba54438df2cfac9e3c27fc8 \
@@ -357,9 +357,6 @@ pytest-black==0.3.11 \
 pytest-cov==2.10.1 \
     --hash=sha256:45ec2d5182f89a81fc3eb29e3d1ed3113b9e9a873bcddb2a71faaab066110191 \
     --hash=sha256:47bd0ce14056fdd79f93e1713f88fad7bdcc583dcd7783da86ef2f085a0bb88e \
-    # via -r requirements.in
-pytest-docstyle==2.0.1 \
-    --hash=sha256:66b523677d8ed5f5b061ba0d216d46420ec85b492083e8e80bc6ea5fd6164f3b \
     # via -r requirements.in
 pytest-env==0.6.2 \
     --hash=sha256:7e94956aef7f2764f3c147d216ce066bf6c42948bb9e293169b1b1c880a580c2 \
@@ -376,6 +373,9 @@ pytest-mypy==0.7.0 \
     --hash=sha256:5a667d9a2b66bf98b3a494411f221923a6e2c3eafbe771104951aaec8985673d \
     --hash=sha256:e0505ace48d2b19fe686366fce6b4a2ac0d090423736bb6aa2e39554d18974b7 \
     # via -r requirements.in
+pytest-pydocstyle==2.2.0 \
+    --hash=sha256:b4e7eee47252fbb7495f4a0126e547a25f5f114f3096c504e738db49a5034333 \
+    # via -r requirements.in
 pytest-sanic==1.6.2 \
     --hash=sha256:6428ed8cc2e6cfa05b92689a8589149aacdc1f0640fcf9673211aa733e6a5209 \
     --hash=sha256:982fa2ca879130fda9066b6051c7d232bf433dcc1bbac324e17ee49a8f7a92b1 \
@@ -387,7 +387,7 @@ pytest-timeout==1.4.2 \
 pytest==6.1.0 \
     --hash=sha256:1cd09785c0a50f9af72220dd12aa78cfa49cbffc356c61eab009ca189e018a33 \
     --hash=sha256:d010e24666435b39a4cf48740b039885642b6c273a3f77be3e7e03554d2806b7 \
-    # via -r requirements.in, pytest-black, pytest-cov, pytest-docstyle, pytest-env, pytest-flake8, pytest-mock, pytest-mypy, pytest-sanic, pytest-timeout
+    # via -r requirements.in, pytest-black, pytest-cov, pytest-env, pytest-flake8, pytest-mock, pytest-mypy, pytest-pydocstyle, pytest-sanic, pytest-timeout
 python-dateutil==2.8.1 \
     --hash=sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c \
     --hash=sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a \
