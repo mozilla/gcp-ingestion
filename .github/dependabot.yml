@@ -19,3 +19,5 @@ updates:
   labels:
   - dependencies
   - python
+  ignore:
+  - dependency-name: google-cloud-pubsub
