@@ -9,7 +9,7 @@ import pytest
 
 @pytest.fixture
 def app() -> Sanic:
-    return Sanic()
+    return Sanic(name="test")
 
 
 @pytest.fixture
