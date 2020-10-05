@@ -16,6 +16,6 @@ pytest-mypy==0.7.0
 pytest-pydocstyle==2.2.0
 pytest-sanic==1.6.2
 pytest-timeout==1.4.2
-pytest==6.1.0
+pytest==6.1.1
 python-dateutil==2.8.1
 Sanic==19.12.2
