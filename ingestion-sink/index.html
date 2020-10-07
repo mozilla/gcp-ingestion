@@ -317,7 +317,7 @@ when using <code>--outputType=file</code> and <code>--outputFileFormat=json</cod
 setup is needed on the local machine. For prolonged development performance is
 likely to be significantly better, especially in MacOS, if <code>mvn</code> is installed and
 run natively without docker.</p>
-<pre><code class="bash"># create a test input file
+<pre><code class="language-bash"># create a test input file
 mkdir -p tmp/
 echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' &gt; tmp/input.ndjson
 
@@ -337,7 +337,6 @@ cat tmp/input.ndjson | PASS_ENV=&quot;\
   OUTPUT_BUCKET=gs://my_bucket/\${document_type:-UNSPECIFIED}/ \
 &quot; ./bin/mvn compile exec:java
 </code></pre>
-
 <h3 id="locally-without-docker">Locally without Docker</h3>
 <p>If you install Java and maven, you can invoke <code>VAR=... mvn</code> in the above commands
 instead of using <code>PASS_ENV="VAR=..." ./bin/mvn</code>. Be aware that Java 8 is the target JVM and some
@@ -345,7 +344,7 @@ reflection warnings may be thrown on newer versions. Though these are generally
 harmless, you may need to comment out the
 <code>&lt;compilerArgument&gt;-Werror&lt;/compilerArgument&gt;</code> line in the <code>pom.xml</code> in the git
 root.</p>
-<pre><code class="bash"># consume messages from the test file, decode and re-encode them, and write to a directory
+<pre><code class="language-bash"># consume messages from the test file, decode and re-encode them, and write to a directory
 INPUT_PIPE=tmp/input.ndjson OUTPUT_PIPE=tmp/output.ndjson mvn compile exec:java
 
 # read message from stdin and write to stdout

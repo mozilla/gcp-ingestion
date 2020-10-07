@@ -180,7 +180,6 @@
 <p>Timeline: <strong>Q4 2018</strong></p>
 <pre><code>Data Producers -&gt; AWS Edge -&gt; Kafka -&gt; AWS Hindsight -&gt; PubSub -&gt; GCP Hindsight w/ HTTP Output -&gt; GCP Edge
 </code></pre>
-
 <p>In this configuration we get 100% of "expected" data going to the GCP pipeline without any risk of affecting production AWS processing.</p>
 <p>This "expected" data does <em>not</em> include recording and replaying traffic that we currently throw away at the edge (e.g. data from Firefox versions prior to unified telemetry). There may be some other subtle differences from the original incoming data from producers, such as missing some headers that are not currently being stored in Landfill. On the whole, this is a good approximation of 100% of the data we actually care about. We also need to test operation of the new system while processing data we <em>don't</em> care about; see more detail in Phase 3 below.</p>
 <p>During this phase, we will collect logging info to determine exactly what data is being ignored by limiting to this "expected" data.</p>
@@ -189,7 +188,6 @@
 <p>Timeline: <strong>possibly Q4 2018</strong></p>
 <pre><code>Data Producers -&gt; AWS Edge -&gt; Kafka -&gt; AWS Hindsight w/ HTTP Output -&gt; GCP Edge
 </code></pre>
-
 <p>We continue to write the Hindsight PubSub topic from Phase 1, but we move the HTTP output to the AWS side. This will help us better empirically determine performance and various other implications of cross-cloud requests without potentially affecting production AWS processing. We can still use the GCP PubSub topic for stage testing, but it won't necessarily be actively used and the production GCP Edge will be receiving its data directly from AWS via HTTP POST.</p>
 <h2 id="phase-3">Phase 3</h2>
 <p>Timeline: <strong>2019</strong></p>
@@ -197,7 +195,6 @@
                           \
                            `-&gt; GCP Edge
 </code></pre>
-
 <p>This is how we did the last major migration from <a href="https://hekad.readthedocs.io/en/v0.10.0/"><code>Heka</code></a> to <a href="http://mozilla-services.github.io/hindsight/"><code>Hindsight</code></a>.</p>
 <p>This architecture introduces risk of data loss, so should be considered more dangerous than previous phases. This is why we are not planning on doing this until we're reasonably confident in the efficacy of the GCP infrastructure. In active tee mode, the client will be affected by GCP edge processing, particularly in request processing time and potentially by its status code. Depending on how we configure the tee, the AWS data ingestion infrastructure is susceptible to data duplication or loss due to client retry behavior.</p>
 <p>We should ensure that we are sufficiently confident in the behavior, performance, and stability of the GCP Edge before we move to this phase to ensure things don't go south. The previous phases are safer and should let us discover any major issues before we proceed to this phase.</p>
@@ -207,14 +204,12 @@
                                \
                                 `-&gt; GCP edge
 </code></pre>
-
 <p>This alternative does not make use of a Tee to duplicate traffic.</p>
 <p>Depending on the results of Phase 2, an alternative strategy to teeing would be weighted DNS and running two GCP edges. In this configuration we could e.g. tee 1% of data directly to one of the GCP edges, while having the other 99% be processed by the other edge as per earlier phases. We would then need to do the reverse of Phase 1 and write that 1% back to AWS + Kafka for the AWS ingestion stack to process. This strategy can be just as dangerous as using the <code>OpenResty</code> tee because data loss on either side may result in partial data to both, and also requires writing code to convert the GCP representation back to the AWS representation. The risk can be mitigated by using the DNS weights to adjust the amount of data being sent directly to GCP, which is an advantage. This is an interesting variation more similar to a standard DNS cut-over, if required.</p>
 <h2 id="phase-4">Phase 4</h2>
 <p>Timeline: <strong>To Be Determined</strong></p>
 <pre><code>Data Producers -&gt; GCP Edge
 </code></pre>
-
 <p>This will happen after we are confident that there is no risk of data loss by switching the endpoint to the GCP stack. It will also depend on the logistics and timing of sunsetting systems and components in AWS.</p></div>
             </div>
         </div>

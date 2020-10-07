@@ -203,7 +203,6 @@ required group attributes {
   optional string stack_trace_cause_5
 }
 </code></pre>
-
 <h3 id="raw-message-schema">Raw message schema</h3>
 <p>See <a href="../edge_service_specification/#pubsub-message-schema">Edge Service PubSub Message Schema</a>.</p>
 <h3 id="decoded-message-metadata-schema">Decoded message metadata schema</h3>
@@ -240,7 +239,6 @@ required group attributes {
   optional string sample_id                  // based on parsed json payload
 }
 </code></pre>
-
 <p>Many of these fields are also injected into the JSON payload either at the top
 level or nested inside a <code>metadata</code> object. The schema for injected metadata
 is maintained under the <a href="https://github.com/mozilla-services/mozilla-pipeline-schemas/tree/dev/schemas/metadata"><code>metadata</code> namespace in <code>mozilla-pipeline-schemas</code></a>.</p>

@@ -208,7 +208,6 @@ dGVzdA==
 $ echo -en &quot;test\n&quot; | base64
 dGVzdAo=
 </code></pre>
-
 <p>Example <code>json</code> file:</p>
 <pre><code>{"payload":"dGVzdA==","attributeMap":{"meta":"data"}}
 {"payload":"dGVzdAo=","attributeMap":null}
@@ -319,7 +318,7 @@ generally harmless.</p>
 setup is needed on the local machine. For prolonged development performance is
 likely to be significantly better, especially in MacOS, if <code>mvn</code> is installed and
 run natively without docker.</p>
-<pre><code class="bash"># create a test input file
+<pre><code class="language-bash"># create a test input file
 mkdir -p tmp/
 echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;host&quot;:&quot;test&quot;}}' &gt; tmp/input.json
 
@@ -354,9 +353,8 @@ cat tmp/output/*
 # check the SinkOptions help page for options specific to Sink
 ./bin/mvn compile exec:java -Dexec.args=--help=SinkOptions
 </code></pre>
-
 <h3 id="on-dataflow">On Dataflow</h3>
-<pre><code class="bash"># Pick a bucket to store files in
+<pre><code class="language-bash"># Pick a bucket to store files in
 BUCKET=&quot;gs://$(gcloud config get-value project)&quot;
 
 # create a test input file
@@ -384,7 +382,6 @@ gcloud dataflow jobs list
 # check that the message was delivered
 gsutil cat $BUCKET/output/*
 </code></pre>
-
 <h3 id="on-dataflow-with-templates">On Dataflow with templates</h3>
 <p>Dataflow templates make a distinction between
 <a href="https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface">runtime parameters that implement the <code>ValueProvider</code> interface</a>
@@ -395,7 +392,7 @@ but runtime parameters can also be overridden when
 via the <code>--parameters</code> flag.
 In the output of <code>--help=SinkOptions</code>, runtime parameters are those
 with type <code>ValueProvider</code>.</p>
-<pre><code class="bash"># Pick a bucket to store files in
+<pre><code class="language-bash"># Pick a bucket to store files in
 BUCKET=&quot;gs://$(gcloud config get-value project)&quot;
 
 # Set credentials; beam is not able to use gcloud credentials
@@ -430,14 +427,12 @@ gcloud dataflow jobs show &quot;$JOB_ID&quot;
 # check that the message was delivered
 gsutil cat $BUCKET/output/*
 </code></pre>
-
 <h3 id="in-streaming-mode">In streaming mode</h3>
 <p>If <code>--inputType=pubsub</code>, Beam will execute in streaming mode, requiring some
 extra configuration for file-based outputs. You will need to specify sharding like:</p>
 <pre><code>    --outputNumShards=10
     --errorOutputNumShards=10
 </code></pre>
-
 <p>As discussed in the
 <a href="https://beam.apache.org/releases/javadoc/2.8.0/org/apache/beam/sdk/io/FileIO.Write.html#withNumShards-int-">Beam documentation for <code>FileIO.Write#withNumShards</code></a>,
 batch mode is most efficient when the runner is left to determine sharding,

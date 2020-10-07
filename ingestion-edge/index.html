@@ -172,16 +172,15 @@ subdirectory of the gcp-ingestion repository.</p>
 <p>We assume that you have <a href="https://docs.docker.com/compose/">docker-compose</a>
 installed.</p>
 <p>From inside the <code>ingestion-edge</code> subdirectory:</p>
-<pre><code class="bash"># docker-compose
+<pre><code class="language-bash"># docker-compose
 docker-compose build
 
 # pytest
 bin/build
 </code></pre>
-
 <h2 id="running">Running</h2>
 <p>Use <code>docker-compose</code> to run a local development server that auto-detects changes:</p>
-<pre><code class="bash"># run the web server and PubSub emulator
+<pre><code class="language-bash"># run the web server and PubSub emulator
 docker-compose up --detach web
 
 # manually check the server
@@ -196,7 +195,6 @@ docker-compose logs web
 # clean up docker-compose environment
 docker-compose down --timeout 0
 </code></pre>
-
 <h2 id="configuration">Configuration</h2>
 <p>The ingestion-edge docker container accepts these configuration options from
 environment variables:</p>
@@ -236,7 +234,7 @@ environment variables:</p>
 <p>Run tests with <a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros">CircleCI Local
 CLI</a>,
 <code>docker-compose</code>, or <code>pytest</code> wrappers</p>
-<pre><code class="bash"># circleci
+<pre><code class="language-bash"># circleci
 (cd .. &amp;&amp; circleci build --job ingestion-edge)
 
 # docker-compose
@@ -245,7 +243,6 @@ docker-compose run --rm test
 # pytest wrapper (pytest-all calls lint and pytest)
 ./bin/pytest-all
 </code></pre>
-
 <p>The <code>pytest</code> wrappers add these options via the environment:</p>
 <ul>
 <li><code>CLEAN_RELOCATES</code> controls whether <code>bin/lint</code> and <code>bin/pytest</code> will remove
@@ -262,33 +259,30 @@ docker-compose run --rm test
 </ul>
 <h3 id="style-checks">Style Checks</h3>
 <p>Run style checks</p>
-<pre><code class="bash"># docker-compose
+<pre><code class="language-bash"># docker-compose
 docker-compose run --rm test bin/lint
 
 # pytest wrapper
 ./bin/lint
 </code></pre>
-
 <h3 id="unit-tests">Unit Tests</h3>
 <p>Run unit tests</p>
-<pre><code class="bash"># docker-compose
+<pre><code class="language-bash"># docker-compose
 docker-compose run --rm test bin/pytest tests/unit
 
 # pytest wrapper
 ./bin/pytest tests/unit
 </code></pre>
-
 <h3 id="integration-tests">Integration Tests</h3>
 <p>Run integration tests locally</p>
-<pre><code class="bash"># docker-compose
+<pre><code class="language-bash"># docker-compose
 docker-compose run --rm test bin/pytest tests/integration
 
 # pytest wrapper
 ./bin/pytest tests/integration
 </code></pre>
-
 <p>Test a remote server (requires credentials to read PubSub)</p>
-<pre><code class="bash"># define the same ROUTE_TABLE as your edge server
+<pre><code class="language-bash"># define the same ROUTE_TABLE as your edge server
 export ROUTE_TABLE='[[&quot;/submit/telemetry/&lt;suffix:path&gt;&quot;,&quot;projects/PROJECT/topics/TOPIC&quot;]]'
 
 # docker using latest image and no git checkout
@@ -300,10 +294,9 @@ docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --serve
 # pytest wrapper
 ./bin/pytest tests/integration --server https://myedgeserver.example.com
 </code></pre>
-
 <h3 id="load-tests">Load Tests</h3>
 <p>Run a load test (defaults to a single GKE cluster and a PubSub emulator)</p>
-<pre><code class="bash"># docker using latest image and no git checkout
+<pre><code class="language-bash"># docker using latest image and no git checkout
 docker run --rm --tty --interactive mozilla/ingestion-edge:latest bin/pytest tests/load
 
 # docker-compose
@@ -312,9 +305,8 @@ docker-compose run --rm test bin/pytest tests/load
 # pytest
 ./bin/pytest tests/load
 </code></pre>
-
 <p>Load test options (from <code>./bin/test -h</code>)</p>
-<pre><code class="plain">  --min-success-rate=MIN_SUCCESS_RATE
+<pre><code class="language-plain">  --min-success-rate=MIN_SUCCESS_RATE
                         Minimum 200 responses per non-200 response to require
                         during --test-period, default is 1000 (0.1% errors)
   --min-throughput=MIN_THROUGHPUT

@@ -176,43 +176,37 @@ documentation:</p>
 </ul>
 <h2 id="building">Building</h2>
 <p>Move to the <code>ingestion-beam</code> subdirectory of your gcp-ingestion checkout and run:</p>
-<pre><code class="bash">./bin/mvn clean compile
+<pre><code class="language-bash">./bin/mvn clean compile
 </code></pre>
-
 <p>See the details below under each job for details on how to run what you've produced.</p>
 <h2 id="testing">Testing</h2>
 <p>Before anything else, be sure to download the test data:</p>
-<pre><code class="bash">./bin/download-cities15000
+<pre><code class="language-bash">./bin/download-cities15000
 ./bin/download-geolite2
 ./bin/download-schemas
 </code></pre>
-
 <p>Run tests locally with <a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros">CircleCI Local CLI</a></p>
-<pre><code class="bash">(cd .. &amp;&amp; circleci build --job ingestion-beam)
+<pre><code class="language-bash">(cd .. &amp;&amp; circleci build --job ingestion-beam)
 </code></pre>
-
 <p>To make more targeted test invocations, you can install Java and maven locally or
 use the <code>bin/mvn</code> executable to run maven in docker:</p>
-<pre><code class="bash">./bin/mvn clean test
+<pre><code class="language-bash">./bin/mvn clean test
 </code></pre>
-
 <p>If you wish to just run a single test class or a single test case, try something like this:</p>
-<pre><code class="bash"># Run all tests in a single class
+<pre><code class="language-bash"># Run all tests in a single class
 ./bin/mvn test -Dtest=com.mozilla.telemetry.util.SnakeCaseTest
 
 # Run only a single test case
 ./bin/mvn test -Dtest='com.mozilla.telemetry.util.SnakeCaseTest#testSnakeCaseFormat'
 </code></pre>
-
 <p>To run the project in a sandbox against production data, see this document on
 <a href="ingestion_testing_workflow/">configuring an integration testing workflow</a>.</p>
 <h2 id="code-formatting">Code Formatting</h2>
 <p>Use spotless to automatically reformat code:</p>
-<pre><code class="bash">mvn spotless:apply
+<pre><code class="language-bash">mvn spotless:apply
 </code></pre>
-
 <p>or just check what changes it requires:</p>
-<pre><code class="bash">mvn spotless:check
+<pre><code class="language-bash">mvn spotless:check
 </code></pre></div>
             </div>
         </div>
