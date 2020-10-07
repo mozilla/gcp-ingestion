@@ -106,21 +106,21 @@ flake8==3.8.3 \
     --hash=sha256:15e351d19611c887e482fb960eae4d44845013cc142d42896e9862f775d8cf5c \
     --hash=sha256:f04b9fcbac03b0a3e58c0ab3a0ecc462e023a9faf046d57794184028123aa208 \
     # via pytest-flake8
-google-api-core[grpc]==1.22.0 \
-    --hash=sha256:aaedc40ae977dbc2710f0de0012b673c8c7644f81ca0c93e839d22895f2ff29d \
-    --hash=sha256:c4e3b3d914e09d181287abb7101b42f308204fa5e8f89efc4839f607303caa2f \
+google-api-core[grpc]==1.22.4 \
+    --hash=sha256:15e00ceb7e6dc44159e2a41a222830744e9ebcb3a553c580b61cb5a66572f2f0 \
+    --hash=sha256:4a9d7ac2527a9e298eebb580a5e24e7e41d6afd97010848dd0f306cae198ec1a \
     # via google-cloud-container, google-cloud-monitoring, google-cloud-pubsub
-google-auth==1.19.2 \
-    --hash=sha256:15b42d57d6c3d868d318e8273c06b2692fc5aad1bc45989a4f68f1fee05d41b2 \
-    --hash=sha256:f404448f3d3c91944b1d907427d4a0c48f465898e9dbacf1bdebf95c5fe03273 \
+google-auth==1.22.1 \
+    --hash=sha256:712dd7d140a9a1ea218e5688c7fcb04af71b431a29ec9ce433e384c60e387b98 \
+    --hash=sha256:9c0f71789438d703f77b94aad4ea545afaec9a65f10e6cc1bc8b89ce242244bb \
     # via google-api-core, kubernetes
 google-cloud-container==2.1.0 \
     --hash=sha256:982f643a3c01c981446619e4aec73dfdd9f65e1289df40a23b4b95fa421d913c \
     --hash=sha256:fd800230f51484d2ad59b7a6daea85c5497cf412c6b5623d53cafd4418c12c1f \
     # via -r requirements.in
-google-cloud-monitoring==1.1.0 \
-    --hash=sha256:30632fa7aad044a3b4e2b662e6ba99f29f60064c1cfc88bbf4d175c1a12ced66 \
-    --hash=sha256:81e387363b49298ff420893ab6e899d8045d74106f8510f417e482bf35e5350e \
+google-cloud-monitoring==2.0.0 \
+    --hash=sha256:1debfa046ab9518d46b68712c03d86d0ddb11d1aad428aed62c6465752f2201f \
+    --hash=sha256:8c83b4248b6576ed133a38c67d9aefed55ecea2c78b31ff4f340617f1a813a56 \
     # via -r requirements.in
 google-cloud-pubsub==1.0.2 \
     --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
@@ -211,7 +211,7 @@ kubernetes==11.0.0 \
 libcst==0.3.7 \
     --hash=sha256:2dc234c4c911ae06f0d68c13f5ccd046b78d2aae293c334be4e3436803ec2d1f \
     --hash=sha256:3ded555ceb853862ff26bb9bb9a81db0dceb5385f226f12f16bd4c28532dcdf1 \
-    # via google-cloud-container
+    # via google-cloud-container, google-cloud-monitoring
 mccabe==0.6.1 \
     --hash=sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42 \
     --hash=sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f \
@@ -277,7 +277,7 @@ pluggy==0.13.1 \
     # via pytest
 proto-plus==1.9.1 \
     --hash=sha256:2028b1466bff50cda055bdaaa069511e119d933e3c2af21b4002a1d13ff4ac68 \
-    # via google-cloud-container
+    # via google-cloud-container, google-cloud-monitoring
 protobuf==3.12.2 \
     --hash=sha256:304e08440c4a41a0f3592d2a38934aad6919d692bb0edfb355548786728f9a5e \
     --hash=sha256:49ef8ab4c27812a89a76fa894fe7a08f42f2147078392c0dee51d4a444ef6df5 \
