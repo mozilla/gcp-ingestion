@@ -31,7 +31,7 @@ jobs:
         command: sudo pip install mkdocs markdown-include
     - add_ssh_keys:
         fingerprints:
-          "84:b0:66:dd:ec:68:b1:45:9d:5d:66:fd:4a:4f:1b:57"
+        - "84:b0:66:dd:ec:68:b1:45:9d:5d:66:fd:4a:4f:1b:57"
     - run:
         name: Build and deploy docs
         command: |
