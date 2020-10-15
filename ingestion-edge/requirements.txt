@@ -205,9 +205,9 @@ iniconfig==1.0.1 \
     --hash=sha256:80cf40c597eb564e86346103f609d74efce0f6b4d4f30ec8ce9e2c26411ba437 \
     --hash=sha256:e5f92f89355a67de0595932a6c6c02ab4afddc6fcdc0bfc5becd0d60884d3f69 \
     # via pytest
-kubernetes==11.0.0 \
-    --hash=sha256:1a2472f8b01bc6aa87e3a34781f859bded5a5c8ff791a53d889a8bd6cc550430 \
-    --hash=sha256:4af81201520977139a143f96123fb789fa351879df37f122916b9b6ed050bbaf \
+kubernetes==12.0.0 \
+    --hash=sha256:72f095a1cd593401ff26b3b8d71749340394ca6d8413770ea28ce18efd5bcf4c \
+    --hash=sha256:9a339a32d6c79e6461cb6050c3662cb4e33058b508d8d34ee5d5206add395828 \
     # via -r requirements.in
 libcst==0.3.7 \
     --hash=sha256:2dc234c4c911ae06f0d68c13f5ccd046b78d2aae293c334be4e3436803ec2d1f \
