@@ -34,6 +34,10 @@ public class MessageScrubber {
       .put("org-mozilla-fenix-tm", "1638902") //
       .put("network-novak-iceweasel", "1662737") //
       .put("skipity-web-browser-ios", "1662737") //
+      .put("com-abaqoo-fenix", "1669281") //
+      .put("ai-laso-ios-insight", "1669280") //
+      .put("org-mozilla-fennec-fdroid", "1669279") //
+      .put("io-uc-browser-web", "1671993") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
