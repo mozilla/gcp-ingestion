@@ -38,6 +38,7 @@ public class MessageScrubber {
       .put("ai-laso-ios-insight", "1669280") //
       .put("org-mozilla-fennec-fdroid", "1669279") //
       .put("io-uc-browser-web", "1671993") //
+      .put("org-torproject-torbrowser-alpha", "1671987") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
