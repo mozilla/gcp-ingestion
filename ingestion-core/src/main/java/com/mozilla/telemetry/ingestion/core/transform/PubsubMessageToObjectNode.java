@@ -345,6 +345,15 @@ public abstract class PubsubMessageToObjectNode {
       if (additionalProperties != null) {
         contents.put(FieldName.ADDITIONAL_PROPERTIES, Json.asString(additionalProperties));
       }
+
+      // TODO: REMOVE! This exists only for testing as described in Bug 1672992
+      if ("telemetry".equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+          && "main".equals(attributes.get(Attribute.DOCUMENT_TYPE))) {
+        ObjectNode payload = (ObjectNode) contents.path("payload");
+        JsonNode histograms = payload.path("histograms");
+        payload.set("histograms2", histograms);
+      }
+
       return contents;
     }
 
