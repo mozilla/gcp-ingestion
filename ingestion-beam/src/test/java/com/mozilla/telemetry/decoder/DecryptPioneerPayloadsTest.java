@@ -61,6 +61,14 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     return json.toString();
   }
 
+  private String modifySchemaNamespace(String jsonData, String newSchemaNamespace)
+      throws Exception {
+    ObjectNode json = Json.readObjectNode(jsonData);
+    ((ObjectNode) json.get(FieldName.PAYLOAD)).put(DecryptPioneerPayloads.SCHEMA_NAMESPACE,
+        newSchemaNamespace);
+    return json.toString();
+  }
+
   private String removeRequiredSchemaNamespace(String jsonData) throws Exception {
     ObjectNode json = Json.readObjectNode(jsonData);
     // This effectively turns the schema into a v1 pioneer-study ping
@@ -228,5 +236,38 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
         throw Throwables.getRootCause(e);
       }
     }).getMessage(), "Metadata location is missing.");
+  }
+
+  @Test
+  public void testBug1674847() throws Exception {
+    // minimal test for invalid enrollment pings sending addonId instead of
+    // schemaNamespace
+    ValueProvider<String> metadataLocation = pipeline
+        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
+    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
+    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+
+    final List<String> input = readTestFiles(
+        Arrays.asList("pioneer/study-foo.ciphertext.json", "pioneer/study-foo.ciphertext.json"));
+    input.set(0, modifySchemaNamespace(input.get(0), "news.study@princeton.edu"));
+    input.set(1, modifySchemaNamespace(input.get(1), "pioneer-citp-news-disinfo"));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode())
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
+        .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload));
+
+    PAssert.that(result.failures()).empty();
+    pipeline.run();
+
+    PCollection<String> output = result.output().apply(MapElements.into(TypeDescriptors.strings())
+        .via(message -> message.getAttribute(Attribute.DOCUMENT_NAMESPACE)));
+    final List<String> expectedNamespaces = Arrays.asList("pioneer-citp-news-disinfo",
+        "pioneer-citp-news-disinfo");
+    PAssert.that(output).containsInAnyOrder(expectedNamespaces);
+    pipeline.run();
   }
 }
