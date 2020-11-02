@@ -6,13 +6,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.api.gax.rpc.ApiException;
 import com.google.cloud.pubsub.v1.AckReplyConsumer;
 import com.google.cloud.pubsub.v1.MessageReceiver;
 import com.google.cloud.pubsublite.cloudpubsub.Subscriber;
 import com.google.cloud.pubsublite.cloudpubsub.SubscriberSettings;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import io.grpc.StatusException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
@@ -84,10 +84,9 @@ public class PubsubLiteReadTest {
 
   @Test
   public void throwsInvalidSubscription() {
-    RuntimeException thrown = assertThrows(RuntimeException.class,
+    ApiException thrown = assertThrows(ApiException.class,
         () -> new PubsubLite.Read("projects/123/subscriptions/test-123", 1, 1,
             m -> CompletableFuture.completedFuture(null), b -> b, m -> m));
-    assertEquals(StatusException.class, thrown.getCause().getClass());
-    assertEquals("INVALID_ARGUMENT", thrown.getCause().getMessage());
+    assertEquals("INVALID_ARGUMENT", thrown.getStatusCode().getCode().name());
   }
 }
