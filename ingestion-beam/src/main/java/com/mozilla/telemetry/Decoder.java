@@ -11,7 +11,6 @@ import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
-import com.mozilla.telemetry.decoder.RerouteDocuments;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
@@ -77,8 +76,7 @@ public class Decoder extends Sink {
 
         // URI Parsing
         .map(p -> p //
-            .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections)
-            .apply("RerouteDocuments", RerouteDocuments.of()))
+            .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections))
 
         // Special case: decryption of Pioneer payloads
         .map(p -> options.getPioneerEnabled() ? p //
