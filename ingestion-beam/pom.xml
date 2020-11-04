@@ -107,7 +107,7 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-kms</artifactId>
-            <version>1.40.0</version>
+            <version>1.40.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
@@ -155,7 +155,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>5.2.9.RELEASE</version>
+            <version>5.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

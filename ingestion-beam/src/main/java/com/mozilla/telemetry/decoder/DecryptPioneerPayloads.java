@@ -93,6 +93,19 @@ public class DecryptPioneerPayloads extends
     return jwe.getPlaintextBytes();
   }
 
+  /**
+   * Resolve an invalid namespace due to bug 1674847. The addonId may be sent
+   * instead of the schemaNamespace with enrollment pings, so we replace known
+   * addonIds with their mappings in the schema repository.
+   */
+  private static String resolveInvalidNamespace(String schemaNamespace) {
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1674847
+    if (schemaNamespace.equals("news.study@princeton.edu")) {
+      return "pioneer-citp-news-disinfo";
+    }
+    return schemaNamespace;
+  }
+
   private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
 
     @Override
@@ -155,7 +168,8 @@ public class DecryptPioneerPayloads extends
 
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
-      attributes.put(Attribute.DOCUMENT_NAMESPACE, payload.get(SCHEMA_NAMESPACE).asText());
+      attributes.put(Attribute.DOCUMENT_NAMESPACE,
+          resolveInvalidNamespace(payload.get(SCHEMA_NAMESPACE).asText()));
       attributes.put(Attribute.DOCUMENT_TYPE, payload.get(SCHEMA_NAME).asText());
       attributes.put(Attribute.DOCUMENT_VERSION, payload.get(SCHEMA_VERSION).asText());
       return Collections.singletonList(new PubsubMessage(merged, attributes));
