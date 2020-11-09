@@ -304,9 +304,9 @@ pathspec==0.8.0 \
     --hash=sha256:7d91249d21749788d07a2d0f94147accd8f845507400749ea19c1ec9054a12b0 \
     --hash=sha256:da45173eb3a6f2a5a487efba21f050af2b41948be6ab52b6a1e3ff22bb8b7061 \
     # via black
-persist-queue==0.5.0 \
-    --hash=sha256:7722ecca67529669ddf6be708d8389994fc893e30ca2491eef0af110dc8ff72c \
-    --hash=sha256:8d7159ba5061b071450a5127c1f7b8ab9dae7e45e5a6726db2a7cbf59b8e04fd \
+persist-queue==0.5.1 \
+    --hash=sha256:27a44e6376bdaff1375f09ba6e14f633192cd2bdc593b948a752d80edea4d68c \
+    --hash=sha256:9e2890660305847609bcbfa814ce38229b3629ea98e6fd8fb858bf9533a98d83 \
     # via -r requirements.in
 pluggy==0.13.1 \
     --hash=sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0 \
