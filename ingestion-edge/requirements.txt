@@ -58,7 +58,7 @@ async-timeout==3.0.1 \
 attrs==19.3.0 \
     --hash=sha256:08a96c641c3a74e44eb59afb61a24f2cb9f4d7188748e76ba4bb5edfa3cb7d1c \
     --hash=sha256:f7b7ce16570fe9965acd6d30101a28f62fb4a7f9e926b3bbc9b61f8b04247e72 \
-    # via aiohttp, black, pytest
+    # via aiohttp, black, pytest, pytest-mypy
 black==19.10b0 \
     --hash=sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b \
     --hash=sha256:c2edb73a08e9e0e6f65a0e6af18b059b8b1cdd5bef997d7a0b181df93dc81539 \
@@ -394,9 +394,9 @@ pytest-mock==3.3.1 \
     --hash=sha256:024e405ad382646318c4281948aadf6fe1135632bea9cc67366ea0c4098ef5f2 \
     --hash=sha256:a4d6d37329e4a893e77d9ffa89e838dd2b45d5dc099984cf03c703ac8411bb82 \
     # via -r requirements.in
-pytest-mypy==0.7.0 \
-    --hash=sha256:5a667d9a2b66bf98b3a494411f221923a6e2c3eafbe771104951aaec8985673d \
-    --hash=sha256:e0505ace48d2b19fe686366fce6b4a2ac0d090423736bb6aa2e39554d18974b7 \
+pytest-mypy==0.8.0 \
+    --hash=sha256:63d418a4fea7d598ac40b659723c00804d16a251d90a5cfbca213eeba5aaf01c \
+    --hash=sha256:8d2112972c1debf087943f48963a0daf04f3424840aea0cf437cc97053b1b0ef \
     # via -r requirements.in
 pytest-pydocstyle==2.2.0 \
     --hash=sha256:b4e7eee47252fbb7495f4a0126e547a25f5f114f3096c504e738db49a5034333 \
