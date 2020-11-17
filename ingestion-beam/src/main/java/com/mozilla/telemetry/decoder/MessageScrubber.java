@@ -51,6 +51,11 @@ public class MessageScrubber {
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
       "modules");
 
+  private static final Map<String, String> IGNORED_URIS = ImmutableMap.<String, String>builder()
+      .put("/submit/sslreports", "1585144") //
+      .put("/submit/sslreports/", "1585144") //
+      .build();
+
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
    *
@@ -154,6 +159,17 @@ public class MessageScrubber {
           markBugCounter("1642386");
         });
       });
+    }
+  }
+
+  /**
+   * Check the message URI against known URIs of messages with potentially harmful data.
+   *
+   * <p>May throw an exception as a signal to route the message to error output or to be dropped.
+   */
+  public static void scrubByUri(String uri) throws AffectedByBugException {
+    if (IGNORED_URIS.containsKey(uri)) {
+      throw new UnwantedDataException(IGNORED_URIS.get(uri));
     }
   }
 

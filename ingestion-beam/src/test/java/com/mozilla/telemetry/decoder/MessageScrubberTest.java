@@ -524,4 +524,14 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(attributes, Json.createObjectNode()));
   }
+
+  @Test
+  public void testUnwantedData1585144() {
+    MessageScrubber.scrubByUri(null);
+    MessageScrubber.scrubByUri("/foo/bar");
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrubByUri("/submit/sslreports"));
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrubByUri("/submit/sslreports/"));
+  }
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.mozilla.telemetry.decoder.MessageScrubber.MessageScrubberException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -76,6 +77,8 @@ public class ParseUri {
 
       // parse uri based on prefix
       final String uri = attributes.get(Attribute.URI);
+      MessageScrubber.scrubByUri(uri);
+
       if (uri == null) {
         // We should only have a missing uri attribute if we're replaying messages from decoded
         // payloads in which case they already have parsed URI attributes encoded in the payload
@@ -117,7 +120,7 @@ public class ParseUri {
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (UncheckedIOException | InvalidUriException e) {
+          } catch (UncheckedIOException | InvalidUriException | MessageScrubberException e) {
             return FailureMessage.of(ParseUri.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
