@@ -167,7 +167,7 @@ public class MessageScrubber {
    *
    * <p>May throw an exception as a signal to route the message to error output or to be dropped.
    */
-  public static void scrubByUri(String uri) throws AffectedByBugException {
+  public static void scrubByUri(String uri) {
     if (IGNORED_URIS.containsKey(uri)) {
       throw new UnwantedDataException(IGNORED_URIS.get(uri));
     }
