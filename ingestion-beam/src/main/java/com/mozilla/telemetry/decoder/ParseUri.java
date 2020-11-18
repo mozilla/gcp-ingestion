@@ -77,6 +77,8 @@ public class ParseUri {
 
       // parse uri based on prefix
       final String uri = attributes.get(Attribute.URI);
+
+      // Throws an exception on certain URI patterns to signal that the message should be rejected.
       MessageScrubber.scrubByUri(uri);
 
       if (uri == null) {
