@@ -527,11 +527,34 @@ public class MessageScrubberTest {
 
   @Test
   public void testUnwantedData1585144() {
-    MessageScrubber.scrubByUri(null);
-    MessageScrubber.scrubByUri("/foo/bar");
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.ARGS, "v=4").build();
+    MessageScrubber.scrubByUri(null, attributes);
+    MessageScrubber.scrubByUri("/foo/bar", attributes);
     assertThrows(UnwantedDataException.class,
-        () -> MessageScrubber.scrubByUri("/submit/sslreports"));
+        () -> MessageScrubber.scrubByUri("/submit/sslreports", attributes));
     assertThrows(UnwantedDataException.class,
-        () -> MessageScrubber.scrubByUri("/submit/sslreports/"));
+        () -> MessageScrubber.scrubByUri("/submit/sslreports/", attributes));
+  }
+
+  @Test
+  public void testUnwantedData1673433() {
+    Map<String, String> attributesv4 = ImmutableMap.<String, String>builder()
+        .put(Attribute.ARGS, "v=4").build();
+    MessageScrubber.scrubByUri("/foo/bar/", attributesv4);
+
+    Map<String, String> attributesv2 = ImmutableMap.<String, String>builder()
+        .put(Attribute.ARGS, "v=2").build();
+    MessageScrubber.scrubByUri(
+        "/submit/telemetry/ce39b608/main/Firefox/61.0a1/nightly/20180328030202", attributesv2);
+    MessageScrubber.scrubByUri(
+        "/submit/telemetry/00000000/test/FirefoxOS/61.0a1/nightly/20180328030202", attributesv2);
+    MessageScrubber.scrubByUri(
+        "/submit/telemetry/ce39b608-f595/core/Firefox/61.0a1/nightly/20180328030202", attributesv2);
+    MessageScrubber.scrubByUri(
+        "/submit/telemetry/ce39b608/sync/Firefox/61.0a1/nightly/20180328030202", attributesv2);
+
+    assertThrows(UnwantedDataException.class, () -> MessageScrubber.scrubByUri(
+        "/submit/telemetry/ce39b608/test/Firefox/61.0a1/nightly/20180328030202", attributesv2));
   }
 }

@@ -167,9 +167,14 @@ public class MessageScrubber {
    *
    * <p>May throw an exception as a signal to route the message to error output or to be dropped.
    */
-  public static void scrubByUri(String uri) {
+  public static void scrubByUri(String uri, Map<String, String> attributes) {
     if (IGNORED_URIS.containsKey(uri)) {
       throw new UnwantedDataException(IGNORED_URIS.get(uri));
+    }
+
+    // Ignore v2 / other old ping buckets
+    if (bug1673433Affected(uri, attributes)) {
+      throw new UnwantedDataException("1673433");
     }
   }
 
@@ -268,5 +273,31 @@ public class MessageScrubber {
         && attributes.get(Attribute.DOCUMENT_TYPE).equals("sync")
         && attributes.get(Attribute.APP_VERSION) != null
         && attributes.get(Attribute.APP_VERSION).matches("^([0-9]|[0-2][0-7])\\..*"); // <= 27
+  }
+
+  // See bug 1673433 for discussion of affected URIs
+  private static boolean bug1673433Affected(String uri, Map<String, String> attributes) {
+    // See: https://github.com/mozilla-services/cloudops-infra/blob/master/projects/data-ingestion/
+    // k8s/charts/data-ingestion/templates/filter-configmap.yaml#L14-L41
+    if (uri == null) {
+      return false;
+    }
+
+    final ImmutableSet<String> allowedDocTypes = ImmutableSet.of("/main/", "/core/", "/sync/",
+        "/sslreports", "/FirefoxOS/");
+
+    boolean dropPing = true;
+    for (String docType : allowedDocTypes) {
+      if (uri.contains(docType)) {
+        dropPing = false;
+        break;
+      }
+    }
+
+    if (attributes.get(Attribute.ARGS).contains("v=4")) {
+      dropPing = false;
+    }
+
+    return dropPing;
   }
 }

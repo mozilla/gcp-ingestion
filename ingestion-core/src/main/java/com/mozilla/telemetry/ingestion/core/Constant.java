@@ -14,6 +14,7 @@ public class Constant {
     public static final String APP_NAME = "app_name";
     public static final String APP_UPDATE_CHANNEL = "app_update_channel";
     public static final String APP_VERSION = "app_version";
+    public static final String ARGS = "args";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_IP = "client_ip";
     public static final String DATE = "date";

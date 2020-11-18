@@ -79,7 +79,7 @@ public class ParseUri {
       final String uri = attributes.get(Attribute.URI);
 
       // Throws an exception on certain URI patterns to signal that the message should be rejected.
-      MessageScrubber.scrubByUri(uri);
+      MessageScrubber.scrubByUri(uri, attributes);
 
       if (uri == null) {
         // We should only have a missing uri attribute if we're replaying messages from decoded
