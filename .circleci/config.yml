@@ -98,9 +98,12 @@ jobs:
       - *checkout
       - run:
           name: Verify that requirements.txt contains the right dependencies for this python version
+          # use `--constraint` with `requirements.in` not `requirements.txt`
+          # because as of pip>=20.3 "Constraints are only allowed to take the
+          # form of a package name and a version specifier"
           command: |
-            pip install pip-tools
-            pip-compile --quiet --generate-hashes
+            pip install pip-tools --constraint requirements.in
+            pip-compile --quiet --allow-unsafe --generate-hashes
             git diff --exit-code requirements.txt
 
   ingestion-edge-release:
