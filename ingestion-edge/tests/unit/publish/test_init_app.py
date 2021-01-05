@@ -15,7 +15,7 @@ ROUTE_TABLE = [
 
 @pytest.fixture
 def app():
-    app = Sanic(name="test")
+    app = Sanic(name="test", register=False)
     app.config.update(QUEUE_PATH=":memory:", METADATA_HEADERS={}, ROUTE_TABLE=[])
     return app
 
