@@ -19,4 +19,4 @@ pytest-sanic==1.6.2
 pytest-timeout==1.4.2
 pytest==6.2.1
 python-dateutil==2.8.1
-Sanic==20.9.1
+Sanic==20.12.0
