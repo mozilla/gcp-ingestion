@@ -264,13 +264,13 @@ public class DecryptAetIdentifiers extends
       }
 
       try {
-        if (Namespace.TELEMETRY.equals(namespace) && //
-            docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
+        if (Namespace.TELEMETRY.equals(namespace) //
+            && docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
           validator.validate(telemetryAetSchema, json);
           decryptAndReplace(keyStore, json, meta.jwe_mappings());
           successTelemetry.inc();
-        } else if ("firefox-accounts".equals(namespace) && //
-            docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
+        } else if ("firefox-accounts".equals(namespace) //
+            && docType != null && docType.startsWith(ACCOUNT_ECOSYSTEM)) {
           validator.validate(structuredAetSchema, json);
           decryptAndReplace(keyStore, json, meta.jwe_mappings());
           successStructured.inc();
