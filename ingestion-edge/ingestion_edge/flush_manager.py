@@ -305,11 +305,14 @@ def _unschedulable_due_to_pvc(pod: V1Pod):
     return (
         pod.status
         and pod.status.phase == "Pending"
-        and (condition := (pod.status.conditions or [None])[0])
-        and condition.reason == "Unschedulable"
-        and condition.message
-        and condition.message.startswith('persistentvolumeclaim "')
-        and condition.message.endswith('" not found')
+        and any(
+            condition.reason == "Unschedulable"
+            and condition.message
+            and condition.message.startswith('persistentvolumeclaim "')
+            and condition.message.endswith('" not found')
+            for condition in (pod.status.conditions or [])
+            if condition
+        )
         and pod.metadata.owner_references
         and any(ref.kind == "StatefulSet" for ref in pod.metadata.owner_references)
     )
