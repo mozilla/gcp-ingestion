@@ -4,9 +4,9 @@
 #
 #    pip-compile --allow-unsafe --generate-hashes
 #
-aiofiles==0.5.0 \
-    --hash=sha256:377fdf7815cc611870c59cbd07b68b180841d2a2b79812d8c218be02448c2acb \
-    --hash=sha256:98e6bcfd1b50f97db4980e182ddd509b7cc35909e903a8fe50d8849e02d815af \
+aiofiles==0.6.0 \
+    --hash=sha256:bd3019af67f83b739f8e4053c6c0512a7f545b9a8d91aaeab55e6e0f9d123c27 \
+    --hash=sha256:e0281b157d3d5d59d803e3f4557dcc9a3dff28a4dd4829a9ff478adae50ca092 \
     # via sanic
 aiohttp==3.7.3 \
     --hash=sha256:0b795072bb1bf87b8620120a6373a3c61bfcb8da7e5c2377f4bb23ff4f0b62c9 \
@@ -498,9 +498,9 @@ rsa==4.6 \
     --hash=sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa \
     --hash=sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233 \
     # via google-auth
-sanic==20.9.1 \
-    --hash=sha256:0c6949fe55501d8648f1cab77efa71685f7dda48368c7e03e8342fd794dda8cf \
-    --hash=sha256:8687db10f11942b3163e789af80951f5b85bde02f752acbc5073b985bba6e01a \
+sanic==20.12.1 \
+    --hash=sha256:067d8dde5cf5dc1738e1ec3b9b41085bec29c9afc5745539334aa66a6dbf9beb \
+    --hash=sha256:d485655fa0a4aa983615396d586283909f1589a17c0acff821f68dcac9b1e333 \
     # via -r requirements.in
 six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
