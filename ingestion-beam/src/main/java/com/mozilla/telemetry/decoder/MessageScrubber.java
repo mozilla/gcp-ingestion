@@ -42,6 +42,10 @@ public class MessageScrubber {
       .put("com-nationaledtech-spin", "1675135") //
       .put("org-mozilla-ios-Lockbox-CredentialProvider", "1679830") //
       .put("com-ucbrowser-indian-browser", "1682425") //
+      .put("com-athena-equality-firefox", "1686088") //
+      .put("com-authenticatedreality-fireios", "1686087") //
+      .put("com-netsweeper-clientfilter-lgfl-homeprotect", "1686085") //
+      .put("com-myie9-xf", "1684918") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
