@@ -35,15 +35,24 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
   public static class PubsubInput extends Read {
 
     private final ValueProvider<String> subscription;
+    private final String idAttribute;
 
-    public PubsubInput(ValueProvider<String> subscription) {
+    public PubsubInput(ValueProvider<String> subscription, String idAttribute) {
       this.subscription = subscription;
+      this.idAttribute = idAttribute;
     }
 
     @Override
     public PCollection<PubsubMessage> expand(PBegin input) {
+      final PubsubIO.Read readBase = PubsubIO.readMessagesWithAttributesAndMessageId();
+      final PubsubIO.Read read;
+      if (idAttribute == null) {
+        read = readBase;
+      } else {
+        read = readBase.withIdAttribute(idAttribute);
+      }
       return input //
-          .apply(PubsubIO.readMessagesWithAttributesAndMessageId().fromSubscription(subscription))
+          .apply(read.fromSubscription(subscription))
           .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
             Map<String, String> attributesWithMessageId = new HashMap<>(message.getAttributeMap());
             attributesWithMessageId.put(Attribute.MESSAGE_ID, message.getMessageId());

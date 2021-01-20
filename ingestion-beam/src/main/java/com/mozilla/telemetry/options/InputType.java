@@ -11,7 +11,7 @@ public enum InputType {
 
     /** Return a PTransform that reads from a Pubsub subscription. */
     public Read read(SinkOptions.Parsed options) {
-      return new PubsubInput(options.getInput());
+      return new PubsubInput(options.getInput(), options.getIdAttribute());
     }
   },
 
