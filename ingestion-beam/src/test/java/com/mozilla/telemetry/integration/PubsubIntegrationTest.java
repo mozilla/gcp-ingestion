@@ -104,6 +104,15 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
 
   @Test(timeout = 30000)
   public void canReadPubsubInput() throws Exception {
+    readPubsubInput(false);
+  }
+
+  @Test(timeout = 30000)
+  public void canDedupPubsubInput() throws Exception {
+    readPubsubInput(true);
+  }
+
+  private void readPubsubInput(boolean provideIdAttribute) throws Exception {
     List<String> inputLines = Lines.resources("testdata/basic-messages-nonempty.ndjson");
     publishLines(inputLines);
 
@@ -111,6 +120,11 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
 
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
     sinkOptions.setInput(pipeline.newProvider(subscriptionName.toString()));
+    if (provideIdAttribute) {
+      sinkOptions.setPubsubIdAttribute("host");
+      // publish inputLines again so that there are duplicates to remove
+      publishLines(inputLines);
+    }
 
     PCollection<String> output = pipeline.apply(InputType.pubsub.read(sinkOptions))
         .apply("encodeJson", OutputFileFormat.json.encode());

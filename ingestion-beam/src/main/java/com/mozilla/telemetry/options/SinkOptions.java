@@ -231,6 +231,12 @@ public interface SinkOptions extends PipelineOptions {
 
   void setWindowDuration(String value);
 
+  @Description("Attribute for built-in deduplication when reading from Pub/Sub."
+      + " Must be an attribute set before the message was last published to Pub/Sub.")
+  String getPubsubIdAttribute();
+
+  void setPubsubIdAttribute(String value);
+
   /*
    * Note: Dataflow templates accept ValueProvider options at runtime, and other options at creation
    * time. When running without templates specify all options at once.
