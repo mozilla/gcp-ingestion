@@ -1,7 +1,7 @@
 package com.mozilla.telemetry;
 
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;

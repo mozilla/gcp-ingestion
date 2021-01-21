@@ -1,7 +1,7 @@
 package com.mozilla.telemetry;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Resources;
