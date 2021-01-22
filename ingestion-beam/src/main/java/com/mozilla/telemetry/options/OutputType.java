@@ -6,6 +6,7 @@ import com.mozilla.telemetry.io.Write.BigQueryOutput;
 import com.mozilla.telemetry.io.Write.FileOutput;
 import com.mozilla.telemetry.io.Write.IgnoreOutput;
 import com.mozilla.telemetry.io.Write.PrintOutput;
+import com.mozilla.telemetry.io.Write.PubsubLiteOutput;
 import com.mozilla.telemetry.io.Write.PubsubOutput;
 import com.mozilla.telemetry.transforms.Println;
 
@@ -62,6 +63,14 @@ public enum OutputType {
     /** Return a PTransform that writes to Google Pubsub. */
     public Write write(SinkOptions.Parsed options) {
       return new PubsubOutput(options.getOutput(), options.getOutputPubsubCompression());
+    }
+  },
+
+  pubsub_lite {
+
+    /** Return a PTransform that writes to Google Pubsub. */
+    public Write write(SinkOptions.Parsed options) {
+      return new PubsubLiteOutput(options.getOutput(), options.getOutputPubsubCompression());
     }
   },
 
