@@ -106,4 +106,11 @@ public class Decoder extends Sink {
 
     return pipeline.run();
   }
+
+  static class FlexTemplateMetadata {
+
+    public static void main(String[] args) {
+      Sink.FlexTemplateMetadata.run(DecoderOptions.class);
+    }
+  }
 }

@@ -7,3 +7,4 @@ cities15000.txt
 schemas.tar.gz
 avro-schema.tar.gz
 bq-schemas/
+metadata.*.json
