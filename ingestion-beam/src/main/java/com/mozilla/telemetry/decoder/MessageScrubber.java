@@ -79,6 +79,7 @@ public class MessageScrubber {
     final String appVersion = attributes.get(Attribute.APP_VERSION);
     final String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
     final String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
+    final String userAgent = attributes.get(Attribute.USER_AGENT);
 
     // Check for toxic data that should be dropped without sending to error output.
     if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
@@ -132,8 +133,7 @@ public class MessageScrubber {
 
     // Glean enforces a particular user-agent string that a rogue fuzzer is not abiding by
     // https://searchfox.org/mozilla-central/source/third_party/rust/glean-core/src/upload/request.rs#35,72-75
-    if (attributes.get(Attribute.DOCUMENT_NAMESPACE).equals("firefox-desktop")
-        && !attributes.get(Attribute.USER_AGENT).startsWith("Glean")) {
+    if ("firefox-desktop".equals(namespace) && !userAgent.startsWith("Glean")) {
       throw new UnwantedDataException("1684980");
     }
 
