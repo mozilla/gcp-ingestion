@@ -534,4 +534,32 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrubByUri("/submit/sslreports/"));
   }
+
+  @Test
+  public void testUnwantedData1684980GleanUserAgent() {
+    Map<String, String> mozAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .put(Attribute.USER_AGENT,
+            "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0")
+        .build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(mozAttributes, Json.createObjectNode()));
+
+    // empty agent strings are also scrubbed
+    Map<String, String> emptyAtrributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .put(Attribute.USER_AGENT, "") //
+        .build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(emptyAtrributes, Json.createObjectNode()));
+
+    Map<String, String> gleanAtrributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .put(Attribute.USER_AGENT, "Glean/33.9.1 (Rust on Windows)") //
+        .build();
+
+    MessageScrubber.scrub(gleanAtrributes, Json.createObjectNode());
+  }
 }
