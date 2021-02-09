@@ -555,6 +555,14 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(emptyAtrributes, Json.createObjectNode()));
 
+    // null agent strings...
+    Map<String, String> nullAtrributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(nullAtrributes, Json.createObjectNode()));
+
     Map<String, String> gleanAtrributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
         .put(Attribute.USER_AGENT, "Glean/33.9.1 (Rust on Windows)") //
