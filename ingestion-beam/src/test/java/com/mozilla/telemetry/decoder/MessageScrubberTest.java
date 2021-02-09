@@ -570,4 +570,18 @@ public class MessageScrubberTest {
 
     MessageScrubber.scrub(gleanAttributes, Json.createObjectNode());
   }
+
+  @Test
+  public void testScrubValidDocument() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "namespace") //
+        .put(Attribute.DOCUMENT_TYPE, "type") //
+        .put(Attribute.APP_NAME, "name") //
+        .put(Attribute.APP_VERSION, "version") //
+        .put(Attribute.APP_UPDATE_CHANNEL, "channel") //
+        .put(Attribute.APP_BUILD_ID, "build_id") //
+        // USER_AGENT may be null
+        .build();
+    MessageScrubber.scrub(attributes, Json.createObjectNode());
+  }
 }
