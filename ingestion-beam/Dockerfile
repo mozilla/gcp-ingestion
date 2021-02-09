@@ -1,4 +1,4 @@
-
+# Use maven image to build the jars that will be included via COPY later.
 FROM maven:3-jdk-8 AS build
 WORKDIR /app/ingestion-beam
 COPY pom.xml /app/pom.xml
@@ -10,7 +10,8 @@ COPY ingestion-core/src /app/ingestion-core/src
 COPY ingestion-beam/src /app/ingestion-beam/src
 RUN mvn package -Dmaven.test.skip=true
 
-FROM gcr.io/dataflow-templates-base/java8-template-launcher-base:latest
+# This is the base image for the final image we're building.
+FROM gcr.io/dataflow-templates-base/java8-template-launcher-base:20210120_RC00
 ARG PACKAGE_VERSION=0.1-SNAPSHOT
 COPY --from=build /app/ingestion-beam/target/ingestion-beam-$PACKAGE_VERSION.lib/ /template/ingestion-beam-$PACKAGE_VERSION.lib/
 # copy jar after dependencies to maximize docker caching and reduce upload size

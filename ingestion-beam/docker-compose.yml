@@ -6,7 +6,3 @@ services:
       context: ..
       dockerfile: ingestion-beam/Dockerfile
     image: ${IMAGE:?}
-    entrypoint: /bin/bash
-    command:
-    - -c
-    - java -cp /template/ingestion-beam-0.1-SNAPSHOT.jar "$$FLEX_TEMPLATE_JAVA_MAIN_CLASS"'$$FlexTemplateMetadata'

@@ -16,12 +16,9 @@ for JOB_CLASS in Sink Decoder; do
   docker-compose build --build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.${JOB_CLASS}
   docker-compose push
 
-  METADATA_FILE=metadata.$JOB_TYPE.json
-  docker-compose run --rm flex-template > $METADATA_FILE
-
   gcloud dataflow flex-template build \
     gs://$TEMPLATE_BUCKET/$JOB_TYPE/flex-templates/$BUILD_ID.json \
     --image $IMAGE \
     --sdk-language JAVA \
-    --metadata-file $METADATA_FILE
+    --metadata-file <(echo '{"name":"Mozilla Ingestion Beam '$JOB_CLASS'"}')
 done
