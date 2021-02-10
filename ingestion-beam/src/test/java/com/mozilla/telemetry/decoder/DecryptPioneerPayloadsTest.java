@@ -322,13 +322,13 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
                     "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
         .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload));
 
-    PAssert.that(result.output()).empty();
+    PAssert.that(result.failures()).empty();
     pipeline.run();
 
-    PCollection<String> exceptions = result.failures().apply(MapElements
-        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
-    // IntegrityException extends JoseException
-    PAssert.that(exceptions).containsInAnyOrder("org.jose4j.lang.JoseException",
-        "org.jose4j.lang.JoseException");
+    PCollection<String> output = result.output().apply(OutputFileFormat.text.encode())
+        .apply(ReformatJson.of());
+    final List<String> expectedMain = Arrays.asList("{}", "{}");
+    PAssert.that(output).containsInAnyOrder(expectedMain);
+    pipeline.run();
   }
 }
