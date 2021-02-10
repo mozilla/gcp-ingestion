@@ -3,13 +3,15 @@
 
 To install the appropriate dependencies for this script:
 
-    pip install jwcrypto
+    pip install jwcrypto click
 """
 import gzip
 import json
 from pathlib import Path
 from jwcrypto import jwe, jwk
 from base64 import b64decode, b64encode
+import click
+from copy import deepcopy
 
 resources = Path(__file__).parent.resolve()
 pioneer = resources / "pioneer"
@@ -22,7 +24,7 @@ def write_serialized(json_data, fp):
 
 def generate_jwk(path: Path, name: str):
     """Generate a keypair. If the keypair exists, return that instead.
-    
+
     https://jwcrypto.readthedocs.io/en/stable/jwk.html
     """
     private_path = path / f"{name}.private.json"
@@ -125,7 +127,15 @@ def encrypt_decoder_integration_input(
             fp.write("\n")
 
 
-def main():
+@click.group()
+def cli():
+    """Scripts for generating testing resources for Rally (Ion, Pioneer v2)."""
+    pass
+
+
+@cli.command()
+def decrypt_pioneer():
+    """Generate resources for initial DecryptPioneerPayloads implemenation."""
     for study_id in ["study-foo", "study-bar"]:
         key = generate_jwk(pioneer, study_id)
 
@@ -145,5 +155,28 @@ def main():
     )
 
 
+def _copy_examples(source, reason, encrypted_data=None):
+    # we convert a sample ping into an enrollment/deletion ping
+    sample = json.loads((pioneer / source).read_text())
+    for schema_name in ["pioneer-enrollment", "deletion-request"]:
+        modified = deepcopy(sample)
+        modified["payload"]["schemaName"] = schema_name
+        if encrypted_data:
+            modified["payload"]["encryptedData"] = encrypted_data
+        (pioneer / f"bug-1691807.{schema_name}.{reason}.{source}").write_text(
+            json.dumps(modified, indent=2)
+        )
+
+
+@cli.command()
+def bug_1691807():
+    """Tests for adding valid objects to enrollment/deletion requests."""
+    _copy_examples("study-bar.ciphertext.json", "valid")
+    invalid_data = json.loads((pioneer / "study-foo.ciphertext.json").read_text())[
+        "payload"
+    ]["encryptedData"]
+    _copy_examples("study-bar.ciphertext.json", "invalid", invalid_data)
+
+
 if __name__ == "__main__":
-    main()
+    cli()

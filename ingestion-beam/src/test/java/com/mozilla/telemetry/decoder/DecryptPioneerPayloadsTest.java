@@ -270,4 +270,65 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     PAssert.that(output).containsInAnyOrder(expectedNamespaces);
     pipeline.run();
   }
+
+  @Test
+  public void testBug1691807EnrollmentDeletionPayloadsSuccess() throws Exception {
+    // test valid payloads within the enrollment and deletion request
+    ValueProvider<String> metadataLocation = pipeline
+        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
+    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
+    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+
+    final List<String> input = readTestFiles(
+        Arrays.asList("pioneer/bug-1691807.pioneer-enrollment.valid.study-bar.ciphertext.json",
+            "pioneer/bug-1691807.deletion-request.valid.study-bar.ciphertext.json"));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode())
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
+        .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload));
+
+    PAssert.that(result.failures()).empty();
+    pipeline.run();
+
+    PCollection<String> output = result.output().apply(OutputFileFormat.text.encode())
+        .apply(ReformatJson.of());
+    final List<String> expectedMain = readTestFiles(
+        Arrays.asList("pioneer/sample.plaintext.json", "pioneer/sample.plaintext.json"));
+    PAssert.that(output).containsInAnyOrder(expectedMain);
+    pipeline.run();
+  }
+
+  @Test
+  public void testBug1691807EnrollmentDeletionPayloadsFailures() throws Exception {
+    // test valid payloads within the enrollment and deletion request
+    ValueProvider<String> metadataLocation = pipeline
+        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
+    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
+    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+
+    final List<String> input = readTestFiles(
+        Arrays.asList("pioneer/bug-1691807.pioneer-enrollment.invalid.study-bar.ciphertext.json",
+            "pioneer/bug-1691807.deletion-request.invalid.study-bar.ciphertext.json"));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode())
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
+        .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload));
+
+    PAssert.that(result.output()).empty();
+    pipeline.run();
+
+    PCollection<String> exceptions = result.failures().apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+    // IntegrityException extends JoseException
+    PAssert.that(exceptions).containsInAnyOrder("org.jose4j.lang.JoseException",
+        "org.jose4j.lang.JoseException");
+  }
 }

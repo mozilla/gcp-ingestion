@@ -132,17 +132,7 @@ public class DecryptPioneerPayloads extends
       JsonNode payload = json.get(FieldName.PAYLOAD);
 
       byte[] payloadData;
-      if (payload.get(SCHEMA_NAME).asText().equals(DELETION_REQUEST_SCHEMA_NAME)
-          || payload.get(SCHEMA_NAME).asText().equals(ENROLLMENT_SCHEMA_NAME)) {
-        // The deletion-request and enrollment pings are special cased within
-        // the decryption pipeline. The Pioneer client requires a JWE payload to
-        // exist before it can be sent. The encrypted data is the empty string
-        // encoded with a throwaway key in order to satisfy these requirements.
-        // We only need the envelope metadata to shred all client data in a
-        // study, so the encrypted data in the deletion-request ping is thrown
-        // away. Likewise, the enrollment ping only requires envelope metadata.
-        payloadData = "{}".getBytes(Charsets.UTF_8);
-      } else {
+      try {
         String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
         PrivateKey key = keyStore.getKey(encryptionKeyId);
         if (key == null) {
@@ -157,6 +147,25 @@ public class DecryptPioneerPayloads extends
         } else {
           // don't bother decompressing
           payloadData = decrypted;
+        }
+      } catch (IOException | JoseException e) {
+        if (payload.get(SCHEMA_NAME).asText().equals(DELETION_REQUEST_SCHEMA_NAME)
+            || payload.get(SCHEMA_NAME).asText().equals(ENROLLMENT_SCHEMA_NAME)) {
+          // The deletion-request and enrollment pings are special cased within
+          // the decryption pipeline. The Pioneer client requires a JWE payload to
+          // exist before it can be sent. The encrypted data is the empty string
+          // encoded with a throwaway key in order to satisfy these requirements.
+          // We only need the envelope metadata to shred all client data in a
+          // study, so the encrypted data in the deletion-request ping is thrown
+          // away. Likewise, the enrollment ping only requires envelope metadata.
+          //
+          // This changes with the Rally add-on which will contain valid
+          // payloads. We continue to send documents through if they do not
+          // decrypt properly. Because we are ignoring the exceptions, we do not
+          // get a sense of key errors directly in the error stream.
+          payloadData = "{}".getBytes(Charsets.UTF_8);
+        } else {
+          throw e;
         }
       }
 
