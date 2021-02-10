@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -130,6 +131,9 @@ public class DecryptPioneerPayloads extends
       ObjectNode json = Json.readObjectNode(message.getPayload());
       validator.validate(envelopeSchema, json);
       JsonNode payload = json.get(FieldName.PAYLOAD);
+      final String namespace = payload.get(SCHEMA_NAMESPACE).asText();
+      final String schemaName = payload.get(SCHEMA_NAME).asText();
+      final String schemaVersion = payload.get(SCHEMA_VERSION).asText();
 
       byte[] payloadData;
       try {
@@ -149,8 +153,13 @@ public class DecryptPioneerPayloads extends
           payloadData = decrypted;
         }
       } catch (IOException | JoseException e) {
-        if (payload.get(SCHEMA_NAME).asText().equals(DELETION_REQUEST_SCHEMA_NAME)
-            || payload.get(SCHEMA_NAME).asText().equals(ENROLLMENT_SCHEMA_NAME)) {
+        if (schemaName.equals(DELETION_REQUEST_SCHEMA_NAME)
+            || schemaName.equals(ENROLLMENT_SCHEMA_NAME)) {
+          // keep track of these exceptions, which are the cases where we
+          // were unable to decrypt the content and push it through anyways
+          // to ensure delivery of requests.
+          String label = String.format("%s.%s.%s", namespace, schemaName, schemaVersion);
+          Metrics.counter(DecryptPioneerPayloads.class, label).inc();
           // The deletion-request and enrollment pings are special cased within
           // the decryption pipeline. The Pioneer client requires a JWE payload to
           // exist before it can be sent. The encrypted data is the empty string
@@ -177,10 +186,9 @@ public class DecryptPioneerPayloads extends
 
       // Redirect messages via attributes
       Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
-      attributes.put(Attribute.DOCUMENT_NAMESPACE,
-          resolveInvalidNamespace(payload.get(SCHEMA_NAMESPACE).asText()));
-      attributes.put(Attribute.DOCUMENT_TYPE, payload.get(SCHEMA_NAME).asText());
-      attributes.put(Attribute.DOCUMENT_VERSION, payload.get(SCHEMA_VERSION).asText());
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, resolveInvalidNamespace(namespace));
+      attributes.put(Attribute.DOCUMENT_TYPE, schemaName);
+      attributes.put(Attribute.DOCUMENT_VERSION, schemaVersion);
       return Collections.singletonList(new PubsubMessage(merged, attributes));
     }
   }
