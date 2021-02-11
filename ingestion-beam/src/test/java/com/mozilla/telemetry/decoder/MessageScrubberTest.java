@@ -547,19 +547,41 @@ public class MessageScrubberTest {
         () -> MessageScrubber.scrub(mozAttributes, Json.createObjectNode()));
 
     // empty agent strings are also scrubbed
-    Map<String, String> emptyAtrributes = ImmutableMap.<String, String>builder()
+    Map<String, String> emptyAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
         .put(Attribute.USER_AGENT, "") //
         .build();
 
     assertThrows(UnwantedDataException.class,
-        () -> MessageScrubber.scrub(emptyAtrributes, Json.createObjectNode()));
+        () -> MessageScrubber.scrub(emptyAttributes, Json.createObjectNode()));
 
-    Map<String, String> gleanAtrributes = ImmutableMap.<String, String>builder()
+    // null agent strings...
+    Map<String, String> nullAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(nullAttributes, Json.createObjectNode()));
+
+    Map<String, String> gleanAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
         .put(Attribute.USER_AGENT, "Glean/33.9.1 (Rust on Windows)") //
         .build();
 
-    MessageScrubber.scrub(gleanAtrributes, Json.createObjectNode());
+    MessageScrubber.scrub(gleanAttributes, Json.createObjectNode());
+  }
+
+  @Test
+  public void testScrubValidDocument() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "namespace") //
+        .put(Attribute.DOCUMENT_TYPE, "type") //
+        .put(Attribute.APP_NAME, "name") //
+        .put(Attribute.APP_VERSION, "version") //
+        .put(Attribute.APP_UPDATE_CHANNEL, "channel") //
+        .put(Attribute.APP_BUILD_ID, "build_id") //
+        // USER_AGENT may be null
+        .build();
+    MessageScrubber.scrub(attributes, Json.createObjectNode());
   }
 }
