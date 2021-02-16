@@ -49,6 +49,7 @@ public class MessageScrubber {
       .put("com-netsweeper-clientfilter-lgfl-socialblocked", "1688689") //
       .put("com-only4free-activate", "1687350") //
       .put("glean-js-tmp", "1689513") //
+      .put("org-privacywall-browser", "1691468") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
