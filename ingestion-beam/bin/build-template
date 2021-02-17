@@ -56,6 +56,7 @@ elif [[ $JOB_TYPE =~ ^decoder.*$ ]] ; then
   JOB_CLASS="com.mozilla.telemetry.Decoder"
   OUTPUT_OPTS="--outputType=pubsub \
 --outputFileFormat=json \
+--pubsubIdAttribute=uri \
 ${DECODER_OPTS}"
   ERROR_OUTPUT_OPTS="--errorOutputType=pubsub"
 elif [[ $JOB_TYPE =~ ^republisher_.*$ ]] ; then
