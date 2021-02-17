@@ -1,7 +1,7 @@
 package com.mozilla.telemetry.integration;
 
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;

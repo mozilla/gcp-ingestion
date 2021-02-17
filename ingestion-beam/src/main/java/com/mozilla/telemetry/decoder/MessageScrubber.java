@@ -46,6 +46,10 @@ public class MessageScrubber {
       .put("com-authenticatedreality-fireios", "1686087") //
       .put("com-netsweeper-clientfilter-lgfl-homeprotect", "1686085") //
       .put("com-myie9-xf", "1684918") //
+      .put("com-netsweeper-clientfilter-lgfl-socialblocked", "1688689") //
+      .put("com-only4free-activate", "1687350") //
+      .put("glean-js-tmp", "1689513") //
+      .put("org-privacywall-browser", "1691468") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -76,6 +80,8 @@ public class MessageScrubber {
     final String appVersion = attributes.get(Attribute.APP_VERSION);
     final String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
     final String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
+    // NOTE: this value may be null
+    final String userAgent = attributes.get(Attribute.USER_AGENT);
 
     // Check for toxic data that should be dropped without sending to error output.
     if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
@@ -125,6 +131,13 @@ public class MessageScrubber {
     if (ParseUri.TELEMETRY.equals(namespace) && FIREFOX_ONLY_DOCTYPES.contains(docType)
         && !"Firefox".equals(appName)) {
       throw new UnwantedDataException("1592010");
+    }
+
+    // Glean enforces a particular user-agent string that a rogue fuzzer is not abiding by
+    // https://searchfox.org/mozilla-central/source/third_party/rust/glean-core/src/upload/request.rs#35,72-75
+    if ("firefox-desktop".equals(namespace)
+        && (userAgent == null || !userAgent.startsWith("Glean"))) {
+      throw new UnwantedDataException("1684980");
     }
 
     // Check for other signatures that we want to send to error output, but which should appear
