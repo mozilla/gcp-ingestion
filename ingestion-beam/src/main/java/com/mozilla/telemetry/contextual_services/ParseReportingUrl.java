@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.contextual_services;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Json;
@@ -15,7 +16,8 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Extract reporting URL from document and filter out unknown URLs
@@ -39,6 +41,8 @@ public class ParseReportingUrl extends
       .via((PubsubMessage message) -> {
         message = PubsubConstraints.ensureNonNull(message);
 
+        Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+
         ObjectNode json;
         try {
           json = Json.readObjectNode(message.getPayload());
@@ -52,9 +56,9 @@ public class ParseReportingUrl extends
 
         // TODO: add url params
 
-        // TODO: should send entire payload for error output in case of downstream errors
+        attributes.put(Attribute.REPORTING_URL, reportingUrl);
 
-        return new PubsubMessage(reportingUrl.getBytes(StandardCharsets.UTF_8), message.getAttributeMap());
+        return new PubsubMessage(message.getPayload(), attributes);
       }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {

@@ -40,6 +40,7 @@ public class Constant {
     public static final String OS_VERSION = "os_version";
     public static final String PROXY_TIMESTAMP = "proxy_timestamp";
     public static final String REMOTE_ADDR = "remote_addr";
+    public static final String REPORTING_URL = "reporting_url";
     public static final String SAMPLE_ID = "sample_id";
     public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
     public static final String URI = "uri";

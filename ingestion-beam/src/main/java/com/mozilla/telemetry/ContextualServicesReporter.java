@@ -2,6 +2,7 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.contextual_services.ParseReportingUrl;
 import com.mozilla.telemetry.contextual_services.ContextualServicesReporterOptions;
+import com.mozilla.telemetry.contextual_services.SendRequest;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
@@ -55,7 +56,8 @@ public class ContextualServicesReporter extends Sink {
             .apply(options.getInputType().read(options)) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
             .apply(ParseReportingUrl.of(options.getUrlAllowList())).failuresTo(errorCollections) //
-            .apply(options.getOutputType().write(options)).failuresTo(errorCollections));
+            .apply(SendRequest.of()).failuresTo(errorCollections) //
+            .apply(options.getOutputType().write(options)).failuresTo(errorCollections)); // TODO: need this?
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //
