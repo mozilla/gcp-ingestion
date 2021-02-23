@@ -50,7 +50,7 @@ public class ParseReportingUrl extends
           throw new UncheckedIOException(e);
         }
 
-        String reportingUrl = json.path("reporting_url").textValue();
+        String reportingUrl = json.path("reporting_url").asText();
 
         // TODO: check against allow list
 
