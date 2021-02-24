@@ -6,7 +6,7 @@ import com.mozilla.telemetry.transforms.PubsubConstraints;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.WithFailures;
+import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
@@ -30,14 +30,12 @@ public class SendRequest extends
         .via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
 
-          Map<String, String> attributes = message.getAttributeMap();
-
           // TODO: HTTP GET
-          System.out.println(attributes.get(Attribute.REPORTING_URL));
+          System.out.println(message.getAttribute(Attribute.REPORTING_URL));
 
           return message;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
+        .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
           } catch (UncheckedIOException e) {

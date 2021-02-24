@@ -1,5 +1,6 @@
 package com.mozilla.telemetry;
 
+import com.mozilla.telemetry.contextual_services.FilterByDocType;
 import com.mozilla.telemetry.contextual_services.ParseReportingUrl;
 import com.mozilla.telemetry.contextual_services.ContextualServicesReporterOptions;
 import com.mozilla.telemetry.contextual_services.SendRequest;
@@ -50,10 +51,13 @@ public class ContextualServicesReporter extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
+    // TODO: dedupe input
+
     // We wrap pipeline in Optional for more convenience in chaining together transforms.
-    Optional.of(pipeline) // TODO: can remove optional
+    Optional.of(pipeline) // TODO: can remove optional?
         .map(p -> p //
             .apply(options.getInputType().read(options)) //
+            .apply(FilterByDocType.of(options.getAllowedDocTypes()))
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
             .apply(ParseReportingUrl.of(options.getUrlAllowList())).failuresTo(errorCollections) //
             .apply(SendRequest.of()).failuresTo(errorCollections) //
