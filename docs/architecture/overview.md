@@ -15,8 +15,6 @@ This document specifies the architecture for GCP Ingestion as a whole.
   `BigQuery`
 - The Dataflow `Decoder` job decodes messages from the PubSub `Raw Topic` to
   the PubSub `Decoded Topic`
-  - Also checks for existence of `document_id`s in
-    `Cloud Memorystore` in order to deduplicate messages
 - The Dataflow `AET Decoder` job provides all the functionality of the `Decoder`
   with additional decryption handling for Account Ecosystem Telemetry pings
 - The Dataflow `Republisher` job reads messages from the PubSub `Decoded Topic`,
@@ -70,12 +68,8 @@ This document specifies the architecture for GCP Ingestion as a whole.
   1. Produce `normalized_` variants of select attributes
   1. Inject `normalized_` attributes at the top level and other select
      attributes into a nested `metadata` top level key in `payload`
-- Should deduplicate messages based on the `document_id` attribute using
-  `Cloud MemoryStore`
+- Should deduplicate messages based on the `uri` attribute
   - Must ensure at least once delivery, so deduplication is only "best effort"
-  - Should delay deduplication to the latest possible stage of the pipeline
-    to minimize the time window between an ID being marked as seen in
-    `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
   - Must allow error destination in BigQuery
 
