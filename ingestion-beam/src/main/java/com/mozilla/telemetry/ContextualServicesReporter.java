@@ -51,17 +51,16 @@ public class ContextualServicesReporter extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    // TODO: dedupe input
-
     // We wrap pipeline in Optional for more convenience in chaining together transforms.
     Optional.of(pipeline) // TODO: can remove optional?
         .map(p -> p //
             .apply(options.getInputType().read(options)) //
-            .apply(FilterByDocType.of(options.getAllowedDocTypes()))
+            .apply(FilterByDocType.of(options.getAllowedDocTypes())) // TODO: could use subscription filter instead
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-            .apply(ParseReportingUrl.of(options.getUrlAllowList())).failuresTo(errorCollections) //
+            .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(),
+                options.getOsUserAgentList())).failuresTo(errorCollections) //
             .apply(SendRequest.of()).failuresTo(errorCollections) //
-            .apply(options.getOutputType().write(options)).failuresTo(errorCollections)); // TODO: need this?
+            .apply(options.getOutputType().write(options)).failuresTo(errorCollections)); // TODO: should we output anything at all?
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //

@@ -12,7 +12,6 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
 import java.io.UncheckedIOException;
-import java.util.Map;
 
 /**
  * Send GET requests to reporting
