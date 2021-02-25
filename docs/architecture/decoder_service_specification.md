@@ -77,7 +77,7 @@ required group attributes {
   optional string geo_subdivision2           // from geoip lookup
   optional string geo_city                   // from geoip lookup
   required string submission_timestamp       // from edge metadata
-g  optional string date                       // header from client
+  optional string date                       // header from client
   optional string dnt                        // header from client
   optional string x_pingsender_version       // header from client
   optional string x_debug_id                 // header from client
@@ -124,4 +124,4 @@ the document.
 BigQuery, and GroupByKey in Beam and Spark.
 
 Note that deduplication is only provided with a "best effort" quality of service
-using a 10-minute window.
+using a 10 minute window.
