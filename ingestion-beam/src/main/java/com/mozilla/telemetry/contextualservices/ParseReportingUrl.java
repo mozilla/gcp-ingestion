@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.contextual_services;
+package com.mozilla.telemetry.contextualservices;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -6,6 +6,19 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -15,23 +28,8 @@ import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
-import java.io.BufferedReader;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 /**
- * Extract reporting URL from document and filter out unknown URLs
+ * Extract reporting URL from document and filter out unknown URLs.
  */
 public class ParseReportingUrl extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
@@ -44,12 +42,13 @@ public class ParseReportingUrl extends
   private static transient Map<String, String> singletonCountryToIpMapping;
   private static transient Map<String, String> singletonOsToUserAgentMapping;
 
-  public static ParseReportingUrl of(ValueProvider<String> urlAllowList, ValueProvider<String> countryIpList,
+  public static ParseReportingUrl of(
+      ValueProvider<String> urlAllowList, ValueProvider<String> countryIpList,
       ValueProvider<String> osUserAgentList) {
     return new ParseReportingUrl(urlAllowList, countryIpList, osUserAgentList);
   }
 
-  public ParseReportingUrl(ValueProvider<String> urlAllowList, ValueProvider<String> countryIpList,
+  private ParseReportingUrl(ValueProvider<String> urlAllowList, ValueProvider<String> countryIpList,
       ValueProvider<String> osUserAgentList) {
     this.urlAllowList = urlAllowList;
     this.countryIpList = countryIpList;
@@ -67,12 +66,11 @@ public class ParseReportingUrl extends
   }
 
   @Override
-  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(PCollection<PubsubMessage> messages) {
+  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
+      PCollection<PubsubMessage> messages) {
     return messages.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
       .via((PubsubMessage message) -> {
         message = PubsubConstraints.ensureNonNull(message);
-
-        Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
         ObjectNode json;
         try {
@@ -106,16 +104,21 @@ public class ParseReportingUrl extends
           throw new InvalidUrlException("Could not parse reporting URL: " + reportingUrl, e);
         }
 
-        //if (urlObj.getHost() == "" || !singletonAllowedUrls.contains(urlObj.getHost())) { // TODO: placeholder logic
-        //  throw new InvalidUrlException("Reporting URL host not found in allow list: " + reportingUrl);
+        // TODO: this is placeholder logic
+        //if (urlObj.getHost() == "" || !singletonAllowedUrls.contains(urlObj.getHost())) {
+        //  throw new InvalidUrlException("Reporting URL host not found in allow list: "
+        //      + reportingUrl);
         //}
+
+        Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
         // Get query params as map
         Map<String, String> queryParams = Arrays.stream(urlObj.getQuery().split("&"))
             .map(param -> param.split("="))
             .collect(Collectors.toMap(item -> item[0], item -> item[1]));
 
-        String ipParam = singletonCountryToIpMapping.get(attributes.get(Attribute.NORMALIZED_COUNTRY_CODE));
+        String ipParam = singletonCountryToIpMapping.get(
+            attributes.get(Attribute.NORMALIZED_COUNTRY_CODE));
         if (ipParam == null) {
           throw new IllegalArgumentException("Could not get ip value: Unrecognized country "
               + Attribute.NORMALIZED_COUNTRY_CODE);
@@ -136,16 +139,19 @@ public class ParseReportingUrl extends
         } else if (os.startsWith("Linux")) {
           normalizedOs = "Linux";
         } else {
-          throw new IllegalArgumentException("Could not get user agent value: Unrecognized OS " + os);
+          throw new IllegalArgumentException(
+              "Could not get user agent value: Unrecognized OS " + os);
         }
-        String userAgent = String.format(singletonOsToUserAgentMapping.get(normalizedOs), clientVersion);
+        String userAgent = String.format(
+            singletonOsToUserAgentMapping.get(normalizedOs), clientVersion);
         queryParams.put("ua", userAgent);
 
         try {
           reportingUrl = new URL(urlObj.getProtocol(), urlObj.getHost(),
               urlObj.getPath() + "?" + queryString).toString();
         } catch (MalformedURLException e) {
-          throw new InvalidUrlException("Could not parse reporting with query string: " + queryString, e);
+          throw new InvalidUrlException("Could not parse reporting with query string: "
+              + queryString, e);
         }
 
         attributes.put(Attribute.REPORTING_URL, reportingUrl);
@@ -190,10 +196,11 @@ public class ParseReportingUrl extends
 
   /**
    * Returns a mapping from a two-column CSV file where column one
-   * is the key and column two is the value
+   * is the key and column two is the value.
    *
    * @throws IOException if the given file path cannot be read
-   * @throws IllegalArgumentException if the given file location cannot be retrieved or the CSV format is incorrect
+   * @throws IllegalArgumentException if the given file location cannot be retrieved
+   *     or the CSV format is incorrect
    */
   private Map<String, String> readMappingFromFile(
       ValueProvider<String> fileLocation, String paramName) throws IOException {
@@ -213,7 +220,8 @@ public class ParseReportingUrl extends
           String[] separated = line.split(",");
 
           if (separated.length != 2) {
-            throw new IllegalArgumentException("Invalid mapping: " + line + "; two-column csv expected");
+            throw new IllegalArgumentException("Invalid mapping: " + line
+                + "; two-column csv expected");
           }
           mapping.put(separated[0], separated[1]);
         }
@@ -234,7 +242,8 @@ public class ParseReportingUrl extends
 
   private Map<String, String> loadOsUserAgentMapping() throws IOException {
     if (singletonOsToUserAgentMapping == null) {
-      singletonOsToUserAgentMapping = readMappingFromFile(osUserAgentList, "osUserAgentList");
+      singletonOsToUserAgentMapping = readMappingFromFile(
+          osUserAgentList, "osUserAgentList");
     }
     return singletonOsToUserAgentMapping;
   }

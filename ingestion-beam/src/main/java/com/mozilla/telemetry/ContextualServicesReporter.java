@@ -1,10 +1,13 @@
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.contextual_services.FilterByDocType;
-import com.mozilla.telemetry.contextual_services.ParseReportingUrl;
-import com.mozilla.telemetry.contextual_services.ContextualServicesReporterOptions;
-import com.mozilla.telemetry.contextual_services.SendRequest;
+import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
+import com.mozilla.telemetry.contextualservices.FilterByDocType;
+import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
+import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -13,12 +16,8 @@ import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 /**
- * Get contextual services pings and send requests to URLs in payload
+ * Get contextual services pings and send requests to URLs in payload.
  */
 public class ContextualServicesReporter extends Sink {
 
@@ -39,8 +38,9 @@ public class ContextualServicesReporter extends Sink {
   public static PipelineResult run(String[] args) {
     registerOptions(); // Defined in Sink.java
     final ContextualServicesReporterOptions.Parsed options = ContextualServicesReporterOptions
-        .parseContextualServicesReporterOptions(PipelineOptionsFactory.fromArgs(args).withValidation()
-            .as(ContextualServicesReporterOptions.class));
+        .parseContextualServicesReporterOptions(
+            PipelineOptionsFactory.fromArgs(args).withValidation()
+                .as(ContextualServicesReporterOptions.class));
     return run(options);
   }
 
@@ -55,12 +55,14 @@ public class ContextualServicesReporter extends Sink {
     Optional.of(pipeline) // TODO: can remove optional?
         .map(p -> p //
             .apply(options.getInputType().read(options)) //
-            .apply(FilterByDocType.of(options.getAllowedDocTypes())) // TODO: could use subscription filter instead
+            // TODO: could use subscription filter instead
+            .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-            .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(),
+            .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(), //
                 options.getOsUserAgentList())).failuresTo(errorCollections) //
             .apply(SendRequest.of()).failuresTo(errorCollections) //
-            .apply(options.getOutputType().write(options)).failuresTo(errorCollections)); // TODO: should we output anything at all?
+            // TODO: should we output anything at all?
+            .apply(options.getOutputType().write(options)).failuresTo(errorCollections)); //
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //

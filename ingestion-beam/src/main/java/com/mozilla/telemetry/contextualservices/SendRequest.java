@@ -1,8 +1,9 @@
-package com.mozilla.telemetry.contextual_services;
+package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import java.io.UncheckedIOException;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -11,10 +12,8 @@ import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
-import java.io.UncheckedIOException;
-
 /**
- * Send GET requests to reporting
+ * Send GET requests to reporting.
  */
 public class SendRequest extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
@@ -24,7 +23,8 @@ public class SendRequest extends
   }
 
   @Override
-  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(PCollection<PubsubMessage> messages) {
+  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
+      PCollection<PubsubMessage> messages) {
     return messages.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
         .via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
