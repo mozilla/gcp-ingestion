@@ -10,8 +10,8 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
 
-public class FilterByDocType extends
-    PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+public class FilterByDocType
+    extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
   private final ValueProvider<List<String>> allowedDocTypes;
 

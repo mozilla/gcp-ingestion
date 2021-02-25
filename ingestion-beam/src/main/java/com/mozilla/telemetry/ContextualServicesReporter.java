@@ -38,9 +38,8 @@ public class ContextualServicesReporter extends Sink {
   public static PipelineResult run(String[] args) {
     registerOptions(); // Defined in Sink.java
     final ContextualServicesReporterOptions.Parsed options = ContextualServicesReporterOptions
-        .parseContextualServicesReporterOptions(
-            PipelineOptionsFactory.fromArgs(args).withValidation()
-                .as(ContextualServicesReporterOptions.class));
+        .parseContextualServicesReporterOptions(PipelineOptionsFactory.fromArgs(args)
+            .withValidation().as(ContextualServicesReporterOptions.class));
     return run(options);
   }
 
@@ -59,7 +58,8 @@ public class ContextualServicesReporter extends Sink {
             .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
             .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(), //
-                options.getOsUserAgentList())).failuresTo(errorCollections) //
+                options.getOsUserAgentList()))
+            .failuresTo(errorCollections) //
             .apply(SendRequest.of()).failuresTo(errorCollections) //
             // TODO: should we output anything at all?
             .apply(options.getOutputType().write(options)).failuresTo(errorCollections)); //

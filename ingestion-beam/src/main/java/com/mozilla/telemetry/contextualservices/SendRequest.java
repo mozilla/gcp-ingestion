@@ -25,8 +25,8 @@ public class SendRequest extends
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
-    return messages.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-        .via((PubsubMessage message) -> {
+    return messages.apply(
+        MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
 
           // TODO: HTTP GET
@@ -34,13 +34,13 @@ public class SendRequest extends
 
           return message;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
-          try {
-            throw ee.exception();
-          } catch (UncheckedIOException e) {
-            return FailureMessage.of(ParseReportingUrl.class.getSimpleName(),
-                ee.element(), ee.exception());
-          }
-        }));
+            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
+              try {
+                throw ee.exception();
+              } catch (UncheckedIOException e) {
+                return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
+                    ee.exception());
+              }
+            }));
   }
 }

@@ -42,8 +42,8 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
    */
   static ContextualServicesReporterOptions.Parsed parseContextualServicesReporterOptions(
       ContextualServicesReporterOptions options) {
-    final ContextualServicesReporterOptions.Parsed parsed =
-        options.as(ContextualServicesReporterOptions.Parsed.class);
+    final ContextualServicesReporterOptions.Parsed parsed = options
+        .as(ContextualServicesReporterOptions.Parsed.class);
     SinkOptions.enrichSinkOptions(parsed);
     return parsed;
   }
