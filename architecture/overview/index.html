@@ -182,8 +182,6 @@
   <code>BigQuery</code></li>
 <li>The Dataflow <code>Decoder</code> job decodes messages from the PubSub <code>Raw Topic</code> to
   the PubSub <code>Decoded Topic</code></li>
-<li>Also checks for existence of <code>document_id</code>s in
-    <code>Cloud Memorystore</code> in order to deduplicate messages</li>
 <li>The Dataflow <code>AET Decoder</code> job provides all the functionality of the <code>Decoder</code>
   with additional decryption handling for Account Ecosystem Telemetry pings</li>
 <li>The Dataflow <code>Republisher</code> job reads messages from the PubSub <code>Decoded Topic</code>,
@@ -236,12 +234,8 @@
 <li>Produce <code>normalized_</code> variants of select attributes</li>
 <li>Inject <code>normalized_</code> attributes at the top level and other select
      attributes into a nested <code>metadata</code> top level key in <code>payload</code></li>
-<li>Should deduplicate messages based on the <code>document_id</code> attribute using
-  <code>Cloud MemoryStore</code></li>
+<li>Should deduplicate messages based on the <code>uri</code> attribute</li>
 <li>Must ensure at least once delivery, so deduplication is only "best effort"</li>
-<li>Should delay deduplication to the latest possible stage of the pipeline
-    to minimize the time window between an ID being marked as seen in
-    <code>Republisher</code> and it being checked in <code>Decoder</code></li>
 <li>Must send messages rejected by transforms to a configurable error destination</li>
 <li>Must allow error destination in BigQuery</li>
 </ul>

@@ -161,15 +161,7 @@
 <p>The primary intention is to produce smaller derived Pub/Sub topics so
 that consumers that only need a specific subset of messages don't incur
 the cost of reading the entire stream of decoded messages.</p>
-<p>The Republisher has the additional responsibility of marking messages as seen
-in <code>Cloud MemoryStore</code> for deduplication purposes. That functionality exists
-here to avoid the expense of an additional separate consumer of the full
-decoded topic.</p>
 <h2 id="capabilities">Capabilities</h2>
-<h3 id="marking-messages-as-seen">Marking Messages As Seen</h3>
-<p>The job needs to connect to Redis in order to mark <code>document_id</code>s of consumed
-messages as seen. The Decoder is able to use that information to drop duplicate
-messages flowing through the pipeline.</p>
 <h3 id="debug-republishing">Debug Republishing</h3>
 <p>If <code>--enableDebugDestination</code> is set, messages containing an <code>x_debug_id</code>
 attribute will be republished to a destination that's configurable at runtime.

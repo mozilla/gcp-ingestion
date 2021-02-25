@@ -162,6 +162,8 @@ in the Structured Ingestion pipeline.</p>
 <h2 id="data-flow">Data Flow</h2>
 <ol>
 <li>Consume messages from Google Cloud PubSub raw topic</li>
+<li>Deduplicate message by <code>uri</code> (which generally contains <code>docId</code>)</li>
+<li>Disabled for stub-installer, which does not include a UUID in the URI</li>
 <li>Perform GeoIP lookup and drop <code>x_forwarded_for</code> and <code>remote_addr</code> and
    optionally <code>geo_city</code> based on population</li>
 <li>Parse the <code>uri</code> attribute to determine document type, etc.</li>
@@ -172,15 +174,11 @@ in the Structured Ingestion pipeline.</p>
 <li>Validate the schema of the body</li>
 <li>Extract user agent information and drop <code>user_agent</code></li>
 <li>Add metadata fields to message</li>
-<li>Deduplicate message by <code>docId</code></li>
-<li>Generate <code>docId</code> for submission types that don't have one</li>
 <li>Write message to PubSub decoded topic based on <code>namespace</code> and <code>docType</code></li>
 </ol>
 <h3 id="implementation">Implementation</h3>
 <p>The above steps will be executed as a single Apache Beam job that can accept
-either a streaming input from PubSub or a batch input from Cloud Storage.
-Message deduplication will be done by checking for the presence of ids as keys
-in Cloud Memory Store (managed Redis).</p>
+either a streaming input from PubSub or a batch input from Cloud Storage.</p>
 <h3 id="decoding-errors">Decoding Errors</h3>
 <p>All messages that are rejected at any step of the Data Flow above will be
 forwarded to a PubSub error topic for backfill and monitoring purposes.
@@ -253,15 +251,14 @@ be taken downstream to handle the backfill.</p>
 <p>Deployments should always terminate functional pipelines using the <code>drain</code>
 method, to ensure ack'd messages are fully delivered.</p>
 <h3 id="deduplication">Deduplication</h3>
-<p>Each <code>docId</code> will be allowed through "at least once", and only be
+<p>Each <code>uri</code> will be allowed through "at least once", and only be
 rejected as a duplicate if we have completed delivery of a message with the
-same <code>docId</code>. Duplicates will be considered errors and sent to the error topic.
+same <code>uri</code>. We assume that each <code>uri</code> contains a UUID that uniquely identifies
+the document.
 "Exactly once" semantics can be applied to derived data sets using SQL in
 BigQuery, and GroupByKey in Beam and Spark.</p>
-<p>Note that deduplication is only provided with a "best effort" quality of service.
-In the ideal case, we hold 24 hours of history for seen document IDs, but that
-buffer is allowed to degrade to a shorter time window when the pipeline is under
-high load.</p></div>
+<p>Note that deduplication is only provided with a "best effort" quality of service
+using a 10 minute window.</p></div>
             </div>
         </div>
 
