@@ -1,14 +1,11 @@
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.republisher.RandomSampler;
 import com.mozilla.telemetry.republisher.RepublishPerChannel;
 import com.mozilla.telemetry.republisher.RepublishPerDocType;
 import com.mozilla.telemetry.republisher.RepublishPerNamespace;
 import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
@@ -16,9 +13,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.Filter;
-import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.PCollectionList;
 
 public class Republisher extends Sink {
 
@@ -51,17 +46,10 @@ public class Republisher extends Sink {
     options.setOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
 
     final Pipeline pipeline = Pipeline.create(options);
-    final List<PCollection<PubsubMessage>> failuresCollections = new ArrayList<>();
 
     // Trailing comments are used below to prevent re-wrapping by google-java-format.
     PCollection<PubsubMessage> decoded = pipeline //
         .apply(options.getInputType().read(options));
-
-    // Mark messages as seen in Redis.
-    decoded //
-        .apply("MarkAsSeen", Deduplicate.markAsSeen(options.getParsedRedisUri(),
-            options.getDeduplicateExpireSeconds()))
-        .failuresTo(failuresCollections);
 
     // Republish debug messages.
     if (options.getEnableDebugDestination()) {
@@ -102,12 +90,6 @@ public class Republisher extends Sink {
     if (options.getPerChannelSampleRatios() != null) {
       decoded.apply(RepublishPerChannel.of(options));
     }
-
-    // Write error output collections.
-    PCollectionList.of(failuresCollections) //
-        .apply("FlattenFailureCollections", Flatten.pCollections()) //
-        .apply("WriteErrorOutput", options.getErrorOutputType().write(options)) //
-        .output();
 
     return pipeline.run();
   }

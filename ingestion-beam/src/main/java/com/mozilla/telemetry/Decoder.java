@@ -4,7 +4,6 @@ import com.mozilla.telemetry.aet.AetProcessing;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
-import com.mozilla.telemetry.decoder.Deduplicate;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GeoIspLookup;
 import com.mozilla.telemetry.decoder.ParsePayload;
@@ -94,8 +93,6 @@ public class Decoder extends Sink {
             .apply(ParseUserAgent.of()) //
             .apply(NormalizeAttributes.of()) //
             .apply("AddMetadata", AddMetadata.of()).failuresTo(failureCollections) //
-            .apply(Deduplicate.removeDuplicates(options.getParsedRedisUri())) //
-            .sendDuplicateMetadataToErrors().failuresTo(failureCollections) //
             .apply(options.getOutputType().write(options)).failuresTo(failureCollections));
 
     // Error output

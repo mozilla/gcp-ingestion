@@ -7,7 +7,6 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.decoder.DecryptPioneerPayloadsTest;
 import com.mozilla.telemetry.matchers.Lines;
-import com.mozilla.telemetry.rules.RedisServer;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
@@ -22,9 +21,6 @@ public class DecoderMainTest extends TestWithDeterministicJson {
 
   @Rule
   public TemporaryFolder outputFolder = new TemporaryFolder();
-
-  @Rule
-  public final RedisServer redis = new RedisServer();
 
   @Test
   public void instantiateDecoderForCodeCoverage() {
@@ -63,7 +59,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
+        "--schemasLocation=schemas.tar.gz" });
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
 
@@ -91,7 +87,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
+        "--schemasLocation=schemas.tar.gz" });
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
@@ -134,7 +130,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
         "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri, "--pioneerEnabled=true",
+        "--schemasLocation=schemas.tar.gz", "--pioneerEnabled=true",
         "--pioneerMetadataLocation=" + pioneerMetadataLocation, "--pioneerKmsEnabled=false" });
 
     List<String> outputLines = removePioneerMetadata(Lines.files(output + "*.ndjson"));
@@ -169,7 +165,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
         "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri, "--pioneerEnabled=true",
+        "--schemasLocation=schemas.tar.gz", "--pioneerEnabled=true",
         "--pioneerMetadataLocation=" + pioneerMetadataLocation });
     // NOTE: equivalent to --pioneerKmsEnabled=true
   }
@@ -192,7 +188,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--errorOutputFileCompression=UNCOMPRESSED",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
+        "--schemasLocation=schemas.tar.gz" });
 
     Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", //
         "--input=" + intermediateOutput + "*.ndjson", //
@@ -203,7 +199,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--errorOutputFileCompression=UNCOMPRESSED",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
+        "--schemasLocation=schemas.tar.gz" });
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");

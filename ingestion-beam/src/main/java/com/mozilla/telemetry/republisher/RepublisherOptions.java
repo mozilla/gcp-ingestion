@@ -1,20 +1,13 @@
 package com.mozilla.telemetry.republisher;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.primitives.Ints;
 import com.mozilla.telemetry.options.SinkOptions;
-import com.mozilla.telemetry.util.Time;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 
 /**
  * Options supported by {@code Republisher}.
@@ -22,22 +15,6 @@ import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
  * <p>Inherits standard configuration options and {@code Sink} configuration options.
  */
 public interface RepublisherOptions extends SinkOptions, PipelineOptions {
-
-  @Description("URI of a redis server that will be contacted to mark document IDs as seen for"
-      + " deduplication purposes; if left unspecified, this step of the pipeline is skipped")
-  @Validation.Required
-  ValueProvider<String> getRedisUri();
-
-  void setRedisUri(ValueProvider<String> value);
-
-  @Description("Duration for which document IDs should be stored for deduplication."
-      + " Allowed formats are: Ns (for seconds, example: 5s),"
-      + " Nm (for minutes, example: 12m), Nh (for hours, example: 2h)."
-      + " Can be omitted if --redisUri is unset.")
-  @Default.String("24h")
-  ValueProvider<String> getDeduplicateExpireDuration();
-
-  void setDeduplicateExpireDuration(ValueProvider<String> value);
 
   @Description("If set, messages with an x_debug_id attribute will be republished to"
       + " --debugDestination")
@@ -106,16 +83,6 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
    */
   @Hidden
   interface Parsed extends RepublisherOptions, SinkOptions.Parsed {
-
-    @JsonIgnore
-    ValueProvider<Integer> getDeduplicateExpireSeconds();
-
-    void setDeduplicateExpireSeconds(ValueProvider<Integer> value);
-
-    @JsonIgnore
-    ValueProvider<URI> getParsedRedisUri();
-
-    void setParsedRedisUri(ValueProvider<URI> value);
   }
 
   /**
@@ -133,11 +100,6 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichRepublisherOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    options
-        .setDeduplicateExpireSeconds(NestedValueProvider.of(options.getDeduplicateExpireDuration(),
-            value -> Ints.checkedCast(Time.parseSeconds(value))));
-    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(),
-        s -> Optional.ofNullable(s).map(URI::create).orElse(null)));
   }
 
 }
