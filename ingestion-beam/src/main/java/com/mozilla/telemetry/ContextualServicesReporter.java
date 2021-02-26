@@ -7,7 +7,6 @@ import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -50,19 +49,15 @@ public class ContextualServicesReporter extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    // We wrap pipeline in Optional for more convenience in chaining together transforms.
-    Optional.of(pipeline) // TODO: can remove optional?
-        .map(p -> p //
-            .apply(options.getInputType().read(options)) //
-            // TODO: could use subscription filter instead
-            .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
-            .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-            .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(), //
-                options.getOsUserAgentList()))
-            .failuresTo(errorCollections) //
-            .apply(SendRequest.of()).failuresTo(errorCollections) //
-            // TODO: should we output anything at all?
-            .apply(options.getOutputType().write(options)).failuresTo(errorCollections)); //
+    pipeline //
+        .apply(options.getInputType().read(options)) //
+        // TODO: could use subscription filter instead
+        .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
+        .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
+        .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(), //
+            options.getOsUserAgentList()))
+        .failuresTo(errorCollections) //
+        .apply(SendRequest.of()).failuresTo(errorCollections);
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //

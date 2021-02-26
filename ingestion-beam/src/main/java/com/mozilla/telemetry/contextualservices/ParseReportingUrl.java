@@ -42,6 +42,9 @@ public class ParseReportingUrl extends
   private static transient Map<String, String> singletonCountryToIpMapping;
   private static transient Map<String, String> singletonOsToUserAgentMapping;
 
+  private static final String DEFAULT_COUNTRY = "US";
+  private static final String DEFAULT_OS = "Windows";
+
   public static ParseReportingUrl of(ValueProvider<String> urlAllowList,
       ValueProvider<String> countryIpList, ValueProvider<String> osUserAgentList) {
     return new ParseReportingUrl(urlAllowList, countryIpList, osUserAgentList);
@@ -95,7 +98,7 @@ public class ParseReportingUrl extends
             throw new UncheckedIOException(e);
           }
 
-          String reportingUrl = json.path("reporting_url").asText();
+          String reportingUrl = json.path(Attribute.REPORTING_URL).asText();
 
           URL urlObj;
           try {
@@ -117,17 +120,14 @@ public class ParseReportingUrl extends
               .map(param -> param.split("="))
               .collect(Collectors.toMap(item -> item[0], item -> item[1]));
 
-          String ipParam = singletonCountryToIpMapping
-              .get(attributes.get(Attribute.NORMALIZED_COUNTRY_CODE));
+          String ipParam = singletonCountryToIpMapping.getOrDefault(
+              attributes.get(Attribute.NORMALIZED_COUNTRY_CODE),
+              singletonCountryToIpMapping.get(DEFAULT_COUNTRY));
           if (ipParam == null) {
             throw new IllegalArgumentException("Could not get ip value: Unrecognized country "
-                + Attribute.NORMALIZED_COUNTRY_CODE);
+                + "and missing default value: " + Attribute.NORMALIZED_COUNTRY_CODE);
           }
           queryParams.put("ip", ipParam);
-
-          String queryString = queryParams.entrySet().stream().map(
-              entry -> entry.getKey() + (entry.getValue() == null ? "" : "=" + entry.getValue()))
-              .collect(Collectors.joining("&"));
 
           String os = attributes.get(Attribute.USER_AGENT_OS);
           String clientVersion = attributes.get(Attribute.USER_AGENT_VERSION);
@@ -139,12 +139,19 @@ public class ParseReportingUrl extends
           } else if (os.startsWith("Linux")) {
             normalizedOs = "Linux";
           } else {
-            throw new IllegalArgumentException(
-                "Could not get user agent value: Unrecognized OS " + os);
+            normalizedOs = DEFAULT_OS;
           }
-          String userAgent = String.format(singletonOsToUserAgentMapping.get(normalizedOs),
-              clientVersion);
+          String userAgent = String.format(singletonOsToUserAgentMapping.getOrDefault(normalizedOs,
+              singletonOsToUserAgentMapping.get(DEFAULT_COUNTRY)), clientVersion);
+          if (userAgent == null) {
+            throw new IllegalArgumentException(
+                "Could not get user agent value: Unrecognized OS and missing default value: " + os);
+          }
           queryParams.put("ua", userAgent);
+
+          String queryString = queryParams.entrySet().stream().map(
+              entry -> entry.getKey() + (entry.getValue() == null ? "" : "=" + entry.getValue()))
+              .collect(Collectors.joining("&"));
 
           try {
             reportingUrl = new URL(urlObj.getProtocol(), urlObj.getHost(),

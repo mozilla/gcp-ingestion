@@ -27,7 +27,8 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setOsUserAgentList(ValueProvider<String> value);
 
-  @Description("List of doc types for which to send reporting requests")
+  @Description("List of doc types for which to send reporting requests; doc types are "
+      + "not namespace qualified (e.g. quicksuggest-click is a correct argument)")
   ValueProvider<List<String>> getAllowedDocTypes();
 
   void setAllowedDocTypes(ValueProvider<List<String>> value);
