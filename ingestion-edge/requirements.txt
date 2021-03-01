@@ -46,9 +46,7 @@ aiohttp==3.7.4 \
     --hash=sha256:f4496d8d04da2e98cc9133e238ccebf6a13ef39a93da2e87146c8c8ac9768242 \
     --hash=sha256:fbd3b5e18d34683decc00d9a360179ac1e7a320a5fee10ab8053ffd6deab76e0 \
     --hash=sha256:feb24ff1226beeb056e247cf2e24bba5232519efb5645121c4aea5b6ad74c1f2
-    # via
-    #   -r requirements.in
-    #   pytest-sanic
+    # via -r requirements.in
 appdirs==1.4.4 \
     --hash=sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41 \
     --hash=sha256:a841dacd6b99318a741b166adb07e19ee71a274450e68237b4650ca1055ab128
@@ -260,7 +258,9 @@ httptools==0.1.1 \
 httpx==0.15.4 \
     --hash=sha256:4c81dbf98a29cb4f51f415140df56542f9d4860798d713e336642e953cddd1db \
     --hash=sha256:7b3c07bfdcdadd92020dd4c07b15932abdcf1c898422a4e98de3d19b2223310b
-    # via sanic
+    # via
+    #   pytest-sanic
+    #   sanic
 idna==2.10 \
     --hash=sha256:b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6 \
     --hash=sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0
@@ -483,9 +483,9 @@ pytest-mypy==0.8.0 \
 pytest-pydocstyle==2.2.0 \
     --hash=sha256:b4e7eee47252fbb7495f4a0126e547a25f5f114f3096c504e738db49a5034333
     # via -r requirements.in
-pytest-sanic==1.6.2 \
-    --hash=sha256:6428ed8cc2e6cfa05b92689a8589149aacdc1f0640fcf9673211aa733e6a5209 \
-    --hash=sha256:982fa2ca879130fda9066b6051c7d232bf433dcc1bbac324e17ee49a8f7a92b1
+pytest-sanic==1.7.0 \
+    --hash=sha256:fde2c2fd96d9cef5ead0425dfe097511a25723746b6132269a0ebf764e8da742 \
+    --hash=sha256:ffef99df8bc18dc223a8da11273ec166a7b474c17d4e9011881597f38c8f6cc0
     # via -r requirements.in
 pytest-timeout==1.4.2 \
     --hash=sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76 \
@@ -707,7 +707,9 @@ websockets==8.1 \
     --hash=sha256:d705f8aeecdf3262379644e4b55107a3b55860eb812b673b28d0fbc347a60c55 \
     --hash=sha256:e898a0863421650f0bebac8ba40840fc02258ef4714cb7e1fd76b6a6354bda36 \
     --hash=sha256:f8a7bff6e8664afc4e6c28b983845c5bc14965030e3fb98789734d416af77c4b
-    # via sanic
+    # via
+    #   pytest-sanic
+    #   sanic
 yarl==1.4.2 \
     --hash=sha256:0c2ab325d33f1b824734b3ef51d4d54a54e0e7a23d13b86974507602334c2cce \
     --hash=sha256:0ca2f395591bbd85ddd50a82eb1fde9c1066fafe888c5c7cc1d810cf03fd3cc6 \
