@@ -9,19 +9,20 @@ import org.apache.beam.sdk.options.ValueProvider;
 
 public interface ContextualServicesReporterOptions extends SinkOptions, PipelineOptions {
 
-  @Description("Path (local or gs://) to newline-delimited text file containing allowed reporting "
-      + "URLs to which requests can be sent")
+  @Description("Path (local or gs://) to CSV file text file containing allowed reporting "
+      + "URLs to which requests can be sent to action type (click or impression),"
+      + " expected format is url,type with no header")
   ValueProvider<String> getUrlAllowList();
 
   void setUrlAllowList(ValueProvider<String> value);
 
-  @Description("Path (local or gs://) to a CSV containing mappings of country codes to IP "
+  @Description("Path (local or gs://) to a CSV file containing mappings of country codes to IP "
       + "addresses used for reporting (expected format is country,ip with no header)")
   ValueProvider<String> getCountryIpList();
 
   void setCountryIpList(ValueProvider<String> value);
 
-  @Description("Path (local or gs://) to a CSV containing mappings of operating system to "
+  @Description("Path (local or gs://) to a CSV file containing mappings of operating system to "
       + "user agent used for reporting (expected format is os,ua with no header)")
   ValueProvider<String> getOsUserAgentList();
 

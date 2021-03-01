@@ -2,6 +2,7 @@ package com.mozilla.telemetry.contextualservices;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
@@ -39,7 +40,8 @@ public class ParseReportingUrl extends
   private final ValueProvider<String> countryIpList;
   private final ValueProvider<String> osUserAgentList;
 
-  private static transient Set<String> singletonAllowedUrls;
+  private static transient Set<String> singletonAllowedImpressionUrls;
+  private static transient Set<String> singletonAllowedClickUrls;
   private static transient Map<String, String> singletonCountryToIpMapping;
   private static transient Map<String, String> singletonOsToUserAgentMapping;
 
@@ -84,20 +86,14 @@ public class ParseReportingUrl extends
           }
 
           try {
-            if (singletonAllowedUrls == null) {
-              loadAllowedUrls();
-            }
-
-            if (singletonCountryToIpMapping == null) {
-              loadCountryToIpMapping();
-            }
-
-            if (singletonOsToUserAgentMapping == null) {
-              loadOsUserAgentMapping();
-            }
+            loadAllowedUrls();
+            loadCountryToIpMapping();
+            loadOsUserAgentMapping();
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
+
+          Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
           String reportingUrl = json.path(Attribute.REPORTING_URL).asText();
 
@@ -108,49 +104,28 @@ public class ParseReportingUrl extends
             throw new InvalidUrlException("Could not parse reporting URL: " + reportingUrl, e);
           }
 
-          // TODO: this is placeholder logic
-          // if (urlObj.getHost() == "" || !singletonAllowedUrls.contains(urlObj.getHost())) {
-          // throw new InvalidUrlException("Reporting URL host not found in allow list: "
-          // + reportingUrl);
-          // }
+          if (urlObj.getHost() == null || urlObj.getHost().isEmpty()) {
+            throw new InvalidUrlException(
+                "Reporting URL null or missing: " + reportingUrl);
+          }
 
-          Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+          if (!isUrlValid(urlObj, attributes.get(Attribute.DOCUMENT_TYPE))) {
+            PerDocTypeCounter.inc(attributes, "RejectedNonNullUrl");
+            throw new InvalidUrlException(
+                "Reporting URL host not found in allow list: " + reportingUrl);
+          }
 
-          // Get query params as map
+          // Get query parameters as map
           Map<String, String> queryParams = Arrays.stream(urlObj.getQuery().split("&"))
               .map(param -> param.split("="))
               .collect(Collectors.toMap(item -> item[0], item -> item[1]));
 
-          String ipParam = singletonCountryToIpMapping.getOrDefault(
-              attributes.get(Attribute.NORMALIZED_COUNTRY_CODE),
-              singletonCountryToIpMapping.get(DEFAULT_COUNTRY));
-          if (ipParam == null) {
-            throw new IllegalArgumentException("Could not get ip value: Unrecognized country "
-                + "and missing default value: " + Attribute.NORMALIZED_COUNTRY_CODE);
-          }
-          queryParams.put("ip", ipParam);
+          queryParams.put("ip", createIpParam(attributes.get(Attribute.NORMALIZED_COUNTRY_CODE)));
 
-          String os = attributes.get(Attribute.USER_AGENT_OS);
-          String clientVersion = attributes.get(Attribute.USER_AGENT_VERSION);
-          String normalizedOs;
-          if (os.startsWith("Windows")) {
-            normalizedOs = "Windows";
-          } else if (os.startsWith("Macintosh")) {
-            normalizedOs = "Macintosh";
-          } else if (os.startsWith("Linux")) {
-            normalizedOs = "Linux";
-          } else {
-            normalizedOs = DEFAULT_OS;
-          }
-          String userAgentFormatString = singletonOsToUserAgentMapping.getOrDefault(normalizedOs,
-              singletonOsToUserAgentMapping.get(DEFAULT_COUNTRY));
-          if (userAgentFormatString == null) {
-            throw new IllegalArgumentException(
-                "Could not get user agent value: Unrecognized OS and missing default value: " + os);
-          }
-          String userAgent = MessageFormat.format(userAgentFormatString, clientVersion);
-          queryParams.put("ua", userAgent);
+          queryParams.put("ua", createUserAgentParam(attributes.get(Attribute.USER_AGENT_OS),
+              attributes.get(Attribute.USER_AGENT_VERSION)));
 
+          // Generate query string from map
           String queryString = queryParams.entrySet().stream().map(
               entry -> entry.getKey() + (entry.getValue() == null ? "" : "=" + entry.getValue()))
               .collect(Collectors.joining("&"));
@@ -178,29 +153,54 @@ public class ParseReportingUrl extends
             }));
   }
 
-  private Set<String> loadAllowedUrls() throws IOException {
-    if (urlAllowList == null || !urlAllowList.isAccessible()) {
-      throw new IllegalArgumentException("--urlAllowList not found");
+  private boolean isUrlValid(URL url, String doctype) {
+    Set<String> allowedUrls;
+
+    if (doctype.endsWith("-click")) {
+      allowedUrls = singletonAllowedClickUrls;
+    } else if (doctype.endsWith("-impression")) {
+      allowedUrls = singletonAllowedImpressionUrls;
+    } else {
+      throw new IllegalArgumentException("Invalid doctype: " + doctype);
     }
 
-    if (singletonAllowedUrls == null) {
-      try (InputStream inputStream = BeamFileInputStream.open(urlAllowList.get());
-          InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-          BufferedReader reader = new BufferedReader(inputStreamReader)) {
-        singletonAllowedUrls = new HashSet<>();
-
-        while (reader.ready()) {
-          String line = reader.readLine();
-
-          if (line != null && !line.isEmpty()) {
-            singletonAllowedUrls.add(line);
-          }
-        }
-      } catch (IOException e) {
-        throw new IOException("Exception thrown while fetching urlAllowList", e);
-      }
+    if (allowedUrls.contains(url.getHost())) {
+      return true;
     }
-    return singletonAllowedUrls;
+
+    // chek for subdomains (e.g. allow mozilla.test.com but not mozillatest.com)
+    return allowedUrls.stream().map(allowedUrl -> "." + allowedUrl)
+        .anyMatch(url.getHost()::endsWith);
+  }
+
+  private String createIpParam(String countryCode) {
+    String ipParam = singletonCountryToIpMapping.getOrDefault(countryCode,
+        singletonCountryToIpMapping.get(DEFAULT_COUNTRY));
+    if (ipParam == null) {
+      throw new IllegalArgumentException("Could not get ip value: Unrecognized country "
+          + "and missing default value: " + Attribute.NORMALIZED_COUNTRY_CODE);
+    }
+    return ipParam;
+  }
+
+  private String createUserAgentParam(String os, String clientVersion) {
+    String normalizedOs;
+    if (os.startsWith("Windows")) {
+      normalizedOs = "Windows";
+    } else if (os.startsWith("Macintosh")) {
+      normalizedOs = "Macintosh";
+    } else if (os.startsWith("Linux")) {
+      normalizedOs = "Linux";
+    } else {
+      normalizedOs = DEFAULT_OS;
+    }
+    String userAgentFormatString = singletonOsToUserAgentMapping.getOrDefault(normalizedOs,
+        singletonOsToUserAgentMapping.get(DEFAULT_COUNTRY));
+    if (userAgentFormatString == null) {
+      throw new IllegalArgumentException(
+          "Could not get user agent value: Unrecognized OS and missing default value: " + os);
+    }
+    return MessageFormat.format(userAgentFormatString, clientVersion);
   }
 
   /**
@@ -238,7 +238,7 @@ public class ParseReportingUrl extends
 
       return mapping;
     } catch (IOException e) {
-      throw new IOException("Exception thrown while fetching countryToIpMapping", e);
+      throw new IOException("Exception thrown while fetching " + paramName, e);
     }
   }
 
@@ -254,5 +254,25 @@ public class ParseReportingUrl extends
       singletonOsToUserAgentMapping = readMappingFromFile(osUserAgentList, "osUserAgentList");
     }
     return singletonOsToUserAgentMapping;
+  }
+
+  private void loadAllowedUrls() throws IOException {
+    if (singletonAllowedImpressionUrls == null || singletonAllowedClickUrls == null) {
+      singletonAllowedImpressionUrls = new HashSet<>();
+      singletonAllowedClickUrls = new HashSet<>();
+
+      Map<String, String> urlToActionTypeMap = readMappingFromFile(urlAllowList, "urlAllowList");
+
+      for (Map.Entry<String, String> urlToActionType : urlToActionTypeMap.entrySet()) {
+        if (urlToActionType.getValue().equals("click")) {
+          singletonAllowedClickUrls.add(urlToActionType.getKey());
+        } else if (urlToActionType.getValue().equals("impression")) {
+          singletonAllowedImpressionUrls.add(urlToActionType.getKey());
+        } else {
+          throw new IllegalArgumentException(
+              "Invalid action type in url allow list: " + urlToActionType.getValue());
+        }
+      }
+    }
   }
 }
