@@ -2,17 +2,13 @@ package com.mozilla.telemetry.metrics;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
-import org.apache.beam.sdk.metrics.Counter;
-import org.apache.beam.sdk.metrics.Metrics;
 
 /** Convenience methods for managing sets of counters separated by document_type. */
-public class PerDocTypeCounter {
+public class PerDocTypeCounter extends KeyedCounter {
 
   private static final Map<String, String> EMPTY_ATTRIBUTES = ImmutableMap.of();
-  private static final Map<String, Counter> counters = new HashMap<>();
 
   /**
    * Like {@link #inc(Map, String, long)}, but always increments by 1.
@@ -44,11 +40,11 @@ public class PerDocTypeCounter {
    * @param n the number by which to increment the counter
    */
   public static void inc(@Nullable Map<String, String> attributes, String name, long n) {
-    getOrCreateCounter(attributes, name).inc(n);
+    inc(getCounterKey(attributes, name), n);
   }
 
   @VisibleForTesting
-  static Counter getOrCreateCounter(@Nullable Map<String, String> attributes, String name) {
+  static String getCounterKey(@Nullable Map<String, String> attributes, String name) {
     if (attributes == null) {
       attributes = EMPTY_ATTRIBUTES;
     }
@@ -60,10 +56,9 @@ public class PerDocTypeCounter {
     if (version != null) {
       docType = docType + "_v" + version;
     }
-    String key = String.format("%s/%s/%s", namespace, docType, name)
+    return String.format("%s/%s/%s", namespace, docType, name)
         // We change dashes to underscores to make sure we're following Stackdriver's naming scheme:
         // https://cloud.google.com/monitoring/api/v3/metrics-details#label_names
         .replace("-", "_");
-    return counters.computeIfAbsent(key, k -> Metrics.counter(PerDocTypeCounter.class, k));
   }
 }

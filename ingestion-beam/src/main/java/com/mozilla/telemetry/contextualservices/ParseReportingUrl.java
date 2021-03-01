@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -141,12 +142,13 @@ public class ParseReportingUrl extends
           } else {
             normalizedOs = DEFAULT_OS;
           }
-          String userAgent = String.format(singletonOsToUserAgentMapping.getOrDefault(normalizedOs,
-              singletonOsToUserAgentMapping.get(DEFAULT_COUNTRY)), clientVersion);
-          if (userAgent == null) {
+          String userAgentFormatString = singletonOsToUserAgentMapping.getOrDefault(normalizedOs,
+              singletonOsToUserAgentMapping.get(DEFAULT_COUNTRY));
+          if (userAgentFormatString == null) {
             throw new IllegalArgumentException(
                 "Could not get user agent value: Unrecognized OS and missing default value: " + os);
           }
+          String userAgent = MessageFormat.format(userAgentFormatString, clientVersion);
           queryParams.put("ua", userAgent);
 
           String queryString = queryParams.entrySet().stream().map(
@@ -162,8 +164,9 @@ public class ParseReportingUrl extends
           }
 
           attributes.put(Attribute.REPORTING_URL, reportingUrl);
+          json.put(Attribute.REPORTING_URL, reportingUrl);
 
-          return new PubsubMessage(message.getPayload(), attributes);
+          return new PubsubMessage(Json.asBytes(json), attributes);
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
               try {

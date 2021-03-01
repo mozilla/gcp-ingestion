@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -33,11 +34,12 @@ public class FilterByDocType
     @ProcessElement
     public void processElement(@Element PubsubMessage message, OutputReceiver<PubsubMessage> out) {
       message = PubsubConstraints.ensureNonNull(message);
-      if (allowedDocTypes.isAccessible()) {
-        if (allowedDocTypes.get() == null
-            || allowedDocTypes.get().contains(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
-          out.output(message);
-        }
+      if (allowedDocTypes.isAccessible() && (allowedDocTypes.get() == null
+          || allowedDocTypes.get().contains(message.getAttribute(Attribute.DOCUMENT_TYPE)))) {
+        out.output(message);
+        PerDocTypeCounter.inc(message.getAttributeMap(), "doctype_filter_passed");
+      } else {
+        PerDocTypeCounter.inc(message.getAttributeMap(), "doctype_filter_rejected");
       }
     }
   }

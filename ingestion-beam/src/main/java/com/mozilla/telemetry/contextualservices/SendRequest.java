@@ -1,9 +1,11 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.UncheckedIOException;
+import java.util.HashMap;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -32,7 +34,10 @@ public class SendRequest extends
           // TODO: HTTP GET
           System.out.println(message.getAttribute(Attribute.REPORTING_URL));
 
-          return message;
+          KeyedCounter.inc("reporting_response_200");
+
+          // TODO: this output is just for testing
+          return new PubsubMessage(message.getPayload(), new HashMap<>());
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
               try {
