@@ -15,7 +15,7 @@ pytest-flake8==1.0.7
 pytest-mock==3.5.1
 pytest-mypy==0.8.0
 pytest-pydocstyle==2.2.0
-pytest-sanic==1.6.2
+pytest-sanic==1.7.0
 pytest-timeout==1.4.2
 pytest==6.2.2
 python-dateutil==2.8.1
