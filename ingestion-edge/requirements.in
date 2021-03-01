@@ -1,4 +1,4 @@
-aiohttp==3.7.3
+aiohttp==3.7.4
 dockerflow==2020.10.0
 google-cloud-container==2.3.0
 google-cloud-monitoring==2.0.1
