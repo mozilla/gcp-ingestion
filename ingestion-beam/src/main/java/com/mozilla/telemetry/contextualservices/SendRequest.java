@@ -4,8 +4,12 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -15,10 +19,19 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
- * Send GET requests to reporting.
+ * Send GET requests to reporting endpoint.
  */
 public class SendRequest extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
+
+  private static class HttpRequestException extends RuntimeException {
+
+    HttpRequestException(String message, int code) {
+      super("HTTP " + code + ": " + message);
+    }
+  }
+
+  private static OkHttpClient httpClient;
 
   public static SendRequest of() {
     return new SendRequest();
@@ -31,10 +44,25 @@ public class SendRequest extends
         MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
 
-          // TODO: HTTP GET
-          System.out.println(message.getAttribute(Attribute.REPORTING_URL));
+          String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
 
-          KeyedCounter.inc("reporting_response_200");
+          if (reportingUrl == null) {
+            throw new IllegalArgumentException("reporting url cannot be null");
+          }
+
+          getOrCreateHttpClient();
+
+          Request request = new Request.Builder().url(reportingUrl).build();
+
+          // TODO: first iteration of job does not retry requests on errors
+          try (Response response = httpClient.newCall(request).execute()) {
+            KeyedCounter.inc("reporting_response_" + response.code());
+            if (!response.isSuccessful()) {
+              throw new HttpRequestException(response.message(), response.code());
+            }
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
 
           // TODO: this output is just for testing
           return new PubsubMessage(message.getPayload(), new HashMap<>());
@@ -47,5 +75,12 @@ public class SendRequest extends
                     ee.exception());
               }
             }));
+  }
+
+  private OkHttpClient getOrCreateHttpClient() {
+    if (httpClient == null) {
+      httpClient = new OkHttpClient();
+    }
+    return httpClient;
   }
 }

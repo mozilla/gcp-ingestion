@@ -105,8 +105,7 @@ public class ParseReportingUrl extends
           }
 
           if (urlObj.getHost() == null || urlObj.getHost().isEmpty()) {
-            throw new InvalidUrlException(
-                "Reporting URL null or missing: " + reportingUrl);
+            throw new InvalidUrlException("Reporting URL null or missing: " + reportingUrl);
           }
 
           if (!isUrlValid(urlObj, attributes.get(Attribute.DOCUMENT_TYPE))) {
