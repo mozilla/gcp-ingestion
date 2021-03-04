@@ -66,7 +66,7 @@ elif [[ $JOB_TYPE =~ ^republisher_.*$ ]] ; then
 --outputFileFormat=json ${SINK_OPTS} ${REPUBLISHER_OPTS:?}"
   ERROR_OUTPUT_OPTS="--errorOutputType=file \
 --errorOutputNumShards=${ERROR_NUM_SHARDS}"
-elif [[ $JOB_TYPE =~ ^contextualservices$ ]] ; then
+elif [[ $JOB_TYPE == "ctxsvc_reporter" ]] ; then
   JOB_CLASS="com.mozilla.telemetry.ContextualServicesReporter"
   ERROR_OUTPUT_OPTS="--errorOutputType=bigquery \
 --errorBqWriteMethod=streaming"
