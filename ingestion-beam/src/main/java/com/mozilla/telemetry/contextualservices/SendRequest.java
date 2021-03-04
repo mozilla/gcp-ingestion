@@ -36,7 +36,7 @@ public class SendRequest extends
   private static OkHttpClient httpClient;
 
   private final Distribution requestTimer = Metrics.distribution(SendRequest.class,
-      "reqporting_request_millis");
+      "reporting_request_millis");
 
   public static SendRequest of() {
     return new SendRequest();

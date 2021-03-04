@@ -12,8 +12,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -121,8 +123,12 @@ public class ParseReportingUrl extends
 
           queryParams.put("ip", createIpParam(attributes.get(Attribute.NORMALIZED_COUNTRY_CODE)));
 
-          queryParams.put("ua", createUserAgentParam(attributes.get(Attribute.USER_AGENT_OS),
-              attributes.get(Attribute.USER_AGENT_VERSION)));
+          try {
+            queryParams.put("ua", createUserAgentParam(attributes.get(Attribute.USER_AGENT_OS),
+                attributes.get(Attribute.USER_AGENT_VERSION)));
+          } catch (UnsupportedEncodingException e) {
+            throw new UncheckedIOException(e);
+          }
 
           // Generate query string from map
           String queryString = queryParams.entrySet().stream().map(
@@ -167,7 +173,7 @@ public class ParseReportingUrl extends
       return true;
     }
 
-    // chek for subdomains (e.g. allow mozilla.test.com but not mozillatest.com)
+    // check for subdomains (e.g. allow mozilla.test.com but not mozillatest.com)
     return allowedUrls.stream().map(allowedUrl -> "." + allowedUrl)
         .anyMatch(url.getHost()::endsWith);
   }
@@ -182,7 +188,8 @@ public class ParseReportingUrl extends
     return ipParam;
   }
 
-  private String createUserAgentParam(String os, String clientVersion) {
+  private String createUserAgentParam(String os, String clientVersion)
+      throws UnsupportedEncodingException {
     String normalizedOs;
     if (os.startsWith("Windows")) {
       normalizedOs = "Windows";
@@ -199,7 +206,8 @@ public class ParseReportingUrl extends
       throw new IllegalArgumentException(
           "Could not get user agent value: Unrecognized OS and missing default value: " + os);
     }
-    return MessageFormat.format(userAgentFormatString, clientVersion);
+    String userAgent = MessageFormat.format(userAgentFormatString, clientVersion);
+    return URLEncoder.encode(userAgent, "UTF-8");
   }
 
   /**
