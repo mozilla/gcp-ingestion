@@ -57,7 +57,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(), //
             options.getOsUserAgentList()))
         .failuresTo(errorCollections) //
-        .apply(SendRequest.of()).failuresTo(errorCollections)
+        .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections)
         // TODO: just for testing
         .apply(options.getOutputType().write(options)).failuresTo(errorCollections);
 

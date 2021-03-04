@@ -13,6 +13,7 @@ import okhttp3.Response;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
+import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
@@ -38,8 +39,14 @@ public class SendRequest extends
   private final Distribution requestTimer = Metrics.distribution(SendRequest.class,
       "reporting_request_millis");
 
-  public static SendRequest of() {
-    return new SendRequest();
+  private final ValueProvider<Boolean> reportingEnabled;
+
+  public SendRequest(ValueProvider<Boolean> reportingEnabled) {
+    this.reportingEnabled = reportingEnabled;
+  }
+
+  public static SendRequest of(ValueProvider<Boolean> reportingEnabled) {
+    return new SendRequest(reportingEnabled);
   }
 
   @Override
@@ -59,19 +66,8 @@ public class SendRequest extends
 
           Request request = new Request.Builder().url(reportingUrl).build();
 
-          // TODO: first iteration of job does not retry requests on errors
-          try (Response response = httpClient.newCall(request).execute()) {
-            KeyedCounter.inc("reporting_response_" + response.code());
-
-            long requestDuration = response.receivedResponseAtMillis()
-                - response.sentRequestAtMillis();
-            requestTimer.update(requestDuration);
-
-            if (!response.isSuccessful()) {
-              throw new HttpRequestException(response.message(), response.code());
-            }
-          } catch (IOException e) {
-            throw new UncheckedIOException(e);
+          if (reportingEnabled.isAccessible() && reportingEnabled.get()) {
+            sendRequest(request);
           }
 
           // TODO: this output is just for testing
@@ -85,6 +81,22 @@ public class SendRequest extends
                     ee.exception());
               }
             }));
+  }
+
+  private void sendRequest(Request request) {
+    try (Response response = httpClient.newCall(request).execute()) {
+      KeyedCounter.inc("reporting_response_" + response.code());
+
+      long requestDuration = response.receivedResponseAtMillis() - response.sentRequestAtMillis();
+      requestTimer.update(requestDuration);
+
+      // TODO: first iteration of job does not retry requests on errors
+      if (!response.isSuccessful()) {
+        throw new HttpRequestException(response.message(), response.code());
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   private OkHttpClient getOrCreateHttpClient() {

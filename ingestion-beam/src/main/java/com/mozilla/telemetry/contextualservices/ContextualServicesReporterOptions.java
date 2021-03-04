@@ -2,6 +2,7 @@ package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.options.SinkOptions;
 import java.util.List;
+import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
@@ -33,6 +34,13 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
   ValueProvider<List<String>> getAllowedDocTypes();
 
   void setAllowedDocTypes(ValueProvider<List<String>> value);
+
+  @Description("If set to true, send HTTP requests to reporting URLs.  "
+      + "Can be set to false for testing purposes.")
+  @Default.Boolean(true)
+  ValueProvider<Boolean> getReportingEnabled();
+
+  void setReportingEnabled(ValueProvider<Boolean> value);
 
   @Hidden
   interface Parsed extends ContextualServicesReporterOptions, SinkOptions.Parsed {
