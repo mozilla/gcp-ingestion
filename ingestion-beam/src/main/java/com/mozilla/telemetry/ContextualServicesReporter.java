@@ -51,15 +51,12 @@ public class ContextualServicesReporter extends Sink {
 
     pipeline //
         .apply(options.getInputType().read(options)) //
-        // TODO: could use subscription filter instead
         .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(), //
             options.getOsUserAgentList()))
         .failuresTo(errorCollections) //
-        .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections)
-        // TODO: just for testing
-        .apply(options.getOutputType().write(options)).failuresTo(errorCollections);
+        .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections);
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //

@@ -27,19 +27,19 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class SendRequest extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  private static class HttpRequestException extends IOException {
-
-    HttpRequestException(String message, int code) {
-      super("HTTP " + code + ": " + message);
-    }
-  }
-
   private static OkHttpClient httpClient;
 
   private final Distribution requestTimer = Metrics.distribution(SendRequest.class,
       "reporting_request_millis");
 
   private final ValueProvider<Boolean> reportingEnabled;
+
+  private static class HttpRequestException extends IOException {
+
+    HttpRequestException(String message, int code) {
+      super("HTTP " + code + ": " + message);
+    }
+  }
 
   public SendRequest(ValueProvider<Boolean> reportingEnabled) {
     this.reportingEnabled = reportingEnabled;
@@ -70,7 +70,6 @@ public class SendRequest extends
             sendRequest(request);
           }
 
-          // TODO: this output is just for testing
           return new PubsubMessage(message.getPayload(), new HashMap<>());
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
