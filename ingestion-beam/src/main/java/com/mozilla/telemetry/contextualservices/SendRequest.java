@@ -27,7 +27,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class SendRequest extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  private static class HttpRequestException extends RuntimeException {
+  private static class HttpRequestException extends IOException {
 
     HttpRequestException(String message, int code) {
       super("HTTP " + code + ": " + message);

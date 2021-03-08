@@ -8,6 +8,7 @@ import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,8 +45,7 @@ public class ParseReportingUrlTest {
 
     Map<String, String> mapping = parseReportingUrl.loadCountryToIpMapping();
 
-    Map<String, String> expected = ImmutableMap.of("US", "255.255.255.0", "AA",
-        "255.255.255.1");
+    Map<String, String> expected = ImmutableMap.of("US", "255.255.255.0", "AA", "255.255.255.1");
 
     Assert.assertEquals(expected, mapping);
 
@@ -62,8 +62,8 @@ public class ParseReportingUrlTest {
 
     Map<String, String> mapping = parseReportingUrl.loadOsUserAgentMapping();
 
-    Map<String, String> expected = ImmutableMap.of("Windows", "W {0} {0}", "Macintosh",
-        "M {0} {0}", "Linux", "L {0} {0}");
+    Map<String, String> expected = ImmutableMap.of("Windows", "W {0} {0}", "Macintosh", "M {0} {0}",
+        "Linux", "L {0} {0}");
 
     Assert.assertEquals(expected, mapping);
 
@@ -102,8 +102,8 @@ public class ParseReportingUrlTest {
 
   @Test
   public void testParsedUrlOutput() {
-    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
-        "topsites-impression", Attribute.USER_AGENT_OS, "Windows");
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+        Attribute.USER_AGENT_OS, "Windows");
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -121,11 +121,14 @@ public class ParseReportingUrlTest {
             pipeline.newProvider(COUNTRY_IP_LIST), pipeline.newProvider(OS_UA_LIST)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      List<Integer> messageCount = new ArrayList<>();
-      messages.forEach(message -> messageCount.add(1));
+      Iterator<PubsubMessage> iterator = messages.iterator();
+      int messageCount = 0;
 
-      Assert.assertEquals(1, messageCount.size());
+      for (; iterator.hasNext(); iterator.next()) {
+        messageCount++;
+      }
 
+      Assert.assertEquals(1, messageCount);
       return null;
     });
 
