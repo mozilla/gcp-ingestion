@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
@@ -20,6 +21,7 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -48,7 +50,11 @@ public class ParseReportingUrl extends
   private static transient Map<String, String> singletonOsToUserAgentMapping;
 
   private static final String DEFAULT_COUNTRY = "US";
-  private static final String DEFAULT_OS = "Windows";
+
+  private static final String OS_WINDOWS = "Windows";
+  private static final String OS_MAC = "Macintosh";
+  private static final String OS_LINUX = "Linux";
+  private static final String DEFAULT_OS = OS_WINDOWS;
 
   public static ParseReportingUrl of(ValueProvider<String> urlAllowList,
       ValueProvider<String> countryIpList, ValueProvider<String> osUserAgentList) {
@@ -80,9 +86,9 @@ public class ParseReportingUrl extends
         MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
 
-          ObjectNode json;
+          ObjectNode payload;
           try {
-            json = Json.readObjectNode(message.getPayload());
+            payload = Json.readObjectNode(message.getPayload());
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
@@ -97,7 +103,7 @@ public class ParseReportingUrl extends
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
-          String reportingUrl = json.path(Attribute.REPORTING_URL).asText();
+          String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
 
           URL urlObj;
           try {
@@ -116,16 +122,21 @@ public class ParseReportingUrl extends
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
-          // Get query parameters as map
+          if (urlObj.getQuery() == null) {
+            throw new IllegalArgumentException("Missing query string from URL: " + reportingUrl);
+          }
           Map<String, String> queryParams = Arrays.stream(urlObj.getQuery().split("&"))
-              .map(param -> param.split("="))
+              .map(param -> param.split("=")).filter(param -> param.length > 1)
               .collect(Collectors.toMap(item -> item[0], item -> item[1]));
 
-          queryParams.put("ip", createIpParam(attributes.get(Attribute.NORMALIZED_COUNTRY_CODE)));
+          // TODO: Validate required query params
+
+          queryParams.put("ip",
+              createIpParam(payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText()));
 
           try {
             queryParams.put("ua", createUserAgentParam(attributes.get(Attribute.USER_AGENT_OS),
-                attributes.get(Attribute.USER_AGENT_VERSION)));
+                payload.get(Attribute.VERSION).asText()));
           } catch (UnsupportedEncodingException e) {
             throw new UncheckedIOException(e);
           }
@@ -144,9 +155,9 @@ public class ParseReportingUrl extends
           }
 
           attributes.put(Attribute.REPORTING_URL, reportingUrl);
-          json.put(Attribute.REPORTING_URL, reportingUrl);
+          payload.put(Attribute.REPORTING_URL, reportingUrl);
 
-          return new PubsubMessage(Json.asBytes(json), attributes);
+          return new PubsubMessage(Json.asBytes(payload), attributes);
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
               try {
@@ -158,7 +169,8 @@ public class ParseReportingUrl extends
             }));
   }
 
-  private boolean isUrlValid(URL url, String doctype) {
+  @VisibleForTesting
+  boolean isUrlValid(URL url, String doctype) {
     Set<String> allowedUrls;
 
     if (doctype.endsWith("-click")) {
@@ -178,7 +190,8 @@ public class ParseReportingUrl extends
         .anyMatch(url.getHost()::endsWith);
   }
 
-  private String createIpParam(String countryCode) {
+  @VisibleForTesting
+  String createIpParam(String countryCode) {
     String ipParam = singletonCountryToIpMapping.getOrDefault(countryCode,
         singletonCountryToIpMapping.get(DEFAULT_COUNTRY));
     if (ipParam == null) {
@@ -188,15 +201,15 @@ public class ParseReportingUrl extends
     return ipParam;
   }
 
-  private String createUserAgentParam(String os, String clientVersion)
-      throws UnsupportedEncodingException {
+  @VisibleForTesting
+  String createUserAgentParam(String os, String clientVersion) throws UnsupportedEncodingException {
     String normalizedOs;
-    if (os.startsWith("Windows")) {
-      normalizedOs = "Windows";
-    } else if (os.startsWith("Macintosh")) {
-      normalizedOs = "Macintosh";
-    } else if (os.startsWith("Linux")) {
-      normalizedOs = "Linux";
+    if (os.startsWith(OS_WINDOWS)) {
+      normalizedOs = OS_WINDOWS;
+    } else if (os.startsWith(OS_MAC)) {
+      normalizedOs = OS_MAC;
+    } else if (os.startsWith(OS_LINUX)) {
+      normalizedOs = OS_LINUX;
     } else {
       normalizedOs = DEFAULT_OS;
     }
@@ -221,7 +234,7 @@ public class ParseReportingUrl extends
   private Map<String, String> readMappingFromFile(ValueProvider<String> fileLocation,
       String paramName) throws IOException {
     if (fileLocation == null || !fileLocation.isAccessible()) {
-      throw new IllegalArgumentException("--" + paramName + " argument not found");
+      throw new IllegalArgumentException("--" + paramName + " argument not accessible");
     }
 
     try (InputStream inputStream = BeamFileInputStream.open(fileLocation.get());
@@ -249,21 +262,24 @@ public class ParseReportingUrl extends
     }
   }
 
-  private Map<String, String> loadCountryToIpMapping() throws IOException {
+  @VisibleForTesting
+  Map<String, String> loadCountryToIpMapping() throws IOException {
     if (singletonCountryToIpMapping == null) {
       singletonCountryToIpMapping = readMappingFromFile(countryIpList, "countryIpList");
     }
     return singletonCountryToIpMapping;
   }
 
-  private Map<String, String> loadOsUserAgentMapping() throws IOException {
+  @VisibleForTesting
+  Map<String, String> loadOsUserAgentMapping() throws IOException {
     if (singletonOsToUserAgentMapping == null) {
       singletonOsToUserAgentMapping = readMappingFromFile(osUserAgentList, "osUserAgentList");
     }
     return singletonOsToUserAgentMapping;
   }
 
-  private void loadAllowedUrls() throws IOException {
+  @VisibleForTesting
+  List<Set<String>> loadAllowedUrls() throws IOException {
     if (singletonAllowedImpressionUrls == null || singletonAllowedClickUrls == null) {
       singletonAllowedImpressionUrls = new HashSet<>();
       singletonAllowedClickUrls = new HashSet<>();
@@ -281,5 +297,6 @@ public class ParseReportingUrl extends
         }
       }
     }
+    return Arrays.asList(singletonAllowedClickUrls, singletonAllowedImpressionUrls);
   }
 }
