@@ -17,8 +17,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.text.MessageFormat;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,7 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.apache.commons.text.StringSubstitutor;
 
 /**
  * Extract reporting URL from document and filter out unknown URLs.
@@ -219,8 +221,11 @@ public class ParseReportingUrl extends
       throw new IllegalArgumentException(
           "Could not get user agent value: Unrecognized OS and missing default value: " + os);
     }
-    String userAgent = MessageFormat.format(userAgentFormatString, clientVersion);
-    return URLEncoder.encode(userAgent, "UTF-8");
+
+    Map<String, String> valueMap = Collections.singletonMap("client_version", clientVersion);
+    String userAgent = StringSubstitutor.replace(userAgentFormatString, valueMap);
+
+    return URLEncoder.encode(userAgent, StandardCharsets.UTF_8.name());
   }
 
   /**

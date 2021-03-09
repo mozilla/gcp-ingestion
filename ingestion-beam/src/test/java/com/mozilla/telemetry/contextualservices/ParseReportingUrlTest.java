@@ -62,11 +62,15 @@ public class ParseReportingUrlTest {
 
     Map<String, String> mapping = parseReportingUrl.loadOsUserAgentMapping();
 
-    Map<String, String> expected = ImmutableMap.of("Windows", "W {0} {0}", "Macintosh", "M {0} {0}",
-        "Linux", "L {0} {0}");
+    // The templates here are invented for testing and include "{0}" to
+    // validate injection of OS version.
+    Map<String, String> expected = ImmutableMap.of("Windows",
+        "W ${client_version} ${client_version}", "Macintosh",
+        "M ${client_version} ${client_version}", "Linux", "L ${client_version} ${client_version}");
 
     Assert.assertEquals(expected, mapping);
 
+    // The output of createUserAgentParam should be URL-encoded, so spaces become "+".
     Assert.assertEquals("W+10+10", parseReportingUrl.createUserAgentParam("Windows", "10"));
     Assert.assertEquals("L+11+11", parseReportingUrl.createUserAgentParam("Linux", "11"));
     Assert.assertEquals("W+12+12", parseReportingUrl.createUserAgentParam("Other", "12"));
