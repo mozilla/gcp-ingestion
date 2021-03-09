@@ -57,6 +57,8 @@ public class ContextualServicesReporter extends Sink {
             options.getOsUserAgentList()))
         .failuresTo(errorCollections) //
         .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections);
+    // Note that there is no write step here for "successes"
+    // since the purpose of this job is sending to an external API.
 
     // Write error output collections.
     PCollectionList.of(errorCollections) //
