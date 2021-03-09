@@ -204,13 +204,14 @@ public class ParseReportingUrl extends
   }
 
   @VisibleForTesting
-  String createUserAgentParam(String os, String clientVersion) throws UnsupportedEncodingException {
+  String createUserAgentParam(String userAgentOs, String clientVersion)
+      throws UnsupportedEncodingException {
     String normalizedOs;
-    if (os.startsWith(OS_WINDOWS)) {
+    if (userAgentOs.startsWith(OS_WINDOWS)) {
       normalizedOs = OS_WINDOWS;
-    } else if (os.startsWith(OS_MAC)) {
+    } else if (userAgentOs.startsWith(OS_MAC)) {
       normalizedOs = OS_MAC;
-    } else if (os.startsWith(OS_LINUX)) {
+    } else if (userAgentOs.startsWith(OS_LINUX)) {
       normalizedOs = OS_LINUX;
     } else {
       normalizedOs = DEFAULT_OS;
@@ -219,7 +220,8 @@ public class ParseReportingUrl extends
         singletonOsToUserAgentMapping.get(DEFAULT_COUNTRY));
     if (userAgentFormatString == null) {
       throw new IllegalArgumentException(
-          "Could not get user agent value: Unrecognized OS and missing default value: " + os);
+          "Could not get user agent value: Unrecognized OS and missing default value: "
+              + userAgentOs);
     }
 
     Map<String, String> valueMap = Collections.singletonMap("client_version", clientVersion);
