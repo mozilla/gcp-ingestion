@@ -196,7 +196,7 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputNumShards(ValueProvider<Integer> value);
 
-  @Description("Type of --errorOutput; must be one of [pubsub, file]")
+  @Description("Type of --errorOutput; must be one of [pubsub, file, bigquery]")
   @Default.Enum("pubsub")
   ErrorOutputType getErrorOutputType();
 
