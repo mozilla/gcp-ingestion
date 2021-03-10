@@ -69,7 +69,8 @@ elif [[ $JOB_TYPE =~ ^republisher_.*$ ]] ; then
 elif [[ $JOB_TYPE == "ctxsvc_reporter" ]] ; then
   JOB_CLASS="com.mozilla.telemetry.ContextualServicesReporter"
   ERROR_OUTPUT_OPTS="--errorOutputType=bigquery \
---errorBqWriteMethod=streaming"
+--errorBqWriteMethod=streaming \
+${CONTEXTUAL_SERVICES_OPTS}"
 else
   echo "unknown job type ${JOB_TYPE}"
   exit 1
