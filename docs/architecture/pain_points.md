@@ -57,9 +57,9 @@ limit that otherwise would not.
 ## Templates
 
 Does not support repeated parameters via `ValueProvider<List<...>>`, as
-described in [Dataflow Java SDK #632]
+described in [Dataflow Java SDK #632].
 
-[googlecloudplatform/dataflowjavasdk#632]: https://github.com/GoogleCloudPlatform/DataflowJavaSDK/issues/632
+[dataflow java sdk #632]: https://github.com/GoogleCloudPlatform/DataflowJavaSDK/issues/632
 
 # PubSub
 
