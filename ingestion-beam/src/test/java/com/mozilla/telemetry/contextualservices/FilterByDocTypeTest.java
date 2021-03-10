@@ -3,7 +3,6 @@ package com.mozilla.telemetry.contextualservices;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +24,7 @@ public class FilterByDocTypeTest {
 
   @Test
   public void testMessagesFiltered() {
-    List<String> allowedDocTypes = Arrays.asList("type-a", "type-b");
+    String allowedDocTypes = "type-a,type-b,";
 
     List<PubsubMessage> inputDocTypes = Stream.of("type-a", "type-b", "type-c", "type-a", "type-d")
         .map(docType -> ImmutableMap.<String, String>of(Attribute.DOCUMENT_TYPE, docType))
