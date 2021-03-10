@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.options.SinkOptions;
-import java.util.List;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
@@ -34,7 +33,7 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
       + "(e.g. quicksuggest-click is a correct argument)")
   ValueProvider<String> getAllowedDocTypes();
 
-  void setAllowedDocTypes(ValueProvider<List<String>> value);
+  void setAllowedDocTypes(ValueProvider<String> value);
 
   @Description("If set to true, send HTTP requests to reporting URLs.  "
       + "Can be set to false for testing purposes.")
