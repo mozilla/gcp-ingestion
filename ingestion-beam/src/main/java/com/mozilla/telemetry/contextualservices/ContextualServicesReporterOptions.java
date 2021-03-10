@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.options.SinkOptions;
-import java.util.List;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
