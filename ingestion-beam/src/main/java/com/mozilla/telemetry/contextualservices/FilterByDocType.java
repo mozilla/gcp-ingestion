@@ -6,13 +6,13 @@ import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.beam.repackaged.core.org.apache.commons.lang3.StringUtils;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.commons.lang3.StringUtils;
 
 public class FilterByDocType
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
