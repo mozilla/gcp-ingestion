@@ -5,7 +5,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.matchers.Lines;
-import com.mozilla.telemetry.rules.RedisServer;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.List;
 import org.hamcrest.Matchers;
@@ -17,9 +16,6 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
 
   @Rule
   public TemporaryFolder outputFolder = new TemporaryFolder();
-
-  @Rule
-  public final RedisServer redis = new RedisServer();
 
   @Test
   public void instantiateRepublisherForCodeCoverage() {
@@ -68,10 +64,10 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     String output = "{\"" + outputPath + "/out_telemetry_event\":[\"telemetry/event\"], \""
         + outputPath + "/out_bar_foo\": [\"bar/foo\"]}";
 
-    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
-        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
-        "--perDocTypeDestinations=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--redisUri=" + redis.uri, "--errorOutputType=stderr" });
+    Republisher
+        .main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+            "--outputFileFormat=json", "--outputType=file", "--perDocTypeDestinations=" + output,
+            "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     List<String> expectedLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
@@ -96,10 +92,10 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     String input = inputPath + "/*.ndjson";
     String output = "{\"mynamespace\":\"" + outputPath + "/per-namespace_mynamespace" + "\"}";
 
-    Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
-        "--input=" + input, "--outputFileFormat=json", "--outputType=file",
-        "--perNamespaceDestinations=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--redisUri=" + redis.uri, "--errorOutputType=stderr" });
+    Republisher
+        .main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+            "--outputFileFormat=json", "--outputType=file", "--perNamespaceDestinations=" + output,
+            "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr" });
 
     List<String> expectedLines = Lines.files(inputPath + "/per-namespace-*.ndjson");
     List<String> outputLines = Lines.files(outputPath + "/*.ndjson");
@@ -124,8 +120,7 @@ public class RepublisherMainTest extends TestWithDeterministicJson {
     Republisher.main(new String[] { "--inputFileFormat=json", "--inputType=file",
         "--input=" + input, "--outputFileFormat=json", "--outputType=file",
         "--perChannelDestination=" + output, "--outputFileCompression=UNCOMPRESSED",
-        "--perChannelSampleRatios={\"beta\":1.0,\"release\":0.5}", "--redisUri=" + redis.uri,
-        "--errorOutputType=stderr" });
+        "--perChannelSampleRatios={\"beta\":1.0,\"release\":0.5}", "--errorOutputType=stderr" });
 
     List<String> inputLinesBeta = Lines.files(inputPath + "/per-channel-beta.ndjson");
     List<String> outputLinesBeta = Lines.files(outputPath + "/out-beta*.ndjson");

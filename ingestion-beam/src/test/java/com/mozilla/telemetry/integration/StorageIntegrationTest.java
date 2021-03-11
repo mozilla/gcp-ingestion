@@ -13,7 +13,6 @@ import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.testing.RemoteStorageHelper;
 import com.mozilla.telemetry.Decoder;
 import com.mozilla.telemetry.matchers.Lines;
-import com.mozilla.telemetry.rules.RedisServer;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,9 +33,6 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
 
   @Rule
   public TemporaryFolder tempFolder = new TemporaryFolder();
-
-  @Rule
-  public final RedisServer redis = new RedisServer();
 
   /** Find credentials in the environment and create a bucket in GCS. */
   @Before
@@ -80,7 +76,7 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
         "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz", "--redisUri=" + redis.uri });
+        "--schemasLocation=schemas.tar.gz" });
 
     tempFolder.newFolder("out");
     tempFolder.newFolder("error");

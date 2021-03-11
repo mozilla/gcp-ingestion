@@ -124,11 +124,6 @@
             <artifactId>geoip2</artifactId>
             <version>2.15.0</version>
         </dependency>
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>3.5.1</version>
-        </dependency>
         <!-- Following https://github.com/apache/beam/blob/v2.20.0/examples/java/build.gradle#L64 -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -139,12 +134,6 @@
             <groupId>org.bitbucket.b_c</groupId>
             <artifactId>jose4j</artifactId>
             <version>0.7.6</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.kstyrc</groupId>
-            <artifactId>embedded-redis</artifactId>
-            <version>0.6</version>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>

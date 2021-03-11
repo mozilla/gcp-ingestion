@@ -1,16 +1,12 @@
 package com.mozilla.telemetry.decoder;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mozilla.telemetry.options.SinkOptions;
-import java.net.URI;
-import java.util.Optional;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 
 /**
  * Options supported by {@code Decoder}.
@@ -38,11 +34,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   ValueProvider<String> getGeoIspDatabase();
 
   void setGeoIspDatabase(ValueProvider<String> value);
-
-  @Description("URI of a redis server that will be used for deduplication; leave null to disable")
-  ValueProvider<String> getRedisUri();
-
-  void setRedisUri(ValueProvider<String> value);
 
   @Description("If set to true, enable decryption of Pioneer payloads.")
   @Default.Boolean(false)
@@ -107,11 +98,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   @Hidden
   interface Parsed extends DecoderOptions, SinkOptions.Parsed {
-
-    @JsonIgnore
-    ValueProvider<URI> getParsedRedisUri();
-
-    void setParsedRedisUri(ValueProvider<URI> value);
   }
 
   /**
@@ -129,8 +115,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
-    options.setParsedRedisUri(NestedValueProvider.of(options.getRedisUri(),
-        s -> Optional.ofNullable(s).map(URI::create).orElse(null)));
   }
 
 }
