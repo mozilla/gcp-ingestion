@@ -40,6 +40,7 @@ public class Constant {
     public static final String OS_VERSION = "os_version";
     public static final String PROXY_TIMESTAMP = "proxy_timestamp";
     public static final String REMOTE_ADDR = "remote_addr";
+    public static final String REPORTING_URL = "reporting_url";
     public static final String SAMPLE_ID = "sample_id";
     public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
     public static final String URI = "uri";
@@ -47,6 +48,7 @@ public class Constant {
     public static final String USER_AGENT_BROWSER = "user_agent_browser";
     public static final String USER_AGENT_OS = "user_agent_os";
     public static final String USER_AGENT_VERSION = "user_agent_version";
+    public static final String VERSION = "version";
     public static final String X_DEBUG_ID = "x_debug_id";
     public static final String X_FORWARDED_FOR = "x_forwarded_for";
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";

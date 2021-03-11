@@ -50,6 +50,7 @@ public class MessageScrubber {
       .put("com-only4free-activate", "1687350") //
       .put("glean-js-tmp", "1689513") //
       .put("org-privacywall-browser", "1691468") //
+      .put("org-mozilla-ios-lockbox-credentialprovider", "1695728") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap

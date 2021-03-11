@@ -4,33 +4,32 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
-import org.apache.beam.sdk.metrics.Counter;
 import org.junit.Test;
 
 public class PerDocTypeCounterTest {
 
   @Test
-  public void getCounterTest() {
+  public void getKeyTest() {
     Map<String, String> attributes = ImmutableMap //
         .of("document_namespace", "telemetry", //
             "document_type", "core", //
             "document_version", "10");
-    Counter counter = PerDocTypeCounter.getOrCreateCounter(attributes, "my-name");
-    assertEquals("telemetry/core_v10/my_name", counter.getName().getName());
+    String key = PerDocTypeCounter.getCounterKey(attributes, "my-name");
+    assertEquals("telemetry/core_v10/my_name", key);
   }
 
   @Test
-  public void getCounterVersionlessTest() {
+  public void getKeyVersionlessTest() {
     Map<String, String> attributes = ImmutableMap //
         .of("document_namespace", "telemetry", //
             "document_type", "core");
-    Counter counter = PerDocTypeCounter.getOrCreateCounter(attributes, "my-name");
-    assertEquals("telemetry/core/my_name", counter.getName().getName());
+    String key = PerDocTypeCounter.getCounterKey(attributes, "my-name");
+    assertEquals("telemetry/core/my_name", key);
   }
 
   @Test
-  public void getCounterNullTest() {
-    Counter counter = PerDocTypeCounter.getOrCreateCounter(null, "my-name");
-    assertEquals("unknown_namespace/unknown_doctype/my_name", counter.getName().getName());
+  public void getKeyNullTest() {
+    String key = PerDocTypeCounter.getCounterKey(null, "my-name");
+    assertEquals("unknown_namespace/unknown_doctype/my_name", key);
   }
 }

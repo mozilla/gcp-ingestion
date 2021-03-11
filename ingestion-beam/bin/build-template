@@ -37,6 +37,8 @@ SINK_OPTS="--workerMachineType=${SINK_WORKER_MACHINE_TYPE} \
 --diskSizeGb=${SINK_DISK_SIZE} \
 --outputNumShards=${NUM_SHARDS}"
 
+CONTEXTUAL_SERVICES_OPTS="${CONTEXTUAL_SERVICES_OPTS}"
+
 INPUT_OPTS="--inputFileFormat=json \
 --inputType=pubsub"
 
@@ -56,7 +58,6 @@ elif [[ $JOB_TYPE =~ ^decoder.*$ ]] ; then
   JOB_CLASS="com.mozilla.telemetry.Decoder"
   OUTPUT_OPTS="--outputType=pubsub \
 --outputFileFormat=json \
---pubsubIdAttribute=uri \
 ${DECODER_OPTS}"
   ERROR_OUTPUT_OPTS="--errorOutputType=pubsub"
 elif [[ $JOB_TYPE =~ ^republisher_.*$ ]] ; then
@@ -65,6 +66,11 @@ elif [[ $JOB_TYPE =~ ^republisher_.*$ ]] ; then
 --outputFileFormat=json ${SINK_OPTS} ${REPUBLISHER_OPTS:?}"
   ERROR_OUTPUT_OPTS="--errorOutputType=file \
 --errorOutputNumShards=${ERROR_NUM_SHARDS}"
+elif [[ $JOB_TYPE == "ctxsvc_reporter" ]] ; then
+  JOB_CLASS="com.mozilla.telemetry.ContextualServicesReporter"
+  ERROR_OUTPUT_OPTS="--errorOutputType=bigquery \
+--errorBqWriteMethod=streaming \
+${CONTEXTUAL_SERVICES_OPTS}"
 else
   echo "unknown job type ${JOB_TYPE}"
   exit 1
