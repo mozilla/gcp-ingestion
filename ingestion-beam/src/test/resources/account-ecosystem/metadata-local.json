@@ -1,7 +1,0 @@
-[
-    {
-        "private_key_id": "gT92GBxi39BGNAK9vk1bkPdUxq_FmuuTrFmRmAmun4g",
-        "private_key_uri": "src/test/resources/account-ecosystem/testkey1.private.json",
-        "kms_resource_id": "projects/DUMMY_PROJECT_ID/locations/global/keyRings/test-ingestion-beam-integration/cryptoKeys/testkey1"
-    }
-]
