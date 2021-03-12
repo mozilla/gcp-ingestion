@@ -220,6 +220,20 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testShouldScrubBug1697602() throws Exception {
+    final Map<String, String> attributes1 = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+        .put(Attribute.DOCUMENT_TYPE, "account-ecosystem").build();
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes1, Json.createObjectNode()));
+    final Map<String, String> attributes2 = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-accounts")
+        .put(Attribute.DOCUMENT_TYPE, "account-ecosystem").build();
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes2, Json.createObjectNode()));
+  }
+
+  @Test
   public void testBug1602844Affected() throws Exception {
     Map<String, String> baseAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
