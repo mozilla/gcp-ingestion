@@ -112,6 +112,9 @@ public class MessageScrubber {
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       throw new MessageShouldBeDroppedException("1562011");
     }
+    if ("account-ecosystem".equals(docType)) {
+      throw new MessageShouldBeDroppedException("1697602");
+    }
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
