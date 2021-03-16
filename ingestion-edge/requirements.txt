@@ -358,13 +358,17 @@ pathspec==0.8.0 \
     --hash=sha256:7d91249d21749788d07a2d0f94147accd8f845507400749ea19c1ec9054a12b0 \
     --hash=sha256:da45173eb3a6f2a5a487efba21f050af2b41948be6ab52b6a1e3ff22bb8b7061
     # via black
+pep517==0.10.0 \
+    --hash=sha256:ac59f3f6b9726a49e15a649474539442cf76e0697e39df4869d25e68e880931b \
+    --hash=sha256:eba39d201ef937584ad3343df3581069085bacc95454c80188291d5b3ac7a249
+    # via pip-tools
 persist-queue==0.5.1 \
     --hash=sha256:27a44e6376bdaff1375f09ba6e14f633192cd2bdc593b948a752d80edea4d68c \
     --hash=sha256:9e2890660305847609bcbfa814ce38229b3629ea98e6fd8fb858bf9533a98d83
     # via -r requirements.in
-pip-tools==6.0.0 \
-    --hash=sha256:7c31c5dfe6b3b2cfcdaf1712f34551964d809eb89ea3568a5d0b781426725824 \
-    --hash=sha256:98db6932c704770b14c150f415b25643f4546710c88dd800b3ed87b27d3139c6
+pip-tools==6.0.1 \
+    --hash=sha256:3b0c7b95e8d3dfb011bb42cb38f356fcf5d0630480462b59c4d0a112b8d90281 \
+    --hash=sha256:50ec26df7710557ab574f19f7511830294999e6121b42b87473b48cb9984d788
     # via -r requirements.in
 pluggy==0.13.1 \
     --hash=sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0 \
@@ -603,6 +607,7 @@ toml==0.10.1 \
     --hash=sha256:bda89d5935c2eac546d648028b9901107a595863cb36bae0c73ac804a9b4ce88
     # via
     #   black
+    #   pep517
     #   pytest
     #   pytest-black
 typed-ast==1.4.1 \
