@@ -103,4 +103,35 @@ public class SendRequestTest {
 
     Assert.assertEquals(2, server.getRequestCount());
   }
+
+  @Test
+  public void testRedirectError() {
+    MockWebServer server = new MockWebServer();
+    server.enqueue(new MockResponse().setResponseCode(302));
+
+    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL,
+        server.url("/test").toString());
+
+    List<PubsubMessage> input = Collections
+        .singletonList(new PubsubMessage(new byte[0], attributes));
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
+        .apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(true)));
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Iterator<PubsubMessage> iterator = messages.iterator();
+      int messageCount = 0;
+
+      for (; iterator.hasNext(); iterator.next()) {
+        messageCount++;
+      }
+
+      Assert.assertEquals(1, messageCount);
+      return null;
+    });
+
+    pipeline.run();
+
+    Assert.assertEquals(1, server.getRequestCount());
+  }
 }

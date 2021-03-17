@@ -7,6 +7,7 @@ import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.HashMap;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -38,6 +39,13 @@ public class SendRequest extends
 
     HttpRequestException(String message, int code) {
       super("HTTP " + code + ": " + message);
+    }
+  }
+
+  private static class HttpRedirectException extends IOException {
+
+    HttpRedirectException(String url) {
+      super("Redirects not allowed: " + url);
     }
   }
 
@@ -90,7 +98,11 @@ public class SendRequest extends
       requestTimer.update(requestDuration);
 
       // TODO: first iteration of job does not retry requests on errors
-      if (!response.isSuccessful()) {
+      if (response.isRedirect()) {
+        // Get url without query params
+        HttpUrl url = request.url();
+        throw new HttpRedirectException(url.host() + url.encodedPath());
+      } else if (!response.isSuccessful()) {
         throw new HttpRequestException(response.message(), response.code());
       }
     } catch (IOException e) {
@@ -100,7 +112,7 @@ public class SendRequest extends
 
   private OkHttpClient getOrCreateHttpClient() {
     if (httpClient == null) {
-      httpClient = new OkHttpClient();
+      httpClient = new OkHttpClient.Builder().followRedirects(false).build();
     }
     return httpClient;
   }
