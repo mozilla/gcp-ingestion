@@ -182,10 +182,8 @@
   <code>BigQuery</code></li>
 <li>The Dataflow <code>Decoder</code> job decodes messages from the PubSub <code>Raw Topic</code> to
   the PubSub <code>Decoded Topic</code></li>
-<li>The Dataflow <code>AET Decoder</code> job provides all the functionality of the <code>Decoder</code>
-  with additional decryption handling for Account Ecosystem Telemetry pings</li>
-<li>The Dataflow <code>Republisher</code> job reads messages from the PubSub <code>Decoded Topic</code>,
-  marks them as seen in <code>Cloud Memorystore</code> and republishes them to various
+<li>The Dataflow <code>Republisher</code> job reads messages from the PubSub <code>Decoded Topic</code>
+  and republishes them to various
   lower volume derived topics including <code>Monitoring Sample Topics</code> and
   <code>Per DocType Topics</code></li>
 <li>The Kubernetes <code>Decoded Sink</code> job copies messages from the PubSub <code>Decoded Topic</code>
@@ -239,27 +237,9 @@
 <li>Must send messages rejected by transforms to a configurable error destination</li>
 <li>Must allow error destination in BigQuery</li>
 </ul>
-<h3 id="aet-decoder">AET Decoder</h3>
-<p>The AET (Account Ecosystem Telemetry) Decoder is a modified version of the
-Decoder with the following properties:</p>
-<ul>
-<li>The raw topic that feeds the AET Decoder must not be sent anywhere else;
-  the AET Decoder needs to either successfully decrypt or sanitize all AET
-  identifiers</li>
-<li>Must load private keys from an encrypted blob in GCS</li>
-<li>Must call Cloud KMS at startup to decrypt keys and store these only in memory</li>
-<li>Must remove or redact all AET <code>ecosystem_anon_id</code> values from the payload before
-  passing to any durable output, including errors</li>
-<li>Must have access restricted to a limited set of operators to avoid exposing private keys</li>
-<li>Encrypted fields must be JOSE JWE objects in Compact Serialization form</li>
-</ul>
 <h3 id="republisher">Republisher</h3>
 <ul>
 <li>Must copy messages from PubSub topics to PubSub topics</li>
-<li>Must attempt to publish the <code>document_id</code> of each consumed message to
-  <code>Cloud MemoryStore</code></li>
-<li>ID publishing should be "best effort" but must not prevent the message
-    proceeding to further steps in case of errors reaching <code>Cloud MemoryStore</code></li>
 <li>Must ack messages read from PubSub after they are delivered to all
   matching destinations</li>
 <li>Must not ack messages read from PubSub before they are delivered to all
