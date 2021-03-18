@@ -9,21 +9,16 @@ graph TD
 
 f1(Producers) --> k1(Ingestion Edge)
 k1 --> p1(Raw Topic)
-k1 --> p1aet(AET Raw Topic)
 k1 --> p99(...)
 
 subgraph Pipeline Family: Structured
     p1 --> k2(Raw Sink)
     k2 --> c1(BigQuery)
     p1 --> d2(Decoder)
-    p1aet --> d2aet(AET Decoder)
-    d2aet -. Decrypt keys on startup .- m2(Cloud KMS)
     d2 --> p2(Decoded Topic)
     d2 -.-> p2err(Error Topic)
     p2err --> d3err(Error Sink)
     d3err --> berr(BigQuery)
-    d2aet --> p2
-    d2aet -.-> p2err
     p2 --> d3(Live Sink)
     d3 --> b1(BigQuery)
     p2 --> k3(Decoded Sink)
@@ -36,9 +31,6 @@ end
 subgraph .
    p99 --> d99(...)
 end
-
-d5 -. Mark document as seen .-> m1
-m1(Cloud Memorystore) -. Document already seen? .-> d2
 
 subgraph Colors
     d(Dataflow jobs are green)
