@@ -18,5 +18,5 @@ The components are:
 The design behind the system along with various trade offs are documented in
 the [architecture section](./architecture/overview.md).
 
-Feel free to ask us in `#fx-metrics` on Slack or `#telemetry` on `chat.mozilla.org`
+Feel free to ask us in `#data-help` on Slack or `#telemetry` on `chat.mozilla.org`
 if you have specific questions.
