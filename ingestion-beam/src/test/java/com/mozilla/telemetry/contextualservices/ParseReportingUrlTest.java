@@ -3,12 +3,12 @@ package com.mozilla.telemetry.contextualservices;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -125,14 +125,7 @@ public class ParseReportingUrlTest {
             pipeline.newProvider(COUNTRY_IP_LIST), pipeline.newProvider(OS_UA_LIST)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Iterator<PubsubMessage> iterator = messages.iterator();
-      int messageCount = 0;
-
-      for (; iterator.hasNext(); iterator.next()) {
-        messageCount++;
-      }
-
-      Assert.assertEquals(1, messageCount);
+      Assert.assertEquals(1, Iterators.size(messages.iterator()));
       return null;
     });
 

@@ -51,6 +51,9 @@ public class MessageScrubber {
       .put("glean-js-tmp", "1689513") //
       .put("org-privacywall-browser", "1691468") //
       .put("org-mozilla-ios-lockbox-credentialprovider", "1695728") //
+      .put("com-zibb-browser", "1698576") //
+      .put("org-mozilla-firefox-betb", "1698579") //
+      .put("org-mozilla-allanchain-firefox", "1698574") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
