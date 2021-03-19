@@ -2,7 +2,6 @@ package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.io.Resources;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
@@ -10,7 +9,6 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.JsonValidator;
 import com.mozilla.telemetry.util.KeyStore;
 import java.io.IOException;
 import java.security.PrivateKey;
@@ -24,7 +22,6 @@ import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.lang.JoseException;
@@ -36,23 +33,21 @@ public class DecryptJWE extends
   private final ValueProvider<Boolean> kmsEnabled;
   private final ValueProvider<Boolean> decompressPayload;
   private transient KeyStore keyStore;
-  private transient JsonValidator validator;
-  private transient Schema envelopeSchema;
+  private transient JSONSchemaStore schemaStore;
 
-  public static final String ENCRYPTED_DATA = "encryptedData";
-  public static final String ENCRYPTION_KEY_ID = "encryptionKeyId";
-  public static final String SCHEMA_NAMESPACE = "schemaNamespace";
   public static final String RALLY_ID = "rallyId";
   public static final String STUDY_NAME = "studyName";
 
   public static DecryptJWE of(ValueProvider<String> metadataLocation,
-      ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
+      ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
+      ValueProvider<Boolean> decompressPayload) {
     return new DecryptPioneerPayloads(metadataLocation, kmsEnabled, decompressPayload);
   }
 
-  private DecryptJWE(ValueProvider<String> metadataLocation, ValueProvider<Boolean> kmsEnabled,
-      ValueProvider<Boolean> decompressPayload) {
+  private DecryptJWE(ValueProvider<String> metadataLocation, ValueProvider<String> schemasLocation,
+      ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
     this.metadataLocation = metadataLocation;
+    this.schemasLocation = schemasLocation;
     this.kmsEnabled = kmsEnabled;
     this.decompressPayload = decompressPayload;
   }
@@ -93,19 +88,26 @@ public class DecryptJWE extends
       message = PubsubConstraints.ensureNonNull(message);
 
       if (keyStore == null) {
-        // If configured resources aren't available, this throws UncheckedIOException;
-        // this is unretryable so we allow it to bubble up and kill the worker and eventually fail
-        // the pipeline.
+        // If configured resources aren't available, this throws
+        // UncheckedIOException; this is unretryable so we allow it to bubble up
+        // and kill the worker and eventually fail the pipeline.
         keyStore = KeyStore.of(metadataLocation.get(), kmsEnabled.get());
       }
 
-      if (validator == null) {
-        validator = new JsonValidator();
-        byte[] data = Resources
-            .toByteArray(Resources.getResource("telemetry.pioneer-study.4.schema.json"));
-        envelopeSchema = JSONSchemaStore.readSchema(data);
+      if (schemaStore == null) {
+        schemaStore = JSONSchemaStore.of(schemasLocation.get(), BeamFileInputStream::open);
       }
 
+      Schema schema;
+      try {
+        schema = schemaStore.getSchema(attributes);
+      } catch (SchemaNotFoundException e) {
+        throw e;
+      }
+
+      // TODO: read metadata from the mozMetadata field
+
+      // We do no validation at this stage
       ObjectNode json = Json.readObjectNode(message.getPayload());
       validator.validate(envelopeSchema, json);
       JsonNode payload = json.get(FieldName.PAYLOAD);
