@@ -4,15 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
+import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.KeyStore;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.FlatMapElements;
@@ -22,6 +26,7 @@ import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.lang.JoseException;
@@ -30,6 +35,7 @@ public class DecryptJWE extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   private final ValueProvider<String> metadataLocation;
+  private final ValueProvider<String> schemasLocation;
   private final ValueProvider<Boolean> kmsEnabled;
   private final ValueProvider<Boolean> decompressPayload;
   private transient KeyStore keyStore;
@@ -41,7 +47,7 @@ public class DecryptJWE extends
   public static DecryptJWE of(ValueProvider<String> metadataLocation,
       ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
       ValueProvider<Boolean> decompressPayload) {
-    return new DecryptPioneerPayloads(metadataLocation, kmsEnabled, decompressPayload);
+    return new DecryptJWE(metadataLocation, schemasLocation, kmsEnabled, decompressPayload);
   }
 
   private DecryptJWE(ValueProvider<String> metadataLocation, ValueProvider<String> schemasLocation,
@@ -86,6 +92,7 @@ public class DecryptJWE extends
     public Iterable<PubsubMessage> apply(PubsubMessage message)
         throws IOException, JoseException, ValidationException {
       message = PubsubConstraints.ensureNonNull(message);
+      Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
       if (keyStore == null) {
         // If configured resources aren't available, this throws
@@ -109,19 +116,18 @@ public class DecryptJWE extends
 
       // We do no validation at this stage
       ObjectNode json = Json.readObjectNode(message.getPayload());
-      validator.validate(envelopeSchema, json);
       JsonNode payload = json.get(FieldName.PAYLOAD);
 
       byte[] payloadData;
       try {
-        String encryptionKeyId = payload.get(ENCRYPTION_KEY_ID).asText();
-        PrivateKey key = keyStore.getKey(encryptionKeyId);
+        PrivateKey key = keyStore.getKey("TODO");
         if (key == null) {
           // Is this really an IOException?
-          throw new IOException(String.format("encryptionKeyId not found: %s", encryptionKeyId));
+          throw new IOException(String.format("encryptionKeyId not found: %s", "TODO"));
         }
 
-        final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
+        // TODO: use the mozmetadata stuff
+        final byte[] decrypted = decrypt(key, payload.get("payload").asText());
 
         if (decompressPayload.get()) {
           payloadData = GzipUtil.maybeDecompress(decrypted);
