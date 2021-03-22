@@ -2,20 +2,23 @@ package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
-import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
-import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
-import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.JweMapping;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.KeyStore;
+import com.mozilla.telemetry.util.KeyStore.KeyNotFoundException;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
@@ -26,8 +29,6 @@ import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.ValidationException;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.lang.JoseException;
 
@@ -39,7 +40,7 @@ public class DecryptJWE extends
   private final ValueProvider<Boolean> kmsEnabled;
   private final ValueProvider<Boolean> decompressPayload;
   private transient KeyStore keyStore;
-  private transient JSONSchemaStore schemaStore;
+  private transient PipelineMetadataStore pipelineMetadataStore;
 
   public static final String RALLY_ID = "rallyId";
   public static final String STUDY_NAME = "studyName";
@@ -67,7 +68,8 @@ public class DecryptJWE extends
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (IOException | JoseException | ValidationException e) {
+          } catch (IOException | JoseException | KeyNotFoundException
+              | IllegalArgumentException e) {
             return FailureMessage.of(DecryptJWE.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
@@ -88,9 +90,41 @@ public class DecryptJWE extends
 
   private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
 
+    private void decryptAndReplace(PrivateKey key, JsonNode json, List<JweMapping> mappings)
+        throws JoseException, KeyNotFoundException {
+      for (JweMapping mapping : mappings) {
+        JsonNode sourceNode = json.at(mapping.source_field_path());
+        if (sourceNode.isMissingNode()) {
+          continue;
+        }
+
+        final byte[] decryptedData = decrypt(key, sourceNode.asText());
+        byte[] decrypted;
+        if (decompressPayload.get()) {
+          decrypted = GzipUtil.maybeDecompress(decryptedData);
+        } else {
+          // don't bother decompressing
+          decrypted = decryptedData;
+        }
+
+        ObjectNode sourceParent = (ObjectNode) json.at(mapping.source_field_path().head());
+        sourceParent.remove(mapping.source_field_path().last().getMatchingProperty());
+        JsonNode destinationParent = json.at(mapping.decrypted_field_path().head());
+        if (destinationParent.isObject()) {
+          ((ObjectNode) destinationParent).set(
+              mapping.decrypted_field_path().last().getMatchingProperty(),
+              TextNode.valueOf(decrypted.toString()));
+        } else {
+          throw new IllegalArgumentException(
+              "Payload is missing parent object for destination field: "
+                  + mapping.decrypted_field_path());
+        }
+      }
+    }
+
     @Override
     public Iterable<PubsubMessage> apply(PubsubMessage message)
-        throws IOException, JoseException, ValidationException {
+        throws IOException, JoseException, KeyNotFoundException, IllegalArgumentException {
       message = PubsubConstraints.ensureNonNull(message);
       Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
@@ -101,51 +135,34 @@ public class DecryptJWE extends
         keyStore = KeyStore.of(metadataLocation.get(), kmsEnabled.get());
       }
 
-      if (schemaStore == null) {
-        schemaStore = JSONSchemaStore.of(schemasLocation.get(), BeamFileInputStream::open);
+      if (pipelineMetadataStore == null) {
+        pipelineMetadataStore = PipelineMetadataStore.of(schemasLocation.get(),
+            BeamFileInputStream::open);
       }
 
-      Schema schema;
-      try {
-        schema = schemaStore.getSchema(attributes);
-      } catch (SchemaNotFoundException e) {
-        throw e;
+      PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
+      if (meta.jwe_mappings().isEmpty()) {
+        // Error for lack of better behavior
+        throw new RuntimeException(String.format("jwe_mappings missing from schema: %s %s",
+            attributes.get(Attribute.DOCUMENT_NAMESPACE), attributes.get(Attribute.DOCUMENT_TYPE)));
       }
 
-      // TODO: read metadata from the mozMetadata field
-
-      // We do no validation at this stage
+      // We do no validation at this stage and leave it for the downstream
+      // transform to determine whether the decrypted content is appropriate.
       ObjectNode json = Json.readObjectNode(message.getPayload());
-      JsonNode payload = json.get(FieldName.PAYLOAD);
 
-      byte[] payloadData;
       try {
-        PrivateKey key = keyStore.getKey("TODO");
-        if (key == null) {
-          // Is this really an IOException?
-          throw new IOException(String.format("encryptionKeyId not found: %s", "TODO"));
-        }
-
-        // TODO: use the mozmetadata stuff
-        final byte[] decrypted = decrypt(key, payload.get("payload").asText());
-
-        if (decompressPayload.get()) {
-          payloadData = GzipUtil.maybeDecompress(decrypted);
-        } else {
-          // don't bother decompressing
-          payloadData = decrypted;
-        }
-      } catch (IOException | JoseException e) {
+        // The keying behavior is specific to Rally -- it may be possible to
+        // rely on the keyId in the header instead. This behavior should be
+        // consistent with how keys are actually allocated.
+        PrivateKey key = keyStore.getKeyOrThrow(Attribute.DOCUMENT_NAMESPACE);
+        decryptAndReplace(key, json, meta.jwe_mappings());
+      } catch (JoseException | KeyNotFoundException | IllegalArgumentException e) {
         throw e;
       }
 
-      // insert top-level metadata into the payload
-      ObjectNode metadata = Json.createObjectNode();
-      metadata.put(RALLY_ID, payload.get(RALLY_ID).asText());
-      metadata.put(STUDY_NAME, payload.get(STUDY_NAME).asText());
-      final byte[] merged = NestedMetadata.mergedPayload(payloadData, Json.asBytes(metadata));
-
-      return Collections.singletonList(new PubsubMessage(merged, attributes));
+      return Collections
+          .singletonList(new PubsubMessage(Json.asBytes(json), message.getAttributeMap()));
     }
   }
 }
