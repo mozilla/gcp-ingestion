@@ -54,75 +54,74 @@ EOF
   }
 ]
 EOF
-}
     # testing schemas for jwe decryption
     mkdir -p schemas/rally-study-foo/baseline
     cat > schemas/rally-study-foo/baseline/baseline.1.schema.json << 'EOF'
 {
-  "$schema" : "http://json-schema.org/draft-04/schema#",
+  "$schema": "http://json-schema.org/draft-04/schema#",
   "mozPipelineMetadata": {
-    "bq_dataset_family": "rally_study_foo,
+    "bq_dataset_family": "rally_study_foo",
     "bq_metadata_format": "rally",
     "bq_table": "baseline",
     "jwe_mappings": [
       {
         "source_field_path": "/payload",
-        "decrypted_field_path": "/",
+        "decrypted_field_path": "/"
       }
     ]
   },
-  "type" : "object",
-  "properties" : {
-    "id": {"type": "string"},
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
     "metrics": {
       "type": "object",
       "properties": {
         "uuid": {
           "type": "object",
           "properties": {
-            "rally_id": {"type": "string}
+            "rally_id": { "type": "string" }
           }
         }
       }
     }
   },
-  "required" : []
+  "required": []
 }
 EOF
-
     mkdir -p schemas/rally-study-bar/baseline
     cat > schemas/rally-study-bar/baseline/baseline.1.schema.json << 'EOF'
 {
-  "$schema" : "http://json-schema.org/draft-04/schema#",
+  "$schema": "http://json-schema.org/draft-04/schema#",
   "mozPipelineMetadata": {
-    "bq_dataset_family": "rally_study_bar,
+    "bq_dataset_family": "rally_study_bar",
     "bq_metadata_format": "rally",
     "bq_table": "baseline",
     "jwe_mappings": [
       {
         "source_field_path": "/payload",
-        "decrypted_field_path": "/",
+        "decrypted_field_path": "/"
       }
     ]
   },
-  "type" : "object",
-  "properties" : {
-    "id": {"type": "string"},
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
     "metrics": {
       "type": "object",
       "properties": {
         "uuid": {
           "type": "object",
           "properties": {
-            "rally_id": {"type": "string}
+            "rally_id": { "type": "string" }
           }
         }
       }
     }
   },
-  "required" : []
+  "required": []
 }
 EOF
+}
 
 cd "$(dirname "$0")/.."
 init_working_directory
