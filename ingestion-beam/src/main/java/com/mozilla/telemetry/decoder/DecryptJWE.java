@@ -2,7 +2,6 @@ package com.mozilla.telemetry.decoder;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.JweMapping;
@@ -68,8 +67,7 @@ public class DecryptJWE extends
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (IOException | JoseException | KeyNotFoundException
-              | IllegalArgumentException e) {
+          } catch (IOException | JoseException | KeyNotFoundException e) {
             return FailureMessage.of(DecryptJWE.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
@@ -90,8 +88,9 @@ public class DecryptJWE extends
 
   private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
 
+    /** Replace decrypted elements in-place. Encrypted fields are assumed to be objects. */
     private void decryptAndReplace(PrivateKey key, JsonNode json, List<JweMapping> mappings)
-        throws JoseException, KeyNotFoundException {
+        throws IOException, JoseException, KeyNotFoundException {
       for (JweMapping mapping : mappings) {
         JsonNode sourceNode = json.at(mapping.source_field_path());
         if (sourceNode.isMissingNode()) {
@@ -109,15 +108,28 @@ public class DecryptJWE extends
 
         ObjectNode sourceParent = (ObjectNode) json.at(mapping.source_field_path().head());
         sourceParent.remove(mapping.source_field_path().last().getMatchingProperty());
-        JsonNode destinationParent = json.at(mapping.decrypted_field_path().head());
-        if (destinationParent.isObject()) {
-          ((ObjectNode) destinationParent).set(
-              mapping.decrypted_field_path().last().getMatchingProperty(),
-              TextNode.valueOf(decrypted.toString()));
+        JsonNode destination = json.at(mapping.decrypted_field_path());
+
+        // Replace the entire object at the destination if it exists
+        // https://tools.ietf.org/html/draft-ietf-appsawg-json-pointer-03
+        if (destination.isObject()) {
+          // NOTE: we should actually be able to insert any type of JsonNode
+          // into the tree, but it's easier to use the existing APIs for
+          // parsing out Json data.
+          ((ObjectNode) destination).setAll(Json.readObjectNode(decrypted));
         } else {
-          throw new IllegalArgumentException(
-              "Payload is missing parent object for destination field: "
-                  + mapping.decrypted_field_path());
+          // the destination doesn't exist, so let's insert it into an existing
+          // parent if it does exist.
+          JsonNode destinationParent = json.at(mapping.decrypted_field_path().head());
+          if (destinationParent.isObject()) {
+            ((ObjectNode) destinationParent).set(
+                mapping.decrypted_field_path().last().getMatchingProperty(),
+                Json.readObjectNode(decrypted));
+          } else {
+            throw new RuntimeException(
+                "Payload is missing parent object for destination field: "
+                    + mapping.decrypted_field_path());
+          }
         }
       }
     }
@@ -155,9 +167,9 @@ public class DecryptJWE extends
         // The keying behavior is specific to Rally -- it may be possible to
         // rely on the keyId in the header instead. This behavior should be
         // consistent with how keys are actually allocated.
-        PrivateKey key = keyStore.getKeyOrThrow(Attribute.DOCUMENT_NAMESPACE);
+        PrivateKey key = keyStore.getKeyOrThrow(attributes.get(Attribute.DOCUMENT_NAMESPACE));
         decryptAndReplace(key, json, meta.jwe_mappings());
-      } catch (JoseException | KeyNotFoundException | IllegalArgumentException e) {
+      } catch (JoseException | KeyNotFoundException e) {
         throw e;
       }
 

@@ -24,6 +24,7 @@ import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
+import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
@@ -107,15 +108,20 @@ public class DecryptJWETest extends TestWithDeterministicJson {
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
     final List<String> input = readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json"));
-    PCollection<String> output = pipeline.apply(Create.of(input))
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
                     ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "rally-study-foo",
                         Attribute.DOCUMENT_TYPE, "baseline", Attribute.DOCUMENT_VERSION, "1"))))
-        .apply(DecryptJWE.of(metadataLocation, schemasLocation, kmsEnabled, decompressPayload))
-        .output().apply(OutputFileFormat.text.encode()).apply(ReformatJson.of());
+        .apply(DecryptJWE.of(metadataLocation, schemasLocation, kmsEnabled, decompressPayload));
+
+    PAssert.that(result.failures()).empty();
+    pipeline.run();
+
+    PCollection<String> output = result.output().apply(OutputFileFormat.text.encode())
+        .apply(ReformatJson.of());
 
     final List<String> expectedMain = readTestFiles(
         Arrays.asList("jwe/rally-study-foo.plaintext.json"));
@@ -132,7 +138,7 @@ public class DecryptJWETest extends TestWithDeterministicJson {
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
-    pipeline.apply(Create.of(readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"))))
+    pipeline.apply(Create.of(readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json"))))
         .apply(InputFileFormat.text.decode())
         .apply(DecryptJWE.of(metadataLocation, schemasLocation, kmsEnabled, decompressPayload));
 

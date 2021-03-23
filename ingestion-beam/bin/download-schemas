@@ -66,7 +66,7 @@ EOF
     "jwe_mappings": [
       {
         "source_field_path": "/payload",
-        "decrypted_field_path": "/"
+        "decrypted_field_path": ""
       }
     ]
   },
@@ -99,7 +99,7 @@ EOF
     "jwe_mappings": [
       {
         "source_field_path": "/payload",
-        "decrypted_field_path": "/"
+        "decrypted_field_path": ""
       }
     ]
   },
