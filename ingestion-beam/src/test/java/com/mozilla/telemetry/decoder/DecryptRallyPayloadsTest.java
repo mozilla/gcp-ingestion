@@ -81,21 +81,30 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     return key.getPrivateKey();
   }
 
-  @Test
-  public void testDecrypt() throws Exception {
-    PrivateKey key = loadPrivateKey("jwe/rally-study-foo.private.json");
+  private void testDecryptHelper(String name) throws Exception {
+    PrivateKey key = loadPrivateKey(String.format("jwe/%s.private.json", name));
     byte[] ciphertext = Resources
-        .toByteArray(Resources.getResource("jwe/rally-study-foo.ciphertext.json"));
+        .toByteArray(Resources.getResource(String.format("jwe/%s.ciphertext.json", name)));
     byte[] plaintext = Resources
-        .toByteArray(Resources.getResource("jwe/rally-study-foo.plaintext.json"));
+        .toByteArray(Resources.getResource(String.format("jwe/%s.plaintext.json", name)));
 
     String payload = Json.readObjectNode(ciphertext).get("payload").textValue();
     byte[] decrypted = DecryptRallyPayloads.decrypt(key, payload);
     byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
 
-    String actual = Json.readObjectNode(plaintext).toString();
-    String expect = Json.readObjectNode(decompressed).toString();
+    String expect = Json.readObjectNode(plaintext).toString();
+    String actual = Json.readObjectNode(decompressed).toString();
     Assert.assertEquals(expect, actual);
+  }
+
+  @Test
+  public void testDecryptOnlyUuidMetric() throws Exception {
+    testDecryptHelper("rally-study-foo");
+  }
+
+  @Test
+  public void testDecryptUuidMetricAndCounter() throws Exception {
+    testDecryptHelper("rally-study-bar");
   }
 
   @Test

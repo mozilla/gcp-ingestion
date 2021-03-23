@@ -70,22 +70,7 @@ EOF
       }
     ]
   },
-  "type": "object",
-  "properties": {
-    "id": { "type": "string" },
-    "metrics": {
-      "type": "object",
-      "properties": {
-        "uuid": {
-          "type": "object",
-          "properties": {
-            "rally_id": { "type": "string" }
-          }
-        }
-      }
-    }
-  },
-  "required": []
+  "type": "object"
 }
 EOF
     mkdir -p schemas/rally-study-bar/baseline
@@ -103,22 +88,7 @@ EOF
       }
     ]
   },
-  "type": "object",
-  "properties": {
-    "id": { "type": "string" },
-    "metrics": {
-      "type": "object",
-      "properties": {
-        "uuid": {
-          "type": "object",
-          "properties": {
-            "rally_id": { "type": "string" }
-          }
-        }
-      }
-    }
-  },
-  "required": []
+  "type": "object"
 }
 EOF
 }

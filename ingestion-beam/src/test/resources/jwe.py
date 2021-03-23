@@ -9,11 +9,10 @@ To install the appropriate dependencies for this script:
 
     pip install jwcrypto click
 
-Here's a list of commands to run:
+Here's a command to run:
 
-    python jwe.py encrypt jwe/study-bar.private.json jwe/study-bar.plaintext.json jwe/study-bar.ciphertext.json
-    python jwe.py encrypt jwe/study-bar.private.json jwe/study-bar.plaintext.json jwe/study-bar.ciphertext.json
-
+    name=rally-study-foo
+    python jwe.py encrypt jwe/${name}.private.json jwe/${name}.plaintext.json jwe/${name}.ciphertext.json
 """
 import gzip
 import json

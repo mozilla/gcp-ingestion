@@ -3,6 +3,7 @@ package com.mozilla.telemetry.decoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.JweMapping;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
@@ -11,6 +12,7 @@ import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.JsonValidator;
 import com.mozilla.telemetry.util.KeyStore;
 import com.mozilla.telemetry.util.KeyStore.KeyNotFoundException;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.everit.json.schema.Schema;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.lang.JoseException;
 
@@ -40,6 +43,8 @@ public class DecryptRallyPayloads extends
   private final ValueProvider<Boolean> decompressPayload;
   private transient KeyStore keyStore;
   private transient PipelineMetadataStore pipelineMetadataStore;
+  private transient JsonValidator validator;
+  private transient Schema gleanSchema;
 
   public static final String RALLY_ID = "rallyId";
   public static final String STUDY_NAME = "studyName";
@@ -153,6 +158,13 @@ public class DecryptRallyPayloads extends
             BeamFileInputStream::open);
       }
 
+      if (gleanSchema == null || validator == null) {
+        JSONSchemaStore schemaStore = JSONSchemaStore.of(schemasLocation.get(),
+            BeamFileInputStream::open);
+        gleanSchema = schemaStore.getSchema("glean/glean/glean.1.schema.json");
+        validator = new JsonValidator();
+      }
+
       PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
       if (meta.jwe_mappings().isEmpty()) {
         // Error for lack of better behavior
@@ -173,6 +185,9 @@ public class DecryptRallyPayloads extends
       } catch (JoseException | KeyNotFoundException e) {
         throw e;
       }
+
+      // Ensure our new payload is a glean document
+      validator.validate(gleanSchema, json);
 
       return Collections
           .singletonList(new PubsubMessage(Json.asBytes(json), message.getAttributeMap()));
