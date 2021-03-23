@@ -1,6 +1,5 @@
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.aet.AetProcessing;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
@@ -67,11 +66,6 @@ public class Decoder extends Sink {
             .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())))
-
-        // Special case: decryption of Account Ecosystem Telemetry identifiers
-        .map(p -> options.getAetEnabled() ? p //
-            .apply(AetProcessing.of(options)).failuresTo(failureCollections) //
-            : p)
 
         // URI Parsing
         .map(p -> p //
