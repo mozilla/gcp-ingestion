@@ -31,7 +31,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.lang.JoseException;
 
-public class DecryptJWE extends
+public class DecryptRallyPayloads extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   private final ValueProvider<String> metadataLocation;
@@ -44,14 +44,16 @@ public class DecryptJWE extends
   public static final String RALLY_ID = "rallyId";
   public static final String STUDY_NAME = "studyName";
 
-  public static DecryptJWE of(ValueProvider<String> metadataLocation,
+  public static DecryptRallyPayloads of(ValueProvider<String> metadataLocation,
       ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
       ValueProvider<Boolean> decompressPayload) {
-    return new DecryptJWE(metadataLocation, schemasLocation, kmsEnabled, decompressPayload);
+    return new DecryptRallyPayloads(metadataLocation, schemasLocation, kmsEnabled,
+        decompressPayload);
   }
 
-  private DecryptJWE(ValueProvider<String> metadataLocation, ValueProvider<String> schemasLocation,
-      ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
+  private DecryptRallyPayloads(ValueProvider<String> metadataLocation,
+      ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
+      ValueProvider<Boolean> decompressPayload) {
     this.metadataLocation = metadataLocation;
     this.schemasLocation = schemasLocation;
     this.kmsEnabled = kmsEnabled;
@@ -68,7 +70,7 @@ public class DecryptJWE extends
           try {
             throw ee.exception();
           } catch (IOException | JoseException | KeyNotFoundException e) {
-            return FailureMessage.of(DecryptJWE.class.getSimpleName(), //
+            return FailureMessage.of(DecryptRallyPayloads.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
           }
@@ -126,9 +128,8 @@ public class DecryptJWE extends
                 mapping.decrypted_field_path().last().getMatchingProperty(),
                 Json.readObjectNode(decrypted));
           } else {
-            throw new RuntimeException(
-                "Payload is missing parent object for destination field: "
-                    + mapping.decrypted_field_path());
+            throw new RuntimeException("Payload is missing parent object for destination field: "
+                + mapping.decrypted_field_path());
           }
         }
       }

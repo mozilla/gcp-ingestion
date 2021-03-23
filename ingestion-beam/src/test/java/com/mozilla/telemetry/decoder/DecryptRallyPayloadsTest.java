@@ -33,7 +33,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DecryptJWETest extends TestWithDeterministicJson {
+public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -51,7 +51,7 @@ public class DecryptJWETest extends TestWithDeterministicJson {
     }).toArray(String[]::new));
   }
 
-  public static String reformat(String jsonData) {
+  private static String reformat(String jsonData) {
     try {
       ObjectNode node = Json.readObjectNode(jsonData);
       return node.toString();
@@ -90,7 +90,7 @@ public class DecryptJWETest extends TestWithDeterministicJson {
         .toByteArray(Resources.getResource("jwe/rally-study-foo.plaintext.json"));
 
     String payload = Json.readObjectNode(ciphertext).get("payload").textValue();
-    byte[] decrypted = DecryptJWE.decrypt(key, payload);
+    byte[] decrypted = DecryptRallyPayloads.decrypt(key, payload);
     byte[] decompressed = GzipUtil.maybeDecompress(decrypted);
 
     String actual = Json.readObjectNode(plaintext).toString();
@@ -115,7 +115,8 @@ public class DecryptJWETest extends TestWithDeterministicJson {
                 .via(element -> new PubsubMessage(element.getPayload(),
                     ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "rally-study-foo",
                         Attribute.DOCUMENT_TYPE, "baseline", Attribute.DOCUMENT_VERSION, "1"))))
-        .apply(DecryptJWE.of(metadataLocation, schemasLocation, kmsEnabled, decompressPayload));
+        .apply(DecryptRallyPayloads.of(metadataLocation, schemasLocation, kmsEnabled,
+            decompressPayload));
 
     PAssert.that(result.failures()).empty();
     pipeline.run();
@@ -139,8 +140,8 @@ public class DecryptJWETest extends TestWithDeterministicJson {
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
     pipeline.apply(Create.of(readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json"))))
-        .apply(InputFileFormat.text.decode())
-        .apply(DecryptJWE.of(metadataLocation, schemasLocation, kmsEnabled, decompressPayload));
+        .apply(InputFileFormat.text.decode()).apply(DecryptRallyPayloads.of(metadataLocation,
+            schemasLocation, kmsEnabled, decompressPayload));
 
     assertEquals(assertThrows(IllegalArgumentException.class, () -> {
       try {
