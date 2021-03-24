@@ -107,8 +107,7 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     testDecryptHelper("rally-study-bar");
   }
 
-  @Test
-  public void testOutput() throws Exception {
+  private void testOutputHelper(String name) throws Exception {
     // minimal test for throughput of a single document
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("jwe/metadata-local.json").getPath());
@@ -116,14 +115,15 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
-    final List<String> input = readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json"));
+    final List<String> input = readTestFiles(
+        Arrays.asList(String.format("jwe/%s.ciphertext.json", name)));
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "rally-study-foo",
-                        Attribute.DOCUMENT_TYPE, "baseline", Attribute.DOCUMENT_VERSION, "1"))))
+                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, name, Attribute.DOCUMENT_TYPE,
+                        "baseline", Attribute.DOCUMENT_VERSION, "1"))))
         .apply(DecryptRallyPayloads.of(metadataLocation, schemasLocation, kmsEnabled,
             decompressPayload));
 
@@ -134,10 +134,20 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
         .apply(ReformatJson.of());
 
     final List<String> expectedMain = readTestFiles(
-        Arrays.asList("jwe/rally-study-foo.plaintext.json"));
+        Arrays.asList(String.format("jwe/%s.plaintext.json", name)));
     PAssert.that(output).containsInAnyOrder(expectedMain);
 
     pipeline.run();
+  }
+
+  @Test
+  public void testOutputOnlyUuidMetric() throws Exception {
+    testOutputHelper("rally-study-foo");
+  }
+
+  @Test
+  public void testOutputUuidMetricAndCounter() throws Exception {
+    testOutputHelper("rally-study-bar");
   }
 
   @Test
