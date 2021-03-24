@@ -81,14 +81,6 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     return key.getPrivateKey();
   }
 
-  @Test
-  public void testJsonRenamingBehavior() throws Exception {
-    ObjectNode singleProp = Json.readObjectNode("{\"a\":{\"b\":{\"c.x\": 1}}}");
-    ObjectNode multiProp = Json.readObjectNode("{\"a\":{\"b\":{\"c.x\": 1, \"d\": 2}}}");
-    ((ObjectNode) multiProp.get("a")).remove("d");
-    Assert.assertEquals(reformat(singleProp.toString()), reformat(multiProp.toString()));
-  }
-
   private void testDecryptHelper(String name) throws Exception {
     PrivateKey key = loadPrivateKey(String.format("jwe/%s.private.json", name));
     byte[] ciphertext = Resources
