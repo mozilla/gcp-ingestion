@@ -44,6 +44,15 @@
                 <module>ingestion-sink</module>
             </modules>
         </profile>
+        <profile>
+            <id>java-8-api</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
     </profiles>
 
     <properties>
@@ -158,6 +167,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
+                    <!-- For JDK 9+ the java-8-api profile is automatically activated, which sets
+                         maven.compiler.release=8, causing source and target to be ignored -->
                     <source>1.8</source>
                     <target>1.8</target>
                     <showWarnings>true</showWarnings>
