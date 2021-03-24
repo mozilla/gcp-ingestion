@@ -7,6 +7,7 @@ import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.JweMapping;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
+import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
@@ -46,6 +47,7 @@ public class DecryptRallyPayloads extends
   private transient JsonValidator validator;
   private transient Schema gleanSchema;
 
+  public static final String PIONEER_ID = "pioneerId";
   public static final String RALLY_ID = "rallyId";
   public static final String STUDY_NAME = "studyName";
 
@@ -145,6 +147,7 @@ public class DecryptRallyPayloads extends
         throws IOException, JoseException, KeyNotFoundException, IllegalArgumentException {
       message = PubsubConstraints.ensureNonNull(message);
       Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+      final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
 
       if (keyStore == null) {
         // If configured resources aren't available, this throws
@@ -165,22 +168,21 @@ public class DecryptRallyPayloads extends
         validator = new JsonValidator();
       }
 
-      PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
+      final PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
       if (meta.jwe_mappings().isEmpty()) {
-        // Error for lack of better behavior
+        // Error for lack of a better behavior
         throw new RuntimeException(String.format("jwe_mappings missing from schema: %s %s",
-            attributes.get(Attribute.DOCUMENT_NAMESPACE), attributes.get(Attribute.DOCUMENT_TYPE)));
+            namespace, attributes.get(Attribute.DOCUMENT_TYPE)));
       }
 
-      // We do no validation at this stage and leave it for the downstream
-      // transform to determine whether the decrypted content is appropriate.
       ObjectNode json = Json.readObjectNode(message.getPayload());
 
+      // Decrypt in-place
       try {
         // The keying behavior is specific to Rally -- it may be possible to
         // rely on the keyId in the header instead. This behavior should be
         // consistent with how keys are actually allocated.
-        PrivateKey key = keyStore.getKeyOrThrow(attributes.get(Attribute.DOCUMENT_NAMESPACE));
+        PrivateKey key = keyStore.getKeyOrThrow(namespace);
         decryptAndReplace(key, json, meta.jwe_mappings());
       } catch (JoseException | KeyNotFoundException e) {
         throw e;
@@ -189,8 +191,41 @@ public class DecryptRallyPayloads extends
       // Ensure our new payload is a glean document
       validator.validate(gleanSchema, json);
 
-      return Collections
-          .singletonList(new PubsubMessage(Json.asBytes(json), message.getAttributeMap()));
+      // Ensure that our payload has a uuid field named rally.id, otherwise
+      // throw this docuemnt into the error stream.
+      final JsonNode rallyId = json.at("/metrics/uuid/rally.id");
+      if (rallyId.isMissingNode()) {
+        throw new RuntimeException("missing field: #/metrics/uuid/rally.id");
+      }
+
+      // Apply the correct identifier based on the namespace. The ingestion
+      // system is configured to route rally-* and pioneer-* into the instance
+      // of the decoder running this transform.
+      ObjectNode metadata = Json.createObjectNode();
+      if (namespace.startsWith("rally-")) {
+        metadata.put(RALLY_ID, rallyId.asText());
+      } else if (namespace.startsWith("pioneer-")) {
+        // It's entirely feasible that data is sent an existing pioneer study
+        // (e.g. pioneer-core accepts a glean.js ping from the rally-core
+        // addon). In these cases, the rally id will be configured to be the
+        // pioneer id for legacy reasons.
+        metadata.put(PIONEER_ID, rallyId.asText());
+      } else {
+        // We must have either a rally id or a pioneer id to continue. This
+        // would mean that the decoder is misconfigured.
+        throw new RuntimeException("unexpected namespace: neither rally-* nor pioneer-*");
+      }
+
+      // There is no fixed-concept of a study name in this transform. We'll just
+      // insert the document namespace instead.
+      metadata.put(STUDY_NAME, namespace);
+
+      // Merge the metadata into the main document so it exists during
+      // validation downstream.
+      final byte[] merged = NestedMetadata.mergedPayload(Json.asBytes(json),
+          Json.asBytes(metadata));
+
+      return Collections.singletonList(new PubsubMessage(merged, message.getAttributeMap()));
     }
   }
 }
