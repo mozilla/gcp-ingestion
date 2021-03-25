@@ -31,6 +31,9 @@ import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.apache.beam.sdk.values.TypeDescriptors;
+import org.jose4j.jwe.ContentEncryptionAlgorithmIdentifiers;
+import org.jose4j.jwe.JsonWebEncryption;
+import org.jose4j.jwe.KeyManagementAlgorithmIdentifiers;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -87,11 +90,29 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
 
   /** Load a private key from a JWK. See the KeyStore for more details. */
   private PrivateKey loadPrivateKey(String resourceLocation) throws Exception {
-    byte[] data = Resources.toByteArray(Resources.getResource(resourceLocation));
-    PublicJsonWebKey key = PublicJsonWebKey.Factory.newPublicJwk(new String(data));
-    return key.getPrivateKey();
+    return loadPublicKey(resourceLocation).getPrivateKey();
   }
 
+  /** Load a public key from a JWK. See the KeyStore for more details. */
+  private static PublicJsonWebKey loadPublicKey(String resourceLocation) throws Exception {
+    byte[] data = Resources.toByteArray(Resources.getResource(resourceLocation));
+    return PublicJsonWebKey.Factory.newPublicJwk(new String(data));
+  }
+
+  /** Encrypt a string using a key stored in test resources. */
+  private String encryptWithTestPublicKey(String resourceLocation, String payload)
+      throws Exception {
+    PublicJsonWebKey key = loadPublicKey(resourceLocation);
+    JsonWebEncryption jwe = new JsonWebEncryption();
+    jwe.setKey(key.getKey());
+    jwe.setKeyIdHeaderValue(key.getKeyId());
+    jwe.setAlgorithmHeaderValue(KeyManagementAlgorithmIdentifiers.ECDH_ES_A256KW);
+    jwe.setEncryptionMethodHeaderParameter(ContentEncryptionAlgorithmIdentifiers.AES_256_GCM);
+    jwe.setPayload(payload);
+    return jwe.getCompactSerialization();
+  }
+
+  /** Test documents that can be used for testing out */
   private void testDecryptHelper(String name) throws Exception {
     PrivateKey key = loadPrivateKey(String.format("jwe/%s.private.json", name));
     byte[] ciphertext = Resources
@@ -118,25 +139,28 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     testDecryptHelper("rally-study-bar");
   }
 
-  private void testOutputHelper(String name) throws Exception {
-    // minimal test for throughput of a single document
+  private Result<PCollection<PubsubMessage>, PubsubMessage> getPipelineResult(TestPipeline pipeline,
+      List<String> input, String namespace) {
     ValueProvider<String> metadataLocation = pipeline
         .newProvider(Resources.getResource("jwe/metadata-local.json").getPath());
     ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
-    final List<String> input = readTestFiles(
-        Arrays.asList(String.format("jwe/%s.ciphertext.json", name)));
-    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
-        .apply(InputFileFormat.text.decode())
+    return pipeline.apply(Create.of(input)).apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
             MapElements.into(TypeDescriptor.of(PubsubMessage.class))
                 .via(element -> new PubsubMessage(element.getPayload(),
-                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, name, Attribute.DOCUMENT_TYPE,
-                        "baseline", Attribute.DOCUMENT_VERSION, "1"))))
+                    ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, namespace,
+                        Attribute.DOCUMENT_TYPE, "baseline", Attribute.DOCUMENT_VERSION, "1"))))
         .apply(DecryptRallyPayloads.of(metadataLocation, schemasLocation, kmsEnabled,
             decompressPayload));
+  }
+
+  private void testSuccess(String namespace, List<String> input, List<String> expected)
+      throws Exception {
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = getPipelineResult(pipeline, input,
+        namespace);
 
     PAssert.that(result.failures()).empty();
     pipeline.run();
@@ -144,21 +168,64 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     PCollection<String> output = result.output().apply(OutputFileFormat.text.encode())
         .apply(ReformatJson.of());
 
-    final List<String> expectedMain = readTestFiles(
-        Arrays.asList(String.format("jwe/%s.plaintext.json", name)));
-    PAssert.that(output).containsInAnyOrder(expectedMain);
-
+    PAssert.that(output).containsInAnyOrder(expected);
     pipeline.run();
   }
 
   @Test
   public void testOutputOnlyUuidMetric() throws Exception {
-    testOutputHelper("rally-study-foo");
+    String namespace = "rally-study-foo";
+    testSuccess(namespace,
+        readTestFiles(Arrays.asList(String.format("jwe/%s.ciphertext.json", namespace))),
+        readTestFiles(Arrays.asList(String.format("jwe/%s.plaintext.json", namespace))));
   }
 
   @Test
   public void testOutputUuidMetricAndCounter() throws Exception {
-    testOutputHelper("rally-study-bar");
+    String namespace = "rally-study-bar";
+    testSuccess(namespace,
+        readTestFiles(Arrays.asList(String.format("jwe/%s.ciphertext.json", namespace))),
+        readTestFiles(Arrays.asList(String.format("jwe/%s.plaintext.json", namespace))));
+  }
+
+  @Test
+  public void testOutputPioneerNamespace() throws Exception {
+
+  }
+
+  @Test
+  public void testOutputSchemaJweMappingMissing() throws Exception {
+
+  }
+
+  @Test
+  public void testOutputSchemaJweMappingMissingParent() throws Exception {
+
+  }
+
+  @Test
+  public void testOutputSchemaJweMappingWrongMapping() throws Exception {
+
+  }
+
+  @Test
+  public void testOutputKeyNotFound() throws Exception {
+
+  }
+
+  @Test
+  public void testOutputInvalidEncryptionKey() throws Exception {
+
+  }
+
+  @Test
+  public void testOutputMissingRallyId() throws Exception {
+
+  }
+
+  @Test
+  public void testOutputInjectMetadataWrongNamespace() throws Exception {
+
   }
 
   @Test
