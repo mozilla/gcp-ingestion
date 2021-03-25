@@ -32,6 +32,7 @@ import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 import org.everit.json.schema.Schema;
+import org.everit.json.schema.ValidationException;
 import org.jose4j.jwe.JsonWebEncryption;
 import org.jose4j.lang.JoseException;
 
@@ -76,7 +77,7 @@ public class DecryptRallyPayloads extends
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (IOException | JoseException | KeyNotFoundException e) {
+          } catch (IOException | JoseException | KeyNotFoundException | ValidationException e) {
             return FailureMessage.of(DecryptRallyPayloads.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
@@ -99,7 +100,7 @@ public class DecryptRallyPayloads extends
 
     /** Replace decrypted elements in-place. Encrypted fields are assumed to be objects. */
     private void decryptAndReplace(PrivateKey key, JsonNode json, List<JweMapping> mappings)
-        throws IOException, JoseException, KeyNotFoundException {
+        throws IOException, JoseException, KeyNotFoundException, ValidationException {
       for (JweMapping mapping : mappings) {
         JsonNode sourceNode = json.at(mapping.source_field_path());
         if (sourceNode.isMissingNode()) {

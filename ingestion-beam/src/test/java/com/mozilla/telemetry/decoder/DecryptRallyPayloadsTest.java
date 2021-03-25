@@ -20,6 +20,7 @@ import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.security.PrivateKey;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
@@ -172,6 +173,21 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     pipeline.run();
   }
 
+  private void testFailureExceptions(String namespace, List<String> input, List<String> expected)
+      throws Exception {
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = getPipelineResult(pipeline, input,
+        namespace);
+
+    PAssert.that(result.output()).empty();
+    pipeline.run();
+
+    PCollection<String> exceptions = result.failures().apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+    PAssert.that(exceptions).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
   @Test
   public void testOutputOnlyUuidMetric() throws Exception {
     String namespace = "rally-study-foo";
@@ -220,7 +236,43 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
 
   @Test
   public void testOutputMissingRallyId() throws Exception {
+    List<String> input = readTestFiles(Arrays.asList("jwe/rally-study-foo.plaintext.json")).stream()
+        .map(x -> {
+          try {
+            ObjectNode node = Json.readObjectNode(x);
+            node.remove("metrics");
+            ObjectNode envelope = Json.createObjectNode();
+            envelope.put("payload",
+                encryptWithTestPublicKey("jwe/rally-study-foo.public.json", node.toString()));
+            return envelope.toString();
+          } catch (Exception e) {
+            return null;
+          }
+        }).collect(Collectors.toList());
 
+    // TODO: make a custom RuntimeException to catch and put into the error stream
+    List<String> expected = Arrays.asList("org.everit.json.schema.ValidationException");
+    testFailureExceptions("rally-study-foo", input, expected);
+  }
+
+  @Test
+  public void testInvalidGleanDocument() throws Exception {
+    List<String> input = readTestFiles(Arrays.asList("jwe/rally-study-foo.plaintext.json")).stream()
+        .map(x -> {
+          try {
+            ObjectNode node = Json.readObjectNode(x);
+            // necessary for glean validation
+            node.remove("ping_info");
+            ObjectNode envelope = Json.createObjectNode();
+            envelope.put("payload",
+                encryptWithTestPublicKey("jwe/rally-study-foo.public.json", node.toString()));
+            return envelope.toString();
+          } catch (Exception e) {
+            return null;
+          }
+        }).collect(Collectors.toList());
+    List<String> expected = Arrays.asList("org.everit.json.schema.ValidationException");
+    testFailureExceptions("rally-study-foo", input, expected);
   }
 
   @Test
