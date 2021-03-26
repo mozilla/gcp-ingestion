@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.decoder;
+package com.mozilla.telemetry.decoder.rally;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

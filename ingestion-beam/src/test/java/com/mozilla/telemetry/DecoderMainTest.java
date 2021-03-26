@@ -5,7 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-import com.mozilla.telemetry.decoder.DecryptPioneerPayloadsTest;
+import com.mozilla.telemetry.decoder.rally.DecryptPioneerPayloadsTest;
 import com.mozilla.telemetry.matchers.Lines;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;

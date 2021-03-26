@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.decoder;
+package com.mozilla.telemetry.decoder.rally;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -214,16 +214,16 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
 
   @Test
   public void testOutputSchemaJweMappingMissing() throws Exception {
-    List<String> expected = Arrays
-        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    List<String> expected = Arrays.asList(
+        "com.mozilla.telemetry.decoder.rally.DecryptRallyPayloads$DecryptRallyPayloadsException");
     testFailureExceptions("rally-missing",
         readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
 
   @Test
   public void testOutputSchemaJweMappingMissingParent() throws Exception {
-    List<String> expected = Arrays
-        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    List<String> expected = Arrays.asList(
+        "com.mozilla.telemetry.decoder.rally.DecryptRallyPayloads$DecryptRallyPayloadsException");
     testFailureExceptions("rally-missing-parent",
         readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
@@ -252,8 +252,8 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
 
   @Test
   public void testOutputInjectMetadataWrongNamespace() throws Exception {
-    List<String> expected = Arrays
-        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    List<String> expected = Arrays.asList(
+        "com.mozilla.telemetry.decoder.rally.DecryptRallyPayloads$DecryptRallyPayloadsException");
     testFailureExceptions("telemetry-rally",
         readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
@@ -274,8 +274,8 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
           }
         }).collect(Collectors.toList());
 
-    List<String> expected = Arrays
-        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    List<String> expected = Arrays.asList(
+        "com.mozilla.telemetry.decoder.rally.DecryptRallyPayloads$DecryptRallyPayloadsException");
     testFailureExceptions("rally-study-foo", input, expected);
   }
 

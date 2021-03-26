@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.decoder;
+package com.mozilla.telemetry.decoder.rally;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
