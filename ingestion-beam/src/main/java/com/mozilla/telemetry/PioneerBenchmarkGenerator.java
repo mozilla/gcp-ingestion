@@ -71,6 +71,7 @@ public class PioneerBenchmarkGenerator {
       attributes.put(Attribute.DOCUMENT_NAMESPACE, "telemetry");
       attributes.put(Attribute.DOCUMENT_TYPE, "pioneer-study");
       attributes.put(Attribute.DOCUMENT_VERSION, "4");
+      attributes.put(Attribute.ISP_NAME, "none");
 
       PubsubMessage encryptedMessage = new PubsubMessage(
           Json.asString(node).getBytes(Charsets.UTF_8), attributes);

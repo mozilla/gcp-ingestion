@@ -29,7 +29,7 @@ fi
 
 if [[ ! -f pioneer_benchmark_data.ndjson ]] || [[ ${reset} == "true" ]]; then
     # generate the data using the document sample, this may take a while depending on your machine
-    ./bin/mvn clean compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
+    mvn clean compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PioneerBenchmarkGenerator
 fi
 
 # assert bucket can be read
@@ -58,28 +58,31 @@ fi
 # this can take a while, depending on your upload speed (~1 GB of data)
 gsutil -m rsync -R -d $staging/ "$bucket/$prefix/"
 
-# plaintext
-./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
-    --runner=Dataflow \
-    --profilingAgentConfiguration='{\"APICurated\": true}'
-    --project=$project \
-    --autoscalingAlgorithm=NONE \
-    --workerMachineType=n1-standard-1 \
-    --gcpTempLocation=$bucket/tmp \
-    --numWorkers=2 \
-    --geoCityDatabase=$bucket/$prefix/metadata/GeoLite2-City.mmdb \
-    --geoCityFilter=$bucket/$prefix/metadata/cities15000.txt \
-    --schemasLocation=$bucket/$prefix/metadata/schemas.tar.gz \
-    --inputType=file \
-    --input=$bucket/$prefix/input/plaintext/'part-*' \
-    --outputType=file \
-    --output=$bucket/$prefix/output/plaintext/ \
-    --errorOutputType=file \
-    --errorOutput=$bucket/$prefix/error/plaintext/ \
-"
+# Note, isp database must be copied from the production location...
+gsutil cp gs://moz-fx-data-prod-geoip/GeoIP2-ISP/20210104/GeoIP2-ISP.mmdb $bucket/$prefix/metadata/GeoIP2-ISP.mmdb
+
+# # plaintext
+# ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+#     --runner=Dataflow \
+#     --profilingAgentConfiguration='{\"APICurated\": true}'
+#     --project=$project \
+#     --autoscalingAlgorithm=NONE \
+#     --workerMachineType=n1-standard-1 \
+#     --gcpTempLocation=$bucket/tmp \
+#     --numWorkers=2 \
+#     --geoCityDatabase=$bucket/$prefix/metadata/GeoLite2-City.mmdb \
+#     --geoCityFilter=$bucket/$prefix/metadata/cities15000.txt \jg56  5  
+#     --schemasLocation=$bucket/$prefix/metadata/schemas.tar.gz \
+#     --inputType=file \
+#     --input=$bucket/$prefix/input/plaintext/'part-*' \
+#     --outputType=file \
+#     --output=$bucket/$prefix/output/plaintext/ \
+#     --errorOutputType=file \
+#     --errorOutput=$bucket/$prefix/error/plaintext/ \
+# "
 
 # ciphertext
-./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
+mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
     --runner=Dataflow \
     --profilingAgentConfiguration='{\"APICurated\": true}'
     --project=$project \
@@ -87,10 +90,12 @@ gsutil -m rsync -R -d $staging/ "$bucket/$prefix/"
     --workerMachineType=n1-standard-1 \
     --gcpTempLocation=$bucket/tmp \
     --numWorkers=2 \
+    --region=us-central1 \
     --pioneerEnabled=true \
     --pioneerMetadataLocation=$bucket/$prefix/metadata/metadata.json \
     --pioneerKmsEnabled=false \
     --pioneerDecompressPayload=false \
+    --geoIspDatabase=$bucket/$prefix/metadata/GeoIP2-ISP.mmdb  \
     --geoCityDatabase=$bucket/$prefix/metadata/GeoLite2-City.mmdb \
     --geoCityFilter=$bucket/$prefix/metadata/cities15000.txt \
     --schemasLocation=$bucket/$prefix/metadata/schemas.tar.gz \
