@@ -7,6 +7,7 @@ import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.JweMapping;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
+import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -68,6 +69,19 @@ public class DecryptRallyPayloads extends
     this.decompressPayload = decompressPayload;
   }
 
+  /**
+  * Base class for all exceptions thrown by this class.
+  */
+  public static class DecryptRallyPayloadsException extends RuntimeException {
+
+    private DecryptRallyPayloadsException() {
+    }
+
+    private DecryptRallyPayloadsException(String cause) {
+      super(new RuntimeException(cause));
+    }
+  }
+
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
@@ -77,7 +91,8 @@ public class DecryptRallyPayloads extends
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (IOException | JoseException | KeyNotFoundException | ValidationException e) {
+          } catch (IOException | JoseException | KeyNotFoundException | SchemaNotFoundException
+              | ValidationException | DecryptRallyPayloadsException e) {
             return FailureMessage.of(DecryptRallyPayloads.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
@@ -136,8 +151,8 @@ public class DecryptRallyPayloads extends
                 mapping.decrypted_field_path().last().getMatchingProperty(),
                 Json.readObjectNode(decrypted));
           } else {
-            throw new RuntimeException("Payload is missing parent object for destination field: "
-                + mapping.decrypted_field_path());
+            throw new DecryptRallyPayloadsException(
+                "missing parent object for destination field: " + mapping.decrypted_field_path());
           }
         }
       }
@@ -172,8 +187,9 @@ public class DecryptRallyPayloads extends
       final PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
       if (meta.jwe_mappings().isEmpty()) {
         // Error for lack of a better behavior
-        throw new RuntimeException(String.format("jwe_mappings missing from schema: %s %s",
-            namespace, attributes.get(Attribute.DOCUMENT_TYPE)));
+        throw new DecryptRallyPayloadsException(
+            String.format("jwe_mappings missing from schema: %s %s", namespace,
+                attributes.get(Attribute.DOCUMENT_TYPE)));
       }
 
       ObjectNode json = Json.readObjectNode(message.getPayload());
@@ -196,7 +212,7 @@ public class DecryptRallyPayloads extends
       // throw this docuemnt into the error stream.
       final JsonNode rallyId = json.at("/metrics/uuid/rally.id");
       if (rallyId.isMissingNode()) {
-        throw new RuntimeException("missing field: #/metrics/uuid/rally.id");
+        throw new DecryptRallyPayloadsException("missing field: #/metrics/uuid/rally.id");
       }
 
       // Apply the correct identifier based on the namespace. The ingestion
@@ -214,7 +230,8 @@ public class DecryptRallyPayloads extends
       } else {
         // We must have either a rally id or a pioneer id to continue. This
         // would mean that the decoder is misconfigured.
-        throw new RuntimeException("unexpected namespace: neither rally-* nor pioneer-*");
+        throw new DecryptRallyPayloadsException(
+            "unexpected namespace: neither rally-* nor pioneer-*");
       }
 
       // There is no fixed-concept of a study name in this transform. We'll just

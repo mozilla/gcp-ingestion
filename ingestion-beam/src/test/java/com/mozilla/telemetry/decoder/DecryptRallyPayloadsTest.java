@@ -113,7 +113,7 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     return jwe.getCompactSerialization();
   }
 
-  /** Test documents that can be used for testing out */
+  /** Test multiple pre-encrypted objects. */
   private void testDecryptHelper(String name) throws Exception {
     PrivateKey key = loadPrivateKey(String.format("jwe/%s.private.json", name));
     byte[] ciphertext = Resources
@@ -206,32 +206,56 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
 
   @Test
   public void testOutputPioneerNamespace() throws Exception {
-
+    String namespace = "rally-study-foo";
+    testSuccess("pioneer-rally",
+        readTestFiles(Arrays.asList(String.format("jwe/%s.ciphertext.json", namespace))),
+        readTestFiles(Arrays.asList(String.format("jwe/%s.plaintext.json", namespace))));
   }
 
   @Test
   public void testOutputSchemaJweMappingMissing() throws Exception {
-
+    List<String> expected = Arrays
+        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    testFailureExceptions("rally-missing",
+        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
 
   @Test
   public void testOutputSchemaJweMappingMissingParent() throws Exception {
-
+    List<String> expected = Arrays
+        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    testFailureExceptions("rally-missing-parent",
+        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
 
   @Test
   public void testOutputSchemaJweMappingWrongMapping() throws Exception {
-
+    List<String> expected = Arrays.asList("org.everit.json.schema.ValidationException");
+    testFailureExceptions("rally-wrong",
+        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
 
   @Test
   public void testOutputKeyNotFound() throws Exception {
-
+    List<String> expected = Arrays
+        .asList("com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException");
+    testFailureExceptions("this-is-not-a-legitimate-namespace",
+        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
 
   @Test
   public void testOutputInvalidEncryptionKey() throws Exception {
+    List<String> expected = Arrays.asList("org.jose4j.lang.JoseException");
+    testFailureExceptions("rally-study-bar",
+        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
+  }
 
+  @Test
+  public void testOutputInjectMetadataWrongNamespace() throws Exception {
+    List<String> expected = Arrays
+        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    testFailureExceptions("telemetry-rally",
+        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
   }
 
   @Test
@@ -250,8 +274,8 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
           }
         }).collect(Collectors.toList());
 
-    // TODO: make a custom RuntimeException to catch and put into the error stream
-    List<String> expected = Arrays.asList("org.everit.json.schema.ValidationException");
+    List<String> expected = Arrays
+        .asList("com.mozilla.telemetry.decoder.DecryptRallyPayloads$DecryptRallyPayloadsException");
     testFailureExceptions("rally-study-foo", input, expected);
   }
 
@@ -273,11 +297,6 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
         }).collect(Collectors.toList());
     List<String> expected = Arrays.asList("org.everit.json.schema.ValidationException");
     testFailureExceptions("rally-study-foo", input, expected);
-  }
-
-  @Test
-  public void testOutputInjectMetadataWrongNamespace() throws Exception {
-
   }
 
   @Test
