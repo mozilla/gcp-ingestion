@@ -5,7 +5,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
-import com.mozilla.telemetry.decoder.rally.DecryptPioneerPayloadsTest;
+import com.mozilla.telemetry.decoder.rally.DecryptRallyPayloadsTest;
 import com.mozilla.telemetry.matchers.Lines;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
@@ -97,12 +97,12 @@ public class DecoderMainTest extends TestWithDeterministicJson {
 
   /** Helper for testEncryptedPioneerPayloads. The pipeline will insert metadata
    * during processing, which needs to be removed to match base payload. */
-  private List<String> removePioneerMetadata(List<String> lines) {
+  private List<String> removeMetadata(List<String> lines) {
     return Arrays.asList(lines.stream().map(data -> {
       try {
         PubsubMessage message = Json.readPubsubMessage(data);
-        String payload = DecryptPioneerPayloadsTest
-            .removePioneerMetadata(new String(message.getPayload(), Charsets.UTF_8));
+        String payload = DecryptRallyPayloadsTest
+            .removeMetadata(new String(message.getPayload(), Charsets.UTF_8));
         return Json.asString(
             new PubsubMessage(payload.getBytes(Charsets.UTF_8), message.getAttributeMap()));
       } catch (Exception e) {
@@ -133,8 +133,11 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--schemasLocation=schemas.tar.gz", "--pioneerEnabled=true",
         "--pioneerMetadataLocation=" + pioneerMetadataLocation, "--pioneerKmsEnabled=false" });
 
-    List<String> outputLines = removePioneerMetadata(Lines.files(output + "*.ndjson"));
-    List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
+    List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
+    assertThat(errorOutputLines, Matchers.hasSize(0));
+
+    List<String> outputLines = removeMetadata(Lines.files(output + "*.ndjson"));
+    List<String> expectedOutputLines = Lines.files(resourceDir + "/pioneer-output.ndjson");
     assertThat("Main output differed from expectation", outputLines,
         matchesInAnyOrder(expectedOutputLines));
   }
