@@ -128,6 +128,17 @@ public class DecoderMainTest extends TestWithDeterministicJson {
     }).toArray(String[]::new));
   }
 
+  private List<String> getErrorType(List<String> lines) {
+    return Arrays.asList(lines.stream().map(data -> {
+      try {
+        PubsubMessage message = Json.readPubsubMessage(data);
+        return message.getAttributeMap().get("error_type");
+      } catch (Exception e) {
+        return null;
+      }
+    }).toArray(String[]::new));
+  }
+
   /** Run the pipeline with the Pioneer decryption and decompression enabled. KMS is disabled since
    * it requires access to an external service. See the KeyStore integration tests for decrypting
    * private keys.
@@ -160,6 +171,35 @@ public class DecoderMainTest extends TestWithDeterministicJson {
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
     assertThat("Main output differed from expectation", getPayload(removeMetadata(outputLines)),
         matchesInAnyOrder(getPayload(expectedOutputLines)));
+  }
+
+  /** In this test, we only care that messages were correctly routed to the
+   * Rally transform for decoding messages. The unit tests are more
+   * comprehensive for the specific behavior of the transform. */
+  @Test
+  public void testEncryptedRallyPayload() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
+    String input = resourceDir + "/rally.ndjson";
+    String output = outputPath + "/out/out";
+    String errorOutput = outputPath + "/error/error";
+    String pioneerMetadataLocation = Resources.getResource("pioneer/metadata-decoder.json")
+        .getPath();
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput,
+        "--includeStackTrace=false",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--pioneerEnabled=true",
+        "--pioneerMetadataLocation=" + pioneerMetadataLocation, "--pioneerKmsEnabled=false" });
+
+    List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
+    assertThat(getErrorType(errorOutputLines), matchesInAnyOrder(
+        Arrays.asList("DecryptRallyPayloads", "DecryptRallyPayloads", "DecryptRallyPayloads")));
+
   }
 
   /** Assert that the default value of --pioneerKms causes the unit test to fail
