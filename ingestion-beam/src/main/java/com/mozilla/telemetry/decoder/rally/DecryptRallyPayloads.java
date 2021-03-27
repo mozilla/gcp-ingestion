@@ -219,19 +219,14 @@ public class DecryptRallyPayloads extends
       // system is configured to route rally-* and pioneer-* into the instance
       // of the decoder running this transform.
       ObjectNode metadata = Json.createObjectNode();
-      if (namespace.startsWith("rally-")) {
-        metadata.put(RALLY_ID, rallyId.asText());
-      } else if (namespace.startsWith("pioneer-")) {
+      if (namespace.startsWith("pioneer-")) {
         // It's entirely feasible that data is sent an existing pioneer study
         // (e.g. pioneer-core accepts a glean.js ping from the rally-core
         // addon). In these cases, the rally id will be configured to be the
         // pioneer id for legacy reasons.
         metadata.put(PIONEER_ID, rallyId.asText());
       } else {
-        // We must have either a rally id or a pioneer id to continue. This
-        // would mean that the decoder is misconfigured.
-        throw new DecryptRallyPayloadsException(
-            "unexpected namespace: neither rally-* nor pioneer-*");
+        metadata.put(RALLY_ID, rallyId.asText());
       }
 
       // There is no fixed-concept of a study name in this transform. We'll just

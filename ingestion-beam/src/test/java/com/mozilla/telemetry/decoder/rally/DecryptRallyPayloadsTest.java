@@ -251,14 +251,6 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testOutputInjectMetadataWrongNamespace() throws Exception {
-    List<String> expected = Arrays.asList(
-        "com.mozilla.telemetry.decoder.rally.DecryptRallyPayloads$DecryptRallyPayloadsException");
-    testFailureExceptions("telemetry-rally",
-        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
-  }
-
-  @Test
   public void testOutputMissingRallyId() throws Exception {
     List<String> input = readTestFiles(Arrays.asList("jwe/rally-study-foo.plaintext.json")).stream()
         .map(x -> {

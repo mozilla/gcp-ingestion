@@ -92,7 +92,6 @@ EOF
     insert_rally_schema rally-missing-parent "$(jwe_mapping '/payload' '/nonexistent/parent')"
     insert_rally_schema rally-wrong "$(jwe_mapping '/payload' '/payload')"
     insert_rally_schema pioneer-rally "$(jwe_mapping '/payload' '')"
-    insert_rally_schema telemetry-rally "$(jwe_mapping '/payload' '')"
 }
 
 cd "$(dirname "$0")/.."
