@@ -3,6 +3,7 @@ package com.mozilla.telemetry;
 import static com.mozilla.telemetry.matchers.Lines.matchesInAnyOrder;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.decoder.rally.DecryptRallyPayloadsTest;
@@ -103,8 +104,24 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         PubsubMessage message = Json.readPubsubMessage(data);
         String payload = DecryptRallyPayloadsTest
             .removeMetadata(new String(message.getPayload(), Charsets.UTF_8));
-        return Json.asString(
-            new PubsubMessage(payload.getBytes(Charsets.UTF_8), message.getAttributeMap()));
+        // also remove any extra stuff from the telemetry namespace, since the test document
+        // is a structured ingestion document
+        ObjectNode node = Json.readObjectNode(payload);
+        node.remove("normalized_app_name");
+        node.remove("normalized_channel");
+
+        return Json.asString(new PubsubMessage(Json.asBytes(node), message.getAttributeMap()));
+      } catch (Exception e) {
+        return null;
+      }
+    }).toArray(String[]::new));
+  }
+
+  private List<String> getPayload(List<String> lines) {
+    return Arrays.asList(lines.stream().map(data -> {
+      try {
+        PubsubMessage message = Json.readPubsubMessage(data);
+        return new String(message.getPayload(), Charsets.UTF_8);
       } catch (Exception e) {
         return null;
       }
@@ -128,18 +145,21 @@ public class DecoderMainTest extends TestWithDeterministicJson {
     Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
         "--outputFileFormat=json", "--outputType=file", "--output=" + output,
         "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
-        "--errorOutput=" + errorOutput, "--includeStackTrace=false",
+        "--errorOutputFileCompression=UNCOMPRESSED", "--errorOutput=" + errorOutput,
+        "--includeStackTrace=false",
         "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
         "--schemasLocation=schemas.tar.gz", "--pioneerEnabled=true",
         "--pioneerMetadataLocation=" + pioneerMetadataLocation, "--pioneerKmsEnabled=false" });
 
     List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
     assertThat(errorOutputLines, Matchers.hasSize(0));
 
-    List<String> outputLines = removeMetadata(Lines.files(output + "*.ndjson"));
-    List<String> expectedOutputLines = Lines.files(resourceDir + "/pioneer-output.ndjson");
-    assertThat("Main output differed from expectation", outputLines,
-        matchesInAnyOrder(expectedOutputLines));
+    List<String> outputLines = Lines.files(output + "*.ndjson");
+    assertThat(outputLines, Matchers.hasSize(3));
+    List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
+    assertThat("Main output differed from expectation", getPayload(removeMetadata(outputLines)),
+        matchesInAnyOrder(getPayload(expectedOutputLines)));
   }
 
   /** Assert that the default value of --pioneerKms causes the unit test to fail
