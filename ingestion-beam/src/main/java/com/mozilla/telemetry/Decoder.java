@@ -9,8 +9,6 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.rally.DecryptPayloads;
-import com.mozilla.telemetry.decoder.rally.DecryptPioneerPayloads;
-import com.mozilla.telemetry.decoder.rally.DecryptRallyPayloads;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
@@ -21,7 +19,6 @@ import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
@@ -77,20 +74,12 @@ public class Decoder extends Sink {
         // Special case: decryption of Pioneer payloads
         // Both legacy messages sent to the `telemetry.pioneer-study` doctype
         // and the glean.js-styled messages are supported respectively
-        .map(p -> options.getPioneerEnabled() ? PCollectionList.of(p //
-            .apply("FilterPioneer", Filter.by(new DecryptPayloads.PioneerPredicate())) //
-            .apply("DecryptPioneerPayloads",
-                DecryptPioneerPayloads.of(options.getPioneerMetadataLocation(),
-                    options.getPioneerKmsEnabled(), options.getPioneerDecompressPayload())) //
-            .failuresTo(failureCollections)) //
-            .and(p //
-                .apply("FilterRally", Filter.by(new DecryptPayloads.RallyPredicate())) //
-                .apply("DecryptRallyPayloads",
-                    DecryptRallyPayloads.of(options.getPioneerMetadataLocation(),
-                        options.getSchemasLocation(), options.getPioneerKmsEnabled(),
-                        options.getPioneerDecompressPayload())) //
-                .failuresTo(failureCollections)) //
-            .apply(Flatten.pCollections()) : p)
+        .map(p -> options.getPioneerEnabled() ? p //
+            .apply("DecryptRallyAndPioneerPayloads",
+                DecryptPayloads.of(options.getPioneerMetadataLocation(),
+                    options.getSchemasLocation(), options.getPioneerKmsEnabled(),
+                    options.getPioneerDecompressPayload())) //
+            .failuresTo(failureCollections) : p)
 
         // Main output
         .map(p -> p //

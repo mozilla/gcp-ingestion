@@ -32,7 +32,7 @@ public class DecryptPayloadsTest extends TestWithDeterministicJson {
     PCollection<String> result = pipeline
         .apply(Create.of(Arrays.asList(doc("telemetry", "pioneer-study"),
             doc("telemetry", "pioneer-study"), doc("telemetry", "main"))))
-        .apply(Filter.by(new DecryptPayloads.PioneerPredicate()))
+        .apply(Filter.by(DecryptPayloads.PioneerPredicate.of()))
         .apply(OutputFileFormat.text.encode());
 
     PAssert.that(result).containsInAnyOrder(Arrays.asList("{}", "{}"));
@@ -45,7 +45,7 @@ public class DecryptPayloadsTest extends TestWithDeterministicJson {
     PCollection<String> result = pipeline
         .apply(Create.of(Arrays.asList(doc("rally", "baseline"), doc("telemetry", "baseline"),
             doc("telemetry", "pioneer-study"))))
-        .apply(Filter.by(new DecryptPayloads.RallyPredicate()))
+        .apply(Filter.by(DecryptPayloads.RallyPredicate.of()))
         .apply(OutputFileFormat.text.encode());
 
     PAssert.that(result).containsInAnyOrder(Arrays.asList("{}", "{}"));
