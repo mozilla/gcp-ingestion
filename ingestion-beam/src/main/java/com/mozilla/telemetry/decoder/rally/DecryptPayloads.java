@@ -8,10 +8,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ProcessFunction;
+import org.apache.beam.sdk.transforms.Partition;
 import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
@@ -46,20 +45,21 @@ public class DecryptPayloads extends
 
     final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();
 
-    PCollection<PubsubMessage> pioneer = messages //
-        .apply("FilterPioneer", Filter.by(PioneerPredicate.of())) //
-        .apply("DecryptPioneerPayloads",
-            DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload)) //
-        .failuresTo(failureCollections);
+    PCollectionList<PubsubMessage> partitioned = messages //
+        .apply("PartitionRallyAndPioneer", Partition.of(2, RallyPartitioner.of()));
 
-    PCollection<PubsubMessage> rally = messages //
-        .apply("FilterRally", Filter.by(RallyPredicate.of())) //
+    PCollection<PubsubMessage> rally = partitioned.get(0)
         .apply("DecryptRallyPayloads",
             DecryptRallyPayloads.of(metadataLocation, schemasLocation, kmsEnabled,
                 decompressPayload)) //
         .failuresTo(failureCollections);
 
-    PCollection<PubsubMessage> output = PCollectionList.of(pioneer).and(rally) //
+    PCollection<PubsubMessage> pioneer = partitioned.get(1)
+        .apply("DecryptPioneerPayloads",
+            DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload)) //
+        .failuresTo(failureCollections);
+
+    PCollection<PubsubMessage> output = PCollectionList.of(rally).and(pioneer) //
         .apply("FlattenDecryptedRallyMessages", Flatten.pCollections());
     PCollection<PubsubMessage> errors = PCollectionList.of(failureCollections) //
         .apply("FlattenRallyErrors", Flatten.pCollections());
@@ -74,33 +74,18 @@ public class DecryptPayloads extends
     return "telemetry".equals(namespace) && "pioneer-study".equals(docType);
   }
 
-  public static class PioneerPredicate implements ProcessFunction<PubsubMessage, Boolean> {
+  public static class RallyPartitioner implements Partition.PartitionFn<PubsubMessage> {
 
-    private PioneerPredicate() {
+    private RallyPartitioner() {
     }
 
-    public static PioneerPredicate of() {
-      return new PioneerPredicate();
-    }
-
-    @Override
-    public Boolean apply(PubsubMessage message) {
-      return isPioneerPing(message);
-    }
-  }
-
-  public static class RallyPredicate implements ProcessFunction<PubsubMessage, Boolean> {
-
-    private RallyPredicate() {
-    }
-
-    public static RallyPredicate of() {
-      return new RallyPredicate();
+    public static RallyPartitioner of() {
+      return new RallyPartitioner();
     }
 
     @Override
-    public Boolean apply(PubsubMessage message) {
-      return !isPioneerPing(message);
+    public int partitionFor(PubsubMessage message, int numPartitions) {
+      return !isPioneerPing(message) ? 0 : 1;
     }
   }
 }
