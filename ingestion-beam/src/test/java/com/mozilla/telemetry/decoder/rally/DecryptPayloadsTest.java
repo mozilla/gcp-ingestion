@@ -88,12 +88,15 @@ public class DecryptPayloadsTest extends TestWithDeterministicJson {
     ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
     ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
 
-    List<PubsubMessage> input = Arrays.asList(readTestFilePubsub(
-        "jwe/rally-study-foo.ciphertext.json", "rally-study-foo", "baseline", "1"));
-    List<String> expected = Arrays.asList(readTestFile("jwe/rally-study-foo.plaintext.json"));
+    List<PubsubMessage> input = Arrays.asList(
+        readTestFilePubsub("jwe/rally-study-foo.ciphertext.json", "rally-study-foo", "baseline",
+            "1"),
+        readTestFilePubsub("pioneer/study-foo.ciphertext.json", "telemetry", "pioneer-study", "4"));
+    List<String> expected = Arrays.asList(readTestFile("jwe/rally-study-foo.plaintext.json"),
+        readTestFile("pioneer/sample.plaintext.json"));
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
-        .apply(DecryptRallyPayloads.of(metadataLocation, schemasLocation, kmsEnabled,
-            decompressPayload));
+        .apply(
+            DecryptPayloads.of(metadataLocation, schemasLocation, kmsEnabled, decompressPayload));
 
     PAssert.that(result.failures()).empty();
     pipeline.run();
