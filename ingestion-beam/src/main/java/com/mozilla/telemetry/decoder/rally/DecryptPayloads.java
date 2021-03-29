@@ -71,7 +71,7 @@ public class DecryptPayloads extends
     Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
     final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
     final String docType = attributes.get(Attribute.DOCUMENT_TYPE);
-    return namespace.equals("telemetry") && docType.equals("pioneer-study");
+    return "telemetry".equals(namespace) && "pioneer-study".equals(docType);
   }
 
   public static class PioneerPredicate implements ProcessFunction<PubsubMessage, Boolean> {

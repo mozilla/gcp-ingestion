@@ -194,18 +194,16 @@ public class DecryptRallyPayloads extends
 
       ObjectNode json = Json.readObjectNode(message.getPayload());
 
-      // Decrypt in-place
-      try {
-        // The keying behavior is specific to Rally -- it may be possible to
-        // rely on the keyId in the header instead. This behavior should be
-        // consistent with how keys are actually allocated.
-        PrivateKey key = keyStore.getKeyOrThrow(namespace);
-        decryptAndReplace(key, json, meta.jwe_mappings());
-      } catch (JoseException | KeyNotFoundException e) {
-        throw e;
-      }
+      // The keying behavior is specific to Rally -- it may be possible to rely
+      // on the keyId in the header instead. This behavior should be consistent
+      // with how keys are actually allocated. This may throw
+      // KeyNotFoundException.
+      PrivateKey key = keyStore.getKeyOrThrow(namespace);
 
-      // Ensure our new payload is a glean document
+      // Decrypt in-place, this may throw a variety of different exceptions.
+      decryptAndReplace(key, json, meta.jwe_mappings());
+
+      // Ensure our new payload is a glean document; throws ValidationException
       validator.validate(gleanSchema, json);
 
       // Ensure that our payload has a uuid field named rally.id, otherwise
