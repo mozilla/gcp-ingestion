@@ -76,7 +76,7 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
   }
 
   /** Reformat the document, and remove the expected metadata. */
-  private static final class ReformatJson
+  public static final class ReformatJson
       extends PTransform<PCollection<String>, PCollection<String>> {
 
     public static ReformatJson of() {
