@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
-import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
+import com.mozilla.telemetry.decoder.rally.DecryptPioneerPayloads;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.util.Json;
@@ -71,6 +71,7 @@ public class PioneerBenchmarkGenerator {
       attributes.put(Attribute.DOCUMENT_NAMESPACE, "telemetry");
       attributes.put(Attribute.DOCUMENT_TYPE, "pioneer-study");
       attributes.put(Attribute.DOCUMENT_VERSION, "4");
+      attributes.put(Attribute.ISP_NAME, "none");
 
       PubsubMessage encryptedMessage = new PubsubMessage(
           Json.asString(node).getBytes(Charsets.UTF_8), attributes);

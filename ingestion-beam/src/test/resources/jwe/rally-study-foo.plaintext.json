@@ -1,0 +1,21 @@
+{
+  "client_info": {
+    "app_build": "59f330e5",
+    "app_display_version": "1.0.0",
+    "architecture": "arm",
+    "first_run_date": "2018-10-23-04:25",
+    "os": "Android",
+    "os_version": "3.2.1",
+    "telemetry_sdk_build": "abcdabcd"
+  },
+  "ping_info": {
+    "seq": 1,
+    "start_time": "2018-10-23 11:23:15-04:00",
+    "end_time": "2018-10-23 11:23:15-04:25"
+  },
+  "metrics": {
+    "uuid": {
+      "rally.id": "e7af9ea0-bb7f-477b-a0a6-f5843dd7dca7"
+    }
+  }
+}
