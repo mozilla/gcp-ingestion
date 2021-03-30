@@ -71,9 +71,13 @@ public class Decoder extends Sink {
         .map(p -> p //
             .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections))
 
-        // Special case: decryption of Pioneer payloads
-        // Both legacy messages sent to the `telemetry.pioneer-study` doctype
-        // and the glean.js-styled messages are supported respectively
+        // Special case: decryption of Rally/Pioneer payloads. There is a
+        // separate decoder instance that only contains pioneer-* and rally-*
+        // documents as per bugs 1628539 and 1675479. All messages sent in
+        // plaintext not intended for Rally/Pioneer will be rejected in some
+        // form (e.g. KeyNotFound or Validation errors). Both legacy messages
+        // sent to the `telemetry.pioneer-study` doctype and the glean.js-styled
+        // messages are supported respectively.
         .map(p -> options.getPioneerEnabled() ? p //
             .apply("DecryptRallyAndPioneerPayloads",
                 DecryptPayloads.of(options.getPioneerMetadataLocation(),
