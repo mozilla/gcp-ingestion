@@ -46,7 +46,8 @@ public class DecryptPayloads extends
     final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();
 
     PCollectionList<PubsubMessage> partitioned = messages //
-        .apply("PartitionRallyAndPioneer", Partition.of(2, RallyPartitioner.of()));
+        .apply("PartitionRallyAndPioneer", Partition.of(2,
+            (PubsubMessage message, int numPartitions) -> isPioneerPing(message) ? 1 : 0));
 
     PCollection<PubsubMessage> rally = partitioned.get(0)
         .apply("DecryptRallyPayloads",
@@ -72,20 +73,5 @@ public class DecryptPayloads extends
     final String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
     final String docType = attributes.get(Attribute.DOCUMENT_TYPE);
     return "telemetry".equals(namespace) && "pioneer-study".equals(docType);
-  }
-
-  public static class RallyPartitioner implements Partition.PartitionFn<PubsubMessage> {
-
-    private RallyPartitioner() {
-    }
-
-    public static RallyPartitioner of() {
-      return new RallyPartitioner();
-    }
-
-    @Override
-    public int partitionFor(PubsubMessage message, int numPartitions) {
-      return !isPioneerPing(message) ? 0 : 1;
-    }
   }
 }
