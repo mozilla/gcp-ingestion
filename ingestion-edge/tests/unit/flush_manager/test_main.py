@@ -28,7 +28,7 @@ def test_run_task():
 
 def test_flush_and_delete(api: MagicMock, batch_api: MagicMock):
     flush_released_pvs_and_delete_complete_jobs(
-        api, batch_api, "command", "env", "image", "namespace"
+        api, batch_api, "command", "env", "image", "namespace", "service-account-name"
     )
     api.list_persistent_volume.assert_called_once_with()
     assert [
