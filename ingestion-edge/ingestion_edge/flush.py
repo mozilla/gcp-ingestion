@@ -163,7 +163,9 @@ def init_app(app: Sanic, client: PublisherClient, q: SQLiteAckQueue):
 def main():
     """Flush until queue is empty."""
     config = get_config_dict()
-    flush = get_flush(config, get_client(config), get_queue(config))
+    q = get_queue(config)
+    q.resume_unack_tasks()  # retry all tasks that were in progress
+    flush = get_flush(config, get_client(config), q)
     asyncio.get_event_loop().run_until_complete(flush.run_until_complete())
 
 
