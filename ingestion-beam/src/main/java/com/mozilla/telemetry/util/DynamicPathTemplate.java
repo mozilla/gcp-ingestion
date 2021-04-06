@@ -21,7 +21,7 @@ import org.apache.commons.text.StringSubstitutor;
  * and a dynamic part of the path starting with the first placeholder.
  *
  * <p>For details of the intended behavior for file paths, see:
- * https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam#output-path-specification
+ * https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-beam#output-path-specification
  */
 public class DynamicPathTemplate implements Serializable {
 

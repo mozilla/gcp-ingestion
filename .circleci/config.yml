@@ -54,18 +54,18 @@ jobs:
       run:
         name: Early return when dir not modified
         command: |
-          if [ "$CIRCLE_BRANCH" = master ]; then
-              echo "Run tests because branch is master"
+          if [ "$CIRCLE_BRANCH" = main ]; then
+              echo "Run tests because branch is main"
           elif git log --format=%B --no-merges -n 1 | grep -qF '[run-tests]'; then
               echo "Run tests because [run-tests] in commit message"
-          elif ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/.circleci; then
-              echo "Run tests because .circleci/ was modified since branching off master"
-          elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/pom.xml; then
-              echo "Run tests because pom.xml was modified since branching off master"
-          elif test -f pom.xml && ! git diff --quiet origin/master -- "$(git rev-parse --show-toplevel)"/ingestion-core/src; then
-              echo "Run tests because ingestion-core/src was modified since branching off master"
-          elif ! git diff --quiet origin/master... -- .; then
-              echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off master"
+          elif ! git diff --quiet origin/main -- "$(git rev-parse --show-toplevel)"/.circleci; then
+              echo "Run tests because .circleci/ was modified since branching off main"
+          elif test -f pom.xml && ! git diff --quiet origin/main -- "$(git rev-parse --show-toplevel)"/pom.xml; then
+              echo "Run tests because pom.xml was modified since branching off main"
+          elif test -f pom.xml && ! git diff --quiet origin/main -- "$(git rev-parse --show-toplevel)"/ingestion-core/src; then
+              echo "Run tests because ingestion-core/src was modified since branching off main"
+          elif ! git diff --quiet origin/main... -- .; then
+              echo "Run tests because $(git rev-parse --show-prefix) was modified since branching off main"
           else
               echo "Skipping tests because $(git rev-parse --show-prefix) was not modified"
               circleci step halt
@@ -292,13 +292,13 @@ workflows:
     - docs:
         filters:
           branches:
-            only: master
+            only: main
     - ingestion-edge
     - ingestion-edge-verify-requirements
     - ingestion-edge-release:
         filters:
           branches:
-            only: master
+            only: main
           tags:
             only: /.*/
     - ingestion-beam
@@ -308,6 +308,6 @@ workflows:
     - ingestion-sink-release:
         filters:
           branches:
-            only: master
+            only: main
           tags:
             only: /.*/

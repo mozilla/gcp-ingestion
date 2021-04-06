@@ -4,7 +4,7 @@ This ingestion-beam java module contains our [Apache Beam](https://beam.apache.o
 Google Cloud Dataflow is a Google Cloud Platform service that natively runs
 Apache Beam jobs.
 
-The source code lives in the [ingestion-beam](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam)
+The source code lives in the [ingestion-beam](https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-beam)
 subdirectory of the gcp-ingestion repository.
 
 There are currently three jobs defined, please see the respective sections on them in the

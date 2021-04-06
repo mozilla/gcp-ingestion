@@ -689,7 +689,7 @@ public abstract class PubsubMessageToObjectNode {
      *
      * <p>We maintain a BigQuery persistent UDF that can parse a variety of formats, so any format
      * used here must first be supported in:
-     * https://github.com/mozilla/bigquery-etl/blob/master/mozfun/hist/extract/udf.sql
+     * https://github.com/mozilla/bigquery-etl/blob/main/mozfun/hist/extract/udf.sql
      *
      * <p>Schema validation should generally ensure that all histograms are well-formed, but we
      * perform some light sanity checking on the values and fall back to encoding the histogram

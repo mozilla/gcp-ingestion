@@ -3,7 +3,7 @@
 A Java application that runs in Kubernetes, reading input from Google Cloud
 Pub/Sub and emitting records to batch-oriented outputs like GCS or BigQuery.
 Defined in the `ingestion-sink` package
-([source](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-sink/)).
+([source](https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-sink/)).
 
 ## Supported Input and Outputs
 

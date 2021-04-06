@@ -1,6 +1,6 @@
 # Decoder Job
 
-A job for normalizing ingestion messages. Defined in the `com.mozilla.telemetry.Decoder` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java)).
+A job for normalizing ingestion messages. Defined in the `com.mozilla.telemetry.Decoder` class ([source](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java)).
 
 ## Transforms
 

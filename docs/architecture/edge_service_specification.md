@@ -57,11 +57,11 @@ required group attributes {
 
 ### GET Request
 
-| Endpoint           | Description                                                                                                           |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `/__heartbeat__`   | check if service is healthy, and can reach PubSub or has space to store requests on disk                              |
-| `/__lbheartbeat__` | check if service is running                                                                                           |
-| `/__version__`     | return Dockerflow [version object](https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md) |
+| Endpoint           | Description                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `/__heartbeat__`   | check if service is healthy, and can reach PubSub or has space to store requests on disk                            |
+| `/__lbheartbeat__` | check if service is running                                                                                         |
+| `/__version__`     | return Dockerflow [version object](https://github.com/mozilla-services/Dockerflow/blob/main/docs/version_object.md) |
 
 ### GET Response codes
 

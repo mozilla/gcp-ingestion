@@ -134,7 +134,7 @@ public class ParseUri {
    * Class for parsing stub installer pings.
    *
    * <p>Support for stub installer pings as per
-   * https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#legacy-systems
+   * https://github.com/mozilla/gcp-ingestion/blob/main/docs/edge.md#legacy-systems
    *
    * <p>Reimplementation of
    * https://github.com/whd/dsmo_load/blob/master/heka/usr/share/heka/lua_filters/nginx_redshift.lua#L71-L194
