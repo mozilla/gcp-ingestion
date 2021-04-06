@@ -872,8 +872,8 @@ production must include a document explaining why that decision was made.</p>
 <ol>
 <li>Continuous Integration</li>
 <li>Must run <a href="#unit-tests">Unit Tests</a> and <a href="#integration-tests">Integration Tests</a></li>
-<li>Must run against every merge to master and every pull request</li>
-<li>Must block merging to master</li>
+<li>Must run against every merge to main and every pull request</li>
+<li>Must block merging to main</li>
 <li>Pre-Production</li>
 <li>Must run <a href="#unit-tests">Unit Tests</a> and <a href="#load-tests">Load Tests</a></li>
 <li>Must run against every version deployed to production</li>
@@ -895,7 +895,7 @@ split into categories with increasing run time and decreasing coverage.</p>
 <li>Should run as fast as possible</li>
 <li><a href="#integration-tests">Integration Tests</a></li>
 <li>Must cover all expected production behavior</li>
-<li>Must run fast enough to allow frequent merging to master</li>
+<li>Must run fast enough to allow frequent merging to main</li>
 <li><a href="#load-tests">Load Tests</a></li>
 <li>Must cover performance at scale with and without external services down</li>
 <li>Must run fast enough to allow multiple production deployments per day</li>
