@@ -416,7 +416,7 @@ public class PubsubMessageToObjectNodeBeamTest {
   @Test
   public void testRawFormat() throws Exception {
     // Use example values for all attributes present in the spec:
-    // https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#edge-server-pubsub-message-schema
+    // https://github.com/mozilla/gcp-ingestion/blob/main/docs/edge.md#edge-server-pubsub-message-schema
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put("submission_timestamp", "2018-03-12T21:02:18.123456Z")
         .put("uri",
@@ -440,7 +440,7 @@ public class PubsubMessageToObjectNodeBeamTest {
   @Test
   public void testDecodedFormat() throws Exception {
     // Ensure sure we preserve all attributes present in the spec:
-    // https://github.com/mozilla/gcp-ingestion/blob/master/docs/decoder.md#decoded-message-metadata-schema
+    // https://github.com/mozilla/gcp-ingestion/blob/main/docs/decoder.md#decoded-message-metadata-schema
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put("client_id", "5c49ec73-4350-45a0-9c8a-6c8f5aded0da").put("document_version", "4")
         .put("document_id", "6c49ec73-4350-45a0-9c8a-6c8f5aded0cf")

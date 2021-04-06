@@ -2,7 +2,7 @@
 
 A simple service for delivering HTTP messages to Google Cloud PubSub
 
-The source code lives in the [ingestion-edge](https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-edge)
+The source code lives in the [ingestion-edge](https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-edge)
 subdirectory of the gcp-ingestion repository.
 
 ## Building

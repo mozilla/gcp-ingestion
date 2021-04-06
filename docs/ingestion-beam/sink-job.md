@@ -1,6 +1,6 @@
 # Sink Job
 
-A job for delivering messages between Google Cloud services. Defined in the `com.mozilla.telemetry.Sink` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java)).
+A job for delivering messages between Google Cloud services. Defined in the `com.mozilla.telemetry.Sink` class ([source](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Sink.java)).
 
 ## Deprecated
 

@@ -1,6 +1,6 @@
 # Republisher Job
 
-A job for republishing subsets of decoded messages to new destinations. Defined in the `com.mozilla.telemetry.Republisher` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java)).
+A job for republishing subsets of decoded messages to new destinations. Defined in the `com.mozilla.telemetry.Republisher` class ([source](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java)).
 
 The primary intention is to produce smaller derived Pub/Sub topics so
 that consumers that only need a specific subset of messages don't incur

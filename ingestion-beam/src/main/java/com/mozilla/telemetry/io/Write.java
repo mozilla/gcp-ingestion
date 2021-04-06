@@ -118,7 +118,7 @@ public abstract class Write
    * Implementation of writing to local or remote files.
    *
    * <p>For details of the intended behavior for file paths, see:
-   * https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam#output-path-specification
+   * https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-beam#output-path-specification
    */
   public static class FileOutput extends Write {
 
@@ -186,7 +186,7 @@ public abstract class Write
    * Implementation of writing to local or remote files.
    *
    * <p>For details of the intended behavior for file paths, see:
-   * https://github.com/mozilla/gcp-ingestion/tree/master/ingestion-beam#output-path-specification
+   * https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-beam#output-path-specification
    */
   public static class AvroOutput extends Write {
 
