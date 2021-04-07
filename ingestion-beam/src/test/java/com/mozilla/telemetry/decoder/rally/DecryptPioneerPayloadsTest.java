@@ -331,4 +331,40 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
     PAssert.that(output).containsInAnyOrder(expectedMain);
     pipeline.run();
   }
+
+  @Test
+  public void testBug1703648() throws Exception {
+    // minimal test for invalid enrollment pings sending addonId instead of
+    // schemaNamespace
+    ValueProvider<String> metadataLocation = pipeline
+        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
+    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
+    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+
+    final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"));
+    input.set(0, modifySchemaNamespace(input.get(0), "rally-foo"));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode())
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(),
+                ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "telemetry", Attribute.DOCUMENT_TYPE,
+                    "pioneer-study", Attribute.DOCUMENT_VERSION, "4"))))
+        .apply(DecryptPioneerPayloads.of(metadataLocation, kmsEnabled, decompressPayload));
+
+    PAssert.that(result.failures()).empty();
+    pipeline.run();
+
+    PCollection<String> output = result.output()
+        .apply(MapElements.into(TypeDescriptors.strings()).via(message -> {
+          try {
+            return Json.readObjectNode(message.getPayload()).get("rallyId").asText();
+          } catch (Exception e) {
+            return null;
+          }
+        }));
+    final List<String> expectedId = Arrays.asList("9af045aa-80ca-e743-92de-b31431abc547");
+    PAssert.that(output).containsInAnyOrder(expectedId);
+    pipeline.run();
+  }
 }
