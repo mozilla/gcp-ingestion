@@ -1,5 +1,11 @@
 # Link to code removed from this repository
 
+- 2021-03-12 (available until [commit `c05fbab`](https://github.com/mozilla/gcp-ingestion/commit/c05fbabcb44c5a8a290be311a87951728cf587b6))
+  - Remove support for Account Ecosystem Telemetry (AET);
+    see [Bug 1697602](https://bugzilla.mozilla.org/show_bug.cgi?id=1697602)
+  - Also removes `ParseLogEntry` which transforms a Google Cloud Logging
+    (`Stackdriver`) `LogEntry` message into one compatible with structured
+    ingestion, which could be relevant for future use cases.
 - 2020-06-01 (available until [commit `f1d6464`](https://github.com/mozilla/gcp-ingestion/commit/f1d646442b8c1fcd63202ebca91363979b5b2ae2))
   - Remove `DeduplicateByDocumentId` transform, which was intended for use with
     the backfill from `heka` data, but did not perform well and was never used

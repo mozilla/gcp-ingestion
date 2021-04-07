@@ -131,7 +131,9 @@ def test_flush_released_pvs(api: MagicMock, batch_api: MagicMock):
 
     batch_api.create_namespaced_job.side_effect = create_job
 
-    flush_released_pvs(api, batch_api, "command", "env", "image", "namespace")
+    flush_released_pvs(
+        api, batch_api, "command", "env", "image", "namespace", "service-account-name"
+    )
 
     api.list_persistent_volume.assert_called_once_with()
     batch_api.list_namespaced_job.assert_called_once_with("namespace")
@@ -179,7 +181,15 @@ def test_create_flush_job_raises_server_error(api: MagicMock, batch_api: MagicMo
     batch_api.create_namespaced_job.side_effect = create_job
 
     with pytest.raises(ApiException):
-        flush_released_pvs(api, batch_api, "command", "env", "image", "namespace")
+        flush_released_pvs(
+            api,
+            batch_api,
+            "command",
+            "env",
+            "image",
+            "namespace",
+            "service-account-name",
+        )
 
     api.list_persistent_volume.assert_called_once_with()
     batch_api.list_namespaced_job.called_once_with("namespace")
@@ -207,7 +217,15 @@ def test_create_pvc_raises_server_error(api: MagicMock, batch_api: MagicMock):
     api.create_namespaced_persistent_volume_claim.side_effect = create_pvc
 
     with pytest.raises(ApiException):
-        flush_released_pvs(api, batch_api, "command", "env", "image", "namespace")
+        flush_released_pvs(
+            api,
+            batch_api,
+            "command",
+            "env",
+            "image",
+            "namespace",
+            "service-account-name",
+        )
 
     api.list_persistent_volume.assert_called_once_with()
     batch_api.list_namespaced_job.called_once_with("namespace")

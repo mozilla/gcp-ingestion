@@ -14,7 +14,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <log4j.version>2.14.0</log4j.version>
+        <log4j.version>2.14.1</log4j.version>
         <opencensus.version>0.28.3</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
@@ -52,7 +52,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
-                <version>16.3.0</version>
+                <version>19.2.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -60,7 +60,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>google-cloud-pubsublite</artifactId>
-                <version>0.8.0</version>
+                <version>0.13.1</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
@@ -93,7 +93,7 @@
             <!-- runtime dependency required by pubsublite -->
             <groupId>com.google.flogger</groupId>
             <artifactId>flogger-system-backend</artifactId>
-            <version>0.5.1</version>
+            <version>0.6</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
@@ -138,7 +138,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>3.7.7</version>
+            <version>3.8.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>

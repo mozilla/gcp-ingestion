@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
@@ -35,15 +36,18 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
   public static class PubsubInput extends Read {
 
     private final ValueProvider<String> subscription;
+    private final String idAttribute;
 
-    public PubsubInput(ValueProvider<String> subscription) {
+    public PubsubInput(ValueProvider<String> subscription, @Nullable String idAttribute) {
       this.subscription = subscription;
+      this.idAttribute = idAttribute;
     }
 
     @Override
     public PCollection<PubsubMessage> expand(PBegin input) {
       return input //
-          .apply(PubsubIO.readMessagesWithAttributesAndMessageId().fromSubscription(subscription))
+          .apply(PubsubIO.readMessagesWithAttributesAndMessageId().withIdAttribute(idAttribute)
+              .fromSubscription(subscription))
           .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
             Map<String, String> attributesWithMessageId = new HashMap<>(message.getAttributeMap());
             attributesWithMessageId.put(Attribute.MESSAGE_ID, message.getMessageId());

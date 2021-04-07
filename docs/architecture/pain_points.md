@@ -45,8 +45,8 @@ is to specify mapping at template creation time.
 Does not use standard client library.
 
 Does not expose an output of delivered messages, which is needed for at least
-once delivery with deduplication. Current workaround is to get delivered
-messages from a subscription to the output PubSub topic.
+once delivery with deduplication. Current workaround is to use the deduplication
+available via `PubsubIO.read()`.
 
 Uses HTTPS JSON API, which increases message payload size vs protobuf by 25%
 for base64 encoding and causes some messages to exceed the 10MB request size
@@ -57,9 +57,9 @@ limit that otherwise would not.
 ## Templates
 
 Does not support repeated parameters via `ValueProvider<List<...>>`, as
-described in [Dataflow Java SDK #632]
+described in [Dataflow Java SDK #632].
 
-[googlecloudplatform/dataflowjavasdk#632]: https://github.com/GoogleCloudPlatform/DataflowJavaSDK/issues/632
+[dataflow java sdk #632]: https://github.com/GoogleCloudPlatform/DataflowJavaSDK/issues/632
 
 # PubSub
 

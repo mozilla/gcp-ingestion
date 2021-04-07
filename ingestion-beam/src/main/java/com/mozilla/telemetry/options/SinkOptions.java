@@ -196,7 +196,7 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputNumShards(ValueProvider<Integer> value);
 
-  @Description("Type of --errorOutput; must be one of [pubsub, file]")
+  @Description("Type of --errorOutput; must be one of [pubsub, file, bigquery]")
   @Default.Enum("pubsub")
   ErrorOutputType getErrorOutputType();
 
@@ -230,6 +230,12 @@ public interface SinkOptions extends PipelineOptions {
   String getWindowDuration();
 
   void setWindowDuration(String value);
+
+  @Description("Attribute for built-in deduplication when reading from Pub/Sub."
+      + " Must be an attribute set before the message was last published to Pub/Sub.")
+  String getPubsubIdAttribute();
+
+  void setPubsubIdAttribute(String value);
 
   /*
    * Note: Dataflow templates accept ValueProvider options at runtime, and other options at creation

@@ -15,12 +15,8 @@ This document specifies the architecture for GCP Ingestion as a whole.
   `BigQuery`
 - The Dataflow `Decoder` job decodes messages from the PubSub `Raw Topic` to
   the PubSub `Decoded Topic`
-  - Also checks for existence of `document_id`s in
-    `Cloud Memorystore` in order to deduplicate messages
-- The Dataflow `AET Decoder` job provides all the functionality of the `Decoder`
-  with additional decryption handling for Account Ecosystem Telemetry pings
-- The Dataflow `Republisher` job reads messages from the PubSub `Decoded Topic`,
-  marks them as seen in `Cloud Memorystore` and republishes them to various
+- The Dataflow `Republisher` job reads messages from the PubSub `Decoded Topic`
+  and republishes them to various
   lower volume derived topics including `Monitoring Sample Topics` and
   `Per DocType Topics`
 - The Kubernetes `Decoded Sink` job copies messages from the PubSub `Decoded Topic`
@@ -58,7 +54,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must apply the following transforms in order
   ([implementations here](../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/)):
   1. Parse `x_pipeline_proxy` attribute; if present with a valid value in
-     [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/master/docs/edge.md#submission-timestamp-format),
+     [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/main/docs/edge.md#submission-timestamp-format),
      archive the value of `submission_timestamp` to `proxy_timestamp` and
      replace with the `x_pipeline_proxy` value
   1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
@@ -70,37 +66,14 @@ This document specifies the architecture for GCP Ingestion as a whole.
   1. Produce `normalized_` variants of select attributes
   1. Inject `normalized_` attributes at the top level and other select
      attributes into a nested `metadata` top level key in `payload`
-- Should deduplicate messages based on the `document_id` attribute using
-  `Cloud MemoryStore`
+- Should deduplicate messages based on the `uri` attribute
   - Must ensure at least once delivery, so deduplication is only "best effort"
-  - Should delay deduplication to the latest possible stage of the pipeline
-    to minimize the time window between an ID being marked as seen in
-    `Republisher` and it being checked in `Decoder`
 - Must send messages rejected by transforms to a configurable error destination
   - Must allow error destination in BigQuery
-
-### AET Decoder
-
-The AET (Account Ecosystem Telemetry) Decoder is a modified version of the
-Decoder with the following properties:
-
-- The raw topic that feeds the AET Decoder must not be sent anywhere else;
-  the AET Decoder needs to either successfully decrypt or sanitize all AET
-  identifiers
-- Must load private keys from an encrypted blob in GCS
-- Must call Cloud KMS at startup to decrypt keys and store these only in memory
-- Must remove or redact all AET `ecosystem_anon_id` values from the payload before
-  passing to any durable output, including errors
-- Must have access restricted to a limited set of operators to avoid exposing private keys
-- Encrypted fields must be JOSE JWE objects in Compact Serialization form
 
 ### Republisher
 
 - Must copy messages from PubSub topics to PubSub topics
-- Must attempt to publish the `document_id` of each consumed message to
-  `Cloud MemoryStore`
-  - ID publishing should be "best effort" but must not prevent the message
-    proceeding to further steps in case of errors reaching `Cloud MemoryStore`
 - Must ack messages read from PubSub after they are delivered to all
   matching destinations
 - Must not ack messages read from PubSub before they are delivered to all

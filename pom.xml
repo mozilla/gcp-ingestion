@@ -44,6 +44,15 @@
                 <module>ingestion-sink</module>
             </modules>
         </profile>
+        <profile>
+            <id>java-8-api</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
     </profiles>
 
     <properties>
@@ -53,7 +62,7 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
-        <beam.version>2.27.0</beam.version>
+        <beam.version>2.28.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
@@ -95,7 +104,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>30.1-jre</version>
+            <version>30.1.1-jre</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -116,7 +125,7 @@
         <dependency>
             <groupId>com.github.everit-org.json-schema</groupId>
             <artifactId>org.everit.json.schema</artifactId>
-            <version>1.12.1</version>
+            <version>1.12.2</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -146,7 +155,7 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.1</version>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -158,6 +167,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
+                    <!-- For JDK 9+ the java-8-api profile is automatically activated, which sets
+                         maven.compiler.release=8, causing source and target to be ignored -->
                     <source>1.8</source>
                     <target>1.8</target>
                     <showWarnings>true</showWarnings>
@@ -246,7 +257,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.1.2</version>
                 <configuration>
                     <configLocation>checkstyle/checks.xml</configLocation>
                     <suppressionsLocation>checkstyle/suppressions.xml</suppressionsLocation>
@@ -261,7 +272,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.39</version>
+                        <version>8.41.1</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -293,7 +304,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.7.0</version>
+                <version>2.9.0</version>
                 <configuration>
                     <java>
                         <excludes>

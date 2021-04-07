@@ -4,27 +4,29 @@ site_author: Mozilla Data Platform Team
 
 repo_url: https://github.com/mozilla/gcp-ingestion/
 
+theme:
+  name: material
+  features:
+    - navigation.tabs
+  palette:
+    primary: teal
+
+plugins:
+  - search
+  - awesome-pages
+
 nav:
   - Home: index.md
-  - ingestion-edge: ingestion-edge/index.md
-  - ingestion-beam:
-    - Overview: ingestion-beam/index.md
-    - Sink Job: ingestion-beam/sink-job.md
-    - Decoder Job: ingestion-beam/decoder-job.md
-    - Republisher Job: ingestion-beam/republisher-job.md
-    - Ingestion testing workflow: ingestion-beam/ingestion_testing_workflow.md
   - Architecture:
     - Overview: architecture/overview.md
-    - Differences from AWS: architecture/differences_from_aws.md
-    - Pain Points: architecture/pain_points.md
-    - Edge Migration Plan: architecture/edge_migration_plan.md
-    - Reliability: architecture/reliability.md
-    - Test requirements: architecture/test_requirements.md
-    - Landfill Service Specification: architecture/landfill_service_specification.md
-    - Edge Server Specification: architecture/edge_service_specification.md
-    - BigQuery Sink Specification: architecture/bigquery_sink_specification.md
-    - Decoder Service Specification: architecture/decoder_service_specification.md
-
-theme:
-    name: mkdocs
-    custom_dir: custom_docs_theme/
+    - ... | architecture/*.md
+  - ingestion-edge:
+    - Overview: ingestion-edge/index.md
+    - ... | ingestion-edge/*
+  - ingestion-beam:
+    - Overview: ingestion-beam/index.md
+    - ... | ingestion-beam/*
+  - ingestion-sink:
+    - Overview: ingestion-sink/index.md
+    - ... | ingestion-sink/*
+  - ...

@@ -11,8 +11,8 @@ production must include a document explaining why that decision was made.
 
 1. Continuous Integration
    - Must run [Unit Tests](#unit-tests) and [Integration Tests](#integration-tests)
-   - Must run against every merge to master and every pull request
-   - Must block merging to master
+   - Must run against every merge to main and every pull request
+   - Must block merging to main
 1. Pre-Production
    - Must run [Unit Tests](#unit-tests) and [Load Tests](#load-tests)
    - Must run against every version deployed to production
@@ -35,7 +35,7 @@ split into categories with increasing run time and decreasing coverage.
    - Should run as fast as possible
 1. [Integration Tests](#integration-tests)
    - Must cover all expected production behavior
-   - Must run fast enough to allow frequent merging to master
+   - Must run fast enough to allow frequent merging to main
 1. [Load Tests](#load-tests)
    - Must cover performance at scale with and without external services down
    - Must run fast enough to allow multiple production deployments per day

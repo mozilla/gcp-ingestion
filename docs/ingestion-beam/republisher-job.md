@@ -1,23 +1,12 @@
 # Republisher Job
 
-A job for republishing subsets of decoded messages to new destinations. Defined in the `com.mozilla.telemetry.Republisher` class ([source](https://github.com/mozilla/gcp-ingestion/blob/master/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java)).
+A job for republishing subsets of decoded messages to new destinations. Defined in the `com.mozilla.telemetry.Republisher` class ([source](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java)).
 
 The primary intention is to produce smaller derived Pub/Sub topics so
 that consumers that only need a specific subset of messages don't incur
 the cost of reading the entire stream of decoded messages.
 
-The Republisher has the additional responsibility of marking messages as seen
-in `Cloud MemoryStore` for deduplication purposes. That functionality exists
-here to avoid the expense of an additional separate consumer of the full
-decoded topic.
-
 ## Capabilities
-
-### Marking Messages As Seen
-
-The job needs to connect to Redis in order to mark `document_id`s of consumed
-messages as seen. The Decoder is able to use that information to drop duplicate
-messages flowing through the pipeline.
 
 ### Debug Republishing
 

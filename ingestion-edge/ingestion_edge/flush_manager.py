@@ -76,6 +76,11 @@ parser.add_argument(
     "--namespace", default="default", help="Kubernetes namespace to use",
 )
 parser.add_argument(
+    "--service-account-name",
+    default="default",
+    help="Kubernetes service account name to use",
+)
+parser.add_argument(
     "--claim-prefix",
     default="queue-",
     help="Prefix for the names of persistent volume claims to delete",
@@ -148,6 +153,7 @@ def _create_flush_job(
     image: str,
     name: str,
     namespace: str,
+    service_account_name: str,
 ) -> V1Job:
     logger.info(f"creating job: {name}")
     try:
@@ -182,6 +188,7 @@ def _create_flush_job(
                                     ),
                                 )
                             ],
+                            service_account_name=service_account_name,
                         )
                     )
                 ),
@@ -201,6 +208,7 @@ def flush_released_pvs(
     env: List[V1EnvVar],
     image: str,
     namespace: str,
+    service_account_name: str,
 ):
     """
     Flush persistent volumes.
@@ -224,7 +232,9 @@ def flush_released_pvs(
             if pv.status.phase != "Bound":
                 pvc = _create_pvc(api, name, namespace, pv)
                 _bind_pvc(api, pv, pvc)
-            _create_flush_job(batch_api, command, env, image, name, namespace)
+            _create_flush_job(
+                batch_api, command, env, image, name, namespace, service_account_name
+            )
 
 
 def delete_complete_jobs(api: CoreV1Api, batch_api: BatchV1Api, namespace: str):
@@ -292,12 +302,15 @@ def flush_released_pvs_and_delete_complete_jobs(
     env: List[V1EnvVar],
     image: str,
     namespace: str,
+    service_account_name: str,
 ):
     """Flush released persistent volumes then delete complete jobs.
 
     Run sequentially to avoid race conditions.
     """
-    flush_released_pvs(api, batch_api, command, env, image, namespace)
+    flush_released_pvs(
+        api, batch_api, command, env, image, namespace, service_account_name
+    )
     delete_complete_jobs(api, batch_api, namespace)
 
 
@@ -425,6 +438,7 @@ def main():
             args.env,
             args.image,
             args.namespace,
+            args.service_account_name,
         ),
         partial(delete_detached_pvcs, api, args.namespace, args.claim_prefix),
         partial(delete_unschedulable_pods, api, args.namespace),

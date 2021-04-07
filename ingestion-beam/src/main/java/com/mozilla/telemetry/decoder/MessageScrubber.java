@@ -48,6 +48,12 @@ public class MessageScrubber {
       .put("com-myie9-xf", "1684918") //
       .put("com-netsweeper-clientfilter-lgfl-socialblocked", "1688689") //
       .put("com-only4free-activate", "1687350") //
+      .put("glean-js-tmp", "1689513") //
+      .put("org-privacywall-browser", "1691468") //
+      .put("org-mozilla-ios-lockbox-credentialprovider", "1695728") //
+      .put("com-zibb-browser", "1698576") //
+      .put("org-mozilla-firefox-betb", "1698579") //
+      .put("org-mozilla-allanchain-firefox", "1698574") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -78,6 +84,8 @@ public class MessageScrubber {
     final String appVersion = attributes.get(Attribute.APP_VERSION);
     final String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
     final String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
+    // NOTE: this value may be null
+    final String userAgent = attributes.get(Attribute.USER_AGENT);
 
     // Check for toxic data that should be dropped without sending to error output.
     if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
@@ -107,6 +115,9 @@ public class MessageScrubber {
             .anyMatch(j -> j.textValue().startsWith("webIsolated="))) {
       throw new MessageShouldBeDroppedException("1562011");
     }
+    if ("account-ecosystem".equals(docType)) {
+      throw new MessageShouldBeDroppedException("1697602");
+    }
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
@@ -127,6 +138,13 @@ public class MessageScrubber {
     if (ParseUri.TELEMETRY.equals(namespace) && FIREFOX_ONLY_DOCTYPES.contains(docType)
         && !"Firefox".equals(appName)) {
       throw new UnwantedDataException("1592010");
+    }
+
+    // Glean enforces a particular user-agent string that a rogue fuzzer is not abiding by
+    // https://searchfox.org/mozilla-central/source/third_party/rust/glean-core/src/upload/request.rs#35,72-75
+    if ("firefox-desktop".equals(namespace)
+        && (userAgent == null || !userAgent.startsWith("Glean"))) {
+      throw new UnwantedDataException("1684980");
     }
 
     // Check for other signatures that we want to send to error output, but which should appear

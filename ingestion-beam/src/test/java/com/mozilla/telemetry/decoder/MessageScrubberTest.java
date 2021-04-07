@@ -220,6 +220,20 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testShouldScrubBug1697602() throws Exception {
+    final Map<String, String> attributes1 = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+        .put(Attribute.DOCUMENT_TYPE, "account-ecosystem").build();
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes1, Json.createObjectNode()));
+    final Map<String, String> attributes2 = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-accounts")
+        .put(Attribute.DOCUMENT_TYPE, "account-ecosystem").build();
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes2, Json.createObjectNode()));
+  }
+
+  @Test
   public void testBug1602844Affected() throws Exception {
     Map<String, String> baseAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
@@ -533,5 +547,55 @@ public class MessageScrubberTest {
         () -> MessageScrubber.scrubByUri("/submit/sslreports"));
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrubByUri("/submit/sslreports/"));
+  }
+
+  @Test
+  public void testUnwantedData1684980GleanUserAgent() {
+    Map<String, String> mozAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .put(Attribute.USER_AGENT,
+            "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0")
+        .build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(mozAttributes, Json.createObjectNode()));
+
+    // empty agent strings are also scrubbed
+    Map<String, String> emptyAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .put(Attribute.USER_AGENT, "") //
+        .build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(emptyAttributes, Json.createObjectNode()));
+
+    // null agent strings...
+    Map<String, String> nullAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .build();
+
+    assertThrows(UnwantedDataException.class,
+        () -> MessageScrubber.scrub(nullAttributes, Json.createObjectNode()));
+
+    Map<String, String> gleanAttributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .put(Attribute.USER_AGENT, "Glean/33.9.1 (Rust on Windows)") //
+        .build();
+
+    MessageScrubber.scrub(gleanAttributes, Json.createObjectNode());
+  }
+
+  @Test
+  public void testScrubValidDocument() {
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "namespace") //
+        .put(Attribute.DOCUMENT_TYPE, "type") //
+        .put(Attribute.APP_NAME, "name") //
+        .put(Attribute.APP_VERSION, "version") //
+        .put(Attribute.APP_UPDATE_CHANNEL, "channel") //
+        .put(Attribute.APP_BUILD_ID, "build_id") //
+        // USER_AGENT may be null
+        .build();
+    MessageScrubber.scrub(attributes, Json.createObjectNode());
   }
 }

@@ -106,7 +106,11 @@ def get_queue(config: dict) -> SQLiteAckQueue:
         for key, value in config.items()
         if key.startswith("QUEUE_")
     }
-    return SQLiteAckQueue(**queue_config)
+    q: SQLiteAckQueue = SQLiteAckQueue(**queue_config, auto_resume=False)
+    q.resume_unack_tasks()
+    # work around https://github.com/peter-wangxu/persist-queue/pull/154
+    q.total = q._count()
+    return q
 
 
 def init_app(app: Sanic) -> Tuple[PublisherClient, SQLiteAckQueue]:

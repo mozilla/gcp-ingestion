@@ -2,6 +2,7 @@ from ingestion_edge import publish
 from ingestion_edge.config import Route
 from sanic import Sanic
 from sanic.request import Request
+from unittest import mock
 import pytest
 
 ROUTE_TABLE = [
@@ -43,7 +44,7 @@ def app():
     ],
 )
 async def test_endpoint(app, kwargs, method, mocker, uri_bytes):
-    mocker.patch("ingestion_edge.publish.SQLiteAckQueue", dict)
+    Q = mocker.patch("ingestion_edge.publish.SQLiteAckQueue")
     client = mocker.patch("ingestion_edge.publish.PublisherClient").return_value
     mocker.patch("ingestion_edge.publish.submit", lambda _, **kw: kw)
     app.config["ROUTE_TABLE"] = ROUTE_TABLE
@@ -52,7 +53,12 @@ async def test_endpoint(app, kwargs, method, mocker, uri_bytes):
     request = Request(uri_bytes, {}, "1.1", method, None, app)
     await app.handle_request(request, lambda r: responses.append(r), None)
     assert responses == [
-        dict(client=client, q={"path": ":memory:"}, metadata_headers={}, **kwargs)
+        dict(client=client, q=Q.return_value, metadata_headers={}, **kwargs)
+    ]
+    assert Q.mock_calls == [
+        mock.call(path=':memory:', auto_resume=False),
+        mock.call().resume_unack_tasks(),
+        mock.call()._count()
     ]
 
 

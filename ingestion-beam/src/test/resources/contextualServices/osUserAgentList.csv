@@ -1,0 +1,3 @@
+Windows,W ${client_version} ${client_version}
+Macintosh,M ${client_version} ${client_version}
+Linux,L ${client_version} ${client_version}

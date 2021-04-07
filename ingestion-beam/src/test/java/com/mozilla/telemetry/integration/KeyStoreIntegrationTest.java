@@ -20,7 +20,7 @@ import com.google.cloud.storage.testing.RemoteStorageHelper;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.Resources;
 import com.google.protobuf.ByteString;
-import com.mozilla.telemetry.decoder.DecryptPioneerPayloads;
+import com.mozilla.telemetry.decoder.rally.DecryptPioneerPayloads;
 import com.mozilla.telemetry.util.GzipUtil;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.KeyStore;
