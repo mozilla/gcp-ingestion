@@ -19,6 +19,5 @@ for JOB_CLASS in Sink Decoder; do
   gcloud dataflow flex-template build \
     gs://$TEMPLATE_BUCKET/$JOB_TYPE/flex-templates/$BUILD_ID.json \
     --image $IMAGE \
-    --sdk-language JAVA \
-    --metadata-file <(echo '{"name":"Mozilla Ingestion Beam '$JOB_CLASS'"}')
+    --sdk-language JAVA
 done
