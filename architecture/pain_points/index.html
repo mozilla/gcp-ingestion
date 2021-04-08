@@ -746,10 +746,11 @@ in batch mode.</p>
 <h2 id="pubsubiowrite"><code>PubsubIO.Write</code></h2>
 <p>Does not support dynamic destinations.</p>
 <p>Does not support [<code>NestedValueProvider</code>] for destinations in streaming mode on
-Dataflow, which is needed to create templates that accept a mapping of document
-type to a predetermined number of destinations. This is because Dataflow moves
-the implementation into the shuffler to improve performance. Current workaround
-is to specify mapping at template creation time.</p>
+Dataflow, which is needed to create classic templates that accept a mapping of
+document type to a predetermined number of destinations. This is because
+Dataflow moves the implementation into the shuffler to improve performance.
+Current workaround is to specify mapping at classic template creation time, or
+use Flex Templates.</p>
 <p>Does not use standard client library.</p>
 <p>Does not expose an output of delivered messages, which is needed for at least
 once delivery with deduplication. Current workaround is to use the deduplication

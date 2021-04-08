@@ -862,6 +862,8 @@ See the <code>--help</code> output for details on format.</p>
 but with a few differences in flags. You'll need to set the <code>mainClass</code>:</p>
 <ul>
 <li><code>-Dexec.mainClass=com.mozilla.telemetry.Republisher</code></li>
+<li>For Dataflow Flex Templates, change the <code>docker-compose</code> build argument to
+    <code>--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Republisher</code></li>
 </ul>
 <p>The <code>--outputType</code> flag is still required as in the sink, but the <code>--output</code>
 configuration is ignored for the Republisher. Instead, there is a separate

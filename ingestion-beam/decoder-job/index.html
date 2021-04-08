@@ -930,6 +930,8 @@ payload body.</p>
 but with a few extra flags:</p>
 <ul>
 <li><code>-Dexec.mainClass=com.mozilla.telemetry.Decoder</code></li>
+<li>For Dataflow Flex Templates, change the <code>docker-compose</code> build argument to
+    <code>--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Decoder</code></li>
 <li><code>--geoCityDatabase=/path/to/GeoIP2-City.mmdb</code></li>
 <li><code>--geoCityFilter=/path/to/cities15000.txt</code> (optional)</li>
 </ul>
