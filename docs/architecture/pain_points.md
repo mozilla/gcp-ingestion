@@ -41,7 +41,7 @@ Dataflow, which is needed to create classic templates that accept a mapping of
 document type to a predetermined number of destinations. This is because
 Dataflow moves the implementation into the shuffler to improve performance.
 Current workaround is to specify mapping at classic template creation time, or
-use flex templates.
+use Flex Templates.
 
 Does not use standard client library.
 

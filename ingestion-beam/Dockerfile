@@ -11,6 +11,10 @@ COPY ingestion-beam/src /app/ingestion-beam/src
 RUN mvn package -Dmaven.test.skip=true
 
 # This is the base image for the final image we're building.
+# The base image documentation is here:
+# https://cloud.google.com/dataflow/docs/guides/templates/configuring-flex-templates#changing_the_base_image
+# and the versions available are defined here:
+# https://cloud.google.com/dataflow/docs/reference/flex-templates-base-images
 FROM gcr.io/dataflow-templates-base/java8-template-launcher-base:20210120_RC00
 ARG PACKAGE_VERSION=0.1-SNAPSHOT
 COPY --from=build /app/ingestion-beam/target/ingestion-beam-$PACKAGE_VERSION.lib/ /template/ingestion-beam-$PACKAGE_VERSION.lib/

@@ -64,7 +64,7 @@ Decoder jobs are executed the [same way as sink jobs](../sink-job/#executing)
 but with a few extra flags:
 
 - `-Dexec.mainClass=com.mozilla.telemetry.Decoder`
-  - For Dataflow flex templates, change the `docker-compose` build argument to
+  - For Dataflow Flex Templates, change the `docker-compose` build argument to
     `--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Decoder`
 - `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
 - `--geoCityFilter=/path/to/cities15000.txt` (optional)

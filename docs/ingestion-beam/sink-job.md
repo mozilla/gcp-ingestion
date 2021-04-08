@@ -257,7 +257,7 @@ gcloud dataflow jobs list
 gsutil cat $BUCKET/output/*
 ```
 
-### On Dataflow with flex templates
+### On Dataflow with Flex Templates
 
 The Dataflow templates documentation includes [a section explaining the benefits of flex
 templates](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#evaluating-which-template-type-to-use)
@@ -283,12 +283,12 @@ BUCKET="gs://$PROJECT"
 # configure gcloud credential helper for docker to push to GCR
 gcloud auth configure-docker
 
-# build a docker image for a flex template
+# build a docker image for a Flex Template
 export IMAGE=gcr.io/$PROJECT/ingestion-beam/sink:latest
 docker-compose build --build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Sink
 docker-compose push
 
-# create a flex template
+# create a Flex Template
 gcloud dataflow flex-template build \
     $BUCKET/sink/flex-templates/latest.json \
     --image $IMAGE \
@@ -297,7 +297,7 @@ gcloud dataflow flex-template build \
 # create a test input file
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
-# run the dataflow flex template with gcloud
+# run the dataflow Flex Template with gcloud
 JOBNAME=file-to-file1
 REGION=$(gcloud config get-value compute/region 2>&1 | sed 's/(unset)/us-central1/')
 gcloud dataflow flex-template run $JOBNAME \

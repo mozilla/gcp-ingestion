@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Build dataflow flex template with output to
+# Build Dataflow Flex Templates with output to
 # gs://$TEMPLATE_BUCKET/$JOB_TYPE/flex-templates/$BUILD_ID.json
 set -e
 set -o pipefail
