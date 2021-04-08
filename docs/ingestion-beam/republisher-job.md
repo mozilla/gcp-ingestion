@@ -36,6 +36,8 @@ Republisher jobs are executed the [same way as sink jobs](../sink-job/#executing
 but with a few differences in flags. You'll need to set the `mainClass`:
 
 - `-Dexec.mainClass=com.mozilla.telemetry.Republisher`
+  - For Dataflow Flex Templates, change the `docker-compose` build argument to
+    `--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Republisher`
 
 The `--outputType` flag is still required as in the sink, but the `--output`
 configuration is ignored for the Republisher. Instead, there is a separate

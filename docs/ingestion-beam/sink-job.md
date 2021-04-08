@@ -257,14 +257,79 @@ gcloud dataflow jobs list
 gsutil cat $BUCKET/output/*
 ```
 
-### On Dataflow with templates
+### On Dataflow with Flex Templates
 
-Dataflow templates make a distinction between
+The Dataflow templates documentation includes [a section explaining the benefits of flex
+templates](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#evaluating-which-template-type-to-use)
+
+> Flex Templates bring more flexibility over classic templates by allowing minor variations of
+> Dataflow jobs to be launched from a single template and allowing the use of any source or sink
+> I/O. For classic templates, the execution graph is built during the template creation process. The
+> execution graph for Flex Templates is dynamically built based on runtime parameters provided by
+> the user when the template is executed. This means that when you use Flex Templates, you can make
+> minor variations to accomplish different tasks with the same underlying template, such as changing
+> the source or sink file formats.
+
+```bash
+# pick a project to store the docker image in
+PROJECT=$(gcloud config get-value project)"
+
+# pick a region to run Dataflow jobs in
+PROJECT=$(gcloud config get-value compute/region)"
+
+# pick a bucket to store files in
+BUCKET="gs://$PROJECT"
+
+# configure gcloud credential helper for docker to push to GCR
+gcloud auth configure-docker
+
+# build a docker image for a Flex Template
+export IMAGE=gcr.io/$PROJECT/ingestion-beam/sink:latest
+docker-compose build --build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Sink
+docker-compose push
+
+# create a Flex Template
+gcloud dataflow flex-template build \
+    $BUCKET/sink/flex-templates/latest.json \
+    --image $IMAGE \
+    --sdk-language JAVA
+
+# create a test input file
+echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
+
+# run the dataflow Flex Template with gcloud
+JOBNAME=file-to-file1
+REGION=$(gcloud config get-value compute/region 2>&1 | sed 's/(unset)/us-central1/')
+gcloud dataflow flex-template run $JOBNAME \
+    --template-file-gcs-location=$BUCKET/sink/flex-templates/latest.json \
+    --region=$REGION \
+    --parameters=inputType=file \
+    --parameters=outputType=file \
+    --parameters=errorOutputType=file \
+    --parameters=inputFileFormat=json \
+    --parameters=outputFileFormat=json \
+    --parameters=input=$BUCKET/input.json \
+    --parameters=output=$BUCKET/output/ \
+    --parameters=errorOutput=$BUCKET/error/
+
+# get the job id
+JOB_ID="$(gcloud dataflow jobs list --region=$REGION --filter=name=$JOBNAME --format='value(JOB_ID)' --limit=1)"
+
+# wait for the job to finish
+gcloud dataflow jobs show "$JOB_ID" --region=$REGION
+
+# check that the message was delivered
+gsutil cat $BUCKET/output/*
+```
+
+### On Dataflow with classic templates (deprecated)
+
+Dataflow classic templates make a distinction between
 [runtime parameters that implement the `ValueProvider` interface](https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface)
 and compile-time parameters which do not.
-All options can be specified at template compile time by passing command line flags,
+All options can be specified at classic template compile time by passing command line flags,
 but runtime parameters can also be overridden when
-[executing the template](https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud)
+[executing the classic template](https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud)
 via the `--parameters` flag.
 In the output of `--help=SinkOptions`, runtime parameters are those
 with type `ValueProvider`.
@@ -276,7 +341,7 @@ BUCKET="gs://$(gcloud config get-value project)"
 # Set credentials; beam is not able to use gcloud credentials
 export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/creds.json"
 
-# create a template
+# create a classic template
 ./bin/mvn compile exec:java -Dexec.args="\
     --runner=Dataflow \
     --project=$(gcloud config get-value project) \
@@ -292,12 +357,12 @@ export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/creds.json"
 # create a test input file
 echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
 
-# run the dataflow template with gcloud
+# run the dataflow classic template with gcloud
 JOBNAME=FileToFile1
 gcloud dataflow jobs run $JOBNAME --gcs-location=$BUCKET/sink/templates/JsonFileToJsonFile --parameters "input=$BUCKET/input.json,output=$BUCKET/output/,errorOutput=$BUCKET/error"
 
 # get the job id
-JOB_ID="$(gcloud dataflow jobs list --filter name=fileToStdout1 | tail -1 | cut -d' ' -f1)"
+JOB_ID="$(gcloud dataflow jobs list --filter=name=$JOBNAME --format='value(JOB_ID)' --limit=1)"
 
 # wait for the job to finish
 gcloud dataflow jobs show "$JOB_ID"

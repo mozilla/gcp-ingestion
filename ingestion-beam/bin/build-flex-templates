@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+# Build Dataflow Flex Templates with output to
+# gs://$TEMPLATE_BUCKET/$JOB_TYPE/flex-templates/$BUILD_ID.json
+set -e
+set -o pipefail
+
+PROJECT="${PROJECT:?}"
+TEMPLATE_BUCKET="${TEMPLATE_BUCKET:?}"
+BUILD_ID="${BUILD_ID:?}"
+
+for JOB_CLASS in Sink Decoder; do
+  JOB_TYPE="$(echo $JOB_CLASS | tr [:upper:] [:lower:])"
+
+  export IMAGE=gcr.io/$PROJECT/ingestion-beam/$JOB_TYPE:$BUILD_ID
+  docker-compose build --build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.${JOB_CLASS}
+  docker-compose push
+
+  gcloud dataflow flex-template build \
+    gs://$TEMPLATE_BUCKET/$JOB_TYPE/flex-templates/$BUILD_ID.json \
+    --image $IMAGE \
+    --sdk-language JAVA
+done
