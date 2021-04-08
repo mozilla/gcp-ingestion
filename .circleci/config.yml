@@ -2,12 +2,15 @@ version: 2
 jobs:
   spelling:
     docker:
-    - image: mozilla/markdown-spellcheck
+    - image: node:alpine
     steps:
     - checkout
     - run:
+        name: Install mdspell
+        command: npm install markdown-spellcheck
+    - run:
         name: Spell Check
-        command: mdspell --ignore-numbers --en-us --report '**/*.md'
+        command: npx mdspell --ignore-numbers --en-us --report '**/*.md' '!node_modules/**/*.md'
 
   prettier:
     docker:
