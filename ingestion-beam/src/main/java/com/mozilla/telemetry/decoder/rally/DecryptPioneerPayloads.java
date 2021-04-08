@@ -50,6 +50,7 @@ public class DecryptPioneerPayloads extends
   public static final String SCHEMA_NAME = "schemaName";
   public static final String SCHEMA_VERSION = "schemaVersion";
   public static final String PIONEER_ID = "pioneerId";
+  public static final String RALLY_ID = "rallyId";
   public static final String STUDY_NAME = "studyName";
   public static final String DELETION_REQUEST_SCHEMA_NAME = "deletion-request";
   public static final String ENROLLMENT_SCHEMA_NAME = "pioneer-enrollment";
@@ -180,7 +181,9 @@ public class DecryptPioneerPayloads extends
 
       // insert top-level metadata into the payload
       ObjectNode metadata = Json.createObjectNode();
-      metadata.put(PIONEER_ID, payload.get(PIONEER_ID).asText());
+      // ensure that we handle the rally namespace appropriately
+      metadata.put(namespace.startsWith("rally-") ? RALLY_ID : PIONEER_ID,
+          payload.get(PIONEER_ID).asText());
       metadata.put(STUDY_NAME, payload.get(STUDY_NAME).asText());
       final byte[] merged = NestedMetadata.mergedPayload(payloadData, Json.asBytes(metadata));
 
