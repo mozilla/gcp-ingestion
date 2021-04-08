@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build dataflow template with output to
+# Build dataflow classic template with output to
 # gs://$TEMPLATE_BUCKET/$JOB_TYPE/templates/$BUILD_ID/template
 # and staging/temporary assets at
 # gs://$TEMP_BUCKET/$JOB_TYPE/$BUILD_ID/{stage,tmp}
