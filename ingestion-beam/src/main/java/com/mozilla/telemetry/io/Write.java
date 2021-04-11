@@ -6,9 +6,6 @@ import com.google.api.services.bigquery.model.TableRow;
 import com.google.cloud.pubsublite.TopicPath;
 import com.google.cloud.pubsublite.beam.PublisherOptions;
 import com.google.cloud.pubsublite.beam.PubsubLiteIO;
-import com.google.cloud.pubsublite.proto.AttributeValues;
-import com.google.cloud.pubsublite.proto.PubSubMessage;
-import com.google.protobuf.ByteString;
 import com.mozilla.telemetry.avro.BinaryRecordFormatter;
 import com.mozilla.telemetry.avro.GenericRecordBinaryEncoder;
 import com.mozilla.telemetry.avro.PubsubMessageRecordFormatter;
@@ -23,6 +20,7 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.KeyByBigQueryTableDestination;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.transforms.PubsubLiteCompat;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.BeamFileInputStream;
@@ -36,7 +34,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.Pipeline;
@@ -365,15 +362,7 @@ public abstract class Write
       PDone done = input //
           .apply(CompressPayload.of(compression).withMaxCompressedBytes(maxCompressedBytes)) //
           .apply(PubsubConstraints.truncateAttributes()) //
-          .apply(MapElements.into(TypeDescriptor.of(PubSubMessage.class)) //
-              .via(message -> {
-                message = PubsubConstraints.ensureNonNull(message);
-                Map<String, AttributeValues> attributes = message.getAttributeMap().entrySet()
-                    .stream().collect(Collectors.toMap(e -> e.getKey(), e -> AttributeValues
-                        .newBuilder().addValues(ByteString.copyFromUtf8(e.getValue())).build()));
-                return PubSubMessage.newBuilder().setData(ByteString.copyFrom(message.getPayload()))
-                    .putAllAttributes(attributes).build();
-              }))
+          .apply(PubsubLiteCompat.toPubsubLite()) //
           .apply(PubsubLiteIO.write(PublisherOptions.newBuilder().setTopicPath(path).build()));
       return WithFailures.Result.of(done, EmptyErrors.in(input.getPipeline()));
     }

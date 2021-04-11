@@ -8,13 +8,13 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
+import com.mozilla.telemetry.transforms.PubsubLiteCompat;
 import com.mozilla.telemetry.util.Time;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.beam.sdk.io.TextIO;
@@ -74,20 +74,10 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
 
     @Override
     public PCollection<PubsubMessage> expand(PBegin input) {
-      return input //
+      return input
           .apply(
               PubsubLiteIO.read(SubscriberOptions.newBuilder().setSubscriptionPath(path).build()))
-          .apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
-            Map<String, String> attributesWithMessageId = message.getMessage().getAttributesMap()
-                .entrySet().stream().collect(Collectors.toMap(e -> e.getKey(),
-                    e -> e.getValue().getValues(0).toStringUtf8()));
-            if (message.hasCursor()) {
-              attributesWithMessageId.put(Attribute.MESSAGE_ID,
-                  Long.toString(message.getCursor().getOffset()));
-            }
-            return new PubsubMessage(message.getMessage().getData().toByteArray(),
-                attributesWithMessageId);
-          }));
+          .apply(PubsubLiteCompat.fromPubsubLite());
     }
   }
 

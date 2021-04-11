@@ -127,7 +127,7 @@ public class PubsubLiteIntegrationTest {
   }
 
   @Test
-  public void readPubsubInput() throws Exception {
+  public void canReadPubsubLite() throws Exception {
     List<String> inputLines = Lines.resources("testdata/basic-messages-nonempty.ndjson");
     publishLines(inputLines);
 
@@ -152,7 +152,7 @@ public class PubsubLiteIntegrationTest {
   }
 
   @Test(timeout = 90_000L)
-  public void canOutput() throws Exception {
+  public void canWritePubsubLite() throws Exception {
     final SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
     // We would normally use pipeline.newProvider instead of StaticValueProvider in tests,
     // but output has to be available during initialization for Pub/Sub Lite, and the value of
