@@ -16,7 +16,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class PubsubLiteCompat {
 
   /**
-   * Convert message from {@link PubsubLiteIO.read} to {@link PubsubMessage}.
+   * Convert message from {@link PubsubLiteIO#read} to {@link PubsubMessage}.
    * 
    * <p>For compatiblity with standard PubSub {@link PubsubMessage} extract exactly one value per
    * attribute, even though Pubsub Lite's {@link PubSubMessage} allows multiple values.
@@ -33,7 +33,7 @@ public class PubsubLiteCompat {
   }
 
   /** 
-   * Return {@link #toPubsubLite(SequencedMessage)} as a {@link MapElements} transform.
+   * Return {@link #fromPubsubLite(SequencedMessage)} as a {@link MapElements} transform.
    */
   public static MapElements<SequencedMessage, PubsubMessage> fromPubsubLite() {
     return MapElements.into(TypeDescriptor.of(PubsubMessage.class))

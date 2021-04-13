@@ -68,7 +68,7 @@ public enum OutputType {
 
   pubsub_lite {
 
-    /** Return a PTransform that writes to Google Pubsub. */
+    /** Return a PTransform that writes to Google Cloud Pub/Sub Lite. */
     public Write write(SinkOptions.Parsed options) {
       return new PubsubLiteOutput(options.getOutput(), options.getOutputPubsubCompression());
     }
