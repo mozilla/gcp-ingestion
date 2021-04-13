@@ -49,32 +49,14 @@
     <dependencyManagement>
         <dependencies>
             <!-- Keep these dependency versions in sync with what is pulled in by beam;
-                 check https://mvnrepository.com/artifact/org.apache.beam/beam-sdks-java-io-google-cloud-platform/2.22.0
-
-                 Does not use libraries-bom to determine versions as of beam 2.19 because the lowest
-                 version available uses google-cloud-bom 0.84.0-alpha, but 0.79.0-alpha is needed to
-                 match what is pulled in by beam
-
-                 Does not use google-cloud-bom 0.79.0-alpha to determine versions as of beam 2.19
-                 because that causes integration tests to fail on dataflow with
-                 java.lang.NoSuchMethodError and java.lang.NoClassDefFoundError
-
-                 These versions are not shared via a property, because they are independently
-                 versioned and more recent versions do not match -->
+                 check https://mvnrepository.com/artifact/org.apache.beam/beam-sdks-java-io-google-cloud-platform/2.28.0
+                 -->
             <dependency>
                 <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-bigquery</artifactId>
-                <version>1.61.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-pubsub</artifactId>
-                <version>1.61.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-storage</artifactId>
-                <version>1.61.0</version>
+                <artifactId>libraries-bom</artifactId>
+                <version>13.2.0</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -93,6 +75,14 @@
             <artifactId>beam-sdks-java-extensions-json-jackson</artifactId>
         </dependency>
         <dependency>
+            <!-- Must be defined before beam-sdks-java-io-google-cloud-platform because they depend
+                 on different versions of google-cloud-pubsublite to implement PubsubLiteIO, and
+                 this version supports messages larger than 1MB -->
+            <groupId>com.google.cloud</groupId>
+            <artifactId>pubsublite-beam-io</artifactId>
+            <version>0.13.1</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
         </dependency>
@@ -101,13 +91,9 @@
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-bigquery</artifactId>
         </dependency>
-        <!-- The latest stable version of cloud kms is 1.38.0 at the time of writing. There are
-            conflicts in the dependencies (com.google.api.gax.grpc) that cause issues with
-            authentication. The latest beta resolves these issues. -->
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-kms</artifactId>
-            <version>1.41.1</version>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>

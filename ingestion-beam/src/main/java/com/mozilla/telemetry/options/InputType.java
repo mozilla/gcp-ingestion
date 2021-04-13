@@ -4,6 +4,7 @@ import com.mozilla.telemetry.io.Read;
 import com.mozilla.telemetry.io.Read.BigQueryInput;
 import com.mozilla.telemetry.io.Read.FileInput;
 import com.mozilla.telemetry.io.Read.PubsubInput;
+import com.mozilla.telemetry.io.Read.PubsubLiteInput;
 
 public enum InputType {
 
@@ -12,6 +13,14 @@ public enum InputType {
     /** Return a PTransform that reads from a Pubsub subscription. */
     public Read read(SinkOptions.Parsed options) {
       return new PubsubInput(options.getInput(), options.getPubsubIdAttribute());
+    }
+  },
+
+  pubsub_lite {
+
+    /** Return a PTransform that reads from a Pubsub Lite subscription. */
+    public Read read(SinkOptions.Parsed options) {
+      return new PubsubLiteInput(options.getInput());
     }
   },
 
