@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.cloud.pubsublite.proto.AttributeValues;
 import com.google.cloud.pubsublite.proto.Cursor;
-import com.google.cloud.pubsublite.proto.PubSubMessage;
 import com.google.cloud.pubsublite.proto.SequencedMessage;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -39,16 +38,18 @@ public class PubsubLiteCompatTest {
       new PubsubMessage("payload".getBytes(StandardCharsets.UTF_8),
           ImmutableMap.of("meta", "data")));
 
-  private static final Function<PubSubMessage, String> jsonPrinter = IOFunction
-      .unchecked(JsonFormat.printer()::print);
+  private static final Function<com.google.cloud.pubsublite.proto.PubSubMessage, //
+      String> jsonPrinter = IOFunction.unchecked(JsonFormat.printer()::print);
 
-  private static String liteToJson(PubSubMessage message) {
+  private static String liteToJson(com.google.cloud.pubsublite.proto.PubSubMessage message) {
     return jsonPrinter.apply(message);
   }
 
   private static final List<String> expectedToLite = Stream.of(//
-      PubSubMessage.newBuilder().setData(ByteString.copyFromUtf8("")).build(),
-      PubSubMessage.newBuilder().setData(ByteString.copyFromUtf8("payload"))
+      com.google.cloud.pubsublite.proto.PubSubMessage.newBuilder()
+          .setData(ByteString.copyFromUtf8("")).build(),
+      com.google.cloud.pubsublite.proto.PubSubMessage.newBuilder()
+          .setData(ByteString.copyFromUtf8("payload"))
           .putAttributes("meta",
               AttributeValues.newBuilder().addValues(ByteString.copyFromUtf8("data")).build())
           .build())
@@ -73,9 +74,11 @@ public class PubsubLiteCompatTest {
   }
 
   private static final List<SequencedMessage> inputFromLite = ImmutableList.of(
-      SequencedMessage.newBuilder().setMessage(PubSubMessage.newBuilder().build()).build(),
       SequencedMessage.newBuilder()
-          .setMessage(PubSubMessage.newBuilder().setData(ByteString.copyFromUtf8("payload"))
+          .setMessage(com.google.cloud.pubsublite.proto.PubSubMessage.newBuilder().build()).build(),
+      SequencedMessage.newBuilder()
+          .setMessage(com.google.cloud.pubsublite.proto.PubSubMessage.newBuilder()
+              .setData(ByteString.copyFromUtf8("payload"))
               .putAttributes("meta",
                   AttributeValues.newBuilder().addValues(ByteString.copyFromUtf8("data")).build())
               .build())

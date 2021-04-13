@@ -2,7 +2,6 @@ package com.mozilla.telemetry.transforms;
 
 import com.google.cloud.pubsublite.beam.PubsubLiteIO;
 import com.google.cloud.pubsublite.proto.AttributeValues;
-import com.google.cloud.pubsublite.proto.PubSubMessage;
 import com.google.cloud.pubsublite.proto.SequencedMessage;
 import com.google.protobuf.ByteString;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -22,7 +21,7 @@ public class PubsubLiteCompat {
    * attribute, even though Pubsub Lite's {@link PubSubMessage} allows multiple values.
    */
   public static PubsubMessage fromPubsubLite(SequencedMessage sequencedMessage) {
-    PubSubMessage message = sequencedMessage.getMessage();
+    com.google.cloud.pubsublite.proto.PubSubMessage message = sequencedMessage.getMessage();
     Map<String, String> attributesWithMessageId = message.getAttributesMap().entrySet().stream()
         .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue().getValues(0).toStringUtf8()));
     if (sequencedMessage.hasCursor()) {
@@ -46,20 +45,23 @@ public class PubsubLiteCompat {
    * <p>For compatiblity with standard PubSub {@link PubsubMessage} set exactly one value per
    * attribute, even though PubSub Lite's {@link PubSubMessage} allows multiple values.
    */
-  public static PubSubMessage toPubsubLite(PubsubMessage message) {
+  public static com.google.cloud.pubsublite.proto.PubSubMessage toPubsubLite(
+      PubsubMessage message) {
     message = PubsubConstraints.ensureNonNull(message);
     Map<String, AttributeValues> attributes = message.getAttributeMap().entrySet().stream()
         .collect(Collectors.toMap(e -> e.getKey(), e -> AttributeValues.newBuilder()
             .addValues(ByteString.copyFromUtf8(e.getValue())).build()));
-    return PubSubMessage.newBuilder().setData(ByteString.copyFrom(message.getPayload()))
-        .putAllAttributes(attributes).build();
+    return com.google.cloud.pubsublite.proto.PubSubMessage.newBuilder()
+        .setData(ByteString.copyFrom(message.getPayload())).putAllAttributes(attributes).build();
   }
 
   /**
    * Return {@link #toPubsubLite(PubsubMessage)} as a {@link MapElements} transform.
    */
-  public static MapElements<PubsubMessage, PubSubMessage> toPubsubLite() {
-    return MapElements.into(TypeDescriptor.of(PubSubMessage.class))
+  public static MapElements<PubsubMessage, //
+      com.google.cloud.pubsublite.proto.PubSubMessage> toPubsubLite() {
+    return MapElements
+        .into(TypeDescriptor.of(com.google.cloud.pubsublite.proto.PubSubMessage.class))
         .via(PubsubLiteCompat::toPubsubLite);
   }
 }
