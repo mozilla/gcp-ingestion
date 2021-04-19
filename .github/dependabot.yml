@@ -1,7 +1,10 @@
 version: 2
 updates:
-- package-ecosystem: maven
+- &maven
+  package-ecosystem: maven
   directory: /
+  ignore: &sink-only
+  - dependency-name: com.google.cloud:libraries-bom
   schedule:
     interval: daily
   reviewers:
@@ -10,6 +13,11 @@ updates:
   labels:
   - dependencies
   - java
+- <<: *maven
+  directory: /ingestion-sink
+  ignore: []
+  allow: *sink-only
+  reviewers: [relud]
 - package-ecosystem: pip
   directory: /ingestion-edge
   schedule:
