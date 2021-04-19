@@ -257,9 +257,7 @@ httptools==0.1.1 \
 httpx==0.15.4 \
     --hash=sha256:4c81dbf98a29cb4f51f415140df56542f9d4860798d713e336642e953cddd1db \
     --hash=sha256:7b3c07bfdcdadd92020dd4c07b15932abdcf1c898422a4e98de3d19b2223310b
-    # via
-    #   pytest-sanic
-    #   sanic
+    # via pytest-sanic
 idna==2.10 \
     --hash=sha256:b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6 \
     --hash=sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0
@@ -584,9 +582,13 @@ rsa==4.6 \
     --hash=sha256:109ea5a66744dd859bf16fe904b8d8b627adafb9408753161e766a92e7d681fa \
     --hash=sha256:6166864e23d6b5195a5cfed6cd9fed0fe774e226d8f854fcb23b7bbef0350233
     # via google-auth
-sanic==20.12.2 \
-    --hash=sha256:9f01a3ebfe4bf6c57e164bfa1b66c977cb47421e54ae91cc04173cfc711891ce \
-    --hash=sha256:b9d7e24cd293c126f6f4aaf26fcc3b11e35338b86e8c2693b71d05196e7b02b0
+sanic-routing==0.6.0 \
+    --hash=sha256:23a2dfda84b2f038e037afc88c214914a0f3e5ba2ca8f547712c17ddbdb97421 \
+    --hash=sha256:f6c3722f802b2b2c5317a86e3834f6edb928c2831db154ac5c9dd813e0ce6d2c
+    # via sanic
+sanic==21.3.2 \
+    --hash=sha256:84a04c5f12bf321bed3942597787f1854d15c18f157aebd7ced8c851ccc49e08 \
+    --hash=sha256:9b63b0367f45a854023cb1f54a7315a86582442a08ba22f806c1f3ebf0c04e00
     # via -r requirements.in
 six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
