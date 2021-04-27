@@ -115,7 +115,7 @@
             <artifactId>google-cloud-bigquery</artifactId>
             <!-- This version is a placeholder that is overridden in downstream modules,
                  and it should only ever be used when testing ingestion-core directly -->
-            <version>1.61.0</version>
+            <version>1.128.1</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
