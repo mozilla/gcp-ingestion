@@ -185,7 +185,7 @@ public class DecryptRallyPayloads extends
       }
 
       final PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
-      if (meta.jwe_mappings().isEmpty()) {
+      if (meta.jwe_mappings() == null || meta.jwe_mappings().isEmpty()) {
         // Error for lack of a better behavior
         throw new DecryptRallyPayloadsException(
             String.format("jwe_mappings missing from schema: %s %s", namespace,
