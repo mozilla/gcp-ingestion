@@ -50,7 +50,6 @@ public class DecryptRallyPayloads extends
   private transient Schema gleanSchema;
 
   public static final String PIONEER_ID = "pioneerId";
-  public static final String RALLY_ID = "rallyId";
   public static final String STUDY_NAME = "studyName";
 
   public static DecryptRallyPayloads of(ValueProvider<String> metadataLocation,
@@ -216,27 +215,34 @@ public class DecryptRallyPayloads extends
       // Apply the correct identifier based on the namespace. The ingestion
       // system is configured to route rally-* and pioneer-* into the instance
       // of the decoder running this transform.
-      ObjectNode metadata = Json.createObjectNode();
       if (namespace.startsWith("pioneer-")) {
+        ObjectNode metadata = Json.createObjectNode();
         // It's entirely feasible that data is sent an existing pioneer study
         // (e.g. pioneer-core accepts a glean.js ping from the rally-core
         // addon). In these cases, the rally id will be configured to be the
         // pioneer id for legacy reasons.
         metadata.put(PIONEER_ID, rallyId.asText());
+
+        // There is no fixed-concept of a study name in this transform. We'll just
+        // insert the document namespace instead.
+        metadata.put(STUDY_NAME, namespace);
+
+        // Merge the metadata into the main document so it exists during
+        // validation downstream.
+        final byte[] merged = NestedMetadata.mergedPayload(Json.asBytes(json),
+            Json.asBytes(metadata));
+
+        return Collections.singletonList(new PubsubMessage(merged, message.getAttributeMap()));
+
       } else {
-        metadata.put(RALLY_ID, rallyId.asText());
+        // NOTE: we do not inject the rally id or study name into the top level
+        // because the glean schema is strict about what fields may or may not
+        // exist in the payload.
+        return Collections
+            .singletonList(new PubsubMessage(Json.asBytes(json), message.getAttributeMap()));
+
       }
 
-      // There is no fixed-concept of a study name in this transform. We'll just
-      // insert the document namespace instead.
-      metadata.put(STUDY_NAME, namespace);
-
-      // Merge the metadata into the main document so it exists during
-      // validation downstream.
-      final byte[] merged = NestedMetadata.mergedPayload(Json.asBytes(json),
-          Json.asBytes(metadata));
-
-      return Collections.singletonList(new PubsubMessage(merged, message.getAttributeMap()));
     }
   }
 }
