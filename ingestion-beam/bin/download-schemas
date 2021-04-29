@@ -51,6 +51,22 @@ function insert_rally_schema() {
 EOF
 }
 
+function insert_rally_schema_missing_jwe_mappings() {
+    local namespace=$1
+    local bq_dataset_family=${namespace/-/_}
+    mkdir -p "schemas/$namespace/baseline"
+    cat > "schemas/$namespace/baseline/baseline.1.schema.json" << EOF
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "${bq_dataset_family}",
+    "bq_metadata_format": "pioneer",
+    "bq_table": "baseline"
+  },
+  "type": "object"
+}
+EOF
+}
+
 function insert_testing_schemas() {
     # Patch the current schema archive with testing resources. This function
     # should be called within the root directory of the extracted archive.
@@ -92,6 +108,7 @@ EOF
     insert_rally_schema rally-missing-parent "$(jwe_mapping '/payload' '/nonexistent/parent')"
     insert_rally_schema rally-wrong "$(jwe_mapping '/payload' '/payload')"
     insert_rally_schema pioneer-rally "$(jwe_mapping '/payload' '')"
+    insert_rally_schema_missing_jwe_mappings rally-missing-jwe
 }
 
 cd "$(dirname "$0")/.."

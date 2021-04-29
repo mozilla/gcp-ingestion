@@ -251,6 +251,14 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
   }
 
   @Test
+  public void testOutputMissingJweMapping() throws Exception {
+    List<String> expected = Arrays.asList(
+        "com.mozilla.telemetry.decoder.rally.DecryptRallyPayloads$DecryptRallyPayloadsException");
+    testFailureExceptions("rally-missing-jwe",
+        readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json")), expected);
+  }
+
+  @Test
   public void testOutputMissingRallyId() throws Exception {
     List<String> input = readTestFiles(Arrays.asList("jwe/rally-study-foo.plaintext.json")).stream()
         .map(x -> {
