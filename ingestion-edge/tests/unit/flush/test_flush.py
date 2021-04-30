@@ -34,7 +34,6 @@ def test_success(
     mocker.patch.object(client.api, "publish", api_publish)
 
     flush.q.put(("topic", b"data", {"attr": "value"}))
-    flush.q._MAX_ACKED_LENGTH = 0
 
     assert asyncio.run(flush._flush()) == 1
     assert flush.q.unack_count() == 0
@@ -68,7 +67,7 @@ def test_batching(
     assert asyncio.run(flush._flush()) == 1
     assert flush.q.unack_count() == 0
     assert flush.q.ready_count() == 0
-    assert flush.q.acked_count() == 4
+    assert flush.q.acked_count() == 0
     assert flush.q.size == 0
     assert published == [
         ("topic", [(b"", {}), (b"", {})]),
