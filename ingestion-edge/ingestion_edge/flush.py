@@ -87,7 +87,7 @@ class Flush:
             raise  # from bare except
         else:
             # clean up disk space
-            self.q.clear_acked_data()
+            self.q.clear_acked_data(max_delete=None, keep_latest=None)
             # return number of messages flushed
             return len(pending)
 
