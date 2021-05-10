@@ -85,7 +85,7 @@ decrypted message.
 ## Notable design decisions
 
 Data SRE allocates each Rally study a JWK pair. The client must encode messages
-with the key to reaching the analysis environment. The client may not always
+with the key to reach the analysis environment. The client may not always
 have the key, so there are exceptions for the enrollment and deletion pings. The
 decoder will ignore the payload and extract the pioneer id for these document
 types. 
