@@ -53,8 +53,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(options.getInputType().read(options)) //
         .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParseReportingUrl.of(options.getUrlAllowList(), options.getCountryIpList(), //
-            options.getOsUserAgentList()))
+        .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections) //
         .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections);
     // Note that there is no write step here for "successes"
