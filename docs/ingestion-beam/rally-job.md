@@ -71,7 +71,7 @@ All encryption and decryption takes place using [JSON Web Encryption
 (JWE)](https://tools.ietf.org/html/rfc7516). An envelope is a piece of metadata
 that surrounds the encrypted data. The Rally envelope is an object with a
 payload field containing a JWE compact object. After decrypting the payload, the
-ping takes the form of a Glean ping.  The document namespace (as per the [HTTP
+ping takes the form of a Glean ping. The document namespace (as per the [HTTP
 Edge Server
 Specification](https://docs.telemetry.mozilla.org/concepts/pipeline/http_edge_spec.html))
 is used to fetch the key from memory.
@@ -88,7 +88,7 @@ Data SRE allocates each Rally study a JWK pair. The client must encode messages
 with the key to reach the analysis environment. The client may not always
 have the key, so there are exceptions for the enrollment and deletion pings. The
 decoder will ignore the payload and extract the pioneer id for these document
-types. 
+types.
 
 [source]: https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/rally
 [website]: https://rally.mozilla.org/)
