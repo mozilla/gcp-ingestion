@@ -46,21 +46,6 @@
         </repository>
     </repositories>
 
-    <dependencyManagement>
-        <dependencies>
-            <!-- Keep these dependency versions in sync with what is pulled in by beam;
-                 check https://mvnrepository.com/artifact/org.apache.beam/beam-sdks-java-io-google-cloud-platform/2.28.0
-                 -->
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>libraries-bom</artifactId>
-                <version>13.2.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.beam</groupId>
@@ -80,16 +65,11 @@
                  this version supports messages larger than 1MB -->
             <groupId>com.google.cloud</groupId>
             <artifactId>pubsublite-beam-io</artifactId>
-            <version>0.13.2</version>
+            <version>0.14.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
-        </dependency>
-        <dependency>
-            <!-- redefine dep from parent pom.xml to use the version from dependencyManagement -->
-            <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-bigquery</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
@@ -142,6 +122,11 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
             <version>4.9.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -43,12 +43,7 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Use com.google.cloud/libraries-bom to ensure compatible versions of components from
-                 guava, protobuf, grpc-java, google-http-java-client and google-cloud-java
-
-                 https://github.com/GoogleCloudPlatform/cloud-opensource-java/wiki/The-Google-Cloud-Platform-Libraries-BOM#maven
-
-                 This cannot go in the parent pom.xml because it breaks beam -->
+            <!-- Use updated version of libraries-bom incompatible with Beam. -->
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
@@ -60,7 +55,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>google-cloud-pubsublite</artifactId>
-                <version>0.13.2</version>
+                <version>0.14.1</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>

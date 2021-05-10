@@ -68,6 +68,7 @@
              check https://mvnrepository.com/artifact/org.apache.beam -->
         <jackson.version>2.10.2</jackson.version>
         <avro.version>1.8.2</avro.version>
+        <googleCloudLibraries.version>13.2.0</googleCloudLibraries.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
@@ -96,6 +97,13 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>libraries-bom</artifactId>
+                <version>${googleCloudLibraries.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -113,9 +121,6 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-bigquery</artifactId>
-            <!-- This version is a placeholder that is overridden in downstream modules,
-                 and it should only ever be used when testing ingestion-core directly -->
-            <version>1.61.0</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -270,7 +275,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.41.1</version>
+                        <version>8.42</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -297,12 +302,18 @@
                             <value>src/test/resources/logging.properties</value>
                         </property>
                     </systemProperties>
+                    <systemPropertyVariables>
+                        <beam.version>${beam.version}</beam.version>
+                        <jackson.version>${jackson.version}</jackson.version>
+                        <avro.version>${avro.version}</avro.version>
+                        <googleCloudLibraries.version>${googleCloudLibraries.version}</googleCloudLibraries.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.10.3</version>
+                <version>2.11.0</version>
                 <configuration>
                     <java>
                         <excludes>
@@ -335,7 +346,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.6</version>
+                <version>0.8.7</version>
                 <executions>
                     <execution>
                         <goals>

@@ -183,18 +183,18 @@ def node_pools(options: Dict[str, Any]) -> Iterator[List[str]]:
     if not pools:
         yield []  # nothing to create
     else:
-        kwargs = {
-            "cluster": Cluster(
-                name=options["cluster"],
-                logging_service=None,
-                monitoring_service=None,
-                node_pools=list(pools.values()),
-            ),
-            "parent": f"projects/{options['project']}/locations/{options['location']}",
-        }
-        name = f"{kwargs['parent']}/clusters/{options['cluster']}"
+        parent = f"projects/{options['project']}/locations/{options['location']}"
+        name = f"{parent}/clusters/{options['cluster']}"
         try:
-            operation = gke.create_cluster(**kwargs)
+            operation = gke.create_cluster(
+                cluster=Cluster(
+                    name=options["cluster"],
+                    logging_service=None,
+                    monitoring_service=None,
+                    node_pools=list(pools.values()),
+                ),
+                parent=parent,
+            )
         except AlreadyExists:
             pass
         else:

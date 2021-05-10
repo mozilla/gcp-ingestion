@@ -1,11 +1,8 @@
 package com.mozilla.telemetry.decoder.rally;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
@@ -58,17 +55,12 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
     }).toArray(String[]::new));
   }
 
-  /** Remove metadata inserted by the rally transform and assert they existed.
-   * If the do not exist, return null. */
+  /** Remove metadata inserted by the rally transform. */
   public static String removeMetadata(String jsonData) {
     try {
       ObjectNode node = Json.readObjectNode(jsonData);
-      JsonNode pioneerId = node.remove(DecryptRallyPayloads.PIONEER_ID);
-      JsonNode rallyId = node.remove(DecryptRallyPayloads.RALLY_ID);
-      // one of the two must be set, and we enforce that both are not set in the
-      // ingestion metadata schema
-      assertTrue(pioneerId != null ^ rallyId != null);
-      assertNotNull(node.remove(DecryptPioneerPayloads.STUDY_NAME));
+      node.remove(DecryptRallyPayloads.PIONEER_ID);
+      node.remove(DecryptPioneerPayloads.STUDY_NAME);
       return node.toString();
     } catch (Exception e) {
       return null;
