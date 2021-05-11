@@ -30,6 +30,12 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setReportingEnabled(ValueProvider<Boolean> value);
 
+  @Description("Size (in minutes) of the window for aggregation of reporting requests.")
+  @Default.Integer(10)
+  ValueProvider<Integer> getAggregationWindowSize();
+
+  void setAggregationWindowSize(ValueProvider<Integer> value);
+
   @Hidden
   interface Parsed extends ContextualServicesReporterOptions, SinkOptions.Parsed {
   }

@@ -1,0 +1,88 @@
+package com.mozilla.telemetry.contextualservices;
+
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * Utility class for parsing and building contextual services reporting URLs.
+ */
+public class ReportingUrlParser {
+
+  // API parameter names
+  static final String PARAM_COUNTRY_CODE = "country-code";
+  static final String PARAM_REGION_CODE = "region-code";
+  static final String PARAM_OS_FAMILY = "os-family";
+  static final String PARAM_FORM_FACTOR = "form-factor";
+  static final String PARAM_PRODUCT_VERSION = "product-version";
+  static final String PARAM_ID = "id";
+  static final String PARAM_IMPRESSIONS = "impressions";
+  static final String PARAM_TIMESTAMP_BEGIN = "begin-timestamp";
+  static final String PARAM_TIMESTAMP_END = "end-timestamp";
+
+  private final URL reportingUrl;
+  private final Map<String, String> queryParams;
+
+  static class InvalidUrlException extends RuntimeException {
+
+    InvalidUrlException(String message) {
+      super(message);
+    }
+
+    public InvalidUrlException(String message, Throwable cause) {
+      super(message, cause);
+    }
+  }
+
+  public ReportingUrlParser(String reportingUrl) {
+    try {
+      this.reportingUrl = new URL(reportingUrl);
+    } catch (MalformedURLException e) {
+      throw new InvalidUrlException("Could not parse reporting URL: " + reportingUrl, e);
+    }
+
+    if (this.reportingUrl.getHost() == null || this.reportingUrl.getHost().isEmpty()) {
+      throw new InvalidUrlException("Reporting URL null or missing: " + reportingUrl);
+    }
+
+    if (this.reportingUrl.getQuery() == null) {
+      throw new IllegalArgumentException("Missing query string from URL: " + reportingUrl);
+    }
+    queryParams = Arrays.stream(this.reportingUrl.getQuery().split("&"))
+        .map(param -> param.split("=")).filter(param -> param.length > 1)
+        .collect(Collectors.toMap(item -> item[0], item -> item[1]));
+  }
+
+  public void addQueryParam(String name, String value) {
+    queryParams.put(name, value);
+  }
+
+  public String getQueryParam(String paramName) {
+    return queryParams.getOrDefault(paramName, "");
+  }
+
+  public String getBaseUrl() {
+    return reportingUrl.getProtocol() + reportingUrl.getHost() + reportingUrl.getPath();
+  }
+
+  public URL getReportingUrl() {
+    // Generate query string from map sorted by key
+    String queryString = queryParams.entrySet().stream().sorted(Map.Entry.comparingByKey())
+        .map(entry -> entry.getKey() + "=" + (entry.getValue() == null ? "" : entry.getValue()))
+        .collect(Collectors.joining("&"));
+
+    try {
+      return new URL(getBaseUrl() + "?" + queryString);
+    } catch (MalformedURLException e) {
+      throw new InvalidUrlException("Could not parse reporting with query string: " + queryString,
+          e);
+    }
+  }
+
+  @Override
+  public String toString() {
+    return getReportingUrl().toString();
+  }
+}
