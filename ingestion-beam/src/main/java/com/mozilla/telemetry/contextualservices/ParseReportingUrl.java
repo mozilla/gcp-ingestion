@@ -78,14 +78,6 @@ public class ParseReportingUrl extends
     }
   }
 
-  private static class MissingParameterException extends IllegalArgumentException {
-
-    MissingParameterException(String valueName, String paramName) {
-      super(
-          "Missing required " + valueName + " value required for " + paramName + " URL parameter.");
-    }
-  }
-
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
@@ -135,8 +127,8 @@ public class ParseReportingUrl extends
               .collect(Collectors.toMap(item -> item[0], item -> item[1]));
 
           if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
-            throw new MissingParameterException(Attribute.NORMALIZED_COUNTRY_CODE,
-                PARAM_COUNTRY_CODE);
+            throw new IllegalArgumentException(
+                "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE);
           }
           queryParams.put(PARAM_COUNTRY_CODE,
               payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
@@ -149,7 +141,8 @@ public class ParseReportingUrl extends
               || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("quicksuggest-click")) {
             String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
             if (userAgentVersion == null) {
-              throw new MissingParameterException(Attribute.USER_AGENT_VERSION, PARAM_OS_FAMILY);
+              throw new IllegalArgumentException(
+                  "Missing required attribute " + Attribute.USER_AGENT_VERSION);
             }
             queryParams.put(PARAM_PRODUCT_VERSION,
                 "firefox_" + attributes.get(Attribute.USER_AGENT_VERSION));
