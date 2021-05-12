@@ -13,13 +13,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +30,6 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import org.apache.commons.text.StringSubstitutor;
 
 /**
  * Extract reporting URL from document and filter out unknown URLs.
@@ -43,31 +38,33 @@ public class ParseReportingUrl extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
   private final ValueProvider<String> urlAllowList;
-  private final ValueProvider<String> countryIpList;
-  private final ValueProvider<String> osUserAgentList;
 
   private static transient Set<String> singletonAllowedImpressionUrls;
   private static transient Set<String> singletonAllowedClickUrls;
-  private static transient Map<String, String> singletonCountryToIpMapping;
-  private static transient Map<String, String> singletonOsToUserAgentMapping;
 
-  private static final String DEFAULT_COUNTRY = "US";
-
+  // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
   private static final String OS_MAC = "Macintosh";
   private static final String OS_LINUX = "Linux";
-  private static final String DEFAULT_OS = OS_WINDOWS;
 
-  public static ParseReportingUrl of(ValueProvider<String> urlAllowList,
-      ValueProvider<String> countryIpList, ValueProvider<String> osUserAgentList) {
-    return new ParseReportingUrl(urlAllowList, countryIpList, osUserAgentList);
+  // Values used for the os-family API parameter
+  private static final String PARAM_WINDOWS = "Windows";
+  private static final String PARAM_MAC = "macOS";
+  private static final String PARAM_LINUX = "Linux";
+
+  // API parameter names
+  private static final String PARAM_COUNTRY_CODE = "country-code";
+  private static final String PARAM_REGION_CODE = "region-code";
+  private static final String PARAM_OS_FAMILY = "os-family";
+  private static final String PARAM_FORM_FACTOR = "form-factor";
+  private static final String PARAM_PRODUCT_VERSION = "product-version";
+
+  public static ParseReportingUrl of(ValueProvider<String> urlAllowList) {
+    return new ParseReportingUrl(urlAllowList);
   }
 
-  private ParseReportingUrl(ValueProvider<String> urlAllowList, ValueProvider<String> countryIpList,
-      ValueProvider<String> osUserAgentList) {
+  private ParseReportingUrl(ValueProvider<String> urlAllowList) {
     this.urlAllowList = urlAllowList;
-    this.countryIpList = countryIpList;
-    this.osUserAgentList = osUserAgentList;
   }
 
   private static class InvalidUrlException extends RuntimeException {
@@ -97,8 +94,6 @@ public class ParseReportingUrl extends
 
           try {
             loadAllowedUrls();
-            loadCountryToIpMapping();
-            loadOsUserAgentMapping();
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
@@ -131,21 +126,31 @@ public class ParseReportingUrl extends
               .map(param -> param.split("=")).filter(param -> param.length > 1)
               .collect(Collectors.toMap(item -> item[0], item -> item[1]));
 
-          // TODO: Validate required query params
+          if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
+            throw new IllegalArgumentException(
+                "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE);
+          }
+          queryParams.put(PARAM_COUNTRY_CODE,
+              payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
 
-          queryParams.put("ip",
-              createIpParam(payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText()));
+          queryParams.put(PARAM_REGION_CODE, attributes.get(Attribute.GEO_SUBDIVISION1));
+          queryParams.put(PARAM_OS_FAMILY, getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
+          queryParams.put(PARAM_FORM_FACTOR, "desktop");
 
-          try {
-            queryParams.put("ua", createUserAgentParam(attributes.get(Attribute.USER_AGENT_OS),
-                payload.get(Attribute.VERSION).asText()));
-          } catch (UnsupportedEncodingException e) {
-            throw new UncheckedIOException(e);
+          if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
+              || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("quicksuggest-click")) {
+            String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
+            if (userAgentVersion == null) {
+              throw new IllegalArgumentException(
+                  "Missing required attribute " + Attribute.USER_AGENT_VERSION);
+            }
+            queryParams.put(PARAM_PRODUCT_VERSION, "firefox_" + userAgentVersion);
           }
 
           // Generate query string from map
-          String queryString = queryParams.entrySet().stream().map(
-              entry -> entry.getKey() + (entry.getValue() == null ? "" : "=" + entry.getValue()))
+          String queryString = queryParams.entrySet().stream()
+              .map(entry -> String.format("%s=%s", entry.getKey(),
+                  entry.getValue() == null ? "" : entry.getValue()))
               .collect(Collectors.joining("&"));
 
           try {
@@ -192,42 +197,23 @@ public class ParseReportingUrl extends
         .anyMatch(url.getHost()::endsWith);
   }
 
-  @VisibleForTesting
-  String createIpParam(String countryCode) {
-    String ipParam = singletonCountryToIpMapping.getOrDefault(countryCode,
-        singletonCountryToIpMapping.get(DEFAULT_COUNTRY));
-    if (ipParam == null) {
-      throw new IllegalArgumentException("Could not get ip value: Unrecognized country "
-          + "and missing default value: " + Attribute.NORMALIZED_COUNTRY_CODE);
-    }
-    return ipParam;
-  }
-
-  @VisibleForTesting
-  String createUserAgentParam(String userAgentOs, String clientVersion)
-      throws UnsupportedEncodingException {
-    String normalizedOs;
+  /**
+   * Return the value used for the os-family parameter of the API
+   * associated with the user_agent_os attribute.
+   *
+   * @throws IllegalArgumentException if the given OS value is not recognized
+   */
+  private String getOsParam(String userAgentOs) {
     if (userAgentOs.startsWith(OS_WINDOWS)) {
-      normalizedOs = OS_WINDOWS;
+      return PARAM_WINDOWS;
     } else if (userAgentOs.startsWith(OS_MAC)) {
-      normalizedOs = OS_MAC;
+      return PARAM_MAC;
     } else if (userAgentOs.startsWith(OS_LINUX)) {
-      normalizedOs = OS_LINUX;
+      return PARAM_LINUX;
     } else {
-      normalizedOs = DEFAULT_OS;
-    }
-    String userAgentFormatString = singletonOsToUserAgentMapping.getOrDefault(normalizedOs,
-        singletonOsToUserAgentMapping.get(DEFAULT_COUNTRY));
-    if (userAgentFormatString == null) {
       throw new IllegalArgumentException(
-          "Could not get user agent value: Unrecognized OS and missing default value: "
-              + userAgentOs);
+          "Could not get os-family param: Unrecognized OS: " + userAgentOs);
     }
-
-    Map<String, String> valueMap = Collections.singletonMap("client_version", clientVersion);
-    String userAgent = StringSubstitutor.replace(userAgentFormatString, valueMap);
-
-    return URLEncoder.encode(userAgent, StandardCharsets.UTF_8.name());
   }
 
   /**
@@ -267,22 +253,6 @@ public class ParseReportingUrl extends
     } catch (IOException e) {
       throw new IOException("Exception thrown while fetching " + paramName, e);
     }
-  }
-
-  @VisibleForTesting
-  Map<String, String> loadCountryToIpMapping() throws IOException {
-    if (singletonCountryToIpMapping == null) {
-      singletonCountryToIpMapping = readMappingFromFile(countryIpList, "countryIpList");
-    }
-    return singletonCountryToIpMapping;
-  }
-
-  @VisibleForTesting
-  Map<String, String> loadOsUserAgentMapping() throws IOException {
-    if (singletonOsToUserAgentMapping == null) {
-      singletonOsToUserAgentMapping = readMappingFromFile(osUserAgentList, "osUserAgentList");
-    }
-    return singletonOsToUserAgentMapping;
   }
 
   @VisibleForTesting

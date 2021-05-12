@@ -28,58 +28,14 @@ public class ParseReportingUrlTest {
 
   private static final String URL_ALLOW_LIST = "src/test/resources/contextualServices/"
       + "urlAllowlist.csv";
-  private static final String COUNTRY_IP_LIST = "src/test/resources/contextualServices/"
-      + "countryIpList.csv";
-  private static final String OS_UA_LIST = "src/test/resources/contextualServices/"
-      + "osUserAgentList.csv";
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   @Test
-  public void testCountryIpLoadAndParam() throws IOException {
-    ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST),
-        pipeline.newProvider(COUNTRY_IP_LIST), pipeline.newProvider(OS_UA_LIST));
-
-    pipeline.run();
-
-    Map<String, String> mapping = parseReportingUrl.loadCountryToIpMapping();
-
-    Map<String, String> expected = ImmutableMap.of("US", "255.255.255.0", "AA", "255.255.255.1");
-
-    Assert.assertEquals(expected, mapping);
-
-    Assert.assertEquals("255.255.255.1", parseReportingUrl.createIpParam("AA"));
-    Assert.assertEquals("255.255.255.0", parseReportingUrl.createIpParam("BB"));
-  }
-
-  @Test
-  public void testOsUserAgentLoadAndParam() throws IOException {
-    ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST),
-        pipeline.newProvider(COUNTRY_IP_LIST), pipeline.newProvider(OS_UA_LIST));
-
-    pipeline.run();
-
-    Map<String, String> mapping = parseReportingUrl.loadOsUserAgentMapping();
-
-    // The templates here are invented for testing and include "{0}" to
-    // validate injection of OS version.
-    Map<String, String> expected = ImmutableMap.of("Windows",
-        "W ${client_version} ${client_version}", "Macintosh",
-        "M ${client_version} ${client_version}", "Linux", "L ${client_version} ${client_version}");
-
-    Assert.assertEquals(expected, mapping);
-
-    // The output of createUserAgentParam should be URL-encoded, so spaces become "+".
-    Assert.assertEquals("W+10+10", parseReportingUrl.createUserAgentParam("Windows", "10"));
-    Assert.assertEquals("L+11+11", parseReportingUrl.createUserAgentParam("Linux", "11"));
-    Assert.assertEquals("W+12+12", parseReportingUrl.createUserAgentParam("Other", "12"));
-  }
-
-  @Test
   public void testAllowedUrlsLoadAndFilter() throws IOException {
-    ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST),
-        pipeline.newProvider(COUNTRY_IP_LIST), pipeline.newProvider(OS_UA_LIST));
+    ParseReportingUrl parseReportingUrl = ParseReportingUrl
+        .of(pipeline.newProvider(URL_ALLOW_LIST));
 
     pipeline.run();
 
@@ -121,8 +77,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST),
-            pipeline.newProvider(COUNTRY_IP_LIST), pipeline.newProvider(OS_UA_LIST)));
+        .apply(ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterators.size(messages.iterator()));
@@ -147,8 +102,6 @@ public class ParseReportingUrlTest {
 
       Assert.assertTrue(reportingUrl.startsWith("https://moz.impression.com/?"));
       Assert.assertTrue(reportingUrl.contains("param=1"));
-      Assert.assertTrue(reportingUrl.contains("ua=W+87.0+87.0"));
-      Assert.assertTrue(reportingUrl.contains("ip=255.255.255.0"));
 
       return null;
     });

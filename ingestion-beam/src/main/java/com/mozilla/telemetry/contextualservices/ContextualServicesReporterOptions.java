@@ -16,18 +16,6 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setUrlAllowList(ValueProvider<String> value);
 
-  @Description("Path (local or gs://) to a CSV file containing mappings of country codes to IP "
-      + "addresses used for reporting (expected format is country,ip with no header)")
-  ValueProvider<String> getCountryIpList();
-
-  void setCountryIpList(ValueProvider<String> value);
-
-  @Description("Path (local or gs://) to a CSV file containing mappings of operating system to "
-      + "user agent used for reporting (expected format is os,ua with no header)")
-  ValueProvider<String> getOsUserAgentList();
-
-  void setOsUserAgentList(ValueProvider<String> value);
-
   @Description("Comma-separated strings representing a list of doc types for which "
       + " to send reporting requests; doc types are not namespace qualified "
       + "(e.g. quicksuggest-click is a correct argument)")
