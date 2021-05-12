@@ -144,13 +144,13 @@ public class ParseReportingUrl extends
               throw new IllegalArgumentException(
                   "Missing required attribute " + Attribute.USER_AGENT_VERSION);
             }
-            queryParams.put(PARAM_PRODUCT_VERSION,
-                "firefox_" + attributes.get(Attribute.USER_AGENT_VERSION));
+            queryParams.put(PARAM_PRODUCT_VERSION, "firefox_" + userAgentVersion);
           }
 
           // Generate query string from map
-          String queryString = queryParams.entrySet().stream().map(
-              entry -> entry.getKey() + "=" + (entry.getValue() == null ? "" : entry.getValue()))
+          String queryString = queryParams.entrySet().stream()
+              .map(entry -> String.format("%s=%s", entry.getKey(),
+                  entry.getValue() == null ? "" : entry.getValue()))
               .collect(Collectors.joining("&"));
 
           try {
