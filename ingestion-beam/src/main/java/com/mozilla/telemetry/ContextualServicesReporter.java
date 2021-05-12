@@ -68,20 +68,20 @@ public class ContextualServicesReporter extends Sink {
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
 
     // Aggregate impressions
-    requests
+    PCollection<PubsubMessage> aggregated = requests
         .apply("FilterAggregatedDocTypes",
             Filter.by((message) -> aggregatedDocTypes
                 .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
-        .apply(AggregateImpressions.of(options.getAggregationWindowSize())) //
-        .apply(sendRequest).failuresTo(errorCollections) //
-        .apply(output).failuresTo(errorCollections); // todo: delete
+        .apply(AggregateImpressions.of(options.getAggregationWindowDuration())); //
 
-    requests
+    PCollection<PubsubMessage> unaggregated = requests
         .apply("FilterUnaggregatedDocTypes",
             Filter.by((message) -> !aggregatedDocTypes
-                .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
-        .apply(sendRequest).failuresTo(errorCollections) //
-        .apply(output).failuresTo(errorCollections); // todo: delete
+                .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE))));
+
+    PCollectionList.of(aggregated).and(unaggregated).apply(Flatten.pCollections())
+      .apply(sendRequest).failuresTo(errorCollections) //
+      .apply(output).failuresTo(errorCollections); // todo: delete?
 
     // Note that there is no write step here for "successes"
     // since the purpose of this job is sending to an external API.

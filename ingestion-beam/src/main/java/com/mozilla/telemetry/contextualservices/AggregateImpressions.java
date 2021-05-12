@@ -22,7 +22,6 @@ import org.apache.beam.sdk.transforms.windowing.IntervalWindow;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
-import org.joda.time.Duration;
 
 /**
  * Count the number of impressions aggregated by reporting URL.
@@ -35,13 +34,13 @@ public class AggregateImpressions
       ReportingUrlUtil.PARAM_FORM_FACTOR, ReportingUrlUtil.PARAM_OS_FAMILY,
       ReportingUrlUtil.PARAM_ID);
 
-  private final ValueProvider<Integer> getAggregationWindowSize;
+  private final ValueProvider<String> getAggregationWindowDuration;
 
-  public AggregateImpressions(ValueProvider<Integer> getAggregationWindowSize) {
-    this.getAggregationWindowSize = getAggregationWindowSize;
+  public AggregateImpressions(ValueProvider<String> getAggregationWindowDuration) {
+    this.getAggregationWindowDuration = getAggregationWindowDuration;
   }
 
-  public static AggregateImpressions of(ValueProvider<Integer> getAggregationWindowSize) {
+  public static AggregateImpressions of(ValueProvider<String> getAggregationWindowSize) {
     return new AggregateImpressions(getAggregationWindowSize);
   }
 
@@ -49,7 +48,7 @@ public class AggregateImpressions
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> messages) {
     return messages.apply(ParDo.of(new AddAggregationKey())) //
         .apply(
-            Window.into(FixedWindows.of(Duration.standardMinutes(getAggregationWindowSize.get())))) //
+            Window.into(FixedWindows.of(Time.parseDuration(getAggregationWindowDuration.get())))) //
         .apply(GroupByKey.create()) //
         .apply(ParDo.of(new CountImpressionsPerKey())) //
         .apply(Window.into(new GlobalWindows()));
@@ -100,7 +99,7 @@ public class AggregateImpressions
 
       ObjectNode json = Json.createObjectNode(); // TODO: for debug output
       json.put(Attribute.REPORTING_URL, urlParser.toString());
-      json.put(Attribute.SUBMISSION_TIMESTAMP, Time.epochNanosToTimestamp(windowEnd / 1000));
+      json.put(Attribute.SUBMISSION_TIMESTAMP, Time.epochMicrosToTimestamp(windowEnd * 1000));
       json.put(Attribute.DOCUMENT_ID, ":)");
 
       out.output(new PubsubMessage(Json.asBytes(json), attributeMap));
