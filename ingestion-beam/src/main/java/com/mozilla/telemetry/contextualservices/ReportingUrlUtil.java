@@ -71,8 +71,9 @@ public class ReportingUrlUtil {
 
   public URL getReportingUrl() {
     // Generate query string from map sorted by key
-    String queryString = queryParams.entrySet().stream().sorted(Map.Entry.comparingByKey())
-        .map(entry -> entry.getKey() + "=" + (entry.getValue() == null ? "" : entry.getValue()))
+    String queryString = queryParams
+        .entrySet().stream().sorted(Map.Entry.comparingByKey()).map(entry -> String.format("%s=%s",
+            entry.getKey(), entry.getValue() == null ? "" : entry.getValue()))
         .collect(Collectors.joining("&"));
 
     try {

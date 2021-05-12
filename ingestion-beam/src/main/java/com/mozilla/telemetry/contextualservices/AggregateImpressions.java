@@ -90,9 +90,10 @@ public class AggregateImpressions
 
       urlParser.addQueryParam(ReportingUrlUtil.PARAM_IMPRESSIONS,
           Integer.toString(impressionCount));
-      urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_BEGIN, Long.toString(windowStart / 1000));
-      urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_END, Long.toString(windowEnd / 1000));
-
+      urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_BEGIN,
+          Long.toString(windowStart / 1000));
+      urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_END,
+          Long.toString(windowEnd / 1000));
 
       Map<String, String> attributeMap = ImmutableMap.of(Attribute.REPORTING_URL,
           urlParser.toString());
