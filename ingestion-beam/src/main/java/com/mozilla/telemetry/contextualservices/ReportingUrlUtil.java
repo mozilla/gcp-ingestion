@@ -3,13 +3,14 @@ package com.mozilla.telemetry.contextualservices;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Utility class for parsing and building contextual services reporting URLs.
  */
-public class ReportingUrlParser {
+public class ReportingUrlUtil {
 
   // API parameter names
   static final String PARAM_COUNTRY_CODE = "country-code";
@@ -36,7 +37,7 @@ public class ReportingUrlParser {
     }
   }
 
-  public ReportingUrlParser(String reportingUrl) {
+  public ReportingUrlUtil(String reportingUrl) {
     try {
       this.reportingUrl = new URL(reportingUrl);
     } catch (MalformedURLException e) {
@@ -48,11 +49,12 @@ public class ReportingUrlParser {
     }
 
     if (this.reportingUrl.getQuery() == null) {
-      throw new IllegalArgumentException("Missing query string from URL: " + reportingUrl);
+      queryParams = new HashMap<>();
+    } else {
+      queryParams = Arrays.stream(this.reportingUrl.getQuery().split("&"))
+          .map(param -> param.split("=")).filter(param -> param.length > 1)
+          .collect(Collectors.toMap(item -> item[0], item -> item[1]));
     }
-    queryParams = Arrays.stream(this.reportingUrl.getQuery().split("&"))
-        .map(param -> param.split("=")).filter(param -> param.length > 1)
-        .collect(Collectors.toMap(item -> item[0], item -> item[1]));
   }
 
   public void addQueryParam(String name, String value) {
@@ -64,7 +66,7 @@ public class ReportingUrlParser {
   }
 
   public String getBaseUrl() {
-    return reportingUrl.getProtocol() + reportingUrl.getHost() + reportingUrl.getPath();
+    return reportingUrl.toString().split("\\?")[0];
   }
 
   public URL getReportingUrl() {
@@ -76,8 +78,8 @@ public class ReportingUrlParser {
     try {
       return new URL(getBaseUrl() + "?" + queryString);
     } catch (MalformedURLException e) {
-      throw new InvalidUrlException("Could not parse reporting with query string: " + queryString,
-          e);
+      throw new InvalidUrlException(
+          "Could not parse URL " + getBaseUrl() + " with query string: " + queryString, e);
     }
   }
 

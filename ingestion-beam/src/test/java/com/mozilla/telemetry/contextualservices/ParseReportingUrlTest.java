@@ -41,8 +41,8 @@ public class ParseReportingUrlTest {
 
     List<Set<String>> allowedUrlSets = parseReportingUrl.loadAllowedUrls();
 
-    Set<String> expectedClickUrls = ImmutableSet.of("click.com", "click2.com");
-    Set<String> expectedImpressionUrls = ImmutableSet.of("impression.com");
+    Set<String> expectedClickUrls = ImmutableSet.of("click.com", "click2.com", "test.com");
+    Set<String> expectedImpressionUrls = ImmutableSet.of("impression.com", "test.com");
 
     Assert.assertEquals(expectedClickUrls, allowedUrlSets.get(0));
     Assert.assertEquals(expectedImpressionUrls, allowedUrlSets.get(1));
@@ -58,6 +58,9 @@ public class ParseReportingUrlTest {
         parseReportingUrl.isUrlValid(new URL("http://click.com"), "topsites-impression"));
     Assert.assertTrue(
         parseReportingUrl.isUrlValid(new URL("https://impression.com/"), "topsites-impression"));
+    Assert.assertTrue(
+        parseReportingUrl.isUrlValid(new URL("https://test.com/"), "topsites-impression"));
+    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("https://test.com/"), "topsites-click"));
   }
 
   @Test
