@@ -164,8 +164,7 @@ public class ParseReportingUrl extends
    */
   private String getOsParam(String userAgentOs) {
     if (userAgentOs == null) {
-      throw new IllegalArgumentException( // TODO: exception subclass?
-          "Could not get os-family param: missing OS attribute");
+      throw new IllegalArgumentException("Missing required OS attribute");
     }
     if (userAgentOs.startsWith(OS_WINDOWS)) {
       return PARAM_WINDOWS;
@@ -174,8 +173,7 @@ public class ParseReportingUrl extends
     } else if (userAgentOs.startsWith(OS_LINUX)) {
       return PARAM_LINUX;
     } else {
-      throw new IllegalArgumentException(
-          "Could not get os-family param: Unrecognized OS: " + userAgentOs);
+      throw new IllegalArgumentException("Unrecognized OS attribute: " + userAgentOs);
     }
   }
 
