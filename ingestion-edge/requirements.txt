@@ -94,7 +94,7 @@ click==7.1.2 \
     # via
     #   black
     #   pip-tools
-coverage==5.3.1 \
+coverage[toml]==5.3.1 \
     --hash=sha256:08b3ba72bd981531fd557f67beee376d6700fba183b167857038997ba30dd297 \
     --hash=sha256:2757fa64e11ec12220968f65d086b7a29b6583d16e9a544c889b22ba98555ef1 \
     --hash=sha256:3102bb2c206700a7d28181dbe04d66b30780cde1d1c02c5f3c165cf3d2489497 \
@@ -463,9 +463,9 @@ pyparsing==2.4.7 \
 pytest-black==0.3.12 \
     --hash=sha256:1d339b004f764d6cd0f06e690f6dd748df3d62e6fe1a692d6a5500ac2c5b75a5
     # via -r requirements.in
-pytest-cov==2.11.1 \
-    --hash=sha256:359952d9d39b9f822d9d29324483e7ba04a3a17dd7d05aa6beb7ea01e359e5f7 \
-    --hash=sha256:bdb9fdb0b85a7cc825269a4c56b48ccaa5c7e365054b6038772c32ddcdc969da
+pytest-cov==2.12.0 \
+    --hash=sha256:8535764137fecce504a49c2b742288e3d34bc09eed298ad65963616cc98fd45e \
+    --hash=sha256:95d4933dcbbacfa377bb60b29801daa30d90c33981ab2a79e9ab4452c165066e
     # via -r requirements.in
 pytest-env==0.6.2 \
     --hash=sha256:7e94956aef7f2764f3c147d216ce066bf6c42948bb9e293169b1b1c880a580c2
@@ -615,6 +615,7 @@ toml==0.10.1 \
     --hash=sha256:bda89d5935c2eac546d648028b9901107a595863cb36bae0c73ac804a9b4ce88
     # via
     #   black
+    #   coverage
     #   pep517
     #   pytest
     #   pytest-black
