@@ -62,6 +62,7 @@ DEFAULT_METADATA_HEADERS = [
     "X-Pipeline-Proxy",
     "X-Debug-ID",
     "X-Source-Tags",
+    "X-Telemetry-Agent",
 ]
 
 METADATA_HEADERS = {

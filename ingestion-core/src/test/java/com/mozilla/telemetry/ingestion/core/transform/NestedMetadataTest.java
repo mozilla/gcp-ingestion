@@ -70,19 +70,27 @@ public class NestedMetadataTest {
     Map<String, String> attributes = ImmutableMap.of("dnt", "1", //
         "sample_id", "18", //
         "x_source_tags", "automation, perf", //
-        "x_debug_id", "mysession");
+        "x_debug_id", "mysession", //
+        "x_telemetry_agent", "Glean/0.40.0 (Kotlin on Android)"
+        );
     ObjectNode headers = NestedMetadata.headersFromAttributes(attributes);
-    ObjectNode expected = mapToObjectNode(ImmutableMap.of("dnt", "1", "x_debug_id", "mysession",
-        "x_source_tags", "automation, perf"));
+    ObjectNode expected = mapToObjectNode(ImmutableMap.of("dnt", "1", //
+        "x_debug_id", "mysession", //
+        "x_source_tags", "automation, perf", //
+        "x_telemetry_agent", "Glean/0.40.0 (Kotlin on Android)"));
     assertEquals(expected, headers);
   }
 
   @Test
   public void testPutHeaderAttributes() throws Exception {
-    ObjectNode metadata = mapToObjectNode(ImmutableMap.of("header", ImmutableMap.of("dnt", "1",
-        "x_debug_id", "mysession", "x_source_tags", "automation, perf")));
+    ObjectNode metadata = mapToObjectNode(ImmutableMap.of("header", ImmutableMap.of("dnt", "1", //
+        "x_debug_id", "mysession", //
+        "x_source_tags", "automation, perf", //
+        "x_telemetry_agent", "Glean/0.40.0 (Kotlin on Android)")));
     Map<String, String> expected = ImmutableMap.of("dnt", "1", //
-        "x_debug_id", "mysession", "x_source_tags", "automation, perf");
+        "x_debug_id", "mysession", //
+        "x_source_tags", "automation, perf", //
+        "x_telemetry_agent", "Glean/0.40.0 (Kotlin on Android)");
     Map<String, String> attributes = new HashMap<>();
     NestedMetadata.putHeaderAttributes(attributes, (metadata));
     assertEquals(expected, attributes);
