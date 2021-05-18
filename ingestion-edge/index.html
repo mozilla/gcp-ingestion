@@ -936,7 +936,7 @@ environment variables:</p>
   on the filesystem where <code>QUEUE_PATH</code> is mounted below which <code>/__heartbeat__</code>
   will fail, defaults to <code>0</code> which disables the check</li>
 <li><code>METADATA_HEADERS</code>: a JSON list of headers to preserve as PubSub message
-  attributes, defaults to <code>["Content-Length", "Date", "DNT", "User-Agent", "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID"]</code>;
+  attributes, defaults to <code>["Content-Length", "Date", "DNT", "User-Agent", "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID", "X-Telemetry-Agent"]</code>;
   the message attribute name will be the header name in lowercase and with <code>-</code>
   converted to <code>_</code></li>
 <li><code>PUBLISH_TIMEOUT_SECONDS</code>: a float indicating the maximum number of seconds
