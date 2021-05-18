@@ -54,6 +54,7 @@ public class Constant {
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";
     public static final String X_PIPELINE_PROXY = "x_pipeline_proxy";
     public static final String X_SOURCE_TAGS = "x_source_tags";
+    public static final String X_TELEMETRY_AGENT = "x_telemetry_agent";
   }
 
   public static class FieldName {
