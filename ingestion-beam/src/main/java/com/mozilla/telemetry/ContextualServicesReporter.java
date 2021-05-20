@@ -7,7 +7,6 @@ import com.mozilla.telemetry.contextualservices.FilterByDocType;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.ingestion.core.Constant;
-import com.mozilla.telemetry.io.Write;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,9 +61,6 @@ public class ContextualServicesReporter extends Sink {
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections);
 
-    SendRequest sendRequest = SendRequest.of(options.getReportingEnabled());
-    Write output = options.getOutputType().write(options);
-
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
 
     // Aggregate impressions
@@ -78,9 +74,9 @@ public class ContextualServicesReporter extends Sink {
         Filter.by((message) -> !aggregatedDocTypes // TODO: NOT
             .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE))));
 
-    PCollectionList.of(aggregated).and(unaggregated).apply(Flatten.pCollections())
-        .apply(sendRequest).failuresTo(errorCollections) //
-        .apply(output).failuresTo(errorCollections); // todo: delete?
+    PCollectionList.of(aggregated).and(unaggregated).apply(Flatten.pCollections()) //
+        .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
+        .failuresTo(errorCollections);
 
     // Note that there is no write step here for "successes"
     // since the purpose of this job is sending to an external API.
