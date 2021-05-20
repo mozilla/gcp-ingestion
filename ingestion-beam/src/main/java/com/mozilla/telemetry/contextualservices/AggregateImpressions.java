@@ -38,7 +38,7 @@ import org.joda.time.Instant;
 public class AggregateImpressions
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
-  private final List<String> aggregationFields = ImmutableList.of(
+  private static final List<String> aggregationFields = ImmutableList.of(
       ReportingUrlUtil.PARAM_COUNTRY_CODE, ReportingUrlUtil.PARAM_REGION_CODE,
       ReportingUrlUtil.PARAM_FORM_FACTOR, ReportingUrlUtil.PARAM_OS_FAMILY,
       ReportingUrlUtil.PARAM_ID);
@@ -56,7 +56,8 @@ public class AggregateImpressions
   @Override
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> messages) {
     return messages //
-        .apply(WithKeys.of((SerializableFunction<PubsubMessage, String>) this::getAggregationKey)) //
+        .apply(WithKeys.of(
+            (SerializableFunction<PubsubMessage, String>) AggregateImpressions::getAggregationKey)) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of())) //
         // .apply(WithTimestamps.of(message -> new Instant())) //
         .apply(Window.<KV<String, PubsubMessage>>into(FixedWindows.of(Duration.standardDays(36500)))
@@ -70,7 +71,7 @@ public class AggregateImpressions
         .apply(Window.<PubsubMessage>into(new GlobalWindows()).triggering(DefaultTrigger.of()));
   }
 
-  private String getAggregationKey(PubsubMessage message) {
+  private static String getAggregationKey(PubsubMessage message) {
     message = PubsubConstraints.ensureNonNull(message);
 
     String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
