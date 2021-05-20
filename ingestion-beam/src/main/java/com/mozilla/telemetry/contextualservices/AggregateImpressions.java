@@ -20,13 +20,16 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.WithKeys;
-import org.apache.beam.sdk.transforms.WithTimestamps;
+import org.apache.beam.sdk.transforms.windowing.AfterProcessingTime;
+import org.apache.beam.sdk.transforms.windowing.DefaultTrigger;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
 import org.apache.beam.sdk.transforms.windowing.IntervalWindow;
+import org.apache.beam.sdk.transforms.windowing.Repeatedly;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.joda.time.Duration;
 import org.joda.time.Instant;
 
 /**
@@ -40,10 +43,10 @@ public class AggregateImpressions
       ReportingUrlUtil.PARAM_FORM_FACTOR, ReportingUrlUtil.PARAM_OS_FAMILY,
       ReportingUrlUtil.PARAM_ID);
 
-  private final ValueProvider<String> getAggregationWindowDuration;
+  private final ValueProvider<String> aggregationWindowDuration;
 
-  public AggregateImpressions(ValueProvider<String> getAggregationWindowDuration) {
-    this.getAggregationWindowDuration = getAggregationWindowDuration;
+  public AggregateImpressions(ValueProvider<String> aggregationWindowDuration) {
+    this.aggregationWindowDuration = aggregationWindowDuration;
   }
 
   public static AggregateImpressions of(ValueProvider<String> getAggregationWindowSize) {
@@ -55,11 +58,16 @@ public class AggregateImpressions
     return messages //
         .apply(WithKeys.of((SerializableFunction<PubsubMessage, String>) this::getAggregationKey)) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of())) //
-        .apply(WithTimestamps.of(message -> new Instant())) //
-        .apply(Window.into(FixedWindows.of(Time.parseDuration(getAggregationWindowDuration.get())))) //
+        // .apply(WithTimestamps.of(message -> new Instant())) //
+        .apply(Window.<KV<String, PubsubMessage>>into(FixedWindows.of(Duration.standardDays(36500)))
+            .triggering(Repeatedly.forever(AfterProcessingTime.pastFirstElementInPane()
+                .alignedTo(Time.parseDuration(aggregationWindowDuration.get()))))
+            .withAllowedLateness(Duration.ZERO).discardingFiredPanes()) //
+        // .apply(Window.<KV<String,
+        // PubsubMessage>>into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration.get()))))
         .apply(Count.perKey()) //
         .apply(ParDo.of(new BuildAggregateUrl())) //
-        .apply(Window.into(new GlobalWindows()));
+        .apply(Window.<PubsubMessage>into(new GlobalWindows()).triggering(DefaultTrigger.of()));
   }
 
   private String getAggregationKey(PubsubMessage message) {
@@ -86,8 +94,9 @@ public class AggregateImpressions
       ReportingUrlUtil urlParser = new ReportingUrlUtil(input.getKey());
 
       long impressionCount = input.getValue();
-      long windowStart = window.start().getMillis();
-      long windowEnd = window.end().getMillis();
+      long windowStart = new Instant().minus(Time.parseDuration(aggregationWindowDuration.get()))
+          .getMillis();
+      long windowEnd = new Instant().getMillis();
 
       urlParser.addQueryParam(ReportingUrlUtil.PARAM_IMPRESSIONS, Long.toString(impressionCount));
       urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_BEGIN,
