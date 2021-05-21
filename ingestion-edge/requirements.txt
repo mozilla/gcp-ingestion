@@ -487,9 +487,9 @@ pytest-mypy==0.8.1 \
 pytest-pydocstyle==2.2.0 \
     --hash=sha256:b4e7eee47252fbb7495f4a0126e547a25f5f114f3096c504e738db49a5034333
     # via -r requirements.in
-pytest-sanic==1.7.0 \
-    --hash=sha256:fde2c2fd96d9cef5ead0425dfe097511a25723746b6132269a0ebf764e8da742 \
-    --hash=sha256:ffef99df8bc18dc223a8da11273ec166a7b474c17d4e9011881597f38c8f6cc0
+pytest-sanic==1.7.1 \
+    --hash=sha256:b3abb456731d0aa9a030a908159e48580b1b49cb188f68bce75bf6f186748763 \
+    --hash=sha256:ebb3e0dabd05e32914b0a0cb472bfe04ae75ff4009954da2430b0c420467691f
     # via -r requirements.in
 pytest-timeout==1.4.2 \
     --hash=sha256:20b3113cf6e4e80ce2d403b6fb56e9e1b871b510259206d40ff8d609f48bda76 \
