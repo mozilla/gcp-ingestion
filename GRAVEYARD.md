@@ -6,6 +6,8 @@
   - Also removes `ParseLogEntry` which transforms a Google Cloud Logging
     (`Stackdriver`) `LogEntry` message into one compatible with structured
     ingestion, which could be relevant for future use cases.
+- 2021-03-11 (removed in [#1583](https://github.com/mozilla/gcp-ingestion/pull/1583))
+  - Remove support for Redis deduplication
 - 2020-06-01 (available until [commit `f1d6464`](https://github.com/mozilla/gcp-ingestion/commit/f1d646442b8c1fcd63202ebca91363979b5b2ae2))
   - Remove `DeduplicateByDocumentId` transform, which was intended for use with
     the backfill from `heka` data, but did not perform well and was never used
