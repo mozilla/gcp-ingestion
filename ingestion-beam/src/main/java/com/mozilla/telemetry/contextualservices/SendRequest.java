@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
@@ -53,7 +54,8 @@ public class SendRequest extends
   /**
    * Used to log requests for debugging purposes.
    */
-  private static class RequestContentException extends RuntimeException {
+  @VisibleForTesting
+  static class RequestContentException extends RuntimeException {
 
     RequestContentException(String url) {
       super("Reporting URL sent: " + url);

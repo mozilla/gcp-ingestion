@@ -120,6 +120,34 @@ public class SendRequestTest {
 
   @Test
   public void testLogReportingUrls() {
-    // TODO
+    MockWebServer server = new MockWebServer();
+    server.enqueue(new MockResponse().setResponseCode(200));
+
+    String requestUrl = server.url("/test").toString();
+    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL, requestUrl);
+
+    List<PubsubMessage> input = Collections
+        .singletonList(new PubsubMessage(new byte[0], attributes));
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(true)));
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterators.size(messages.iterator()));
+
+      PubsubMessage message = Iterators.get(messages.iterator(), 0);
+      String errorMessage = message.getAttribute("error_message");
+
+      Assert.assertTrue(
+          errorMessage.contains(SendRequest.RequestContentException.class.getSimpleName()));
+      Assert.assertTrue(errorMessage.contains(requestUrl));
+
+      return null;
+    });
+
+    pipeline.run();
+
+    Assert.assertEquals(1, server.getRequestCount());
   }
 }
