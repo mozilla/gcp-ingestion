@@ -53,8 +53,8 @@ public class AggregateImpressions
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> messages) {
     return messages //
         // Add reporting url as key, pubsub message as value
-        .apply(WithKeys.of(
-            (SerializableFunction<PubsubMessage, String>) AggregateImpressions::getAggregationKey)) //
+        .apply(WithKeys.of((SerializableFunction<PubsubMessage, String>) //
+        AggregateImpressions::getAggregationKey)) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of())) //
         // Set timestamp to current time
         .apply(WithTimestamps.of(message -> new Instant())) //
@@ -100,7 +100,8 @@ public class AggregateImpressions
           Long.toString(windowEnd / 1000));
 
       Map<String, String> attributeMap = ImmutableMap.of(Attribute.REPORTING_URL,
-          urlParser.toString());
+          urlParser.toString(), Attribute.SUBMISSION_TIMESTAMP,
+          Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
 
       out.output(new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributeMap));
     }

@@ -83,14 +83,12 @@ public class ParseReportingUrl extends
 
           String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
 
-          // TODO: change back to reportingUrl
-          ReportingUrlUtil urlParser = new ReportingUrlUtil("https://test.com?id=abc");
+          ReportingUrlUtil urlParser = new ReportingUrlUtil(reportingUrl);
 
           if (!isUrlValid(urlParser.getReportingUrl(), attributes.get(Attribute.DOCUMENT_TYPE))) {
             PerDocTypeCounter.inc(attributes, "RejectedNonNullUrl");
             throw new ReportingUrlUtil.InvalidUrlException(
-                // TODO: change back to reportingUrl
-                "Reporting URL host not found in allow list: " + urlParser.toString());
+                "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
           if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {

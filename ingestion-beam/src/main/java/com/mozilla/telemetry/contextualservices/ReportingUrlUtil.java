@@ -37,7 +37,7 @@ public class ReportingUrlUtil {
     }
   }
 
-  public ReportingUrlUtil(String reportingUrl) {
+  ReportingUrlUtil(String reportingUrl) {
     try {
       this.reportingUrl = new URL(reportingUrl);
     } catch (MalformedURLException e) {
@@ -69,6 +69,9 @@ public class ReportingUrlUtil {
     return reportingUrl.toString().split("\\?")[0];
   }
 
+  /**
+   * Build reporting url by creating query param string (sorted by key).
+   */
   public URL getReportingUrl() {
     // Generate query string from map sorted by key
     String queryString = queryParams

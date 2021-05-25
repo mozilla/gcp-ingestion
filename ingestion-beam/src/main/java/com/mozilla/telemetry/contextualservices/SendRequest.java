@@ -51,7 +51,7 @@ public class SendRequest extends
   }
 
   /**
-   * Used to log requests for debugging purposes
+   * Used to log requests for debugging purposes.
    */
   private static class RequestContentException extends RuntimeException {
 
@@ -102,7 +102,7 @@ public class SendRequest extends
               try {
                 throw ee.exception();
               } catch (UncheckedIOException | RequestContentException e) {
-                return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
+                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
                     ee.exception());
               }
             }));
