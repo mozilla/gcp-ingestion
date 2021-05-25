@@ -33,7 +33,8 @@ public class SendRequestTest {
     List<PubsubMessage> input = Collections
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
-    pipeline.apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(false)));
+    pipeline.apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(false), pipeline.newProvider(false)));
 
     pipeline.run();
 
@@ -53,7 +54,8 @@ public class SendRequestTest {
         new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(true)));
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterators.size(messages.iterator()));
@@ -78,7 +80,8 @@ public class SendRequestTest {
         new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(true)));
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterators.size(messages.iterator()));
@@ -102,7 +105,8 @@ public class SendRequestTest {
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(true)));
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterators.size(messages.iterator()));
@@ -112,5 +116,10 @@ public class SendRequestTest {
     pipeline.run();
 
     Assert.assertEquals(1, server.getRequestCount());
+  }
+
+  @Test
+  public void testLogReportingUrls() {
+    // TODO
   }
 }

@@ -1,12 +1,11 @@
 package com.mozilla.telemetry.contextualservices;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.Time;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.coders.KvCoder;
@@ -20,16 +19,13 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.WithKeys;
-import org.apache.beam.sdk.transforms.windowing.AfterProcessingTime;
-import org.apache.beam.sdk.transforms.windowing.DefaultTrigger;
+import org.apache.beam.sdk.transforms.WithTimestamps;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
 import org.apache.beam.sdk.transforms.windowing.IntervalWindow;
-import org.apache.beam.sdk.transforms.windowing.Repeatedly;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
-import org.joda.time.Duration;
 import org.joda.time.Instant;
 
 /**
@@ -56,19 +52,18 @@ public class AggregateImpressions
   @Override
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> messages) {
     return messages //
+        // Add reporting url as key, pubsub message as value
         .apply(WithKeys.of(
             (SerializableFunction<PubsubMessage, String>) AggregateImpressions::getAggregationKey)) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of())) //
-        // .apply(WithTimestamps.of(message -> new Instant())) //
-        .apply(Window.<KV<String, PubsubMessage>>into(FixedWindows.of(Duration.standardDays(36500)))
-            .triggering(Repeatedly.forever(AfterProcessingTime.pastFirstElementInPane()
-                .alignedTo(Time.parseDuration(aggregationWindowDuration.get()))))
-            .withAllowedLateness(Duration.ZERO).discardingFiredPanes()) //
-        // .apply(Window.<KV<String,
-        // PubsubMessage>>into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration.get()))))
+        // Set timestamp to current time
+        .apply(WithTimestamps.of(message -> new Instant())) //
+        // Group impressions into timed windows
+        .apply(Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration.get())))) //
         .apply(Count.perKey()) //
+        // Create aggregated url by adding impression count as query parameter
         .apply(ParDo.of(new BuildAggregateUrl())) //
-        .apply(Window.<PubsubMessage>into(new GlobalWindows()).triggering(DefaultTrigger.of()));
+        .apply(Window.into(new GlobalWindows()));
   }
 
   private static String getAggregationKey(PubsubMessage message) {
@@ -95,9 +90,8 @@ public class AggregateImpressions
       ReportingUrlUtil urlParser = new ReportingUrlUtil(input.getKey());
 
       long impressionCount = input.getValue();
-      long windowStart = new Instant().minus(Time.parseDuration(aggregationWindowDuration.get()))
-          .getMillis();
-      long windowEnd = new Instant().getMillis();
+      long windowStart = window.start().getMillis();
+      long windowEnd = window.end().getMillis();
 
       urlParser.addQueryParam(ReportingUrlUtil.PARAM_IMPRESSIONS, Long.toString(impressionCount));
       urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_BEGIN,
@@ -108,12 +102,7 @@ public class AggregateImpressions
       Map<String, String> attributeMap = ImmutableMap.of(Attribute.REPORTING_URL,
           urlParser.toString());
 
-      ObjectNode json = Json.createObjectNode(); // TODO: for debug output
-      json.put(Attribute.REPORTING_URL, urlParser.toString());
-      json.put(Attribute.SUBMISSION_TIMESTAMP, Time.epochMicrosToTimestamp(windowEnd * 1000));
-      json.put(Attribute.DOCUMENT_ID, ":)");
-
-      out.output(new PubsubMessage(Json.asBytes(json), attributeMap));
+      out.output(new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributeMap));
     }
   }
 }

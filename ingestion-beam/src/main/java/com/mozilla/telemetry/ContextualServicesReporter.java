@@ -71,7 +71,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration())); //
 
     PCollection<PubsubMessage> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
-        Filter.by((message) -> !aggregatedDocTypes // TODO: NOT
+        Filter.by((message) -> !aggregatedDocTypes
             .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE))));
 
     PCollectionList.of(aggregated).and(unaggregated).apply(Flatten.pCollections()) //
