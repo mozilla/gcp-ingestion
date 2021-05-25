@@ -83,11 +83,11 @@ public class ParseReportingUrl extends
 
           String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
 
-          ReportingUrlUtil urlParser = new ReportingUrlUtil(reportingUrl);
+          ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
           if (!isUrlValid(urlParser.getReportingUrl(), attributes.get(Attribute.DOCUMENT_TYPE))) {
             PerDocTypeCounter.inc(attributes, "RejectedNonNullUrl");
-            throw new ReportingUrlUtil.InvalidUrlException(
+            throw new ParsedReportingUrl.InvalidUrlException(
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
@@ -95,14 +95,14 @@ public class ParseReportingUrl extends
             throw new IllegalArgumentException(
                 "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE);
           }
-          urlParser.addQueryParam(ReportingUrlUtil.PARAM_COUNTRY_CODE,
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE,
               payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
 
-          urlParser.addQueryParam(ReportingUrlUtil.PARAM_REGION_CODE,
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_REGION_CODE,
               attributes.get(Attribute.GEO_SUBDIVISION1));
-          urlParser.addQueryParam(ReportingUrlUtil.PARAM_OS_FAMILY,
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY,
               getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
-          urlParser.addQueryParam(ReportingUrlUtil.PARAM_FORM_FACTOR, "desktop");
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop");
 
           if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
               || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("quicksuggest-click")) {
@@ -111,7 +111,7 @@ public class ParseReportingUrl extends
               throw new IllegalArgumentException(
                   "Missing required attribute " + Attribute.USER_AGENT_VERSION);
             }
-            urlParser.addQueryParam(ReportingUrlUtil.PARAM_PRODUCT_VERSION,
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_PRODUCT_VERSION,
                 "firefox_" + userAgentVersion);
           }
 
@@ -126,7 +126,7 @@ public class ParseReportingUrl extends
               try {
                 throw ee.exception();
               } catch (UncheckedIOException | IllegalArgumentException
-                  | ReportingUrlUtil.InvalidUrlException e) {
+                  | ParsedReportingUrl.InvalidUrlException e) {
                 return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
                     ee.exception());
               }

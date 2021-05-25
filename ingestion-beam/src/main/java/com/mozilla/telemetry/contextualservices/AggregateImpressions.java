@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -35,9 +36,9 @@ public class AggregateImpressions
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
   private static final List<String> aggregationFields = ImmutableList.of(
-      ReportingUrlUtil.PARAM_COUNTRY_CODE, ReportingUrlUtil.PARAM_REGION_CODE,
-      ReportingUrlUtil.PARAM_FORM_FACTOR, ReportingUrlUtil.PARAM_OS_FAMILY,
-      ReportingUrlUtil.PARAM_ID);
+      ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE,
+      ParsedReportingUrl.PARAM_FORM_FACTOR, ParsedReportingUrl.PARAM_OS_FAMILY,
+      ParsedReportingUrl.PARAM_ID);
 
   private final ValueProvider<String> aggregationWindowDuration;
 
@@ -59,22 +60,24 @@ public class AggregateImpressions
         // Set timestamp to current time
         .apply(WithTimestamps.of(message -> new Instant())) //
         // Group impressions into timed windows
-        .apply(Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration.get())))) //
+        // TODO: Use valueprovider
+        .apply("IntervalWindow", Window.into(FixedWindows.of(Time.parseDuration("10m")))) //
         .apply(Count.perKey()) //
         // Create aggregated url by adding impression count as query parameter
         .apply(ParDo.of(new BuildAggregateUrl())) //
-        .apply(Window.into(new GlobalWindows()));
+        .apply("Return to GlobalWindow", Window.into(new GlobalWindows()));
   }
 
-  private static String getAggregationKey(PubsubMessage message) {
+  @VisibleForTesting
+  static String getAggregationKey(PubsubMessage message) {
     message = PubsubConstraints.ensureNonNull(message);
 
     String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
 
-    ReportingUrlUtil urlParser = new ReportingUrlUtil(reportingUrl);
+    ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
     // Rebuild url filtering out unneeded parameters
-    ReportingUrlUtil aggregationUrl = new ReportingUrlUtil(urlParser.getBaseUrl());
+    ParsedReportingUrl aggregationUrl = new ParsedReportingUrl(urlParser.getBaseUrl());
     for (String name : aggregationFields) {
       aggregationUrl.addQueryParam(name, urlParser.getQueryParam(name));
     }
@@ -82,21 +85,22 @@ public class AggregateImpressions
     return aggregationUrl.toString();
   }
 
-  private class BuildAggregateUrl extends DoFn<KV<String, Long>, PubsubMessage> {
+  @VisibleForTesting
+  static class BuildAggregateUrl extends DoFn<KV<String, Long>, PubsubMessage> {
 
     @ProcessElement
     public void processElement(@Element KV<String, Long> input, OutputReceiver<PubsubMessage> out,
         IntervalWindow window) {
-      ReportingUrlUtil urlParser = new ReportingUrlUtil(input.getKey());
+      ParsedReportingUrl urlParser = new ParsedReportingUrl(input.getKey());
 
       long impressionCount = input.getValue();
       long windowStart = window.start().getMillis();
       long windowEnd = window.end().getMillis();
 
-      urlParser.addQueryParam(ReportingUrlUtil.PARAM_IMPRESSIONS, Long.toString(impressionCount));
-      urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_BEGIN,
+      urlParser.addQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS, Long.toString(impressionCount));
+      urlParser.addQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_BEGIN,
           Long.toString(windowStart / 1000));
-      urlParser.addQueryParam(ReportingUrlUtil.PARAM_TIMESTAMP_END,
+      urlParser.addQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_END,
           Long.toString(windowEnd / 1000));
 
       Map<String, String> attributeMap = ImmutableMap.of(Attribute.REPORTING_URL,

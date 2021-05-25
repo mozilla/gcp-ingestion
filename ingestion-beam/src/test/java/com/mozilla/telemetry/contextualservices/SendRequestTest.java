@@ -1,7 +1,7 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.Iterables;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +58,7 @@ public class SendRequestTest {
         .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterators.size(messages.iterator()));
+      Assert.assertEquals(2, Iterables.size(messages));
       return null;
     });
 
@@ -84,7 +84,7 @@ public class SendRequestTest {
         .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.output()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterators.size(messages.iterator()));
+      Assert.assertEquals(2, Iterables.size(messages));
       return null;
     });
 
@@ -109,7 +109,7 @@ public class SendRequestTest {
         .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterators.size(messages.iterator()));
+      Assert.assertEquals(1, Iterables.size(messages));
       return null;
     });
 
@@ -134,9 +134,9 @@ public class SendRequestTest {
         .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(true)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterators.size(messages.iterator()));
+      Assert.assertEquals(1, Iterables.size(messages));
 
-      PubsubMessage message = Iterators.get(messages.iterator(), 0);
+      PubsubMessage message = Iterables.get(messages, 0);
       String errorMessage = message.getAttribute("error_message");
 
       Assert.assertTrue(
