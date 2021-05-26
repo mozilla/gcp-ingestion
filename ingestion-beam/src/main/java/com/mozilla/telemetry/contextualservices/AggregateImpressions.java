@@ -13,7 +13,6 @@ import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -40,13 +39,13 @@ public class AggregateImpressions
       ParsedReportingUrl.PARAM_FORM_FACTOR, ParsedReportingUrl.PARAM_OS_FAMILY,
       ParsedReportingUrl.PARAM_ID);
 
-  private final ValueProvider<String> aggregationWindowDuration;
+  private final String aggregationWindowDuration;
 
-  public AggregateImpressions(ValueProvider<String> aggregationWindowDuration) {
+  public AggregateImpressions(String aggregationWindowDuration) {
     this.aggregationWindowDuration = aggregationWindowDuration;
   }
 
-  public static AggregateImpressions of(ValueProvider<String> getAggregationWindowSize) {
+  public static AggregateImpressions of(String getAggregationWindowSize) {
     return new AggregateImpressions(getAggregationWindowSize);
   }
 
@@ -60,8 +59,8 @@ public class AggregateImpressions
         // Set timestamp to current time
         .apply(WithTimestamps.of(message -> new Instant())) //
         // Group impressions into timed windows
-        // TODO: Use valueprovider
-        .apply("IntervalWindow", Window.into(FixedWindows.of(Time.parseDuration("10m")))) //
+        .apply("IntervalWindow",
+            Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration)))) //
         .apply(Count.perKey()) //
         // Create aggregated url by adding impression count as query parameter
         .apply(ParDo.of(new BuildAggregateUrl())) //

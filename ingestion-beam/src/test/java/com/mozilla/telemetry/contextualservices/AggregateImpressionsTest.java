@@ -85,7 +85,7 @@ public class AggregateImpressionsTest {
         new PubsubMessage(new byte[0], attributesUrl2));
 
     PCollection<PubsubMessage> output = pipeline.apply(Create.of(input))
-        .apply(AggregateImpressions.of(pipeline.newProvider("10m")));
+        .apply(AggregateImpressions.of("10m"));
 
     PAssert.that(output).satisfies(messages -> {
 

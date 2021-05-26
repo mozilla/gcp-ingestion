@@ -32,9 +32,9 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   @Description("Duration window for aggregation of reporting requests.")
   @Default.String("10m")
-  ValueProvider<String> getAggregationWindowDuration();
+  String getAggregationWindowDuration();
 
-  void setAggregationWindowDuration(ValueProvider<String> value);
+  void setAggregationWindowDuration(String value);
 
   @Description("If set to true, send successfully requested reporting URLs to"
       + "error output.  SendRequests stage does not continue if true.")
