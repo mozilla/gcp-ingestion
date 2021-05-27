@@ -312,6 +312,21 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testBug1712850Affected() {
+    Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE,
+        "contextual-services");
+
+    assertTrue(MessageScrubber.bug1712850Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.DOCUMENT_TYPE, "quicksuggest-impression").build()));
+    assertFalse(MessageScrubber.bug1712850Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.DOCUMENT_TYPE, "quicksuggest-click").build()));
+    assertFalse(MessageScrubber.bug1712850Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.DOCUMENT_TYPE, "topsites-impression").build()));
+    assertFalse(MessageScrubber.bug1712850Affected(ImmutableMap.<String, String>builder()
+        .putAll(baseAttributes).put(Attribute.DOCUMENT_TYPE, "topsites-click").build()));
+  }
+
+  @Test
   public void testRedactForBug1602844() throws Exception {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY)
@@ -429,6 +444,23 @@ public class MessageScrubberTest {
     assertFalse(json.path("payload").path("syncs").path(0).path("engines").path(1).has("outgoing"));
     assertFalse(json.path("payload").path("syncs").path(1).path("engines").path(0).has("outgoing"));
     assertFalse(json.path("payload").path("syncs").path(1).path("engines").path(1).has("outgoing"));
+  }
+
+  @Test
+  public void testRedactForBug1712850() throws Exception {
+    ObjectNode json = Json.readObjectNode(("{\n" //
+        + "\"payload\": {\n" //
+        + "  \"search_query\": \"abc\"\n" //
+        + "  }\n}").getBytes(StandardCharsets.UTF_8));
+
+    final Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "contextual-services")
+        .put(Attribute.DOCUMENT_TYPE, "quicksuggest-impression").build();
+
+    assertTrue(json.path("payload").hasNonNull("search_query"));
+    MessageScrubber.scrub(attributes, json);
+    assertTrue(json.path("payload").hasNonNull("search_query"));
+    assertEquals("", json.path("payload").path("search_query").asText());
   }
 
   @Test
