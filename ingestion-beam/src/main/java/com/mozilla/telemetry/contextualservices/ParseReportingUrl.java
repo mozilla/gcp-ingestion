@@ -13,15 +13,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -52,30 +51,12 @@ public class ParseReportingUrl extends
   private static final String PARAM_MAC = "macOS";
   private static final String PARAM_LINUX = "Linux";
 
-  // API parameter names
-  private static final String PARAM_COUNTRY_CODE = "country-code";
-  private static final String PARAM_REGION_CODE = "region-code";
-  private static final String PARAM_OS_FAMILY = "os-family";
-  private static final String PARAM_FORM_FACTOR = "form-factor";
-  private static final String PARAM_PRODUCT_VERSION = "product-version";
-
   public static ParseReportingUrl of(ValueProvider<String> urlAllowList) {
     return new ParseReportingUrl(urlAllowList);
   }
 
   private ParseReportingUrl(ValueProvider<String> urlAllowList) {
     this.urlAllowList = urlAllowList;
-  }
-
-  private static class InvalidUrlException extends RuntimeException {
-
-    InvalidUrlException(String message) {
-      super(message);
-    }
-
-    public InvalidUrlException(String message, Throwable cause) {
-      super(message, cause);
-    }
   }
 
   @Override
@@ -102,40 +83,26 @@ public class ParseReportingUrl extends
 
           String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
 
-          URL urlObj;
-          try {
-            urlObj = new URL(reportingUrl);
-          } catch (MalformedURLException e) {
-            throw new InvalidUrlException("Could not parse reporting URL: " + reportingUrl, e);
-          }
+          ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
-          if (urlObj.getHost() == null || urlObj.getHost().isEmpty()) {
-            throw new InvalidUrlException("Reporting URL null or missing: " + reportingUrl);
-          }
-
-          if (!isUrlValid(urlObj, attributes.get(Attribute.DOCUMENT_TYPE))) {
+          if (!isUrlValid(urlParser.getReportingUrl(), attributes.get(Attribute.DOCUMENT_TYPE))) {
             PerDocTypeCounter.inc(attributes, "RejectedNonNullUrl");
-            throw new InvalidUrlException(
+            throw new ParsedReportingUrl.InvalidUrlException(
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
-
-          if (urlObj.getQuery() == null) {
-            throw new IllegalArgumentException("Missing query string from URL: " + reportingUrl);
-          }
-          Map<String, String> queryParams = Arrays.stream(urlObj.getQuery().split("&"))
-              .map(param -> param.split("=")).filter(param -> param.length > 1)
-              .collect(Collectors.toMap(item -> item[0], item -> item[1]));
 
           if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
             throw new IllegalArgumentException(
                 "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE);
           }
-          queryParams.put(PARAM_COUNTRY_CODE,
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE,
               payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
 
-          queryParams.put(PARAM_REGION_CODE, attributes.get(Attribute.GEO_SUBDIVISION1));
-          queryParams.put(PARAM_OS_FAMILY, getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
-          queryParams.put(PARAM_FORM_FACTOR, "desktop");
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_REGION_CODE,
+              attributes.get(Attribute.GEO_SUBDIVISION1));
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY,
+              getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
+          urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop");
 
           if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
               || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("quicksuggest-click")) {
@@ -144,22 +111,11 @@ public class ParseReportingUrl extends
               throw new IllegalArgumentException(
                   "Missing required attribute " + Attribute.USER_AGENT_VERSION);
             }
-            queryParams.put(PARAM_PRODUCT_VERSION, "firefox_" + userAgentVersion);
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_PRODUCT_VERSION,
+                "firefox_" + userAgentVersion);
           }
 
-          // Generate query string from map
-          String queryString = queryParams.entrySet().stream()
-              .map(entry -> String.format("%s=%s", entry.getKey(),
-                  entry.getValue() == null ? "" : entry.getValue()))
-              .collect(Collectors.joining("&"));
-
-          try {
-            reportingUrl = new URL(urlObj.getProtocol(), urlObj.getHost(),
-                urlObj.getPath() + "?" + queryString).toString();
-          } catch (MalformedURLException e) {
-            throw new InvalidUrlException(
-                "Could not parse reporting with query string: " + queryString, e);
-          }
+          reportingUrl = urlParser.toString();
 
           attributes.put(Attribute.REPORTING_URL, reportingUrl);
           payload.put(Attribute.REPORTING_URL, reportingUrl);
@@ -169,7 +125,8 @@ public class ParseReportingUrl extends
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
               try {
                 throw ee.exception();
-              } catch (UncheckedIOException | IllegalArgumentException | InvalidUrlException e) {
+              } catch (UncheckedIOException | IllegalArgumentException
+                  | ParsedReportingUrl.InvalidUrlException e) {
                 return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
                     ee.exception());
               }
@@ -204,6 +161,9 @@ public class ParseReportingUrl extends
    * @throws IllegalArgumentException if the given OS value is not recognized
    */
   private String getOsParam(String userAgentOs) {
+    if (userAgentOs == null) {
+      throw new IllegalArgumentException("Missing required OS attribute");
+    }
     if (userAgentOs.startsWith(OS_WINDOWS)) {
       return PARAM_WINDOWS;
     } else if (userAgentOs.startsWith(OS_MAC)) {
@@ -211,8 +171,7 @@ public class ParseReportingUrl extends
     } else if (userAgentOs.startsWith(OS_LINUX)) {
       return PARAM_LINUX;
     } else {
-      throw new IllegalArgumentException(
-          "Could not get os-family param: Unrecognized OS: " + userAgentOs);
+      throw new IllegalArgumentException("Unrecognized OS attribute: " + userAgentOs);
     }
   }
 
@@ -224,8 +183,8 @@ public class ParseReportingUrl extends
    * @throws IllegalArgumentException if the given file location cannot be retrieved
    *     or the CSV format is incorrect
    */
-  private Map<String, String> readMappingFromFile(ValueProvider<String> fileLocation,
-      String paramName) throws IOException {
+  private List<String[]> readPairsFromFile(ValueProvider<String> fileLocation, String paramName)
+      throws IOException {
     if (fileLocation == null || !fileLocation.isAccessible()) {
       throw new IllegalArgumentException("--" + paramName + " argument not accessible");
     }
@@ -233,7 +192,7 @@ public class ParseReportingUrl extends
     try (InputStream inputStream = BeamFileInputStream.open(fileLocation.get());
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
         BufferedReader reader = new BufferedReader(inputStreamReader)) {
-      Map<String, String> mapping = new HashMap<>();
+      List<String[]> pairs = new ArrayList<>();
 
       while (reader.ready()) {
         String line = reader.readLine();
@@ -245,11 +204,12 @@ public class ParseReportingUrl extends
             throw new IllegalArgumentException(
                 "Invalid mapping: " + line + "; two-column csv expected");
           }
-          mapping.put(separated[0], separated[1]);
+
+          pairs.add(separated);
         }
       }
 
-      return mapping;
+      return pairs;
     } catch (IOException e) {
       throw new IOException("Exception thrown while fetching " + paramName, e);
     }
@@ -261,16 +221,17 @@ public class ParseReportingUrl extends
       singletonAllowedImpressionUrls = new HashSet<>();
       singletonAllowedClickUrls = new HashSet<>();
 
-      Map<String, String> urlToActionTypeMap = readMappingFromFile(urlAllowList, "urlAllowList");
+      List<String[]> urlToActionTypePairs = readPairsFromFile(urlAllowList, "urlAllowList");
 
-      for (Map.Entry<String, String> urlToActionType : urlToActionTypeMap.entrySet()) {
-        if (urlToActionType.getValue().equals("click")) {
-          singletonAllowedClickUrls.add(urlToActionType.getKey());
-        } else if (urlToActionType.getValue().equals("impression")) {
-          singletonAllowedImpressionUrls.add(urlToActionType.getKey());
+      // 0th element is site, 1st element is action type (click/impression)
+      for (String[] urlToActionType : urlToActionTypePairs) {
+        if (urlToActionType[1].equals("click")) {
+          singletonAllowedClickUrls.add(urlToActionType[0]);
+        } else if (urlToActionType[1].equals("impression")) {
+          singletonAllowedImpressionUrls.add(urlToActionType[0]);
         } else {
           throw new IllegalArgumentException(
-              "Invalid action type in url allow list: " + urlToActionType.getValue());
+              "Invalid action type in url allow list: " + urlToActionType[1]);
         }
       }
     }

@@ -1,16 +1,21 @@
 package com.mozilla.telemetry;
 
+import com.google.common.collect.ImmutableSet;
+import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
+import com.mozilla.telemetry.ingestion.core.Constant;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
@@ -49,13 +54,30 @@ public class ContextualServicesReporter extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    pipeline //
+    PCollection<PubsubMessage> requests = pipeline //
         .apply(options.getInputType().read(options)) //
         .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
-        .failuresTo(errorCollections) //
-        .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections);
+        .failuresTo(errorCollections);
+
+    Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
+
+    // Aggregate impressions
+    PCollection<PubsubMessage> aggregated = requests
+        .apply("FilterAggregatedDocTypes",
+            Filter.by((message) -> aggregatedDocTypes
+                .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
+        .apply(AggregateImpressions.of(options.getAggregationWindowDuration())); //
+
+    PCollection<PubsubMessage> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
+        Filter.by((message) -> !aggregatedDocTypes
+            .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE))));
+
+    PCollectionList.of(aggregated).and(unaggregated).apply(Flatten.pCollections()) //
+        .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
+        .failuresTo(errorCollections);
+
     // Note that there is no write step here for "successes"
     // since the purpose of this job is sending to an external API.
 

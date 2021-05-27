@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
@@ -34,6 +35,7 @@ public class SendRequest extends
       "reporting_request_millis");
 
   private final ValueProvider<Boolean> reportingEnabled;
+  private final ValueProvider<Boolean> logReportingUrls;
 
   private static class HttpRequestException extends IOException {
 
@@ -49,12 +51,26 @@ public class SendRequest extends
     }
   }
 
-  public SendRequest(ValueProvider<Boolean> reportingEnabled) {
-    this.reportingEnabled = reportingEnabled;
+  /**
+   * Used to log requests for debugging purposes.
+   */
+  @VisibleForTesting
+  static class RequestContentException extends RuntimeException {
+
+    RequestContentException(String url) {
+      super("Reporting URL sent: " + url);
+    }
   }
 
-  public static SendRequest of(ValueProvider<Boolean> reportingEnabled) {
-    return new SendRequest(reportingEnabled);
+  public SendRequest(ValueProvider<Boolean> reportingEnabled,
+      ValueProvider<Boolean> logReportingUrls) {
+    this.reportingEnabled = reportingEnabled;
+    this.logReportingUrls = logReportingUrls;
+  }
+
+  public static SendRequest of(ValueProvider<Boolean> reportingEnabled,
+      ValueProvider<Boolean> logReportingUrls) {
+    return new SendRequest(reportingEnabled, logReportingUrls);
   }
 
   @Override
@@ -78,13 +94,17 @@ public class SendRequest extends
             sendRequest(request);
           }
 
+          if (logReportingUrls.isAccessible() && logReportingUrls.get()) {
+            throw new RequestContentException(reportingUrl);
+          }
+
           return new PubsubMessage(message.getPayload(), new HashMap<>());
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
               try {
                 throw ee.exception();
-              } catch (UncheckedIOException e) {
-                return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
+              } catch (UncheckedIOException | RequestContentException e) {
+                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
                     ee.exception());
               }
             }));
