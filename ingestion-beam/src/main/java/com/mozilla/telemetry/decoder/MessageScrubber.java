@@ -309,7 +309,7 @@ public class MessageScrubber {
   // See bug 1712850
   @VisibleForTesting
   static boolean bug1712850Affected(Map<String, String> attributes) {
-    return attributes.get(Attribute.DOCUMENT_NAMESPACE).equals("contextual-services")
-        && attributes.get(Attribute.DOCUMENT_TYPE).equals("quicksuggest-impression");
+    return "contextual-services".equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "quicksuggest-impression".equals(attributes.get(Attribute.DOCUMENT_TYPE));
   }
 }
