@@ -1,7 +1,7 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
+import com.google.common.collect.Iterables;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +33,8 @@ public class SendRequestTest {
     List<PubsubMessage> input = Collections
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
-    pipeline.apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(false)));
+    pipeline.apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(false), pipeline.newProvider(false)));
 
     pipeline.run();
 
@@ -53,10 +54,11 @@ public class SendRequestTest {
         new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(true)));
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterators.size(messages.iterator()));
+      Assert.assertEquals(2, Iterables.size(messages));
       return null;
     });
 
@@ -78,10 +80,11 @@ public class SendRequestTest {
         new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(true)));
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.output()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterators.size(messages.iterator()));
+      Assert.assertEquals(2, Iterables.size(messages));
       return null;
     });
 
@@ -102,10 +105,44 @@ public class SendRequestTest {
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(pipeline.newProvider(true)));
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterators.size(messages.iterator()));
+      Assert.assertEquals(1, Iterables.size(messages));
+      return null;
+    });
+
+    pipeline.run();
+
+    Assert.assertEquals(1, server.getRequestCount());
+  }
+
+  @Test
+  public void testLogReportingUrls() {
+    MockWebServer server = new MockWebServer();
+    server.enqueue(new MockResponse().setResponseCode(200));
+
+    String requestUrl = server.url("/test").toString();
+    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL, requestUrl);
+
+    List<PubsubMessage> input = Collections
+        .singletonList(new PubsubMessage(new byte[0], attributes));
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
+        .apply(Create.of(input))
+        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(true)));
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+
+      PubsubMessage message = Iterables.get(messages, 0);
+      String errorMessage = message.getAttribute("error_message");
+
+      Assert.assertTrue(
+          errorMessage.contains(SendRequest.RequestContentException.class.getSimpleName()));
+      Assert.assertTrue(errorMessage.contains(requestUrl));
+
       return null;
     });
 

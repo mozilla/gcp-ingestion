@@ -30,6 +30,19 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setReportingEnabled(ValueProvider<Boolean> value);
 
+  @Description("Duration window for aggregation of reporting requests.")
+  @Default.String("10m")
+  String getAggregationWindowDuration();
+
+  void setAggregationWindowDuration(String value);
+
+  @Description("If set to true, send successfully requested reporting URLs to"
+      + "error output.  SendRequests stage does not continue if true.")
+  @Default.Boolean(true)
+  ValueProvider<Boolean> getLogReportingUrls();
+
+  void setLogReportingUrls(ValueProvider<Boolean> value);
+
   @Hidden
   interface Parsed extends ContextualServicesReporterOptions, SinkOptions.Parsed {
   }
