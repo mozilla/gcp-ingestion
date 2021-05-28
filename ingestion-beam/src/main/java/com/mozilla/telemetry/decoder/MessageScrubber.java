@@ -188,6 +188,14 @@ public class MessageScrubber {
         });
       });
     }
+
+    if (bug1712850Affected(attributes)) {
+      JsonNode payload = json.path("payload");
+      if (payload.hasNonNull("search_query")) {
+        ((ObjectNode) payload).put("search_query", "");
+        markBugCounter("1712850");
+      }
+    }
   }
 
   /**
@@ -296,5 +304,12 @@ public class MessageScrubber {
         && attributes.get(Attribute.DOCUMENT_TYPE).equals("sync")
         && attributes.get(Attribute.APP_VERSION) != null
         && attributes.get(Attribute.APP_VERSION).matches("^([0-9]|[0-2][0-7])\\..*"); // <= 27
+  }
+
+  // See bug 1712850
+  @VisibleForTesting
+  static boolean bug1712850Affected(Map<String, String> attributes) {
+    return "contextual-services".equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "quicksuggest-impression".equals(attributes.get(Attribute.DOCUMENT_TYPE));
   }
 }
