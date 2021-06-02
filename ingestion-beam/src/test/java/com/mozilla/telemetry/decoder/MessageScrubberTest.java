@@ -449,18 +449,19 @@ public class MessageScrubberTest {
   @Test
   public void testRedactForBug1712850() throws Exception {
     ObjectNode json = Json.readObjectNode(("{\n" //
-        + "\"payload\": {\n" //
-        + "  \"search_query\": \"abc\"\n" //
-        + "  }\n}").getBytes(StandardCharsets.UTF_8));
+        + "  \"search_query\": \"abc\",\n" //
+        + "  \"matched_keywords\": \"abc\"\n" //
+        + "}").getBytes(StandardCharsets.UTF_8));
 
     final Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "contextual-services")
         .put(Attribute.DOCUMENT_TYPE, "quicksuggest-impression").build();
 
-    assertTrue(json.path("payload").hasNonNull("search_query"));
+    assertTrue(json.hasNonNull("search_query"));
+    assertTrue(json.hasNonNull("matched_keywords"));
     MessageScrubber.scrub(attributes, json);
-    assertTrue(json.path("payload").hasNonNull("search_query"));
-    assertEquals("", json.path("payload").path("search_query").asText());
+    assertEquals("", json.path("search_query").asText());
+    assertEquals("", json.path("matched_keywords").asText());
   }
 
   @Test

@@ -190,9 +190,9 @@ public class MessageScrubber {
     }
 
     if (bug1712850Affected(attributes)) {
-      JsonNode payload = json.path("payload");
-      if (payload.hasNonNull("search_query")) {
-        ((ObjectNode) payload).put("search_query", "");
+      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
+        json.put("search_query", "");
+        json.put("matched_keywords", "");
         markBugCounter("1712850");
       }
     }
