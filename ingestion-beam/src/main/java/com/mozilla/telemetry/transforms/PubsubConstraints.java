@@ -38,12 +38,14 @@ public class PubsubConstraints {
     return truncateToFitUtf8ByteLength(value, MAX_ATTRIBUTE_VALUE_BYTES);
   }
 
-  /** Fills out empty attributes if message or attributeMap are null. */
+  /** Fills out empty payload and attributes if the message itself or components are null. */
   public static PubsubMessage ensureNonNull(PubsubMessage message) {
     if (message == null) {
-      return new PubsubMessage(new byte[] {}, new HashMap<>(), null);
+      return new PubsubMessage(new byte[] {}, new HashMap<>());
+    } else if (message.getPayload() == null) {
+      return ensureNonNull(new PubsubMessage(new byte[] {}, message.getAttributeMap()));
     } else if (message.getAttributeMap() == null) {
-      return new PubsubMessage(message.getPayload(), new HashMap<>(), message.getMessageId());
+      return ensureNonNull(new PubsubMessage(message.getPayload(), new HashMap<>()));
     } else {
       return message;
     }

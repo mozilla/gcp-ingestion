@@ -1,13 +1,7 @@
 package com.mozilla.telemetry.transforms;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
 
-import com.google.common.collect.ImmutableMap;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
@@ -19,38 +13,6 @@ public class PubsubConstraintsTest {
 
   // Euro is 3 bytes in UTF-8.
   private static final char EURO = '€';
-
-  private void expectNonNull(PubsubMessage message, boolean expectSameMessage,
-      String expectedPayload, Map<String, String> expectedAttributeMap, String expectedMessageId) {
-    assertEquals(expectedPayload,
-        new String(PubsubConstraints.ensureNonNull(message).getPayload(), StandardCharsets.UTF_8));
-    assertEquals(expectedAttributeMap, PubsubConstraints.ensureNonNull(message).getAttributeMap());
-    assertEquals(expectedMessageId, PubsubConstraints.ensureNonNull(message).getMessageId());
-    if (expectSameMessage) {
-      assertEquals(message, PubsubConstraints.ensureNonNull(message));
-    } else {
-      assertNotEquals(message, PubsubConstraints.ensureNonNull(message));
-    }
-  }
-
-  @Test
-  public void testEnsureNonNull() {
-    final byte[] emptyBytes = new byte[] {};
-    final byte[] testBytes = "test".getBytes(StandardCharsets.UTF_8);
-    final Map<String, String> emptyMap = ImmutableMap.of();
-    final Map<String, String> nonEmptyMap = ImmutableMap.of("k", "v");
-
-    // PubsubMessage enforces non-null payload
-    assertThrows(NullPointerException.class, () -> new PubsubMessage(null, emptyMap, "1"));
-
-    expectNonNull(null, false, "", emptyMap, null);
-    expectNonNull(new PubsubMessage(emptyBytes, null, null), false, "", emptyMap, null);
-    expectNonNull(new PubsubMessage(testBytes, null, "1"), false, "test", emptyMap, "1");
-    expectNonNull(new PubsubMessage(emptyBytes, emptyMap, null), true, "", emptyMap, null);
-    expectNonNull(new PubsubMessage(testBytes, emptyMap, "2"), true, "test", emptyMap, "2");
-    expectNonNull(new PubsubMessage(emptyBytes, nonEmptyMap, null), true, "", nonEmptyMap, null);
-    expectNonNull(new PubsubMessage(testBytes, nonEmptyMap, "3"), true, "test", nonEmptyMap, "3");
-  }
 
   @Test
   public void testTruncatePreservesShortAscii() {
