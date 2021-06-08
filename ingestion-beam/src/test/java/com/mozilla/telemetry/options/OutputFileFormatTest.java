@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.options;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
 
 import java.io.UncheckedIOException;
 import java.util.HashMap;
@@ -11,13 +10,10 @@ import org.junit.Test;
 
 public class OutputFileFormatTest {
 
-  private static final byte[] emptyBytes = new byte[] {};
-
   @Test
-  public void testEmptyText() {
+  public void testNullText() {
     assertEquals("", OutputFileFormat.text.encodeSingleMessage(null));
-    assertEquals("",
-        OutputFileFormat.text.encodeSingleMessage(new PubsubMessage(emptyBytes, null)));
+    assertEquals("", OutputFileFormat.text.encodeSingleMessage(new PubsubMessage(null, null)));
   }
 
   @Test
@@ -25,11 +21,10 @@ public class OutputFileFormatTest {
     assertEquals("null", OutputFileFormat.json.encodeSingleMessage(null));
   }
 
-  @Test
+  @Test(expected = UncheckedIOException.class)
   public void testInvalidAttributeMapThrows() {
     Map<String, String> attributes = new HashMap<>();
     attributes.put(null, "hi");
-    assertThrows(UncheckedIOException.class,
-        () -> OutputFileFormat.json.encodeSingleMessage(new PubsubMessage(emptyBytes, attributes)));
+    OutputFileFormat.json.encodeSingleMessage(new PubsubMessage(null, attributes));
   }
 }
