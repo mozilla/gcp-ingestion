@@ -20,19 +20,14 @@ public class BeamDependenciesIntegrationTest {
   public void checkVersions() throws Exception {
     final String beamVersion = System.getProperty("beam.version");
     final Pom beamCore = getPom("org.apache.beam", "beam-sdks-java-core", beamVersion);
-    final Pom beamGcpIO = getPom("org.apache.beam", "beam-sdks-java-io-google-cloud-platform",
-        beamVersion);
 
     final Map<String, Optional<String>> expectedVersions = ImmutableMap.of(//
         "avro.version", beamCore.getVersion("org.apache.avro", "avro"), //
-        "jackson.version", beamCore.getVersion("com.fasterxml.jackson.core", "jackson-core"), //
-        "googleCloudLibraries.version", beamGcpIO.getVersion("com.google.cloud", "libraries-bom"));
+        "jackson.version", beamCore.getVersion("com.fasterxml.jackson.core", "jackson-core"));
 
     final Map<String, Optional<String>> actualVersions = ImmutableMap.of(//
         "avro.version", Optional.of(System.getProperty("avro.version")), //
-        "jackson.version", Optional.of(System.getProperty("jackson.version")), //
-        "googleCloudLibraries.version",
-        Optional.of(System.getProperty("googleCloudLibraries.version")));
+        "jackson.version", Optional.of(System.getProperty("jackson.version")));
 
     assertEquals(expectedVersions, actualVersions);
   }

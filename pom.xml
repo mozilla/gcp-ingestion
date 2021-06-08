@@ -68,7 +68,6 @@
              check https://mvnrepository.com/artifact/org.apache.beam -->
         <jackson.version>2.10.2</jackson.version>
         <avro.version>1.8.2</avro.version>
-        <googleCloudLibraries.version>13.2.0</googleCloudLibraries.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
@@ -85,7 +84,7 @@
         <dependencies>
             <dependency>
                 <groupId>org.apache.beam</groupId>
-                <artifactId>beam-sdks-java-bom</artifactId>
+                <artifactId>beam-sdks-java-google-cloud-platform-bom</artifactId>
                 <version>${beam.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
@@ -96,13 +95,6 @@
                 <version>${jackson.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>libraries-bom</artifactId>
-                <version>${googleCloudLibraries.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -306,7 +298,6 @@
                         <beam.version>${beam.version}</beam.version>
                         <jackson.version>${jackson.version}</jackson.version>
                         <avro.version>${avro.version}</avro.version>
-                        <googleCloudLibraries.version>${googleCloudLibraries.version}</googleCloudLibraries.version>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
