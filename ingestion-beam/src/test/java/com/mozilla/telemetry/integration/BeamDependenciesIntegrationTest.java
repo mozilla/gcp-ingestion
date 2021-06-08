@@ -20,8 +20,6 @@ public class BeamDependenciesIntegrationTest {
   public void checkVersions() throws Exception {
     final String beamVersion = System.getProperty("beam.version");
     final Pom beamCore = getPom("org.apache.beam", "beam-sdks-java-core", beamVersion);
-    final Pom beamGcpIO = getPom("org.apache.beam", "beam-sdks-java-io-google-cloud-platform",
-        beamVersion);
 
     final Map<String, Optional<String>> expectedVersions = ImmutableMap.of(//
         "avro.version", beamCore.getVersion("org.apache.avro", "avro"), //
