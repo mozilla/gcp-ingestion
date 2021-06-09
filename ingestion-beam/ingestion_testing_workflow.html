@@ -13,19 +13,19 @@
         <meta name="author" content="Mozilla Data Platform Team">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.1.6">
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.7">
     
     
       
-        <title>Reliability - GCP Ingestion</title>
+        <title>Ingestion Testing Workflow - GCP Ingestion</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.875de78c.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ca7ac06f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.f1a3b89f.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.f1a3b89f.min.css">
         
           
           
@@ -59,7 +59,7 @@
     <body dir="ltr" data-md-color-scheme="" data-md-color-primary="teal" data-md-color-accent="">
   
     
-    <script>function __prefix(e){return new URL("../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -67,7 +67,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#reliability" class="md-skip">
+        <a href="#ingestion-testing-workflow" class="md-skip">
           Skip to content
         </a>
       
@@ -78,7 +78,7 @@
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../index.html" title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -97,7 +97,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Reliability
+              Ingestion Testing Workflow
             
           </span>
         </div>
@@ -168,7 +168,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../.." class="md-tabs__link">
+    <a href="../index.html" class="md-tabs__link">
       Home
     </a>
   </li>
@@ -177,15 +177,13 @@
         
   
   
-    
-  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../overview/" class="md-tabs__link md-tabs__link--active">
+      <a href="../architecture/overview.html" class="md-tabs__link">
         Architecture
       </a>
     </li>
@@ -201,7 +199,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-edge/" class="md-tabs__link">
+      <a href="../ingestion-edge/index.html" class="md-tabs__link">
         ingestion-edge
       </a>
     </li>
@@ -211,13 +209,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-beam/" class="md-tabs__link">
+      <a href="index.html" class="md-tabs__link md-tabs__link--active">
         ingestion-beam
       </a>
     </li>
@@ -233,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-sink/" class="md-tabs__link">
+      <a href="../ingestion-sink/index.html" class="md-tabs__link">
         ingestion-sink
       </a>
     </li>
@@ -260,7 +260,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../index.html" title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -292,7 +292,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../index.html" class="md-nav__link">
         Home
       </a>
     </li>
@@ -305,14 +305,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" data-md-state="indeterminate" type="checkbox" id="__nav_2" checked>
       
       <label class="md-nav__link" for="__nav_2">
         Architecture
@@ -330,7 +328,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="../architecture/overview.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -340,14 +338,12 @@
             
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_2" type="checkbox" id="__nav_2_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_2" data-md-state="indeterminate" type="checkbox" id="__nav_2_2" checked>
       
       <label class="md-nav__link" for="__nav_2_2">
         Architecture
@@ -365,7 +361,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../bigquery_sink_specification/" class="md-nav__link">
+      <a href="../architecture/bigquery_sink_specification.html" class="md-nav__link">
         Live Sink Service Specification
       </a>
     </li>
@@ -377,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decoder_service_specification/" class="md-nav__link">
+      <a href="../architecture/decoder_service_specification.html" class="md-nav__link">
         Decoder Service Specification
       </a>
     </li>
@@ -389,7 +385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../differences_from_aws/" class="md-nav__link">
+      <a href="../architecture/differences_from_aws.html" class="md-nav__link">
         Differences from AWS
       </a>
     </li>
@@ -401,7 +397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../edge_migration_plan/" class="md-nav__link">
+      <a href="../architecture/edge_migration_plan.html" class="md-nav__link">
         Plans for migrating edge traffic to GCP Ingestion
       </a>
     </li>
@@ -413,7 +409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../edge_service_specification/" class="md-nav__link">
+      <a href="../architecture/edge_service_specification.html" class="md-nav__link">
         Edge Service Specification
       </a>
     </li>
@@ -425,7 +421,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../landfill_service_specification/" class="md-nav__link">
+      <a href="../architecture/landfill_service_specification.html" class="md-nav__link">
         Raw Sink Service Specification
       </a>
     </li>
@@ -437,7 +433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pain_points/" class="md-nav__link">
+      <a href="../architecture/pain_points.html" class="md-nav__link">
         Pain points
       </a>
     </li>
@@ -447,79 +443,11 @@
             
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Reliability
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../architecture/reliability.html" class="md-nav__link">
         Reliability
       </a>
-      
-        
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#disclaimer-and-purpose" class="md-nav__link">
-    Disclaimer and Purpose
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reliability-target" class="md-nav__link">
-    Reliability Target
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#definitions" class="md-nav__link">
-    Definitions
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#exclusions" class="md-nav__link">
-    Exclusions
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#additional-information" class="md-nav__link">
-    Additional Information
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -529,7 +457,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test_requirements/" class="md-nav__link">
+      <a href="../architecture/test_requirements.html" class="md-nav__link">
         Test Requirements
       </a>
     </li>
@@ -577,7 +505,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-edge/" class="md-nav__link">
+      <a href="../ingestion-edge/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -596,12 +524,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" data-md-state="indeterminate" type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
       
       <label class="md-nav__link" for="__nav_4">
         ingestion-beam
@@ -619,7 +549,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/" class="md-nav__link">
+      <a href="index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -629,12 +559,14 @@
             
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" data-md-state="indeterminate" type="checkbox" id="__nav_4_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
       
       <label class="md-nav__link" for="__nav_4_2">
         Ingestion beam
@@ -652,7 +584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/decoder-job/" class="md-nav__link">
+      <a href="decoder-job.html" class="md-nav__link">
         Decoder Job
       </a>
     </li>
@@ -662,11 +594,65 @@
             
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../ingestion-beam/ingestion_testing_workflow/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Ingestion Testing Workflow
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="ingestion_testing_workflow.html" class="md-nav__link md-nav__link--active">
         Ingestion Testing Workflow
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#setting-up-the-gcs-project" class="md-nav__link">
+    Setting up the GCS project
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bootstrapping-schemas-from-mozilla-pipeline-schemas" class="md-nav__link">
+    Bootstrapping schemas from mozilla-pipeline-schemas
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-the-project" class="md-nav__link">
+    Building the project
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -676,7 +662,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/rally-job/" class="md-nav__link">
+      <a href="rally-job.html" class="md-nav__link">
         Rally Decoder Job
       </a>
     </li>
@@ -688,7 +674,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/republisher-job/" class="md-nav__link">
+      <a href="republisher-job.html" class="md-nav__link">
         Republisher Job
       </a>
     </li>
@@ -700,7 +686,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/sink-job/" class="md-nav__link">
+      <a href="sink-job.html" class="md-nav__link">
         Sink Job
       </a>
     </li>
@@ -748,7 +734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-sink/" class="md-nav__link">
+      <a href="../ingestion-sink/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -787,36 +773,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#disclaimer-and-purpose" class="md-nav__link">
-    Disclaimer and Purpose
+  <a href="#setting-up-the-gcs-project" class="md-nav__link">
+    Setting up the GCS project
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#reliability-target" class="md-nav__link">
-    Reliability Target
+  <a href="#bootstrapping-schemas-from-mozilla-pipeline-schemas" class="md-nav__link">
+    Bootstrapping schemas from mozilla-pipeline-schemas
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#definitions" class="md-nav__link">
-    Definitions
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#exclusions" class="md-nav__link">
-    Exclusions
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#additional-information" class="md-nav__link">
-    Additional Information
+  <a href="#building-the-project" class="md-nav__link">
+    Building the project
   </a>
   
 </li>
@@ -833,136 +805,82 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/architecture/reliability.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/ingestion_testing_workflow.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
                 
-                <h1 id="reliability">Reliability</h1>
-<p>In production the ingestion product aims to provide a Biweekly Uptime
-Percentage determined by the Reliability Target below. If a component does
-not meet that then a Stability Work Period should be assigned
-to each software engineer supporting the component.</p>
-<h2 id="disclaimer-and-purpose">Disclaimer and Purpose</h2>
-<p><strong>This document is intended solely for those directly running, writing, and
-managing GCP Ingestion. It is not an agreement, implicit or otherwise, with any
-other parties.</strong> This document is a prototype that should be treated as a goal
-that will require adjustments.</p>
-<p>The purpose of this document is first and foremost to encourage behavior that
-reduces Downtime. The secondary purpose is to establish clear expectations for
-how software engineers respond to Downtime.</p>
-<h2 id="reliability-target">Reliability Target</h2>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Biweekly Uptime Percentage</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ingestion-edge</td>
-<td>99.99%</td>
-</tr>
-<tr>
-<td>ingestion-beam</td>
-<td>99.5%</td>
-</tr>
-</tbody>
-</table>
-<h2 id="definitions">Definitions</h2>
-<p><strong>"Downtime"</strong> on ingestion-edge means for at least 0.1% of requests a status
-code lower than 500 was not successfully returned. On ingestion-beam it means
-<code>oldest_unacked_message_age</code> on a PubSub input exceeds 1 hour for a batch sink
-job or 1 minute for a decoder or streaming sink job.</p>
-<p><strong>"Downtime Period"</strong> means a period of 60 consecutive seconds of Downtime.
-Intermittent Downtime for a period of less than 60 consecutive seconds will not
-be counted towards any Downtime Periods.</p>
-<p><strong>"Biweekly Uptime Percentage"</strong> means total number of minutes in a rolling two
-week window, minus the number of minutes of Downtime suffered from all Downtime
-Periods in the window, divided by the total number of minutes in the window.</p>
-<p><strong>"Stability Work"</strong> means work on Downtime prevention and reduction. Only
-code changes resulting from that work may be deployed to production. All other
-features and work on the component are suspended.</p>
-<p><strong>"Stability Work Period"</strong> means a continuous period of time after recovery
-and postmortem, where each engineer is assigned Stability Work. The length of
-the Stability Work Period is determined below.</p>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Biweekly Uptime Percentage</th>
-<th>Length of Stability Work Period</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ingestion-edge</td>
-<td>99.9% to &lt; 99.99%</td>
-<td>2 weeks</td>
-</tr>
-<tr>
-<td>ingestion-edge</td>
-<td>99% to &lt; 99.9%</td>
-<td>4 weeks</td>
-</tr>
-<tr>
-<td>ingestion-edge</td>
-<td>&lt; 99%</td>
-<td>12 weeks</td>
-</tr>
-<tr>
-<td>ingestion-beam</td>
-<td>99% to &lt; 99.5%</td>
-<td>2 weeks</td>
-</tr>
-<tr>
-<td>ingestion-beam</td>
-<td>95% to &lt; 99%</td>
-<td>4 weeks</td>
-</tr>
-<tr>
-<td>ingestion-beam</td>
-<td>&lt; 95%</td>
-<td>12 weeks</td>
-</tr>
-</tbody>
-</table>
-<h2 id="exclusions">Exclusions</h2>
-<p>The Reliability Target does not apply to any Downtime in ingestion caused by
-Downtime on a Google Cloud Platform Service, other than Downtime on
-ingestion-edge caused by PubSub.</p>
-<h2 id="additional-information">Additional Information</h2>
-<table>
-<thead>
-<tr>
-<th>Biweekly Uptime Percentage</th>
-<th>Downtime per Two Weeks</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>99.99%</td>
-<td>2 minutes</td>
-</tr>
-<tr>
-<td>99.9%</td>
-<td>20 minutes</td>
-</tr>
-<tr>
-<td>99.5%</td>
-<td>1 hour 40 minutes</td>
-</tr>
-<tr>
-<td>99%</td>
-<td>3 hours 21 minutes</td>
-</tr>
-<tr>
-<td>95%</td>
-<td>16 hours 48 minutes</td>
-</tr>
-</tbody>
-</table>
+                <h1 id="ingestion-testing-workflow">Ingestion Testing Workflow</h1>
+<p>The ingestion-beam handles data flow of documents from the edge into various
+sinks. You may be interested in standing up a small testing instance to validate
+the integration of the various components.</p>
+<p><img alt="diagrams/workflow.mmd" src="../diagrams/workflow.svg" />
+<strong>Figure</strong>: <em>An overview of the various components necessary to query BigQuery
+against data from a PubSub subscription.</em></p>
+<h2 id="setting-up-the-gcs-project">Setting up the GCS project</h2>
+<p>Read through <a href="https://github.com/whd/gcp-quickstart"><code>whd/gcp-quickstart</code></a> for details
+about the sandbox environment that is provided by data operations.</p>
+<ul>
+<li>Install the <a href="https://cloud.google.com/sdk/">Google Cloud SDK</a></li>
+<li>Navigate to the <a href="https://cloud.google.com/sdk/">Google Cloud Console</a></li>
+<li>Create a new project under <code>firefox.gcp.mozilla.com/dataops/sandbox</code></li>
+<li><code>gcloud config set project &lt;PROJECT&gt;</code></li>
+<li>Create a PubSub subscription (see <code>gcp-quickstart/pubsub.sh</code>)</li>
+<li>Create a GCS bucket</li>
+<li><code>gsutil mb gs://&lt;PROJECT&gt;</code></li>
+<li>Enable the <a href="https://console.cloud.google.com/marketplace/details/google/dataflow.googleapis.com">Dataflow API</a></li>
+<li>Create a service account and store the key locally</li>
+</ul>
+<h2 id="bootstrapping-schemas-from-mozilla-pipeline-schemas">Bootstrapping schemas from <code>mozilla-pipeline-schemas</code></h2>
+<ul>
+<li>Download the latest schemas from <code>mozilla-pipeline-schemas</code> using <code>bin/download-schemas</code>.</li>
+<li>This script may also inject testing resources into the resulting archive.</li>
+<li>A <code>schemas.tar.gz</code> will appear at the project root.</li>
+<li>Copy generated BigQuery schemas using <code>bin/copy-bq-schemas</code>.</li>
+<li>Schemas will be written to <code>bq-schemas/</code> with a <code>.bq</code> extension</li>
+<li>Schemas can be generated directly from JSON Schema using <code>bin/generate-bq-schemas</code>
+  <code>bq-schemas/
+  ├── activity-stream.impression-stats.1.bq
+  ├── coverage.coverage.1.bq
+  ├── edge-validator.error-report.1.bq
+  ├── eng-workflow.bmobugs.1.bq
+  ....</code></li>
+<li>Update the BigQuery table in the current project using <code>bin/update-bq-table</code>.</li>
+<li>This may take several minutes. Read the script for usage information.</li>
+<li>Each namespace will be given its own dataset and each document type its own table.</li>
+<li>Verify that tables have been updated by viewing the BigQuery console.</li>
+<li>Download a copy of sampled documents using <code>bin/download-document-sample</code></li>
+<li>Upload this to your project's data bucket e.g. <code>gs://$PROJECT/data/</code></li>
+</ul>
+<h2 id="building-the-project">Building the project</h2>
+<p>Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.</p>
+<pre><code class="language-bash"># this must be an absolute path
+export GOOGLE_APPLICATION_CREDENTIALS=keys.json
+PROJECT=$(gcloud config get-value project)
+BUCKET=&quot;gs://$PROJECT&quot;
+
+path=&quot;$BUCKET/data/*.ndjson&quot;
+
+# use local maven instead of the docker container in bin/mvn, otherwise make sure to mount
+# credentials into the proper location in the container
+mvn compile exec:java -Dexec.args=&quot;\
+    --runner=Dataflow \
+    --project=$PROJECT \
+    --autoscalingAlgorithm=NONE \
+    --workerMachineType=n1-standard-1 \
+    --numWorkers=1 \
+    --gcpTempLocation=$BUCKET/tmp \
+    --inputFileFormat=json \
+    --inputType=file \
+    --input=$path\
+    --outputType=bigquery \
+    --output=$PROJECT:test_ingestion.\${document_namespace}__\${document_type}_v\${document_version} \
+    --bqWriteMethod=file_loads \
+    --tempLocation=$BUCKET/temp/bq-loads \
+    --errorOutputType=file \
+    --errorOutput=$BUCKET/error/ \
+&quot;
+</code></pre>
                 
               
               
@@ -981,7 +899,8 @@ ingestion-edge caused by PubSub.</p>
   
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
-        <a href="../pain_points/" class="md-footer__link md-footer__link--prev" rel="prev">
+        
+        <a href="decoder-job.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Decoder Job" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -990,19 +909,20 @@ ingestion-edge caused by PubSub.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Pain points
+              Decoder Job
             </div>
           </div>
         </a>
       
       
-        <a href="../test_requirements/" class="md-footer__link md-footer__link--next" rel="next">
+        
+        <a href="rally-job.html" class="md-footer__link md-footer__link--next" aria-label="Next: Rally Decoder Job" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Test Requirements
+              Rally Decoder Job
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -1031,10 +951,10 @@ ingestion-edge caused by PubSub.</p>
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../../assets/javascripts/workers/search.d351de03.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.b0710199.min.js", "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.34eae1b6.min.js"></script>
+      <script src="../assets/javascripts/bundle.76f349be.min.js"></script>
       
     
   </body>

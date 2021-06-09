@@ -13,19 +13,19 @@
         <meta name="author" content="Mozilla Data Platform Team">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.1.6">
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.7">
     
     
       
-        <title>Decoder Job - GCP Ingestion</title>
+        <title>Test Requirements - GCP Ingestion</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.875de78c.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ca7ac06f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.f1a3b89f.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.f1a3b89f.min.css">
         
           
           
@@ -59,7 +59,7 @@
     <body dir="ltr" data-md-color-scheme="" data-md-color-primary="teal" data-md-color-accent="">
   
     
-    <script>function __prefix(e){return new URL("../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -67,7 +67,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#decoder-job" class="md-skip">
+        <a href="#test-requirements" class="md-skip">
           Skip to content
         </a>
       
@@ -78,7 +78,7 @@
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../index.html" title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -97,7 +97,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Decoder Job
+              Test Requirements
             
           </span>
         </div>
@@ -168,7 +168,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../.." class="md-tabs__link">
+    <a href="../index.html" class="md-tabs__link">
       Home
     </a>
   </li>
@@ -177,13 +177,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../../architecture/overview/" class="md-tabs__link">
+      <a href="overview.html" class="md-tabs__link md-tabs__link--active">
         Architecture
       </a>
     </li>
@@ -199,7 +201,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-edge/" class="md-tabs__link">
+      <a href="../ingestion-edge/index.html" class="md-tabs__link">
         ingestion-edge
       </a>
     </li>
@@ -209,15 +211,13 @@
         
   
   
-    
-  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../" class="md-tabs__link md-tabs__link--active">
+      <a href="../ingestion-beam/index.html" class="md-tabs__link">
         ingestion-beam
       </a>
     </li>
@@ -233,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-sink/" class="md-tabs__link">
+      <a href="../ingestion-sink/index.html" class="md-tabs__link">
         ingestion-sink
       </a>
     </li>
@@ -260,7 +260,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../index.html" title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -292,7 +292,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../index.html" class="md-nav__link">
         Home
       </a>
     </li>
@@ -305,12 +305,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" data-md-state="indeterminate" type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
       
       <label class="md-nav__link" for="__nav_2">
         Architecture
@@ -328,7 +330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/overview/" class="md-nav__link">
+      <a href="overview.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -338,12 +340,14 @@
             
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_2" data-md-state="indeterminate" type="checkbox" id="__nav_2_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2_2" type="checkbox" id="__nav_2_2" checked>
       
       <label class="md-nav__link" for="__nav_2_2">
         Architecture
@@ -361,7 +365,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/bigquery_sink_specification/" class="md-nav__link">
+      <a href="bigquery_sink_specification.html" class="md-nav__link">
         Live Sink Service Specification
       </a>
     </li>
@@ -373,7 +377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/decoder_service_specification/" class="md-nav__link">
+      <a href="decoder_service_specification.html" class="md-nav__link">
         Decoder Service Specification
       </a>
     </li>
@@ -385,7 +389,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/differences_from_aws/" class="md-nav__link">
+      <a href="differences_from_aws.html" class="md-nav__link">
         Differences from AWS
       </a>
     </li>
@@ -397,7 +401,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/edge_migration_plan/" class="md-nav__link">
+      <a href="edge_migration_plan.html" class="md-nav__link">
         Plans for migrating edge traffic to GCP Ingestion
       </a>
     </li>
@@ -409,7 +413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/edge_service_specification/" class="md-nav__link">
+      <a href="edge_service_specification.html" class="md-nav__link">
         Edge Service Specification
       </a>
     </li>
@@ -421,7 +425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/landfill_service_specification/" class="md-nav__link">
+      <a href="landfill_service_specification.html" class="md-nav__link">
         Raw Sink Service Specification
       </a>
     </li>
@@ -433,7 +437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/pain_points/" class="md-nav__link">
+      <a href="pain_points.html" class="md-nav__link">
         Pain points
       </a>
     </li>
@@ -445,7 +449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/reliability/" class="md-nav__link">
+      <a href="reliability.html" class="md-nav__link">
         Reliability
       </a>
     </li>
@@ -455,11 +459,99 @@
             
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../architecture/test_requirements/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Test Requirements
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="test_requirements.html" class="md-nav__link md-nav__link--active">
         Test Requirements
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#exceptions" class="md-nav__link">
+    Exceptions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-phases" class="md-nav__link">
+    Test Phases
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-categories" class="md-nav__link">
+    Test Categories
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Categories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#unit-tests" class="md-nav__link">
+    Unit Tests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#integration-tests" class="md-nav__link">
+    Integration Tests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#load-tests" class="md-nav__link">
+    Load Tests
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slow-load-tests" class="md-nav__link">
+    Slow Load Tests
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -505,7 +597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-edge/" class="md-nav__link">
+      <a href="../ingestion-edge/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -524,14 +616,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" data-md-state="indeterminate" type="checkbox" id="__nav_4" checked>
       
       <label class="md-nav__link" for="__nav_4">
         ingestion-beam
@@ -549,7 +639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../ingestion-beam/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -559,14 +649,12 @@
             
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" type="checkbox" id="__nav_4_2" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_2" data-md-state="indeterminate" type="checkbox" id="__nav_4_2" checked>
       
       <label class="md-nav__link" for="__nav_4_2">
         Ingestion beam
@@ -582,106 +670,11 @@
             
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          Decoder Job
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ingestion-beam/decoder-job.html" class="md-nav__link">
         Decoder Job
       </a>
-      
-        
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#transforms" class="md-nav__link">
-    Transforms
-  </a>
-  
-    <nav class="md-nav" aria-label="Transforms">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#geoip-lookup" class="md-nav__link">
-    GeoIP Lookup
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-uri" class="md-nav__link">
-    Parse URI
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#decompress" class="md-nav__link">
-    Decompress
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-payload" class="md-nav__link">
-    Parse Payload
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-user-agent" class="md-nav__link">
-    Parse User Agent
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#write-metadata-into-the-payload" class="md-nav__link">
-    Write Metadata Into the Payload
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#executing" class="md-nav__link">
-    Executing
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -691,7 +684,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion_testing_workflow/" class="md-nav__link">
+      <a href="../ingestion-beam/ingestion_testing_workflow.html" class="md-nav__link">
         Ingestion Testing Workflow
       </a>
     </li>
@@ -703,7 +696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../rally-job/" class="md-nav__link">
+      <a href="../ingestion-beam/rally-job.html" class="md-nav__link">
         Rally Decoder Job
       </a>
     </li>
@@ -715,7 +708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../republisher-job/" class="md-nav__link">
+      <a href="../ingestion-beam/republisher-job.html" class="md-nav__link">
         Republisher Job
       </a>
     </li>
@@ -727,7 +720,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sink-job/" class="md-nav__link">
+      <a href="../ingestion-beam/sink-job.html" class="md-nav__link">
         Sink Job
       </a>
     </li>
@@ -775,7 +768,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-sink/" class="md-nav__link">
+      <a href="../ingestion-sink/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -814,64 +807,57 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#transforms" class="md-nav__link">
-    Transforms
+  <a href="#exceptions" class="md-nav__link">
+    Exceptions
   </a>
   
-    <nav class="md-nav" aria-label="Transforms">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-phases" class="md-nav__link">
+    Test Phases
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-categories" class="md-nav__link">
+    Test Categories
+  </a>
+  
+    <nav class="md-nav" aria-label="Test Categories">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#geoip-lookup" class="md-nav__link">
-    GeoIP Lookup
+  <a href="#unit-tests" class="md-nav__link">
+    Unit Tests
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#parse-uri" class="md-nav__link">
-    Parse URI
+  <a href="#integration-tests" class="md-nav__link">
+    Integration Tests
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#decompress" class="md-nav__link">
-    Decompress
+  <a href="#load-tests" class="md-nav__link">
+    Load Tests
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#parse-payload" class="md-nav__link">
-    Parse Payload
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-user-agent" class="md-nav__link">
-    Parse User Agent
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#write-metadata-into-the-payload" class="md-nav__link">
-    Write Metadata Into the Payload
+  <a href="#slow-load-tests" class="md-nav__link">
+    Slow Load Tests
   </a>
   
 </li>
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#executing" class="md-nav__link">
-    Executing
-  </a>
   
 </li>
       
@@ -887,101 +873,153 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/decoder-job.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/architecture/test_requirements.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
                 
-                <h1 id="decoder-job">Decoder Job</h1>
-<p>A job for normalizing ingestion messages. Defined in the <code>com.mozilla.telemetry.Decoder</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java">source</a>).</p>
-<h2 id="transforms">Transforms</h2>
-<p>These transforms are currently executed against each message in order.</p>
-<h3 id="geoip-lookup">GeoIP Lookup</h3>
+                <h1 id="test-requirements">Test Requirements</h1>
+<p>This document specifies the testing required for GCP Ingestion components.</p>
+<h2 id="exceptions">Exceptions</h2>
+<p>Code that does not comply with this standard before it is deployed to
+production must include a document explaining why that decision was made.</p>
+<h2 id="test-phases">Test Phases</h2>
 <ol>
-<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute</li>
-<li>when the <code>x_pipeline_proxy</code> attribute is not present, use the
-     second-to-last value (since the last value is a forwarding rule IP
-     added by Google load balancer)</li>
-<li>when the <code>x_pipeline_proxy</code> attribute is present, use the third-to-last
-     value (since the tee introduces an additional proxy IP)</li>
-<li>fall back to the <code>remote_addr</code> attribute, then to an empty string</li>
-<li>Execute the following steps until one fails and ignore the exception</li>
-<li>Parse <code>ip</code> using <code>InetAddress.getByName</code></li>
-<li>Lookup <code>ip</code> in the configured <code>GeoIP2City.mmdb</code></li>
-<li>Extract <code>country.iso_code</code> as <code>geo_country</code></li>
-<li>Extract <code>city.name</code> as <code>geo_city</code> if <code>cities15000.txt</code> is not configured
-      or <code>city.geo_name_id</code> is in the configured <code>cities15000.txt</code></li>
-<li>Extract <code>subdivisions[0].iso_code</code> as <code>geo_subdivision1</code></li>
-<li>Extract <code>subdivisions[1].iso_code</code> as <code>geo_subdivision2</code></li>
-<li>Remove the <code>x_forwarded_for</code> and <code>remote_addr</code> attributes</li>
-<li>Remove any <code>null</code> values added to attributes</li>
+<li>Continuous Integration</li>
+<li>Must run <a href="#unit-tests">Unit Tests</a> and <a href="#integration-tests">Integration Tests</a></li>
+<li>Must run against every merge to main and every pull request</li>
+<li>Must block merging to main</li>
+<li>Pre-Production</li>
+<li>Must run <a href="#unit-tests">Unit Tests</a> and <a href="#load-tests">Load Tests</a></li>
+<li>Must run against every version deployed to production</li>
+<li>Must mimic production configuration as closely as possible</li>
+<li>Should block deployment to production</li>
+<li>Async</li>
+<li>Must run <a href="#slow-load-tests">Slow Load Tests</a></li>
+<li>Must run against every version deployed to production</li>
+<li>Must mimic production configuration as closely as possible</li>
+<li>Should not block deployment to production</li>
+<li>Must notify someone to investigate failures</li>
 </ol>
-<h3 id="parse-uri">Parse URI</h3>
-<p>Attempt to extract attributes from <code>uri</code>, on failure send messages to the
-configured error output.</p>
-<h3 id="decompress">Decompress</h3>
-<p>Attempt to decompress payload with gzip, on failure pass the message through
-unmodified.</p>
-<h3 id="parse-payload">Parse Payload</h3>
+<h2 id="test-categories">Test Categories</h2>
+<p>Tests must be both thorough and fast enough to not block development. They are
+split into categories with increasing run time and decreasing coverage.</p>
 <ol>
-<li>Parse the message body as a <code>UTF-8</code> encoded JSON payload</li>
-<li>Drop specific fields or entire messages that match a specific set of signatures
-   for toxic data that we want to make sure we do not store</li>
-<li>Maintain counter metrics for each type of dropped message</li>
-<li>Validate the payload structure based on the JSON schema for the specified
-   document type</li>
-<li>Invalid messages are routed to error output</li>
-<li>Extract some additional attributes such as <code>client_id</code> and <code>os_name</code>
-   based on the payload contents</li>
+<li><a href="#unit-tests">Unit Tests</a></li>
+<li>Must cover 100% of code behavior</li>
+<li>Should run as fast as possible</li>
+<li><a href="#integration-tests">Integration Tests</a></li>
+<li>Must cover all expected production behavior</li>
+<li>Must run fast enough to allow frequent merging to main</li>
+<li><a href="#load-tests">Load Tests</a></li>
+<li>Must cover performance at scale with and without external services down</li>
+<li>Must run fast enough to allow multiple production deployments per day</li>
+<li><a href="#slow-load-tests">Slow Load Tests</a></li>
+<li>Must cover performance at scale with extended downtime</li>
+<li>May take a very long time</li>
 </ol>
-<h3 id="parse-user-agent">Parse User Agent</h3>
-<p>Attempt to extract browser, browser version, and os from the <code>user_agent</code>
-attribute, drop any nulls, and remove <code>user_agent</code> from attributes.</p>
-<h3 id="write-metadata-into-the-payload">Write Metadata Into the Payload</h3>
-<p>Add a nested <code>metadata</code> field and several <code>normalized_*</code> attributes into the
-payload body.</p>
-<h2 id="executing">Executing</h2>
-<p>Decoder jobs are executed the <a href="../sink-job/#executing">same way as sink jobs</a>
-but with a few extra flags:</p>
+<h3 id="unit-tests">Unit Tests</h3>
 <ul>
-<li><code>-Dexec.mainClass=com.mozilla.telemetry.Decoder</code></li>
-<li>For Dataflow Flex Templates, change the <code>docker-compose</code> build argument to
-    <code>--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Decoder</code></li>
-<li><code>--geoCityDatabase=/path/to/GeoIP2-City.mmdb</code></li>
-<li><code>--geoCityFilter=/path/to/cities15000.txt</code> (optional)</li>
+<li>Must run in under 5 seconds in CI, not including build time</li>
+<li>May use CI parallelism and run each group of tests in under 5 seconds in CI</li>
+<li>Should validate code as quickly as possible</li>
+<li>Must run completely in memory</li>
+<li>Must safely run in parallel</li>
+<li>May mock anything that would not run in memory</li>
+<li>Should cover 100% of branches and statements</li>
+<li>Should cover all variations of statements having variable behavior without
+    branching</li>
+<li>Should cover all production configuration variations</li>
+<li>Must have <a href="#integration-tests">Integration Tests</a> to cover exceptions</li>
+<li>Must cover all input and output variations</li>
+<li>Must cover all response codes</li>
+<li>Must cover all valid URL patterns</li>
+<li>Must cover gzipped and not gzipped</li>
+<li>Must cover present, absent, and invalid required attributes</li>
+<li>Must cover present, absent, and invalid optional attributes</li>
+<li>Must cover present, absent, invalid, and wrong type payload JSON</li>
+<li>Must cover present, absent, invalid, and wrong type payload fields</li>
+<li>Must cover <code>document_id</code> duplicates</li>
+<li>Must cover all error types</li>
+<li>Must cover PubSub returning OK but rejecting messages in a batch</li>
+<li>Must cover External service returns server error</li>
+<li>Must cover External service timeout</li>
+<li>Must cover External resource missing</li>
+<li>Must cover Insufficient permissions</li>
+<li>Must cover behavior when disk becomes full</li>
+<li>Must cover behavior with disk already full</li>
+<li>Must cover behavior when ingestion-edge disk is no longer full</li>
 </ul>
-<p>To download the <a href="https://dev.maxmind.com/geoip/geoip2/geolite2/">GeoLite2 database</a>,
-you need to <a href="https://www.maxmind.com/en/geolite2/signup">register for a MaxMind account</a>
-to obtain a license key. After generating a new license key, set <code>MM_LICENSE_KEY</code> to
-your license key.</p>
-<p>Example:</p>
-<pre><code class="language-bash"># create a test input file
-mkdir -p tmp/
-echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;remote_addr&quot;:&quot;63.245.208.195&quot;}}' &gt; tmp/input.json
-
-# Download `cities15000.txt`, `GeoLite2-City.mmdb`, and `schemas.tar.gz`
-./bin/download-cities15000
-./bin/download-schemas
-
-export MM_LICENSE_KEY=&quot;Your MaxMind License Key&quot;
-./bin/download-geolite2
-
-
-# do geo lookup on messages to stdout
-./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args=&quot;\
-    --geoCityDatabase=GeoLite2-City.mmdb \
-    --geoCityFilter=cities15000.txt \
-    --schemasLocation=schemas.tar.gz \
-    --inputType=file \
-    --input=tmp/input.json \
-    --outputType=stdout \
-    --errorOutputType=stderr \
-&quot;
-
-# check the DecoderOptions help page for options specific to Decoder
-./bin/mvn compile exec:java -Dexec.args=--help=DecoderOptions
-&quot;
-</code></pre>
+<h3 id="integration-tests">Integration Tests</h3>
+<ul>
+<li>Must run in under 5 minutes in CI, not including build time</li>
+<li>Must be configurable to run locally and in CI</li>
+<li>Must be configurable to run against a deployment in GCP</li>
+<li>May require a proxy to modify cloud service behavior</li>
+<li>May require specific configuration</li>
+<li>May skip coverage that cannot be forcibly produced in Dataflow</li>
+<li>Must clean up created resources when complete</li>
+<li>Must cover everything unit tests should but do not</li>
+<li>Must cover a configuration that mimics production as closely as possible</li>
+<li>Must cover all code with input from or output to external services</li>
+<li>The ingestion-edge disk queue is an external service</li>
+<li>Must cover all production configuration options</li>
+<li>Must cover all API endpoints with invalid traffic</li>
+<li>Must cover all API endpoints with healthy external services</li>
+<li>Must assert disk queue is not used in ingestion-edge</li>
+<li>Must assert inputs and outputs preserve schema in ingestion-beam</li>
+<li>Must cover behavior with errors from external services</li>
+<li>Must cover PubSub returning OK but rejecting messages in a batch</li>
+<li>Must cover external service DNS does not resolve</li>
+<li>Must cover external service cannot TCP connect</li>
+<li>Must cover external service hangs after TCP connect</li>
+<li>Must cover external service returns 500</li>
+<li>Must cover resource does not exist in external service</li>
+<li>Must cover insufficient permissions in external service</li>
+<li>Must cover behavior when disk becomes full</li>
+<li>Must cover behavior with disk already full</li>
+<li>Must assert automatic recovery unless manual intervention is required</li>
+<li>Must cover behavior when ingestion-edge disk is no longer full</li>
+</ul>
+<h3 id="load-tests">Load Tests</h3>
+<ul>
+<li>Must run in parallel in under 1 hour</li>
+<li>May require a separate deployment for each test</li>
+<li>Must record how much it cost to run</li>
+<li>Must not require manual intervention to evaluate</li>
+<li>Must check performance against a tunable threshold</li>
+<li>Must sustain at least 1.5x expected peak production traffic volume</li>
+<li>As of 2018-08-01 peak production traffic volume is about 11K req/s</li>
+<li>Must cover behavior before, during, and after a period of:</li>
+<li>Service downtime, except ingestion-edge</li>
+<li>100%, 50%, and 5% invalid traffic</li>
+<li>External services cannot TCP connect</li>
+<li>100% and 10% of external service requests time out</li>
+<li>100% and 10% external service requests return 500</li>
+<li>Must cover ingestion-edge behavior with PubSub returning 500 and auto scaling
+  due to disk filling up</li>
+<li>Must assert ingestion-edge only writes to disk queue when PubSub is unhealthy</li>
+<li>Must assert full recovery from downtime does not take longer than the
+  downtime period</li>
+</ul>
+<h3 id="slow-load-tests">Slow Load Tests</h3>
+<ul>
+<li>May run for longer than 1 hour</li>
+<li>Should not block deployment to production</li>
+<li>Must cover behavior with sustained load and a backlog equivalent to:</li>
+<li>For ingestion-edge: 1.5x the longest PubSub outage in the last year<ul>
+<li>As of 2018-08-01 the longest PubSub outage was about 4.5 hours</li>
+</ul>
+</li>
+<li>For everything else: 4 days (1 holiday weekend)<ul>
+<li>Should reach full recovery in under 1 day</li>
+</ul>
+</li>
+<li>Must cover behavior of ingestion-beam BigQuery output with sustained load and
+  BigQuery returning 500 for at least 1.5x the longest BigQuery outage in the
+  last year</li>
+<li>As of 2018-08-01 the longest BigQuery outage was about 2.3 hours</li>
+</ul>
                 
               
               
@@ -1000,7 +1038,8 @@ export MM_LICENSE_KEY=&quot;Your MaxMind License Key&quot;
   
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
-        <a href="../" class="md-footer__link md-footer__link--prev" rel="prev">
+        
+        <a href="reliability.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Reliability" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -1009,19 +1048,20 @@ export MM_LICENSE_KEY=&quot;Your MaxMind License Key&quot;
               <span class="md-footer__direction">
                 Previous
               </span>
-              Overview
+              Reliability
             </div>
           </div>
         </a>
       
       
-        <a href="../ingestion_testing_workflow/" class="md-footer__link md-footer__link--next" rel="next">
+        
+        <a href="../ingestion-edge/index.html" class="md-footer__link md-footer__link--next" aria-label="Next: Overview" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Ingestion Testing Workflow
+              Overview
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -1050,10 +1090,10 @@ export MM_LICENSE_KEY=&quot;Your MaxMind License Key&quot;
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../../assets/javascripts/workers/search.d351de03.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.b0710199.min.js", "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.34eae1b6.min.js"></script>
+      <script src="../assets/javascripts/bundle.76f349be.min.js"></script>
       
     
   </body>

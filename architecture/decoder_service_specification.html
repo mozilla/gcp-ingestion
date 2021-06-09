@@ -13,19 +13,19 @@
         <meta name="author" content="Mozilla Data Platform Team">
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.1.6">
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.7">
     
     
       
-        <title>Differences from AWS - GCP Ingestion</title>
+        <title>Decoder Service Specification - GCP Ingestion</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.875de78c.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ca7ac06f.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.f1a3b89f.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.f1a3b89f.min.css">
         
           
           
@@ -59,7 +59,7 @@
     <body dir="ltr" data-md-color-scheme="" data-md-color-primary="teal" data-md-color-accent="">
   
     
-    <script>function __prefix(e){return new URL("../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -67,7 +67,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#differences-from-aws" class="md-skip">
+        <a href="#decoder-service-specification" class="md-skip">
           Skip to content
         </a>
       
@@ -78,7 +78,7 @@
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../index.html" title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -97,7 +97,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Differences from AWS
+              Decoder Service Specification
             
           </span>
         </div>
@@ -168,7 +168,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../.." class="md-tabs__link">
+    <a href="../index.html" class="md-tabs__link">
       Home
     </a>
   </li>
@@ -185,7 +185,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../overview/" class="md-tabs__link md-tabs__link--active">
+      <a href="overview.html" class="md-tabs__link md-tabs__link--active">
         Architecture
       </a>
     </li>
@@ -201,7 +201,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-edge/" class="md-tabs__link">
+      <a href="../ingestion-edge/index.html" class="md-tabs__link">
         ingestion-edge
       </a>
     </li>
@@ -217,7 +217,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-beam/" class="md-tabs__link">
+      <a href="../ingestion-beam/index.html" class="md-tabs__link">
         ingestion-beam
       </a>
     </li>
@@ -233,7 +233,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../ingestion-sink/" class="md-tabs__link">
+      <a href="../ingestion-sink/index.html" class="md-tabs__link">
         ingestion-sink
       </a>
     </li>
@@ -260,7 +260,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../index.html" title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -292,7 +292,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../index.html" class="md-nav__link">
         Home
       </a>
     </li>
@@ -330,7 +330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../overview/" class="md-nav__link">
+      <a href="overview.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -365,20 +365,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../bigquery_sink_specification/" class="md-nav__link">
+      <a href="bigquery_sink_specification.html" class="md-nav__link">
         Live Sink Service Specification
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decoder_service_specification/" class="md-nav__link">
-        Decoder Service Specification
       </a>
     </li>
   
@@ -399,12 +387,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Differences from AWS
+          Decoder Service Specification
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="./" class="md-nav__link md-nav__link--active">
-        Differences from AWS
+      <a href="decoder_service_specification.html" class="md-nav__link md-nav__link--active">
+        Decoder Service Specification
       </a>
       
         
@@ -422,51 +410,83 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#replace-heka-framed-protobuf-with-newline-delimited-json" class="md-nav__link">
-    Replace Heka Framed Protobuf with newline delimited JSON
+  <a href="#data-flow" class="md-nav__link">
+    Data Flow
   </a>
+  
+    <nav class="md-nav" aria-label="Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    Implementation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decoding-errors" class="md-nav__link">
+    Decoding Errors
+  </a>
+  
+    <nav class="md-nav" aria-label="Decoding Errors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-message-schema" class="md-nav__link">
+    Error message schema
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raw-message-schema" class="md-nav__link">
+    Raw message schema
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decoded-message-metadata-schema" class="md-nav__link">
+    Decoded message metadata schema
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#replace-ec2-edge-with-kubernetes-edge" class="md-nav__link">
-    Replace EC2 Edge with Kubernetes Edge
+  <a href="#other-considerations" class="md-nav__link">
+    Other Considerations
+  </a>
+  
+    <nav class="md-nav" aria-label="Other Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#message-acks" class="md-nav__link">
+    Message Acks
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#replace-kafka-with-pubsub" class="md-nav__link">
-    Replace Kafka with PubSub
+        
+          <li class="md-nav__item">
+  <a href="#deduplication" class="md-nav__link">
+    Deduplication
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#replace-hindsight-data-warehouse-loaders-with-dataflow" class="md-nav__link">
-    Replace Hindsight Data Warehouse Loaders with Dataflow
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#replace-s3-with-cloud-storage" class="md-nav__link">
-    Replace S3 with Cloud Storage
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#messages-always-delivered-to-message-queue" class="md-nav__link">
-    Messages Always Delivered to Message Queue
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#landfill-is-downstream-from-message-queue" class="md-nav__link">
-    Landfill is Downstream from Message Queue
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -483,7 +503,19 @@
   
   
     <li class="md-nav__item">
-      <a href="../edge_migration_plan/" class="md-nav__link">
+      <a href="differences_from_aws.html" class="md-nav__link">
+        Differences from AWS
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="edge_migration_plan.html" class="md-nav__link">
         Plans for migrating edge traffic to GCP Ingestion
       </a>
     </li>
@@ -495,7 +527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../edge_service_specification/" class="md-nav__link">
+      <a href="edge_service_specification.html" class="md-nav__link">
         Edge Service Specification
       </a>
     </li>
@@ -507,7 +539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../landfill_service_specification/" class="md-nav__link">
+      <a href="landfill_service_specification.html" class="md-nav__link">
         Raw Sink Service Specification
       </a>
     </li>
@@ -519,7 +551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pain_points/" class="md-nav__link">
+      <a href="pain_points.html" class="md-nav__link">
         Pain points
       </a>
     </li>
@@ -531,7 +563,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reliability/" class="md-nav__link">
+      <a href="reliability.html" class="md-nav__link">
         Reliability
       </a>
     </li>
@@ -543,7 +575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test_requirements/" class="md-nav__link">
+      <a href="test_requirements.html" class="md-nav__link">
         Test Requirements
       </a>
     </li>
@@ -591,7 +623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-edge/" class="md-nav__link">
+      <a href="../ingestion-edge/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -633,7 +665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/" class="md-nav__link">
+      <a href="../ingestion-beam/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -666,7 +698,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/decoder-job/" class="md-nav__link">
+      <a href="../ingestion-beam/decoder-job.html" class="md-nav__link">
         Decoder Job
       </a>
     </li>
@@ -678,7 +710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/ingestion_testing_workflow/" class="md-nav__link">
+      <a href="../ingestion-beam/ingestion_testing_workflow.html" class="md-nav__link">
         Ingestion Testing Workflow
       </a>
     </li>
@@ -690,7 +722,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/rally-job/" class="md-nav__link">
+      <a href="../ingestion-beam/rally-job.html" class="md-nav__link">
         Rally Decoder Job
       </a>
     </li>
@@ -702,7 +734,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/republisher-job/" class="md-nav__link">
+      <a href="../ingestion-beam/republisher-job.html" class="md-nav__link">
         Republisher Job
       </a>
     </li>
@@ -714,7 +746,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/sink-job/" class="md-nav__link">
+      <a href="../ingestion-beam/sink-job.html" class="md-nav__link">
         Sink Job
       </a>
     </li>
@@ -762,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-sink/" class="md-nav__link">
+      <a href="../ingestion-sink/index.html" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -801,51 +833,83 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#replace-heka-framed-protobuf-with-newline-delimited-json" class="md-nav__link">
-    Replace Heka Framed Protobuf with newline delimited JSON
+  <a href="#data-flow" class="md-nav__link">
+    Data Flow
   </a>
+  
+    <nav class="md-nav" aria-label="Data Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#implementation" class="md-nav__link">
+    Implementation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decoding-errors" class="md-nav__link">
+    Decoding Errors
+  </a>
+  
+    <nav class="md-nav" aria-label="Decoding Errors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#error-message-schema" class="md-nav__link">
+    Error message schema
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raw-message-schema" class="md-nav__link">
+    Raw message schema
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decoded-message-metadata-schema" class="md-nav__link">
+    Decoded message metadata schema
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#replace-ec2-edge-with-kubernetes-edge" class="md-nav__link">
-    Replace EC2 Edge with Kubernetes Edge
+  <a href="#other-considerations" class="md-nav__link">
+    Other Considerations
+  </a>
+  
+    <nav class="md-nav" aria-label="Other Considerations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#message-acks" class="md-nav__link">
+    Message Acks
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#replace-kafka-with-pubsub" class="md-nav__link">
-    Replace Kafka with PubSub
+        
+          <li class="md-nav__item">
+  <a href="#deduplication" class="md-nav__link">
+    Deduplication
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#replace-hindsight-data-warehouse-loaders-with-dataflow" class="md-nav__link">
-    Replace Hindsight Data Warehouse Loaders with Dataflow
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#replace-s3-with-cloud-storage" class="md-nav__link">
-    Replace S3 with Cloud Storage
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#messages-always-delivered-to-message-queue" class="md-nav__link">
-    Messages Always Delivered to Message Queue
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#landfill-is-downstream-from-message-queue" class="md-nav__link">
-    Landfill is Downstream from Message Queue
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -861,127 +925,114 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/architecture/differences_from_aws.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/architecture/decoder_service_specification.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
                 
-                <h1 id="differences-from-aws">Differences from AWS</h1>
-<p>This document explains how GCP Ingestion differs from the <a href="https://mana.mozilla.org/wiki/display/SVCOPS/Telemetry+-+Data+Pipeline+Architecture">AWS Data Platform
-Architecture</a>.</p>
-<h2 id="replace-heka-framed-protobuf-with-newline-delimited-json">Replace Heka Framed Protobuf with newline delimited JSON</h2>
-<p>Heka framed protobuf requires special code to read and write. Newline delimited
-JSON is readable by BigQuery, Dataflow, and Spark using standard libraries. JSON
-doesn't enforce a schema, so it can be used to store data with an incomplete
-schema and be used to backfill missing columns.</p>
-<h2 id="replace-ec2-edge-with-kubernetes-edge">Replace EC2 Edge with Kubernetes Edge</h2>
-<p>The AWS data platform uses EC2 instances running an NGinX module to encode HTTP
-requests as Heka messages and then write them to Kafka using <code>librdkafka</code> and
-directly to files on disk. <code>librdkafka</code> handles buffering and batching when
-writing to Kafka. Files on disk are rotated with cron and uploaded to S3. On
-shutdown files are forcefully rotated and uploaded. The sizing of the EC2
-instance cluster is effectively static, but is configured to scale up if
-needed.</p>
-<p>The EC2 instances have been replaced with a Kubernetes cluster. This decision
-was made by the Cloud Operations team to simplify operational support for them.</p>
-<p>The NGinX module has been replaced by an HTTP service running in Docker. A
-number of factors informed the decision to rewrite the edge, including:</p>
-<ul>
-<li>The PubSub equivalent of <code>librdkafka</code> is the <a href="https://cloud.google.com/apis/docs/cloud-client-libraries">google client
-  libraries</a>,
-  which do not have a C implementation</li>
-<li>We can simplify the edge by uploading to landfill after PubSub while
-  remaining resilient to Dataflow and PubSub failures, because PubSub durably
-  stores unacknowledged messages for 7 days</li>
-<li>We can simplify disaster recovery by Ensuring that all data eventually flows
-  through PubSub</li>
-<li>In the AWS edge data only flows to at least one of Kafka or landfill</li>
-<li>We can allow Kubernetes to auto scale when PubSub is available by only
-  queuing requests to disk only when they cannot be delivered to PubSub</li>
-<li>We can ensure that data is not lost on shutdown by disabling auto scaling
-  down when there are requests on disk</li>
-</ul>
-<h2 id="replace-kafka-with-pubsub">Replace Kafka with PubSub</h2>
-<p>Comparison:</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>Kafka in AWS Data Pipeline</th>
-<th>PubSub</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Managed by</td>
-<td>Ops</td>
-<td>Google</td>
-</tr>
-<tr>
-<td>Access control</td>
-<td>Security groups, all-or-nothing</td>
-<td>Cloud IAM, per-topic</td>
-</tr>
-<tr>
-<td>Scaling</td>
-<td>Manual</td>
-<td>Automatic</td>
-</tr>
-<tr>
-<td>Cost</td>
-<td>Per EC2 instance</td>
-<td>Per GB, min charge 1 KB/req</td>
-</tr>
-<tr>
-<td>Data Storage</td>
-<td>Configured in GB per EC2 instance</td>
-<td>7 days for unacknowledged</td>
-</tr>
-<tr>
-<td>Cross region</td>
-<td>no</td>
-<td>yes</td>
-</tr>
-</tbody>
-</table>
-<h2 id="replace-hindsight-data-warehouse-loaders-with-dataflow">Replace Hindsight Data Warehouse Loaders with Dataflow</h2>
-<p>Dataflow advantages:</p>
-<ul>
-<li>Connectors for PubSub, Cloud Storage, and BigQuery built-in</li>
-<li>Seamlessly supports streaming and batch sources and sinks</li>
-<li>Runs on managed service and has simple local runner for testing and
-  development</li>
-<li>Auto scales on input volume</li>
-</ul>
-<h2 id="replace-s3-with-cloud-storage">Replace S3 with Cloud Storage</h2>
-<p>They are equivalent products for the different cloud vendors.</p>
-<h2 id="messages-always-delivered-to-message-queue">Messages Always Delivered to Message Queue</h2>
-<p>In AWS the edge aimed to ensure messages were always delivered to either Kafka
-or landfill, and in the case of an outage one could be backfilled from the
-other. On GCP the Kubernetes edge aims to ensure messages are always delivered
-to PubSub. This ensures that consumers from PubSub never miss data unless they
-fall too far behind. It also allows landfill to be handled downstream from
-PubSub (see below).</p>
-<h2 id="landfill-is-downstream-from-message-queue">Landfill is Downstream from Message Queue</h2>
-<p>In AWS, the failsafe data store was upstream of the message queue (Kafka). On
-GCP, the failsafe data store is downstream from the message queue (PubSub).</p>
-<p>This makes the edge and Dataflow landfill loader simpler. The edge doesn’t have
-to ensure that pending messages are safely offloaded on shutdown, because
-messages are only left pending when PubSub is unavailable, and scaling down is
-disabled while messages are pending. The Dataflow landfill loader doesn’t have
-to ensure pending messages are safely offloaded because it only acks messages
-after they are uploaded, ensuring at least once delivery.</p>
-<p>This design is possible because of two changes compared to our AWS
-implementation. First, the Kubernetes edge eventually delivers all messages to
-PubSub. In AWS if Kafka were down then messages would only be delivered
-directly to landfill, and would never flow through Kafka. This change ensures
-that if all messages are consumed from PubSub then no messages have been
-skipped. Second, PubSub stores unacknowledged messages for 7 days. In AWS Kafka
-stores messages for 2-3 days, depending on topic and total message volume. This
-change ensures that we have sufficient time to reliably consume all messages
-before they are dropped from the queue, even if total message volume changes
-dramatically or consumers are not highly available and suffer an outage over a
-holiday weekend.</p>
+                <h1 id="decoder-service-specification">Decoder Service Specification</h1>
+<p>This document specifies the behavior of the service that decodes messages
+in the Structured Ingestion pipeline.</p>
+<h2 id="data-flow">Data Flow</h2>
+<ol>
+<li>Consume messages from Google Cloud PubSub raw topic</li>
+<li>Deduplicate message by <code>uri</code> (which generally contains <code>docId</code>)</li>
+<li>Disabled for stub-installer, which does not include a UUID in the URI</li>
+<li>Perform GeoIP lookup and drop <code>x_forwarded_for</code> and <code>remote_addr</code> and
+   optionally <code>geo_city</code> based on population</li>
+<li>Parse the <code>uri</code> attribute to determine document type, etc.</li>
+<li>Decode the body from base64, optionally decompress, and parse as JSON</li>
+<li>Scrub the message, checking the content against a list of known signatures
+   that should cause the message to be dropped as toxic, sent to error output,
+   or to have specific fields redacted</li>
+<li>Validate the schema of the body</li>
+<li>Extract user agent information and drop <code>user_agent</code></li>
+<li>Add metadata fields to message</li>
+<li>Write message to PubSub decoded topic based on <code>namespace</code> and <code>docType</code></li>
+</ol>
+<h3 id="implementation">Implementation</h3>
+<p>The above steps will be executed as a single Apache Beam job that can accept
+either a streaming input from PubSub or a batch input from Cloud Storage.</p>
+<h3 id="decoding-errors">Decoding Errors</h3>
+<p>All messages that are rejected at any step of the Data Flow above will be
+forwarded to a PubSub error topic for backfill and monitoring purposes.
+If we determine that a message has already been successfully processed
+based on <code>docId</code>, we drop the duplicated body and publish just the metadata
+to the error topic.</p>
+<h4 id="error-message-schema">Error message schema</h4>
+<p>The message that failed decoding, with several additional attributes:</p>
+<pre><code>...
+required group attributes {
+  ...
+  required string error_type    // example: &quot;schema&quot;
+  required string error_message // example: &quot;message did not match json schema for &lt;namespace&gt;/&lt;docVersion&gt;/&lt;docType&gt;&quot;
+  required string exception_class // example: &quot;java.lang.RuntimeException&quot;
+  required string stack_trace
+  optional string stack_trace_cause_1
+  optional string stack_trace_cause_2
+  optional string stack_trace_cause_3
+  optional string stack_trace_cause_4
+  optional string stack_trace_cause_5
+}
+</code></pre>
+<h3 id="raw-message-schema">Raw message schema</h3>
+<p>See <a href="edge_service_specification.html#pubsub-message-schema">Edge Service PubSub Message Schema</a>.</p>
+<h3 id="decoded-message-metadata-schema">Decoded message metadata schema</h3>
+<p>Decoded messages published to Pub/Sub will contain the following attributes:</p>
+<pre><code>required group attributes {
+  ...
+  required string document_version           // from uri for non-Telemetry, from message for Telemetry
+  required string document_id                // from uri
+  required string document_namespace         // from uri
+  required string document_type              // from uri
+  optional string app_name                   // from uri for Telemetry
+  optional string app_version                // from uri for Telemetry
+  optional string app_update_channel         // from uri for Telemetry
+  optional string app_build_id               // from uri for Telemetry
+  optional string geo_country                // from geoip lookup
+  optional string geo_subdivision1           // from geoip lookup
+  optional string geo_subdivision2           // from geoip lookup
+  optional string geo_city                   // from geoip lookup
+  required string submission_timestamp       // from edge metadata
+  optional string date                       // header from client
+  optional string dnt                        // header from client
+  optional string x_pingsender_version       // header from client
+  optional string x_debug_id                 // header from client
+  optional string x_source_tags              // header from client
+  optional string user_agent_browser         // from user_agent
+  optional string user_agent_browser_version // from user_agent
+  optional string user_agent_os              // from user_agent
+  optional string user_agent_os_version      // from user_agent
+  optional string normalized_app_name        // based on parsed json payload
+  optional string normalized_channel         // based on parsed json payload or URI
+  required string normalized_country_code    // from geoip lookup
+  optional string normalized_os              // based on parsed json payload
+  optional string normalized_os_version      // based on parsed json payload
+  optional string sample_id                  // based on parsed json payload
+}
+</code></pre>
+<p>Many of these fields are also injected into the JSON payload either at the top
+level or nested inside a <code>metadata</code> object. The schema for injected metadata
+is maintained under the <a href="https://github.com/mozilla-services/mozilla-pipeline-schemas/tree/dev/schemas/metadata"><code>metadata</code> namespace in <code>mozilla-pipeline-schemas</code></a>.</p>
+<h2 id="other-considerations">Other Considerations</h2>
+<h3 id="message-acks">Message Acks</h3>
+<p>Messages should only be acknowledged in the PubSub raw topic subscription after
+delivery to either a decoded topic or the error topic.</p>
+<p>If this is not possible then any time a message is not successfully delivered
+to PubSub it should by treated as lost data and the appropriate time window
+will be backfilled from Cloud Storage in batch mode, and appropriate steps will
+be taken downstream to handle the backfill.</p>
+<p>Deployments should always terminate functional pipelines using the <code>drain</code>
+method, to ensure ack'd messages are fully delivered.</p>
+<h3 id="deduplication">Deduplication</h3>
+<p>Each <code>uri</code> will be allowed through "at least once", and only be
+rejected as a duplicate if we have completed delivery of a message with the
+same <code>uri</code>. We assume that each <code>uri</code> contains a UUID that uniquely identifies
+the document.
+"Exactly once" semantics can be applied to derived data sets using SQL in
+BigQuery, and GroupByKey in Beam and Spark.</p>
+<p>Note that deduplication is only provided with a "best effort" quality of service
+using a 10 minute window.</p>
                 
               
               
@@ -1000,7 +1051,8 @@ holiday weekend.</p>
   
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
-        <a href="../decoder_service_specification/" class="md-footer__link md-footer__link--prev" rel="prev">
+        
+        <a href="bigquery_sink_specification.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Live Sink Service Specification" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -1009,19 +1061,20 @@ holiday weekend.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Decoder Service Specification
+              Live Sink Service Specification
             </div>
           </div>
         </a>
       
       
-        <a href="../edge_migration_plan/" class="md-footer__link md-footer__link--next" rel="next">
+        
+        <a href="differences_from_aws.html" class="md-footer__link md-footer__link--next" aria-label="Next: Differences from AWS" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Plans for migrating edge traffic to GCP Ingestion
+              Differences from AWS
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -1050,10 +1103,10 @@ holiday weekend.</p>
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../../assets/javascripts/workers/search.d351de03.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.b0710199.min.js", "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.34eae1b6.min.js"></script>
+      <script src="../assets/javascripts/bundle.76f349be.min.js"></script>
       
     
   </body>
