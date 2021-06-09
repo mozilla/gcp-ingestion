@@ -56,6 +56,8 @@ public class MessageScrubber {
       .put("org-mozilla-allanchain-firefox", "1698574") //
       .put("com-nationaledtech-spinbrowser", "1708753") //
       .put("com-netsweeper-clientfilter-netsweeper", "1708754") //
+      .put("com-searchscene-ios", "1715101") //
+      .put("org-geocomply-ios-fennec", "1711513") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
