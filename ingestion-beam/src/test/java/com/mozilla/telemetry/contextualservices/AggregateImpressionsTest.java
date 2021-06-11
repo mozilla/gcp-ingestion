@@ -95,12 +95,18 @@ public class AggregateImpressionsTest {
         String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
         ParsedReportingUrl parsedUrl = new ParsedReportingUrl(reportingUrl);
 
-        String queryParam = parsedUrl.getQueryParam(Attribute.REPORTING_URL);
-        if ("US".equals(queryParam)) {
+        String country = parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE);
+        if ("US".equals(country)) {
           Assert.assertEquals(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS), "3");
-        } else if ("DE".equals(queryParam)) {
+        } else if ("DE".equals(country)) {
           Assert.assertEquals(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS), "2");
+        } else {
+          throw new IllegalArgumentException("unknown country value");
         }
+
+        // Parameters with no values should still be included
+        Assert.assertTrue(
+            reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
 
         long windowSize = Long
             .parseLong(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_END))
