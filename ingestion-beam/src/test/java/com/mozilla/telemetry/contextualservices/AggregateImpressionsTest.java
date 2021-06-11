@@ -100,6 +100,8 @@ public class AggregateImpressionsTest {
           Assert.assertEquals(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS), "3");
         } else if ("DE".equals(country)) {
           Assert.assertEquals(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS), "2");
+        } else {
+          throw new IllegalArgumentException("unknown country value");
         }
 
         // Parameters with no values should still be included
