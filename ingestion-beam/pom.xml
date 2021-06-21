@@ -65,7 +65,7 @@
                  this version supports messages larger than 1MB -->
             <groupId>com.google.cloud</groupId>
             <artifactId>pubsublite-beam-io</artifactId>
-            <version>0.15.0</version>
+            <version>0.16.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
