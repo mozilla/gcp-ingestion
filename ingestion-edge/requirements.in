@@ -2,7 +2,7 @@ aiohttp==3.7.4.post0
 dockerflow==2020.10.0
 google-api-core==1.28.0  # transitive dep that needs dependabot updates
 google-cloud-container==2.4.1
-google-cloud-monitoring==2.2.1
+google-cloud-monitoring==2.3.0
 google-cloud-pubsub==1.0.2
 googleapis-common-protos==1.53.0  # transitive dep that needs dependabot updates
 gunicorn==20.1.0
