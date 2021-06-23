@@ -41,7 +41,7 @@ public class FilterByDocType
       message = PubsubConstraints.ensureNonNull(message);
       if (allowedDocTypesSet == null) {
         if (!allowedDocTypes.isAccessible() || allowedDocTypes.get() == null) {
-          throw new IllegalArgumentException("Required --allowedDocType argument not found");
+          throw new IllegalArgumentException("Required --allowedDocTypes argument not found");
         }
         allowedDocTypesSet = Arrays.stream(allowedDocTypes.get().split(","))
             .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
