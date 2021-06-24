@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.GzipUtil;
@@ -27,14 +26,6 @@ public class VerifyMetadata extends
 
   private VerifyMetadata(ValueProvider<List<String>> docTypesToVerify) {
     this.docTypesToVerify = docTypesToVerify;
-  }
-
-  private static class RejectedMessageException extends RuntimeException {
-
-    RejectedMessageException(String message, String reason) {
-      super(message);
-      KeyedCounter.inc("rejected_" + reason);
-    }
   }
 
   @Override

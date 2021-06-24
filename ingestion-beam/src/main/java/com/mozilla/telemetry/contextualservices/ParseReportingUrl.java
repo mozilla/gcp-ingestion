@@ -103,9 +103,20 @@ public class ParseReportingUrl extends
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
+          if ("topsites-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))
+              || "quicksuggest-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+            checkIfParamPresent(urlParser, "ctag");
+            checkIfParamPresent(urlParser, "version");
+            checkIfParamPresent(urlParser, "key");
+            checkIfParamPresent(urlParser, "ci");
+          } else if ("topsites-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))
+              || "quicksuggest-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+            checkIfParamPresent(urlParser, "id");
+          }
+
           if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
-            throw new IllegalArgumentException(
-                "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE);
+            throw new RejectedMessageException(
+                "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE, "country");
           }
           urlParser.addQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE,
               payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
@@ -120,8 +131,9 @@ public class ParseReportingUrl extends
               || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("quicksuggest-click")) {
             String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
             if (userAgentVersion == null) {
-              throw new IllegalArgumentException(
-                  "Missing required attribute " + Attribute.USER_AGENT_VERSION);
+              throw new RejectedMessageException(
+                  "Missing required attribute " + Attribute.USER_AGENT_VERSION,
+                  "user_agent_version");
             }
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_PRODUCT_VERSION,
                 "firefox_" + userAgentVersion);
@@ -148,7 +160,7 @@ public class ParseReportingUrl extends
               try {
                 throw ee.exception();
               } catch (UncheckedIOException | IllegalArgumentException
-                  | ParsedReportingUrl.InvalidUrlException e) {
+                  | ParsedReportingUrl.InvalidUrlException | RejectedMessageException e) {
                 return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
                     ee.exception());
               }
@@ -180,11 +192,11 @@ public class ParseReportingUrl extends
    * Return the value used for the os-family parameter of the API
    * associated with the user_agent_os attribute.
    *
-   * @throws IllegalArgumentException if the given OS value is not recognized
+   * @throws RejectedMessageException if the given OS value is not recognized
    */
   private String getOsParam(String userAgentOs) {
     if (userAgentOs == null) {
-      throw new IllegalArgumentException("Missing required OS attribute");
+      throw new RejectedMessageException("Missing required OS attribute", "os");
     }
     if (userAgentOs.startsWith(OS_WINDOWS)) {
       return PARAM_WINDOWS;
@@ -193,7 +205,7 @@ public class ParseReportingUrl extends
     } else if (userAgentOs.startsWith(OS_LINUX)) {
       return PARAM_LINUX;
     } else {
-      throw new IllegalArgumentException("Unrecognized OS attribute: " + userAgentOs);
+      throw new RejectedMessageException("Unrecognized OS attribute: " + userAgentOs, "os");
     }
   }
 
@@ -240,23 +252,33 @@ public class ParseReportingUrl extends
   @VisibleForTesting
   List<Set<String>> loadAllowedUrls() throws IOException {
     if (singletonAllowedImpressionUrls == null || singletonAllowedClickUrls == null) {
-      singletonAllowedImpressionUrls = new HashSet<>();
-      singletonAllowedClickUrls = new HashSet<>();
+      Set<String> allowedImpressionUrls = new HashSet<>();
+      Set<String> allowedClickUrls = new HashSet<>();
 
       List<String[]> urlToActionTypePairs = readPairsFromFile(urlAllowList, "urlAllowList");
 
       // 0th element is site, 1st element is action type (click/impression)
       for (String[] urlToActionType : urlToActionTypePairs) {
         if (urlToActionType[1].equals("click")) {
-          singletonAllowedClickUrls.add(urlToActionType[0]);
+          allowedClickUrls.add(urlToActionType[0]);
         } else if (urlToActionType[1].equals("impression")) {
-          singletonAllowedImpressionUrls.add(urlToActionType[0]);
+          allowedImpressionUrls.add(urlToActionType[0]);
         } else {
           throw new IllegalArgumentException(
               "Invalid action type in url allow list: " + urlToActionType[1]);
         }
       }
+
+      singletonAllowedImpressionUrls = allowedImpressionUrls;
+      singletonAllowedClickUrls = allowedClickUrls;
     }
     return Arrays.asList(singletonAllowedClickUrls, singletonAllowedImpressionUrls);
+  }
+
+  private void checkIfParamPresent(ParsedReportingUrl reportingUrl, String paramName) {
+    if (reportingUrl.getQueryParam(paramName) == null) {
+      throw new RejectedMessageException("Missing required url query parameter: " + paramName,
+          paramName);
+    }
   }
 }

@@ -3,6 +3,7 @@ package com.mozilla.telemetry.contextualservices;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
@@ -73,7 +74,7 @@ public class ParseReportingUrlTest {
     basePayload.put(Attribute.VERSION, "87.0");
 
     List<PubsubMessage> input = Stream
-        .of("https://moz.impression.com/?param=1", "https://other.com?")
+        .of("https://moz.impression.com/?param=1&id=a", "https://other.com?id=b")
         .map(url -> basePayload.deepCopy().put(Attribute.REPORTING_URL, url))
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
         .collect(Collectors.toList());
@@ -105,6 +106,7 @@ public class ParseReportingUrlTest {
 
       Assert.assertTrue(reportingUrl.startsWith("https://moz.impression.com/?"));
       Assert.assertTrue(reportingUrl.contains("param=1"));
+      Assert.assertTrue(reportingUrl.contains("id=a"));
       Assert.assertTrue(
           reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
       Assert.assertTrue(reportingUrl
@@ -114,6 +116,55 @@ public class ParseReportingUrlTest {
       Assert.assertTrue(reportingUrl
           .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop")));
 
+      return null;
+    });
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testRequiredParamCheck() {
+    Map<String, String> attributesImpression = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "topsites-impression", Attribute.USER_AGENT_OS, "Windows");
+    Map<String, String> attributesClick = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
+        Attribute.USER_AGENT_OS, "Windows", Attribute.USER_AGENT_VERSION, "123");
+
+    ObjectNode basePayload = Json.createObjectNode();
+    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    basePayload.put(Attribute.VERSION, "87.0");
+
+    List<PubsubMessage> input = Stream
+        .of("https://moz.impression.com/?id=a", "https://moz.impression.com/?")
+        .map(url -> basePayload.deepCopy().put(Attribute.REPORTING_URL, url))
+        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributesImpression))
+        .collect(Collectors.toList());
+
+    input.addAll(Stream
+        .of("https://click.com/?ctag=a&version=1&key=b&ci=c",
+            "https://click.com/?ctag=a&version=1&key=b", "https://click.com/?ctag=a&version=&ci=c",
+            "https://click.com/?ctag=a&key=b&ci=c", "https://click.com/?version=1&key=b&ci=c")
+        .map(url -> basePayload.deepCopy().put(Attribute.REPORTING_URL, url))
+        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributesClick))
+        .collect(Collectors.toList()));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST)));
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(5, Iterables.size(messages));
+
+      messages.forEach(message -> {
+        System.out.println(message.getAttribute("error_message"));
+        Assert.assertEquals(RejectedMessageException.class.getCanonicalName(),
+            message.getAttribute("exception_class"));
+      });
+
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(messages -> {
+      Assert.assertEquals(2, Iterables.size(messages));
       return null;
     });
 
