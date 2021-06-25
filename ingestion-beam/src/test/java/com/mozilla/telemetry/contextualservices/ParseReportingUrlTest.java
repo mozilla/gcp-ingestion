@@ -155,7 +155,6 @@ public class ParseReportingUrlTest {
       Assert.assertEquals(5, Iterables.size(messages));
 
       messages.forEach(message -> {
-        System.out.println(message.getAttribute("error_message"));
         Assert.assertEquals(RejectedMessageException.class.getCanonicalName(),
             message.getAttribute("exception_class"));
       });
