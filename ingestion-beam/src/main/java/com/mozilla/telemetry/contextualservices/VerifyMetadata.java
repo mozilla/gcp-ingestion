@@ -15,6 +15,9 @@ import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
+/**
+ * Verify attributes and payload are in the expected formats.
+ */
 public class VerifyMetadata extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
@@ -56,9 +59,9 @@ public class VerifyMetadata extends
           // Verify Firefox version
           String doctype = attributes.get(Attribute.DOCUMENT_TYPE);
           int minVersion;
-          if (doctype.startsWith("topsites")) {
+          if (doctype.startsWith("topsites-")) {
             minVersion = 87;
-          } else if (doctype.startsWith("quicksuggest")) {
+          } else if (doctype.startsWith("quicksuggest-")) {
             minVersion = 89;
           } else {
             throw new IllegalArgumentException("Unrecognized doctype: " + doctype);
@@ -66,7 +69,8 @@ public class VerifyMetadata extends
           String version = attributes.get(Attribute.USER_AGENT_VERSION);
           if (version == null || minVersion > Integer.parseInt(version)) {
             throw new RejectedMessageException(
-                "User agent version does not match doctype: " + doctype, "user_agent_version");
+                String.format("Firefox version does not match doctype: %s, %s", version, doctype),
+                "user_agent_version");
           }
 
           return message;
@@ -74,7 +78,7 @@ public class VerifyMetadata extends
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
               try {
                 throw ee.exception();
-              } catch (RejectedMessageException e) {
+              } catch (RejectedMessageException | IllegalArgumentException e) {
                 return FailureMessage.of(VerifyMetadata.class.getSimpleName(), ee.element(),
                     ee.exception());
               }
