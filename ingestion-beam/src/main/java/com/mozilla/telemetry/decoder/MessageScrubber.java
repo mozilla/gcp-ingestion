@@ -61,6 +61,9 @@ public class MessageScrubber {
       .put("org-mozilla-vrbrowser-internal", "1715099") //
       .put("com-qwant-mobile", "1717450") //
       .put("io-github-forkmaintainers-iceraven", "1717479") //
+      .put("artistscope-ios-artisbrowser", "1719343") //
+      .put("com-luxxle-ios-fennec", "1719341") //
+      .put("com-etiantian-pclass", "1719338") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
