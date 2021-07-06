@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import com.mozilla.telemetry.util.Time;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -19,7 +20,6 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.WithKeys;
-import org.apache.beam.sdk.transforms.WithTimestamps;
 import org.apache.beam.sdk.transforms.windowing.FixedWindows;
 import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
 import org.apache.beam.sdk.transforms.windowing.IntervalWindow;
@@ -57,7 +57,7 @@ public class AggregateImpressions
         AggregateImpressions::getAggregationKey)) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of())) //
         // Set timestamp to current time
-        .apply(WithTimestamps.of(message -> new Instant())) //
+        .apply(WithCurrentTimestamp.of()) //
         // Group impressions into timed windows
         .apply("IntervalWindow",
             Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration)))) //
