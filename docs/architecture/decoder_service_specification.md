@@ -82,7 +82,7 @@ required group attributes {
   optional string x_pingsender_version       // header from client
   optional string x_debug_id                 // header from client
   optional string x_source_tags              // header from client
-  optional string x_foxsec_ip_reputation     // header from client
+  optional string x_foxsec_ip_reputation     // header from iprepd
   optional string user_agent_browser         // from user_agent
   optional string user_agent_browser_version // from user_agent
   optional string user_agent_os              // from user_agent
