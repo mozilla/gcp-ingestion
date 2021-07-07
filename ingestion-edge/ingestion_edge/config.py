@@ -61,6 +61,7 @@ DEFAULT_METADATA_HEADERS = [
     "X-Pingsender-Version",
     "X-Pipeline-Proxy",
     "X-Debug-ID",
+    "X-Foxsec-IP-Reputation",
     "X-Source-Tags",
     "X-Telemetry-Agent",
 ]
