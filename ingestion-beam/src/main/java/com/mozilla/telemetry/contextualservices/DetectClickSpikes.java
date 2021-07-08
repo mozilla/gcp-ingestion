@@ -49,9 +49,8 @@ public class DetectClickSpikes extends
    */
   public static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> perContextId(
       Integer maxClicks, Duration windowDuration) {
-    return PTransform.compose(input -> input
-        .apply("DetectClickSpikesPerContextId",
-            WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
+    return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
+        .apply(WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of()))
         .apply(WithCurrentTimestamp.of()) //
         .apply(DetectClickSpikes.of(maxClicks, windowDuration)) //
