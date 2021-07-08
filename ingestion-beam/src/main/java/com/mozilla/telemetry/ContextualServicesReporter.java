@@ -3,13 +3,12 @@ package com.mozilla.telemetry;
 import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
-import com.mozilla.telemetry.contextualservices.DetectClickSpikes;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
+import com.mozilla.telemetry.contextualservices.LabelClickSpikes;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.ingestion.core.Constant;
 import com.mozilla.telemetry.transforms.DecompressPayload;
-import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +61,6 @@ public class ContextualServicesReporter extends Sink {
     PCollection<PubsubMessage> requests = pipeline //
         .apply(options.getInputType().read(options)) //
         .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
-        .apply(WithCurrentTimestamp.of()) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections);
@@ -86,7 +84,7 @@ public class ContextualServicesReporter extends Sink {
         .apply("FilterPerContextIdDocTypes",
             Filter.by((message) -> perContextIdDocTypes
                 .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
-        .apply(DetectClickSpikes.perContextId(options.getClickSpikeThreshold(),
+        .apply(LabelClickSpikes.perContextId(options.getClickSpikeThreshold(),
             Time.parseDuration(options.getClickSpikeWindowDuration())));
 
     PCollection<PubsubMessage> unaggregated = requests.apply("FilterUnaggregatedDocTypes",

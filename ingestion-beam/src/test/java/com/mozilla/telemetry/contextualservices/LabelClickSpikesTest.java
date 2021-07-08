@@ -19,7 +19,7 @@ import org.joda.time.Instant;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DetectClickSpikesTest {
+public class LabelClickSpikesTest {
 
   @Rule
   public TestPipeline pipeline = TestPipeline.create();
@@ -54,7 +54,7 @@ public class DetectClickSpikesTest {
 
     PCollection<PubsubMessage> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(DetectClickSpikes.of(10, Duration.standardMinutes(3))).apply(Values.create());
+        .apply(LabelClickSpikes.of(10, Duration.standardMinutes(3))).apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -89,7 +89,7 @@ public class DetectClickSpikesTest {
 
     PCollection<PubsubMessage> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(DetectClickSpikes.of(10, Duration.standardMinutes(3))) //
+        .apply(LabelClickSpikes.of(10, Duration.standardMinutes(3))) //
         .apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {

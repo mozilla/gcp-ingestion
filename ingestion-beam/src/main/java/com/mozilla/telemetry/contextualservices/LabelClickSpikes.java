@@ -36,12 +36,12 @@ import org.joda.time.Instant;
 /**
  * Transform that maintains state per key in order to label suspicious clicks.
  */
-public class DetectClickSpikes extends
+public class LabelClickSpikes extends
     PTransform<PCollection<KV<String, PubsubMessage>>, PCollection<KV<String, PubsubMessage>>> {
 
   private final Integer maxClicks;
   private final Long windowMillis;
-  private final Counter status64Counter = Metrics.counter(DetectClickSpikes.class,
+  private final Counter status64Counter = Metrics.counter(LabelClickSpikes.class,
       "click_status_64");
 
   /**
@@ -53,15 +53,15 @@ public class DetectClickSpikes extends
         .apply(WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of()))
         .apply(WithCurrentTimestamp.of()) //
-        .apply(DetectClickSpikes.of(maxClicks, windowDuration)) //
+        .apply(LabelClickSpikes.of(maxClicks, windowDuration)) //
         .apply(Values.create()));
   }
 
-  public static DetectClickSpikes of(Integer maxClicks, Duration windowDuration) {
-    return new DetectClickSpikes(maxClicks, windowDuration);
+  public static LabelClickSpikes of(Integer maxClicks, Duration windowDuration) {
+    return new LabelClickSpikes(maxClicks, windowDuration);
   }
 
-  private DetectClickSpikes(Integer maxClicks, Duration windowDuration) {
+  private LabelClickSpikes(Integer maxClicks, Duration windowDuration) {
     this.maxClicks = maxClicks;
     this.windowMillis = windowDuration.getMillis();
   }
@@ -76,7 +76,8 @@ public class DetectClickSpikes extends
         .filter(ts -> (currentMillis - ts) < windowMillis)
         // We order with largest timestamps first.
         .sorted(Comparator.reverseOrder())
-        // We conserve memory by keeping only the most recent clicks if we're over the limit.
+        // We conserve memory by keeping only the most recent clicks if we're over the limit;
+        // we allow (maxClicks + 1) elements so size checks can use ">" rather than ">=".
         .limit(maxClicks + 1).collect(Collectors.toList());
     state.write(timestamps);
     return timestamps;
