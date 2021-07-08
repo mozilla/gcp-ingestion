@@ -1,13 +1,18 @@
 package com.mozilla.telemetry;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
+import com.mozilla.telemetry.contextualservices.DetectClickSpikesByContextId;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.ingestion.core.Constant;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
+import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -17,8 +22,11 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.Values;
+import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
+import org.joda.time.Duration;
 
 /**
  * Get contextual services pings and send requests to URLs in payload.
@@ -57,25 +65,41 @@ public class ContextualServicesReporter extends Sink {
     PCollection<PubsubMessage> requests = pipeline //
         .apply(options.getInputType().read(options)) //
         .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
+        .apply(WithCurrentTimestamp.of()) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections);
 
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
+    Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click");
+    Set<String> unionedDocTypes = Sets.union(aggregatedDocTypes, perContextIdDocTypes);
 
-    // Aggregate impressions
+    // Aggregate impressions.
     PCollection<PubsubMessage> aggregated = requests
         .apply("FilterAggregatedDocTypes",
             Filter.by((message) -> aggregatedDocTypes
                 .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration())); //
 
+    // Perform windowed click counting per context_id, adding a click-status to the reporting URL
+    // if the count passes a threshold.
+    PCollection<PubsubMessage> perContextId = requests
+        .apply("FilterPerContextIdDocTypes",
+            Filter.by((message) -> perContextIdDocTypes
+                .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
+        .apply(WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
+        .apply(DetectClickSpikesByContextId.of(options.getClickSpikeThreshold(),
+            Time.parseDuration(options.getClickSpikeWindowDuration()))) //
+        .apply(Values.create());
+
     PCollection<PubsubMessage> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
-        Filter.by((message) -> !aggregatedDocTypes
+        Filter.by((message) -> !unionedDocTypes
             .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE))));
 
-    PCollectionList.of(aggregated).and(unaggregated).apply(Flatten.pCollections()) //
-        .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
+    PCollectionList
+        .of(aggregated).and(perContextId).and(unaggregated) //
+        .apply(Flatten.pCollections()) //
+        .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls())) //
         .failuresTo(errorCollections);
 
     // Note that there is no write step here for "successes"

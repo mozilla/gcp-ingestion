@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
@@ -80,6 +81,10 @@ public class ParseReportingUrl extends
           }
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+
+          // Store context_id for click counting in subsequent transforms.
+          Optional.ofNullable(payload.path(Attribute.CONTEXT_ID).textValue()) //
+              .ifPresent(v -> attributes.put(Attribute.CONTEXT_ID, v));
 
           String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
 
