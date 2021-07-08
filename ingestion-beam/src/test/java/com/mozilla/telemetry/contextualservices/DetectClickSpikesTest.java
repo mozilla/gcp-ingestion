@@ -19,16 +19,15 @@ import org.joda.time.Instant;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DetectClickSpikesByContextIdTest {
+public class DetectClickSpikesTest {
 
   @Rule
   public TestPipeline pipeline = TestPipeline.create();
 
   @Test
   public void testSetsClickStatus() {
-    ImmutableMap<String, String> attributes = ImmutableMap
-        .of(Attribute.CONTEXT_ID, "a", //
-            Attribute.REPORTING_URL, "https://test.com");
+    ImmutableMap<String, String> attributes = ImmutableMap.of(Attribute.CONTEXT_ID, "a", //
+        Attribute.REPORTING_URL, "https://test.com");
     PubsubMessage message = new PubsubMessage(new byte[] {}, attributes);
     PubsubMessage[] messages = new PubsubMessage[19];
     Arrays.fill(messages, message);
@@ -55,8 +54,7 @@ public class DetectClickSpikesByContextIdTest {
 
     PCollection<PubsubMessage> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(DetectClickSpikesByContextId.of(10, Duration.standardMinutes(3)))
-        .apply(Values.create());
+        .apply(DetectClickSpikes.of(10, Duration.standardMinutes(3))).apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -65,8 +63,7 @@ public class DetectClickSpikesByContextIdTest {
     });
 
     PAssert.that(result).satisfies(iter -> {
-      long countWithStatus = StreamSupport
-          .stream(iter.spliterator(), false) //
+      long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
           .filter(m -> m.getAttribute(Attribute.REPORTING_URL).contains("click-status=64")) //
           .count();
       assert countWithStatus == 10 : ("Expected 10 messages with click-status, but found "
@@ -79,7 +76,8 @@ public class DetectClickSpikesByContextIdTest {
 
   @Test
   public void testFlushesState() {
-    ImmutableMap<String, String> attributes = ImmutableMap.of(Attribute.CONTEXT_ID, "a");
+    ImmutableMap<String, String> attributes = ImmutableMap.of(Attribute.CONTEXT_ID, "a", //
+        Attribute.REPORTING_URL, "https://test.com");
     PubsubMessage[] messages = new PubsubMessage[8];
     Arrays.fill(messages, new PubsubMessage(new byte[] {}, attributes));
     TestStream<PubsubMessage> createEvents = TestStream
@@ -91,7 +89,7 @@ public class DetectClickSpikesByContextIdTest {
 
     PCollection<PubsubMessage> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(DetectClickSpikesByContextId.of(10, Duration.standardMinutes(3))) //
+        .apply(DetectClickSpikes.of(10, Duration.standardMinutes(3))) //
         .apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
@@ -101,8 +99,7 @@ public class DetectClickSpikesByContextIdTest {
     });
 
     PAssert.that(result).satisfies(iter -> {
-      long countWithStatus = StreamSupport
-          .stream(iter.spliterator(), false) //
+      long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
           .filter(m -> m.getAttribute(Attribute.REPORTING_URL).contains("click-status=64")) //
           .count();
       assert countWithStatus == 0 : ("Expected 0 messages with click_status, but found "

@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -9,7 +10,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.state.StateSpec;
 import org.apache.beam.sdk.state.StateSpecs;
 import org.apache.beam.sdk.state.TimeDomain;
@@ -20,25 +24,37 @@ import org.apache.beam.sdk.state.ValueState;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
+import org.apache.beam.sdk.transforms.Values;
+import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
 /**
- * Transform that maintains state per {@code context_id} in order to label suspicious clicks.
+ * Transform that maintains state per key in order to label suspicious clicks.
  */
-public class DetectClickSpikesByContextId extends
+public class DetectClickSpikes extends
     PTransform<PCollection<KV<String, PubsubMessage>>, PCollection<KV<String, PubsubMessage>>> {
 
   private final Integer maxClicks;
   private final Long windowMillis;
 
-  public static DetectClickSpikesByContextId of(Integer maxClicks, Duration windowDuration) {
-    return new DetectClickSpikesByContextId(maxClicks, windowDuration);
+  public static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> perContextId(
+      Integer maxClicks, Duration windowDuration) {
+    return PTransform.compose(
+        input -> input.apply(WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
+            .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of()))
+            .apply(WithCurrentTimestamp.of()) //
+            .apply(DetectClickSpikes.of(maxClicks, windowDuration)) //
+            .apply(Values.create()));
   }
 
-  private DetectClickSpikesByContextId(Integer maxClicks, Duration windowDuration) {
+  public static DetectClickSpikes of(Integer maxClicks, Duration windowDuration) {
+    return new DetectClickSpikes(maxClicks, windowDuration);
+  }
+
+  private DetectClickSpikes(Integer maxClicks, Duration windowDuration) {
     this.maxClicks = maxClicks;
     this.windowMillis = windowDuration.getMillis();
   }
@@ -83,7 +99,7 @@ public class DetectClickSpikesByContextId extends
       List<Long> timestamps = updateTimestampState(state, elementTs.getMillis());
 
       // Set an event-time timer to clear state after windowMillis if no further clicks
-      // are seen for this context_id. If another element with this context_id arrives,
+      // are seen for this key. If another element with this key arrives,
       // it will overwrite this timer value.
       timer.set(Instant.ofEpochMilli(elementTs.getMillis() + windowMillis));
 

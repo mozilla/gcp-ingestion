@@ -1,32 +1,29 @@
 package com.mozilla.telemetry;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
-import com.mozilla.telemetry.contextualservices.DetectClickSpikesByContextId;
+import com.mozilla.telemetry.contextualservices.DetectClickSpikes;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.ingestion.core.Constant;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
-import org.apache.beam.sdk.transforms.Values;
-import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
-import org.joda.time.Duration;
 
 /**
  * Get contextual services pings and send requests to URLs in payload.
@@ -72,7 +69,9 @@ public class ContextualServicesReporter extends Sink {
 
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
     Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click");
-    Set<String> unionedDocTypes = Sets.union(aggregatedDocTypes, perContextIdDocTypes);
+    Set<String> unionedDocTypes = Stream
+        .concat(aggregatedDocTypes.stream(), perContextIdDocTypes.stream())
+        .collect(Collectors.toSet());
 
     // Aggregate impressions.
     PCollection<PubsubMessage> aggregated = requests
@@ -87,17 +86,14 @@ public class ContextualServicesReporter extends Sink {
         .apply("FilterPerContextIdDocTypes",
             Filter.by((message) -> perContextIdDocTypes
                 .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
-        .apply(WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
-        .apply(DetectClickSpikesByContextId.of(options.getClickSpikeThreshold(),
-            Time.parseDuration(options.getClickSpikeWindowDuration()))) //
-        .apply(Values.create());
+        .apply(DetectClickSpikes.perContextId(options.getClickSpikeThreshold(),
+            Time.parseDuration(options.getClickSpikeWindowDuration())));
 
     PCollection<PubsubMessage> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
         Filter.by((message) -> !unionedDocTypes
             .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE))));
 
-    PCollectionList
-        .of(aggregated).and(perContextId).and(unaggregated) //
+    PCollectionList.of(aggregated).and(perContextId).and(unaggregated) //
         .apply(Flatten.pCollections()) //
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls())) //
         .failuresTo(errorCollections);
