@@ -14,6 +14,8 @@ import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.state.StateSpec;
 import org.apache.beam.sdk.state.StateSpecs;
 import org.apache.beam.sdk.state.TimeDomain;
@@ -39,15 +41,21 @@ public class DetectClickSpikes extends
 
   private final Integer maxClicks;
   private final Long windowMillis;
+  private final Counter status64Counter = Metrics.counter(DetectClickSpikes.class,
+      "click_status_64");
 
+  /**
+   * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
+   */
   public static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> perContextId(
       Integer maxClicks, Duration windowDuration) {
-    return PTransform.compose(
-        input -> input.apply(WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
-            .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of()))
-            .apply(WithCurrentTimestamp.of()) //
-            .apply(DetectClickSpikes.of(maxClicks, windowDuration)) //
-            .apply(Values.create()));
+    return PTransform.compose(input -> input
+        .apply("DetectClickSpikesPerContextId",
+            WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of()))
+        .apply(WithCurrentTimestamp.of()) //
+        .apply(DetectClickSpikes.of(maxClicks, windowDuration)) //
+        .apply(Values.create()));
   }
 
   public static DetectClickSpikes of(Integer maxClicks, Duration windowDuration) {
@@ -109,6 +117,7 @@ public class DetectClickSpikes extends
         PubsubMessage message = element.getValue();
         Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
         addClickStatusToReportingUrlAttribute(attributes);
+        status64Counter.inc();
         out.output(KV.of(element.getKey(), new PubsubMessage(message.getPayload(), attributes)));
       }
     }
