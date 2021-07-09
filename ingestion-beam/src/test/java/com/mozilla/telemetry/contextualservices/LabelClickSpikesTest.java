@@ -64,7 +64,7 @@ public class LabelClickSpikesTest {
 
     PAssert.that(result).satisfies(iter -> {
       long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
-          .filter(m -> m.getAttribute(Attribute.REPORTING_URL).contains("click-status=64")) //
+          .filter(m -> m.getAttribute(Attribute.REPORTING_URL).contains("click-status=65")) //
           .count();
       assert countWithStatus == 10 : ("Expected 10 messages with click-status, but found "
           + countWithStatus);
@@ -100,7 +100,7 @@ public class LabelClickSpikesTest {
 
     PAssert.that(result).satisfies(iter -> {
       long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
-          .filter(m -> m.getAttribute(Attribute.REPORTING_URL).contains("click-status=64")) //
+          .filter(m -> m.getAttribute(Attribute.REPORTING_URL).contains("click-status=65")) //
           .count();
       assert countWithStatus == 0 : ("Expected 0 messages with click_status, but found "
           + countWithStatus);

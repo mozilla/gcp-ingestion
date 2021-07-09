@@ -41,8 +41,8 @@ public class LabelClickSpikes extends
 
   private final Integer maxClicks;
   private final Long windowMillis;
-  private final Counter status64Counter = Metrics.counter(LabelClickSpikes.class,
-      "click_status_64");
+  private final Counter status65Counter = Metrics.counter(LabelClickSpikes.class,
+      "click_status_65");
 
   /**
    * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
@@ -87,8 +87,8 @@ public class LabelClickSpikes extends
   private static void addClickStatusToReportingUrlAttribute(Map<String, String> attributes) {
     String reportingUrl = attributes.get(Attribute.REPORTING_URL);
     ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
-    // "64" indicates a spike in clicks per the Conducive API spec.
-    urlParser.addQueryParam("click-status", "64");
+    // "65" indicates a short-term spike in "ghost" clicks per the Conducive API spec.
+    urlParser.addQueryParam("click-status", "65");
     attributes.put(Attribute.REPORTING_URL, urlParser.toString());
   }
 
@@ -117,7 +117,7 @@ public class LabelClickSpikes extends
         PubsubMessage message = element.getValue();
         Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
         addClickStatusToReportingUrlAttribute(attributes);
-        status64Counter.inc();
+        status65Counter.inc();
         out.output(KV.of(element.getKey(), new PubsubMessage(message.getPayload(), attributes)));
       }
     }
