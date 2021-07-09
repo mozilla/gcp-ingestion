@@ -26,12 +26,36 @@ public class DecompressPayloadTest {
 
     final List<String> expected = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
-        "{\"attributeMap\":null,\"payload\":\"dGVzdA==\"}");
+        "{\"attributeMap\":{},\"payload\":\"dGVzdA==\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
         .apply(DecompressPayload.enabled(pipeline.newProvider(true))) //
+        .apply(OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testClientCompressionIsRecorded() {
+    final List<String> input = Arrays.asList(
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
+        // TODO calculate this compression for the test
+        // payload="$(printf test | gzip -c | base64)"
+        "{\"payload\":\"H4sIAM1ekFsAAytJLS4BAAx+f9gEAAAA\"}");
+
+    final List<String> expected = Arrays.asList(
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}",
+        "{\"attributeMap\":{\"client_compression\":\"gzip\"},\"payload\":\"dGVzdA==\"}");
+
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()) //
+        .apply(DecompressPayload.enabled(pipeline.newProvider(true)) //
+            .withClientCompressionRecorded()) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);

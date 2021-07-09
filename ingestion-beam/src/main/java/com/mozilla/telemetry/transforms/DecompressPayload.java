@@ -1,8 +1,11 @@
 package com.mozilla.telemetry.transforms;
 
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.GZIPInputStream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
@@ -24,7 +27,11 @@ public class DecompressPayload
    * @param enabled if false, this transform will pass all messages through unchanged
    */
   public static DecompressPayload enabled(ValueProvider<Boolean> enabled) {
-    return new DecompressPayload(enabled);
+    return new DecompressPayload(enabled, false);
+  }
+
+  public DecompressPayload withClientCompressionRecorded() {
+    return new DecompressPayload(enabled, true);
   }
 
   @Override
@@ -35,14 +42,14 @@ public class DecompressPayload
   ////////
 
   private final ValueProvider<Boolean> enabled;
+  private final boolean recordInputCompression;
 
-  private DecompressPayload(ValueProvider<Boolean> enabled) {
+  private DecompressPayload(ValueProvider<Boolean> enabled, boolean recordInputCompression) {
     this.enabled = enabled;
+    this.recordInputCompression = recordInputCompression;
   }
 
   private class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
-
-    private static final byte ZERO_BYTE = 0x00;
 
     private final Counter compressedInput = Metrics.counter(Fn.class, "compressed_input");
     private final Counter uncompressedInput = Metrics.counter(Fn.class, "uncompressed_input");
@@ -53,6 +60,7 @@ public class DecompressPayload
         // Compression has been explicitly turned off in options, so return unchanged message.
         return message;
       } else {
+        message = PubsubConstraints.ensureNonNull(message);
         try {
           ByteArrayInputStream payloadStream = new ByteArrayInputStream(message.getPayload());
           GZIPInputStream gzipStream = new GZIPInputStream(payloadStream);
@@ -60,7 +68,12 @@ public class DecompressPayload
           // Throws IOException
           IOUtils.copy(gzipStream, decompressedStream);
           compressedInput.inc();
-          return new PubsubMessage(decompressedStream.toByteArray(), message.getAttributeMap());
+          Map<String, String> attributes = message.getAttributeMap();
+          if (recordInputCompression) {
+            attributes = new HashMap<>(message.getAttributeMap());
+            attributes.putIfAbsent(Attribute.CLIENT_COMPRESSION, "gzip");
+          }
+          return new PubsubMessage(decompressedStream.toByteArray(), attributes);
         } catch (IOException ignore) {
           // payload wasn't valid gzip, assume it wasn't compressed
           uncompressedInput.inc();
