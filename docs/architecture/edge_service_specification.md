@@ -51,6 +51,8 @@ required group attributes {
   optional string x_debug_id           // example: "my_debug_session_1"
   optional string x_pipeline_proxy     // time that the AWS->GCP tee received the message, example: "2018-03-12T21:02:18.123456Z"
   optional string x_telemetry_agent    // example: "Glean/0.40.0 (Kotlin on Android)"
+  optional string x_source_tags        // example: "Automation, Other"
+  optional string x_foxsec_ip_reputation // example: "95"
 }
 ```
 

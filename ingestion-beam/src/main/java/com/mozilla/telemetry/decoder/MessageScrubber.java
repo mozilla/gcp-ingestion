@@ -56,6 +56,14 @@ public class MessageScrubber {
       .put("org-mozilla-allanchain-firefox", "1698574") //
       .put("com-nationaledtech-spinbrowser", "1708753") //
       .put("com-netsweeper-clientfilter-netsweeper", "1708754") //
+      .put("com-searchscene-ios", "1715101") //
+      .put("org-geocomply-ios-fennec", "1711513") //
+      .put("org-mozilla-vrbrowser-internal", "1715099") //
+      .put("com-qwant-mobile", "1717450") //
+      .put("io-github-forkmaintainers-iceraven", "1717479") //
+      .put("artistscope-ios-artisbrowser", "1719343") //
+      .put("com-luxxle-ios-fennec", "1719341") //
+      .put("com-etiantian-pclass", "1719338") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap

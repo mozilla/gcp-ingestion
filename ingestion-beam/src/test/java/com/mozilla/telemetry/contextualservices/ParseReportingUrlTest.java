@@ -105,6 +105,14 @@ public class ParseReportingUrlTest {
 
       Assert.assertTrue(reportingUrl.startsWith("https://moz.impression.com/?"));
       Assert.assertTrue(reportingUrl.contains("param=1"));
+      Assert.assertTrue(
+          reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
+      Assert.assertTrue(reportingUrl
+          .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "Windows")));
+      Assert.assertTrue(reportingUrl
+          .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
+      Assert.assertTrue(reportingUrl
+          .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop")));
 
       return null;
     });

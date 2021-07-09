@@ -65,7 +65,7 @@
                  this version supports messages larger than 1MB -->
             <groupId>com.google.cloud</groupId>
             <artifactId>pubsublite-beam-io</artifactId>
-            <version>0.14.2</version>
+            <version>0.16.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
@@ -94,12 +94,12 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
-            <version>1.7.30</version>
+            <version>1.7.31</version>
         </dependency>
         <dependency>
             <groupId>org.bitbucket.b_c</groupId>
             <artifactId>jose4j</artifactId>
-            <version>0.7.7</version>
+            <version>0.7.8</version>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
@@ -110,7 +110,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>5.3.7</version>
+            <version>5.3.8</version>
             <scope>test</scope>
         </dependency>
         <dependency>

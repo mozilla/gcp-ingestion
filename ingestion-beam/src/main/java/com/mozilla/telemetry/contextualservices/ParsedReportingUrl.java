@@ -52,8 +52,8 @@ public class ParsedReportingUrl {
       queryParams = new HashMap<>();
     } else {
       queryParams = Arrays.stream(this.reportingUrl.getQuery().split("&"))
-          .map(param -> param.split("=")).filter(param -> param.length > 1)
-          .collect(Collectors.toMap(item -> item[0], item -> item[1]));
+          .map(param -> param.split("="))
+          .collect(Collectors.toMap(item -> item[0], item -> item.length > 1 ? item[1] : ""));
     }
   }
 
