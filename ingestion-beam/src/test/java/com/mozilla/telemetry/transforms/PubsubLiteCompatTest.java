@@ -12,7 +12,6 @@ import com.google.protobuf.util.JsonFormat;
 import com.mozilla.telemetry.ingestion.core.util.IOFunction;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.PubsubWithNullsJsonCoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Function;
@@ -34,7 +33,7 @@ public class PubsubLiteCompatTest {
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   private final List<PubsubMessage> outputToLite = ImmutableList.of(//
-      new PubsubMessage(null, null), //
+      new PubsubMessage(new byte[] {}, null), //
       new PubsubMessage("payload".getBytes(StandardCharsets.UTF_8),
           ImmutableMap.of("meta", "data")));
 
@@ -65,7 +64,7 @@ public class PubsubLiteCompatTest {
   @Test
   public void testToPubsubLiteTransform() throws Exception {
     PCollection<String> result = pipeline //
-        .apply(Create.of(outputToLite).withCoder(PubsubWithNullsJsonCoder.of())) //
+        .apply(Create.of(outputToLite)) //
         .apply(PubsubLiteCompat.toPubsubLite()) //
         .apply("liteToJson",
             MapElements.into(TypeDescriptors.strings()).via(PubsubLiteCompatTest::liteToJson));
