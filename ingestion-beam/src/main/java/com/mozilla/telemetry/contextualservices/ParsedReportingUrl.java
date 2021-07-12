@@ -22,6 +22,7 @@ public class ParsedReportingUrl {
   static final String PARAM_IMPRESSIONS = "impressions";
   static final String PARAM_TIMESTAMP_BEGIN = "begin-timestamp";
   static final String PARAM_TIMESTAMP_END = "end-timestamp";
+  static final String PARAM_CLICK_STATUS = "click-status";
 
   private final URL reportingUrl;
   private final Map<String, String> queryParams;
