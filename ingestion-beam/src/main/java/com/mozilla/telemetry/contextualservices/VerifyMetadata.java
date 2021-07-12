@@ -3,9 +3,9 @@ package com.mozilla.telemetry.contextualservices;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.util.GzipUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -46,8 +46,12 @@ public class VerifyMetadata extends
           }
 
           // Message must be gzip compressed
-          if (!GzipUtil.isGzip(message.getPayload())) {
-            throw new RejectedMessageException("Payload must be gzip compressed", "gzip");
+          String clientCompression = attributes.get(Attribute.CLIENT_COMPRESSION);
+          if (!"gzip".equals(clientCompression)) {
+            throw new RejectedMessageException(
+                String.format("Payload must be gzip compressed, found: %s",
+                    Optional.ofNullable(clientCompression).orElse("none")),
+                "gzip");
           }
 
           // User agent must be Firefox
@@ -67,10 +71,15 @@ public class VerifyMetadata extends
             throw new IllegalArgumentException("Unrecognized doctype: " + doctype);
           }
           String version = attributes.get(Attribute.USER_AGENT_VERSION);
-          if (version == null || minVersion > Integer.parseInt(version)) {
+          try {
+            if (version == null || minVersion > Integer.parseInt(version)) {
+              throw new RejectedMessageException(
+                  String.format("Firefox version does not match doctype: %s, %s", version, doctype),
+                  "user_agent_version");
+            }
+          } catch (NumberFormatException e) {
             throw new RejectedMessageException(
-                String.format("Firefox version does not match doctype: %s, %s", version, doctype),
-                "user_agent_version");
+                String.format("Invalid Firefox version: %s", version), "user_agent_version");
           }
 
           return message;

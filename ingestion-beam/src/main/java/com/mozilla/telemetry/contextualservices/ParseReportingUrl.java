@@ -105,13 +105,13 @@ public class ParseReportingUrl extends
 
           if ("topsites-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))
               || "quicksuggest-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
-            checkIfParamPresent(urlParser, "ctag");
-            checkIfParamPresent(urlParser, "version");
-            checkIfParamPresent(urlParser, "key");
-            checkIfParamPresent(urlParser, "ci");
+            requireParamPresent(urlParser, "ctag");
+            requireParamPresent(urlParser, "version");
+            requireParamPresent(urlParser, "key");
+            requireParamPresent(urlParser, "ci");
           } else if ("topsites-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))
               || "quicksuggest-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
-            checkIfParamPresent(urlParser, "id");
+            requireParamPresent(urlParser, "id");
           }
 
           if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
@@ -275,7 +275,7 @@ public class ParseReportingUrl extends
     return Arrays.asList(singletonAllowedClickUrls, singletonAllowedImpressionUrls);
   }
 
-  private void checkIfParamPresent(ParsedReportingUrl reportingUrl, String paramName) {
+  private static void requireParamPresent(ParsedReportingUrl reportingUrl, String paramName) {
     if (reportingUrl.getQueryParam(paramName) == null) {
       throw new RejectedMessageException("Missing required url query parameter: " + paramName,
           paramName);

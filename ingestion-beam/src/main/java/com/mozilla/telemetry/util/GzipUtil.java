@@ -20,16 +20,4 @@ public class GzipUtil {
       return bytes;
     }
   }
-
-  /**
-   * Return true if the input is gzipped based on comparing the first two bytes to GZIP header.
-   */
-  public static boolean isGzip(byte[] bytes) {
-    try (ByteArrayInputStream payloadStream = new ByteArrayInputStream(bytes)) {
-      int header = payloadStream.read() | payloadStream.read() << 8;
-      return header == GZIPInputStream.GZIP_MAGIC;
-    } catch (IOException e) {
-      return false;
-    }
-  }
 }

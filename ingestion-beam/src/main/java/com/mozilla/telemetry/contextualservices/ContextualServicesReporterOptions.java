@@ -50,14 +50,14 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
   void setClickSpikeThreshold(Integer value);
 
   @Description("If set to true, send successfully requested reporting URLs to"
-      + "error output.  SendRequests stage does not continue if true.")
+      + " error output.  SendRequests stage does not continue if true.")
   @Default.Boolean(true)
   ValueProvider<Boolean> getLogReportingUrls();
 
   void setLogReportingUrls(ValueProvider<Boolean> value);
 
   @Description("Comma-separated list of doc types for which to validate metadata"
-      + "for the purposes of removing invalid clicks or impressions.")
+      + " for the purposes of removing invalid clicks or impressions.")
   ValueProvider<List<String>> getDocTypesToVerify();
 
   void setDocTypesToVerify(ValueProvider<List<String>> value);
