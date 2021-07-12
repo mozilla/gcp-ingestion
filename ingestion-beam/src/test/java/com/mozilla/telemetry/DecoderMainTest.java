@@ -74,28 +74,6 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         matchesInAnyOrder(expectedErrorOutputLines));
   }
 
-  @Test
-  public void testGzippedPayload() throws Exception {
-    String outputPath = outputFolder.getRoot().getAbsolutePath();
-    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
-    String input = resourceDir + "/gzipped.ndjson";
-    String output = outputPath + "/out/out";
-    String errorOutput = outputPath + "/error/error";
-
-    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
-        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
-        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=file",
-        "--errorOutput=" + errorOutput, "--includeStackTrace=false",
-        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
-        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz" });
-
-    List<String> outputLines = Lines.files(output + "*.ndjson");
-    List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
-    assertThat("Main output differed from expectation", outputLines,
-        matchesInAnyOrder(expectedOutputLines));
-  }
-
   /** Helper for testEncryptedPioneerPayloads. The pipeline will insert metadata
    * during processing, which needs to be removed to match base payload. */
   private List<String> removeMetadata(List<String> lines) {
@@ -167,7 +145,7 @@ public class DecoderMainTest extends TestWithDeterministicJson {
     assertThat(errorOutputLines, Matchers.hasSize(0));
 
     List<String> outputLines = Lines.files(output + "*.ndjson");
-    assertThat(outputLines, Matchers.hasSize(3));
+    assertThat(outputLines, Matchers.hasSize(4));
     List<String> expectedOutputLines = Lines.files(resourceDir + "/output.ndjson");
     assertThat("Main output differed from expectation", getPayload(removeMetadata(outputLines)),
         matchesInAnyOrder(getPayload(expectedOutputLines)));

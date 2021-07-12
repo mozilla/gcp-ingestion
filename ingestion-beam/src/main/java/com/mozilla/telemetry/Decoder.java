@@ -65,7 +65,8 @@ public class Decoder extends Sink {
             .apply(ParseProxy.of()) //
             .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
-            .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())))
+            .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
+                .withClientCompressionRecorded()))
 
         // URI Parsing
         .map(p -> p //

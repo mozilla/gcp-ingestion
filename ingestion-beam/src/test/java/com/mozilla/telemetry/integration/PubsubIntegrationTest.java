@@ -194,29 +194,6 @@ public class PubsubIntegrationTest extends TestWithDeterministicJson {
     result.cancel();
   }
 
-  @Test(timeout = 30000)
-  public void canSendGzippedPayloads() throws Exception {
-    final List<String> inputLines = Lines.resources("testdata/pubsub-integration/input.ndjson");
-
-    pipeline.getOptions().as(DirectOptions.class).setBlockOnRun(false);
-
-    SinkOptions sinkOptions = pipeline.getOptions().as(SinkOptions.class);
-    sinkOptions.setOutputType(OutputType.pubsub);
-    sinkOptions.setOutput(pipeline.newProvider(topicName.toString()));
-    SinkOptions.Parsed options = SinkOptions.parseSinkOptions(sinkOptions);
-
-    pipeline.apply(Create.of(inputLines)).apply(InputFileFormat.json.decode())
-        .apply(options.getOutputType().write(options));
-
-    final PipelineResult result = pipeline.run();
-
-    System.err.println("Waiting for subscriber to receive messages published in the pipeline...");
-    List<String> expectedLines = Lines.resources("testdata/pubsub-integration/gzipped.ndjson");
-    List<String> received = receiveLines(expectedLines.size());
-    assertThat(received, matchesInAnyOrder(expectedLines));
-    result.cancel();
-  }
-
   /*
    * Helper methods
    */
