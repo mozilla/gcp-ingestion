@@ -97,7 +97,7 @@ public class LabelClickSpikes extends
     @StateId("click-state")
     private final StateSpec<ValueState<List<Long>>> clickState = StateSpecs.value();
     @TimerId("click-timer")
-    private final TimerSpec clickTimer = TimerSpecs.timer(TimeDomain.EVENT_TIME);
+    private final TimerSpec clickTimer = TimerSpecs.timer(TimeDomain.PROCESSING_TIME);
 
     @ProcessElement
     public void process(@Element KV<String, PubsubMessage> element, @Timestamp Instant elementTs,
@@ -108,7 +108,7 @@ public class LabelClickSpikes extends
       // Set an event-time timer to clear state after windowMillis if no further clicks
       // are seen for this key. If another element with this key arrives,
       // it will overwrite this timer value.
-      timer.set(Instant.ofEpochMilli(elementTs.getMillis() + windowMillis));
+      timer.offset(Duration.millis(windowMillis)).setRelative();
 
       if (timestamps.size() <= maxClicks) {
         out.output(element);

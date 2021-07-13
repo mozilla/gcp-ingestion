@@ -126,7 +126,6 @@ public class ParseReportingUrl extends
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_PRODUCT_VERSION,
                 "firefox_" + userAgentVersion);
             String ipReputationString = attributes.get(Attribute.X_FOXSEC_IP_REPUTATION);
-            System.out.println("ipReputation: " + ipReputationString);
             Integer ipReputation = null;
             try {
               ipReputation = Integer.parseInt(ipReputationString);
@@ -136,17 +135,6 @@ public class ParseReportingUrl extends
             if (ipReputation != null && ipReputation < IP_REPUTATION_THRESHOLD) {
               urlParser.addQueryParam(ParsedReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
             }
-          }
-
-          String ipReputationString = attributes.get(Attribute.X_FOXSEC_IP_REPUTATION);
-          Integer ipReputation = null;
-          try {
-            ipReputation = Integer.parseInt(ipReputationString);
-          } catch (NumberFormatException ignore) {
-            // pass
-          }
-          if (ipReputation != null && ipReputation < IP_REPUTATION_THRESHOLD) {
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
           }
 
           reportingUrl = urlParser.toString();
