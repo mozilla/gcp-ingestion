@@ -40,7 +40,7 @@ public class VerifyMetadata extends
 
           Map<String, String> attributes = message.getAttributeMap();
 
-          if (!docTypesToVerify.isAccessible()
+          if (!docTypesToVerify.isAccessible() || docTypesToVerify.get() == null
               || !docTypesToVerify.get().contains(attributes.get(Attribute.DOCUMENT_TYPE))) {
             return message;
           }

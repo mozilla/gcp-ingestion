@@ -45,7 +45,7 @@ public class VerifyMetadataTest {
 
   @Test
   public void testRejectUncompressed() {
-    Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click", //
+    Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
         Attribute.USER_AGENT_BROWSER, "Firefox", //
         Attribute.USER_AGENT_VERSION, "90");
 
