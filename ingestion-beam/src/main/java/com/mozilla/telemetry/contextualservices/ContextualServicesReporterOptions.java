@@ -36,6 +36,18 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setAggregationWindowDuration(String value);
 
+  @Description("Duration window when counting clicks for labeling spikes.")
+  @Default.String("3m")
+  String getClickSpikeWindowDuration();
+
+  void setClickSpikeWindowDuration(String value);
+
+  @Description("Click count threshold when labeling click spikes.")
+  @Default.Integer(10)
+  Integer getClickSpikeThreshold();
+
+  void setClickSpikeThreshold(Integer value);
+
   @Description("If set to true, send successfully requested reporting URLs to"
       + "error output.  SendRequests stage does not continue if true.")
   @Default.Boolean(true)

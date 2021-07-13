@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.ValueProvider;
@@ -51,6 +52,13 @@ public class ParseReportingUrl extends
   private static final String PARAM_MAC = "macOS";
   private static final String PARAM_LINUX = "Linux";
 
+  // Values for the click-status API parameter
+  public static final String CLICK_STATUS_ABUSE = "64";
+  public static final String CLICK_STATUS_GHOST = "65";
+
+  // Threshold for IP reputation considered likely abuse.
+  private static final int IP_REPUTATION_THRESHOLD = 70;
+
   public static ParseReportingUrl of(ValueProvider<String> urlAllowList) {
     return new ParseReportingUrl(urlAllowList);
   }
@@ -80,6 +88,10 @@ public class ParseReportingUrl extends
           }
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+
+          // Store context_id for click counting in subsequent transforms.
+          Optional.ofNullable(payload.path(Attribute.CONTEXT_ID).textValue()) //
+              .ifPresent(v -> attributes.put(Attribute.CONTEXT_ID, v));
 
           String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
 
@@ -113,6 +125,16 @@ public class ParseReportingUrl extends
             }
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_PRODUCT_VERSION,
                 "firefox_" + userAgentVersion);
+            String ipReputationString = attributes.get(Attribute.X_FOXSEC_IP_REPUTATION);
+            Integer ipReputation = null;
+            try {
+              ipReputation = Integer.parseInt(ipReputationString);
+            } catch (NumberFormatException ignore) {
+              // pass
+            }
+            if (ipReputation != null && ipReputation < IP_REPUTATION_THRESHOLD) {
+              urlParser.addQueryParam(ParsedReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
+            }
           }
 
           reportingUrl = urlParser.toString();

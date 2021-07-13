@@ -17,6 +17,7 @@ public class Constant {
     public static final String CLIENT_COMPRESSION = "client_compression";
     public static final String CLIENT_ID = "client_id";
     public static final String CLIENT_IP = "client_ip";
+    public static final String CONTEXT_ID = "context_id";
     public static final String DATE = "date";
     public static final String DNT = "dnt";
     public static final String DOCUMENT_ID = "document_id";
