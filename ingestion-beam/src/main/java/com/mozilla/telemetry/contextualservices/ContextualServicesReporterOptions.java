@@ -49,7 +49,7 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
   void setClickSpikeThreshold(Integer value);
 
   @Description("If set to true, send successfully requested reporting URLs to"
-      + "error output.  SendRequests stage does not continue if true.")
+      + " error output.  SendRequests stage does not continue if true.")
   @Default.Boolean(true)
   ValueProvider<Boolean> getLogReportingUrls();
 
