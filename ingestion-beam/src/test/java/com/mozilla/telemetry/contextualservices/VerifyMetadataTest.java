@@ -1,6 +1,5 @@
 package com.mozilla.telemetry.contextualservices;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
@@ -27,23 +26,6 @@ public class VerifyMetadataTest {
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   @Test
-  public void testNoVerifyDocTypes() {
-    // Should pass invalid message if no doctype arguments are given
-    PubsubMessage message = new PubsubMessage(new byte[] {}, Collections.emptyMap());
-
-    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
-        .apply(Create.of(Collections.singletonList(message))) //
-        .apply(VerifyMetadata.of(pipeline.newProvider(Collections.emptyList())));
-
-    PAssert.that(result.output()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-      return null;
-    });
-
-    pipeline.run();
-  }
-
-  @Test
   public void testRejectUncompressed() {
     Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
         Attribute.USER_AGENT_BROWSER, "Firefox", //
@@ -61,7 +43,7 @@ public class VerifyMetadataTest {
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(VerifyMetadata.of(pipeline.newProvider(ImmutableList.of("topsites-click"))));
+        .apply(VerifyMetadata.of());
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -96,7 +78,7 @@ public class VerifyMetadataTest {
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(VerifyMetadata.of(pipeline.newProvider(ImmutableList.of("topsites-click"))));
+        .apply(VerifyMetadata.of());
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));
@@ -127,8 +109,7 @@ public class VerifyMetadataTest {
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(VerifyMetadata
-            .of(pipeline.newProvider(ImmutableList.of("topsites-click", "quicksuggest-click"))));
+        .apply(VerifyMetadata.of());
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));

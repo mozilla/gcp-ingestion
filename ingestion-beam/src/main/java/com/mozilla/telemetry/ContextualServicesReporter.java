@@ -62,7 +62,7 @@ public class ContextualServicesReporter extends Sink {
     PCollection<PubsubMessage> requests = pipeline //
         .apply(options.getInputType().read(options)) //
         .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
-        .apply(VerifyMetadata.of(options.getDocTypesToVerify())) //
+        .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //

@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.options.SinkOptions;
-import java.util.List;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
@@ -55,12 +54,6 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
   ValueProvider<Boolean> getLogReportingUrls();
 
   void setLogReportingUrls(ValueProvider<Boolean> value);
-
-  @Description("Comma-separated list of doc types for which to validate metadata"
-      + " for the purposes of removing invalid clicks or impressions.")
-  ValueProvider<List<String>> getDocTypesToVerify();
-
-  void setDocTypesToVerify(ValueProvider<List<String>> value);
 
   @Hidden
   interface Parsed extends ContextualServicesReporterOptions, SinkOptions.Parsed {
