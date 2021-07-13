@@ -105,7 +105,7 @@ public class LabelClickSpikes extends
         OutputReceiver<KV<String, PubsubMessage>> out) {
       List<Long> timestamps = updateTimestampState(state, elementTs.getMillis());
 
-      // Set an event-time timer to clear state after windowMillis if no further clicks
+      // Set a processing-time timer to clear state after windowMillis if no further clicks
       // are seen for this key. If another element with this key arrives,
       // it will overwrite this timer value.
       timer.offset(Duration.millis(windowMillis)).setRelative();

@@ -15,7 +15,6 @@ import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
-import org.joda.time.Instant;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,8 +33,7 @@ public class LabelClickSpikesTest {
     // We add 20 messages each only a second apart. The first 10 should saturate the timestamp
     // state, then the final 10 should be marked as suspicious via click-status.
     for (int i = 1; i <= 20; i++) {
-      eventBuilder = eventBuilder
-          .advanceWatermarkTo(new Instant(0L).plus(Duration.standardSeconds(i)))
+      eventBuilder = eventBuilder.advanceProcessingTime(Duration.standardSeconds(i))
           .addElements(message);
     }
 
@@ -73,8 +71,7 @@ public class LabelClickSpikesTest {
     // These 20 messages arrive one minute apart from each other, so old timestamps should
     // expire before we hit the click threshold. These should have no click status set.
     for (int i = 1; i <= 20; i++) {
-      eventBuilder = eventBuilder
-          .advanceWatermarkTo(new Instant(0L).plus(Duration.standardMinutes(i)))
+      eventBuilder = eventBuilder.advanceProcessingTime(Duration.standardMinutes(i))
           .addElements(message);
     }
 
@@ -111,7 +108,7 @@ public class LabelClickSpikesTest {
     TestStream<PubsubMessage> createEvents = TestStream
         .create(PubsubMessageWithAttributesCoder.of())
         .addElements(messages[0], Arrays.copyOfRange(messages, 1, 8))
-        .advanceWatermarkTo(new Instant(0L).plus(Duration.standardMinutes(4)))
+        .advanceProcessingTime(Duration.standardMinutes(4))
         .addElements(messages[0], Arrays.copyOfRange(messages, 1, 8)) //
         .advanceWatermarkToInfinity();
 
