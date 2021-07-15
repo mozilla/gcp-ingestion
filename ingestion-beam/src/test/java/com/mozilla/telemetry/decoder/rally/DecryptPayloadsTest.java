@@ -57,9 +57,12 @@ public class DecryptPayloadsTest extends TestWithDeterministicJson {
     List<PubsubMessage> input = Arrays.asList(
         readTestFilePubsub("jwe/rally-study-foo.ciphertext.json", "rally-study-foo", "baseline",
             "1"),
-        readTestFilePubsub("pioneer/study-foo.ciphertext.json", "telemetry", "pioneer-study", "4"));
+        readTestFilePubsub("pioneer/study-foo.ciphertext.json", "telemetry", "pioneer-study", "4"),
+        readTestFilePubsub("jwe/rally-study-foo.deletion-request.ciphertext.json",
+            "rally-study-foo", "deletion-request", "1"));
     List<String> expected = Arrays.asList(readTestFile("jwe/rally-study-foo.plaintext.json"),
-        readTestFile("pioneer/sample.plaintext.json"));
+        readTestFile("pioneer/sample.plaintext.json"),
+        readTestFile("jwe/rally-study-foo.deletion-request.plaintext.json"));
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
         .apply(
             DecryptPayloads.of(metadataLocation, schemasLocation, kmsEnabled, decompressPayload));
