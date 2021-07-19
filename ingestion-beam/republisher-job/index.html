@@ -13,19 +13,19 @@
         <meta name="author" content="Mozilla Data Platform Team">
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.10">
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.1.11">
     
     
       
-        <title>Ingestion Testing Workflow - GCP Ingestion</title>
+        <title>Republisher Job - GCP Ingestion</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.1fe995fd.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.3754935a.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.f1a3b89f.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.f1a3b89f.min.css">
         
           
           
@@ -61,7 +61,7 @@
     <body dir="ltr" data-md-color-scheme="" data-md-color-primary="teal" data-md-color-accent="">
   
     
-    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    <script>function __prefix(e){return new URL("../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -69,7 +69,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ingestion-testing-workflow" class="md-skip">
+        <a href="#republisher-job" class="md-skip">
           Skip to content
         </a>
       
@@ -80,7 +80,7 @@
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../index.html" title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../.." title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -99,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Ingestion Testing Workflow
+              Republisher Job
             
           </span>
         </div>
@@ -170,7 +170,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../index.html" class="md-tabs__link">
+    <a href="../.." class="md-tabs__link">
       Home
     </a>
   </li>
@@ -185,7 +185,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../architecture/overview.html" class="md-tabs__link">
+      <a href="../../architecture/overview/" class="md-tabs__link">
         Architecture
       </a>
     </li>
@@ -201,7 +201,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../ingestion-edge/index.html" class="md-tabs__link">
+      <a href="../../ingestion-edge/" class="md-tabs__link">
         ingestion-edge
       </a>
     </li>
@@ -219,7 +219,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="index.html" class="md-tabs__link md-tabs__link--active">
+      <a href="../" class="md-tabs__link md-tabs__link--active">
         ingestion-beam
       </a>
     </li>
@@ -235,7 +235,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../ingestion-sink/index.html" class="md-tabs__link">
+      <a href="../../ingestion-sink/" class="md-tabs__link">
         ingestion-sink
       </a>
     </li>
@@ -262,7 +262,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../index.html" title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../.." title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -294,7 +294,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../index.html" class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         Home
       </a>
     </li>
@@ -330,7 +330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/overview.html" class="md-nav__link">
+      <a href="../../architecture/overview/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -363,7 +363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/bigquery_sink_specification.html" class="md-nav__link">
+      <a href="../../architecture/bigquery_sink_specification/" class="md-nav__link">
         Live Sink Service Specification
       </a>
     </li>
@@ -375,7 +375,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/decoder_service_specification.html" class="md-nav__link">
+      <a href="../../architecture/decoder_service_specification/" class="md-nav__link">
         Decoder Service Specification
       </a>
     </li>
@@ -387,7 +387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/differences_from_aws.html" class="md-nav__link">
+      <a href="../../architecture/differences_from_aws/" class="md-nav__link">
         Differences from AWS
       </a>
     </li>
@@ -399,7 +399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/edge_migration_plan.html" class="md-nav__link">
+      <a href="../../architecture/edge_migration_plan/" class="md-nav__link">
         Plans for migrating edge traffic to GCP Ingestion
       </a>
     </li>
@@ -411,7 +411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/edge_service_specification.html" class="md-nav__link">
+      <a href="../../architecture/edge_service_specification/" class="md-nav__link">
         Edge Service Specification
       </a>
     </li>
@@ -423,7 +423,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/landfill_service_specification.html" class="md-nav__link">
+      <a href="../../architecture/landfill_service_specification/" class="md-nav__link">
         Raw Sink Service Specification
       </a>
     </li>
@@ -435,7 +435,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/pain_points.html" class="md-nav__link">
+      <a href="../../architecture/pain_points/" class="md-nav__link">
         Pain points
       </a>
     </li>
@@ -447,7 +447,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/reliability.html" class="md-nav__link">
+      <a href="../../architecture/reliability/" class="md-nav__link">
         Reliability
       </a>
     </li>
@@ -459,7 +459,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture/test_requirements.html" class="md-nav__link">
+      <a href="../../architecture/test_requirements/" class="md-nav__link">
         Test Requirements
       </a>
     </li>
@@ -507,7 +507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-edge/index.html" class="md-nav__link">
+      <a href="../../ingestion-edge/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -551,7 +551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="index.html" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -586,8 +586,32 @@
   
   
     <li class="md-nav__item">
-      <a href="decoder-job.html" class="md-nav__link">
+      <a href="../decoder-job/" class="md-nav__link">
         Decoder Job
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ingestion_testing_workflow/" class="md-nav__link">
+        Ingestion Testing Workflow
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rally-job/" class="md-nav__link">
+        Rally Decoder Job
       </a>
     </li>
   
@@ -608,12 +632,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Ingestion Testing Workflow
+          Republisher Job
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="ingestion_testing_workflow.html" class="md-nav__link md-nav__link--active">
-        Ingestion Testing Workflow
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Republisher Job
       </a>
       
         
@@ -631,22 +655,42 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setting-up-the-gcs-project" class="md-nav__link">
-    Setting up the GCS project
+  <a href="#capabilities" class="md-nav__link">
+    Capabilities
   </a>
+  
+    <nav class="md-nav" aria-label="Capabilities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#debug-republishing" class="md-nav__link">
+    Debug Republishing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-doctype-republishing" class="md-nav__link">
+    Per-docType Republishing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-channel-sampled-republishing" class="md-nav__link">
+    Per-Channel Sampled Republishing
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#bootstrapping-schemas-from-mozilla-pipeline-schemas" class="md-nav__link">
-    Bootstrapping schemas from mozilla-pipeline-schemas
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#building-the-project" class="md-nav__link">
-    Building the project
+  <a href="#executing" class="md-nav__link">
+    Executing
   </a>
   
 </li>
@@ -664,31 +708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="rally-job.html" class="md-nav__link">
-        Rally Decoder Job
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="republisher-job.html" class="md-nav__link">
-        Republisher Job
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="sink-job.html" class="md-nav__link">
+      <a href="../sink-job/" class="md-nav__link">
         Sink Job
       </a>
     </li>
@@ -736,7 +756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-sink/index.html" class="md-nav__link">
+      <a href="../../ingestion-sink/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -775,22 +795,42 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setting-up-the-gcs-project" class="md-nav__link">
-    Setting up the GCS project
+  <a href="#capabilities" class="md-nav__link">
+    Capabilities
   </a>
+  
+    <nav class="md-nav" aria-label="Capabilities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#debug-republishing" class="md-nav__link">
+    Debug Republishing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-doctype-republishing" class="md-nav__link">
+    Per-docType Republishing
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#per-channel-sampled-republishing" class="md-nav__link">
+    Per-Channel Sampled Republishing
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#bootstrapping-schemas-from-mozilla-pipeline-schemas" class="md-nav__link">
-    Bootstrapping schemas from mozilla-pipeline-schemas
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#building-the-project" class="md-nav__link">
-    Building the project
+  <a href="#executing" class="md-nav__link">
+    Executing
   </a>
   
 </li>
@@ -807,80 +847,77 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/ingestion_testing_workflow.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/ingestion-beam/republisher-job.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
                 
-                <h1 id="ingestion-testing-workflow">Ingestion Testing Workflow</h1>
-<p>The ingestion-beam handles data flow of documents from the edge into various
-sinks. You may be interested in standing up a small testing instance to validate
-the integration of the various components.</p>
-<p><img alt="diagrams/workflow.mmd" src="../diagrams/workflow.svg" />
-<strong>Figure</strong>: <em>An overview of the various components necessary to query BigQuery
-against data from a PubSub subscription.</em></p>
-<h2 id="setting-up-the-gcs-project">Setting up the GCS project</h2>
-<p>Read through <a href="https://github.com/whd/gcp-quickstart"><code>whd/gcp-quickstart</code></a> for details
-about the sandbox environment that is provided by data operations.</p>
+                <h1 id="republisher-job">Republisher Job</h1>
+<p>A job for republishing subsets of decoded messages to new destinations. Defined in the <code>com.mozilla.telemetry.Republisher</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Republisher.java">source</a>).</p>
+<p>The primary intention is to produce smaller derived Pub/Sub topics so
+that consumers that only need a specific subset of messages don't incur
+the cost of reading the entire stream of decoded messages.</p>
+<h2 id="capabilities">Capabilities</h2>
+<h3 id="debug-republishing">Debug Republishing</h3>
+<p>If <code>--enableDebugDestination</code> is set, messages containing an <code>x_debug_id</code>
+attribute will be republished to a destination that's configurable at runtime.
+This is currently expected to be a feature specific to structured ingestion,
+so should not be set for <code>telemetry-decoded</code> input.</p>
+<h3 id="per-doctype-republishing">Per-<code>docType</code> Republishing</h3>
+<p>If <code>--perDocTypeEnabledList</code> is provided, a separate producer will be created
+for each <code>docType</code> specified in the given comma-separated list.
+See the <code>--help</code> output for details on format.</p>
+<h3 id="per-channel-sampled-republishing">Per-Channel Sampled Republishing</h3>
+<p>If <code>--perChannelSampleRatios</code> is provided, a separate producer will be created
+for each specified release channel. The messages will be randomly sampled
+according to the ratios provided per channel.
+This is currently intended as a feature only for telemetry data, so should
+not be set for <code>structured-decoded</code> input.
+See the <code>--help</code> output for details on format.</p>
+<h2 id="executing">Executing</h2>
+<p>Republisher jobs are executed the <a href="../sink-job/#executing">same way as sink jobs</a>
+but with a few differences in flags. You'll need to set the <code>mainClass</code>:</p>
 <ul>
-<li>Install the <a href="https://cloud.google.com/sdk/">Google Cloud SDK</a></li>
-<li>Navigate to the <a href="https://cloud.google.com/sdk/">Google Cloud Console</a></li>
-<li>Create a new project under <code>firefox.gcp.mozilla.com/dataops/sandbox</code></li>
-<li><code>gcloud config set project &lt;PROJECT&gt;</code></li>
-<li>Create a PubSub subscription (see <code>gcp-quickstart/pubsub.sh</code>)</li>
-<li>Create a GCS bucket</li>
-<li><code>gsutil mb gs://&lt;PROJECT&gt;</code></li>
-<li>Enable the <a href="https://console.cloud.google.com/marketplace/details/google/dataflow.googleapis.com">Dataflow API</a></li>
-<li>Create a service account and store the key locally</li>
+<li><code>-Dexec.mainClass=com.mozilla.telemetry.Republisher</code></li>
+<li>For Dataflow Flex Templates, change the <code>docker-compose</code> build argument to
+    <code>--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Republisher</code></li>
 </ul>
-<h2 id="bootstrapping-schemas-from-mozilla-pipeline-schemas">Bootstrapping schemas from <code>mozilla-pipeline-schemas</code></h2>
+<p>The <code>--outputType</code> flag is still required as in the sink, but the <code>--output</code>
+configuration is ignored for the Republisher. Instead, there is a separate
+destination configuration flag for each of the three republishing types.
+For each type, there is an compile-time option that affects what publishers
+are generated in the graph for the Dataflow job along with a runtime option
+that determines the specific location (usually a topic name) for each publisher.</p>
+<p>To enable debug republishing:</p>
 <ul>
-<li>Download the latest schemas from <code>mozilla-pipeline-schemas</code> using <code>bin/download-schemas</code>.</li>
-<li>This script may also inject testing resources into the resulting archive.</li>
-<li>A <code>schemas.tar.gz</code> will appear at the project root.</li>
-<li>Copy generated BigQuery schemas using <code>bin/copy-bq-schemas</code>.</li>
-<li>Schemas will be written to <code>bq-schemas/</code> with a <code>.bq</code> extension</li>
-<li>Schemas can be generated directly from JSON Schema using <code>bin/generate-bq-schemas</code>
-  <code>bq-schemas/
-  ├── activity-stream.impression-stats.1.bq
-  ├── coverage.coverage.1.bq
-  ├── edge-validator.error-report.1.bq
-  ├── eng-workflow.bmobugs.1.bq
-  ....</code></li>
-<li>Update the BigQuery table in the current project using <code>bin/update-bq-table</code>.</li>
-<li>This may take several minutes. Read the script for usage information.</li>
-<li>Each namespace will be given its own dataset and each document type its own table.</li>
-<li>Verify that tables have been updated by viewing the BigQuery console.</li>
-<li>Download a copy of sampled documents using <code>bin/download-document-sample</code></li>
-<li>Upload this to your project's data bucket e.g. <code>gs://$PROJECT/data/</code></li>
+<li><code>--enableDebugDestination</code> (compile-time)</li>
+<li><code>--debugDestination=/some/pubsub/topic/path</code></li>
 </ul>
-<h2 id="building-the-project">Building the project</h2>
-<p>Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.</p>
-<pre><code class="language-bash"># this must be an absolute path
-export GOOGLE_APPLICATION_CREDENTIALS=keys.json
-PROJECT=$(gcloud config get-value project)
-BUCKET=&quot;gs://$PROJECT&quot;
+<p>To enable per-<code>docType</code> republishing:</p>
+<ul>
+<li><code>--perDocTypeDestination='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'</code> (compile-time)</li>
+</ul>
+<p>To enable per-channel sampled republishing:</p>
+<ul>
+<li><code>--perChannelSampleRatios='{"nightly":1.0,"beta":0.1,"release":0.01}'</code> (compile-time)</li>
+<li><code>--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}</code> (compile-time)</li>
+</ul>
+<p>Example:</p>
+<pre><code class="language-bash"># create a test input file
+mkdir -p tmp/
+echo '{&quot;payload&quot;:&quot;dGVzdA==&quot;,&quot;attributeMap&quot;:{&quot;x_debug_id&quot;:&quot;mysession&quot;}}' &gt; tmp/input.json
 
-path=&quot;$BUCKET/data/*.ndjson&quot;
-
-# use local maven instead of the docker container in bin/mvn, otherwise make sure to mount
-# credentials into the proper location in the container
-mvn compile exec:java -Dexec.args=&quot;\
-    --runner=Dataflow \
-    --project=$PROJECT \
-    --autoscalingAlgorithm=NONE \
-    --workerMachineType=n1-standard-1 \
-    --numWorkers=1 \
-    --gcpTempLocation=$BUCKET/tmp \
-    --inputFileFormat=json \
+# Republish only messages with x_debug_id attribute to stdout.
+./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Republisher -Dexec.args=&quot;\
     --inputType=file \
-    --input=$path\
-    --outputType=bigquery \
-    --output=$PROJECT:test_ingestion.\${document_namespace}__\${document_type}_v\${document_version} \
-    --bqWriteMethod=file_loads \
-    --tempLocation=$BUCKET/temp/bq-loads \
-    --errorOutputType=file \
-    --errorOutput=$BUCKET/error/ \
+    --input=tmp/input.json \
+    --outputType=stdout \
+    --errorOutputType=stderr \
+    --enableDebugDestination
+&quot;
+
+# check the RepublisherOptions help page for options specific to Republisher
+./bin/mvn compile exec:java -Dexec.args=--help=RepublisherOptions
 &quot;
 </code></pre>
                 
@@ -902,7 +939,7 @@ mvn compile exec:java -Dexec.args=&quot;\
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="decoder-job.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Decoder Job" rel="prev">
+        <a href="../rally-job/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Rally Decoder Job" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -911,20 +948,20 @@ mvn compile exec:java -Dexec.args=&quot;\
               <span class="md-footer__direction">
                 Previous
               </span>
-              Decoder Job
+              Rally Decoder Job
             </div>
           </div>
         </a>
       
       
         
-        <a href="rally-job.html" class="md-footer__link md-footer__link--next" aria-label="Next: Rally Decoder Job" rel="next">
+        <a href="../sink-job/" class="md-footer__link md-footer__link--next" aria-label="Next: Sink Job" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Rally Decoder Job
+              Sink Job
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -953,10 +990,10 @@ mvn compile exec:java -Dexec.args=&quot;\
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.477d984a.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.477d984a.min.js", "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.ddd52ceb.min.js"></script>
+      <script src="../../assets/javascripts/bundle.ddd52ceb.min.js"></script>
       
     
   </body>

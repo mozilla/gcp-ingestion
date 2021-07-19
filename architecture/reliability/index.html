@@ -13,19 +13,19 @@
         <meta name="author" content="Mozilla Data Platform Team">
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.10">
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.1.11">
     
     
       
-        <title>Decoder Service Specification - GCP Ingestion</title>
+        <title>Reliability - GCP Ingestion</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.1fe995fd.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.3754935a.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.f1a3b89f.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.f1a3b89f.min.css">
         
           
           
@@ -61,7 +61,7 @@
     <body dir="ltr" data-md-color-scheme="" data-md-color-primary="teal" data-md-color-accent="">
   
     
-    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
+    <script>function __prefix(e){return new URL("../..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -69,7 +69,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#decoder-service-specification" class="md-skip">
+        <a href="#reliability" class="md-skip">
           Skip to content
         </a>
       
@@ -80,7 +80,7 @@
     
       <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../index.html" title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../.." title="GCP Ingestion" class="md-header__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -99,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Decoder Service Specification
+              Reliability
             
           </span>
         </div>
@@ -170,7 +170,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../index.html" class="md-tabs__link">
+    <a href="../.." class="md-tabs__link">
       Home
     </a>
   </li>
@@ -187,7 +187,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="overview.html" class="md-tabs__link md-tabs__link--active">
+      <a href="../overview/" class="md-tabs__link md-tabs__link--active">
         Architecture
       </a>
     </li>
@@ -203,7 +203,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../ingestion-edge/index.html" class="md-tabs__link">
+      <a href="../../ingestion-edge/" class="md-tabs__link">
         ingestion-edge
       </a>
     </li>
@@ -219,7 +219,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../ingestion-beam/index.html" class="md-tabs__link">
+      <a href="../../ingestion-beam/" class="md-tabs__link">
         ingestion-beam
       </a>
     </li>
@@ -235,7 +235,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../ingestion-sink/index.html" class="md-tabs__link">
+      <a href="../../ingestion-sink/" class="md-tabs__link">
         ingestion-sink
       </a>
     </li>
@@ -262,7 +262,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../index.html" title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
+    <a href="../.." title="GCP Ingestion" class="md-nav__button md-logo" aria-label="GCP Ingestion" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
@@ -294,7 +294,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../index.html" class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         Home
       </a>
     </li>
@@ -332,7 +332,7 @@
   
   
     <li class="md-nav__item">
-      <a href="overview.html" class="md-nav__link">
+      <a href="../overview/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -367,8 +367,80 @@
   
   
     <li class="md-nav__item">
-      <a href="bigquery_sink_specification.html" class="md-nav__link">
+      <a href="../bigquery_sink_specification/" class="md-nav__link">
         Live Sink Service Specification
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../decoder_service_specification/" class="md-nav__link">
+        Decoder Service Specification
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../differences_from_aws/" class="md-nav__link">
+        Differences from AWS
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge_migration_plan/" class="md-nav__link">
+        Plans for migrating edge traffic to GCP Ingestion
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../edge_service_specification/" class="md-nav__link">
+        Edge Service Specification
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../landfill_service_specification/" class="md-nav__link">
+        Raw Sink Service Specification
+      </a>
+    </li>
+  
+
+          
+            
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pain_points/" class="md-nav__link">
+        Pain points
       </a>
     </li>
   
@@ -389,12 +461,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Decoder Service Specification
+          Reliability
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <a href="decoder_service_specification.html" class="md-nav__link md-nav__link--active">
-        Decoder Service Specification
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Reliability
       </a>
       
         
@@ -412,83 +484,37 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
-    Data Flow
+  <a href="#disclaimer-and-purpose" class="md-nav__link">
+    Disclaimer and Purpose
   </a>
-  
-    <nav class="md-nav" aria-label="Data Flow">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#implementation" class="md-nav__link">
-    Implementation
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#decoding-errors" class="md-nav__link">
-    Decoding Errors
-  </a>
-  
-    <nav class="md-nav" aria-label="Decoding Errors">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#error-message-schema" class="md-nav__link">
-    Error message schema
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#raw-message-schema" class="md-nav__link">
-    Raw message schema
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#decoded-message-metadata-schema" class="md-nav__link">
-    Decoded message metadata schema
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#other-considerations" class="md-nav__link">
-    Other Considerations
-  </a>
-  
-    <nav class="md-nav" aria-label="Other Considerations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#message-acks" class="md-nav__link">
-    Message Acks
+  <a href="#reliability-target" class="md-nav__link">
+    Reliability Target
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#deduplication" class="md-nav__link">
-    Deduplication
+      
+        <li class="md-nav__item">
+  <a href="#definitions" class="md-nav__link">
+    Definitions
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#exclusions" class="md-nav__link">
+    Exclusions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-information" class="md-nav__link">
+    Additional Information
+  </a>
   
 </li>
       
@@ -505,79 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="differences_from_aws.html" class="md-nav__link">
-        Differences from AWS
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="edge_migration_plan.html" class="md-nav__link">
-        Plans for migrating edge traffic to GCP Ingestion
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="edge_service_specification.html" class="md-nav__link">
-        Edge Service Specification
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="landfill_service_specification.html" class="md-nav__link">
-        Raw Sink Service Specification
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="pain_points.html" class="md-nav__link">
-        Pain points
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reliability.html" class="md-nav__link">
-        Reliability
-      </a>
-    </li>
-  
-
-          
-            
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="test_requirements.html" class="md-nav__link">
+      <a href="../test_requirements/" class="md-nav__link">
         Test Requirements
       </a>
     </li>
@@ -625,7 +579,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-edge/index.html" class="md-nav__link">
+      <a href="../../ingestion-edge/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -667,7 +621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-beam/index.html" class="md-nav__link">
+      <a href="../../ingestion-beam/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -700,7 +654,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-beam/decoder-job.html" class="md-nav__link">
+      <a href="../../ingestion-beam/decoder-job/" class="md-nav__link">
         Decoder Job
       </a>
     </li>
@@ -712,7 +666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-beam/ingestion_testing_workflow.html" class="md-nav__link">
+      <a href="../../ingestion-beam/ingestion_testing_workflow/" class="md-nav__link">
         Ingestion Testing Workflow
       </a>
     </li>
@@ -724,7 +678,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-beam/rally-job.html" class="md-nav__link">
+      <a href="../../ingestion-beam/rally-job/" class="md-nav__link">
         Rally Decoder Job
       </a>
     </li>
@@ -736,7 +690,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-beam/republisher-job.html" class="md-nav__link">
+      <a href="../../ingestion-beam/republisher-job/" class="md-nav__link">
         Republisher Job
       </a>
     </li>
@@ -748,7 +702,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-beam/sink-job.html" class="md-nav__link">
+      <a href="../../ingestion-beam/sink-job/" class="md-nav__link">
         Sink Job
       </a>
     </li>
@@ -796,7 +750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ingestion-sink/index.html" class="md-nav__link">
+      <a href="../../ingestion-sink/" class="md-nav__link">
         Overview
       </a>
     </li>
@@ -835,83 +789,37 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
-    Data Flow
+  <a href="#disclaimer-and-purpose" class="md-nav__link">
+    Disclaimer and Purpose
   </a>
-  
-    <nav class="md-nav" aria-label="Data Flow">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#implementation" class="md-nav__link">
-    Implementation
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#decoding-errors" class="md-nav__link">
-    Decoding Errors
-  </a>
-  
-    <nav class="md-nav" aria-label="Decoding Errors">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#error-message-schema" class="md-nav__link">
-    Error message schema
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#raw-message-schema" class="md-nav__link">
-    Raw message schema
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#decoded-message-metadata-schema" class="md-nav__link">
-    Decoded message metadata schema
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#other-considerations" class="md-nav__link">
-    Other Considerations
-  </a>
-  
-    <nav class="md-nav" aria-label="Other Considerations">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#message-acks" class="md-nav__link">
-    Message Acks
+  <a href="#reliability-target" class="md-nav__link">
+    Reliability Target
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#deduplication" class="md-nav__link">
-    Deduplication
+      
+        <li class="md-nav__item">
+  <a href="#definitions" class="md-nav__link">
+    Definitions
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#exclusions" class="md-nav__link">
+    Exclusions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-information" class="md-nav__link">
+    Additional Information
+  </a>
   
 </li>
       
@@ -927,115 +835,136 @@
             <article class="md-content__inner md-typeset">
               
                 
-                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/architecture/decoder_service_specification.md" title="Edit this page" class="md-content__button md-icon">
+                  <a href="https://github.com/mozilla/gcp-ingestion/edit/master/docs/architecture/reliability.md" title="Edit this page" class="md-content__button md-icon">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
                   </a>
                 
                 
-                <h1 id="decoder-service-specification">Decoder Service Specification</h1>
-<p>This document specifies the behavior of the service that decodes messages
-in the Structured Ingestion pipeline.</p>
-<h2 id="data-flow">Data Flow</h2>
-<ol>
-<li>Consume messages from Google Cloud PubSub raw topic</li>
-<li>Deduplicate message by <code>uri</code> (which generally contains <code>docId</code>)</li>
-<li>Disabled for stub-installer, which does not include a UUID in the URI</li>
-<li>Perform GeoIP lookup and drop <code>x_forwarded_for</code> and <code>remote_addr</code> and
-   optionally <code>geo_city</code> based on population</li>
-<li>Parse the <code>uri</code> attribute to determine document type, etc.</li>
-<li>Decode the body from base64, optionally decompress, and parse as JSON</li>
-<li>Scrub the message, checking the content against a list of known signatures
-   that should cause the message to be dropped as toxic, sent to error output,
-   or to have specific fields redacted</li>
-<li>Validate the schema of the body</li>
-<li>Extract user agent information and drop <code>user_agent</code></li>
-<li>Add metadata fields to message</li>
-<li>Write message to PubSub decoded topic based on <code>namespace</code> and <code>docType</code></li>
-</ol>
-<h3 id="implementation">Implementation</h3>
-<p>The above steps will be executed as a single Apache Beam job that can accept
-either a streaming input from PubSub or a batch input from Cloud Storage.</p>
-<h3 id="decoding-errors">Decoding Errors</h3>
-<p>All messages that are rejected at any step of the Data Flow above will be
-forwarded to a PubSub error topic for backfill and monitoring purposes.
-If we determine that a message has already been successfully processed
-based on <code>docId</code>, we drop the duplicated body and publish just the metadata
-to the error topic.</p>
-<h4 id="error-message-schema">Error message schema</h4>
-<p>The message that failed decoding, with several additional attributes:</p>
-<pre><code>...
-required group attributes {
-  ...
-  required string error_type    // example: &quot;schema&quot;
-  required string error_message // example: &quot;message did not match json schema for &lt;namespace&gt;/&lt;docVersion&gt;/&lt;docType&gt;&quot;
-  required string exception_class // example: &quot;java.lang.RuntimeException&quot;
-  required string stack_trace
-  optional string stack_trace_cause_1
-  optional string stack_trace_cause_2
-  optional string stack_trace_cause_3
-  optional string stack_trace_cause_4
-  optional string stack_trace_cause_5
-}
-</code></pre>
-<h3 id="raw-message-schema">Raw message schema</h3>
-<p>See <a href="edge_service_specification.html#pubsub-message-schema">Edge Service PubSub Message Schema</a>.</p>
-<h3 id="decoded-message-metadata-schema">Decoded message metadata schema</h3>
-<p>Decoded messages published to Pub/Sub will contain the following attributes:</p>
-<pre><code>required group attributes {
-  ...
-  required string document_version           // from uri for non-Telemetry, from message for Telemetry
-  required string document_id                // from uri
-  required string document_namespace         // from uri
-  required string document_type              // from uri
-  optional string app_name                   // from uri for Telemetry
-  optional string app_version                // from uri for Telemetry
-  optional string app_update_channel         // from uri for Telemetry
-  optional string app_build_id               // from uri for Telemetry
-  optional string geo_country                // from geoip lookup
-  optional string geo_subdivision1           // from geoip lookup
-  optional string geo_subdivision2           // from geoip lookup
-  optional string geo_city                   // from geoip lookup
-  required string submission_timestamp       // from edge metadata
-  optional string date                       // header from client
-  optional string dnt                        // header from client
-  optional string x_pingsender_version       // header from client
-  optional string x_debug_id                 // header from client
-  optional string x_source_tags              // header from client
-  optional string x_foxsec_ip_reputation     // header from iprepd
-  optional string user_agent_browser         // from user_agent
-  optional string user_agent_browser_version // from user_agent
-  optional string user_agent_os              // from user_agent
-  optional string user_agent_os_version      // from user_agent
-  optional string normalized_app_name        // based on parsed json payload
-  optional string normalized_channel         // based on parsed json payload or URI
-  required string normalized_country_code    // from geoip lookup
-  optional string normalized_os              // based on parsed json payload
-  optional string normalized_os_version      // based on parsed json payload
-  optional string sample_id                  // based on parsed json payload
-}
-</code></pre>
-<p>Many of these fields are also injected into the JSON payload either at the top
-level or nested inside a <code>metadata</code> object. The schema for injected metadata
-is maintained under the <a href="https://github.com/mozilla-services/mozilla-pipeline-schemas/tree/dev/schemas/metadata"><code>metadata</code> namespace in <code>mozilla-pipeline-schemas</code></a>.</p>
-<h2 id="other-considerations">Other Considerations</h2>
-<h3 id="message-acks">Message Acks</h3>
-<p>Messages should only be acknowledged in the PubSub raw topic subscription after
-delivery to either a decoded topic or the error topic.</p>
-<p>If this is not possible then any time a message is not successfully delivered
-to PubSub it should by treated as lost data and the appropriate time window
-will be backfilled from Cloud Storage in batch mode, and appropriate steps will
-be taken downstream to handle the backfill.</p>
-<p>Deployments should always terminate functional pipelines using the <code>drain</code>
-method, to ensure ack'd messages are fully delivered.</p>
-<h3 id="deduplication">Deduplication</h3>
-<p>Each <code>uri</code> will be allowed through "at least once", and only be
-rejected as a duplicate if we have completed delivery of a message with the
-same <code>uri</code>. We assume that each <code>uri</code> contains a UUID that uniquely identifies
-the document.
-"Exactly once" semantics can be applied to derived data sets using SQL in
-BigQuery, and GroupByKey in Beam and Spark.</p>
-<p>Note that deduplication is only provided with a "best effort" quality of service
-using a 10 minute window.</p>
+                <h1 id="reliability">Reliability</h1>
+<p>In production the ingestion product aims to provide a Biweekly Uptime
+Percentage determined by the Reliability Target below. If a component does
+not meet that then a Stability Work Period should be assigned
+to each software engineer supporting the component.</p>
+<h2 id="disclaimer-and-purpose">Disclaimer and Purpose</h2>
+<p><strong>This document is intended solely for those directly running, writing, and
+managing GCP Ingestion. It is not an agreement, implicit or otherwise, with any
+other parties.</strong> This document is a prototype that should be treated as a goal
+that will require adjustments.</p>
+<p>The purpose of this document is first and foremost to encourage behavior that
+reduces Downtime. The secondary purpose is to establish clear expectations for
+how software engineers respond to Downtime.</p>
+<h2 id="reliability-target">Reliability Target</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Biweekly Uptime Percentage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ingestion-edge</td>
+<td>99.99%</td>
+</tr>
+<tr>
+<td>ingestion-beam</td>
+<td>99.5%</td>
+</tr>
+</tbody>
+</table>
+<h2 id="definitions">Definitions</h2>
+<p><strong>"Downtime"</strong> on ingestion-edge means for at least 0.1% of requests a status
+code lower than 500 was not successfully returned. On ingestion-beam it means
+<code>oldest_unacked_message_age</code> on a PubSub input exceeds 1 hour for a batch sink
+job or 1 minute for a decoder or streaming sink job.</p>
+<p><strong>"Downtime Period"</strong> means a period of 60 consecutive seconds of Downtime.
+Intermittent Downtime for a period of less than 60 consecutive seconds will not
+be counted towards any Downtime Periods.</p>
+<p><strong>"Biweekly Uptime Percentage"</strong> means total number of minutes in a rolling two
+week window, minus the number of minutes of Downtime suffered from all Downtime
+Periods in the window, divided by the total number of minutes in the window.</p>
+<p><strong>"Stability Work"</strong> means work on Downtime prevention and reduction. Only
+code changes resulting from that work may be deployed to production. All other
+features and work on the component are suspended.</p>
+<p><strong>"Stability Work Period"</strong> means a continuous period of time after recovery
+and postmortem, where each engineer is assigned Stability Work. The length of
+the Stability Work Period is determined below.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Biweekly Uptime Percentage</th>
+<th>Length of Stability Work Period</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ingestion-edge</td>
+<td>99.9% to &lt; 99.99%</td>
+<td>2 weeks</td>
+</tr>
+<tr>
+<td>ingestion-edge</td>
+<td>99% to &lt; 99.9%</td>
+<td>4 weeks</td>
+</tr>
+<tr>
+<td>ingestion-edge</td>
+<td>&lt; 99%</td>
+<td>12 weeks</td>
+</tr>
+<tr>
+<td>ingestion-beam</td>
+<td>99% to &lt; 99.5%</td>
+<td>2 weeks</td>
+</tr>
+<tr>
+<td>ingestion-beam</td>
+<td>95% to &lt; 99%</td>
+<td>4 weeks</td>
+</tr>
+<tr>
+<td>ingestion-beam</td>
+<td>&lt; 95%</td>
+<td>12 weeks</td>
+</tr>
+</tbody>
+</table>
+<h2 id="exclusions">Exclusions</h2>
+<p>The Reliability Target does not apply to any Downtime in ingestion caused by
+Downtime on a Google Cloud Platform Service, other than Downtime on
+ingestion-edge caused by PubSub.</p>
+<h2 id="additional-information">Additional Information</h2>
+<table>
+<thead>
+<tr>
+<th>Biweekly Uptime Percentage</th>
+<th>Downtime per Two Weeks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>99.99%</td>
+<td>2 minutes</td>
+</tr>
+<tr>
+<td>99.9%</td>
+<td>20 minutes</td>
+</tr>
+<tr>
+<td>99.5%</td>
+<td>1 hour 40 minutes</td>
+</tr>
+<tr>
+<td>99%</td>
+<td>3 hours 21 minutes</td>
+</tr>
+<tr>
+<td>95%</td>
+<td>16 hours 48 minutes</td>
+</tr>
+</tbody>
+</table>
                 
               
               
@@ -1055,7 +984,7 @@ using a 10 minute window.</p>
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="bigquery_sink_specification.html" class="md-footer__link md-footer__link--prev" aria-label="Previous: Live Sink Service Specification" rel="prev">
+        <a href="../pain_points/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Pain points" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -1064,20 +993,20 @@ using a 10 minute window.</p>
               <span class="md-footer__direction">
                 Previous
               </span>
-              Live Sink Service Specification
+              Pain points
             </div>
           </div>
         </a>
       
       
         
-        <a href="differences_from_aws.html" class="md-footer__link md-footer__link--next" aria-label="Next: Differences from AWS" rel="next">
+        <a href="../test_requirements/" class="md-footer__link md-footer__link--next" aria-label="Next: Test Requirements" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Differences from AWS
+              Test Requirements
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -1106,10 +1035,10 @@ using a 10 minute window.</p>
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.477d984a.min.js", "version": null}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.expand"], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.477d984a.min.js", "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.ddd52ceb.min.js"></script>
+      <script src="../../assets/javascripts/bundle.ddd52ceb.min.js"></script>
       
     
   </body>
