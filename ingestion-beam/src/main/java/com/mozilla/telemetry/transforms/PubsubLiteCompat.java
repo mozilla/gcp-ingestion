@@ -1,6 +1,5 @@
 package com.mozilla.telemetry.transforms;
 
-import com.google.cloud.pubsublite.beam.PubsubLiteIO;
 import com.google.cloud.pubsublite.proto.AttributeValues;
 import com.google.cloud.pubsublite.proto.SequencedMessage;
 import com.google.protobuf.ByteString;
@@ -8,6 +7,7 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.io.gcp.pubsublite.PubsubLiteIO;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
@@ -18,7 +18,8 @@ public class PubsubLiteCompat {
    * Convert message from {@link PubsubLiteIO#read} to {@link PubsubMessage}.
    * 
    * <p>For compatiblity with standard PubSub {@link PubsubMessage} extract exactly one value per
-   * attribute, even though Pubsub Lite's {@link PubSubMessage} allows multiple values.
+   * attribute, even though Pubsub Lite's {@link com.google.cloud.pubsublite.proto.PubSubMessage}
+   * allows multiple values.
    */
   public static PubsubMessage fromPubsubLite(SequencedMessage sequencedMessage) {
     com.google.cloud.pubsublite.proto.PubSubMessage message = sequencedMessage.getMessage();
@@ -40,10 +41,11 @@ public class PubsubLiteCompat {
   }
 
   /**
-   * Convert message from {@link PubsubMessage} for {@link PubsubLiteIO.write}.
+   * Convert message from {@link PubsubMessage} for {@link PubsubLiteIO#write}.
    * 
    * <p>For compatiblity with standard PubSub {@link PubsubMessage} set exactly one value per
-   * attribute, even though PubSub Lite's {@link PubSubMessage} allows multiple values.
+   * attribute, even though PubSub Lite's {@link com.google.cloud.pubsublite.proto.PubSubMessage}
+   * allows multiple values.
    */
   public static com.google.cloud.pubsublite.proto.PubSubMessage toPubsubLite(
       PubsubMessage message) {
