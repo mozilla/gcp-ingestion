@@ -52,7 +52,7 @@
                      libraries-bom 20.0.0 from beam-sdks-java-io-google-cloud-platform 2.31.0 -->
                 <groupId>com.google.api</groupId>
                 <artifactId>gax-bom</artifactId>
-                <version>1.65.1</version>
+                <version>1.67.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
