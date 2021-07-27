@@ -171,9 +171,9 @@ google-auth==1.30.0 \
     # via
     #   google-api-core
     #   kubernetes
-google-cloud-container==2.7.0 \
-    --hash=sha256:59ec9fe7b24e8d106a12faa8bff0a40b8fe0c93ba219cd4e025e0f0603114e61 \
-    --hash=sha256:daee21d3ea75c5faa579dbc1740e45c7306643e474244ec1a896daffdf69b668
+google-cloud-container==2.7.1 \
+    --hash=sha256:05432dfbba04f10c5ad7cfb187c04fdcfa0204c5811885968ec3efc06f0d7a33 \
+    --hash=sha256:9cc50c185537f374c2edc5e48fa1076847b81c74b937370b048c69d718165338
     # via -r requirements.in
 google-cloud-monitoring==2.4.1 \
     --hash=sha256:7015541f8d27e93b8f16bc5a8cff9dc1f9fdb149979f2df775444b8aa78576f2 \
