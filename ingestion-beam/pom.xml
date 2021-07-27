@@ -45,6 +45,19 @@
             <url>https://jitpack.io</url>
         </repository>
     </repositories>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- pubsublite-beam-io 0.17.0 requires gax 1.65+, instead of gax 1.63.0 from
+                     libraries-bom 20.0.0 from beam-sdks-java-io-google-cloud-platform 2.31.0 -->
+                <groupId>com.google.api</groupId>
+                <artifactId>gax-bom</artifactId>
+                <version>1.65.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
