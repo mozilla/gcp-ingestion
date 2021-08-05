@@ -11,6 +11,9 @@ executors:
     - image: maven:3-jdk-11
     environment:
       JAVA_COMPILER_RELEASE_FLAG: "-Dmaven.compiler.release=11"
+  docker-compose:
+    docker:
+    - image: docker/compose:1.22.0
 jobs:
   spelling:
     docker:
@@ -173,10 +176,9 @@ jobs:
   ingestion-beam: &ingestion_beam
     working_directory: /root/project/ingestion-beam
     parameters:
-      java-version:
-        default: java-8
+      executor:
         type: executor
-    executor: << parameters.java-version >>
+    executor: << parameters.executor >>
     steps:
     - *checkout
     - *skip_unmodified
@@ -281,8 +283,6 @@ jobs:
 
   ingestion-sink-release:
     <<: *ingestion_sink
-    docker:
-      - image: docker/compose:1.22.0
     steps:
       - *setup_remote_docker
       - *checkout
@@ -318,19 +318,15 @@ workflows:
             only: main
           tags:
             only: /.*/
-    - ingestion-beam
-    - ingestion-beam-integration
-    - ingestion-sink
-    - ingestion-sink-integration
-    - ingestion-beam:
-        java-version: java-11
-    - ingestion-beam-integration:
-        java-version: java-11
-    - ingestion-sink:
-        java-version: java-11
-    - ingestion-sink-integration:
-        java-version: java-11
+    - ingestion-beam: &java_matrix
+        matrix:
+          parameters:
+            executor: [java-8, java-11]
+    - ingestion-beam-integration: *java_matrix
+    - ingestion-sink: *java_matrix
+    - ingestion-sink-integration: *java_matrix
     - ingestion-sink-release:
+        executor: docker-compose
         filters:
           branches:
             only: main
