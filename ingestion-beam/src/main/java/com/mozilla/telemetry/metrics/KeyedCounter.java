@@ -1,8 +1,8 @@
 package com.mozilla.telemetry.metrics;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 
@@ -11,7 +11,7 @@ import org.apache.beam.sdk.metrics.Metrics;
  */
 public class KeyedCounter {
 
-  static final Map<String, Counter> counters = new HashMap<>();
+  static final Map<String, Counter> counters = new ConcurrentHashMap<>();
 
   /**
    * Increment the counter associated with the given key by 1.
