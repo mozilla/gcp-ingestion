@@ -1,4 +1,16 @@
-version: 2
+version: 2.1
+executors:
+  java-8:
+    docker:
+    # Pin the maven image due to observed VM aborts on CircleCI 2018-01-08.
+    - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
+    environment:
+      JAVA_COMPILER_RELEASE_FLAG: ""
+  java-11:
+    docker:
+    - image: maven:3-jdk-11
+    environment:
+      JAVA_COMPILER_RELEASE_FLAG: "-Dmaven.compiler.release=11"
 jobs:
   spelling:
     docker:
@@ -160,9 +172,11 @@ jobs:
 
   ingestion-beam: &ingestion_beam
     working_directory: /root/project/ingestion-beam
-    docker:
-    # Pin the maven image due to observed VM aborts on CircleCI 2018-01-08.
-    - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
+    parameters:
+      java-version:
+        default: java-8
+        type: executor
+    executor: << parameters.java-version >>
     steps:
     - *checkout
     - *skip_unmodified
@@ -187,7 +201,7 @@ jobs:
       run:
         name: Maven Test
         command: |
-          mvn clean test
+          mvn clean test $JAVA_COMPILER_RELEASE_FLAG
     - &store_maven_test_results
       store_test_results:
         path: target/surefire-reports
@@ -223,7 +237,7 @@ jobs:
         command: |
           export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
           echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          mvn clean test -Dtest=*IntegrationTest -DfailIfNoTests=false
+          mvn clean test -Dtest=*IntegrationTest -DfailIfNoTests=false $JAVA_COMPILER_RELEASE_FLAG
     - *store_maven_test_results
     - *report_code_coverage
     # We don't save_cache here; we let the ingestion-beam job cover that.
@@ -308,6 +322,14 @@ workflows:
     - ingestion-beam-integration
     - ingestion-sink
     - ingestion-sink-integration
+    - ingestion-beam:
+        java-version: java-11
+    - ingestion-beam-integration:
+        java-version: java-11
+    - ingestion-sink:
+        java-version: java-11
+    - ingestion-sink-integration:
+        java-version: java-11
     - ingestion-sink-release:
         filters:
           branches:
