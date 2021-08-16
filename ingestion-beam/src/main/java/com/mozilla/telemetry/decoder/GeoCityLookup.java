@@ -40,7 +40,6 @@ import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -49,8 +48,7 @@ import org.apache.beam.sdk.values.PCollection;
 public class GeoCityLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
-  public static GeoCityLookup of(ValueProvider<String> geoCityDatabase,
-      ValueProvider<String> geoCityFilter) {
+  public static GeoCityLookup of(String geoCityDatabase, String geoCityFilter) {
     return new GeoCityLookup(geoCityDatabase, geoCityFilter);
   }
 
@@ -61,11 +59,10 @@ public class GeoCityLookup
   private static transient DatabaseReader singletonGeoCityReader;
   private static transient Set<Integer> singletonAllowedCities;
 
-  private final ValueProvider<String> geoCityDatabase;
-  private final ValueProvider<String> geoCityFilter;
+  private final String geoCityDatabase;
+  private final String geoCityFilter;
 
-  private GeoCityLookup(ValueProvider<String> geoCityDatabase,
-      ValueProvider<String> geoCityFilter) {
+  private GeoCityLookup(String geoCityDatabase, String geoCityFilter) {
     this.geoCityDatabase = geoCityDatabase;
     this.geoCityFilter = geoCityFilter;
   }
@@ -93,12 +90,12 @@ public class GeoCityLookup
    * @throws IOException if the configured file path is not a valid .mmdb file
    */
   private static synchronized DatabaseReader getOrCreateSingletonGeoCityReader(
-      ValueProvider<String> geoCityDatabase) throws IOException {
+      String geoCityDatabase) throws IOException {
     if (singletonGeoCityReader == null) {
       File mmdb;
       try {
         InputStream inputStream;
-        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityDatabase.get());
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityDatabase);
         ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
         inputStream = Channels.newInputStream(channel);
         Path mmdbPath = Paths.get(System.getProperty("java.io.tmpdir"), "GeoCityLookup.mmdb");
@@ -117,12 +114,12 @@ public class GeoCityLookup
    *
    * @throws IOException if the configured file path does not exist or is in a bad format
    */
-  private static synchronized Set<Integer> getOrCreateSingletonAllowedCities(
-      ValueProvider<String> geoCityFilter) throws IOException {
+  private static synchronized Set<Integer> getOrCreateSingletonAllowedCities(String geoCityFilter)
+      throws IOException {
     if (singletonAllowedCities == null) {
       InputStream inputStream;
       try {
-        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityFilter.get());
+        Metadata metadata = FileSystems.matchSingleFileSpec(geoCityFilter);
         ReadableByteChannel channel = FileSystems.open(metadata.resourceId());
         inputStream = Channels.newInputStream(channel);
       } catch (IOException e) {
@@ -258,12 +255,11 @@ public class GeoCityLookup
     }
 
     private void loadResourcesOnFirstMessage() throws IOException {
-      if (geoCityDatabase == null || !geoCityDatabase.isAccessible()) {
+      if (geoCityDatabase == null) {
         throw new IllegalArgumentException("--geoCityDatabase must be defined for GeoCityLookup!");
       }
       geoIP2City = getOrCreateSingletonGeoCityReader(geoCityDatabase);
-      if (geoCityFilter != null && geoCityFilter.isAccessible()
-          && !Strings.isNullOrEmpty(geoCityFilter.get())) {
+      if (!Strings.isNullOrEmpty(geoCityFilter)) {
         allowedCities = getOrCreateSingletonAllowedCities(geoCityFilter);
       }
     }

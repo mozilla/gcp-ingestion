@@ -6,14 +6,13 @@ import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
-import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.joda.time.Duration;
 
 /**
@@ -51,9 +50,9 @@ public interface SinkOptions extends PipelineOptions {
       + " archive endpoint for the generated-schemas branch of mozilla-pipeline-schemas:"
       + " https://github.com/"
       + "mozilla-services/mozilla-pipeline-schemas/archive/generated-schemas.tar.gz")
-  ValueProvider<String> getSchemasLocation();
+  String getSchemasLocation();
 
-  void setSchemasLocation(ValueProvider<String> value);
+  void setSchemasLocation(String value);
 
   @Description("Method of reading from BigQuery; the table will either be exported to GCS"
       + " (GA and free, but may take some time to export and may hit quotas) or accessed using the "
@@ -83,14 +82,14 @@ public interface SinkOptions extends PipelineOptions {
 
   @Description("Name of time partitioning field of destination tables;"
       + " defaults to submission_timestamp")
-  ValueProvider<String> getBqPartitioningField();
+  String getBqPartitioningField();
 
-  void setBqPartitioningField(ValueProvider<String> value);
+  void setBqPartitioningField(String value);
 
   @Description("Comma-separated list of clustering fields; defaults to submission_timestamp")
-  ValueProvider<List<String>> getBqClusteringFields();
+  List<String> getBqClusteringFields();
 
-  void setBqClusteringFields(ValueProvider<List<String>> value);
+  void setBqClusteringFields(List<String> value);
 
   @Description("Method of writing to BigQuery")
   @Default.Enum("file_loads")
@@ -125,18 +124,18 @@ public interface SinkOptions extends PipelineOptions {
       + " streaming InsertAll endpoint rather than via file loads;"
       + " only relevant if --bqWriteMethod=mixed;"
       + " each docType must be qualified with a namespace like 'telemetry/event'")
-  ValueProvider<List<String>> getBqStreamingDocTypes();
+  List<String> getBqStreamingDocTypes();
 
-  void setBqStreamingDocTypes(ValueProvider<List<String>> value);
+  void setBqStreamingDocTypes(List<String> value);
 
   @Description("A comma-separated list of docTypes for which we will not accumulate an"
       + " additional_properties field before publishing to BigQuery;"
       + " this is especially useful for telemetry/main where we expect to send the"
       + " same payload to multiple tables, each with only a subset of the overall schema;"
       + " each docType must be qualified with a namespace like 'telemetry/main'")
-  ValueProvider<List<String>> getBqStrictSchemaDocTypes();
+  List<String> getBqStrictSchemaDocTypes();
 
-  void setBqStrictSchemaDocTypes(ValueProvider<List<String>> value);
+  void setBqStrictSchemaDocTypes(List<String> value);
 
   @Description("File format for --outputType=file|stdout; must be one of"
       + " json (each line contains payload[String] and attributeMap[String,String]) or"
@@ -150,21 +149,22 @@ public interface SinkOptions extends PipelineOptions {
       + " raw (each row contains payload[Bytes] and attributes as top level fields) or"
       + " decoded (each row contains payload[Bytes] and attributes as nested metadata fields) or"
       + " payload (each row is extracted from payload); defaults to payload")
-  ValueProvider<TableRowFormat> getOutputTableRowFormat();
+  @Default.Enum("payload")
+  TableRowFormat getOutputTableRowFormat();
 
-  void setOutputTableRowFormat(ValueProvider<TableRowFormat> value);
+  void setOutputTableRowFormat(TableRowFormat value);
 
   @Description("Name of time partitioning field of error destination tables;"
       + " defaults to submission_timestamp")
-  ValueProvider<String> getErrorBqPartitioningField();
+  String getErrorBqPartitioningField();
 
-  void setErrorBqPartitioningField(ValueProvider<String> value);
+  void setErrorBqPartitioningField(String value);
 
   @Description("Comma-separated list of clustering fields for error destination table;"
       + " defaults to submission_timestamp")
-  ValueProvider<List<String>> getErrorBqClusteringFields();
+  List<String> getErrorBqClusteringFields();
 
-  void setErrorBqClusteringFields(ValueProvider<List<String>> value);
+  void setErrorBqClusteringFields(List<String> value);
 
   @Description("Method of writing to BigQuery for error output")
   @Default.Enum("file_loads")
@@ -192,9 +192,10 @@ public interface SinkOptions extends PipelineOptions {
 
   @Description("Number of output shards for --outputType=file; only relevant for stream"
       + " processing (--inputType=pubsub); in batch mode, the runner determines sharding")
-  ValueProvider<Integer> getOutputNumShards();
+  @Default.Integer(100)
+  Integer getOutputNumShards();
 
-  void setOutputNumShards(ValueProvider<Integer> value);
+  void setOutputNumShards(Integer value);
 
   @Description("Type of --errorOutput; must be one of [pubsub, file, bigquery]")
   @Default.Enum("pubsub")
@@ -210,9 +211,10 @@ public interface SinkOptions extends PipelineOptions {
 
   @Description("Number of output shards for --errorOutputType=file; only relevant for stream"
       + " processing (--inputType=pubsub); in batch mode, the runner determines sharding")
-  ValueProvider<Integer> getErrorOutputNumShards();
+  @Default.Integer(100)
+  Integer getErrorOutputNumShards();
 
-  void setErrorOutputNumShards(ValueProvider<Integer> value);
+  void setErrorOutputNumShards(Integer value);
 
   @Hidden
   @Description("If true, include a 'stack_trace' attribute in error output messages;"
@@ -237,43 +239,39 @@ public interface SinkOptions extends PipelineOptions {
 
   void setPubsubIdAttribute(String value);
 
-  /*
-   * Note: Dataflow templates accept ValueProvider options at runtime, and other options at creation
-   * time. When running without templates specify all options at once.
-   */
-
   @Description("Input to read from (path to file, PubSub subscription, etc.)")
   @Validation.Required
-  ValueProvider<String> getInput();
+  String getInput();
 
-  void setInput(ValueProvider<String> value);
+  void setInput(String value);
 
   @Description("Output to write to (path to file or directory, Pubsub topic, etc.)")
-  @Validation.Required
-  ValueProvider<String> getOutput();
+  String getOutput();
 
-  void setOutput(ValueProvider<String> value);
+  void setOutput(String value);
 
   @Description("Error output to write to (path to file or directory, Pubsub topic, etc.)")
-  @Validation.Required
-  ValueProvider<String> getErrorOutput();
+  String getErrorOutput();
 
-  void setErrorOutput(ValueProvider<String> value);
+  void setErrorOutput(String value);
 
   @Description("Unless set to false, we will always attempt to decompress gzipped payloads")
-  ValueProvider<Boolean> getDecompressInputPayloads();
+  @Default.Boolean(true)
+  Boolean getDecompressInputPayloads();
 
-  void setDecompressInputPayloads(ValueProvider<Boolean> value);
+  void setDecompressInputPayloads(Boolean value);
 
   @Description("Compression format for payloads when --outputType=pubsub; defaults to GZIP")
-  ValueProvider<Compression> getOutputPubsubCompression();
+  @Default.Enum("GZIP")
+  Compression getOutputPubsubCompression();
 
-  void setOutputPubsubCompression(ValueProvider<Compression> value);
+  void setOutputPubsubCompression(Compression value);
 
   @Description("Compression format for payloads when --errorOutputType=pubsub; defaults to GZIP")
-  ValueProvider<Compression> getErrorOutputPubsubCompression();
+  @Default.Enum("GZIP")
+  Compression getErrorOutputPubsubCompression();
 
-  void setErrorOutputPubsubCompression(ValueProvider<Compression> value);
+  void setErrorOutputPubsubCompression(Compression value);
 
   /*
    * Subinterface and static methods.
@@ -321,20 +319,12 @@ public interface SinkOptions extends PipelineOptions {
    */
   static void enrichSinkOptions(Parsed options) {
     validateSinkOptions(options);
-    options.setParsedWindowDuration(Time.parseDuration(options.getWindowDuration()));
-    options.setParsedBqTriggeringFrequency(Time.parseDuration(options.getBqTriggeringFrequency()));
-    options.setParsedErrorBqTriggeringFrequency(
-        Time.parseDuration(options.getErrorBqTriggeringFrequency()));
-    options.setDecompressInputPayloads(
-        providerWithDefault(options.getDecompressInputPayloads(), true));
-    options.setOutputTableRowFormat(
-        providerWithDefault(options.getOutputTableRowFormat(), TableRowFormat.payload));
-    options.setOutputPubsubCompression(
-        providerWithDefault(options.getOutputPubsubCompression(), Compression.GZIP));
-    options.setErrorOutputPubsubCompression(
-        providerWithDefault(options.getErrorOutputPubsubCompression(), Compression.GZIP));
-    options.setOutputNumShards(providerWithDefault(options.getOutputNumShards(), 100));
-    options.setErrorOutputNumShards(providerWithDefault(options.getErrorOutputNumShards(), 100));
+    Optional.ofNullable(options.getWindowDuration()).map(Time::parseDuration)
+        .ifPresent(options::setParsedWindowDuration);
+    Optional.ofNullable(options.getBqTriggeringFrequency()).map(Time::parseDuration)
+        .ifPresent(options::setParsedBqTriggeringFrequency);
+    Optional.ofNullable(options.getErrorBqTriggeringFrequency()).map(Time::parseDuration)
+        .ifPresent(options::setParsedErrorBqTriggeringFrequency);
   }
 
   /** Detect invalid combinations of parameters and fail fast with helpful error messages. */
@@ -352,9 +342,5 @@ public interface SinkOptions extends PipelineOptions {
       throw new IllegalArgumentException(
           "Configuration errors found!\n* " + String.join("\n* ", errorMessages));
     }
-  }
-
-  static <T> ValueProvider<T> providerWithDefault(ValueProvider<T> inner, T defaultValue) {
-    return NestedValueProvider.of(inner, value -> value == null ? defaultValue : value);
   }
 }

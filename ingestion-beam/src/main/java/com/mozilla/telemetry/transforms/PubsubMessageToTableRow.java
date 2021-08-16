@@ -15,7 +15,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.values.KV;
 
 /**
@@ -27,8 +26,8 @@ import org.apache.beam.sdk.values.KV;
  */
 public class PubsubMessageToTableRow implements Serializable {
 
-  public static PubsubMessageToTableRow of(ValueProvider<List<String>> strictSchemaDocTypes,
-      ValueProvider<String> schemasLocation, ValueProvider<TableRowFormat> tableRowFormat) {
+  public static PubsubMessageToTableRow of(List<String> strictSchemaDocTypes,
+      String schemasLocation, TableRowFormat tableRowFormat) {
     return new PubsubMessageToTableRow(strictSchemaDocTypes, schemasLocation, tableRowFormat);
   }
 
@@ -36,29 +35,29 @@ public class PubsubMessageToTableRow implements Serializable {
     raw, decoded, payload
   }
 
-  private final ValueProvider<List<String>> strictSchemaDocTypes;
-  private final ValueProvider<String> schemasLocation;
-  private final ValueProvider<TableRowFormat> tableRowFormat;
+  private final List<String> strictSchemaDocTypes;
+  private final String schemasLocation;
+  private final TableRowFormat tableRowFormat;
 
   // We'll instantiate these on first use.
   private transient PubsubMessageToObjectNode format;
 
-  private PubsubMessageToTableRow(ValueProvider<List<String>> strictSchemaDocTypes,
-      ValueProvider<String> schemasLocation, ValueProvider<TableRowFormat> tableRowFormat) {
+  private PubsubMessageToTableRow(List<String> strictSchemaDocTypes, String schemasLocation,
+      TableRowFormat tableRowFormat) {
     this.strictSchemaDocTypes = strictSchemaDocTypes;
     this.schemasLocation = schemasLocation;
     this.tableRowFormat = tableRowFormat;
   }
 
   private PubsubMessageToObjectNode createFormat() {
-    switch (tableRowFormat.get()) {
+    switch (tableRowFormat) {
       case raw:
         return PubsubMessageToObjectNode.Raw.of();
       case decoded:
         return PubsubMessageToObjectNode.Decoded.of();
       case payload:
       default:
-        return PayloadWithBeam.of(strictSchemaDocTypes.get(), schemasLocation.get());
+        return PayloadWithBeam.of(strictSchemaDocTypes, schemasLocation);
     }
   }
 

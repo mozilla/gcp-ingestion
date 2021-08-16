@@ -32,7 +32,7 @@ public class FilterByDocTypeTest {
         .collect(Collectors.toList());
 
     PCollection<PubsubMessage> output = pipeline.apply(Create.of(inputDocTypes))
-        .apply(FilterByDocType.of(pipeline.newProvider(allowedDocTypes)));
+        .apply(FilterByDocType.of(allowedDocTypes));
 
     PAssert.that(output).satisfies(messages -> {
       HashMap<String, Integer> docTypeCount = new HashMap<>();

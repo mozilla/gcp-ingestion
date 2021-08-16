@@ -7,7 +7,6 @@ import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.ValueProvider;
 
 /**
  * Options supported by {@code Republisher}.
@@ -25,16 +24,16 @@ public interface RepublisherOptions extends SinkOptions, PipelineOptions {
 
   @Description("The topic (assuming --outputType=pubsub) where debug messages are republished;"
       + " requires --enableDebugDestination is set")
-  ValueProvider<String> getDebugDestination();
+  String getDebugDestination();
 
-  void setDebugDestination(ValueProvider<String> value);
+  void setDebugDestination(String value);
 
   @Description("An output topic name (assuming --outputType=pubsub) for a random sample of"
       + " incoming messages; messages are chosen based on sample_id if present or by a number"
       + " generated via ThreadLocalRandom; requires that --randomSampleRatio is set")
-  ValueProvider<String> getRandomSampleDestination();
+  String getRandomSampleDestination();
 
-  void setRandomSampleDestination(ValueProvider<String> value);
+  void setRandomSampleDestination(String value);
 
   @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
   Double getRandomSampleRatio();

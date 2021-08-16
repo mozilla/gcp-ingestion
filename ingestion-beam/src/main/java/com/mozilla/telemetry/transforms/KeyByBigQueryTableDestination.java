@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryHelpers;
 import org.apache.beam.sdk.io.gcp.bigquery.TableDestination;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures;
@@ -39,8 +38,8 @@ import org.apache.commons.text.StringSubstitutor;
 public class KeyByBigQueryTableDestination extends PTransform<PCollection<PubsubMessage>, //
     Result<PCollection<KV<TableDestination, PubsubMessage>>, PubsubMessage>> {
 
-  public static KeyByBigQueryTableDestination of(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
+  public static KeyByBigQueryTableDestination of(String tableSpecTemplate, String partitioningField,
+      List<String> clusteringFields) {
     return new KeyByBigQueryTableDestination(tableSpecTemplate, partitioningField,
         clusteringFields);
   }
@@ -70,18 +69,17 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
     // cache of transformed field names.
     attributes = Maps.transformValues(attributes, v -> v.replaceAll("-", "_"));
 
-    final String tableSpec = StringSubstitutor.replace(tableSpecTemplate.get(), attributes);
+    final String tableSpec = StringSubstitutor.replace(tableSpecTemplate, attributes);
 
     // Send to error collection if incomplete tableSpec; $ is not a valid char in tableSpecs.
     if (tableSpec.contains("$")) {
       throw new IllegalArgumentException("Element did not contain all the attributes needed to"
-          + " fill out variables in the configured BigQuery output template: "
-          + tableSpecTemplate.get());
+          + " fill out variables in the configured BigQuery output template: " + tableSpecTemplate);
     }
 
     final TableDestination tableDestination = new TableDestination(tableSpec, null,
-        new TimePartitioning().setField(partitioningField.get()),
-        new Clustering().setFields(clusteringFields.get()));
+        new TimePartitioning().setField(partitioningField),
+        new Clustering().setFields(clusteringFields));
     final TableReference ref = BigQueryHelpers.parseTableSpec(tableSpec);
     final DatasetReference datasetRef = new DatasetReference().setProjectId(ref.getProjectId())
         .setDatasetId(ref.getDatasetId());
@@ -149,9 +147,9 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
 
   ////
 
-  private final ValueProvider<String> tableSpecTemplate;
-  private final ValueProvider<String> partitioningField;
-  private final ValueProvider<List<String>> clusteringFields;
+  private final String tableSpecTemplate;
+  private final String partitioningField;
+  private final List<String> clusteringFields;
 
   // We'll instantiate these on first use.
   private transient Cache<DatasetReference, Set<String>> tableListingCache;
@@ -166,8 +164,8 @@ public class KeyByBigQueryTableDestination extends PTransform<PCollection<Pubsub
       .setTotalTimeout(org.threeten.bp.Duration.ofSeconds(120)) // Defaults to 50 seconds
       .build();
 
-  private KeyByBigQueryTableDestination(ValueProvider<String> tableSpecTemplate,
-      ValueProvider<String> partitioningField, ValueProvider<List<String>> clusteringFields) {
+  private KeyByBigQueryTableDestination(String tableSpecTemplate, String partitioningField,
+      List<String> clusteringFields) {
     this.tableSpecTemplate = tableSpecTemplate;
     this.partitioningField = partitioningField;
     this.clusteringFields = clusteringFields;

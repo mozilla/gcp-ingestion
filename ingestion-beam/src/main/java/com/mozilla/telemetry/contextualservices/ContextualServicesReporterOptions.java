@@ -5,30 +5,29 @@ import org.apache.beam.sdk.options.Default;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
-import org.apache.beam.sdk.options.ValueProvider;
 
 public interface ContextualServicesReporterOptions extends SinkOptions, PipelineOptions {
 
   @Description("Path (local or gs://) to CSV file text file containing allowed reporting "
       + "URLs to which requests can be sent to action type (click or impression),"
       + " expected format is url,type with no header")
-  ValueProvider<String> getUrlAllowList();
+  String getUrlAllowList();
 
-  void setUrlAllowList(ValueProvider<String> value);
+  void setUrlAllowList(String value);
 
   @Description("Comma-separated strings representing a list of doc types for which "
       + " to send reporting requests; doc types are not namespace qualified "
       + "(e.g. quicksuggest-click is a correct argument)")
-  ValueProvider<String> getAllowedDocTypes();
+  String getAllowedDocTypes();
 
-  void setAllowedDocTypes(ValueProvider<String> value);
+  void setAllowedDocTypes(String value);
 
   @Description("If set to true, send HTTP requests to reporting URLs.  "
       + "Can be set to false for testing purposes.")
   @Default.Boolean(true)
-  ValueProvider<Boolean> getReportingEnabled();
+  Boolean getReportingEnabled();
 
-  void setReportingEnabled(ValueProvider<Boolean> value);
+  void setReportingEnabled(Boolean value);
 
   @Description("Duration window for aggregation of reporting requests.")
   @Default.String("10m")
@@ -51,9 +50,9 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
   @Description("If set to true, send successfully requested reporting URLs to"
       + " error output.  SendRequests stage does not continue if true.")
   @Default.Boolean(true)
-  ValueProvider<Boolean> getLogReportingUrls();
+  Boolean getLogReportingUrls();
 
-  void setLogReportingUrls(ValueProvider<Boolean> value);
+  void setLogReportingUrls(Boolean value);
 
   @Hidden
   interface Parsed extends ContextualServicesReporterOptions, SinkOptions.Parsed {

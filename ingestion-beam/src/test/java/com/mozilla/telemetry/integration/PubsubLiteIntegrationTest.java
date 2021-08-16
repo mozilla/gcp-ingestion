@@ -39,7 +39,6 @@ import org.apache.beam.runners.direct.DirectOptions;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -134,7 +133,7 @@ public class PubsubLiteIntegrationTest {
     pipeline.getOptions().as(DirectOptions.class).setBlockOnRun(false);
 
     SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
-    sinkOptions.setInput(StaticValueProvider.of(subscriptionPath.toString()));
+    sinkOptions.setInput(subscriptionPath.toString());
 
     PCollection<String> output = pipeline.apply(InputType.pubsub_lite.read(sinkOptions))
         .apply("encodeJson", OutputFileFormat.json.encode());
@@ -154,14 +153,8 @@ public class PubsubLiteIntegrationTest {
   @Test(timeout = 90_000L)
   public void canWritePubsubLite() throws Exception {
     final SinkOptions.Parsed sinkOptions = pipeline.getOptions().as(SinkOptions.Parsed.class);
-    // We would normally use pipeline.newProvider instead of StaticValueProvider in tests,
-    // but output has to be available during initialization for Pub/Sub Lite, and the value of
-    // pipeline.newProvider isn't available until after the pipeline starts.
-    sinkOptions.setOutput(StaticValueProvider.of(topicPath.toString()));
-    // We would normally use pipeline.newProvider instead of StaticValueProvider in tests,
-    // but something about this configuration causes the pipeline to stall when CompressPayload
-    // accesses a method on the underlying enum value when defined via pipeline.newProvider.
-    sinkOptions.setOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
+    sinkOptions.setOutput(topicPath.toString());
+    sinkOptions.setOutputPubsubCompression(Compression.UNCOMPRESSED);
 
     final List<String> payloads = ImmutableList.of("passing", StringUtils.repeat("f", 1_000_000));
 

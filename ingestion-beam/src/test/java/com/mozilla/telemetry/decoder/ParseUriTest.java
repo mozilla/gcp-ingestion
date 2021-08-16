@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -328,7 +327,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
             .via(message -> message.getAttribute("exception_class")));
     PAssert.that(uriExceptions).containsInAnyOrder(expectedExceptions);
 
-    ValueProvider<String> schemas = pipeline.newProvider("schemas.tar.gz");
+    String schemas = "schemas.tar.gz";
     PCollection<String> schemaExceptions = output.apply(ParsePayload.of(schemas)).failures()
         .apply("EncodeJsonErrors", OutputFileFormat.json.encode());
     PAssert.that(schemaExceptions).empty();

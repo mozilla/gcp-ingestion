@@ -95,20 +95,6 @@ public class StorageIntegrationTest extends TestWithDeterministicJson {
         matchesInAnyOrder(expectedErrorOutputLines));
   }
 
-  @Test
-  public void testCompileDataflowTemplate() {
-    String gcsPath = "gs://" + bucket;
-
-    Decoder.main(new String[] { "--runner=Dataflow", "--project=" + projectId,
-        "--templateLocation=" + gcsPath + "/templates/TestTemplate", //
-        "--stagingLocation=" + gcsPath + "/temp/staging", //
-        "--region=us-west2", "--inputFileFormat=json", "--inputType=file",
-        "--outputFileFormat=json", "--outputType=file", "--errorOutputType=file",
-        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
-        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
-        "--schemasLocation=schemas.tar.gz" });
-  }
-
   private void uploadInputFile(String localPath) throws IOException {
     String[] pathElements = localPath.split("/");
     String remotePath = "in/" + pathElements[pathElements.length - 1];

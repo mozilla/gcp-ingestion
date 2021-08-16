@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -27,9 +26,7 @@ public class HashClientInfoTest {
 
   @Test
   public void testHashKeysNotMixed() throws IOException, HashClientInfo.KeyLengthMismatchException {
-    HashClientInfo hashClientInfo = HashClientInfo.of(
-        ValueProvider.StaticValueProvider.of(ID_HASH_KEY_PATH),
-        ValueProvider.StaticValueProvider.of(IP_HASH_KEY_PATH));
+    HashClientInfo hashClientInfo = HashClientInfo.of(ID_HASH_KEY_PATH, IP_HASH_KEY_PATH);
 
     byte[] idHashKey = hashClientInfo.getClientIdHashKey();
     byte[] ipHashKey = hashClientInfo.getClientIpHashKey();
@@ -48,8 +45,8 @@ public class HashClientInfoTest {
         .put(Attribute.CLIENT_ID, clientId).put(Attribute.CLIENT_IP, clientIp).build();
     PubsubMessage input = new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes);
 
-    PCollection<PubsubMessage> output = pipeline.apply(Create.of(input)).apply(HashClientInfo
-        .of(pipeline.newProvider(ID_HASH_KEY_PATH), pipeline.newProvider(IP_HASH_KEY_PATH)));
+    PCollection<PubsubMessage> output = pipeline.apply(Create.of(input))
+        .apply(HashClientInfo.of(ID_HASH_KEY_PATH, IP_HASH_KEY_PATH));
 
     PAssert.that(output).satisfies((SerializableFunction<Iterable<PubsubMessage>, Void>) input1 -> {
       for (PubsubMessage message : input1) {

@@ -33,8 +33,7 @@ public class SendRequestTest {
     List<PubsubMessage> input = Collections
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
-    pipeline.apply(Create.of(input))
-        .apply(SendRequest.of(pipeline.newProvider(false), pipeline.newProvider(false)));
+    pipeline.apply(Create.of(input)).apply(SendRequest.of(false, false));
 
     pipeline.run();
 
@@ -54,8 +53,7 @@ public class SendRequestTest {
         new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input))
-        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
+        .apply(Create.of(input)).apply(SendRequest.of(true, false));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -80,8 +78,7 @@ public class SendRequestTest {
         new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input))
-        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
+        .apply(Create.of(input)).apply(SendRequest.of(true, false));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -105,8 +102,7 @@ public class SendRequestTest {
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input))
-        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(false)));
+        .apply(Create.of(input)).apply(SendRequest.of(true, false));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));
@@ -130,8 +126,7 @@ public class SendRequestTest {
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
-        .apply(Create.of(input))
-        .apply(SendRequest.of(pipeline.newProvider(true), pipeline.newProvider(true)));
+        .apply(Create.of(input)).apply(SendRequest.of(true, true));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));

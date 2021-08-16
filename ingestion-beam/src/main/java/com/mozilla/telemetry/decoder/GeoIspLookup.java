@@ -26,7 +26,6 @@ import java.util.Objects;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -35,7 +34,7 @@ import org.apache.beam.sdk.values.PCollection;
 public class GeoIspLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
-  public static GeoIspLookup of(ValueProvider<String> ispDatabase) {
+  public static GeoIspLookup of(String ispDatabase) {
     return new GeoIspLookup(ispDatabase);
   }
 
@@ -43,9 +42,9 @@ public class GeoIspLookup
 
   private static transient DatabaseReader singletonIspReader;
 
-  private final ValueProvider<String> geoIspDatabase;
+  private final String geoIspDatabase;
 
-  private GeoIspLookup(ValueProvider<String> ispDatabase) {
+  private GeoIspLookup(String ispDatabase) {
     this.geoIspDatabase = ispDatabase;
   }
 
@@ -54,13 +53,13 @@ public class GeoIspLookup
     singletonIspReader = null;
   }
 
-  private static synchronized DatabaseReader getOrCreateSingletonIspReader(
-      ValueProvider<String> ispDatabase) throws IOException {
+  private static synchronized DatabaseReader getOrCreateSingletonIspReader(String ispDatabase)
+      throws IOException {
     if (singletonIspReader == null) {
       File mmdb;
 
       try {
-        InputStream inputStream = BeamFileInputStream.open(ispDatabase.get());
+        InputStream inputStream = BeamFileInputStream.open(ispDatabase);
         Path mmdbPath = Paths.get(System.getProperty("java.io.tmpdir"), "GeoIspLookup.mmdb");
         Files.copy(inputStream, mmdbPath, StandardCopyOption.REPLACE_EXISTING);
         mmdb = mmdbPath.toFile();
@@ -150,7 +149,7 @@ public class GeoIspLookup
     }
 
     private void loadResourcesOnFirstMessage() throws IOException {
-      if (geoIspDatabase == null || !geoIspDatabase.isAccessible()) {
+      if (geoIspDatabase == null) {
         throw new IllegalArgumentException("--geoIspDatabase must be defined for IspLookup");
       }
 

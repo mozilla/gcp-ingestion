@@ -23,7 +23,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
@@ -39,10 +38,10 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
   /** Implementation of reading from Pub/Sub. */
   public static class PubsubInput extends Read {
 
-    private final ValueProvider<String> subscription;
+    private final String subscription;
     private final String idAttribute;
 
-    public PubsubInput(ValueProvider<String> subscription, @Nullable String idAttribute) {
+    public PubsubInput(String subscription, @Nullable String idAttribute) {
       this.subscription = subscription;
       this.idAttribute = idAttribute;
     }
@@ -66,10 +65,8 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
     private final SubscriptionPath path;
 
     /** Constructor. */
-    public PubsubLiteInput(ValueProvider<String> subscription) {
-      assert subscription
-          .isAccessible() : "PubsubLiteIO is not compatible with Dataflow classic templates.";
-      path = SubscriptionPath.parse(subscription.get());
+    public PubsubLiteInput(String subscription) {
+      path = SubscriptionPath.parse(subscription);
     }
 
     @Override
@@ -84,10 +81,10 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
   /** Implementation of reading from line-delimited local or remote files. */
   public static class FileInput extends Read {
 
-    private final ValueProvider<String> fileSpec;
+    private final String fileSpec;
     private final InputFileFormat fileFormat;
 
-    public FileInput(ValueProvider<String> fileSpec, InputFileFormat fileFormat) {
+    public FileInput(String fileSpec, InputFileFormat fileFormat) {
       this.fileSpec = fileSpec;
       this.fileFormat = fileFormat;
     }
@@ -101,7 +98,7 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
   /** Implementation of reading from BigQuery. */
   public static class BigQueryInput extends Read {
 
-    private final ValueProvider<String> tableSpec;
+    private final String tableSpec;
     private final BigQueryReadMethod method;
     private final Source source;
     private final String rowRestriction;
@@ -112,7 +109,7 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
     }
 
     /** Constructor. */
-    public BigQueryInput(ValueProvider<String> tableSpec, BigQueryReadMethod method, Source source,
+    public BigQueryInput(String tableSpec, BigQueryReadMethod method, Source source,
         String rowRestriction, List<String> selectedFields) {
       this.tableSpec = tableSpec;
       this.method = method;

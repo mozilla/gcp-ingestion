@@ -259,36 +259,32 @@ gsutil cat $BUCKET/output/*
 
 ### On Dataflow with Flex Templates
 
-The Dataflow templates documentation includes [a section explaining the benefits of flex
-templates](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates#evaluating-which-template-type-to-use)
+The [Dataflow templates documentation](https://cloud.google.com/dataflow/docs/concepts/dataflow-templates) explains:
 
-> Flex Templates bring more flexibility over classic templates by allowing minor variations of
-> Dataflow jobs to be launched from a single template and allowing the use of any source or sink
-> I/O. For classic templates, the execution graph is built during the template creation process. The
-> execution graph for Flex Templates is dynamically built based on runtime parameters provided by
-> the user when the template is executed. This means that when you use Flex Templates, you can make
-> minor variations to accomplish different tasks with the same underlying template, such as changing
-> the source or sink file formats.
+> Dataflow templates allow you to stage your pipelines on Google Cloud and [run
+> them](https://cloud.google.com/dataflow/docs/templates/executing-templates) using the Google Cloud
+> Console, the `gcloud` command-line tool, or REST API calls. [...] Flex Templates package the
+> pipeline as a Docker image and stage these images on your project's Container Registry.
 
 ```bash
-# pick a project to store the docker image in
+# pick the project to store the docker image in
 PROJECT=$(gcloud config get-value project)"
 
-# pick a region to run Dataflow jobs in
+# pick the region to run Dataflow jobs in
 PROJECT=$(gcloud config get-value compute/region)"
 
-# pick a bucket to store files in
+# pick the bucket to store files in
 BUCKET="gs://$PROJECT"
 
 # configure gcloud credential helper for docker to push to GCR
 gcloud auth configure-docker
 
-# build a docker image for a Flex Template
+# build the docker image for the Flex Template
 export IMAGE=gcr.io/$PROJECT/ingestion-beam/sink:latest
 docker-compose build --build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Sink
 docker-compose push
 
-# create a Flex Template
+# create the Flex Template
 gcloud dataflow flex-template build \
     $BUCKET/sink/flex-templates/latest.json \
     --image $IMAGE \
@@ -322,63 +318,21 @@ gcloud dataflow jobs show "$JOB_ID" --region=$REGION
 gsutil cat $BUCKET/output/*
 ```
 
-### On Dataflow with classic templates (deprecated)
-
-Dataflow classic templates make a distinction between
-[runtime parameters that implement the `ValueProvider` interface](https://cloud.google.com/dataflow/docs/guides/templates/creating-templates#runtime-parameters-and-the-valueprovider-interface)
-and compile-time parameters which do not.
-All options can be specified at classic template compile time by passing command line flags,
-but runtime parameters can also be overridden when
-[executing the classic template](https://cloud.google.com/dataflow/docs/guides/templates/executing-templates#using-gcloud)
-via the `--parameters` flag.
-In the output of `--help=SinkOptions`, runtime parameters are those
-with type `ValueProvider`.
-
-```bash
-# Pick a bucket to store files in
-BUCKET="gs://$(gcloud config get-value project)"
-
-# Set credentials; beam is not able to use gcloud credentials
-export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/creds.json"
-
-# create a classic template
-./bin/mvn compile exec:java -Dexec.args="\
-    --runner=Dataflow \
-    --project=$(gcloud config get-value project) \
-    --inputFileFormat=json \
-    --inputType=file \
-    --outputFileFormat=json \
-    --outputType=file \
-    --errorOutputType=file \
-    --templateLocation=$BUCKET/sink/templates/JsonFileToJsonFile \
-    --stagingLocation=$BUCKET/sink/staging \
-"
-
-# create a test input file
-echo '{"payload":"dGVzdA==","attributeMap":{"host":"test"}}' | gsutil cp - $BUCKET/input.json
-
-# run the dataflow classic template with gcloud
-JOBNAME=FileToFile1
-gcloud dataflow jobs run $JOBNAME --gcs-location=$BUCKET/sink/templates/JsonFileToJsonFile --parameters "input=$BUCKET/input.json,output=$BUCKET/output/,errorOutput=$BUCKET/error"
-
-# get the job id
-JOB_ID="$(gcloud dataflow jobs list --filter=name=$JOBNAME --format='value(JOB_ID)' --limit=1)"
-
-# wait for the job to finish
-gcloud dataflow jobs show "$JOB_ID"
-
-# check that the message was delivered
-gsutil cat $BUCKET/output/*
-```
-
 ### In streaming mode
 
 If `--inputType=pubsub`, Beam will execute in streaming mode, requiring some
 extra configuration for file-based outputs. You will need to specify sharding like:
 
 ```
-    --outputNumShards=10
-    --errorOutputNumShards=10
+    --outputNumShards=10 \
+    --errorOutputNumShards=10 \
+```
+
+or for Flex Templates:
+
+```
+    --parameters=outputNumShards=10 \
+    --parameters=errorOutputNumShards=10 \
 ```
 
 As discussed in the

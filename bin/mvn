@@ -45,5 +45,5 @@ docker run $INTERACTIVE_FLAGS --rm \
     -e GOOGLE_APPLICATION_CREDENTIALS \
     $(for e in $PASS_ENV; do echo "-e $e"; done) \
     $MOUNT_CREDENTIALS_FLAGS \
-    maven:3-jdk-8 \
+    maven:3-jdk-11 \
     mvn -Duser.home=/var/maven "$@"

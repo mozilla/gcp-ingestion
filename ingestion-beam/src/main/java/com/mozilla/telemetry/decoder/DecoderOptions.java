@@ -6,7 +6,6 @@ import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.Hidden;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.Validation;
-import org.apache.beam.sdk.options.ValueProvider;
 
 /**
  * Options supported by {@code Decoder}.
@@ -17,23 +16,23 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   @Description("Path (local or gs://) to GeoIP2-City.mmdb")
   @Validation.Required
-  ValueProvider<String> getGeoCityDatabase();
+  String getGeoCityDatabase();
 
-  void setGeoCityDatabase(ValueProvider<String> value);
+  void setGeoCityDatabase(String value);
 
   @Description("Path (local or gs://) to newline-delimited text file listing city names to allow"
       + " in geoCity information; cities not in the list are considered too small to ensure"
       + " user anonymity so we won't report geoCity in that case."
       + " If not specified, no limiting is performed and we always report valid geoCity values.")
-  ValueProvider<String> getGeoCityFilter();
+  String getGeoCityFilter();
 
-  void setGeoCityFilter(ValueProvider<String> value);
+  void setGeoCityFilter(String value);
 
   @Description("Path (local or gs://) to GeoIP2-ISP.mmdb")
   @Validation.Required
-  ValueProvider<String> getGeoIspDatabase();
+  String getGeoIspDatabase();
 
-  void setGeoIspDatabase(ValueProvider<String> value);
+  void setGeoIspDatabase(String value);
 
   @Description("If set to true, enable decryption of Pioneer payloads.")
   @Default.Boolean(false)
@@ -44,24 +43,24 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Description("Path (local or gs://) to JSON array of metadata entries enumerating encrypted"
       + " private keys, Cloud KMS resource ids for decrypting those keys, and their corresponding"
       + " document namespaces; this must be set if Pioneer is enabled.")
-  ValueProvider<String> getPioneerMetadataLocation();
+  String getPioneerMetadataLocation();
 
-  void setPioneerMetadataLocation(ValueProvider<String> value);
+  void setPioneerMetadataLocation(String value);
 
   @Description("If set to true, assume that all private keys are encrypted with the associated"
       + " KMS resourceId. Otherwise ignore KMS and assume all private keys are stored in plaintext."
       + " This may be used for debugging.")
   @Default.Boolean(true)
-  ValueProvider<Boolean> getPioneerKmsEnabled();
+  Boolean getPioneerKmsEnabled();
 
-  void setPioneerKmsEnabled(ValueProvider<Boolean> value);
+  void setPioneerKmsEnabled(Boolean value);
 
   @Hidden
   @Description("Decompress pioneer pings.")
   @Default.Boolean(true)
-  ValueProvider<Boolean> getPioneerDecompressPayload();
+  Boolean getPioneerDecompressPayload();
 
-  void setPioneerDecompressPayload(ValueProvider<Boolean> value);
+  void setPioneerDecompressPayload(Boolean value);
 
   @Description("If set to true, enable decryption of Account Ecosystem Telemetry identifiers.")
   @Default.Boolean(false)
@@ -72,17 +71,17 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   @Description("Path (local or gs://) to JSON array of metadata entries enumerating encrypted"
       + " private keys, Cloud KMS resource ids for decrypting those keys, and their corresponding"
       + " document namespaces; this must be set if AET is enabled.")
-  ValueProvider<String> getAetMetadataLocation();
+  String getAetMetadataLocation();
 
-  void setAetMetadataLocation(ValueProvider<String> value);
+  void setAetMetadataLocation(String value);
 
   @Description("If set to true, assume that all private keys are encrypted with the associated"
       + " KMS resourceId. Otherwise ignore KMS and assume all private keys are stored in plaintext."
       + " This may be used for debugging.")
   @Default.Boolean(true)
-  ValueProvider<Boolean> getAetKmsEnabled();
+  Boolean getAetKmsEnabled();
 
-  void setAetKmsEnabled(ValueProvider<Boolean> value);
+  void setAetKmsEnabled(Boolean value);
 
   /*
    * Subinterface and static methods.

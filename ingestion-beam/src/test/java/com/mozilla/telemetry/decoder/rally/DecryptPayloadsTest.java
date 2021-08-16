@@ -10,7 +10,6 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -48,11 +47,10 @@ public class DecryptPayloadsTest extends TestWithDeterministicJson {
 
   @Test
   public void testSuccess() throws Exception {
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("jwe/metadata-local.json").getPath());
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("jwe/metadata-local.json").getPath();
+    String schemasLocation = "schemas.tar.gz";
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     List<PubsubMessage> input = Arrays.asList(
         readTestFilePubsub("jwe/rally-study-foo.ciphertext.json", "rally-study-foo", "baseline",

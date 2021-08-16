@@ -8,7 +8,6 @@ import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.Json;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.values.PCollection;
@@ -33,8 +32,7 @@ public class ParseLogEntryTest {
         .put("region", "Virginia") //
         .build());
 
-    PCollection<PubsubMessage> output = pipeline
-        .apply(new FileInput(StaticValueProvider.of(input), InputFileFormat.json))
+    PCollection<PubsubMessage> output = pipeline.apply(new FileInput(input, InputFileFormat.json))
         .apply(ParseLogEntry.of()).output();
 
     PAssert.that(output.apply(OutputFileFormat.text.encode()))

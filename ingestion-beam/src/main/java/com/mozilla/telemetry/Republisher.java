@@ -11,7 +11,6 @@ import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.values.PCollection;
 
@@ -43,7 +42,7 @@ public class Republisher extends Sink {
    */
   public static PipelineResult run(RepublisherOptions.Parsed options) {
     // We aren't decoding payloads, so no need to re-compress when republishing.
-    options.setOutputPubsubCompression(StaticValueProvider.of(Compression.UNCOMPRESSED));
+    options.setOutputPubsubCompression(Compression.UNCOMPRESSED);
 
     final Pipeline pipeline = Pipeline.create(options);
 

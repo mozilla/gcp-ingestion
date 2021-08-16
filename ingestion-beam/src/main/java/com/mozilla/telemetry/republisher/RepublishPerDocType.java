@@ -5,7 +5,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.Partition;
 import org.apache.beam.sdk.values.PCollection;
@@ -35,7 +34,7 @@ public class RepublishPerDocType extends PTransform<PCollection<PubsubMessage>, 
     for (int i = 0; i < numDestinations; i++) {
       Destination destination = destinations.get(i);
       RepublisherOptions.Parsed opts = baseOptions.as(RepublisherOptions.Parsed.class);
-      opts.setOutput(StaticValueProvider.of(destination.dest));
+      opts.setOutput(destination.dest);
       String name = String.join("_", "republish", destination.namespace, destination.docType);
       partitioned.get(i).apply(name, opts.getOutputType().write(opts));
     }

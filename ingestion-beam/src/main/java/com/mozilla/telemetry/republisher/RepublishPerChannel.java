@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.Partition;
@@ -36,12 +35,8 @@ public class RepublishPerChannel extends PTransform<PCollection<PubsubMessage>, 
     for (int i = 0; i < numDestinations; i++) {
       Destination destination = destinations.get(i);
       RepublisherOptions.Parsed opts = baseOptions.as(RepublisherOptions.Parsed.class);
-
-      // The destination pattern here must be compile-time due to a detail of Dataflow's
-      // streaming PubSub producer implementation; if that restriction is lifted in the future,
-      // this can become a runtime parameter and we can perform replacement via NestedValueProvider.
-      opts.setOutput(StaticValueProvider
-          .of(baseOptions.getPerChannelDestination().replace("${channel}", destination.channel)));
+      opts.setOutput(
+          baseOptions.getPerChannelDestination().replace("${channel}", destination.channel));
 
       partitioned.get(i) //
           .apply("Sample" + destination.getCapitalizedChannel() + "BySampleIdOrRandomNumber",

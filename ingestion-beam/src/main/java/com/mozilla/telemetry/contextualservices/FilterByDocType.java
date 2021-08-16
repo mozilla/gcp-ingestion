@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
@@ -17,15 +16,15 @@ import org.apache.commons.lang3.StringUtils;
 public class FilterByDocType
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
-  private final ValueProvider<String> allowedDocTypes;
+  private final String allowedDocTypes;
 
   private static transient Set<String> allowedDocTypesSet;
 
-  public FilterByDocType(ValueProvider<String> allowedDocTypes) {
+  public FilterByDocType(String allowedDocTypes) {
     this.allowedDocTypes = allowedDocTypes;
   }
 
-  public static FilterByDocType of(ValueProvider<String> allowedDocTypes) {
+  public static FilterByDocType of(String allowedDocTypes) {
     return new FilterByDocType(allowedDocTypes);
   }
 
@@ -40,10 +39,10 @@ public class FilterByDocType
     public void processElement(@Element PubsubMessage message, OutputReceiver<PubsubMessage> out) {
       message = PubsubConstraints.ensureNonNull(message);
       if (allowedDocTypesSet == null) {
-        if (!allowedDocTypes.isAccessible() || allowedDocTypes.get() == null) {
+        if (allowedDocTypes == null) {
           throw new IllegalArgumentException("Required --allowedDocTypes argument not found");
         }
-        allowedDocTypesSet = Arrays.stream(allowedDocTypes.get().split(","))
+        allowedDocTypesSet = Arrays.stream(allowedDocTypes.split(","))
             .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
       }
 
