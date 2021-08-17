@@ -10,7 +10,6 @@ import java.util.zip.GZIPInputStream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
@@ -26,7 +25,7 @@ public class DecompressPayload
    *
    * @param enabled if false, this transform will pass all messages through unchanged
    */
-  public static DecompressPayload enabled(ValueProvider<Boolean> enabled) {
+  public static DecompressPayload enabled(Boolean enabled) {
     return new DecompressPayload(enabled, false);
   }
 
@@ -41,10 +40,10 @@ public class DecompressPayload
 
   ////////
 
-  private final ValueProvider<Boolean> enabled;
+  private final Boolean enabled;
   private final boolean recordInputCompression;
 
-  private DecompressPayload(ValueProvider<Boolean> enabled, boolean recordInputCompression) {
+  private DecompressPayload(Boolean enabled, boolean recordInputCompression) {
     this.enabled = enabled;
     this.recordInputCompression = recordInputCompression;
   }
@@ -56,7 +55,7 @@ public class DecompressPayload
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
-      if (enabled.isAccessible() && !enabled.get()) {
+      if (!enabled) {
         // Compression has been explicitly turned off in options, so return unchanged message.
         return message;
       } else {

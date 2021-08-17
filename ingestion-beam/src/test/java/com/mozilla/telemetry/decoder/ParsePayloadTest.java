@@ -11,7 +11,6 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -30,7 +29,7 @@ public class ParsePayloadTest {
 
   @Test
   public void testSampleId() {
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    String schemasLocation = "schemas.tar.gz";
     ParsePayload transform = ParsePayload.of(schemasLocation);
     assertEquals(67L, transform.calculateSampleId("2907648d-711b-4e9f-94b5-52a2b40a44b1"));
     assertEquals(17L, transform.calculateSampleId("90210716-99f8-0a4f-8119-9bfc16cd68a3"));
@@ -50,7 +49,7 @@ public class ParsePayloadTest {
 
   @Test
   public void testOutput() {
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    String schemasLocation = "schemas.tar.gz";
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{",
         "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}",
         "{\"clientId\":\"2907648D-711B-4E9F-94B5-52A2B40A44B1\"}",
@@ -107,7 +106,7 @@ public class ParsePayloadTest {
 
   @Test
   public void testErrors() {
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    String schemasLocation = "schemas.tar.gz";
     final List<String> input = Arrays.asList(
         // non-json payload
         "{\"attributeMap\":" + "{\"document_namespace\":\"eng-workflow\""
@@ -139,7 +138,7 @@ public class ParsePayloadTest {
 
   @Test
   public void testVersionInPayload() {
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    String schemasLocation = "schemas.tar.gz";
 
     // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
     String input = "{\"attributeMap\":" //
@@ -166,7 +165,7 @@ public class ParsePayloadTest {
 
   @Test
   public void testMetadataInPayload() {
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    String schemasLocation = "schemas.tar.gz";
 
     String input = "{\"id\":null,\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
         + ",\"metadata\":{\"document_namespace\":\"test\",\"document_type\":\"test\""

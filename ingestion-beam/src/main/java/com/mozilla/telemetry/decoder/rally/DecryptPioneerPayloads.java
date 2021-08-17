@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ProcessFunction;
@@ -37,9 +36,9 @@ import org.jose4j.lang.JoseException;
 public class DecryptPioneerPayloads extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  private final ValueProvider<String> metadataLocation;
-  private final ValueProvider<Boolean> kmsEnabled;
-  private final ValueProvider<Boolean> decompressPayload;
+  private final String metadataLocation;
+  private final Boolean kmsEnabled;
+  private final Boolean decompressPayload;
   private transient KeyStore keyStore;
   private transient JsonValidator validator;
   private transient Schema envelopeSchema;
@@ -55,13 +54,13 @@ public class DecryptPioneerPayloads extends
   public static final String DELETION_REQUEST_SCHEMA_NAME = "deletion-request";
   public static final String ENROLLMENT_SCHEMA_NAME = "pioneer-enrollment";
 
-  public static DecryptPioneerPayloads of(ValueProvider<String> metadataLocation,
-      ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
+  public static DecryptPioneerPayloads of(String metadataLocation, Boolean kmsEnabled,
+      Boolean decompressPayload) {
     return new DecryptPioneerPayloads(metadataLocation, kmsEnabled, decompressPayload);
   }
 
-  private DecryptPioneerPayloads(ValueProvider<String> metadataLocation,
-      ValueProvider<Boolean> kmsEnabled, ValueProvider<Boolean> decompressPayload) {
+  private DecryptPioneerPayloads(String metadataLocation, Boolean kmsEnabled,
+      Boolean decompressPayload) {
     this.metadataLocation = metadataLocation;
     this.kmsEnabled = kmsEnabled;
     this.decompressPayload = decompressPayload;
@@ -119,7 +118,7 @@ public class DecryptPioneerPayloads extends
         // If configured resources aren't available, this throws UncheckedIOException;
         // this is unretryable so we allow it to bubble up and kill the worker and eventually fail
         // the pipeline.
-        keyStore = KeyStore.of(metadataLocation.get(), kmsEnabled.get());
+        keyStore = KeyStore.of(metadataLocation, kmsEnabled);
       }
 
       if (validator == null) {
@@ -147,7 +146,7 @@ public class DecryptPioneerPayloads extends
 
         final byte[] decrypted = decrypt(key, payload.get(ENCRYPTED_DATA).asText());
 
-        if (decompressPayload.get()) {
+        if (decompressPayload) {
           payloadData = GzipUtil.maybeDecompress(decrypted);
         } else {
           // don't bother decompressing

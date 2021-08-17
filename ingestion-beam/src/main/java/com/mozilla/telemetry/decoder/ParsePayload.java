@@ -30,7 +30,6 @@ import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ProcessFunction;
@@ -51,7 +50,7 @@ import org.everit.json.schema.ValidationException;
 public class ParsePayload extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  public static ParsePayload of(ValueProvider<String> schemasLocation) {
+  public static ParsePayload of(String schemasLocation) {
     return new ParsePayload(schemasLocation);
   }
 
@@ -62,13 +61,13 @@ public class ParsePayload extends
   private final Distribution validateTimer = Metrics.distribution(ParsePayload.class,
       "json_validate_millis");
 
-  private final ValueProvider<String> schemasLocation;
+  private final String schemasLocation;
 
   private transient JsonValidator validator;
   private transient JSONSchemaStore schemaStore;
   private transient CRC32 crc32;
 
-  private ParsePayload(ValueProvider<String> schemasLocation) {
+  private ParsePayload(String schemasLocation) {
     this.schemasLocation = schemasLocation;
   }
 
@@ -98,7 +97,7 @@ public class ParsePayload extends
       Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
       if (schemaStore == null) {
-        schemaStore = JSONSchemaStore.of(schemasLocation.get(), BeamFileInputStream::open);
+        schemaStore = JSONSchemaStore.of(schemasLocation, BeamFileInputStream::open);
       }
 
       final int submissionBytes = message.getPayload().length;

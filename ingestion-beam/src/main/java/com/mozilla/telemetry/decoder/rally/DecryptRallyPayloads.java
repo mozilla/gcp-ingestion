@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ProcessFunction;
@@ -40,10 +39,10 @@ import org.jose4j.lang.JoseException;
 public class DecryptRallyPayloads extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  private final ValueProvider<String> metadataLocation;
-  private final ValueProvider<String> schemasLocation;
-  private final ValueProvider<Boolean> kmsEnabled;
-  private final ValueProvider<Boolean> decompressPayload;
+  private final String metadataLocation;
+  private final String schemasLocation;
+  private final Boolean kmsEnabled;
+  private final Boolean decompressPayload;
   private transient KeyStore keyStore;
   private transient PipelineMetadataStore pipelineMetadataStore;
   private transient JsonValidator validator;
@@ -52,16 +51,14 @@ public class DecryptRallyPayloads extends
   public static final String PIONEER_ID = "pioneerId";
   public static final String STUDY_NAME = "studyName";
 
-  public static DecryptRallyPayloads of(ValueProvider<String> metadataLocation,
-      ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
-      ValueProvider<Boolean> decompressPayload) {
+  public static DecryptRallyPayloads of(String metadataLocation, String schemasLocation,
+      Boolean kmsEnabled, Boolean decompressPayload) {
     return new DecryptRallyPayloads(metadataLocation, schemasLocation, kmsEnabled,
         decompressPayload);
   }
 
-  private DecryptRallyPayloads(ValueProvider<String> metadataLocation,
-      ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
-      ValueProvider<Boolean> decompressPayload) {
+  private DecryptRallyPayloads(String metadataLocation, String schemasLocation, Boolean kmsEnabled,
+      Boolean decompressPayload) {
     this.metadataLocation = metadataLocation;
     this.schemasLocation = schemasLocation;
     this.kmsEnabled = kmsEnabled;
@@ -123,7 +120,7 @@ public class DecryptRallyPayloads extends
 
         final byte[] decryptedData = decrypt(key, sourceNode.asText());
         byte[] decrypted;
-        if (decompressPayload.get()) {
+        if (decompressPayload) {
           decrypted = GzipUtil.maybeDecompress(decryptedData);
         } else {
           // don't bother decompressing
@@ -168,16 +165,16 @@ public class DecryptRallyPayloads extends
         // If configured resources aren't available, this throws
         // UncheckedIOException; this is unretryable so we allow it to bubble up
         // and kill the worker and eventually fail the pipeline.
-        keyStore = KeyStore.of(metadataLocation.get(), kmsEnabled.get());
+        keyStore = KeyStore.of(metadataLocation, kmsEnabled);
       }
 
       if (pipelineMetadataStore == null) {
-        pipelineMetadataStore = PipelineMetadataStore.of(schemasLocation.get(),
+        pipelineMetadataStore = PipelineMetadataStore.of(schemasLocation,
             BeamFileInputStream::open);
       }
 
       if (gleanSchema == null || validator == null) {
-        JSONSchemaStore schemaStore = JSONSchemaStore.of(schemasLocation.get(),
+        JSONSchemaStore schemaStore = JSONSchemaStore.of(schemasLocation,
             BeamFileInputStream::open);
         gleanSchema = schemaStore.getSchema("glean/glean/glean.1.schema.json");
         validator = new JsonValidator();

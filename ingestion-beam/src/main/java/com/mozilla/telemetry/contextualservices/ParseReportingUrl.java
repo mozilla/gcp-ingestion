@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
@@ -37,7 +36,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class ParseReportingUrl extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  private final ValueProvider<String> urlAllowList;
+  private final String urlAllowList;
 
   private static transient Set<String> singletonAllowedImpressionUrls;
   private static transient Set<String> singletonAllowedClickUrls;
@@ -59,11 +58,11 @@ public class ParseReportingUrl extends
   // Threshold for IP reputation considered likely abuse.
   private static final int IP_REPUTATION_THRESHOLD = 70;
 
-  public static ParseReportingUrl of(ValueProvider<String> urlAllowList) {
+  public static ParseReportingUrl of(String urlAllowList) {
     return new ParseReportingUrl(urlAllowList);
   }
 
-  private ParseReportingUrl(ValueProvider<String> urlAllowList) {
+  private ParseReportingUrl(String urlAllowList) {
     this.urlAllowList = urlAllowList;
   }
 
@@ -217,13 +216,13 @@ public class ParseReportingUrl extends
    * @throws IllegalArgumentException if the given file location cannot be retrieved
    *     or the CSV format is incorrect
    */
-  private List<String[]> readPairsFromFile(ValueProvider<String> fileLocation, String paramName)
+  private List<String[]> readPairsFromFile(String fileLocation, String paramName)
       throws IOException {
-    if (fileLocation == null || !fileLocation.isAccessible()) {
-      throw new IllegalArgumentException("--" + paramName + " argument not accessible");
+    if (fileLocation == null) {
+      throw new IllegalArgumentException("--" + paramName + " must be defined");
     }
 
-    try (InputStream inputStream = BeamFileInputStream.open(fileLocation.get());
+    try (InputStream inputStream = BeamFileInputStream.open(fileLocation);
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
         BufferedReader reader = new BufferedReader(inputStreamReader)) {
       List<String[]> pairs = new ArrayList<>();

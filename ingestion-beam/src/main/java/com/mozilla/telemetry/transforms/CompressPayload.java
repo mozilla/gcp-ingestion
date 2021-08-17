@@ -13,7 +13,6 @@ import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
@@ -22,7 +21,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class CompressPayload
     extends PTransform<PCollection<? extends PubsubMessage>, PCollection<PubsubMessage>> {
 
-  public static CompressPayload of(ValueProvider<Compression> compression) {
+  public static CompressPayload of(Compression compression) {
     return new CompressPayload(compression, Integer.MAX_VALUE);
   }
 
@@ -38,13 +37,13 @@ public class CompressPayload
 
   ////////
 
-  final ValueProvider<Compression> compression;
+  final Compression compression;
   private final int maxCompressedBytes;
 
   private final Counter truncationCounter = Metrics.counter(CompressPayload.class,
       "truncated_payload");
 
-  private CompressPayload(ValueProvider<Compression> compression, int maxCompressedBytes) {
+  private CompressPayload(Compression compression, int maxCompressedBytes) {
     this.compression = compression;
     this.maxCompressedBytes = maxCompressedBytes;
   }
@@ -52,11 +51,11 @@ public class CompressPayload
   @VisibleForTesting
   PubsubMessage compress(PubsubMessage message) {
     message = PubsubConstraints.ensureNonNull(message);
-    byte[] compressedBytes = compress(message.getPayload(), compression.get());
+    byte[] compressedBytes = compress(message.getPayload(), compression);
     if (compressedBytes.length > maxCompressedBytes) {
       byte[] truncated = Arrays.copyOfRange(message.getPayload(), 0, maxCompressedBytes);
       truncationCounter.inc();
-      compressedBytes = compress(truncated, compression.get());
+      compressedBytes = compress(truncated, compression);
     }
     return new PubsubMessage(compressedBytes, message.getAttributeMap());
   }

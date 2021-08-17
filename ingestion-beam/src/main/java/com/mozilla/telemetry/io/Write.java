@@ -51,8 +51,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -126,17 +124,16 @@ public abstract class Write
    */
   public static class FileOutput extends Write {
 
-    private final ValueProvider<String> outputPrefix;
+    private final String outputPrefix;
     private final OutputFileFormat format;
     private final Duration windowDuration;
-    private final ValueProvider<Integer> numShards;
+    private final Integer numShards;
     private final Compression compression;
     private final InputType inputType;
 
     /** Public constructor. */
-    public FileOutput(ValueProvider<String> outputPrefix, OutputFileFormat format,
-        Duration windowDuration, ValueProvider<Integer> numShards, Compression compression,
-        InputType inputType) {
+    public FileOutput(String outputPrefix, OutputFileFormat format, Duration windowDuration,
+        Integer numShards, Compression compression, InputType inputType) {
       this.outputPrefix = outputPrefix;
       this.format = format;
       this.windowDuration = windowDuration;
@@ -147,10 +144,8 @@ public abstract class Write
 
     @Override
     public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
-      ValueProvider<DynamicPathTemplate> pathTemplate = NestedValueProvider.of(outputPrefix,
-          DynamicPathTemplate::new);
-      ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
-          value -> value.staticPrefix);
+      DynamicPathTemplate pathTemplate = new DynamicPathTemplate(outputPrefix);
+      String staticPrefix = pathTemplate.staticPrefix;
 
       FileIO.Write<List<String>, PubsubMessage> write = FileIO
           .<List<String>, PubsubMessage>writeDynamic()
@@ -158,19 +153,18 @@ public abstract class Write
           // deterministic;
           // instead, we extract an ordered list of the needed placeholder values.
           // That list is later available to withNaming() to determine output location.
-          .by(message -> pathTemplate.get()
+          .by(message -> pathTemplate
               .extractValuesFrom(DerivedAttributesMap.of(message.getAttributeMap())))
           .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())) //
           .withCompression(compression) //
           .via(Contextful.fn(format::encodeSingleMessage), TextIO.sink()) //
           .to(staticPrefix) //
-          .withNaming(placeholderValues -> NoColonFileNaming.defaultNaming(
-              pathTemplate.get().replaceDynamicPart(placeholderValues), format.suffix()));
+          .withNaming(placeholderValues -> NoColonFileNaming
+              .defaultNaming(pathTemplate.replaceDynamicPart(placeholderValues), format.suffix()));
 
       if (inputType == InputType.pubsub) {
-        // Passing a ValueProvider to withNumShards disables runner-determined sharding, so we
-        // need to be careful to pass this only for streaming input (where runner-determined
-        // sharding is not an option).
+        // withNumShards disables runner-determined sharding, so we need to be careful to pass this
+        // only for streaming input (where runner-determined sharding is not an option).
         write = write.withNumShards(numShards);
       }
 
@@ -194,13 +188,13 @@ public abstract class Write
    */
   public static class AvroOutput extends Write {
 
-    private final ValueProvider<String> outputPrefix;
+    private final String outputPrefix;
     private final Duration windowDuration;
-    private final ValueProvider<Integer> numShards;
+    private final Integer numShards;
     private final Compression compression;
     private final InputType inputType;
-    private final ValueProvider<String> schemasLocation;
-    private final ValueProvider<DynamicPathTemplate> pathTemplate;
+    private final String schemasLocation;
+    private final DynamicPathTemplate pathTemplate;
     private final PubsubMessageRecordFormatter formatter = new PubsubMessageRecordFormatter();
     private final GenericRecordBinaryEncoder binaryEncoder = new GenericRecordBinaryEncoder();
     private final BinaryRecordFormatter binaryFormatter = new BinaryRecordFormatter();
@@ -210,16 +204,15 @@ public abstract class Write
     };
 
     /** Public constructor. */
-    public AvroOutput(ValueProvider<String> outputPrefix, Duration windowDuration,
-        ValueProvider<Integer> numShards, Compression compression, InputType inputType,
-        ValueProvider<String> schemasLocation) {
+    public AvroOutput(String outputPrefix, Duration windowDuration, Integer numShards,
+        Compression compression, InputType inputType, String schemasLocation) {
       this.outputPrefix = outputPrefix;
       this.windowDuration = windowDuration;
       this.numShards = numShards;
       this.compression = compression;
       this.inputType = inputType;
       this.schemasLocation = schemasLocation;
-      this.pathTemplate = NestedValueProvider.of(outputPrefix, DynamicPathTemplate::new);
+      this.pathTemplate = new DynamicPathTemplate(outputPrefix);
     }
 
     class AvroEncoder extends DoFn<PubsubMessage, PubsubMessage> {
@@ -228,7 +221,7 @@ public abstract class Write
 
       private AvroSchemaStore getStore() {
         if (store == null) {
-          store = AvroSchemaStore.of(schemasLocation.get(), BeamFileInputStream::open);
+          store = AvroSchemaStore.of(schemasLocation, BeamFileInputStream::open);
         }
         return store;
       }
@@ -248,7 +241,7 @@ public abstract class Write
       }
 
       private AvroIO.Sink<PubsubMessage> getSink(List<String> dest) {
-        Map<String, String> attributes = pathTemplate.get().getPlaceholderAttributes(dest);
+        Map<String, String> attributes = pathTemplate.getPlaceholderAttributes(dest);
         Schema schema = getStore().getSchema(attributes);
         return AvroIO.sinkViaGenericRecords(schema, binaryFormatter);
       }
@@ -256,10 +249,9 @@ public abstract class Write
 
     @Override
     public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
-      ValueProvider<String> staticPrefix = NestedValueProvider.of(pathTemplate,
-          value -> value.staticPrefix);
+      String staticPrefix = pathTemplate.staticPrefix;
 
-      List<String> placeholders = pathTemplate.get().getPlaceholderNames();
+      List<String> placeholders = pathTemplate.getPlaceholderNames();
       if (!placeholders
           .containsAll(Arrays.asList("document_namespace", "document_type", "document_version"))) {
         throw new RuntimeException(
@@ -276,18 +268,17 @@ public abstract class Write
 
       FileIO.Write<List<String>, PubsubMessage> write = FileIO
           .<List<String>, PubsubMessage>writeDynamic() //
-          .by(message -> pathTemplate.get().extractValuesFrom(message.getAttributeMap()))
+          .by(message -> pathTemplate.extractValuesFrom(message.getAttributeMap()))
           .withDestinationCoder(ListCoder.of(StringUtf8Coder.of())) //
           .withCompression(compression) //
           .via(Contextful.fn(encoder::getSink)) //
           .to(staticPrefix) //
           .withNaming(placeholderValues -> NoColonFileNaming
-              .defaultNaming(pathTemplate.get().replaceDynamicPart(placeholderValues), ".avro"));
+              .defaultNaming(pathTemplate.replaceDynamicPart(placeholderValues), ".avro"));
 
       if (inputType == InputType.pubsub) {
-        // Passing a ValueProvider to withNumShards disables runner-determined sharding, so we
-        // need to be careful to pass this only for streaming input (where runner-determined
-        // sharding is not an option).
+        // withNumShards disables runner-determined sharding, so we need to be careful to pass this
+        // only for streaming input (where runner-determined sharding is not an option).
         write = write.withNumShards(numShards);
       }
 
@@ -308,20 +299,19 @@ public abstract class Write
   /** Implementation of writing to a Pub/Sub topic. */
   public static class PubsubOutput extends Write {
 
-    private final ValueProvider<String> topic;
-    private final ValueProvider<Compression> compression;
+    private final String topic;
+    private final Compression compression;
     private final int maxCompressedBytes;
 
     /** Constructor. */
-    public PubsubOutput(ValueProvider<String> topic, ValueProvider<Compression> compression,
-        int maxCompressedBytes) {
+    public PubsubOutput(String topic, Compression compression, int maxCompressedBytes) {
       this.topic = topic;
       this.compression = compression;
       this.maxCompressedBytes = maxCompressedBytes;
     }
 
     /** Constructor. */
-    public PubsubOutput(ValueProvider<String> topic, ValueProvider<Compression> compression) {
+    public PubsubOutput(String topic, Compression compression) {
       this(topic, compression, Integer.MAX_VALUE);
     }
 
@@ -339,21 +329,18 @@ public abstract class Write
   public static class PubsubLiteOutput extends Write {
 
     private final TopicPath path;
-    private final ValueProvider<Compression> compression;
+    private final Compression compression;
     private final int maxCompressedBytes;
 
     /** Constructor. */
-    public PubsubLiteOutput(ValueProvider<String> topic, ValueProvider<Compression> compression,
-        int maxCompressedBytes) {
-      assert topic
-          .isAccessible() : "PubsubLiteIO is not compatible with Dataflow classic templates.";
-      this.path = TopicPath.parse(topic.get());
+    public PubsubLiteOutput(String topic, Compression compression, int maxCompressedBytes) {
+      this.path = TopicPath.parse(topic);
       this.compression = compression;
       this.maxCompressedBytes = maxCompressedBytes;
     }
 
     /** Constructor. */
-    public PubsubLiteOutput(ValueProvider<String> topic, ValueProvider<Compression> compression) {
+    public PubsubLiteOutput(String topic, Compression compression) {
       this(topic, compression, Integer.MAX_VALUE);
     }
 
@@ -371,42 +358,40 @@ public abstract class Write
   /** Implementation of writing to BigQuery tables. */
   public static class BigQueryOutput extends Write {
 
-    private final ValueProvider<String> tableSpecTemplate;
+    private final String tableSpecTemplate;
     private final BigQueryWriteMethod writeMethod;
     private final Duration triggeringFrequency;
     private final InputType inputType;
     private final int numShards;
     private final long maxBytesPerPartition;
-    private final ValueProvider<List<String>> streamingDocTypes;
-    private final ValueProvider<List<String>> strictSchemaDocTypes;
-    private final ValueProvider<String> schemasLocation;
-    private final ValueProvider<TableRowFormat> tableRowFormat;
-    private final ValueProvider<String> partitioningField;
-    private final ValueProvider<List<String>> clusteringFields;
+    private final List<String> streamingDocTypes;
+    private final List<String> strictSchemaDocTypes;
+    private final String schemasLocation;
+    private final TableRowFormat tableRowFormat;
+    private final String partitioningField;
+    private final List<String> clusteringFields;
 
     /** Public constructor. */
-    public BigQueryOutput(ValueProvider<String> tableSpecTemplate, BigQueryWriteMethod writeMethod,
+    public BigQueryOutput(String tableSpecTemplate, BigQueryWriteMethod writeMethod,
         Duration triggeringFrequency, InputType inputType, int numShards, long maxBytesPerPartition,
-        ValueProvider<List<String>> streamingDocTypes,
-        ValueProvider<List<String>> strictSchemaDocTypes, ValueProvider<String> schemasLocation,
-        ValueProvider<TableRowFormat> tableRowFormat, ValueProvider<String> partitioningField,
-        ValueProvider<List<String>> clusteringFields) {
+        List<String> streamingDocTypes, List<String> strictSchemaDocTypes, String schemasLocation,
+        TableRowFormat tableRowFormat, String partitioningField, List<String> clusteringFields) {
       this.tableSpecTemplate = tableSpecTemplate;
       this.writeMethod = writeMethod;
       this.triggeringFrequency = triggeringFrequency;
       this.inputType = inputType;
       this.numShards = numShards;
       this.maxBytesPerPartition = maxBytesPerPartition;
-      this.streamingDocTypes = NestedValueProvider.of(streamingDocTypes,
-          value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
-      this.strictSchemaDocTypes = NestedValueProvider.of(strictSchemaDocTypes,
-          value -> Optional.ofNullable(value).orElse(Collections.emptyList()));
+      this.streamingDocTypes = Optional.ofNullable(streamingDocTypes)
+          .orElse(Collections.emptyList());
+      this.strictSchemaDocTypes = Optional.ofNullable(strictSchemaDocTypes)
+          .orElse(Collections.emptyList());
       this.schemasLocation = schemasLocation;
       this.tableRowFormat = tableRowFormat;
-      this.partitioningField = NestedValueProvider.of(partitioningField,
-          f -> f != null ? f : Attribute.SUBMISSION_TIMESTAMP);
-      this.clusteringFields = NestedValueProvider.of(clusteringFields,
-          f -> f != null ? f : Collections.singletonList(Attribute.SUBMISSION_TIMESTAMP));
+      this.partitioningField = Optional.ofNullable(partitioningField)
+          .orElse(Attribute.SUBMISSION_TIMESTAMP);
+      this.clusteringFields = Optional.ofNullable(clusteringFields)
+          .orElse(Collections.singletonList(Attribute.SUBMISSION_TIMESTAMP));
     }
 
     @Override
@@ -423,9 +408,8 @@ public abstract class Write
       // streaming vs. file loads based on uncompressed size, but we then want to compress again
       // before sending to BigQueryIO to save on I/O costs during several GBK operations;
       // the payload will again be decompressed in the formatFunction passed to BigQueryIO.
-      final CompressPayload maybeCompress = CompressPayload
-          .of(NestedValueProvider.of(tableRowFormat,
-              v -> v == TableRowFormat.payload ? Compression.GZIP : Compression.UNCOMPRESSED));
+      final CompressPayload maybeCompress = CompressPayload.of(
+          tableRowFormat == TableRowFormat.payload ? Compression.GZIP : Compression.UNCOMPRESSED);
 
       final PubsubMessageToTableRow pubsubMessageToTableRow = PubsubMessageToTableRow
           .of(strictSchemaDocTypes, schemasLocation, tableRowFormat);
@@ -454,7 +438,7 @@ public abstract class Write
                 (message, numPartitions) -> {
                   message = PubsubConstraints.ensureNonNull(message);
                   final boolean shouldStream;
-                  if (streamingDocTypes.get().contains("*")) {
+                  if (streamingDocTypes.contains("*")) {
                     shouldStream = true;
                   } else {
                     final String namespace = message.getAttribute("document_namespace");
@@ -462,7 +446,7 @@ public abstract class Write
                     if (namespace == null || docType == null) {
                       shouldStream = false;
                     } else {
-                      shouldStream = streamingDocTypes.get().contains(namespace + "/" + docType);
+                      shouldStream = streamingDocTypes.contains(namespace + "/" + docType);
                     }
                   }
                   if (shouldStream && message

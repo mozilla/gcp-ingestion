@@ -8,7 +8,7 @@ COPY ingestion-beam/checkstyle /app/ingestion-sink/checkstyle
 RUN mvn prepare-package
 COPY ingestion-core/src /app/ingestion-core/src
 COPY ingestion-beam/src /app/ingestion-beam/src
-RUN mvn package -Dmaven.test.skip=true
+RUN mvn package -Dmaven.test.skip=true -Dmaven.compiler.release=11
 
 # This is the base image for the final image we're building.
 # The base image documentation is here:

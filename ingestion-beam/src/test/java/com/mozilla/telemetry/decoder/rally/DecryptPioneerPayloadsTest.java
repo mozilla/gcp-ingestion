@@ -20,7 +20,6 @@ import java.security.PrivateKey;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -132,10 +131,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testOutput() throws Exception {
     // minimal test for throughput of a single document
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"));
     PCollection<String> output = pipeline.apply(Create.of(input))
@@ -156,10 +154,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testOutputDeletionAndEnrollment() throws Exception {
     // minimal test for throughput of a single document
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     final List<String> input = readTestFiles(Arrays.asList("pioneer/deletion-request.sample.json",
         "pioneer/pioneer-enrollment.sample.json"));
@@ -187,10 +184,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testErrors() throws Exception {
     // minimal test for throughput of a single document
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json",
         "pioneer/study-foo.ciphertext.json", "pioneer/study-foo.ciphertext.json"));
@@ -221,9 +217,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testEmptyMetadataLocation() throws Exception {
     // minimal test for throughput of a single document
-    ValueProvider<String> metadataLocation = pipeline.newProvider(null);
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = null;
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     pipeline.apply(Create.of(readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"))))
         .apply(InputFileFormat.text.decode())
@@ -242,10 +238,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   public void testBug1674847() throws Exception {
     // minimal test for invalid enrollment pings sending addonId instead of
     // schemaNamespace
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     final List<String> input = readTestFiles(
         Arrays.asList("pioneer/study-foo.ciphertext.json", "pioneer/study-foo.ciphertext.json"));
@@ -274,10 +269,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testBug1691807EnrollmentDeletionPayloadsSuccess() throws Exception {
     // test valid payloads within the enrollment and deletion request
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     final List<String> input = readTestFiles(
         Arrays.asList("pioneer/bug-1691807.pioneer-enrollment.valid.study-bar.ciphertext.json",
@@ -305,10 +299,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testBug1691807EnrollmentDeletionPayloadsFailures() throws Exception {
     // test valid payloads within the enrollment and deletion request
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     final List<String> input = readTestFiles(
         Arrays.asList("pioneer/bug-1691807.pioneer-enrollment.invalid.study-bar.ciphertext.json",
@@ -336,10 +329,9 @@ public class DecryptPioneerPayloadsTest extends TestWithDeterministicJson {
   public void testBug1703648() throws Exception {
     // minimal test for invalid enrollment pings sending addonId instead of
     // schemaNamespace
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("pioneer/metadata-local.json").getPath());
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("pioneer/metadata-local.json").getPath();
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     final List<String> input = readTestFiles(Arrays.asList("pioneer/study-foo.ciphertext.json"));
     input.set(0, modifySchemaNamespace(input.get(0), "rally-foo"));

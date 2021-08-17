@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -134,11 +133,10 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
 
   private Result<PCollection<PubsubMessage>, PubsubMessage> getPipelineResult(TestPipeline pipeline,
       List<String> input, String namespace) {
-    ValueProvider<String> metadataLocation = pipeline
-        .newProvider(Resources.getResource("jwe/metadata-local.json").getPath());
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = Resources.getResource("jwe/metadata-local.json").getPath();
+    String schemasLocation = "schemas.tar.gz";
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     return pipeline.apply(Create.of(input)).apply(InputFileFormat.text.decode())
         .apply("AddAttributes",
@@ -294,10 +292,10 @@ public class DecryptRallyPayloadsTest extends TestWithDeterministicJson {
   @Test
   public void testEmptyMetadataLocation() throws Exception {
     // minimal test for throughput of a single document
-    ValueProvider<String> metadataLocation = pipeline.newProvider(null);
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
-    ValueProvider<Boolean> kmsEnabled = pipeline.newProvider(false);
-    ValueProvider<Boolean> decompressPayload = pipeline.newProvider(true);
+    String metadataLocation = null;
+    String schemasLocation = "schemas.tar.gz";
+    Boolean kmsEnabled = false;
+    Boolean decompressPayload = true;
 
     pipeline.apply(Create.of(readTestFiles(Arrays.asList("jwe/rally-study-foo.ciphertext.json"))))
         .apply(InputFileFormat.text.decode()).apply(DecryptRallyPayloads.of(metadataLocation,

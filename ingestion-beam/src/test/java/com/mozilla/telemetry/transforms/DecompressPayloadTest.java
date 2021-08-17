@@ -31,7 +31,7 @@ public class DecompressPayloadTest {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(DecompressPayload.enabled(pipeline.newProvider(true))) //
+        .apply(DecompressPayload.enabled(true)) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
@@ -54,7 +54,7 @@ public class DecompressPayloadTest {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(DecompressPayload.enabled(pipeline.newProvider(true)) //
+        .apply(DecompressPayload.enabled(true) //
             .withClientCompressionRecorded()) //
         .apply(OutputFileFormat.json.encode());
 

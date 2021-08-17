@@ -35,8 +35,7 @@ public class ParseReportingUrlTest {
 
   @Test
   public void testAllowedUrlsLoadAndFilter() throws IOException {
-    ParseReportingUrl parseReportingUrl = ParseReportingUrl
-        .of(pipeline.newProvider(URL_ALLOW_LIST));
+    ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(URL_ALLOW_LIST);
 
     pipeline.run();
 
@@ -81,7 +80,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST)));
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterators.size(messages.iterator()));
@@ -149,7 +148,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(pipeline.newProvider(URL_ALLOW_LIST)));
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(5, Iterables.size(messages));

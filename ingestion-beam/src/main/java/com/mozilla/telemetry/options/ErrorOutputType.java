@@ -11,11 +11,8 @@ import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
@@ -64,7 +61,7 @@ public enum ErrorOutputType {
 
     /** Return a PTransform that writes to Google Pubsub. */
     public Write writeFailures(SinkOptions.Parsed options) {
-      final ValueProvider<String> inputValueProvider = options.getInput();
+      final String inputValue = options.getInput();
       final String inputType = options.getInputType().toString();
       final String jobName = options.getJobName();
 
@@ -79,8 +76,7 @@ public enum ErrorOutputType {
               MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(message -> {
                 message = PubsubConstraints.ensureNonNull(message);
                 Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-                Optional.ofNullable(inputValueProvider).filter(ValueProvider::isAccessible)
-                    .map(ValueProvider::get).ifPresent(v -> attributes.put("input", v));
+                attributes.put("input", inputValue);
                 attributes.put("input_type", inputType);
                 attributes.put("job_name", jobName);
                 return new PubsubMessage(message.getPayload(), attributes);
@@ -99,9 +95,8 @@ public enum ErrorOutputType {
     public Write writeFailures(SinkOptions.Parsed options) {
       return new BigQueryOutput(options.getErrorOutput(), options.getErrorBqWriteMethod(),
           options.getParsedErrorBqTriggeringFrequency(), options.getInputType(),
-          options.getErrorBqNumFileShards(), options.getBqMaxBytesPerPartition(),
-          StaticValueProvider.of(null), StaticValueProvider.of(null), options.getSchemasLocation(),
-          StaticValueProvider.of(TableRowFormat.raw), options.getErrorBqPartitioningField(),
+          options.getErrorBqNumFileShards(), options.getBqMaxBytesPerPartition(), null, null,
+          options.getSchemasLocation(), TableRowFormat.raw, options.getErrorBqPartitioningField(),
           options.getErrorBqClusteringFields());
     }
   };

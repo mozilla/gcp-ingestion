@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -490,7 +489,7 @@ public class MessageScrubberTest {
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1614428
     // clients with client_id c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0 send malformed client_info
 
-    ValueProvider<String> schemasLocation = pipeline.newProvider("schemas.tar.gz");
+    String schemasLocation = "schemas.tar.gz";
 
     // payloads here are:
     // {"client_info":{"client_id":"c0ffeec0-ffee-c0ff-eec0-ffeec0ffeec0"}}

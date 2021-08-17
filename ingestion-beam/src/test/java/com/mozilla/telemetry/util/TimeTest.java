@@ -6,8 +6,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
-import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.junit.Test;
 
 public class TimeTest {
@@ -43,21 +41,9 @@ public class TimeTest {
   }
 
   @Test
-  public void testParseDurationValueProvider() {
-    final ValueProvider<String> provider = StaticValueProvider.of("13s");
-    assertEquals(Time.parseDuration(provider).get().getMillis(), SECONDS.toMillis(13));
-  }
-
-  @Test
   public void testParseSeconds() {
     assertEquals(Time.parseSeconds("13s"), 13L);
     assertEquals(Time.parseSeconds("4m"), MINUTES.toSeconds(4));
-  }
-
-  @Test
-  public void testParseSecondsValueProvider() {
-    final ValueProvider<String> provider = StaticValueProvider.of("13s");
-    assertEquals(Time.parseSeconds(provider).get().intValue(), 13);
   }
 
   @Test(expected = IllegalArgumentException.class)

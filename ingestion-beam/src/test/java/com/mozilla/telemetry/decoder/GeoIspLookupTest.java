@@ -67,7 +67,7 @@ public class GeoIspLookupTest {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(GeoIspLookup.of(pipeline.newProvider(MMDB))).apply(OutputFileFormat.json.encode());
+        .apply(GeoIspLookup.of(MMDB)).apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 
@@ -93,7 +93,7 @@ public class GeoIspLookupTest {
     pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(GeoIspLookup.of(pipeline.newProvider("missing-file.mmdb")));
+        .apply(GeoIspLookup.of("missing-file.mmdb"));
 
     GeoIspLookup.clearSingletonsForTests();
     pipeline.run();

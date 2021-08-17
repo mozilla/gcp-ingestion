@@ -5,8 +5,6 @@ import static com.mozilla.telemetry.ingestion.core.util.Time.parsePositiveJavaDu
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import org.apache.beam.sdk.options.ValueProvider;
-import org.apache.beam.sdk.options.ValueProvider.NestedValueProvider;
 
 public class Time {
 
@@ -40,28 +38,10 @@ public class Time {
   }
 
   /**
-   * Like {@link #parseDuration(String)}, but using a {@link ValueProvider}.
-   *
-   * <p>The value will be parsed once when first used; the result is cached and reused.
-   */
-  public static ValueProvider<org.joda.time.Duration> parseDuration(ValueProvider<String> value) {
-    return NestedValueProvider.of(value, Time::parseDuration);
-  }
-
-  /**
    * Like {@link #parseDuration(String)}, but returns the number of seconds in the parsed duration.
    */
   public static long parseSeconds(String value) {
     return parsePositiveJavaDuration(value).getSeconds();
-  }
-
-  /**
-   * Like {@link #parseSeconds(String)}, but using a {@link ValueProvider}.
-   *
-   * <p>The value will be parsed once when first used; the result is cached and reused.
-   */
-  public static ValueProvider<Long> parseSeconds(ValueProvider<String> value) {
-    return NestedValueProvider.of(value, Time::parseSeconds);
   }
 
   /**

@@ -15,7 +15,6 @@ import okhttp3.Response;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
@@ -34,8 +33,8 @@ public class SendRequest extends
   private final Distribution requestTimer = Metrics.distribution(SendRequest.class,
       "reporting_request_millis");
 
-  private final ValueProvider<Boolean> reportingEnabled;
-  private final ValueProvider<Boolean> logReportingUrls;
+  private final Boolean reportingEnabled;
+  private final Boolean logReportingUrls;
 
   private static class HttpRequestException extends IOException {
 
@@ -62,14 +61,12 @@ public class SendRequest extends
     }
   }
 
-  public SendRequest(ValueProvider<Boolean> reportingEnabled,
-      ValueProvider<Boolean> logReportingUrls) {
+  public SendRequest(Boolean reportingEnabled, Boolean logReportingUrls) {
     this.reportingEnabled = reportingEnabled;
     this.logReportingUrls = logReportingUrls;
   }
 
-  public static SendRequest of(ValueProvider<Boolean> reportingEnabled,
-      ValueProvider<Boolean> logReportingUrls) {
+  public static SendRequest of(Boolean reportingEnabled, Boolean logReportingUrls) {
     return new SendRequest(reportingEnabled, logReportingUrls);
   }
 
@@ -90,11 +87,11 @@ public class SendRequest extends
 
           Request request = new Request.Builder().url(reportingUrl).build();
 
-          if (reportingEnabled.isAccessible() && reportingEnabled.get()) {
+          if (reportingEnabled) {
             sendRequest(request);
           }
 
-          if (logReportingUrls.isAccessible() && logReportingUrls.get()) {
+          if (logReportingUrls) {
             throw new RequestContentException(reportingUrl);
           }
 

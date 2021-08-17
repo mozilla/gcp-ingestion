@@ -6,7 +6,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider.StaticValueProvider;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.Matchers;
@@ -26,7 +25,7 @@ public class CompressPayloadTest {
   public void testMaxCompressedBytes() {
     String text = StringUtils.repeat("Lorem ipsum dolor sit amet ", 100);
     int expectedCompressedSize = 68;
-    CompressPayload transform = CompressPayload.of(StaticValueProvider.of(Compression.GZIP))
+    CompressPayload transform = CompressPayload.of(Compression.GZIP)
         .withMaxCompressedBytes(expectedCompressedSize - 1);
     PubsubMessage truncated = transform
         .compress(new PubsubMessage(text.getBytes(StandardCharsets.UTF_8), new HashMap<>()));

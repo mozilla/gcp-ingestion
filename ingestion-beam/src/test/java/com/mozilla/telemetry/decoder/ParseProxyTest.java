@@ -125,8 +125,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
         .apply(ParseProxy.of()) //
-        .apply(GeoCityLookup
-            .of(pipeline.newProvider("src/test/resources/cityDB/GeoIP2-City-Test.mmdb"), null))
+        .apply(GeoCityLookup.of("src/test/resources/cityDB/GeoIP2-City-Test.mmdb", null))
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);

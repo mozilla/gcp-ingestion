@@ -17,7 +17,6 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.beam.sdk.io.FileSystems;
 import org.apache.beam.sdk.io.fs.MatchResult.Metadata;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
@@ -26,19 +25,17 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class HashClientInfo
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
-  private final ValueProvider<String> clientIdHashKeyPath;
-  private final ValueProvider<String> clientIpHashKeyPath;
+  private final String clientIdHashKeyPath;
+  private final String clientIpHashKeyPath;
 
   private static byte[] clientIdHashKey;
   private static byte[] clientIpHashKey;
 
-  public static HashClientInfo of(ValueProvider<String> clientIdHashKeyPath,
-      ValueProvider<String> clientIpHashKeyPath) {
+  public static HashClientInfo of(String clientIdHashKeyPath, String clientIpHashKeyPath) {
     return new HashClientInfo(clientIdHashKeyPath, clientIpHashKeyPath);
   }
 
-  private HashClientInfo(ValueProvider<String> clientIdHashKeyPath,
-      ValueProvider<String> clientIpHashKeyPath) {
+  private HashClientInfo(String clientIdHashKeyPath, String clientIpHashKeyPath) {
     this.clientIdHashKeyPath = clientIdHashKeyPath;
     this.clientIpHashKeyPath = clientIpHashKeyPath;
   }
@@ -87,7 +84,7 @@ public class HashClientInfo
   @VisibleForTesting
   byte[] getClientIdHashKey() throws IOException {
     if (clientIdHashKey == null) {
-      clientIdHashKey = readBytes(clientIdHashKeyPath.get());
+      clientIdHashKey = readBytes(clientIdHashKeyPath);
     }
     return clientIdHashKey;
   }
@@ -95,7 +92,7 @@ public class HashClientInfo
   @VisibleForTesting
   byte[] getClientIpHashKey() throws IOException {
     if (clientIpHashKey == null) {
-      clientIpHashKey = readBytes(clientIpHashKeyPath.get());
+      clientIpHashKey = readBytes(clientIpHashKeyPath);
     }
     return clientIpHashKey;
   }
@@ -125,8 +122,7 @@ public class HashClientInfo
         MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
-          if (!clientIdHashKeyPath.isAccessible() || clientIdHashKeyPath.get() == null
-              || !clientIpHashKeyPath.isAccessible() || clientIpHashKeyPath.get() == null) {
+          if (clientIdHashKeyPath == null || clientIpHashKeyPath == null) {
             throw new MissingKeyException();
           }
 

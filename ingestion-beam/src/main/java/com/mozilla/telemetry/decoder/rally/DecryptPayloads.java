@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.options.ValueProvider;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.Partition;
@@ -19,20 +18,18 @@ import org.apache.beam.sdk.values.PCollectionList;
 public class DecryptPayloads extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
 
-  private final ValueProvider<String> metadataLocation;
-  private final ValueProvider<String> schemasLocation;
-  private final ValueProvider<Boolean> kmsEnabled;
-  private final ValueProvider<Boolean> decompressPayload;
+  private final String metadataLocation;
+  private final String schemasLocation;
+  private final Boolean kmsEnabled;
+  private final Boolean decompressPayload;
 
-  public static DecryptPayloads of(ValueProvider<String> metadataLocation,
-      ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
-      ValueProvider<Boolean> decompressPayload) {
+  public static DecryptPayloads of(String metadataLocation, String schemasLocation,
+      Boolean kmsEnabled, Boolean decompressPayload) {
     return new DecryptPayloads(metadataLocation, schemasLocation, kmsEnabled, decompressPayload);
   }
 
-  private DecryptPayloads(ValueProvider<String> metadataLocation,
-      ValueProvider<String> schemasLocation, ValueProvider<Boolean> kmsEnabled,
-      ValueProvider<Boolean> decompressPayload) {
+  private DecryptPayloads(String metadataLocation, String schemasLocation, Boolean kmsEnabled,
+      Boolean decompressPayload) {
     this.metadataLocation = metadataLocation;
     this.schemasLocation = schemasLocation;
     this.kmsEnabled = kmsEnabled;
