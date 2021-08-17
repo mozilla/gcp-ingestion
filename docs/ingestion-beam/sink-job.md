@@ -179,7 +179,7 @@ Note: `-Dexec.args` does not handle newlines gracefully, but bash will remove
 ### Locally
 
 If you install Java and maven, you can invoke `mvn` in the following commands
-instead of using `./bin/mvn`; be aware, though, that Java 8 is the target JVM
+instead of using `./bin/mvn`; be aware, though, that Java 11 is the target JVM
 and some reflection warnings may be thrown on newer versions, though these are
 generally harmless.
 

@@ -216,7 +216,7 @@ cat tmp/input.ndjson | PASS_ENV="\
 ### Locally without Docker
 
 If you install Java and maven, you can invoke `VAR=... mvn` in the above commands
-instead of using `PASS_ENV="VAR=..." ./bin/mvn`. Be aware that Java 8 is the target JVM and some
+instead of using `PASS_ENV="VAR=..." ./bin/mvn`. Be aware that Java 11 is the target JVM and some
 reflection warnings may be thrown on newer versions. Though these are generally
 harmless, you may need to comment out the
 `<compilerArgument>-Werror</compilerArgument>` line in the `pom.xml` in the git

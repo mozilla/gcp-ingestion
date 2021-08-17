@@ -1,4 +1,4 @@
-FROM maven:3-jdk-8 AS base
+FROM maven:3-jdk-11 AS base
 WORKDIR /app/ingestion-sink
 
 FROM base AS build

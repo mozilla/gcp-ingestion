@@ -44,18 +44,10 @@
                 <module>ingestion-sink</module>
             </modules>
         </profile>
-        <profile>
-            <id>java-8-api</id>
-            <activation>
-                <jdk>[9,)</jdk>
-            </activation>
-            <properties>
-                <maven.compiler.release>8</maven.compiler.release>
-            </properties>
-        </profile>
     </profiles>
 
     <properties>
+        <maven.compiler.release>11</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- MAVEN_OPTS environment variable configuration is not picked up by jacoco, so we configure memory here -->
@@ -163,10 +155,6 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <!-- For JDK 9+ the java-8-api profile is automatically activated, which sets
-                         maven.compiler.release=8, causing source and target to be ignored -->
-                    <source>1.8</source>
-                    <target>1.8</target>
                     <showWarnings>true</showWarnings>
                     <compilerArgument>-Xlint:all</compilerArgument>
                     <compilerArgument>-Xdoclint:all</compilerArgument>
@@ -179,6 +167,26 @@
                       </path>
                     </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <id>enforce-java</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <version>[11,)</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
