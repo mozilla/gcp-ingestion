@@ -1126,29 +1126,23 @@
   matching destinations</li>
 <li>Must accept configuration enabling republishing of messages to a debug
   topic if they contain an <code>x_debug_id</code> attribute</li>
-<li>Must accept a compile-time parameter enabling or disabling debug republishing</li>
-<li>Must accept a runtime parameter defining the destination topic</li>
+<li>Must accept configuration enabling or disabling debug republishing</li>
+<li>Must accept configuration for the destination topic</li>
 <li>Must accept configuration enabling republishing of a random sample of the
   input stream</li>
-<li>Must accept a compile-time parameter setting the sample ratio</li>
-<li>Must accept a runtime parameter defining the destination topic</li>
+<li>Must accept configuration for the sample ratio</li>
+<li>Must accept configuration for the destination topic</li>
 <li>Must accept configuration mapping <code>document_type</code>s to PubSub topics</li>
-<li>Must accept a compile-time parameter defining a topic pattern string
-    (may be promoted to runtime if Dataflow adds support for PubSub topic
-    names defined via <code>NestedValueProvider</code>)</li>
-<li>Must accept a compile-time parameter defining which <code>document_type</code>s
-    to republish</li>
+<li>Must accept configuration for the destination topic pattern</li>
+<li>Must accept configuration for which <code>document_type</code>s to republish</li>
 <li>Must only deliver messages with configured destinations</li>
 <li>Must accept configuration mapping <code>document_namespace</code>s to PubSub topics</li>
-<li>Must accept a compile-time parameter defining a map from document
-    namespaces to topics</li>
+<li>Must accept configuration for a map from <code>document_namespace</code>s to topics</li>
 <li>Must only deliver messages with configured destinations</li>
 <li>Must accept optional configuration for sampling telemetry data</li>
-<li>Must accept a compile-time parameter defining a topic pattern string
-    (may be promoted to runtime if Dataflow adds support for PubSub topic
-    names defined via <code>NestedValueProvider</code>)</li>
-<li>Must accept compile-time parameters defining the sampling ratio for
-    each channel (nightly, beta, and release)</li>
+<li>Must accept configuration for the destination topic pattern</li>
+<li>Must accept configuration for the sampling ratio for each channel (nightly,
+    beta, and release)</li>
 </ul>
 <h3 id="live-sink">Live Sink</h3>
 <ul>
