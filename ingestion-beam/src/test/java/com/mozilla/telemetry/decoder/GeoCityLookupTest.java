@@ -60,6 +60,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
             + "{\"geo_city\":\"Milton\"" //
             + ",\"geo_country\":\"US\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
+            + ",\"geo_dma_code\":\"819\"" //
             + ",\"geo_subdivision1\":\"WA\"" //
             + "},\"payload\":\"\"}");
 
@@ -78,7 +79,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
             .addNameFilter(MetricNameFilter.inNamespace(GeoCityLookup.Fn.class)).build())
         .getCounters());
 
-    assertEquals(6, counters.size());
+    assertEquals(8, counters.size());
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
@@ -118,6 +119,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
         + "{\"geo_city\":\"Milton\"" //
         + ",\"geo_country\":\"US\"" //
         + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
+        + ",\"geo_dma_code\":\"819\"" //
         + ",\"geo_subdivision1\":\"WA\"" //
         + "},\"payload\":\"\"}");
 

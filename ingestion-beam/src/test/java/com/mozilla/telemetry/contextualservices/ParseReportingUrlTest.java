@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -114,6 +115,9 @@ public class ParseReportingUrlTest {
           .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
       Assert.assertTrue(reportingUrl
           .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop")));
+      Assert.assertTrue(
+          reportingUrl.contains(String.format("%s=&", ParsedReportingUrl.PARAM_DMA_CODE))
+              || reportingUrl.endsWith(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
 
       return null;
     });
@@ -163,6 +167,76 @@ public class ParseReportingUrlTest {
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
+      return null;
+    });
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testDmaCode() {
+    ObjectNode inputPayload = Json.createObjectNode();
+    inputPayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    inputPayload.put(Attribute.VERSION, "87.0");
+    inputPayload.put(Attribute.REPORTING_URL, "https://test.com?id=a&ctag=1&version=1&key=1&ci=1");
+
+    byte[] payloadBytes = Json.asBytes(inputPayload);
+
+    List<PubsubMessage> input = ImmutableList.of(
+        new PubsubMessage(payloadBytes,
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression", Attribute.USER_AGENT_OS,
+                "Windows", Attribute.GEO_DMA_CODE, "12")),
+        new PubsubMessage(payloadBytes,
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression", Attribute.USER_AGENT_OS,
+                "Windows")),
+        new PubsubMessage(payloadBytes,
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click", Attribute.USER_AGENT_OS,
+                "Windows", Attribute.GEO_DMA_CODE, "34", Attribute.USER_AGENT_VERSION, "87")),
+        new PubsubMessage(payloadBytes,
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-impression",
+                Attribute.USER_AGENT_OS, "Windows", Attribute.GEO_DMA_CODE, "56")),
+        new PubsubMessage(payloadBytes,
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-click", Attribute.USER_AGENT_OS,
+                "Windows", Attribute.GEO_DMA_CODE, "78", Attribute.USER_AGENT_VERSION, "87")));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(0, Iterators.size(messages.iterator()));
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(messages -> {
+      Assert.assertEquals(Iterables.size(messages), 5);
+
+      messages.forEach(message -> {
+        try {
+          String reportingUrl = Json.readObjectNode(message.getPayload())
+              .get(Attribute.REPORTING_URL).asText();
+          String doctype = message.getAttribute(Attribute.DOCUMENT_TYPE);
+
+          if (doctype.equals("topsites-impression")) {
+            if (message.getAttribute(Attribute.GEO_DMA_CODE) != null) {
+              Assert.assertTrue(reportingUrl
+                  .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
+            } else {
+              Assert.assertTrue(
+                  reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+            }
+          } else if (doctype.equals("topsites-click")) {
+            Assert.assertTrue(reportingUrl
+                .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "34")));
+          } else {
+            Assert.assertFalse(
+                reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+          }
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      });
+
       return null;
     });
 
