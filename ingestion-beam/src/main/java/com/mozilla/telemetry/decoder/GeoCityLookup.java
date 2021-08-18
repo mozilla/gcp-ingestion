@@ -209,6 +209,7 @@ public class GeoCityLookup
           // Throws GeoIp2Exception, MalformedInputException, and IOException
           CityResponse response = geoIP2City.city(ipAddress);
           foundCity.inc();
+
           String countryCode = response.getCountry().getIsoCode();
           attributes.put(Attribute.GEO_COUNTRY, countryCode);
 
