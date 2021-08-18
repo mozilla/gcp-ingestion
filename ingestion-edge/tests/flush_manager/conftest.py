@@ -75,6 +75,13 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
         default="topic",
         help="PubSub topic name, default is 'topic'",
     )
+    group.addoption(
+        "--pvc-cleanup-delay-seconds",
+        dest="pvc_cleanup_delay_seconds",
+        default=5,
+        type=int,
+        help="Seconds to wait for PVCs to remain detached before deleting",
+    )
 
 
 @pytest.fixture
