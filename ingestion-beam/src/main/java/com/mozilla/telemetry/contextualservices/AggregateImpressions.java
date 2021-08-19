@@ -37,7 +37,7 @@ public class AggregateImpressions
   private static final List<String> aggregationFields = ImmutableList.of(
       ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE,
       ParsedReportingUrl.PARAM_FORM_FACTOR, ParsedReportingUrl.PARAM_OS_FAMILY,
-      ParsedReportingUrl.PARAM_ID);
+      ParsedReportingUrl.PARAM_ID, ParsedReportingUrl.PARAM_DMA_CODE);
 
   private final String aggregationWindowDuration;
 
