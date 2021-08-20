@@ -67,6 +67,10 @@ public class ParsedReportingUrl {
     return queryParams.get(paramName);
   }
 
+  public Map<String, String> getQueryParams() {
+    return queryParams;
+  }
+
   public String getBaseUrl() {
     return reportingUrl.toString().split("\\?")[0];
   }
