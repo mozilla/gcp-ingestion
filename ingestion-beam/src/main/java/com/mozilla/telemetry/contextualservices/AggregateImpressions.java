@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -10,6 +9,7 @@ import com.mozilla.telemetry.util.Time;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -33,11 +33,6 @@ import org.joda.time.Instant;
  */
 public class AggregateImpressions
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
-
-  private static final List<String> aggregationFields = ImmutableList.of(
-      ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE,
-      ParsedReportingUrl.PARAM_FORM_FACTOR, ParsedReportingUrl.PARAM_OS_FAMILY,
-      ParsedReportingUrl.PARAM_ID);
 
   private final String aggregationWindowDuration;
 
@@ -75,10 +70,12 @@ public class AggregateImpressions
 
     ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
-    // Rebuild url filtering out unneeded parameters
+    // Rebuild url, sorting query params for consistency across urls
+    List<Map.Entry<String, String>> keyValues = urlParser.getQueryParams().entrySet().stream()
+        .sorted(Map.Entry.comparingByKey()).collect(Collectors.toList());
     ParsedReportingUrl aggregationUrl = new ParsedReportingUrl(urlParser.getBaseUrl());
-    for (String name : aggregationFields) {
-      aggregationUrl.addQueryParam(name, urlParser.getQueryParam(name));
+    for (Map.Entry<String, String> kv : keyValues) {
+      aggregationUrl.addQueryParam(kv.getKey(), kv.getValue());
     }
 
     return aggregationUrl.toString();

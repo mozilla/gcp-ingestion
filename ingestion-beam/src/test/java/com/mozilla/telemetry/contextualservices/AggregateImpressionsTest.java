@@ -57,26 +57,24 @@ public class AggregateImpressionsTest {
 
   @Test
   public void testGetAggregationKey() {
-    String url = String.format("http://test.com?%s=US&unwanted=abc",
-        ParsedReportingUrl.PARAM_COUNTRY_CODE);
+    String url = "http://test.com?country-code=US&abc=abc&def=a";
     Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL, url);
     PubsubMessage message = new PubsubMessage(new byte[] {}, attributes);
 
     String aggKey = AggregateImpressions.getAggregationKey(message);
 
-    // Should remove unwanted params and add missing ones
-    Assert.assertTrue(aggKey.startsWith("http://test.com?"));
-    Assert.assertTrue(aggKey.contains(ParsedReportingUrl.PARAM_COUNTRY_CODE + "=US"));
-    Assert.assertTrue(aggKey.contains(ParsedReportingUrl.PARAM_REGION_CODE));
-    Assert.assertFalse(aggKey.contains("unwanted=abc"));
+    // Should return url with sorted query params
+    Assert.assertEquals(aggKey, "http://test.com?abc=abc&country-code=US&def=a");
   }
 
   @Test
   public void testAggregation() {
     Map<String, String> attributesUrl1 = Collections.singletonMap(Attribute.REPORTING_URL,
-        String.format("https://test.com?%s=US", ParsedReportingUrl.PARAM_COUNTRY_CODE));
+        String.format("https://test.com?%s=US&%s=", ParsedReportingUrl.PARAM_COUNTRY_CODE,
+            ParsedReportingUrl.PARAM_REGION_CODE));
     Map<String, String> attributesUrl2 = Collections.singletonMap(Attribute.REPORTING_URL,
-        String.format("https://test.com?%s=DE", ParsedReportingUrl.PARAM_COUNTRY_CODE));
+        String.format("https://test.com?%s=DE&%s=", ParsedReportingUrl.PARAM_COUNTRY_CODE,
+            ParsedReportingUrl.PARAM_REGION_CODE));
 
     List<PubsubMessage> input = ImmutableList.of(new PubsubMessage(new byte[0], attributesUrl1),
         new PubsubMessage(new byte[0], attributesUrl2),
