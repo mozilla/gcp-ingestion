@@ -127,6 +127,12 @@ public class ParseReportingUrl extends
           urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop");
 
           if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
+              || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-impression")) {
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_DMA_CODE,
+                message.getAttribute(Attribute.GEO_DMA_CODE));
+          }
+
+          if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
               || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("quicksuggest-click")) {
             String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
             if (userAgentVersion == null) {

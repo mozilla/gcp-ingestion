@@ -1,10 +1,12 @@
 """Continuously flush ingestion-edge queue from detached persistent volumes."""
 
 from argparse import ArgumentParser
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from functools import partial
 from multiprocessing.pool import ThreadPool
 from time import sleep
-from typing import Callable, List
+from typing import Callable, Dict, List
 import json
 import os
 
@@ -85,6 +87,21 @@ parser.add_argument(
     default="queue-",
     help="Prefix for the names of persistent volume claims to delete",
 )
+parser.add_argument(
+    "--pvc-cleanup-delay-seconds",
+    default=60,
+    type=int,
+    help="Number of seconds to wait for persistent volume claims to remain detached "
+    "before deleting",
+)
+
+
+@dataclass(frozen=True)
+class PvcCacheEntry:
+    """Cache entry for tracking detached persistent volume claims."""
+
+    pv: str
+    time: datetime
 
 
 def _job_and_pvc_name_from_pv(pv: V1PersistentVolume) -> str:
@@ -331,7 +348,13 @@ def _unschedulable_due_to_pvc(pod: V1Pod):
     )
 
 
-def delete_detached_pvcs(api: CoreV1Api, namespace: str, claim_prefix: str):
+def delete_detached_pvcs(
+    api: CoreV1Api,
+    namespace: str,
+    claim_prefix: str,
+    pvc_cleanup_delay: timedelta,
+    detached_pvc_cache: Dict[str, PvcCacheEntry],
+):
     """
     Delete persistent volume claims that are not attached to any pods.
 
@@ -359,6 +382,13 @@ def delete_detached_pvcs(api: CoreV1Api, namespace: str, claim_prefix: str):
             and pvc.metadata.name not in attached_pvcs
             and not pvc.metadata.deletion_timestamp
         ):
+            name, pv, now = pvc.metadata.name, pvc.spec.volume_name, datetime.utcnow()
+            if name not in detached_pvc_cache or detached_pvc_cache[name].pv != pv:
+                logger.info(f"found newly detached pvc: {pvc.metadata.name}")
+                detached_pvc_cache[name] = PvcCacheEntry(pv, now)
+            if (now - detached_pvc_cache[name].time) < pvc_cleanup_delay:
+                # wait for pvc to remain detached for pvc_cleanup_delay before deleting
+                continue
             logger.info(f"deleting detached pvc: {pvc.metadata.name}")
             try:
                 api.delete_namespaced_persistent_volume_claim(
@@ -377,6 +407,9 @@ def delete_detached_pvcs(api: CoreV1Api, namespace: str, claim_prefix: str):
                 if e.reason not in (CONFLICT, NOT_FOUND):
                     raise
                 logger.info(f"pvc already deleted or updated: {pvc.metadata.name}")
+        else:
+            # pvc is not detached, drop from cache if present
+            detached_pvc_cache.pop(pvc.metadata.name, None)
 
 
 def delete_unschedulable_pods(api: CoreV1Api, namespace: str):
@@ -440,7 +473,14 @@ def main():
             args.namespace,
             args.service_account_name,
         ),
-        partial(delete_detached_pvcs, api, args.namespace, args.claim_prefix),
+        partial(
+            delete_detached_pvcs,
+            api,
+            args.namespace,
+            args.claim_prefix,
+            timedelta(seconds=args.pvc_cleanup_delay_seconds),
+            {},  # detached_pvc_cache
+        ),
         partial(delete_unschedulable_pods, api, args.namespace),
     ]
     with ThreadPool(len(tasks)) as pool:

@@ -23,6 +23,7 @@ public class ParsedReportingUrl {
   static final String PARAM_TIMESTAMP_BEGIN = "begin-timestamp";
   static final String PARAM_TIMESTAMP_END = "end-timestamp";
   static final String PARAM_CLICK_STATUS = "click-status";
+  static final String PARAM_DMA_CODE = "dma-code";
 
   private final URL reportingUrl;
   private final Map<String, String> queryParams;
@@ -64,6 +65,10 @@ public class ParsedReportingUrl {
 
   public String getQueryParam(String paramName) {
     return queryParams.get(paramName);
+  }
+
+  public Map<String, String> getQueryParams() {
+    return queryParams;
   }
 
   public String getBaseUrl() {

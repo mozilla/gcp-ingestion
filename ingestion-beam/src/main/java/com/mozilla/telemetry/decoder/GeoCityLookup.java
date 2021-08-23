@@ -155,6 +155,8 @@ public class GeoCityLookup
     private final Counter foundIp = Metrics.counter(Fn.class, "found_ip");
     private final Counter foundCity = Metrics.counter(Fn.class, "found_city");
     private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found_city_allowed");
+    private final Counter foundDmaCode = Metrics.counter(Fn.class, "found_dma_code");
+    private final Counter foundDmaCodeAllowed = Metrics.counter(Fn.class, "found_dma_code_allowed");
     private final Counter foundGeo1 = Metrics.counter(Fn.class, "found_geo_subdivision_1");
     private final Counter foundGeo2 = Metrics.counter(Fn.class, "found_geo_subdivision_2");
     private final Counter malformedInput = Metrics.counter(Fn.class, "malformed_input");
@@ -211,10 +213,20 @@ public class GeoCityLookup
           String countryCode = response.getCountry().getIsoCode();
           attributes.put(Attribute.GEO_COUNTRY, countryCode);
 
+          Integer dmaCode = response.getLocation().getMetroCode();
+          if (dmaCode != null) {
+            foundDmaCode.inc();
+          }
+
           City city = response.getCity();
           if (cityAllowed(city.getGeoNameId())) {
             attributes.put(Attribute.GEO_CITY, city.getName());
             foundCityAllowed.inc();
+
+            if (dmaCode != null) {
+              attributes.put(Attribute.GEO_DMA_CODE, dmaCode.toString());
+              foundDmaCodeAllowed.inc();
+            }
           }
 
           List<Subdivision> subdivisions = response.getSubdivisions();

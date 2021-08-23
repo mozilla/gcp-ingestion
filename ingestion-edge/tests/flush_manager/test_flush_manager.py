@@ -155,6 +155,8 @@ def test_flush_manager(options: Dict[str, Any], emulator: str, web: str):
                 api_version="apps/v1", kind="StatefulSet", spec=dict(replicas=0)
             ),
         )
+        # wait for pvc cleanup delay
+        time.sleep(options["pvc_cleanup_delay_seconds"])
         # wait for no pvcs
         print("waiting for cleanup to complete")
         for _ in range(max_wait_loops):
