@@ -1,19 +1,11 @@
 version: 2.1
 executors:
-  java-8:
-    docker:
-    # Pin the maven image due to observed VM aborts on CircleCI 2018-01-08.
-    - image: maven@sha256:955e28c9a64b439591adfd43da77586c8bcd45f51627bf9144e297386c6a6be3
-    environment:
-      JAVA_COMPILER_RELEASE_FLAG: ""
   java-11:
     docker:
     - image: maven:3-jdk-11
     environment:
-      JAVA_COMPILER_RELEASE_FLAG: "-Dmaven.compiler.release=11"
-  docker-compose:
-    docker:
-    - image: docker/compose:1.22.0
+      # To compile for a different java runtime, provide a value like "-Dmaven.compiler.release=14"
+      JAVA_COMPILER_RELEASE_FLAG: "" # 11 is the default
 jobs:
   spelling:
     docker:
@@ -282,7 +274,9 @@ jobs:
     - *report_code_coverage
 
   ingestion-sink-release:
-    <<: *ingestion_sink
+    working_directory: /root/project/ingestion-sink
+    docker:
+    - image: docker/compose:1.22.0
     steps:
       - *setup_remote_docker
       - *checkout
@@ -321,12 +315,11 @@ workflows:
     - ingestion-beam: &java_matrix
         matrix:
           parameters:
-            executor: [java-8, java-11]
+            executor: [java-11]
     - ingestion-beam-integration: *java_matrix
     - ingestion-sink: *java_matrix
     - ingestion-sink-integration: *java_matrix
     - ingestion-sink-release:
-        executor: docker-compose
         filters:
           branches:
             only: main
