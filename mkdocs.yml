@@ -3,6 +3,7 @@ site_description: Mozilla Telemetry ingestion on Google Cloud Platform
 site_author: Mozilla Data Platform Team
 
 repo_url: https://github.com/mozilla/gcp-ingestion/
+edit_uri: blob/main/docs/
 
 theme:
   name: material
