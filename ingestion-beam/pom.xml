@@ -48,8 +48,8 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <!-- pubsublite-beam-io 0.17.0 requires gax 1.65+, instead of gax 1.63.0 from
-                     libraries-bom 20.0.0 from beam-sdks-java-io-google-cloud-platform 2.31.0 -->
+                <!-- pubsublite-beam-io 0.17.0+ requires gax 1.65+, instead of gax 1.63.0 from
+                     libraries-bom 20.0.0 from beam-sdks-java-io-google-cloud-platform 2.32.0 -->
                 <groupId>com.google.api</groupId>
                 <artifactId>gax-bom</artifactId>
                 <version>1.65.1</version>
@@ -71,6 +71,14 @@
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-extensions-json-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Explicitly define this ahead of pubsublite-beam-io, rather than indirectly via
+                 beam-sdks-java-io-google-cloud-platform, because it requires
+                 com.google.cloud.bigdataoss:gcsio >= 2.2.2, instead of gcsio 2.1.6 from
+                 pubsublite-beam-io 0.19.4 -->
+            <groupId>org.apache.beam</groupId>
+            <artifactId>beam-sdks-java-extensions-google-cloud-platform-core</artifactId>
         </dependency>
         <dependency>
             <!-- Must be defined before beam-sdks-java-io-google-cloud-platform because they depend
