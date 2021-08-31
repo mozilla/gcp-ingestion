@@ -4,6 +4,8 @@ updates:
   directory: /
   ignore:
   - dependency-name: com.google.cloud:libraries-bom
+  - dependency-name: com.fasterxml.jackson:jackson-bom
+  - dependency-name: org.apache.avro:avro
   schedule:
     interval: daily
   reviewers:
