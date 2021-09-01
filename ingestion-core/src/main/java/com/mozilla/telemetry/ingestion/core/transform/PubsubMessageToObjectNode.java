@@ -712,8 +712,8 @@ public abstract class PubsubMessageToObjectNode {
         // a non-zero value in the "1" (true) bucket (and the "sum" field should match this count).
         // They can be encoded as a textual representation of that single number without any loss
         // of information, and since use counters make up the majority of histogram data volume,
-        // this optimization case is the most important one.
-        // See https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/collection/use-counters.html
+        // this optimization case is the most important one. See
+        // https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/collection/use-counters.html
         if (sum == values.path("1").asLong(0)) {
           return TextNode.valueOf(Long.toString(sum));
         } else {
@@ -724,6 +724,7 @@ public abstract class PubsubMessageToObjectNode {
       return jsonHistogramEncoding(o);
       // TODO: Uncomment the following section and related test cases once we have transitioned
       // analysis use cases to tolerate the additional encodings.
+      // spotless:off
       /*
       else if (histogramType == 4) {
         return TextNode.valueOf(Long.toString(sum));
@@ -748,6 +749,7 @@ public abstract class PubsubMessageToObjectNode {
             bucketCount, histogramType, sum, rangeLo, rangeHi, valString));
       }
       */
+      // spotless:on
     }
 
     private static TextNode jsonHistogramEncoding(JsonNode o) {

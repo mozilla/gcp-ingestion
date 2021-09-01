@@ -52,8 +52,9 @@
 
         <!-- MAVEN_OPTS environment variable configuration is not picked up by jacoco, so we configure memory here -->
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
-        <argLine>-Xmx1024m -XX:MaxPermSize=256m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+        <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
+        <auto-value.version>1.7.4</auto-value.version>
         <beam.version>2.32.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
@@ -147,6 +148,12 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.google.auto.value</groupId>
+            <artifactId>auto-value-annotations</artifactId>
+            <version>${auto-value.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -160,11 +167,11 @@
                     <compilerArgument>-Xdoclint:all</compilerArgument>
                     <compilerArgument>-Werror</compilerArgument>
                     <annotationProcessorPaths>
-                      <path>
-                        <groupId>com.google.auto.value</groupId>
-                        <artifactId>auto-value</artifactId>
-                        <version>1.7.4</version>
-                      </path>
+                        <path>
+                            <groupId>com.google.auto.value</groupId>
+                            <artifactId>auto-value</artifactId>
+                            <version>${auto-value.version}</version>
+                        </path>
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
@@ -330,6 +337,7 @@
                             <order>#</order>
                         </importOrder>
                         <removeUnusedImports/>
+                        <toggleOffOn />
                     </java>
                 </configuration>
                 <executions>

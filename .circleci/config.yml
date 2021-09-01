@@ -165,113 +165,79 @@ jobs:
           docker-compose push web
         environment: *edge_compose_env
 
-  ingestion-beam: &ingestion_beam
-    working_directory: /root/project/ingestion-beam
+  maven:
     parameters:
       executor:
         type: executor
+      module:
+        type: enum
+        enum: [ingestion-beam, ingestion-core, ingestion-sink]
+      scope:
+        type: enum
+        enum: [unit, integration]
+    working_directory: /root/project/<< parameters.module >>
     executor: << parameters.executor >>
     steps:
     - *checkout
     - *skip_unmodified
-    - &restore_cache_beam
-      restore_cache:
+    - restore_cache:
         keys:
           # when lock file changes, use increasingly general patterns to restore cache
           # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
-          - &cache_key_beam
-            maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-{{ checksum "pom.xml" }}
-          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-
-          - maven-repo-v1-beam-{{ .Branch }}-{{ checksum "../pom.xml" }}-
-          - maven-repo-v1-beam-{{ .Branch }}-
-          - maven-repo-v1-beam-
-          - maven-repo-v1-
-    - &download_beam_resources
-      run:
-        name: Download resources needed for Beam tests
-        command: |
-          bin/download-schemas
-    - &maven_test
-      run:
-        name: Maven Test
-        command: |
-          mvn clean test $JAVA_COMPILER_RELEASE_FLAG
-    - &store_maven_test_results
-      store_test_results:
-        path: target/surefire-reports
-    - *report_code_coverage
-    - save_cache:
-        paths:
-          - ~/.m2
-        key: *cache_key_beam
-
-  ingestion-beam-integration:
-    <<: *ingestion_beam
-    steps:
-    # Checkout would fail if it were not the first step
-    # because checkout path would contain working dir
-    - *checkout
-    - &skip_forked_pr
-      run:
-        name: Early return if this build is from a forked PR
-        command: |
-          if [ -n "$CIRCLE_PR_NUMBER" ]; then
-            echo "Cannot pass creds to forked PRs, so marking this step successful"
-            circleci step halt
-          fi
-    - *skip_unmodified
-    - *restore_cache_beam
-    - *download_beam_resources
-    - &maven_integration_test
-      run:
-        name: Maven Integration Test
+          - &cache_key
+            maven-repo-v1-<< parameters.module >>-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-{{ checksum "pom.xml" }}
+          - maven-repo-v1-<< parameters.module >>-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-
+          - maven-repo-v1-<< parameters.module >>-{{ .Branch }}-{{ checksum "../pom.xml" }}-
+          - maven-repo-v1-<< parameters.module >>-{{ .Branch }}-
+          - maven-repo-v1-<< parameters.module >>-main-
+    - when:
+        # This when condition only shows this step for integration tests, but still checks
+        # $CIRCLE_PR_NUMBER at runtime because there is no equivalent pipeline value
+        # https://circleci.com/docs/2.0/pipeline-variables/#pipeline-values
+        condition:
+          equal: [integration, << parameters.scope >>]
+        steps:
+          - run:
+              name: Early return if this build is from a forked PR
+              command: |
+                if [ -n "$CIRCLE_PR_NUMBER" ]; then
+                  echo "Cannot pass creds to forked PRs, so marking this step successful"
+                  circleci step halt
+                fi
+    - when:
+        condition:
+          equal: [ingestion-beam, << parameters.module >>]
+        steps:
+          - run:
+              name: Download resources needed for Beam tests
+              command: |
+                bin/download-schemas
+    - run:
+        name: Maven << parameters.scope >> test
         # Google's client libraries will check for GOOGLE_APPLICATION_CREDENTIALS
         # and use a file in that location for credentials if present;
         # See https://cloud.google.com/docs/authentication/production
         command: |
-          export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
-          echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          mvn clean test -Dtest=*IntegrationTest -DfailIfNoTests=false $JAVA_COMPILER_RELEASE_FLAG
-    - *store_maven_test_results
+          if [ "integration" = "<< parameters.scope >>" ]; then
+            export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
+            echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
+            SCOPE_FLAGS="-Dtest=*IntegrationTest -DfailIfNoTests=false"
+          else
+            SCOPE_FLAGS=
+          fi
+          set -x
+          mvn clean test $JAVA_COMPILER_RELEASE_FLAG $SCOPE_FLAGS
+    - store_test_results:
+        path: target/surefire-reports
     - *report_code_coverage
-    # We don't save_cache here; we let the ingestion-beam job cover that.
-
-  ingestion-sink: &ingestion_sink
-    <<: *ingestion_beam
-    working_directory: /root/project/ingestion-sink
-    steps:
-    - *checkout
-    - *skip_unmodified
-    - &sink_restore_cache
-      restore_cache:
-        keys:
-          # when lock file changes, use increasingly general patterns to restore cache
-          # https://circleci.com/docs/2.0/caching/#maven-java-and-leiningen-clojure
-          - &cache_key_sink
-            maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-{{ checksum "pom.xml" }}
-          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-{{ checksum "../ingestion-core/pom.xml" }}-
-          - maven-repo-v1-sink-{{ .Branch }}-{{ checksum "../pom.xml" }}-
-          - maven-repo-v1-sink-{{ .Branch }}-
-          - maven-repo-v1-sink-
-          - maven-repo-v1-
-    - *maven_test
-    - *store_maven_test_results
-    - *report_code_coverage
-    - save_cache:
-        paths:
-          - ~/.m2
-        key: *cache_key_sink
-
-  ingestion-sink-integration:
-    <<: *ingestion_sink
-    steps:
-    - *checkout
-    - *skip_forked_pr
-    - *skip_unmodified
-    - *sink_restore_cache
-    - *maven_integration_test
-    - *store_maven_test_results
-    - *report_code_coverage
+    - when:
+        condition:
+          equal: [unit, << parameters.scope >>]
+        steps:
+          - save_cache:
+              paths:
+                - ~/.m2
+              key: *cache_key
 
   ingestion-sink-release:
     working_directory: /root/project/ingestion-sink
@@ -312,13 +278,16 @@ workflows:
             only: main
           tags:
             only: /.*/
-    - ingestion-beam: &java_matrix
+    - maven: &java_matrix
+        # Use human readable job names, like:
+        #  ingestion-sink-unit-java-11
+        #  and ingestion-beam-integration-java-11
+        name: << matrix.module >>-<< matrix.scope >>-<< matrix.executor >>
         matrix:
           parameters:
             executor: [java-11]
-    - ingestion-beam-integration: *java_matrix
-    - ingestion-sink: *java_matrix
-    - ingestion-sink-integration: *java_matrix
+            module: [ingestion-beam, ingestion-core, ingestion-sink]
+            scope: [unit, integration]
     - ingestion-sink-release:
         filters:
           branches:
