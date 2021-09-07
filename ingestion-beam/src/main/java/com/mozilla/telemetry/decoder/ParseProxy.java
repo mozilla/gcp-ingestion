@@ -5,9 +5,11 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.Time;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Distribution;
@@ -44,10 +46,21 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
       final String xpp = attributes.get(Attribute.X_PIPELINE_PROXY);
-      final String xff = attributes.get(Attribute.X_FORWARDED_FOR);
+      String xff = attributes.get(Attribute.X_FORWARDED_FOR);
 
+      // If the configured proxyIpAddress is present, then there's a GCP load balancer IP
+      // we will need to remove; see
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1729069#c8
+      if (xff != null && xff.contains(proxyIpAddress)) {
+        xff = Arrays.stream(xff.split("\\s*,\\s*")) //
+            .filter(ip -> !proxyIpAddress.equals(ip)) //
+            .collect(Collectors.joining(","));
+        countProxyIpAddress.inc();
+      }
+
+      // If the X-Pipeline-Proxy header is present, this message came from the AWS tee and
+      // we need to make some modifications to headers.
       if (xpp != null) {
-        // If the X-Pipeline-Proxy header is present, this message came from the AWS tee.
 
         // Check if X-Pipeline-Proxy is a timestamp
         final Instant proxyInstant = Time.parseAsInstantOrNull(xpp);
@@ -64,27 +77,19 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
           attributes.put(Attribute.SUBMISSION_TIMESTAMP, xpp);
         }
 
+        if (xff != null) {
+          // Strip the last entry from X-Forwarded-For.
+          xff = xff.substring(0, Math.max(xff.lastIndexOf(","), 0));
+        }
+
         // Remove the proxy attribute
         attributes.remove(Attribute.X_PIPELINE_PROXY);
 
         // Report proxied message
         countPipelineProxy.inc();
-      } else if (xff != null && xff.contains(proxyIpAddress)) {
-        // If the configured proxyIpAddress is present, then there's a GCP load balancer IP
-        // we will need to remove.
-        countProxyIpAddress.inc();
-      } else {
-        // Early return; no proxy was detected, so nothing to do here.
-        return message;
       }
 
-      // If we've reached this code, it means there's a static IP entry we need to remove from
-      // X-Forwarded-For in order for IP parsing logic in downstream transforms to be correct.
-      if (xff != null) {
-        // Strip the last entry from X-Forwarded-For.
-        attributes.put(Attribute.X_FORWARDED_FOR,
-            xff.substring(0, Math.max(xff.lastIndexOf(","), 0)));
-      }
+      attributes.put(Attribute.X_FORWARDED_FOR, xff);
 
       // Remove null attributes because the coder can't handle them.
       attributes.values().removeIf(Objects::isNull);

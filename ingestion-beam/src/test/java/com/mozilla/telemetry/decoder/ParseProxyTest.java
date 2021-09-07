@@ -65,7 +65,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4, 3, 6.7.8.9\"" //
+            + ",\"x_forwarded_for\":\"4,3,1\"" //
             + "},\"payload\":\"statroxied++\"}",
         "{\"attributeMap\":" //
             + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
