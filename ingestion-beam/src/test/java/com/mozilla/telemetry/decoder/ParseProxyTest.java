@@ -29,6 +29,8 @@ public class ParseProxyTest extends TestWithDeterministicJson {
   @Test
   public void testOutput() {
     final List<String> input = Arrays.asList(//
+        // Note that payloads are interpreted as base64 strings, so we sometimes add '+'
+        // to pad them out to be valid base64.
         "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"x_pipeline_proxy\":1" //
@@ -40,6 +42,10 @@ public class ParseProxyTest extends TestWithDeterministicJson {
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"3, 2, 1\"" //
             + "},\"payload\":\"notProxied++\"}",
+        "{\"attributeMap\":" //
+            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4, 3, 6.7.8.9, 1\"" //
+            + "},\"payload\":\"staticProxied+++\"}",
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2, 1\"" //
@@ -60,6 +66,10 @@ public class ParseProxyTest extends TestWithDeterministicJson {
             + ",\"x_forwarded_for\":\"3, 2, 1\"" //
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
+            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4,3,1\"" //
+            + "},\"payload\":\"staticProxied+++\"}",
+        "{\"attributeMap\":" //
             + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2\"" //
@@ -73,7 +83,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of()) //
+        .apply(ParseProxy.of("6.7.8.9")) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
@@ -85,7 +95,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
             .addNameFilter(MetricNameFilter.inNamespace(ParseProxy.Fn.class)).build())
         .getCounters());
 
-    assertEquals(1, counters.size());
+    assertEquals(2, counters.size());
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
@@ -124,7 +134,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of()) //
+        .apply(ParseProxy.of("no-proxy-ip")) //
         .apply(GeoCityLookup.of("src/test/resources/cityDB/GeoIP2-City-Test.mmdb", null))
         .apply(OutputFileFormat.json.encode());
 
@@ -132,4 +142,5 @@ public class ParseProxyTest extends TestWithDeterministicJson {
 
     final PipelineResult result = pipeline.run();
   }
+
 }

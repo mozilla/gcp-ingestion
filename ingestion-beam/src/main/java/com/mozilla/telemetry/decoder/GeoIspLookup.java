@@ -112,7 +112,7 @@ public class GeoIspLookup
           // https://cloud.google.com/load-balancing/docs/https/#components
           //
           // In practice, many of the "first" addresses are bogus or internal,
-          // so we target the immediate sending client IP.
+          // so we target the immediate sending client IP by choosing the second-to-last entry.
           String[] ips = xff.split("\\s*,\\s*");
           ip = ips[Math.max(ips.length - 2, 0)];
           countIpForwarded.inc();

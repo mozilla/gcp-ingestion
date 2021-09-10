@@ -128,8 +128,13 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
             // We have to take care not to read additional bytes; see
             // https://github.com/mozilla/gcp-ingestion/issues/1266
             ByteBuffer byteBuffer = (ByteBuffer) record.get(FieldName.PAYLOAD);
-            byte[] payload = new byte[byteBuffer.limit()];
-            byteBuffer.get(payload);
+            final byte[] payload;
+            if (byteBuffer != null) {
+              payload = new byte[byteBuffer.limit()];
+              byteBuffer.get(payload);
+            } else {
+              payload = new byte[0];
+            }
 
             // We populate attributes for all simple string and timestamp fields, which is complete
             // for raw and error tables.

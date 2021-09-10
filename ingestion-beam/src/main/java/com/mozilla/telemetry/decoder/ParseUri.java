@@ -103,7 +103,9 @@ public class ParseUri {
           throw new UncheckedIOException(e);
         }
 
-        if (attributes.get(Attribute.MESSAGE_ID) != null) {
+        if (attributes.get(Attribute.MESSAGE_ID) == null) {
+          attributes.put(Attribute.DOCUMENT_ID, UUID.randomUUID().toString().toLowerCase());
+        } else {
           // convert PubSub message ID to document ID which will be a V3 UUID using a null namespace
           // See https://stackoverflow.com/a/55296637
           UUID documentId = UUID.nameUUIDFromBytes(
