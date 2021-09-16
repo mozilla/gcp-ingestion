@@ -16,7 +16,7 @@ The following diagram shows the steps in the Beam pipeline. This is up to date a
 
 ### Pub/Sub republished topic
 
-The input to this job is a subset of decoded messages containing all `contextual-services` namespace messages.
+The input to this job is the subset of decoded messages in the `contextual-services` namespace.
 
 ### `FilterByDoctype`
 
@@ -46,7 +46,7 @@ A Beam `IntervalWindow` is used to group by impressions together based on the pr
 
 ### `SendRequest`
 
-This step sends an HTTP GET request to the URL specified by the `reporting_url` attribute in the message. To keep track of requests sent by the job for debugging purposes, successful requests will throw a `RequestContentException` and will be routed to the BigQuery error table.
+This step sends a HTTP GET request to the URL specified by the `reporting_url` attribute in the message. To keep track of requests sent by the job for debugging purposes, successful requests will throw a `RequestContentException` which will add them to the BigQuery error table (see below).
 
 ### BigQuery Error Table
 
@@ -58,7 +58,7 @@ Options specific to this job are found in https://github.com/mozilla/gcp-ingesti
 
 ### Test Deployment
 
-This job can be deployed in a sandbox project for testing. There is currently an existing project, `contextual-services-dev`, used for testing.
+This job can be deployed in a sandbox project for testing. The `contextual-services-dev` project is currently used for this purpose.
 
 There are a few required components to get a job running:
 
