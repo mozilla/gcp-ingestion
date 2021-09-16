@@ -1,7 +1,9 @@
 # Contextual Services Reporter Job
 
 The contextual services reporter forwards contextual-services click and impression events
-to an external partner, preserving user privacy by minimizing the scope of contextual metadata.
+to an external partner, with a particular eye towards minimizing the scope of contextual metadata
+that is shared. For more context, see the
+[Data and Firefox Suggest blog post](https://blog.mozilla.org/data/2021/09/15/data-and-firefox-suggest/).
 
 The code is defined in the [`com.mozilla.telemetry.ContextualServicesReporter`](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java) class.
 
