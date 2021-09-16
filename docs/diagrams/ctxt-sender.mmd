@@ -1,0 +1,21 @@
+graph TD
+    A[Pubsub republished topic] --> B[FilterByDoctype]
+    B --> C[VerifyMetadata]
+    C --> D[DecompressPayload]
+    D --> E[ParseReportingUrl]
+    E --> |Clicks|F[LabelClickSpikes]
+    E --> |Impressions|G[AggregateImpressions]
+    F --> H[SendRequest]
+    G --> H
+    H --> |HTTP GET|I((External URL))
+    C --> |Exceptions|J[BigQuery Error table]
+    D --> |Exceptions|J
+    H --> |Exceptions|J
+
+classDef cyan fill:#eff,stroke:#099;
+classDef green fill:#efe,stroke:#090;
+classDef magenta fill:#fef,stroke:#909;
+classDef orange fill:#fee,stroke:#f90;
+class A cyan
+class B,C,D,E,F,G,H green
+class I magenta
