@@ -599,9 +599,122 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Contextual Services Reporter Job
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Contextual Services Reporter Job
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#beam-pipeline-transforms" class="md-nav__link">
+    Beam Pipeline Transforms
+  </a>
+  
+    <nav class="md-nav" aria-label="Beam Pipeline Transforms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pubsub-republished-topic" class="md-nav__link">
+    Pub/Sub republished topic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filterbydoctype" class="md-nav__link">
+    FilterByDoctype
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verifymetadata" class="md-nav__link">
+    VerifyMetadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decompresspayload" class="md-nav__link">
+    DecompressPayload
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parsereportingurl" class="md-nav__link">
+    ParseReportingUrl
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#labelclickspikes" class="md-nav__link">
+    LabelClickSpikes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aggregateimpressions" class="md-nav__link">
+    AggregateImpressions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sendrequest" class="md-nav__link">
+    SendRequest
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bigquery-error-table" class="md-nav__link">
+    BigQuery Error Table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#working-with-the-beam-job" class="md-nav__link">
+    Working with the Beam Job
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-deployment" class="md-nav__link">
+    Test Deployment
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -740,6 +853,104 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#beam-pipeline-transforms" class="md-nav__link">
+    Beam Pipeline Transforms
+  </a>
+  
+    <nav class="md-nav" aria-label="Beam Pipeline Transforms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pubsub-republished-topic" class="md-nav__link">
+    Pub/Sub republished topic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filterbydoctype" class="md-nav__link">
+    FilterByDoctype
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verifymetadata" class="md-nav__link">
+    VerifyMetadata
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decompresspayload" class="md-nav__link">
+    DecompressPayload
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parsereportingurl" class="md-nav__link">
+    ParseReportingUrl
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#labelclickspikes" class="md-nav__link">
+    LabelClickSpikes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aggregateimpressions" class="md-nav__link">
+    AggregateImpressions
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sendrequest" class="md-nav__link">
+    SendRequest
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bigquery-error-table" class="md-nav__link">
+    BigQuery Error Table
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#working-with-the-beam-job" class="md-nav__link">
+    Working with the Beam Job
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-deployment" class="md-nav__link">
+    Test Deployment
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -757,9 +968,78 @@
                 
                 <h1 id="contextual-services-reporter-job">Contextual Services Reporter Job</h1>
 <p>The contextual services reporter forwards contextual-services click and impression events
-to an external partner in a privacy preserving way.</p>
+to an external partner, with a particular eye towards minimizing the scope of contextual metadata
+that is shared. For more context, see the
+<a href="https://blog.mozilla.org/data/2021/09/15/data-and-firefox-suggest/">Data and Firefox Suggest blog post</a>.</p>
 <p>The code is defined in the <a href="https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java"><code>com.mozilla.telemetry.ContextualServicesReporter</code></a> class.</p>
-<p>For details on the pipeline transforms and development, see <a href="https://docs.google.com/document/d/1RK4C-mc0TBKyEBLS0hotbCg2jEHBcZ0K4EdFj8rMaQ4/edit#">this document</a> (internal).</p>
+<p>The input of this job is all <code>contextual-services</code> namespace messages, which includes <code>topsites-impression</code>, <code>topsites-click</code>, <code>quicksuggest-impression</code>, and <code>quicksuggest-click</code>.</p>
+<h2 id="beam-pipeline-transforms">Beam Pipeline Transforms</h2>
+<p>The following diagram shows the steps in the Beam pipeline. This is up to date as of 2021-08-23.</p>
+<p><img alt="diagrams/workflow.mmd" src="../../diagrams/ctxtsvc-sender.svg" />
+<strong>Figure</strong>: <em>An overview of the execution graph for the <code>ContextualServicesReporter</code>.</em></p>
+<h3 id="pubsub-republished-topic">Pub/Sub republished topic</h3>
+<p>The input to this job is the subset of decoded messages in the <code>contextual-services</code> namespace.</p>
+<h3 id="filterbydoctype"><code>FilterByDoctype</code></h3>
+<p>This step filters out document types based on the <code>document_type</code> attribute using the <code>--allowedDocTypes</code> pipeline option. For example, this can be used to allow the job to process only sponsored tiles or only Suggest events, or only clicks or only impressions.</p>
+<h3 id="verifymetadata"><code>VerifyMetadata</code></h3>
+<p>Message contents are validated in this step using a few simple heuristics such as user agent and user agent version. Messages that fail this check are rejected and sent to the error table.</p>
+<h3 id="decompresspayload"><code>DecompressPayload</code></h3>
+<p>This step attempts to decompress a gzip-compressed payload. This transform is shared with other Beam pipelines such as the decoder.</p>
+<h3 id="parsereportingurl"><code>ParseReportingUrl</code></h3>
+<p>This is where the URLs used for reporting events are built. The <code>reporting_url</code> value from the message payload is used as the base URL, then additional query parameters are added based on the message metadata such as the client’s country, region, and OS. The updated <code>reporting_url</code> value is put in the message payload and attributes.</p>
+<h3 id="labelclickspikes"><code>LabelClickSpikes</code></h3>
+<p>This step counts the number of click events per client (using the <code>context_id</code> attribute) in a time interval. This transform uses Beam’s state and timers; a state and a timer is maintained for every client. The state is a list of recent timestamps of clicks from the current client and the timer will clear the state if there are no recent clicks from the client. If the number of elements in the list exceeds the set threshold, any additional clicks will be marked with a <code>click-status</code>. Because a state needs to be maintained per client, the memory required for this step increases with the number of unique clients.</p>
+<h3 id="aggregateimpressions"><code>AggregateImpressions</code></h3>
+<p>This step groups impressions together in a timed window based on the reporting URLs. The purpose of this step is to reduce the number of HTTP requests made to external endpoints. One URL is output for each unique reporting URL in the timed window by counting the number of occurrences of each URL. The output URL is the original reporting URL with the additional query parameters <code>impressions</code>, <code>begin-timestamp</code>, and <code>end-timestamp</code>.</p>
+<p>A Beam <code>IntervalWindow</code> is used to group by impressions together based on the processing time - the time at which the message enters this transform. The output is generated at the end of the window which means that there is an increased delay between when the impression enters the pipeline and when the corresponding reporting URL is requested. This transform needs to keep track of a window for every unique reporting URL it receives which means memory required increases with the number of unique URLs.</p>
+<h3 id="sendrequest"><code>SendRequest</code></h3>
+<p>This step sends a HTTP GET request to the URL specified by the <code>reporting_url</code> attribute in the message. To keep track of requests sent by the job for debugging purposes, successful requests will throw a <code>RequestContentException</code> which will add them to the BigQuery error table (see below).</p>
+<h3 id="bigquery-error-table">BigQuery Error Table</h3>
+<p>The job is configured at certain steps to catch runtime exceptions and write the message contents to BigQuery. The configured table is <code>moz-fx-data-shared-prod.payload_bytes_error.contextual_services</code>. This can be used for debugging or to backfill messages that initially failed to process.</p>
+<h3 id="working-with-the-beam-job">Working with the Beam Job</h3>
+<p>Options specific to this job are found in https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/contextualservices/ContextualServicesReporterOptions.java</p>
+<h3 id="test-deployment">Test Deployment</h3>
+<p>This job can be deployed in a sandbox project for testing. The <code>contextual-services-dev</code> project is currently used for this purpose.</p>
+<p>There are a few required components to get a job running:</p>
+<ul>
+<li>A PubSub subscription on the republished <code>contextual-services</code> topic</li>
+<li>A BigQuery table with the <code>payload_bytes_error</code> schema used for error output</li>
+<li>A URL allowed list stored in GCS</li>
+<li>The Beam pipeline running on Dataflow, reading from the PubSub subscription, and writing to the BigQuery table</li>
+</ul>
+<p>Example script to start the Dataflow job from the ingestion-beam directory:</p>
+<pre><code>#!/bin/bash
+
+set -ux
+
+PROJECT=&quot;contextual-services-dev&quot;
+JOB_NAME=&quot;contextual-services&quot;
+
+mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.ContextualServicesReporter -Dexec.args=&quot;\
+   --runner=Dataflow \
+   --jobName=$JOB_NAME \
+   --project=$PROJECT  \
+   --inputType=pubsub \
+   --input='projects/contextual-services-dev/subscriptions/ctxsvc-input' \
+   --outputTableRowFormat=payload \
+   --errorBqWriteMethod=streaming \
+   --errorOutputType=bigquery \
+   --errorOutput=$PROJECT:contextual_services.reporting_errors \
+   --region=us-central1 \
+   --usePublicIps=true \
+   --gcsUploadBufferSizeBytes=16777216 \
+   --urlAllowList=gs://contextual-services-data-dev/urlAllowlist.csv \
+   --allowedDocTypes=topsites-impression,topsites-click, \
+   --reportingEnabled=false \
+   --aggregationWindowDuration=10m \
+   --clickSpikeWindowDuration=3m \
+   --clickSpikeThreshold=10 \
+   --logReportingUrls=true \
+   --maxNumWorkers=2 \
+   --numWorkers=1 \
+   --autoscalingAlgorithm=THROUGHPUT_BASED \
+&quot;
+</code></pre>
                 
               
               
