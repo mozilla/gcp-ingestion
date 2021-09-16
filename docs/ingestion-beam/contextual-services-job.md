@@ -20,7 +20,7 @@ The input to this job is a subset of decoded messages containing all `contextual
 
 ### `FilterByDoctype`
 
-This step filters out doctypes based on the document_type attribute using the `--allowedDocTypes` pipeline option. For example, this can be used to allow the job to process only topsites or only suggest events, or only clicks or only impressions.
+This step filters out document types based on the `document_type` attribute using the `--allowedDocTypes` pipeline option. For example, this can be used to allow the job to process only sponsored tiles or only Suggest events, or only clicks or only impressions.
 
 ### `VerifyMetadata`
 
