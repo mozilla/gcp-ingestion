@@ -5,7 +5,7 @@ to an external partner, preserving user privacy by minimizing the scope of conte
 
 The code is defined in the [`com.mozilla.telemetry.ContextualServicesReporter`](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java) class.
 
-The input of this job is all contextual-service namespace messages, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`.
+The input of this job is all `contextual-services` namespace messages, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`.
 
 ## Beam Pipeline Transforms
 
