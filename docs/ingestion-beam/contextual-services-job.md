@@ -13,7 +13,7 @@ The input of this job is all `contextual-services` namespace messages, which inc
 
 The following diagram shows the steps in the Beam pipeline. This is up to date as of 2021-08-23.
 
-![diagrams/workflow.mmd](../../diagrams/ctxtsvc-sender.svg)
+![diagrams/ctxtsvc-sender.mmd](../diagrams/ctxtsvc-sender.svg)
 **Figure**: _An overview of the execution graph for the `ContextualServicesReporter`._
 
 ### Pub/Sub republished topic
