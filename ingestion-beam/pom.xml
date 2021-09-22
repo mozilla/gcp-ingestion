@@ -48,11 +48,20 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <!-- pubsublite-beam-io 0.17.0+ requires gax 1.65+, instead of gax 1.63.0 from
+                <!-- pubsublite-beam-io 0.21.0+ requires gax 2.3+, instead of gax 1.63.0 from
                      libraries-bom 20.0.0 from beam-sdks-java-io-google-cloud-platform 2.32.0 -->
                 <groupId>com.google.api</groupId>
                 <artifactId>gax-bom</artifactId>
-                <version>1.65.1</version>
+                <version>2.4.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <!-- pubsublite-beam-io 0.21.0+ requires google-auth-library 0.27.0+, instead of
+                     google-auth-library 0.25.2 from beam-runners-google-cloud-dataflow-java 2.32.0 -->
+                <groupId>com.google.auth</groupId>
+                <artifactId>google-auth-library-bom</artifactId>
+                <version>1.1.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -86,7 +95,7 @@
                  this version supports messages larger than 1MB -->
             <groupId>com.google.cloud</groupId>
             <artifactId>pubsublite-beam-io</artifactId>
-            <version>0.19.4</version>
+            <version>0.21.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
