@@ -64,6 +64,8 @@ public class MessageScrubber {
       .put("artistscope-ios-artisbrowser", "1719343") //
       .put("com-luxxle-ios-fennec", "1719341") //
       .put("com-etiantian-pclass", "1719338") //
+      .put("com-apple-dt-xctest-tool", "1732313") //
+      .put("org-mozilla-feniy", "1732313") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
