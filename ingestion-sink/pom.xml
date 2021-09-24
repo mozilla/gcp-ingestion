@@ -88,7 +88,7 @@
             <!-- runtime dependency required by pubsublite -->
             <groupId>com.google.flogger</groupId>
             <artifactId>flogger-system-backend</artifactId>
-            <version>0.6</version>
+            <version>0.7</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
