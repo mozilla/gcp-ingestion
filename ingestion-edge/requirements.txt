@@ -175,9 +175,9 @@ google-cloud-container==2.7.1 \
     --hash=sha256:05432dfbba04f10c5ad7cfb187c04fdcfa0204c5811885968ec3efc06f0d7a33 \
     --hash=sha256:9cc50c185537f374c2edc5e48fa1076847b81c74b937370b048c69d718165338
     # via -r requirements.in
-google-cloud-monitoring==2.5.0 \
-    --hash=sha256:d3d436fab7f50f69bdd47655871ac923e4dcbaf8538808bbe31cf0a3cbdf3514 \
-    --hash=sha256:ddb1e98cecc6eeaedb0227fa8ad8c23e0e31365155bab428d5c9b1bb3fc8da76
+google-cloud-monitoring==2.5.1 \
+    --hash=sha256:c767b58bf64f9279b60e64fb18395dee9bc79a45eca8fe010b415cef108c2c2c \
+    --hash=sha256:f8b3842fd11965a3872622988359a21bff62bd1b7b9be3ccf095b7ae2f4c796f
     # via -r requirements.in
 google-cloud-pubsub==1.0.2 \
     --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
