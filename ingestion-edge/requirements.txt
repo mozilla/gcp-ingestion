@@ -369,9 +369,9 @@ persist-queue==0.7.0 \
     --hash=sha256:2571f1c235daf5ebda7bd826de010cc1a867fc14ae6c223f86199f3a0c96c09c \
     --hash=sha256:e85452d204536fdfc707a72290008dca376b636088a9d5de5eab52cdfde06142
     # via -r requirements.in
-pip-tools==6.3.0 \
-    --hash=sha256:1835a1848bdfb22b2b6e5d10d630844ff5ee15e24b6c3bf92319c76f205d347f \
-    --hash=sha256:f5119d08558d4b44f5d3be6c433a5710050282d5aeecb1bfa392e86963827548
+pip-tools==6.3.1 \
+    --hash=sha256:992d968df6f1a19d4d37c53b68b3d4b601b894fb3ee0926d1fa762ebc7c7e9e9 \
+    --hash=sha256:a99b891ccd0fda95e1dc426e92fb98fd1c946d01fe6cd2d383e495b52267cbb8
     # via -r requirements.in
 pluggy==0.13.1 \
     --hash=sha256:15b2acde666561e1298d71b523007ed7364de07029219b604cf808bfa1c765b0 \
