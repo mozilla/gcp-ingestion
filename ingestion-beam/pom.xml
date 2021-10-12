@@ -61,7 +61,7 @@
                      google-auth-library 0.25.2 from beam-runners-google-cloud-dataflow-java 2.32.0 -->
                 <groupId>com.google.auth</groupId>
                 <artifactId>google-auth-library-bom</artifactId>
-                <version>1.2.0</version>
+                <version>1.2.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
