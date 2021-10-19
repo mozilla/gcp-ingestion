@@ -55,6 +55,7 @@ public class Constant {
     public static final String X_DEBUG_ID = "x_debug_id";
     public static final String X_FORWARDED_FOR = "x_forwarded_for";
     public static final String X_FOXSEC_IP_REPUTATION = "x_foxsec_ip_reputation";
+    public static final String X_LB_TAGS = "x_lb_tags";
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";
     public static final String X_PIPELINE_PROXY = "x_pipeline_proxy";
     public static final String X_SOURCE_TAGS = "x_source_tags";
