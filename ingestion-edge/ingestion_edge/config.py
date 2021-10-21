@@ -52,28 +52,13 @@ QUEUE_PATH = environ.get("QUEUE_PATH", "queue")
 
 MINIMUM_DISK_FREE_BYTES = int(environ.get("MINIMUM_DISK_FREE_BYTES", 0)) or None
 
-DEFAULT_METADATA_HEADERS = [
-    "Content-Length",
-    "Date",
-    "DNT",
-    "User-Agent",
-    "X-Forwarded-For",
-    "X-Pingsender-Version",
-    "X-Pipeline-Proxy",
-    "X-Debug-ID",
-    "X-Foxsec-IP-Reputation",
-    "X-Source-Tags",
-    "X-Telemetry-Agent",
-]
-
-METADATA_HEADERS = {
-    header: header.replace("-", "_")
-    for raw in json.loads(
-        environ.get("METADATA_HEADERS", json.dumps(DEFAULT_METADATA_HEADERS))
-    )
-    for header in (raw.strip().lower(),)
-    if header
-}
+with open("metadata_headers.json", "r") as fp:
+    METADATA_HEADERS = {
+        header: header.replace("-", "_")
+        for raw in json.load(fp)
+        for header in (raw.strip().lower(),)
+        if header
+    }
 
 PUBLISH_TIMEOUT_SECONDS = float(environ.get("PUBLISH_TIMEOUT_SECONDS", 1))
 
