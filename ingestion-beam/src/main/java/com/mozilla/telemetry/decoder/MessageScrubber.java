@@ -66,6 +66,7 @@ public class MessageScrubber {
       .put("com-etiantian-pclass", "1719338") //
       .put("com-apple-dt-xctest-tool", "1732313") //
       .put("org-mozilla-feniy", "1732313") //
+      .put("org-mozilla-felix", "1737633") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
