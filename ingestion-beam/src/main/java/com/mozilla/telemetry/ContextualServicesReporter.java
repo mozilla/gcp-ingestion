@@ -70,8 +70,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections);
 
-    Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression",
-        "quicksuggest-impression");
+    Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
     Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click", "quicksuggest-click");
     Set<String> unionedDocTypes = Stream
         .concat(aggregatedDocTypes.stream(), perContextIdDocTypes.stream())
