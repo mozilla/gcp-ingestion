@@ -134,4 +134,47 @@ public class VerifyMetadataTest {
 
     pipeline.run();
   }
+
+  @Test
+  public void testRejectChannel() {
+    // Build list of messages with different doctype/version combinations
+    final List<PubsubMessage> input = Streams
+        .zip(Stream.of("quicksuggest-impression", "quicksuggest-click"),
+            Stream.of("beta", "release"),
+            (doctype, channel) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
+                Attribute.USER_AGENT_BROWSER, "Firefox", //
+                Attribute.USER_AGENT_VERSION, "93", //
+                Attribute.CLIENT_COMPRESSION, "gzip", //
+                Attribute.NORMALIZED_CHANNEL, channel))
+        .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
+        .collect(Collectors.toList());
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(VerifyMetadata.of());
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+      PubsubMessage message = Iterables.get(messages, 0);
+
+      String errorMessage = message.getAttribute("error_message");
+      Assert.assertTrue(errorMessage.contains(RejectedMessageException.class.getCanonicalName()));
+      Assert.assertTrue(errorMessage.contains("Disallowed channel"));
+
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+      Assert.assertEquals("quicksuggest-click",
+          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_TYPE));
+      Assert.assertEquals("release",
+          Iterables.get(messages, 0).getAttribute(Attribute.NORMALIZED_CHANNEL));
+
+      return null;
+    });
+
+    pipeline.run();
+  }
+
 }
