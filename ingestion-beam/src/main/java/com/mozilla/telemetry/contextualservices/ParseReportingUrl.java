@@ -159,6 +159,7 @@ public class ParseReportingUrl extends
           attributes.put(Attribute.REPORTING_URL, reportingUrl);
           payload.put(Attribute.REPORTING_URL, reportingUrl);
 
+          PerDocTypeCounter.inc(attributes, "valid_url");
           return new PubsubMessage(Json.asBytes(payload), attributes);
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
