@@ -3,6 +3,7 @@ package com.mozilla.telemetry;
 import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
+import com.mozilla.telemetry.contextualservices.FilterByChannel;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
 import com.mozilla.telemetry.contextualservices.LabelClickSpikes;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
@@ -61,6 +62,7 @@ public class ContextualServicesReporter extends Sink {
 
     PCollection<PubsubMessage> requests = pipeline //
         .apply(options.getInputType().read(options)) //
+        .apply(FilterByChannel.of(options.getAllowedChannels())) //
         .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
         .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
@@ -68,8 +70,9 @@ public class ContextualServicesReporter extends Sink {
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections);
 
-    Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
-    Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click");
+    Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression",
+        "quicksuggest-impression");
+    Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click", "quicksuggest-click");
     Set<String> unionedDocTypes = Stream
         .concat(aggregatedDocTypes.stream(), perContextIdDocTypes.stream())
         .collect(Collectors.toSet());

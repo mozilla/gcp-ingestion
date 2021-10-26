@@ -22,6 +22,13 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setAllowedDocTypes(String value);
 
+  @Description("Comma-separated strings representing a list of release channels for which "
+      + " to send reporting requests (e.g. release, beta, nightly)")
+  @Default.String("release")
+  String getAllowedChannels();
+
+  void setAllowedChannels(String value);
+
   @Description("If set to true, send HTTP requests to reporting URLs.  "
       + "Can be set to false for testing purposes.")
   @Default.Boolean(true)
