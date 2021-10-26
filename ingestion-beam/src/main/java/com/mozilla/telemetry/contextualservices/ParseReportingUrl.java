@@ -97,7 +97,7 @@ public class ParseReportingUrl extends
           ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
           if (!isUrlValid(urlParser.getReportingUrl(), attributes.get(Attribute.DOCUMENT_TYPE))) {
-            PerDocTypeCounter.inc(attributes, "RejectedNonNullUrl");
+            PerDocTypeCounter.inc(attributes, "rejected_nonnull_url");
             throw new ParsedReportingUrl.InvalidUrlException(
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
@@ -159,6 +159,7 @@ public class ParseReportingUrl extends
           attributes.put(Attribute.REPORTING_URL, reportingUrl);
           payload.put(Attribute.REPORTING_URL, reportingUrl);
 
+          PerDocTypeCounter.inc(attributes, "valid_url");
           return new PubsubMessage(Json.asBytes(payload), attributes);
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
