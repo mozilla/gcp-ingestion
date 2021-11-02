@@ -102,38 +102,55 @@ public class ParseReportingUrl extends
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
-          if ("topsites-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))
-              || "quicksuggest-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+          if ("topsites-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
             requireParamPresent(urlParser, "ctag");
             requireParamPresent(urlParser, "version");
             requireParamPresent(urlParser, "key");
             requireParamPresent(urlParser, "ci");
-          } else if ("topsites-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))
-              || "quicksuggest-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+          } else if ("quicksuggest-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+            // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
+            requireParamPresent(urlParser, "ctag");
+            requireParamPresent(urlParser, "custom-data");
+            requireParamPresent(urlParser, "sub1");
+            requireParamPresent(urlParser, "sub2");
+          } else if ("topsites-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
             requireParamPresent(urlParser, "id");
+          } else if ("quicksuggest-impression"
+              .equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+            // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
+            requireParamPresent(urlParser, "custom-data");
+            requireParamPresent(urlParser, "sub1");
+            requireParamPresent(urlParser, "sub2");
+            requireParamPresent(urlParser, "partner");
+            requireParamPresent(urlParser, "adv-id");
+            requireParamPresent(urlParser, "v");
           }
 
-          if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
-            throw new RejectedMessageException(
-                "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE, "country");
-          }
-          urlParser.addQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE,
-              payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
-
-          urlParser.addQueryParam(ParsedReportingUrl.PARAM_REGION_CODE,
-              attributes.get(Attribute.GEO_SUBDIVISION1));
-          urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY,
-              getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
-          urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop");
-
+          // We only add these dimensions for topsites, not quicksuggest per
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
           if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
               || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-impression")) {
+
+            if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
+              throw new RejectedMessageException(
+                  "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE, "country");
+            }
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE,
+                payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_REGION_CODE,
+                attributes.get(Attribute.GEO_SUBDIVISION1));
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY,
+                getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop");
+
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_DMA_CODE,
                 message.getAttribute(Attribute.GEO_DMA_CODE));
           }
 
-          if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
-              || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("quicksuggest-click")) {
+          // We only add these dimensions for topsites clicks, not quicksuggest per
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
+          if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")) {
             String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
             if (userAgentVersion == null) {
               throw new RejectedMessageException(
