@@ -203,13 +203,16 @@ public class ParseReportingUrlTest {
         .apply(Create.of(input)) //
         .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
+    // We expect this test url to fail for suggest impressions and clicks as of
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
+    // so we get 2 failures and 3 successful messages.
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(0, Iterators.size(messages.iterator()));
+      Assert.assertEquals(2, Iterators.size(messages.iterator()));
       return null;
     });
 
     PAssert.that(result.output()).satisfies(messages -> {
-      Assert.assertEquals(Iterables.size(messages), 5);
+      Assert.assertEquals(Iterables.size(messages), 3);
 
       messages.forEach(message -> {
         try {
