@@ -425,6 +425,8 @@ public class PubsubMessageToObjectNodeBeamTest {
     List<Field> bqFields = ImmutableList.of(Field.newBuilder("metrics", LegacySQLTypeName.RECORD, //
         Field.of("counter", LegacySQLTypeName.RECORD, //
             Field.of("my_count", LegacySQLTypeName.INTEGER)), //
+        Field.of("counter2", LegacySQLTypeName.RECORD, //
+            Field.of("my_count", LegacySQLTypeName.INTEGER)), //
         Field.newBuilder("url", LegacySQLTypeName.RECORD, Field.of("key", LegacySQLTypeName.STRING),
             Field.of("value", LegacySQLTypeName.STRING)).setMode(Mode.REPEATED).build(),
         Field.of("url2", LegacySQLTypeName.RECORD, Field.of("my_url", LegacySQLTypeName.STRING)))
