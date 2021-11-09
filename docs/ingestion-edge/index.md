@@ -57,7 +57,7 @@ environment variables:
   on the filesystem where `QUEUE_PATH` is mounted below which `/__heartbeat__`
   will fail, defaults to `0` which disables the check
 - `METADATA_HEADERS`: a JSON list of headers to preserve as PubSub message
-  attributes, defaults to `["Content-Length", "Date", "DNT", "User-Agent", "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID", "X-Telemetry-Agent", "X-Source-Tags", "X-Foxsec-IP-Reputation"]`;
+  attributes, defaults to `["Content-Length", "Date", "DNT", "User-Agent", "X-Forwarded-For", "X-Pingsender-Version", "X-Pipeline-Proxy", "X-Debug-ID", "X-Telemetry-Agent", "X-Source-Tags", "X-Foxsec-IP-Reputation", "X-LB-Tags"]`;
   the message attribute name will be the header name in lowercase and with `-`
   converted to `_`
 - `PUBLISH_TIMEOUT_SECONDS`: a float indicating the maximum number of seconds
