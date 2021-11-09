@@ -292,9 +292,9 @@ google-cloud-container==2.10.1 \
     --hash=sha256:500f51e2d4e4bc36153a758a6bfdaf6e1d10b8216fddac572c7bb25ff27bd41b \
     --hash=sha256:939970cd09384dde6d6f6758b03648fd8f52fe5c2f83f73300575f7e4e3b2ee0
     # via -r requirements.in
-google-cloud-monitoring==2.6.0 \
-    --hash=sha256:47feb2e635ef79af98696eb22a5af1db8a78b3a2919e39bdec65ba45659b59ac \
-    --hash=sha256:97173b88eaf977fb355e21738405e616529e1a1c0de7cdb497449ddd9587f775
+google-cloud-monitoring==2.7.0 \
+    --hash=sha256:197e8457413efad07a301bb7b11eb7bb82b53d51e4d32f30d4eb5aec560fbfac \
+    --hash=sha256:973f33f4da9598a30769e27510fc0cd4470f9081ba694c6c589bb8c0b86a0a6d
     # via -r requirements.in
 google-cloud-pubsub==1.0.2 \
     --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
@@ -471,7 +471,6 @@ packaging==20.4 \
     --hash=sha256:998416ba6962ae7fbd6596850b80e17859a5753ba17c32284f67bfff33784181
     # via
     #   google-api-core
-    #   google-cloud-monitoring
     #   pytest
 pathspec==0.8.0 \
     --hash=sha256:7d91249d21749788d07a2d0f94147accd8f845507400749ea19c1ec9054a12b0 \
