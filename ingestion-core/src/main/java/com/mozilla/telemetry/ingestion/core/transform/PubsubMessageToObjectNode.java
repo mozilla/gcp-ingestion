@@ -14,6 +14,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Streams;
 import com.google.common.util.concurrent.UncheckedExecutionException;
@@ -38,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,6 +52,8 @@ public abstract class PubsubMessageToObjectNode {
 
   private static final Base64.Encoder BASE64_ENCODER = Base64.getEncoder();
   private static final ObjectNode EMPTY_OBJECT = Json.createObjectNode();
+  private static final Set<String> BUG_1737656_METRIC_NAMES = ImmutableSet.of("url", "text", "jwe",
+      "labeled_rate");
 
   public abstract ObjectNode apply(TableId tableId, Map<String, String> attributes, byte[] data);
 
@@ -369,7 +373,19 @@ public abstract class PubsubMessageToObjectNode {
         final String bqFieldName;
         if (bqFieldMap.containsKey(jsonFieldName)) {
           // The JSON field name already matches a BQ field.
-          bqFieldName = jsonFieldName;
+
+          // For Glean pings defined before November 2021, we had deployed incorrect types to
+          // BigQuery tables under the metrics struct for types url, text, jwe, and labeled_rate;
+          // we thus have to rename these in schemas to url2, text2, jwe2, and labeled_rate2 and
+          // alter payloads here to match the expected schema.
+          final String altFieldName = jsonFieldName + "2";
+          Field altBqField = bqFieldMap.get(altFieldName);
+          if (altBqField != null && BUG_1737656_METRIC_NAMES.contains(jsonFieldName)) {
+            parent.remove(jsonFieldName);
+            bqFieldName = altFieldName;
+          } else {
+            bqFieldName = jsonFieldName;
+          }
         } else {
           // Remove the json field from the parent because it does not match the BQ field name.
           parent.remove(jsonFieldName);
