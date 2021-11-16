@@ -67,6 +67,9 @@ public class MessageScrubber {
       .put("com-apple-dt-xctest-tool", "1732313") //
       .put("org-mozilla-feniy", "1732313") //
       .put("org-mozilla-felix", "1737633") //
+      .put("browser-oceanhero", "1740091") //
+      .put("com-qebrowser", "1740091") //
+      .put("org-mozilla-sorizava-focus", "1740091") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
