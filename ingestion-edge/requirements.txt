@@ -292,9 +292,9 @@ google-cloud-container==2.10.1 \
     --hash=sha256:500f51e2d4e4bc36153a758a6bfdaf6e1d10b8216fddac572c7bb25ff27bd41b \
     --hash=sha256:939970cd09384dde6d6f6758b03648fd8f52fe5c2f83f73300575f7e4e3b2ee0
     # via -r requirements.in
-google-cloud-monitoring==2.7.0 \
-    --hash=sha256:197e8457413efad07a301bb7b11eb7bb82b53d51e4d32f30d4eb5aec560fbfac \
-    --hash=sha256:973f33f4da9598a30769e27510fc0cd4470f9081ba694c6c589bb8c0b86a0a6d
+google-cloud-monitoring==2.8.0 \
+    --hash=sha256:2a25f7535f21cdeabfccb07fe4a75eae5a47bb36b82025537755b37d3376da46 \
+    --hash=sha256:2d2ff53e5cc3ca2063dfb990377407c8905b0a9094a0aae32709d23c1e5d372f
     # via -r requirements.in
 google-cloud-pubsub==1.0.2 \
     --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
