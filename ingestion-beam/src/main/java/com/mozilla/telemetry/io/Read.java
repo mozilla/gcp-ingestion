@@ -2,8 +2,6 @@ package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.pubsublite.SubscriptionPath;
-import com.google.cloud.pubsublite.beam.PubsubLiteIO;
-import com.google.cloud.pubsublite.beam.SubscriberOptions;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
@@ -23,6 +21,8 @@ import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
+import org.apache.beam.sdk.io.gcp.pubsublite.PubsubLiteIO;
+import org.apache.beam.sdk.io.gcp.pubsublite.SubscriberOptions;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
