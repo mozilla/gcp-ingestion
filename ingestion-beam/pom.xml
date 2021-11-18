@@ -118,7 +118,7 @@
         <dependency>
             <groupId>com.maxmind.geoip2</groupId>
             <artifactId>geoip2</artifactId>
-            <version>2.15.0</version>
+            <version>2.16.0</version>
         </dependency>
         <!-- Following https://github.com/apache/beam/blob/v2.20.0/examples/java/build.gradle#L64 -->
         <dependency>
