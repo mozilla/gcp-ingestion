@@ -64,7 +64,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
   1. Validate `payload` using a JSON Schema determined by attributes
   1. Parse `agent` attribute into `user_agent_*` attributes
   1. Produce `normalized_` variants of select attributes
-  1. Allow sanitization of attributes, configurable per document type via schema metadata
+  1. Sanitize attributes, configurable per document type via schema metadata
   1. Inject `normalized_` attributes at the top level and other select
      attributes into a nested `metadata` top level key in `payload`
 - Should deduplicate messages based on the `uri` attribute
