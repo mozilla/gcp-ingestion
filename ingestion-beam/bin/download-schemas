@@ -75,11 +75,28 @@ function insert_testing_schemas() {
     mkdir -p schemas/test/test
     cat > schemas/test/test/test.1.schema.json << 'EOF'
 {
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "test_v1"
+  },
   "type" : "object",
   "title" : "default_schema",
   "properties" : {
   },
   "required" : []
+}
+EOF
+    mkdir -p schemas/test/seconds
+    cat > schemas/test/seconds/seconds.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "seconds_v1",
+    "submission_timestamp_granularity": "seconds"
+  },
+  "type" : "object"
 }
 EOF
     mkdir -p schemas/my-namespace/my-test

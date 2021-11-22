@@ -17,6 +17,7 @@ in the Structured Ingestion pipeline.
    or to have specific fields redacted
 1. Validate the schema of the body
 1. Extract user agent information and drop `user_agent`
+1. Sanitize metadata based on per-document type configuration
 1. Add metadata fields to message
 1. Write message to PubSub decoded topic based on `namespace` and `docType`
 
