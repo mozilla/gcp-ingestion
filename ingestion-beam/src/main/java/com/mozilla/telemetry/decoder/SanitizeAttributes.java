@@ -20,11 +20,11 @@ import org.apache.beam.sdk.values.PCollection;
 /**
  * Alter attributes of the message before sending to output, configurable per docType.
  *
- * This is generally useful for dropping or reducing the granularity of data that may be overly
+ * <p>This is generally useful for dropping or reducing the granularity of data that may be overly
  * identifying, particularly when it comes to correlating datasets that are meant to be using
  * non-correlatable identifiers.
  *
- * See https://bugzilla.mozilla.org/show_bug.cgi?id=1742172
+ * <p>See https://bugzilla.mozilla.org/show_bug.cgi?id=1742172
  */
 public class SanitizeAttributes
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
