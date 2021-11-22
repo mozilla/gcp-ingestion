@@ -55,11 +55,11 @@
         <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
         <auto-value.version>1.8.2</auto-value.version>
-        <beam.version>2.33.0</beam.version>
+        <beam.version>2.34.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
-        <jackson.version>2.12.1</jackson.version>
+        <jackson.version>2.12.4</jackson.version>
         <avro.version>1.8.2</avro.version>
 
         <!-- Set empty default. -->
