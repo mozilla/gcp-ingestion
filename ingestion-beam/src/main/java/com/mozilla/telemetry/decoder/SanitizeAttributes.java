@@ -17,6 +17,15 @@ import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PCollection;
 
+/**
+ * Alter attributes of the message before sending to output, configurable per docType.
+ *
+ * This is generally useful for dropping or reducing the granularity of data that may be overly
+ * identifying, particularly when it comes to correlating datasets that are meant to be using
+ * non-correlatable identifiers.
+ *
+ * See https://bugzilla.mozilla.org/show_bug.cgi?id=1742172
+ */
 public class SanitizeAttributes
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
@@ -52,6 +61,8 @@ public class SanitizeAttributes
 
       final PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
       if (meta.submission_timestamp_granularity() != null) {
+        // The pipeline metadata accepts lower-case values like "seconds", but the elements of
+        // the ChronoUnit enum are uppercase, so we uppercase before lookup.
         String granularity = meta.submission_timestamp_granularity().toUpperCase();
         Instant instant = Time.parseAsInstantOrNull(attributes.get(Attribute.SUBMISSION_TIMESTAMP));
         if (instant != null) {
