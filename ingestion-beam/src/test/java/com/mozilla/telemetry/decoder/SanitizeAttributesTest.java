@@ -23,8 +23,9 @@ public class SanitizeAttributesTest extends TestWithDeterministicJson {
   @Test
   public void testNoop() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "test").put(Attribute.DOCUMENT_TYPE, "test")
-        .put(Attribute.DOCUMENT_VERSION, "1")
+        .put(Attribute.DOCUMENT_NAMESPACE, "test") //
+        .put(Attribute.DOCUMENT_TYPE, "test") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
         .put(Attribute.SUBMISSION_TIMESTAMP, "2021-01-01T12:00:00.123456Z") //
         .put(Attribute.GEO_CITY, "Toronto") //
         .build();
@@ -41,8 +42,9 @@ public class SanitizeAttributesTest extends TestWithDeterministicJson {
   public void testSubmissionTimestampGranularity() {
     // Depends on custom doctype injected in bin/download-schemas
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "test").put(Attribute.DOCUMENT_TYPE, "seconds")
-        .put(Attribute.DOCUMENT_VERSION, "1")
+        .put(Attribute.DOCUMENT_NAMESPACE, "test") //
+        .put(Attribute.DOCUMENT_TYPE, "seconds") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
         .put("submission_timestamp", "2021-01-01T12:00:00.123456Z") //
         .build();
     PCollection<String> result = pipeline //
