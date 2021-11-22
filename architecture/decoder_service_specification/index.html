@@ -1040,6 +1040,7 @@ in the Structured Ingestion pipeline.</p>
    or to have specific fields redacted</li>
 <li>Validate the schema of the body</li>
 <li>Extract user agent information and drop <code>user_agent</code></li>
+<li>Sanitize metadata based on per-document type configuration</li>
 <li>Add metadata fields to message</li>
 <li>Write message to PubSub decoded topic based on <code>namespace</code> and <code>docType</code></li>
 </ol>
