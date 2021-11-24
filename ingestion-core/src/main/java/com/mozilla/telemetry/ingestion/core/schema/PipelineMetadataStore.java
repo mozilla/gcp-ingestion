@@ -74,7 +74,6 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
 
   }
 
-
   @AutoValue
   @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_PipelineMetadata.Builder.class)
   public abstract static class PipelineMetadata {
