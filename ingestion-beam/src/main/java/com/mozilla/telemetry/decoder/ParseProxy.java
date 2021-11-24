@@ -18,6 +18,7 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.SimpleFunction;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.commons.lang3.StringUtils;
 
 public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
@@ -27,7 +28,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
 
   /////////
 
-  private final String proxyIpAddress;
+  private final String proxyIps;
 
   @VisibleForTesting
   public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
@@ -48,14 +49,17 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       final String xpp = attributes.get(Attribute.X_PIPELINE_PROXY);
       String xff = attributes.get(Attribute.X_FORWARDED_FOR);
 
-      // If the configured proxyIpAddress is present, then there's a GCP load balancer IP
+      // If any of the configured proxyIpAddresses is present, then there's a GCP load balancer IP
       // we will need to remove; see
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1729069#c8
-      if (xff != null && xff.contains(proxyIpAddress)) {
-        xff = Arrays.stream(xff.split("\\s*,\\s*")) //
-            .filter(ip -> !proxyIpAddress.equals(ip)) //
-            .collect(Collectors.joining(","));
-        countProxyIpAddress.inc();
+      for (String proxyIpAddress : proxyIps.split(",")) {
+        if (xff != null && xff.contains(proxyIpAddress)) {
+          xff = Arrays.stream(xff.split("\\s*,\\s*")) //
+              .filter(StringUtils::isNotBlank) //
+              .filter(ip -> !proxyIpAddress.equals(ip)) //
+              .collect(Collectors.joining(","));
+          countProxyIpAddress.inc();
+        }
       }
 
       // If the X-Pipeline-Proxy header is present, this message came from the AWS tee and
@@ -100,12 +104,13 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
   }
 
   @Override
+
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> input) {
     return input.apply(MapElements.via(new Fn()));
   }
 
-  private ParseProxy(String proxyIpAddress) {
-    this.proxyIpAddress = proxyIpAddress;
+  private ParseProxy(String proxyIps) {
+    this.proxyIps = proxyIps;
   }
 
 }
