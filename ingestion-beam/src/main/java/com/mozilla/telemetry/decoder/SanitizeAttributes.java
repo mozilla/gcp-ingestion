@@ -60,6 +60,7 @@ public class SanitizeAttributes
       }
 
       final PipelineMetadata meta = pipelineMetadataStore.getSchema(attributes);
+
       if (meta.submission_timestamp_granularity() != null) {
         // The pipeline metadata accepts lower-case values like "seconds", but the elements of
         // the ChronoUnit enum are uppercase, so we uppercase before lookup.
@@ -69,6 +70,16 @@ public class SanitizeAttributes
           attributes.put(Attribute.SUBMISSION_TIMESTAMP, DateTimeFormatter.ISO_INSTANT
               .format(instant.truncatedTo(ChronoUnit.valueOf(granularity))));
         }
+      }
+
+      if (meta.override_attributes() != null) {
+        meta.override_attributes().forEach(override -> {
+          if (override.value() == null) {
+            attributes.remove(override.name());
+          } else {
+            attributes.put(override.name(), override.value());
+          }
+        });
       }
 
       return new PubsubMessage(message.getPayload(), attributes);
