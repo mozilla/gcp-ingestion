@@ -55,7 +55,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>google-cloud-pubsublite</artifactId>
-                <version>1.3.0</version>
+                <version>1.4.0</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
@@ -88,7 +88,7 @@
             <!-- runtime dependency required by pubsublite -->
             <groupId>com.google.flogger</groupId>
             <artifactId>flogger-system-backend</artifactId>
-            <version>0.6</version>
+            <version>0.7.1</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
