@@ -8,6 +8,7 @@ import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
+import com.mozilla.telemetry.decoder.SanitizeAttributes;
 import com.mozilla.telemetry.decoder.rally.DecryptPayloads;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
@@ -94,6 +95,7 @@ public class Decoder extends Sink {
             .failuresTo(failureCollections) //
             .apply(ParseUserAgent.of()) //
             .apply(NormalizeAttributes.of()) //
+            .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
             .apply("AddMetadata", AddMetadata.of()).failuresTo(failureCollections) //
             .apply(options.getOutputType().write(options)).failuresTo(failureCollections));
 

@@ -62,6 +62,9 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     public abstract String bq_metadata_format();
 
     @Nullable
+    public abstract String submission_timestamp_granularity();
+
+    @Nullable
     public abstract List<JweMapping> jwe_mappings();
 
     @AutoValue.Builder
@@ -74,6 +77,8 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
       public abstract Builder bq_table(String value);
 
       public abstract Builder bq_metadata_format(String value);
+
+      public abstract Builder submission_timestamp_granularity(String value);
 
       public abstract Builder jwe_mappings(List<JweMapping> value);
 
