@@ -99,6 +99,22 @@ EOF
   "type" : "object"
 }
 EOF
+    mkdir -p schemas/test/attribute-overrides
+    cat > schemas/test/attribute-overrides/attribute-overrides.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "attribute_overrides_v1",
+    "override_attributes": [
+      {"name": "geo_city", "value": null},
+      {"name": "normalized_channel", "value": "nightly"},
+      {"name": "new_attr", "value": "injected_value"}
+    ]
+  },
+  "type" : "object"
+}
+EOF
     mkdir -p schemas/my-namespace/my-test
     cat > schemas/my-namespace/my-test/my-test.1.bq << 'EOF'
 [

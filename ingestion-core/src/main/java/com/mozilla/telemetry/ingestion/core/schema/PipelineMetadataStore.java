@@ -48,6 +48,33 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
   }
 
   @AutoValue
+  @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_AttributeOverride.Builder.class)
+  public abstract static class AttributeOverride {
+
+    public static Builder builder() {
+      return new AutoValue_PipelineMetadataStore_AttributeOverride.Builder();
+    }
+
+    public abstract String name();
+
+    @Nullable
+    public abstract String value();
+
+    @AutoValue.Builder
+    @JsonPOJOBuilder(withPrefix = "")
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public abstract static class Builder {
+
+      public abstract Builder name(String value);
+
+      public abstract Builder value(String value);
+
+      public abstract AttributeOverride build();
+    }
+
+  }
+
+  @AutoValue
   @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_PipelineMetadata.Builder.class)
   public abstract static class PipelineMetadata {
 
@@ -65,6 +92,9 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     public abstract String submission_timestamp_granularity();
 
     @Nullable
+    public abstract List<AttributeOverride> override_attributes();
+
+    @Nullable
     public abstract List<JweMapping> jwe_mappings();
 
     @AutoValue.Builder
@@ -79,6 +109,8 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
       public abstract Builder bq_metadata_format(String value);
 
       public abstract Builder submission_timestamp_granularity(String value);
+
+      public abstract Builder override_attributes(List<AttributeOverride> value);
 
       public abstract Builder jwe_mappings(List<JweMapping> value);
 
