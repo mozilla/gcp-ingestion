@@ -302,7 +302,7 @@ public class ParsePayload extends
   }
 
   /** Tries to extract glean-style client_info object from payload. */
-  private static JsonNode getGleanClientInfo(ObjectNode json) {
+  static JsonNode getGleanClientInfo(ObjectNode json) {
     return json.path("client_info");
   }
 
