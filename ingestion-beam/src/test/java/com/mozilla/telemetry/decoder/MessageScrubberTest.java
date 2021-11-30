@@ -585,6 +585,42 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testUnwantedData1733118() {
+    // scrub mozillavpn main pings sent by sdk < 0.17
+    final Map<String, String> attributes = new HashMap<>();
+    attributes.put(Attribute.DOCUMENT_NAMESPACE, "mozillavpn");
+    attributes.put(Attribute.DOCUMENT_TYPE, "main");
+
+    final ObjectNode json = Json.createObjectNode();
+    ObjectNode clientInfo = Json.createObjectNode();
+    json.set("client_info", clientInfo);
+    clientInfo.put("telemetry_sdk_build", "0.16.0");
+
+    assertThrows(AffectedByBugException.class, () -> MessageScrubber.scrub(attributes, json));
+
+    // only impacts main pings
+    attributes.put(Attribute.DOCUMENT_TYPE, "deletion-request");
+    MessageScrubber.scrub(attributes, json);
+    attributes.put(Attribute.DOCUMENT_TYPE, "main");
+
+    // only impacts mozillavpn
+    attributes.put(Attribute.DOCUMENT_NAMESPACE, "mozilla-vpn");
+    MessageScrubber.scrub(attributes, json);
+    attributes.put(Attribute.DOCUMENT_NAMESPACE, "mozillavpn");
+
+    // only impacts sdk < 0.17
+    clientInfo.put("telemetry_sdk_build", "0.17.0");
+    MessageScrubber.scrub(attributes, json);
+
+    // can handle missing json paths
+    clientInfo.remove("telemetry_sdk_build");
+    MessageScrubber.scrub(attributes, json);
+
+    json.remove("client_info");
+    MessageScrubber.scrub(attributes, json);
+  }
+
+  @Test
   public void testScrubValidDocument() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "namespace") //
