@@ -83,7 +83,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of("6.7.8.9")) //
+        .apply(ParseProxy.of("2.3.4.5,6.7.8.9")) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
