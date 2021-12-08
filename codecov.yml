@@ -1,0 +1,19 @@
+flags:
+  ingestion_beam:
+    paths:
+    - ingestion-beam/.*
+    - ingestion-core/.*
+    carryforward: true
+  ingestion_core:
+    paths:
+    - ingestion-core/.*
+    carryforward: true
+  ingestion_edge:
+    paths:
+    - ingestion-edge/.*
+    carryforward: true
+  ingestion_sink:
+    paths:
+    - ingestion-core/.*
+    - ingestion-sink/.*
+    carryforward: true
