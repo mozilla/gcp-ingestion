@@ -622,9 +622,9 @@ pytest-sanic==1.7.1 \
     --hash=sha256:b3abb456731d0aa9a030a908159e48580b1b49cb188f68bce75bf6f186748763 \
     --hash=sha256:ebb3e0dabd05e32914b0a0cb472bfe04ae75ff4009954da2430b0c420467691f
     # via -r requirements.in
-pytest-timeout==2.0.1 \
-    --hash=sha256:329bdea323d3e5bea4737070dd85a0d1021dbecb2da5342dc25284fdb929dff0 \
-    --hash=sha256:a5ec4eceddb8ea726911848593d668594107e797621e97f93a1d1dbc6fbb9080
+pytest-timeout==2.0.2 \
+    --hash=sha256:e6f98b54dafde8d70e4088467ff621260b641eb64895c4195b6e5c8f45638112 \
+    --hash=sha256:fe9c3d5006c053bb9e062d60f641e6a76d6707aedb645350af9593e376fcc717
     # via -r requirements.in
 python-dateutil==2.8.2 \
     --hash=sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86 \
