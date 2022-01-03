@@ -15,7 +15,7 @@
 
     <properties>
         <log4j.version>2.17.0</log4j.version>
-        <opencensus.version>0.29.0</opencensus.version>
+        <opencensus.version>0.30.0</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
 
