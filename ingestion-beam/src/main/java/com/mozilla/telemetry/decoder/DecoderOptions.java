@@ -14,11 +14,12 @@ import org.apache.beam.sdk.options.Validation;
  */
 public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
-  @Description("Static IP associated with load balancer; will be ignored for IP lookups")
-  @Default.String("35.227.207.240")
-  String getProxyIpAddress();
+  @Description("Comma-separated list of static IPs associated with load balancers; "
+      + "will be ignored for IP lookups")
+  @Default.String("35.227.207.240,34.120.208.123")
+  String getProxyIps();
 
-  void setProxyIpAddress(String value);
+  void setProxyIps(String value);
 
   @Description("Path (local or gs://) to GeoIP2-City.mmdb")
   @Validation.Required
