@@ -62,6 +62,9 @@
         <jackson.version>2.12.4</jackson.version>
         <avro.version>1.8.2</avro.version>
 
+        <!-- The version pulled in by avro does not support Apple Silicon as of Jan 2022 -->
+        <snappy.version>1.1.8.3</snappy.version>
+
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
     </properties>
@@ -130,6 +133,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>1.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>${snappy.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.avro</groupId>
