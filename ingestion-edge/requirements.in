@@ -4,7 +4,7 @@ google-cloud-container==2.10.1
 google-cloud-monitoring==2.8.0
 google-cloud-pubsub==1.0.2
 gunicorn==20.1.0
-kubernetes==20.13.0
+kubernetes==21.7.0
 persist-queue==0.7.0
 pip-tools==6.4.0
 psutil==5.9.0
