@@ -203,6 +203,14 @@ public class MessageScrubber {
       });
     }
 
+    if (bug1712850Affected(attributes)) {
+      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
+        json.put("search_query", "");
+        json.put("matched_keywords", "");
+        markBugCounter("1712850");
+      }
+    }
+
     // Data collected prior to glean.js 0.17.0 is effectively useless.
     if (bug1733118Affected(namespace, docType, json)) {
       // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1733118
@@ -317,6 +325,13 @@ public class MessageScrubber {
         && attributes.get(Attribute.DOCUMENT_TYPE).equals("sync")
         && attributes.get(Attribute.APP_VERSION) != null
         && attributes.get(Attribute.APP_VERSION).matches("^([0-9]|[0-2][0-7])\\..*"); // <= 27
+  }
+
+  // See bug 1712850
+  @VisibleForTesting
+  static boolean bug1712850Affected(Map<String, String> attributes) {
+    return "contextual-services".equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "quicksuggest-impression".equals(attributes.get(Attribute.DOCUMENT_TYPE));
   }
 
   // See bug 1733118 for discussion of affected versions, etc.
