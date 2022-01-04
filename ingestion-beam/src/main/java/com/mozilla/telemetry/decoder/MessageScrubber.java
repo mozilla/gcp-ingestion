@@ -70,6 +70,7 @@ public class MessageScrubber {
       .put("browser-oceanhero", "1740091") //
       .put("com-qebrowser", "1740091") //
       .put("org-mozilla-sorizava-focus", "1740091") //
+      .put("com-pando-pandobrowser", "1745742") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
