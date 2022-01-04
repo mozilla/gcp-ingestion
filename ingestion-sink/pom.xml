@@ -14,8 +14,8 @@
     <packaging>jar</packaging>
 
     <properties>
-        <log4j.version>2.17.0</log4j.version>
-        <opencensus.version>0.29.0</opencensus.version>
+        <log4j.version>2.17.1</log4j.version>
+        <opencensus.version>0.30.0</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
 
@@ -47,7 +47,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
-                <version>24.1.0</version>
+                <version>24.1.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -55,7 +55,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>google-cloud-pubsublite</artifactId>
-                <version>1.4.5</version>
+                <version>1.4.7</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
@@ -126,7 +126,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.1.0</version>
+            <version>4.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
