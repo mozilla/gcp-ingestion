@@ -92,6 +92,10 @@ public class ParseReportingUrl extends
           Optional.ofNullable(payload.path(Attribute.CONTEXT_ID).textValue()) //
               .ifPresent(v -> attributes.put(Attribute.CONTEXT_ID, v));
 
+          // Store request_id for counting in subsequent transforms.
+          Optional.ofNullable(payload.path(Attribute.REQUEST_ID).textValue()) //
+              .ifPresent(v -> attributes.put(Attribute.REQUEST_ID, v));
+
           String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
 
           ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
