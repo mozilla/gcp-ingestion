@@ -160,6 +160,17 @@ public class ParsePayload extends
         throw e;
       }
 
+      // Round any floating point event timestamps, which would otherwise cause a schema validation error.
+      JsonNode jsonEvents = json.get("events");
+      if (jsonEvents != null && jsonEvents.isArray()) {
+        for (JsonNode jsonEvent: jsonEvents) {
+          JsonNode jsonEventTimestamp = jsonEvent.get("timestamp");
+          if (jsonEventTimestamp != null && jsonEventTimestamp.isFloatingPointNumber()) {
+            ((ObjectNode)jsonEvent).put("timestamp", Math.round(jsonEventTimestamp.asDouble()));
+          }
+        }
+      }
+
       try {
         validateTimed(schema, json);
       } catch (ValidationException e) {
