@@ -369,23 +369,21 @@ public abstract class PubsubMessageToObjectNode {
 
       for (String jsonFieldName : Lists.newArrayList(parent.fieldNames())) {
         final JsonNode value = parent.get(jsonFieldName);
+        final String altFieldName = jsonFieldName + "2";
 
+        // Determine the equivalent bqFieldName for this jsonField.
         final String bqFieldName;
-        if (bqFieldMap.containsKey(jsonFieldName)) {
-          // The JSON field name already matches a BQ field.
-
+        if (bqFieldMap.containsKey(altFieldName)
+            && BUG_1737656_METRIC_NAMES.contains(jsonFieldName)) {
           // For Glean pings defined before November 2021, we had deployed incorrect types to
           // BigQuery tables under the metrics struct for types url, text, jwe, and labeled_rate;
           // we thus have to rename these in schemas to url2, text2, jwe2, and labeled_rate2 and
           // alter payloads here to match the expected schema.
-          final String altFieldName = jsonFieldName + "2";
-          Field altBqField = bqFieldMap.get(altFieldName);
-          if (altBqField != null && BUG_1737656_METRIC_NAMES.contains(jsonFieldName)) {
-            parent.remove(jsonFieldName);
-            bqFieldName = altFieldName;
-          } else {
-            bqFieldName = jsonFieldName;
-          }
+          parent.remove(jsonFieldName);
+          bqFieldName = altFieldName;
+        } else if (bqFieldMap.containsKey(jsonFieldName)) {
+          // The JSON field name already matches a BQ field.
+          bqFieldName = jsonFieldName;
         } else {
           // Remove the json field from the parent because it does not match the BQ field name.
           parent.remove(jsonFieldName);
