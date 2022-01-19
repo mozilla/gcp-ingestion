@@ -3,6 +3,7 @@ package com.mozilla.telemetry;
 import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
+import com.mozilla.telemetry.contextualservices.EmitCounters;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
 import com.mozilla.telemetry.contextualservices.LabelClickSpikes;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
@@ -66,7 +67,8 @@ public class ContextualServicesReporter extends Sink {
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
-        .failuresTo(errorCollections);
+        .failuresTo(errorCollections) //
+        .apply(EmitCounters.of());
 
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
     Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click");
