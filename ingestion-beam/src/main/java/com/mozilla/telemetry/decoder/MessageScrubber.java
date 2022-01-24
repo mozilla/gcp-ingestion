@@ -3,6 +3,7 @@ package com.mozilla.telemetry.decoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.api.client.util.Lists;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -348,9 +349,13 @@ public class MessageScrubber {
 
   // See bug 1751753 for explanation of context.
   private static void processForBug1751753(ObjectNode json) {
-    processKeysForBug1751753(json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS"));
-    json.path("payload").path("processes").path("parent").path("keyedScalars").fields()
-        .forEachRemaining(entry -> {
+    // Sanitize keys in the SEARCH_COUNTS histogram.
+    JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
+    processKeysForBug1751753(searchCounts);
+
+    // Santizie keys in browser.search.content.* keyed scalars.
+    json.path("payload").path("processes").path("parent").path("keyedScalars") //
+        .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.content.")) {
             processKeysForBug1751753(entry.getValue());
           }
@@ -363,17 +368,19 @@ public class MessageScrubber {
       return;
     }
     ObjectNode searchNode = (ObjectNode) inputNode;
-    searchNode.fields().forEachRemaining(entry -> {
-      System.out.println(entry.getKey());
-      String code = StringUtils.substringAfterLast(entry.getKey(), ":");
-      if (ALLOWED_SEARCH_CODES.contains(code)) {
-        // pass; no modification needed for this key.
-      } else {
-        // replace the unknown code with "other".
-        String newKey = StringUtils.substringBeforeLast(entry.getKey(), ":") + ":other";
-        System.out.println("new key: " + newKey);
-        searchNode.remove(entry.getKey());
-        searchNode.set(newKey, entry.getValue());
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      if (name.contains(":")) {
+        // This is an in-content search with format:
+        // <provider>.in-content:[sap|sap-follow-on|organic]:[code|none]
+        final String code = StringUtils.substringAfterLast(name, ":");
+        if (ALLOWED_SEARCH_CODES.contains(code)) {
+          // Search code is allowed; no modification needed for this key.
+        } else {
+          // Search code is not recognized; replace the unknown code with "other".
+          String newKey = StringUtils.substringBeforeLast(name, ":") + ":other";
+          JsonNode value = searchNode.remove(name);
+          searchNode.set(newKey, value);
+        }
       }
     });
   }
