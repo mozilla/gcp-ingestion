@@ -11,8 +11,10 @@ import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is called in {@link ParsePayload} to check for known signatures of potentially
@@ -86,6 +88,19 @@ public class MessageScrubber {
       .put("/submit/sslreports", "1585144") //
       .put("/submit/sslreports/", "1585144") //
       .build();
+
+  // Static list prepared for bug 1751753, pulled from
+  // https://searchfox.org/mozilla-central/source/services/settings/dumps/main/search-telemetry-v2.json
+  // TODO: Pull list from RemoteSettings.
+  private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("MOZ2", "MOZ4", "MOZ5",
+      "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZM", "MOZO", "MOZT", "MOZW", "MOZSL01", "MOZSL02",
+      "MOZSL03", "monline_dg", "monline_4_dg", "monline_7_dg", "firefox-a", "firefox-b",
+      "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d", "firefox-b-1-d",
+      "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m", "firefox-b-o",
+      "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg", "firefox-b-huawei-h1611",
+      "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2", "firefox-b-tinno", "firefox-b-pn-wt",
+      "firefox-b-pn-wt-us", "ubuntu", "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus",
+      "ffos", "ffsb", "fpas", "fpsa", "ftas", "ftsa", "newext", "none");
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -202,6 +217,10 @@ public class MessageScrubber {
           markBugCounter("1642386");
         });
       });
+    }
+
+    if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
+      processForBug1751753(json);
     }
 
     // Data collected prior to glean.js 0.17.0 is effectively useless.
@@ -325,6 +344,38 @@ public class MessageScrubber {
     return "mozillavpn".equals(namespace) && "main".equals(docType)
         && ParsePayload.getGleanClientInfo(json).path("telemetry_sdk_build").asText("")
             .matches("0[.]([0-9]|1[0-6])[.].*"); // < 0.17
+  }
+
+  // See bug 1751753 for explanation of context.
+  private static void processForBug1751753(ObjectNode json) {
+    processKeysForBug1751753(json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS"));
+    json.path("payload").path("processes").path("parent").path("keyedScalars").fields()
+        .forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.content.")) {
+            processKeysForBug1751753(entry.getValue());
+          }
+        });
+  }
+
+  private static void processKeysForBug1751753(JsonNode inputNode) {
+    if (!inputNode.isObject()) {
+      // If this isn't an object, we have nothing to do here.
+      return;
+    }
+    ObjectNode searchNode = (ObjectNode) inputNode;
+    searchNode.fields().forEachRemaining(entry -> {
+      System.out.println(entry.getKey());
+      String code = StringUtils.substringAfterLast(entry.getKey(), ":");
+      if (ALLOWED_SEARCH_CODES.contains(code)) {
+        // pass; no modification needed for this key.
+      } else {
+        // replace the unknown code with "other".
+        String newKey = StringUtils.substringBeforeLast(entry.getKey(), ":") + ":other";
+        System.out.println("new key: " + newKey);
+        searchNode.remove(entry.getKey());
+        searchNode.set(newKey, entry.getValue());
+      }
+    });
   }
 
 }
