@@ -98,15 +98,20 @@ public class MessageScrubber {
       // https://phabricator.services.mozilla.com/D136768
       // Longer-term, they will be available in RemoteSettings at:
       // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
+      // Bing
       "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZM", "MOZO", "MOZT",
-      "MOZW", "MOZSL01", "MOZSL02", "MOZSL03", "monline_dg", "monline_3_dg", "monline_4_dg",
-      "monline_7_dg", "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab",
-      "firefox-b-d", "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m",
-      "firefox-b-1-m", "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm",
-      "firefox-b-lg", "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1",
-      "firefox-b-oem2", "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu",
+      "MOZW", "MOZSL01", "MOZSL02", "MOZSL03",
+      // Google
+      "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
+      "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
+      "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
+      "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
+      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu",
+      // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
-      "ftas", "ftsa", "newext"
+      "ftas", "ftsa", "newext",
+      // Yahoo
+      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
   // End of copied values.
   );
 
