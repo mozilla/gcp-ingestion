@@ -466,7 +466,7 @@ public class MessageScrubberTest {
         + "        \"keyedScalars\": {\n" //
         + "          \"browser.search.content.urlbar\": {\n" //
         + "            \"google:tagged:firefox-b-1-d\": 1,\n" //
-        + "            \"google:tagged:other\": 2\n" //
+        + "            \"google:tagged:other.scrubbed\": 2\n" //
         + "          }\n" //
         + "        }\n" // //
         + "      }\n" //
@@ -475,7 +475,7 @@ public class MessageScrubberTest {
         + "      \"SEARCH_COUNTS\": {\n" //
         + "        \"google-b-1-d.urlbar\": \"hist_content_1\",\n" //
         + "        \"google.in-content:sap-follow-on:firefox-b-1-d\": \"hist_content_2\",\n" //
-        + "        \"google.in-content:sap:other\": \"hist_content_3\"\n" //
+        + "        \"google.in-content:sap:other.scrubbed\": \"hist_content_3\"\n" //
         + "      }\n" //
         + "    }\n" //
         + "  }\n" //
