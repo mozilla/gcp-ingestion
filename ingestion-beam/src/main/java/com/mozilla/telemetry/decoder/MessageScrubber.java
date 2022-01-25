@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -12,9 +13,10 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class is called in {@link ParsePayload} to check for known signatures of potentially
@@ -90,6 +92,14 @@ public class MessageScrubber {
       .build();
 
   private static final String REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+
+  // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
+      .compile("(.+\\.in-content.[^:]+:)(.*)");
+
+  // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("([^:]+:[^:]+:)(.*)");
 
   // TODO: Pull list from RemoteSettings.
   private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
@@ -363,29 +373,30 @@ public class MessageScrubber {
     // Sanitize keys in the SEARCH_COUNTS histogram.
     JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
     if (searchCounts.isObject()) {
-      processKeysForBug1751753((ObjectNode) searchCounts);
+      processKeysForBug1751753((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
     }
 
     // Sanitize keys in browser.search.content.* keyed scalars.
     json.path("payload").path("processes").path("parent").path("keyedScalars") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
-            processKeysForBug1751753((ObjectNode) entry.getValue());
+            processKeysForBug1751753((ObjectNode) entry.getValue(), DESKTOP_SEARCH_CONTENT_PATTERN);
           }
         });
   }
 
-  private static void processKeysForBug1751753(ObjectNode searchNode) {
+  private static void processKeysForBug1751753(ObjectNode searchNode, Pattern pattern) {
     Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
-      if (name.contains(".in-content")) {
-        // This is an in-content search with format:
-        // <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
-        final String code = StringUtils.substringAfterLast(name, ":");
+      Matcher match = pattern.matcher(name);
+      if (match.matches()) {
+        // Group 0 is the entire match;
+        // Group 1 is everything before the code, including trailing separator;
+        // Group 2 is the code
+        final String prefix = match.group(1);
+        final String code = match.group(2);
         if (!ALLOWED_SEARCH_CODES.contains(code)) {
           // Search code is not recognized; redact the value.
-          String newKey = String.format("%s:%s", //
-              StringUtils.substringBeforeLast(name, ":"), //
-              REDACTED_SEARCH_CODE_VALUE);
+          String newKey = prefix + REDACTED_SEARCH_CODE_VALUE;
           JsonNode value = searchNode.remove(name);
           searchNode.set(newKey, value);
           markBugCounter("1751753");
