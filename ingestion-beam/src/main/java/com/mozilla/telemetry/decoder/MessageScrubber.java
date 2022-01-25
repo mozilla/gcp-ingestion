@@ -358,31 +358,26 @@ public class MessageScrubber {
   private static void processForBug1751753(ObjectNode json) {
     // Sanitize keys in the SEARCH_COUNTS histogram.
     JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
-    processKeysForBug1751753(searchCounts);
+    if (searchCounts.isObject()) {
+      processKeysForBug1751753((ObjectNode) searchCounts);
+    }
 
     // Sanitize keys in browser.search.content.* keyed scalars.
     json.path("payload").path("processes").path("parent").path("keyedScalars") //
         .fields().forEachRemaining(entry -> {
-          if (entry.getKey().startsWith("browser.search.content.")) {
-            processKeysForBug1751753(entry.getValue());
+          if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
+            processKeysForBug1751753((ObjectNode) entry.getValue());
           }
         });
   }
 
-  private static void processKeysForBug1751753(JsonNode inputNode) {
-    if (!inputNode.isObject()) {
-      // If this isn't an object, we have nothing to do here.
-      return;
-    }
-    ObjectNode searchNode = (ObjectNode) inputNode;
-    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+  private static void processKeysForBug1751753(ObjectNode searchNode) {
+    IteratorUtils.toList(searchNode.fieldNames()).forEach(name -> {
       if (name.contains(":")) {
         // This is an in-content search with format:
-        // <provider>.in-content:[sap|sap-follow-on|organic]:[code|none]
+        // <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
         final String code = StringUtils.substringAfterLast(name, ":");
-        if (ALLOWED_SEARCH_CODES.contains(code)) {
-          // Search code is allowed; no modification needed for this key.
-        } else {
+        if (!ALLOWED_SEARCH_CODES.contains(code)) {
           // Search code is not recognized; redact the value.
           String newKey = String.format("%s:%s", //
               StringUtils.substringBeforeLast(name, ":"), //
