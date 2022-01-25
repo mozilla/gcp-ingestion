@@ -360,7 +360,7 @@ public class MessageScrubber {
     JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
     processKeysForBug1751753(searchCounts);
 
-    // Santizie keys in browser.search.content.* keyed scalars.
+    // Sanitize keys in browser.search.content.* keyed scalars.
     json.path("payload").path("processes").path("parent").path("keyedScalars") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.content.")) {
@@ -389,6 +389,7 @@ public class MessageScrubber {
               REDACTED_SEARCH_CODE_VALUE);
           JsonNode value = searchNode.remove(name);
           searchNode.set(newKey, value);
+          markBugCounter("1751753");
         }
       }
     });
