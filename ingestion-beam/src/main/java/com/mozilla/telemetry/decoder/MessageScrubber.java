@@ -95,7 +95,7 @@ public class MessageScrubber {
 
   // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
-      .compile("(.+\\.in-content.[^:]+:)(.*)");
+      .compile("([^.]+\\.in-content[:.][^:]+:)(.*)");
 
   // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
