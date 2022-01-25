@@ -3,7 +3,6 @@ package com.mozilla.telemetry.decoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.api.client.util.Lists;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -377,8 +376,8 @@ public class MessageScrubber {
   }
 
   private static void processKeysForBug1751753(ObjectNode searchNode) {
-    IteratorUtils.toList(searchNode.fieldNames()).forEach(name -> {
-      if (name.contains(":")) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      if (name.contains(".in-content")) {
         // This is an in-content search with format:
         // <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
         final String code = StringUtils.substringAfterLast(name, ":");
