@@ -431,6 +431,60 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testRedactSearchCountsForBug1751753() throws Exception {
+    final Map<String, String> attributes = ImmutableMap.<String, String>builder() //
+        .put(Attribute.DOCUMENT_NAMESPACE, ParseUri.TELEMETRY) //
+        .put(Attribute.DOCUMENT_TYPE, "main") //
+        .put(Attribute.DOCUMENT_VERSION, "4") //
+        .put(Attribute.APP_NAME, "Firefox") //
+        .build();
+    ObjectNode json = Json.readObjectNode(("{\n" //
+        + "  \"payload\": {\n" //
+        + "    \"processes\": {\n" //
+        + "      \"parent\": {\n" //
+        + "        \"keyedScalars\": {\n" //
+        + "          \"browser.search.content.urlbar\": {\n" //
+        + "            \"google:tagged:firefox-b-1-d\": 1,\n" //
+        + "            \"google:tagged:firefox-bazbaz\": 2\n" //
+        + "          }\n" //
+        + "        }\n" //
+        + "      }\n" //
+        + "    },\n" //
+        + "    \"keyedHistograms\": {\n" //
+        + "      \"SEARCH_COUNTS\": {\n" //
+        + "        \"google-b-1-d.urlbar\": \"hist_content_1\",\n" //
+        + "        \"google.in-content:sap-follow-on:firefox-b-1-d\": \"hist_content_2\",\n" //
+        + "        \"google.in-content:sap:firefox-blahblahblah\": \"hist_content_3\"\n" //
+        + "      }\n" //
+        + "    }\n" //
+        + "  }\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    ObjectNode expected = Json.readObjectNode(("{\n" //
+        + "  \"payload\": {\n" //
+        + "    \"processes\": {\n" //
+        + "      \"parent\": {\n" //
+        + "        \"keyedScalars\": {\n" //
+        + "          \"browser.search.content.urlbar\": {\n" //
+        + "            \"google:tagged:firefox-b-1-d\": 1,\n" //
+        + "            \"google:tagged:other.scrubbed\": 2\n" //
+        + "          }\n" //
+        + "        }\n" // //
+        + "      }\n" //
+        + "    },\n" //
+        + "    \"keyedHistograms\": {\n" //
+        + "      \"SEARCH_COUNTS\": {\n" //
+        + "        \"google-b-1-d.urlbar\": \"hist_content_1\",\n" //
+        + "        \"google.in-content:sap-follow-on:firefox-b-1-d\": \"hist_content_2\",\n" //
+        + "        \"google.in-content:sap:other.scrubbed\": \"hist_content_3\"\n" //
+        + "      }\n" //
+        + "    }\n" //
+        + "  }\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    MessageScrubber.scrub(attributes, json);
+    assertEquals(expected, json);
+  }
+
+  @Test
   public void testShouldScrubClientIdBug1489560() throws Exception {
     ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
         + "  \"client_info\": {\n" //

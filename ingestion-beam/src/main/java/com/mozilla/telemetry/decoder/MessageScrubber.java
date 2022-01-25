@@ -6,11 +6,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
 
@@ -86,6 +90,39 @@ public class MessageScrubber {
       .put("/submit/sslreports", "1585144") //
       .put("/submit/sslreports/", "1585144") //
       .build();
+
+  private static final String REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+
+  // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
+      .compile("(?<prefix>[^.]+\\.in-content[:.][^:]+:)(?<code>.*)");
+
+  // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("(?<prefix>[^:]+:[^:]+:)(?<code>.*)");
+
+  // TODO: Pull list from RemoteSettings.
+  private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
+      // Values below are pulled from search-telemetry-v2.json as defined in
+      // https://phabricator.services.mozilla.com/D136768
+      // Longer-term, they will be available in RemoteSettings at:
+      // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
+      // Bing
+      "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZM", "MOZO", "MOZT",
+      "MOZW", "MOZSL01", "MOZSL02", "MOZSL03",
+      // Google
+      "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
+      "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
+      "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
+      "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
+      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu",
+      // DuckDuckGo
+      "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
+      "ftas", "ftsa", "newext",
+      // Yahoo
+      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
+  // End of copied values.
+  );
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -202,6 +239,10 @@ public class MessageScrubber {
           markBugCounter("1642386");
         });
       });
+    }
+
+    if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
+      processForBug1751753(json);
     }
 
     // Data collected prior to glean.js 0.17.0 is effectively useless.
@@ -325,6 +366,40 @@ public class MessageScrubber {
     return "mozillavpn".equals(namespace) && "main".equals(docType)
         && ParsePayload.getGleanClientInfo(json).path("telemetry_sdk_build").asText("")
             .matches("0[.]([0-9]|1[0-6])[.].*"); // < 0.17
+  }
+
+  // See bug 1751753 for explanation of context.
+  private static void processForBug1751753(ObjectNode json) {
+    // Sanitize keys in the SEARCH_COUNTS histogram.
+    JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
+    if (searchCounts.isObject()) {
+      processKeysForBug1751753((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
+    }
+
+    // Sanitize keys in browser.search.content.* keyed scalars.
+    json.path("payload").path("processes").path("parent").path("keyedScalars") //
+        .fields().forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
+            processKeysForBug1751753((ObjectNode) entry.getValue(), DESKTOP_SEARCH_CONTENT_PATTERN);
+          }
+        });
+  }
+
+  private static void processKeysForBug1751753(ObjectNode searchNode, Pattern pattern) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      Matcher match = pattern.matcher(name);
+      if (match.matches()) {
+        final String prefix = match.group("prefix");
+        final String code = match.group("code");
+        if (!ALLOWED_SEARCH_CODES.contains(code)) {
+          // Search code is not recognized; redact the value.
+          String newKey = prefix + REDACTED_SEARCH_CODE_VALUE;
+          JsonNode value = searchNode.remove(name);
+          searchNode.set(newKey, value);
+          markBugCounter("1751753");
+        }
+      }
+    });
   }
 
 }
