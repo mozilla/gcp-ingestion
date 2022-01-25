@@ -90,6 +90,8 @@ public class MessageScrubber {
       .put("/submit/sslreports/", "1585144") //
       .build();
 
+  private static final String REDACTED_SEARCH_CODE_VALUE = "other";
+
   // TODO: Pull list from RemoteSettings.
   private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
       // Values below are pulled from search-telemetry-v2.json as defined in
@@ -381,8 +383,10 @@ public class MessageScrubber {
         if (ALLOWED_SEARCH_CODES.contains(code)) {
           // Search code is allowed; no modification needed for this key.
         } else {
-          // Search code is not recognized; replace the unknown code with "other".
-          String newKey = StringUtils.substringBeforeLast(name, ":") + ":other";
+          // Search code is not recognized; redact the value.
+          String newKey = String.format("%s:%s", //
+                  StringUtils.substringBeforeLast(name, ":"), //
+                  REDACTED_SEARCH_CODE_VALUE);
           JsonNode value = searchNode.remove(name);
           searchNode.set(newKey, value);
         }
