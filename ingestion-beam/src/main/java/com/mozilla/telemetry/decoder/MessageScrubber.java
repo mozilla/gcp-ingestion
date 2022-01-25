@@ -90,7 +90,7 @@ public class MessageScrubber {
       .put("/submit/sslreports/", "1585144") //
       .build();
 
-  private static final String REDACTED_SEARCH_CODE_VALUE = "other";
+  private static final String REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
 
   // TODO: Pull list from RemoteSettings.
   private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
@@ -385,8 +385,8 @@ public class MessageScrubber {
         } else {
           // Search code is not recognized; redact the value.
           String newKey = String.format("%s:%s", //
-                  StringUtils.substringBeforeLast(name, ":"), //
-                  REDACTED_SEARCH_CODE_VALUE);
+              StringUtils.substringBeforeLast(name, ":"), //
+              REDACTED_SEARCH_CODE_VALUE);
           JsonNode value = searchNode.remove(name);
           searchNode.set(newKey, value);
         }
