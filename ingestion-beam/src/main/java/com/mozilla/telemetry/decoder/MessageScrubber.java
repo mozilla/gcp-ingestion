@@ -90,18 +90,23 @@ public class MessageScrubber {
       .put("/submit/sslreports/", "1585144") //
       .build();
 
-  // Static list prepared for bug 1751753, pulled from
-  // https://searchfox.org/mozilla-central/source/services/settings/dumps/main/search-telemetry-v2.json
   // TODO: Pull list from RemoteSettings.
-  private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("MOZ2", "MOZ4", "MOZ5",
-      "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZM", "MOZO", "MOZT", "MOZW", "MOZSL01", "MOZSL02",
-      "MOZSL03", "monline_dg", "monline_4_dg", "monline_7_dg", "firefox-a", "firefox-b",
-      "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d", "firefox-b-1-d",
-      "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m", "firefox-b-o",
-      "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg", "firefox-b-huawei-h1611",
-      "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2", "firefox-b-tinno", "firefox-b-pn-wt",
-      "firefox-b-pn-wt-us", "ubuntu", "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus",
-      "ffos", "ffsb", "fpas", "fpsa", "ftas", "ftsa", "newext", "none");
+  private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
+      // Values below are pulled from search-telemetry-v2.json as defined in
+      // https://phabricator.services.mozilla.com/D136768
+      // Longer-term, they will be available in RemoteSettings at:
+      // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
+      "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZM", "MOZO", "MOZT",
+      "MOZW", "MOZSL01", "MOZSL02", "MOZSL03", "monline_dg", "monline_3_dg", "monline_4_dg",
+      "monline_7_dg", "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab",
+      "firefox-b-d", "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m",
+      "firefox-b-1-m", "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm",
+      "firefox-b-lg", "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1",
+      "firefox-b-oem2", "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu",
+      "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
+      "ftas", "ftsa", "newext"
+  // End of copied values.
+  );
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
