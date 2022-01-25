@@ -95,11 +95,11 @@ public class MessageScrubber {
 
   // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
-      .compile("([^.]+\\.in-content[:.][^:]+:)(.*)");
+      .compile("(?<prefix>[^.]+\\.in-content[:.][^:]+:)(?<code>.*)");
 
   // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
-      .compile("([^:]+:[^:]+:)(.*)");
+      .compile("(?<prefix>[^:]+:[^:]+:)(?<code>.*)");
 
   // TODO: Pull list from RemoteSettings.
   private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
@@ -389,11 +389,8 @@ public class MessageScrubber {
     Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
       Matcher match = pattern.matcher(name);
       if (match.matches()) {
-        // Group 0 is the entire match;
-        // Group 1 is everything before the code, including trailing separator;
-        // Group 2 is the code
-        final String prefix = match.group(1);
-        final String code = match.group(2);
+        final String prefix = match.group("prefix");
+        final String code = match.group("code");
         if (!ALLOWED_SEARCH_CODES.contains(code)) {
           // Search code is not recognized; redact the value.
           String newKey = prefix + REDACTED_SEARCH_CODE_VALUE;
