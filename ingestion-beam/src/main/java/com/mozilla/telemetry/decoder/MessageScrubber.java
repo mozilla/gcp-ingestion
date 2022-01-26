@@ -129,6 +129,11 @@ public class MessageScrubber {
   // End of copied values.
   );
 
+  private static final Set<String> MOBILE_SEARCH_AFFECTED_NAMESPACES = ImmutableSet.of(
+      "org-mozilla-firefox", "org-mozilla-firefox-beta", "org-mozilla-fenix",
+      "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora", "org-mozilla-focus",
+      "org-mozilla-focus-beta", "org-mozilla-focus-nightly", "org-mozilla-klar");
+
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
    *
@@ -250,7 +255,8 @@ public class MessageScrubber {
       processForBug1751753(json);
     }
 
-    if ("metrics".equals(docType)) {
+    if ("metrics".equals(docType) && namespace != null
+        && MOBILE_SEARCH_AFFECTED_NAMESPACES.contains(namespace)) {
       processForBug1751955(json);
     }
 

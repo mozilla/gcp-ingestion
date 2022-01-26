@@ -487,7 +487,7 @@ public class MessageScrubberTest {
   @Test
   public void testRedactSearchCountsForBug1751955() throws Exception {
     final Map<String, String> attributes = ImmutableMap.<String, String>builder() //
-        .put(Attribute.DOCUMENT_NAMESPACE, "org_mozilla_firefox") //
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox") //
         .put(Attribute.DOCUMENT_TYPE, "metrics") //
         .put(Attribute.DOCUMENT_VERSION, "1") //
         .build();
