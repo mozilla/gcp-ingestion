@@ -513,13 +513,13 @@ public class MessageScrubberTest {
         + "    \"labeled_counter\": {\n" //
         + "      \"browser.search.in_content\": {\n" //
         + "        \"google.in-content.sap-follow-on.none\": 1,\n" //
-        + "        \"google.in-content.sap-follow-on.scrubbed\": 2,\n" //
+        + "        \"google.in-content.sap-follow-on.other-scrubbed\": 2,\n" //
         + "        \"google.in-content.sap-follow-on.ubuntu.ts\": 3\n" //
         + "      },\n" //
         + "      \"browser.search.ad_clicks\": {\n" //
         + "        \"google.in-content.sap-follow-on.none\": 6,\n" //
-        + "        \"google.in-content.sap-follow-on.scrubbed\": 7,\n" //
-        + "        \"google.in-content.sap-follow-on.scrubbed\": 8,\n" //
+        + "        \"google.in-content.sap-follow-on.other-scrubbed\": 7,\n" //
+        + "        \"google.in-content.sap-follow-on.other-scrubbed\": 8,\n" //
         + "        \"google.in-content.sap-follow-on.ubuntu\": 9\n" //
         + "      }\n" //
         + "    }\n" //

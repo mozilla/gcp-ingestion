@@ -93,7 +93,7 @@ public class MessageScrubber {
       .build();
 
   private static final String DESKTOP_REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
-  private static final String MOBILE_REDACTED_SEARCH_CODE_VALUE = "scrubbed";
+  private static final String MOBILE_REDACTED_SEARCH_CODE_VALUE = "other-scrubbed";
 
   // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
@@ -453,6 +453,8 @@ public class MessageScrubber {
           newKey = prefix + code;
           if (ALLOWED_SEARCH_CHANNELS.contains(channel)) {
             // Channel is an optional field; we include it only if it's a known value.
+            // See related client-side implementation in
+            // https://github.com/mozilla-mobile/android-components/pull/11622
             newKey = String.format("%s.%s", newKey, channel);
           }
         } else {
