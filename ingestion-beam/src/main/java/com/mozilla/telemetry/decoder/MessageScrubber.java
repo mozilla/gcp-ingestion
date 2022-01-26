@@ -102,7 +102,7 @@ public class MessageScrubber {
   private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
       .compile("(?<prefix>[^:]+:[^:]+:)(?<code>.*)");
 
-  // The key format is <provider>.in-content.[sap|sap-follow-on|organic].[<code>|none](.[channel])?
+  // The key format is <provider>.in-content.[sap|sap-follow-on|organic].[<code>|none](.<channel>)?
   private static final Pattern MOBILE_SEARCH_CONTENT_PATTERN = Pattern
       .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*).*");
 
@@ -398,7 +398,7 @@ public class MessageScrubber {
 
   // See bug 1751955 for explanation of context.
   private static void processForBug1751955(ObjectNode json) {
-    // Sanitize keys in browser_search_* labeled counters.
+    // Sanitize keys in browser.search.* labeled counters.
     json.path("metrics").path("labeled_counter") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.") && entry.getValue().isObject()) {
