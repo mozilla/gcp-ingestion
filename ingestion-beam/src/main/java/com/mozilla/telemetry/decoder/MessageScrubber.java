@@ -91,7 +91,8 @@ public class MessageScrubber {
       .put("/submit/sslreports/", "1585144") //
       .build();
 
-  private static final String REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+  private static final String DESKTOP_REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+  private static final String MOBILE_REDACTED_SEARCH_CODE_VALUE = "scrubbed";
 
   // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
@@ -100,6 +101,10 @@ public class MessageScrubber {
   // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
       .compile("(?<prefix>[^:]+:[^:]+:)(?<code>.*)");
+
+  // The key format is <provider>.in-content.[sap|sap-follow-on|organic].[<code>|none](.[channel])?
+  private static final Pattern MOBILE_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*).*");
 
   // TODO: Pull list from RemoteSettings.
   private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
@@ -245,6 +250,10 @@ public class MessageScrubber {
       processForBug1751753(json);
     }
 
+    if ("metrics".equals(docType)) {
+      processForBug1751955(json);
+    }
+
     // Data collected prior to glean.js 0.17.0 is effectively useless.
     if (bug1733118Affected(namespace, docType, json)) {
       // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1733118
@@ -373,19 +382,34 @@ public class MessageScrubber {
     // Sanitize keys in the SEARCH_COUNTS histogram.
     JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
     if (searchCounts.isObject()) {
-      processKeysForBug1751753((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
+      sanitizeSearchKeys((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN,
+          DESKTOP_REDACTED_SEARCH_CODE_VALUE);
     }
 
     // Sanitize keys in browser.search.content.* keyed scalars.
     json.path("payload").path("processes").path("parent").path("keyedScalars") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
-            processKeysForBug1751753((ObjectNode) entry.getValue(), DESKTOP_SEARCH_CONTENT_PATTERN);
+            sanitizeSearchKeys((ObjectNode) entry.getValue(), DESKTOP_SEARCH_CONTENT_PATTERN,
+                DESKTOP_REDACTED_SEARCH_CODE_VALUE);
           }
         });
   }
 
-  private static void processKeysForBug1751753(ObjectNode searchNode, Pattern pattern) {
+  // See bug 1751955 for explanation of context.
+  private static void processForBug1751955(ObjectNode json) {
+    // Sanitize keys in browser_search_* labeled counters.
+    json.path("metrics").path("labeled_counter") //
+        .fields().forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.") && entry.getValue().isObject()) {
+            sanitizeSearchKeys((ObjectNode) entry.getValue(), MOBILE_SEARCH_CONTENT_PATTERN,
+                MOBILE_REDACTED_SEARCH_CODE_VALUE);
+          }
+        });
+  }
+
+  private static void sanitizeSearchKeys(ObjectNode searchNode, Pattern pattern,
+      String redactionConstant) {
     Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
       Matcher match = pattern.matcher(name);
       if (match.matches()) {
@@ -393,7 +417,7 @@ public class MessageScrubber {
         final String code = match.group("code");
         if (!ALLOWED_SEARCH_CODES.contains(code)) {
           // Search code is not recognized; redact the value.
-          String newKey = prefix + REDACTED_SEARCH_CODE_VALUE;
+          String newKey = prefix + redactionConstant;
           JsonNode value = searchNode.remove(name);
           searchNode.set(newKey, value);
           markBugCounter("1751753");
