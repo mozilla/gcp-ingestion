@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -104,7 +105,7 @@ public class MessageScrubber {
 
   // The key format is <provider>.in-content.[sap|sap-follow-on|organic].[<code>|none](.<channel>)?
   private static final Pattern MOBILE_SEARCH_CONTENT_PATTERN = Pattern
-      .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*).*");
+      .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*)\\.?(?<channel>.*)");
 
   // TODO: Pull list from RemoteSettings.
   private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
@@ -128,6 +129,8 @@ public class MessageScrubber {
       "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
   // End of copied values.
   );
+
+  private static final Set<String> ALLOWED_SEARCH_CHANNELS = ImmutableSet.of("ts");
 
   private static final Set<String> MOBILE_SEARCH_AFFECTED_NAMESPACES = ImmutableSet.of(
       "org-mozilla-firefox", "org-mozilla-firefox-beta", "org-mozilla-fenix",
@@ -388,18 +391,34 @@ public class MessageScrubber {
     // Sanitize keys in the SEARCH_COUNTS histogram.
     JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
     if (searchCounts.isObject()) {
-      sanitizeSearchKeys((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN,
-          DESKTOP_REDACTED_SEARCH_CODE_VALUE);
+      sanitizeDesktopSearchKeys((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
     }
 
     // Sanitize keys in browser.search.content.* keyed scalars.
     json.path("payload").path("processes").path("parent").path("keyedScalars") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
-            sanitizeSearchKeys((ObjectNode) entry.getValue(), DESKTOP_SEARCH_CONTENT_PATTERN,
-                DESKTOP_REDACTED_SEARCH_CODE_VALUE);
+            sanitizeDesktopSearchKeys((ObjectNode) entry.getValue(),
+                DESKTOP_SEARCH_CONTENT_PATTERN);
           }
         });
+  }
+
+  private static void sanitizeDesktopSearchKeys(ObjectNode searchNode, Pattern pattern) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      Matcher match = pattern.matcher(name);
+      if (match.matches()) {
+        final String prefix = match.group("prefix");
+        final String code = match.group("code");
+        if (!ALLOWED_SEARCH_CODES.contains(code)) {
+          // Search code is not recognized; redact the value.
+          String newKey = prefix + DESKTOP_REDACTED_SEARCH_CODE_VALUE;
+          JsonNode value = searchNode.remove(name);
+          searchNode.set(newKey, value);
+          markBugCounter("1751753");
+        }
+      }
+    });
   }
 
   // See bug 1751955 for explanation of context.
@@ -408,26 +427,40 @@ public class MessageScrubber {
     json.path("metrics").path("labeled_counter") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.") && entry.getValue().isObject()) {
-            sanitizeSearchKeys((ObjectNode) entry.getValue(), MOBILE_SEARCH_CONTENT_PATTERN,
-                MOBILE_REDACTED_SEARCH_CODE_VALUE);
+            sanitizeMobileSearchKeys((ObjectNode) entry.getValue(), MOBILE_SEARCH_CONTENT_PATTERN);
           }
         });
   }
 
-  private static void sanitizeSearchKeys(ObjectNode searchNode, Pattern pattern,
-      String redactionConstant) {
+  private static void sanitizeMobileSearchKeys(ObjectNode searchNode, Pattern pattern) {
     Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
       Matcher match = pattern.matcher(name);
       if (match.matches()) {
-        final String prefix = match.group("prefix");
-        final String code = match.group("code");
-        if (!ALLOWED_SEARCH_CODES.contains(code)) {
-          // Search code is not recognized; redact the value.
-          String newKey = prefix + redactionConstant;
-          JsonNode value = searchNode.remove(name);
-          searchNode.set(newKey, value);
-          markBugCounter("1751753");
+        String prefix = match.group("prefix");
+        String code = match.group("code");
+        String channel = match.group("channel");
+        boolean codeIsValid = ALLOWED_SEARCH_CODES.contains(code);
+        boolean channelIsValid = Strings.isNullOrEmpty(channel)
+            || ALLOWED_SEARCH_CHANNELS.contains(channel);
+        if (codeIsValid && channelIsValid) {
+          // Key is valid, so no rewrite is needed and we can return early.
+          return;
         }
+
+        // Sanitize the code and channel as needed.
+        String newKey;
+        if (codeIsValid) {
+          newKey = prefix + code;
+          if (ALLOWED_SEARCH_CHANNELS.contains(channel)) {
+            // Channel is an optional field; we include it only if it's a known value.
+            newKey = String.format("%s.%s", newKey, channel);
+          }
+        } else {
+          newKey = prefix + MOBILE_REDACTED_SEARCH_CODE_VALUE;
+        }
+        JsonNode value = searchNode.remove(name);
+        searchNode.set(newKey, value);
+        markBugCounter("1751955");
       }
     });
   }
