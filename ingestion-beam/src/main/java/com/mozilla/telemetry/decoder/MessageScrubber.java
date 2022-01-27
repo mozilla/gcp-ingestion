@@ -109,7 +109,9 @@ public class MessageScrubber {
       .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*)\\.?(?<channel>.*)");
 
   // TODO: Pull list from RemoteSettings.
-  private static final Set<String> ALLOWED_DESKTOP_SEARCH_CODES = ImmutableSet.of("none", "other", //
+  private static final Set<String> ALLOWED_DESKTOP_SEARCH_CODES = ImmutableSet.of("none",
+      // Client-side sanitization will produce "other"
+      "other",
       // Values below are pulled from search-telemetry-v2.json as defined in
       // https://phabricator.services.mozilla.com/D136768
       // Longer-term, they will be available in RemoteSettings at:
