@@ -109,7 +109,7 @@ public class MessageScrubber {
       .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*)\\.?(?<channel>.*)");
 
   // TODO: Pull list from RemoteSettings.
-  private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
+  private static final Set<String> ALLOWED_DESKTOP_SEARCH_CODES = ImmutableSet.of("none", "other", //
       // Values below are pulled from search-telemetry-v2.json as defined in
       // https://phabricator.services.mozilla.com/D136768
       // Longer-term, they will be available in RemoteSettings at:
@@ -127,12 +127,15 @@ public class MessageScrubber {
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "newext",
       // Yahoo
-      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg",
-      // End copied desktop codes.
-      // Additionally, these Baidu codes are relevant for mobile browsers.
-      "1000969a", "1000969b");
+      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
+  // End copied desktop codes.
+  );
 
-  private static final Set<String> ALLOWED_SEARCH_CODES_LOWER = ALLOWED_SEARCH_CODES
+  private static final Set<String> ALLOWED_MOBILE_SEARCH_CODES = ImmutableSet.<String>builder()
+      .addAll(ALLOWED_DESKTOP_SEARCH_CODES) //
+      // These Baidu codes are only relevant for mobile.
+      .add("1000969a", "1000969b") //
+      .build()
       // Search codes are lowercased on mobile before sending to telemetry.
       .stream().map(String::toLowerCase) //
       // Codes that start with digits have "_" prepended before sending to telemetry.
@@ -395,10 +398,6 @@ public class MessageScrubber {
             .matches("0[.]([0-9]|1[0-6])[.].*"); // < 0.17
   }
 
-  private static boolean isAllowedSearchCode(String code) {
-    return ALLOWED_SEARCH_CODES_LOWER.contains(code.toLowerCase());
-  }
-
   // See bug 1751753 for explanation of context.
   private static void processForBug1751753(ObjectNode json) {
     // Sanitize keys in the SEARCH_COUNTS histogram.
@@ -423,7 +422,7 @@ public class MessageScrubber {
       if (match.matches()) {
         final String prefix = match.group("prefix");
         final String code = match.group("code");
-        if (!isAllowedSearchCode(code)) {
+        if (!ALLOWED_DESKTOP_SEARCH_CODES.contains(code)) {
           // Search code is not recognized; redact the value.
           String newKey = prefix + DESKTOP_REDACTED_SEARCH_CODE_VALUE;
           JsonNode value = searchNode.remove(name);
@@ -440,19 +439,19 @@ public class MessageScrubber {
     json.path("metrics").path("labeled_counter") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.") && entry.getValue().isObject()) {
-            sanitizeMobileSearchKeys((ObjectNode) entry.getValue(), MOBILE_SEARCH_CONTENT_PATTERN);
+            sanitizeMobileSearchKeys((ObjectNode) entry.getValue());
           }
         });
   }
 
-  private static void sanitizeMobileSearchKeys(ObjectNode searchNode, Pattern pattern) {
+  private static void sanitizeMobileSearchKeys(ObjectNode searchNode) {
     Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
-      Matcher match = pattern.matcher(name);
+      Matcher match = MOBILE_SEARCH_CONTENT_PATTERN.matcher(name);
       if (match.matches()) {
         String prefix = match.group("prefix");
         String code = match.group("code");
-        String channel = match.group("channel").toLowerCase();
-        boolean codeIsValid = isAllowedSearchCode(code);
+        String channel = match.group("channel");
+        boolean codeIsValid = ALLOWED_MOBILE_SEARCH_CODES.contains(code);
         boolean channelIsValid = Strings.isNullOrEmpty(channel)
             || ALLOWED_SEARCH_CHANNELS.contains(channel);
         if (codeIsValid && channelIsValid) {
