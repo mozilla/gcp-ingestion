@@ -132,7 +132,7 @@ public class MessageScrubber {
 
   private static final Set<String> ALLOWED_SEARCH_CHANNELS = ImmutableSet.of("ts");
 
-  private static final Set<String> MOBILE_SEARCH_AFFECTED_NAMESPACES = ImmutableSet.of(
+  private static final Set<String> BUG_1751955_AFFECTED_NAMESPACES = ImmutableSet.of(
       "org-mozilla-firefox", "org-mozilla-firefox-beta", "org-mozilla-fenix",
       "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora", "org-mozilla-focus",
       "org-mozilla-focus-beta", "org-mozilla-focus-nightly", "org-mozilla-klar");
@@ -259,7 +259,7 @@ public class MessageScrubber {
     }
 
     if ("metrics".equals(docType) && namespace != null
-        && MOBILE_SEARCH_AFFECTED_NAMESPACES.contains(namespace)) {
+        && BUG_1751955_AFFECTED_NAMESPACES.contains(namespace)) {
       processForBug1751955(json);
     }
 
