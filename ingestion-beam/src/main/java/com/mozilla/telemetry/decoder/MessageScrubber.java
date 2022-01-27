@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
 
@@ -126,9 +127,17 @@ public class MessageScrubber {
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "newext",
       // Yahoo
-      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
-  // End of copied values.
-  );
+      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg",
+      // End copied desktop codes.
+      // Additionally, these Baidu codes are relevant for mobile browsers.
+      "1000969a", "1000969b");
+
+  private static final Set<String> ALLOWED_SEARCH_CODES_LOWER = ALLOWED_SEARCH_CODES
+      // Search codes are lowercased on mobile before sending to telemetry.
+      .stream().map(String::toLowerCase) //
+      // Codes that start with digits have "_" prepended before sending to telemetry.
+      .map(s -> Character.isDigit(s.charAt(0)) ? "_" + s : s) //
+      .collect(Collectors.toSet());
 
   private static final Set<String> ALLOWED_SEARCH_CHANNELS = ImmutableSet.of("ts");
 
@@ -386,6 +395,10 @@ public class MessageScrubber {
             .matches("0[.]([0-9]|1[0-6])[.].*"); // < 0.17
   }
 
+  private static boolean isAllowedSearchCode(String code) {
+    return ALLOWED_SEARCH_CODES_LOWER.contains(code.toLowerCase());
+  }
+
   // See bug 1751753 for explanation of context.
   private static void processForBug1751753(ObjectNode json) {
     // Sanitize keys in the SEARCH_COUNTS histogram.
@@ -410,7 +423,7 @@ public class MessageScrubber {
       if (match.matches()) {
         final String prefix = match.group("prefix");
         final String code = match.group("code");
-        if (!ALLOWED_SEARCH_CODES.contains(code)) {
+        if (!isAllowedSearchCode(code)) {
           // Search code is not recognized; redact the value.
           String newKey = prefix + DESKTOP_REDACTED_SEARCH_CODE_VALUE;
           JsonNode value = searchNode.remove(name);
@@ -438,8 +451,8 @@ public class MessageScrubber {
       if (match.matches()) {
         String prefix = match.group("prefix");
         String code = match.group("code");
-        String channel = match.group("channel");
-        boolean codeIsValid = ALLOWED_SEARCH_CODES.contains(code);
+        String channel = match.group("channel").toLowerCase();
+        boolean codeIsValid = isAllowedSearchCode(code);
         boolean channelIsValid = Strings.isNullOrEmpty(channel)
             || ALLOWED_SEARCH_CHANNELS.contains(channel);
         if (codeIsValid && channelIsValid) {
