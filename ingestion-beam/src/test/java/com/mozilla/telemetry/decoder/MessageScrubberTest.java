@@ -485,6 +485,51 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testRedactSearchCountsForBug1751955() throws Exception {
+    final Map<String, String> attributes = ImmutableMap.<String, String>builder() //
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox") //
+        .put(Attribute.DOCUMENT_TYPE, "metrics") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
+        .build();
+    ObjectNode json = Json.readObjectNode(("{\n" //
+        + "  \"metrics\": {\n" //
+        + "    \"labeled_counter\": {\n" //
+        + "      \"browser.search.in_content\": {\n" //
+        + "        \"google.in-content.sap-follow-on.none\": 1,\n" //
+        + "        \"google.in-content.sap-follow-on.blahblah\": 2,\n" //
+        + "        \"google.in-content.sap-follow-on.ubuntu.ts\": 3\n" //
+        + "      },\n" //
+        + "      \"browser.search.ad_clicks\": {\n" //
+        + "        \"google.in-content.sap-follow-on.none\": 6,\n" //
+        + "        \"google.in-content.sap-follow-on.blahblah\": 7,\n" //
+        + "        \"google.in-content.sap-follow-on.barbaz.invalid\": 8,\n" //
+        + "        \"google.in-content.sap-follow-on.ubuntu.invalid\": 9\n" //
+        + "      }\n" //
+        + "    }\n" //
+        + "  }\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    ObjectNode expected = Json.readObjectNode(("{\n" //
+        + "  \"metrics\": {\n" //
+        + "    \"labeled_counter\": {\n" //
+        + "      \"browser.search.in_content\": {\n" //
+        + "        \"google.in-content.sap-follow-on.none\": 1,\n" //
+        + "        \"google.in-content.sap-follow-on.other-scrubbed\": 2,\n" //
+        + "        \"google.in-content.sap-follow-on.ubuntu.ts\": 3\n" //
+        + "      },\n" //
+        + "      \"browser.search.ad_clicks\": {\n" //
+        + "        \"google.in-content.sap-follow-on.none\": 6,\n" //
+        + "        \"google.in-content.sap-follow-on.other-scrubbed\": 7,\n" //
+        + "        \"google.in-content.sap-follow-on.other-scrubbed\": 8,\n" //
+        + "        \"google.in-content.sap-follow-on.ubuntu\": 9\n" //
+        + "      }\n" //
+        + "    }\n" //
+        + "  }\n" //
+        + "}\n").getBytes(StandardCharsets.UTF_8));
+    MessageScrubber.scrub(attributes, json);
+    assertEquals(expected, json);
+  }
+
+  @Test
   public void testShouldScrubClientIdBug1489560() throws Exception {
     ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
         + "  \"client_info\": {\n" //

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -91,7 +92,8 @@ public class MessageScrubber {
       .put("/submit/sslreports/", "1585144") //
       .build();
 
-  private static final String REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+  private static final String DESKTOP_REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+  private static final String MOBILE_REDACTED_SEARCH_CODE_VALUE = "other-scrubbed";
 
   // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
@@ -100,6 +102,10 @@ public class MessageScrubber {
   // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
   private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
       .compile("(?<prefix>[^:]+:[^:]+:)(?<code>.*)");
+
+  // The key format is <provider>.in-content.[sap|sap-follow-on|organic].[<code>|none](.<channel>)?
+  private static final Pattern MOBILE_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*)\\.?(?<channel>.*)");
 
   // TODO: Pull list from RemoteSettings.
   private static final Set<String> ALLOWED_SEARCH_CODES = ImmutableSet.of("none", "other", //
@@ -123,6 +129,13 @@ public class MessageScrubber {
       "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
   // End of copied values.
   );
+
+  private static final Set<String> ALLOWED_SEARCH_CHANNELS = ImmutableSet.of("ts");
+
+  private static final Set<String> BUG_1751955_AFFECTED_NAMESPACES = ImmutableSet.of(
+      "org-mozilla-firefox", "org-mozilla-firefox-beta", "org-mozilla-fenix",
+      "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora", "org-mozilla-focus",
+      "org-mozilla-focus-beta", "org-mozilla-focus-nightly", "org-mozilla-klar");
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -243,6 +256,11 @@ public class MessageScrubber {
 
     if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
       processForBug1751753(json);
+    }
+
+    if ("metrics".equals(docType) && namespace != null
+        && BUG_1751955_AFFECTED_NAMESPACES.contains(namespace)) {
+      processForBug1751955(json);
     }
 
     // Data collected prior to glean.js 0.17.0 is effectively useless.
@@ -373,19 +391,20 @@ public class MessageScrubber {
     // Sanitize keys in the SEARCH_COUNTS histogram.
     JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
     if (searchCounts.isObject()) {
-      processKeysForBug1751753((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
+      sanitizeDesktopSearchKeys((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
     }
 
     // Sanitize keys in browser.search.content.* keyed scalars.
     json.path("payload").path("processes").path("parent").path("keyedScalars") //
         .fields().forEachRemaining(entry -> {
           if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
-            processKeysForBug1751753((ObjectNode) entry.getValue(), DESKTOP_SEARCH_CONTENT_PATTERN);
+            sanitizeDesktopSearchKeys((ObjectNode) entry.getValue(),
+                DESKTOP_SEARCH_CONTENT_PATTERN);
           }
         });
   }
 
-  private static void processKeysForBug1751753(ObjectNode searchNode, Pattern pattern) {
+  private static void sanitizeDesktopSearchKeys(ObjectNode searchNode, Pattern pattern) {
     Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
       Matcher match = pattern.matcher(name);
       if (match.matches()) {
@@ -393,11 +412,57 @@ public class MessageScrubber {
         final String code = match.group("code");
         if (!ALLOWED_SEARCH_CODES.contains(code)) {
           // Search code is not recognized; redact the value.
-          String newKey = prefix + REDACTED_SEARCH_CODE_VALUE;
+          String newKey = prefix + DESKTOP_REDACTED_SEARCH_CODE_VALUE;
           JsonNode value = searchNode.remove(name);
           searchNode.set(newKey, value);
           markBugCounter("1751753");
         }
+      }
+    });
+  }
+
+  // See bug 1751955 for explanation of context.
+  private static void processForBug1751955(ObjectNode json) {
+    // Sanitize keys in browser.search.* labeled counters.
+    json.path("metrics").path("labeled_counter") //
+        .fields().forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.") && entry.getValue().isObject()) {
+            sanitizeMobileSearchKeys((ObjectNode) entry.getValue(), MOBILE_SEARCH_CONTENT_PATTERN);
+          }
+        });
+  }
+
+  private static void sanitizeMobileSearchKeys(ObjectNode searchNode, Pattern pattern) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      Matcher match = pattern.matcher(name);
+      if (match.matches()) {
+        String prefix = match.group("prefix");
+        String code = match.group("code");
+        String channel = match.group("channel");
+        boolean codeIsValid = ALLOWED_SEARCH_CODES.contains(code);
+        boolean channelIsValid = Strings.isNullOrEmpty(channel)
+            || ALLOWED_SEARCH_CHANNELS.contains(channel);
+        if (codeIsValid && channelIsValid) {
+          // Key is valid, so no rewrite is needed and we can return early.
+          return;
+        }
+
+        // Sanitize the code and channel as needed.
+        String newKey;
+        if (codeIsValid) {
+          newKey = prefix + code;
+          if (ALLOWED_SEARCH_CHANNELS.contains(channel)) {
+            // Channel is an optional field; we include it only if it's a known value.
+            // See related client-side implementation in
+            // https://github.com/mozilla-mobile/android-components/pull/11622
+            newKey = String.format("%s.%s", newKey, channel);
+          }
+        } else {
+          newKey = prefix + MOBILE_REDACTED_SEARCH_CODE_VALUE;
+        }
+        JsonNode value = searchNode.remove(name);
+        searchNode.set(newKey, value);
+        markBugCounter("1751955");
       }
     });
   }
