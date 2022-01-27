@@ -497,7 +497,8 @@ public class MessageScrubberTest {
         + "      \"browser.search.in_content\": {\n" //
         + "        \"google.in-content.sap-follow-on.none\": 1,\n" //
         + "        \"google.in-content.sap-follow-on.blahblah\": 2,\n" //
-        + "        \"google.in-content.sap-follow-on.ubuntu.ts\": 3\n" //
+        + "        \"google.in-content.sap-follow-on._1000969a\": 3,\n" //
+        + "        \"google.in-content.sap-follow-on.ubuntu.ts\": 4\n" //
         + "      },\n" //
         + "      \"browser.search.ad_clicks\": {\n" //
         + "        \"google.in-content.sap-follow-on.none\": 6,\n" //
@@ -514,7 +515,8 @@ public class MessageScrubberTest {
         + "      \"browser.search.in_content\": {\n" //
         + "        \"google.in-content.sap-follow-on.none\": 1,\n" //
         + "        \"google.in-content.sap-follow-on.other-scrubbed\": 2,\n" //
-        + "        \"google.in-content.sap-follow-on.ubuntu.ts\": 3\n" //
+        + "        \"google.in-content.sap-follow-on._1000969a\": 3,\n" //
+        + "        \"google.in-content.sap-follow-on.ubuntu.ts\": 4\n" //
         + "      },\n" //
         + "      \"browser.search.ad_clicks\": {\n" //
         + "        \"google.in-content.sap-follow-on.none\": 6,\n" //
