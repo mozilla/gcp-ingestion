@@ -287,9 +287,9 @@ google-auth==1.30.0 \
     # via
     #   google-api-core
     #   kubernetes
-google-cloud-container==2.10.1 \
-    --hash=sha256:500f51e2d4e4bc36153a758a6bfdaf6e1d10b8216fddac572c7bb25ff27bd41b \
-    --hash=sha256:939970cd09384dde6d6f6758b03648fd8f52fe5c2f83f73300575f7e4e3b2ee0
+google-cloud-container==2.10.4 \
+    --hash=sha256:610ed56a13f1a0033ced134290539498cacb74ab34b872787b4745800e2dc296 \
+    --hash=sha256:c242ef06034cf1c915dc108351d11eddd7af5765b1e97d7f9d137a76cec7abc8
     # via -r requirements.in
 google-cloud-monitoring==2.8.0 \
     --hash=sha256:2a25f7535f21cdeabfccb07fe4a75eae5a47bb36b82025537755b37d3376da46 \
@@ -392,10 +392,6 @@ kubernetes==22.6.0 \
     --hash=sha256:5d329ee9b40e333e32f7bb62339cdce3eac47ab7c50b305ec21c114c49447e20 \
     --hash=sha256:8578afa0fd4e7e86cfa4eeec204e4bad8a2c109ce52f85f8f3c593e9b0d47960
     # via -r requirements.in
-libcst==0.3.7 \
-    --hash=sha256:2dc234c4c911ae06f0d68c13f5ccd046b78d2aae293c334be4e3436803ec2d1f \
-    --hash=sha256:3ded555ceb853862ff26bb9bb9a81db0dceb5385f226f12f16bd4c28532dcdf1
-    # via google-cloud-container
 mccabe==0.6.1 \
     --hash=sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42 \
     --hash=sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f
@@ -457,9 +453,7 @@ mypy==0.782 \
 mypy-extensions==0.4.3 \
     --hash=sha256:090fedd75945a69ae91ce1303b5824f428daf5a028d2f6ab8a299250a846f15d \
     --hash=sha256:2d82818f5bb3e369420cb3c4060a7970edba416647068eb4c5343488a6c604a8
-    # via
-    #   mypy
-    #   typing-inspect
+    # via mypy
 oauthlib==3.1.0 \
     --hash=sha256:bee41cc35fcca6e988463cacc3bcb8a96224f470ca547e697b604cc697b2f889 \
     --hash=sha256:df884cd6cbe20e32633f1db1072e9356f53638e4361bef4e8b03c9127c9328ea
@@ -667,9 +661,7 @@ pyyaml==5.4.1 \
     --hash=sha256:fd7f6999a8070df521b6384004ef42833b9bd62cfee11a09bda1079b4b704247 \
     --hash=sha256:fdc842473cd33f45ff6bce46aea678a54e3d21f1b61a7750ce3c498eedfe25d6 \
     --hash=sha256:fe69978f3f768926cfa37b867e3843918e012cf83f680806599ddce33c2c68b0
-    # via
-    #   kubernetes
-    #   libcst
+    # via kubernetes
 regex==2020.7.14 \
     --hash=sha256:0dc64ee3f33cd7899f79a8d788abfbec168410be356ed9bd30bbd3f0a23a7204 \
     --hash=sha256:1269fef3167bb52631ad4fa7dd27bf635d5a0790b8e6222065d42e91bede4162 \
@@ -781,14 +773,7 @@ typing-extensions==3.7.4.2 \
     --hash=sha256:f8d2bd89d25bc39dabe7d23df520442fa1d8969b82544370e03d88b5a591c392
     # via
     #   async-timeout
-    #   libcst
     #   mypy
-    #   typing-inspect
-typing-inspect==0.6.0 \
-    --hash=sha256:3b98390df4d999a28cf5b35d8b333425af5da2ece8a4ea9e98f71e7591347b4f \
-    --hash=sha256:8f1b1dd25908dbfd81d3bebc218011531e7ab614ba6e5bf7826d887c834afab7 \
-    --hash=sha256:de08f50a22955ddec353876df7b2545994d6df08a2f45d54ac8c05e530372ca0
-    # via libcst
 ujson==3.0.0 \
     --hash=sha256:019a17e7162f26e264f1645bb41630f7103d178c092ea4bb8f3b16126c3ea210 \
     --hash=sha256:0379ffc7484b862a292e924c15ad5f1c5306d4271e2efd162144812afb08ff97 \
