@@ -79,6 +79,7 @@ public class MessageScrubber {
       .put("com-pando-pandobrowser", "1745742") //
       .put("com-wqty-browser", "1752883") //
       .put("com-valvesoftware-android-steam-community", "1754042") //
+      .put("net-decentr-browser", "1754007") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
