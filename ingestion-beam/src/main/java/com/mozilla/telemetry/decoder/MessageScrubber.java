@@ -77,6 +77,8 @@ public class MessageScrubber {
       .put("com-qebrowser", "1740091") //
       .put("org-mozilla-sorizava-focus", "1740091") //
       .put("com-pando-pandobrowser", "1745742") //
+      .put("com-wqty-browser", "1752883") //
+      .put("com-valvesoftware-android-steam-community", "1754042") //
       .put("net-decentr-browser", "1754007") //
       .build();
 
