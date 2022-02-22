@@ -597,7 +597,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testBug1626020Affected() throws Exception {
+  public void testBug1626020() throws Exception {
     ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
         + "  \"client_info\": {\n" //
         + "    \"client_id\": null" //
@@ -607,7 +607,7 @@ public class MessageScrubberTest {
         .put(Attribute.DOCUMENT_NAMESPACE, "default-browser-agent")
         .put(Attribute.DOCUMENT_TYPE, "1").build();
 
-    assertThrows(AffectedByBugException.class,
+    assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(attributes, pingToBeScrubbed));
   }
 
