@@ -704,9 +704,9 @@ rsa==4.7 \
     --hash=sha256:69805d6b69f56eb05b62daea3a7dbd7aa44324ad1306445e05da8060232d00f4 \
     --hash=sha256:a8774e55b59fd9fc893b0d05e9bfc6f47081f46ff5b46f39ccf24631b7be356b
     # via google-auth
-sanic==20.12.2 \
-    --hash=sha256:9f01a3ebfe4bf6c57e164bfa1b66c977cb47421e54ae91cc04173cfc711891ce \
-    --hash=sha256:b9d7e24cd293c126f6f4aaf26fcc3b11e35338b86e8c2693b71d05196e7b02b0
+sanic==20.12.6 \
+    --hash=sha256:0109ad50f403664edddf62d99aec5f21b259c2c4a68246e99d390b121c364b6c \
+    --hash=sha256:3339036806e97fa78057627e1de5ee64f161b3164b6fbabbaeb1adaa745445e7
     # via -r requirements.in
 six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
