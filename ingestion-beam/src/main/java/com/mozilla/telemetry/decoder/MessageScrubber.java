@@ -244,7 +244,7 @@ public class MessageScrubber {
 
     // No such docType: default-browser-agent/1
     if ("default-browser-agent".equals(namespace) && "1".equals(docType)) {
-      throw new AffectedByBugException("1626020");
+      throw new UnwantedDataException("1626020");
     }
 
     // Redactions (message is altered, but allowed through).
