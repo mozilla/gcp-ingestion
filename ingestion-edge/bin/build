@@ -4,4 +4,4 @@
 
 if ${VENV:-true}; then python3.8 -m venv "$VENV_DIR"; source "$VENV_ACTIVATE"; fi
 
-python3.8 -m pip install --no-cache-dir -r requirements.txt
+python3.8 -m pip install --no-cache-dir --no-deps -r requirements.txt
