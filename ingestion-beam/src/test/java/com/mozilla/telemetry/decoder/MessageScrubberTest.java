@@ -462,7 +462,7 @@ public class MessageScrubberTest {
     assertFalse(MessageScrubber.bug1712850Affected(ImmutableMap.<String, String>builder()
         .putAll(baseAttributes).put(Attribute.DOCUMENT_TYPE, "topsites-click").build()));
   }
-  
+
   @Test
   public void testRedactSearchCountsForBug1751753() throws Exception {
     final Map<String, String> attributes = ImmutableMap.<String, String>builder() //
