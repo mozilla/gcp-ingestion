@@ -297,6 +297,7 @@ public class MessageScrubber {
       // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1733118
       throw new AffectedByBugException("1733118");
     }
+  }
 
   /**
    * Check the message URI against known URIs of messages with potentially harmful data.
