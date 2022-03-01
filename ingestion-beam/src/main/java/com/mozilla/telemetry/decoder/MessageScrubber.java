@@ -4,13 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
 
@@ -70,6 +76,10 @@ public class MessageScrubber {
       .put("browser-oceanhero", "1740091") //
       .put("com-qebrowser", "1740091") //
       .put("org-mozilla-sorizava-focus", "1740091") //
+      .put("com-pando-pandobrowser", "1745742") //
+      .put("com-wqty-browser", "1752883") //
+      .put("com-valvesoftware-android-steam-community", "1754042") //
+      .put("net-decentr-browser", "1754007") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -85,6 +95,68 @@ public class MessageScrubber {
       .put("/submit/sslreports", "1585144") //
       .put("/submit/sslreports/", "1585144") //
       .build();
+
+  private static final String DESKTOP_REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+  private static final String MOBILE_REDACTED_SEARCH_CODE_VALUE = "other-scrubbed";
+
+  // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
+      .compile("(?<prefix>[^.]+\\.in-content[:.][^:]+:)(?<code>.*)");
+
+  // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("(?<prefix>[^:]+:[^:]+:)(?<code>.*)");
+
+  // The key format is <provider>.in-content.[sap|sap-follow-on|organic].[<code>|none](.<channel>)?
+  private static final Pattern MOBILE_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*)\\.?(?<channel>.*)");
+
+  // TODO: Pull list from RemoteSettings.
+  private static final Set<String> ALLOWED_DESKTOP_SEARCH_CODES = ImmutableSet.of("none",
+      // Client-side sanitization will produce "other"
+      "other",
+      // Additional DDG-specific codes; ideally these would be marked as "none" for organic,
+      // but to avoid additional pipeline complexity, we add them as allowed codes here;
+      // see bug 1752239.
+      "hz", "h_",
+      // Values below are pulled from search-telemetry-v2.json as defined in
+      // https://phabricator.services.mozilla.com/D136768
+      // Longer-term, they will be available in RemoteSettings at:
+      // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
+      // Bing
+      "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZM", "MOZO", "MOZT",
+      "MOZW", "MOZSL01", "MOZSL02", "MOZSL03",
+      // Google
+      "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
+      "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
+      "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
+      "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
+      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu",
+      // DuckDuckGo
+      "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
+      "ftas", "ftsa", "newext",
+      // Yahoo
+      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
+  // End copied desktop codes.
+  );
+
+  private static final Set<String> ALLOWED_MOBILE_SEARCH_CODES = ImmutableSet.<String>builder()
+      .addAll(ALLOWED_DESKTOP_SEARCH_CODES) //
+      // These Baidu codes are only relevant for mobile.
+      .add("1000969a", "1000969b") //
+      .build()
+      // Search codes are lowercased on mobile before sending to telemetry.
+      .stream().map(String::toLowerCase) //
+      // Codes that start with digits have "_" prepended before sending to telemetry.
+      .map(s -> Character.isDigit(s.charAt(0)) ? "_" + s : s) //
+      .collect(Collectors.toSet());
+
+  private static final Set<String> ALLOWED_SEARCH_CHANNELS = ImmutableSet.of("ts");
+
+  private static final Set<String> BUG_1751955_AFFECTED_NAMESPACES = ImmutableSet.of(
+      "org-mozilla-firefox", "org-mozilla-firefox-beta", "org-mozilla-fenix",
+      "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora", "org-mozilla-focus",
+      "org-mozilla-focus-beta", "org-mozilla-focus-nightly", "org-mozilla-klar");
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -172,7 +244,7 @@ public class MessageScrubber {
 
     // No such docType: default-browser-agent/1
     if ("default-browser-agent".equals(namespace) && "1".equals(docType)) {
-      throw new AffectedByBugException("1626020");
+      throw new UnwantedDataException("1626020");
     }
 
     // Redactions (message is altered, but allowed through).
@@ -211,13 +283,20 @@ public class MessageScrubber {
       }
     }
 
+    if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
+      processForBug1751753(json);
+    }
+
+    if ("metrics".equals(docType) && namespace != null
+        && BUG_1751955_AFFECTED_NAMESPACES.contains(namespace)) {
+      processForBug1751955(json);
+    }
+
     // Data collected prior to glean.js 0.17.0 is effectively useless.
     if (bug1733118Affected(namespace, docType, json)) {
       // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1733118
       throw new AffectedByBugException("1733118");
     }
-
-  }
 
   /**
    * Check the message URI against known URIs of messages with potentially harmful data.
@@ -339,6 +418,87 @@ public class MessageScrubber {
     return "mozillavpn".equals(namespace) && "main".equals(docType)
         && ParsePayload.getGleanClientInfo(json).path("telemetry_sdk_build").asText("")
             .matches("0[.]([0-9]|1[0-6])[.].*"); // < 0.17
+  }
+
+  // See bug 1751753 for explanation of context.
+  private static void processForBug1751753(ObjectNode json) {
+    // Sanitize keys in the SEARCH_COUNTS histogram.
+    JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
+    if (searchCounts.isObject()) {
+      sanitizeDesktopSearchKeys((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
+    }
+
+    // Sanitize keys in browser.search.content.* keyed scalars.
+    json.path("payload").path("processes").path("parent").path("keyedScalars") //
+        .fields().forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
+            sanitizeDesktopSearchKeys((ObjectNode) entry.getValue(),
+                DESKTOP_SEARCH_CONTENT_PATTERN);
+          }
+        });
+  }
+
+  private static void sanitizeDesktopSearchKeys(ObjectNode searchNode, Pattern pattern) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      Matcher match = pattern.matcher(name);
+      if (match.matches()) {
+        final String prefix = match.group("prefix");
+        final String code = match.group("code");
+        if (!ALLOWED_DESKTOP_SEARCH_CODES.contains(code)) {
+          // Search code is not recognized; redact the value.
+          String newKey = prefix + DESKTOP_REDACTED_SEARCH_CODE_VALUE;
+          JsonNode value = searchNode.remove(name);
+          searchNode.set(newKey, value);
+          markBugCounter("1751753");
+        }
+      }
+    });
+  }
+
+  // See bug 1751955 for explanation of context.
+  private static void processForBug1751955(ObjectNode json) {
+    // Sanitize keys in browser.search.* labeled counters.
+    json.path("metrics").path("labeled_counter") //
+        .fields().forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.") && entry.getValue().isObject()) {
+            sanitizeMobileSearchKeys((ObjectNode) entry.getValue());
+          }
+        });
+  }
+
+  private static void sanitizeMobileSearchKeys(ObjectNode searchNode) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      Matcher match = MOBILE_SEARCH_CONTENT_PATTERN.matcher(name);
+      if (match.matches()) {
+        String prefix = match.group("prefix");
+        String code = match.group("code");
+        String channel = match.group("channel");
+        boolean codeIsValid = ALLOWED_MOBILE_SEARCH_CODES.contains(code);
+        boolean channelIsValid = Strings.isNullOrEmpty(channel)
+            || ALLOWED_SEARCH_CHANNELS.contains(channel);
+        if (codeIsValid && channelIsValid) {
+          // Key is valid, so no rewrite is needed and we can return early.
+          return;
+        }
+
+        // Sanitize the code and channel as needed.
+        String newKey;
+        if (codeIsValid) {
+          newKey = prefix + code;
+          if (ALLOWED_SEARCH_CHANNELS.contains(channel)) {
+            // Channel is an optional field; we include it only if it's a known value.
+            // See related client-side implementation in
+            // https://github.com/mozilla-mobile/android-components/pull/11622
+            newKey = String.format("%s.%s", newKey, channel);
+          }
+        } else {
+          newKey = prefix + MOBILE_REDACTED_SEARCH_CODE_VALUE;
+        }
+        JsonNode value = searchNode.remove(name);
+        searchNode.set(newKey, value);
+        markBugCounter("1751955");
+      }
+    });
   }
 
 }

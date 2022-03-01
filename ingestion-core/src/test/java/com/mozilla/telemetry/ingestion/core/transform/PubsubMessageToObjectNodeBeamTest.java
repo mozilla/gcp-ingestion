@@ -435,6 +435,31 @@ public class PubsubMessageToObjectNodeBeamTest {
     Map<String, Object> expected = ImmutableMap.of("metrics", ImmutableMap.of("counter",
         ImmutableMap.of("my_count", 3), "url2", ImmutableMap.of("my_url", "http://example.com")));
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(Json.createObjectNode(), additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Test
+  public void testRenameGleanMetricsNoExistingFieldForBug1737656() throws Exception {
+    ObjectNode additionalProperties = Json.createObjectNode();
+    ObjectNode parent = Json.readObjectNode("{\n" //
+        + "  \"metrics\": {\n" //
+        + "    \"counter\": {\"my_count\": 3},\n" //
+        + "    \"url\": {\"my_url\": \"http://example.com\"}\n" //
+        + "  }\n" //
+        + "}\n");
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("metrics", LegacySQLTypeName.RECORD, //
+        Field.of("counter", LegacySQLTypeName.RECORD, //
+            Field.of("my_count", LegacySQLTypeName.INTEGER)), //
+        Field.of("counter2", LegacySQLTypeName.RECORD, //
+            Field.of("my_count", LegacySQLTypeName.INTEGER)), //
+        Field.of("url2", LegacySQLTypeName.RECORD, Field.of("my_url", LegacySQLTypeName.STRING)))
+        .build());
+
+    Map<String, Object> expected = ImmutableMap.of("metrics", ImmutableMap.of("counter",
+        ImmutableMap.of("my_count", 3), "url2", ImmutableMap.of("my_url", "http://example.com")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(Json.createObjectNode(), additionalProperties);
     assertEquals(expected, Json.asMap(parent));
   }
 

@@ -57,7 +57,7 @@ public class GeoCityLookup
   private static final Pattern GEO_NAME_PATTERN = Pattern.compile("^(\\d+).*");
 
   private static transient DatabaseReader singletonGeoCityReader;
-  private static transient Set<Integer> singletonAllowedCities;
+  private static transient Set<Long> singletonAllowedCities;
 
   private final String geoCityDatabase;
   private final String geoCityFilter;
@@ -114,7 +114,7 @@ public class GeoCityLookup
    *
    * @throws IOException if the configured file path does not exist or is in a bad format
    */
-  private static synchronized Set<Integer> getOrCreateSingletonAllowedCities(String geoCityFilter)
+  private static synchronized Set<Long> getOrCreateSingletonAllowedCities(String geoCityFilter)
       throws IOException {
     if (singletonAllowedCities == null) {
       InputStream inputStream;
@@ -131,7 +131,7 @@ public class GeoCityLookup
         String line = reader.readLine();
         Matcher matcher = GEO_NAME_PATTERN.matcher(line);
         if (matcher.find()) {
-          Integer geoNameId = Integer.valueOf(matcher.group(1));
+          Long geoNameId = Long.valueOf(matcher.group(1));
           singletonAllowedCities.add(geoNameId);
         } else {
           throw new IllegalStateException(
@@ -147,7 +147,7 @@ public class GeoCityLookup
   public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
 
     private transient DatabaseReader geoIP2City;
-    private transient Set<Integer> allowedCities;
+    private transient Set<Long> allowedCities;
 
     private final Counter countGeoAlreadyApplied = Metrics.counter(Fn.class, "geo_already_applied");
     private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip_from_x_forwarded_for");
@@ -256,7 +256,7 @@ public class GeoCityLookup
       }
     }
 
-    private boolean cityAllowed(Integer geoNameId) {
+    private boolean cityAllowed(Long geoNameId) {
       if (geoNameId == null) {
         return false;
       } else if (allowedCities == null) {

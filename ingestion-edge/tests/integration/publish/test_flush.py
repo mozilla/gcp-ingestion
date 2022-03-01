@@ -8,7 +8,7 @@ from google.cloud.pubsub_v1 import PublisherClient
 
 # importing from private module _pytest for types only
 import _pytest.fixtures
-import _pytest.tmpdir
+import _pytest.legacypath
 import pytest
 
 from .helpers import IntegrationTest
@@ -16,7 +16,8 @@ from .helpers import IntegrationTest
 
 @pytest.fixture(scope="module", autouse=True)
 def queue_dir(
-    request: _pytest.fixtures.SubRequest, tmpdir_factory: _pytest.tmpdir.TempdirFactory
+    request: _pytest.fixtures.SubRequest,
+    tmpdir_factory: _pytest.legacypath.TempdirFactory,
 ):
     if request.config.getoption("server") is not None:
         # need to be able to set QUEUE_PATH for only tests in this module,
@@ -47,6 +48,7 @@ def test_flush(
     process = subprocess.Popen(
         [sys.executable, "-u", "-m", "ingestion_edge.flush"], stderr=subprocess.PIPE
     )
+    assert process.stderr is not None
     for line in process.stderr:
         break  # wait for an error to be logged
     assert process.poll() is None  # server still running
