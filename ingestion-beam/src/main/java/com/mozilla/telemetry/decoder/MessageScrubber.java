@@ -80,6 +80,9 @@ public class MessageScrubber {
       .put("com-wqty-browser", "1752883") //
       .put("com-valvesoftware-android-steam-community", "1754042") //
       .put("net-decentr-browser", "1754007") //
+      .put("mozilla-lockbox", "1759183") //
+      .put("org-you-ios-fennec", "1759182") //
+      .put("org-mozilla-focut", "1759181") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
