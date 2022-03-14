@@ -274,9 +274,9 @@ frozenlist==1.2.0 \
     # via
     #   aiohttp
     #   aiosignal
-google-api-core[grpc]==1.31.4 \
-    --hash=sha256:c77ffc8b4981b44efdb9d68431fd96d21dbd39545c29552bbe79b9b7dd2c3689 \
-    --hash=sha256:ed59c6a695a81f601e4ba0f37ca9dbde3c43b3309e161a1a8946f266db4a0c4e
+google-api-core[grpc]==1.31.5 \
+    --hash=sha256:6815207a8b422e9da42c200681603f304b25f98c98b675a9db9fdc3717e44280 \
+    --hash=sha256:85d2074f2c8f9c07e614d7f978767d71ceb7d40647814ef4236d3a0ef671ee75
     # via
     #   google-cloud-container
     #   google-cloud-monitoring
@@ -291,9 +291,9 @@ google-cloud-container==2.10.5 \
     --hash=sha256:2579416eff48a8fbd58be2ea40b705b09c9f937c201749008a54c3c37c299614 \
     --hash=sha256:768c4ee90f12691a9734d310a30f243e9d816b0a624ed4a6db2bb3c9a3a5ed16
     # via -r requirements.in
-google-cloud-monitoring==2.8.0 \
-    --hash=sha256:2a25f7535f21cdeabfccb07fe4a75eae5a47bb36b82025537755b37d3376da46 \
-    --hash=sha256:2d2ff53e5cc3ca2063dfb990377407c8905b0a9094a0aae32709d23c1e5d372f
+google-cloud-monitoring==2.9.1 \
+    --hash=sha256:16807a4860eb5431c6eb459e5a61b07d56d2c2deb176af5d6b64304a29292255 \
+    --hash=sha256:600c731aae5eed56299855807e8b3b6b6c877216eb724ccf35f2f3e1741c7022
     # via -r requirements.in
 google-cloud-pubsub==1.0.2 \
     --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
