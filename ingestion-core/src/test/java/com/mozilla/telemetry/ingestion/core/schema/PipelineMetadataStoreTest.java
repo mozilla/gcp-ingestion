@@ -17,4 +17,10 @@ public class PipelineMetadataStoreTest {
     assertEquals("/test_string", meta.jwe_mappings().get(0).decrypted_field_path().toString());
   }
 
+  @Test
+  public void testExpirationMetadata() throws SchemaNotFoundException {
+    PipelineMetadata meta = store.getSchema("namespace_0/bar/bar.1.schema.json");
+    assertEquals("2022/03/01", meta.expiration_policy().collect_through_date());
+  }
+
 }
