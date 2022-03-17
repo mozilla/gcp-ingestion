@@ -115,6 +115,20 @@ EOF
   "type" : "object"
 }
 EOF
+    mkdir -p schemas/test/expiration-policy
+    cat > schemas/test/expiration-policy/expiration-policy.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "expiration_policy_v1",
+    "expiration_policy": {
+      "collect_through_date": "2022-03-01"
+    }
+  },
+  "type" : "object"
+}
+EOF
     mkdir -p schemas/my-namespace/my-test
     cat > schemas/my-namespace/my-test/my-test.1.bq << 'EOF'
 [

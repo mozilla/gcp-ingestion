@@ -10,7 +10,10 @@
         "source_field_path": "/test_jwe",
         "decrypted_field_path": "/test_string"
       }
-    ]
+    ],
+    "expiration_policy": {
+      "collect_through_date": "2022/03/01"
+    }
   },
   "properties" : {
     "payload": {

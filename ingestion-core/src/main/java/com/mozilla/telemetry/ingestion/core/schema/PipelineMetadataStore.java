@@ -75,6 +75,34 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
   }
 
   @AutoValue
+  @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_ExpirationPolicy.Builder.class)
+  public abstract static class ExpirationPolicy {
+
+    public static Builder builder() {
+      return new AutoValue_PipelineMetadataStore_ExpirationPolicy.Builder();
+    }
+
+    @Nullable
+    public abstract Integer delete_after_days();
+
+    @Nullable
+    public abstract String collect_through_date();
+
+    @AutoValue.Builder
+    @JsonPOJOBuilder(withPrefix = "")
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public abstract static class Builder {
+
+      public abstract Builder delete_after_days(Integer value);
+
+      public abstract Builder collect_through_date(String value);
+
+      public abstract ExpirationPolicy build();
+    }
+
+  }
+
+  @AutoValue
   @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_PipelineMetadata.Builder.class)
   public abstract static class PipelineMetadata {
 
@@ -97,6 +125,9 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     @Nullable
     public abstract List<JweMapping> jwe_mappings();
 
+    @Nullable
+    public abstract ExpirationPolicy expiration_policy();
+
     @AutoValue.Builder
     @JsonPOJOBuilder(withPrefix = "")
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -113,6 +144,8 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
       public abstract Builder override_attributes(List<AttributeOverride> value);
 
       public abstract Builder jwe_mappings(List<JweMapping> value);
+
+      public abstract Builder expiration_policy(ExpirationPolicy value);
 
       public abstract PipelineMetadata build();
     }

@@ -9,6 +9,7 @@ import com.mozilla.telemetry.decoder.MessageScrubber.MessageScrubberException;
 import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
@@ -17,8 +18,14 @@ import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.JsonValidator;
+import com.mozilla.telemetry.util.Time;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,6 +72,7 @@ public class ParsePayload extends
 
   private transient JsonValidator validator;
   private transient JSONSchemaStore schemaStore;
+  private transient PipelineMetadataStore metadataStore;
   private transient CRC32 crc32;
 
   private ParsePayload(String schemasLocation) {
@@ -81,7 +89,7 @@ public class ParsePayload extends
           try {
             throw ee.exception();
           } catch (IOException | SchemaNotFoundException | ValidationException
-              | MessageScrubberException e) {
+              | MessageScrubberException | DeprecatedMessageException e) {
             return FailureMessage.of(ParsePayload.class.getSimpleName(), //
                 ee.element(), //
                 ee.exception());
@@ -164,6 +172,18 @@ public class ParsePayload extends
         validateTimed(schema, json);
       } catch (ValidationException e) {
         PerDocTypeCounter.inc(attributes, "error_schema_validation");
+        PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+        throw e;
+      }
+
+      if (metadataStore == null) {
+        metadataStore = PipelineMetadataStore.of(schemasLocation, BeamFileInputStream::open);
+      }
+
+      try {
+        deprecationCheck(attributes);
+      } catch (DeprecatedMessageException e) {
+        PerDocTypeCounter.inc(attributes, "error_deprecated_message");
         PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
         throw e;
       }
@@ -348,5 +368,31 @@ public class ParsePayload extends
     validator.validate(schema, json);
     long endTime = System.currentTimeMillis();
     validateTimer.update(endTime - startTime);
+  }
+
+  private void deprecationCheck(Map<String, String> attributes) throws DeprecatedMessageException {
+    PipelineMetadataStore.PipelineMetadata meta = metadataStore.getSchema(attributes);
+    if (meta.expiration_policy() != null
+        && meta.expiration_policy().collect_through_date() != null) {
+
+      LocalDate collectThroughDate;
+      try {
+        collectThroughDate = LocalDate.parse(meta.expiration_policy().collect_through_date(),
+            DateTimeFormatter.ISO_LOCAL_DATE);
+      } catch (DateTimeParseException e) {
+        collectThroughDate = null;
+      }
+
+      Instant submissionInstant = Time
+          .parseAsInstantOrNull(attributes.get(Attribute.SUBMISSION_TIMESTAMP));
+
+      if (submissionInstant != null && collectThroughDate != null
+          && LocalDate.ofInstant(submissionInstant, ZoneOffset.UTC).isAfter(collectThroughDate)) {
+        throw new DeprecatedMessageException();
+      }
+    }
+  }
+
+  static class DeprecatedMessageException extends RuntimeException {
   }
 }

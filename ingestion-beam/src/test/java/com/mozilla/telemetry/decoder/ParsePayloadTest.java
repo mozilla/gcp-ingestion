@@ -8,6 +8,7 @@ import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -186,6 +187,30 @@ public class ParsePayloadTest {
     final PCollection<String> main = result.output() //
         .apply("encodeTextMain", OutputFileFormat.text.encode());
     PAssert.thatSingleton(main).isEqualTo(expectedMain);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testDeprecation() {
+    // expiration-policy schema sets a do not collect date of 2022-03-01
+    String schemasLocation = "schemas.tar.gz";
+    List<PubsubMessage> input = Arrays.asList(
+        new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8),
+            ImmutableMap.of("document_namespace", "test", "document_type", "expiration-policy",
+                "document_version", "1", "submission_timestamp", "2022-03-12T21:02:18.123456Z")),
+        new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8),
+            ImmutableMap.of("document_namespace", "test", "document_type", "expiration-policy",
+                "document_version", "1", "submission_timestamp", "2022-01-01T00:00:00.123Z")));
+    Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline.apply(Create.of(input))
+        .apply(ParsePayload.of(schemasLocation));
+
+    PCollection<String> exceptions = result.failures().apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+
+    PAssert.that(result.output()).containsInAnyOrder(input.get(1));
+    PAssert.that(exceptions).containsInAnyOrder(
+        "com.mozilla.telemetry.decoder.ParsePayload$DeprecatedMessageException");
 
     pipeline.run();
   }
