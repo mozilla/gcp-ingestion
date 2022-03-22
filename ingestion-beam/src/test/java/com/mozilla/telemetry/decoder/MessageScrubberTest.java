@@ -567,6 +567,30 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testShouldTagBrowserStackBug1757216() throws Exception {
+    final ObjectNode emptyNode = Json.createObjectNode();
+    final Map<String, String> baseAttributes = ImmutableMap.<String, String>builder() //
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox") //
+        .put(Attribute.DOCUMENT_TYPE, "baseline") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
+        .put(Attribute.ISP_NAME, "BrowserStack").build();
+
+    Map<String, String> noTags = new HashMap<>(baseAttributes);
+    MessageScrubber.scrub(noTags, emptyNode);
+    assertEquals("automation", noTags.get(Attribute.X_SOURCE_TAGS));
+
+    Map<String, String> twoTags = new HashMap<>(baseAttributes);
+    twoTags.put(Attribute.X_SOURCE_TAGS, "foo ,  bar");
+    MessageScrubber.scrub(twoTags, emptyNode);
+    assertEquals("foo, bar, automation", twoTags.get(Attribute.X_SOURCE_TAGS));
+
+    Map<String, String> existingAutomationTags = new HashMap<>(baseAttributes);
+    existingAutomationTags.put(Attribute.X_SOURCE_TAGS, "automation,  foo");
+    MessageScrubber.scrub(existingAutomationTags, emptyNode);
+    assertEquals("automation,  foo", existingAutomationTags.get(Attribute.X_SOURCE_TAGS));
+  }
+
+  @Test
   public void testShouldScrubClientIdBug1489560() throws Exception {
     ObjectNode pingToBeScrubbed = Json.readObjectNode(("{\n" //
         + "  \"client_info\": {\n" //
