@@ -2,6 +2,7 @@ package com.mozilla.telemetry.decoder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -564,6 +565,44 @@ public class MessageScrubberTest {
         + "}\n").getBytes(StandardCharsets.UTF_8));
     MessageScrubber.scrub(attributes, json);
     assertEquals(expected, json);
+  }
+
+  @Test
+  public void testShouldTagBrowserStackBug1757216() throws Exception {
+    final ObjectNode emptyNode = Json.createObjectNode();
+    final Map<String, String> baseAttributes = ImmutableMap.<String, String>builder() //
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox") //
+        .put(Attribute.DOCUMENT_TYPE, "baseline") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
+        .put(Attribute.ISP_NAME, "BrowserStack").build();
+
+    Map<String, String> noTags = new HashMap<>(baseAttributes);
+    MessageScrubber.scrub(noTags, emptyNode);
+    assertEquals("automation", noTags.get(Attribute.X_SOURCE_TAGS));
+
+    Map<String, String> twoTags = new HashMap<>(baseAttributes);
+    twoTags.put(Attribute.X_SOURCE_TAGS, "foo ,  bar");
+    MessageScrubber.scrub(twoTags, emptyNode);
+    assertEquals("foo, bar, automation", twoTags.get(Attribute.X_SOURCE_TAGS));
+
+    Map<String, String> existingAutomationTags = new HashMap<>(baseAttributes);
+    existingAutomationTags.put(Attribute.X_SOURCE_TAGS, "automation,  foo");
+    MessageScrubber.scrub(existingAutomationTags, emptyNode);
+    assertEquals("automation,  foo", existingAutomationTags.get(Attribute.X_SOURCE_TAGS));
+  }
+
+  @Test
+  public void testShouldNotTagBrowserStackBug1757216() throws Exception {
+    final ObjectNode emptyNode = Json.createObjectNode();
+    final Map<String, String> baseAttributes = ImmutableMap.<String, String>builder() //
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox") //
+        .put(Attribute.DOCUMENT_TYPE, "baseline") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
+        .put(Attribute.ISP_NAME, "Your Fave ISP").build();
+
+    Map<String, String> noTags = new HashMap<>(baseAttributes);
+    MessageScrubber.scrub(noTags, emptyNode);
+    assertNull(noTags.get(Attribute.X_SOURCE_TAGS));
   }
 
   @Test
