@@ -595,10 +595,10 @@ public class MessageScrubberTest {
   public void testShouldNotTagBrowserStackBug1757216() throws Exception {
     final ObjectNode emptyNode = Json.createObjectNode();
     final Map<String, String> baseAttributes = ImmutableMap.<String, String>builder() //
-            .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox") //
-            .put(Attribute.DOCUMENT_TYPE, "baseline") //
-            .put(Attribute.DOCUMENT_VERSION, "1") //
-            .put(Attribute.ISP_NAME, "Your Fave ISP").build();
+        .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox") //
+        .put(Attribute.DOCUMENT_TYPE, "baseline") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
+        .put(Attribute.ISP_NAME, "Your Fave ISP").build();
 
     Map<String, String> noTags = new HashMap<>(baseAttributes);
     MessageScrubber.scrub(noTags, emptyNode);
