@@ -11,9 +11,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -296,20 +293,6 @@ public class MessageScrubber {
     if ("metrics".equals(docType) && namespace != null
         && BUG_1751955_AFFECTED_NAMESPACES.contains(namespace)) {
       processForBug1751955(json);
-    }
-
-    if ("BrowserStack".equals(attributes.get(Attribute.ISP_NAME))) {
-      String tags = Strings.nullToEmpty(attributes.get(Attribute.X_SOURCE_TAGS));
-      List<String> tagList = Arrays.stream(tags.trim().split("\\s*,\\s*"))
-          .filter(s -> s.length() > 0).collect(Collectors.toList());
-      if (!tagList.contains("automation")) {
-        // We add the "automation" tag to all pings coming from BrowserStack to cause
-        // them to be filtered out of stable tables.
-        tagList = new ArrayList<>(tagList);
-        tagList.add("automation");
-        attributes.put(Attribute.X_SOURCE_TAGS, String.join(", ", tagList));
-        markBugCounter("1757216");
-      }
     }
 
     // Data collected prior to glean.js 0.17.0 is effectively useless.
