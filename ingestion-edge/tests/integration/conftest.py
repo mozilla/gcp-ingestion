@@ -1,19 +1,19 @@
-from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
-from pubsub_emulator import PubsubEmulator
+import os
+import subprocess
+import sys
+from shutil import which
 from time import sleep
-from typing import Iterator, Optional, Tuple, Union
+from typing import Iterator, Optional, Tuple
 
 # importing from private module _pytest for types only
 import _pytest.config.argparsing
 import _pytest.fixtures
-import grpc
-import logging
-import os
 import psutil
 import pytest
 import requests
-import subprocess
-import sys
+from google.cloud.pubsub_v1 import PublisherClient, SubscriberClient
+from google.cloud.pubsub_v1.types import PublisherOptions
+from google.api_core.retry import Retry
 
 
 def pytest_addoption(parser: _pytest.config.argparsing.Parser):
@@ -37,54 +37,53 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
 
 
 @pytest.fixture(scope="session")
-def pubsub(
-    request: _pytest.fixtures.SubRequest,
-) -> Iterator[Union[str, PubsubEmulator]]:
+def pubsub(request: _pytest.fixtures.SubRequest) -> Iterator[str]:
     if "PUBSUB_EMULATOR_HOST" in os.environ:
         yield "remote"
-    elif request.config.getoption("server") is None:
-        emulator = PubsubEmulator(max_workers=1, port=0)
-        emulator.logger.setLevel(logging.DEBUG)
+    elif request.config.getoption("server") is None and which("gcloud"):
+        os.environ["PUBSUB_EMULATOR_HOST"] = "0.0.0.0:8085"
+        process = subprocess.Popen(["gcloud", "beta", "emulators", "pubsub", "start"])
         try:
-            os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:%d" % emulator.port
-            yield emulator
+            assert process.poll() is None  # emulator still running
+            os.environ["PUBSUB_EMULATOR_HOST"] = "localhost:8085"
+            yield "local"
         finally:
-            emulator.server.stop(grace=None)
+            del os.environ["PUBSUB_EMULATOR_HOST"]
+            try:
+                # allow one second for graceful termination
+                process.terminate()
+                process.wait(1)
+            except subprocess.TimeoutExpired:
+                # kill after one second
+                process.kill()
+                process.wait()
     else:
         yield "google"
 
 
 @pytest.fixture
-def publisher(pubsub: Union[str, PubsubEmulator]) -> PublisherClient:
-    return PublisherClient()
+def publisher(pubsub: str) -> PublisherClient:
+    timeout = 1
+    return PublisherClient(
+        publisher_options=PublisherOptions(
+            retry=Retry(deadline=timeout), timeout=timeout
+        )
+    )
 
 
 @pytest.fixture
-def subscriber(pubsub: Union[str, PubsubEmulator]) -> SubscriberClient:
-    if "PUBSUB_EMULATOR_HOST" in os.environ:
-        host = os.environ["PUBSUB_EMULATOR_HOST"]
-        try:
-            # PUBSUB_EMULATOR_HOST will override a channel argument
-            # so remove it in order to preserve channel options for
-            # supporting large messages
-            del os.environ["PUBSUB_EMULATOR_HOST"]
-            return SubscriberClient(
-                channel=grpc.insecure_channel(
-                    host, options=[("grpc.max_receive_message_length", -1)]
-                )
-            )
-        finally:
-            os.environ["PUBSUB_EMULATOR_HOST"] = host
-    else:
-        return SubscriberClient()
+def subscriber(pubsub: str) -> SubscriberClient:
+    return SubscriberClient()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function" if os.environ.get("PORT", "0") == "0" else "session")
 def server_and_process(
-    pubsub: Union[str, PubsubEmulator], request: _pytest.fixtures.SubRequest
+    pubsub: str, request: _pytest.fixtures.SubRequest
 ) -> Iterator[Tuple[str, Optional[subprocess.Popen]]]:
     _server = request.config.getoption("server")
     if _server is None:
+        if "PORT" not in os.environ:
+            os.environ["PORT"] = "0"
         process = subprocess.Popen([sys.executable, "-u", "-m", "ingestion_edge.wsgi"])
         try:
             while process.poll() is None:

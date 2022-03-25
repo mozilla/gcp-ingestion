@@ -70,7 +70,9 @@ class Flush:
                     # record size of message
                     total_bytes += len(data)
                     # publish message
-                    future = self.client.publish(topic, data, **attrs)
+                    future = asyncio.wrap_future(
+                        self.client.publish(topic, data, **attrs)
+                    )
                     # ack or nack by callback
                     future.add_done_callback(partial(self.set_status, message))
                     # wait for this later

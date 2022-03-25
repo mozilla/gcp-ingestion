@@ -10,7 +10,7 @@ import pytest
 # names by outsourcing the actual values
 DATA = {
     "GZIPPED": gzip.compress(b"data"),
-    "MAX_LENGTH": b"x" * (8 * 1024 * 1024),  # nginx max data length 8MB
+    "MAX_LENGTH": b"x" * (1 * 1024 * 1024),  # nginx max data length 1MB
     "NON_UTF8": bytes(range(256)),
     "TOO_LONG": b"x" * (10 * 1024 * 1024 + 1),  # over pubsub max length of 10MB
     # identity values

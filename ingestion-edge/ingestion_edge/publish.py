@@ -7,11 +7,13 @@ from sanic.request import Request
 from functools import partial
 from google.api_core.retry import Retry, if_exception_type
 from google.cloud.pubsub_v1 import PublisherClient
+from google.cloud.pubsub_v1.types import PublisherOptions
 from persistqueue import SQLiteAckQueue
 from typing import Callable, Dict, Tuple
 from .config import logger
-from .util import AsyncioBatch, HTTP_STATUS
+from .util import HTTP_STATUS
 import google.api_core.exceptions
+import asyncio
 
 TRANSIENT_ERRORS = if_exception_type(
     # Service initiated retry
@@ -64,7 +66,7 @@ async def submit(
                 "header too large\n", HTTP_STATUS.REQUEST_HEADER_FIELDS_TOO_LARGE
             )
     try:
-        await client.publish(topic, data, **attrs)
+        await asyncio.wrap_future(client.publish(topic, data, **attrs))
     except ValueError:
         return response.text("payload too large\n", HTTP_STATUS.PAYLOAD_TOO_LARGE)
     except Exception:
@@ -83,13 +85,11 @@ def get_client(config: dict) -> PublisherClient:
     """Create a pubsub client."""
     # Initialize PubSub client
     timeout = config.get("PUBLISH_TIMEOUT_SECONDS", None)
-    client = PublisherClient()
-    client.api.publish = partial(
-        client.api.publish,
-        retry=Retry(TRANSIENT_ERRORS, deadline=timeout),
-        timeout=timeout,
+    client = PublisherClient(
+        publisher_options=PublisherOptions(
+            retry=Retry(TRANSIENT_ERRORS, deadline=timeout), timeout=timeout
+        )
     )
-    client._batch_class = AsyncioBatch
     return client
 
 

@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 from google.cloud.pubsub_v1 import PublisherClient
+from google.cloud.pubsub_v1.types import UpdateTopicRequest
 
 # importing from private module _pytest for types only
 import _pytest.fixtures
@@ -33,11 +34,14 @@ def test_flush(
     topic: str,
     server_process: subprocess.Popen,
 ):
-    if pubsub == "google":
-        pytest.skip("requires pubsub emulator")
+    if pubsub != "proxy":
+        pytest.skip("requires pubsub proxy")
 
     # override pubsub status
-    publisher.update_topic({"name": topic}, {"paths": ["status_code=internal"]})
+    update_request = UpdateTopicRequest(topic={"name": topic}, update_mask={"paths": ["status_code=internal"]})
+    publisher.update_topic(update_request)
+
+    # send message to queue
     integration_test.assert_accepted_and_queued()
 
     # stop server
@@ -54,7 +58,8 @@ def test_flush(
     assert process.poll() is None  # server still running
 
     # restore pubsub status
-    publisher.update_topic({"name": topic}, {"paths": ["status_code="]})
+    update_request = UpdateTopicRequest(topic={"name": topic}, update_mask={"paths": ["status_code="]})
+    publisher.update_topic(update_request)
     try:
         process.wait(5)
     except subprocess.TimeoutExpired:

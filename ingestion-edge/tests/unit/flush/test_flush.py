@@ -5,6 +5,7 @@ from pytest_mock import MockFixture
 import asyncio
 import ingestion_edge.flush
 import pytest
+import concurrent.futures
 
 
 @pytest.fixture
@@ -25,13 +26,15 @@ def test_success(
 ):
     published = []
 
-    def api_publish(topic, messages):
+    def _publish(topic, data, **attributes):
         published.append(
-            (topic, [(message.data, dict(message.attributes)) for message in messages])
+            (topic, [(data, attributes)])
         )
-        return PublishResponse(message_ids=[str(i) for i in range(len(messages))])
+        future = concurrent.futures.Future()
+        future.set_result("1")
+        return future
 
-    mocker.patch.object(client.api, "publish", api_publish)
+    mocker.patch.object(client, "publish", _publish)
 
     flush.q.put(("topic", b"data", {"attr": "value"}))
 
@@ -41,39 +44,6 @@ def test_success(
     assert flush.q.acked_count() == 0
     assert flush.q.size == 0
     assert published == [("topic", [(b"data", {"attr": "value"})])]
-
-
-def test_batching(
-    client: PublisherClient, flush: ingestion_edge.flush.Flush, mocker: MockFixture
-):
-    published = []
-
-    def api_publish(topic, messages):
-        published.append(
-            (topic, [(message.data, dict(message.attributes)) for message in messages])
-        )
-        return PublishResponse(message_ids=[str(i) for i in range(len(messages))])
-
-    mocker.patch.object(client.api, "publish", api_publish)
-
-    flush.q.put(("topic", b"", {}))
-    flush.q.put(("topic", b"", {}))
-    flush.q.put(("topic", b"data", {}))
-    flush.q.put(("topic", b"data", {}))
-    flush.concurrent_messages = 2
-
-    assert asyncio.run(flush._flush()) == 2
-    assert asyncio.run(flush._flush()) == 1
-    assert asyncio.run(flush._flush()) == 1
-    assert flush.q.unack_count() == 0
-    assert flush.q.ready_count() == 0
-    assert flush.q.acked_count() == 0
-    assert flush.q.size == 0
-    assert published == [
-        ("topic", [(b"", {}), (b"", {})]),
-        ("topic", [(b"data", {})]),
-        ("topic", [(b"data", {})]),
-    ]
 
 
 def test_invalid_message(
@@ -95,13 +65,13 @@ def test_publish_exception(
 ):
     published = []
 
-    def api_publish(topic, messages):
+    def _publish(topic, data, **attributes):
         published.append(
-            (topic, [(message.data, dict(message.attributes)) for message in messages])
+            (topic, [(data, attributes)])
         )
-        return PublishResponse()
+        raise Exception("test")
 
-    mocker.patch.object(client.api, "publish", api_publish)
+    mocker.patch.object(client, "publish", _publish)
 
     flush.q.put(("topic", b"data", {}))
 

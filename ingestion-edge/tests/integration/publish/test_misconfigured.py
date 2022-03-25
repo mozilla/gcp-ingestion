@@ -9,17 +9,15 @@ def test_submit_pubsub_permission_denied(
     pubsub: str,
     topic: str,
 ):
-    if pubsub == "google":
-        pytest.skip("not implemented")
-    else:
-        publisher.update_topic(
-            {"name": topic}, {"paths": ["status_code=permission_denied"]}
-        )
+    if pubsub != "proxy":
+        pytest.skip("requires pubsub proxy")
+
+    publisher.update_topic(
+        {"name": topic}, {"paths": ["status_code=permission_denied"]}
+    )
     integration_test.assert_accepted_and_queued()
-    if pubsub == "google":
-        pytest.skip("not implemented")
-    else:
-        publisher.update_topic({"name": topic}, {"paths": ["status_code="]})
+
+    publisher.update_topic({"name": topic}, {"paths": ["status_code="]})
     integration_test.assert_flushed()
 
 
@@ -30,11 +28,11 @@ def test_submit_pubsub_topic_not_found(
     subscription: str,
     topic: str,
 ):
-    publisher.delete_topic(topic)
+    publisher.delete_topic(topic=topic)
     try:
         integration_test.assert_accepted_and_queued()
     finally:
-        subscriber.delete_subscription(subscription)
-        publisher.create_topic(topic)
-        subscriber.create_subscription(subscription, topic)
+        subscriber.delete_subscription(subscription=subscription)
+        publisher.create_topic(name=topic)
+        subscriber.create_subscription(name=subscription, topic=topic)
     integration_test.assert_flushed()

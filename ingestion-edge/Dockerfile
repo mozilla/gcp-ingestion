@@ -14,7 +14,10 @@ FROM python:${PYTHON_VERSION}-slim
 WORKDIR /app
 RUN echo 'deb http://deb.debian.org/debian buster-backports main' >> /etc/apt/sources.list && \
   apt-get update && \
-  apt-get install -qqy --target-release buster-backports wrk
+  apt-get install -qqy --target-release buster-backports wrk default-jdk-headless
+COPY --from=google/cloud-sdk:alpine /google-cloud-sdk /google-cloud-sdk
+ENV PATH /google-cloud-sdk/bin:$PATH
+RUN gcloud components install beta pubsub-emulator --quiet
 COPY --from=0 /usr/local /usr/local
 COPY . /app
 ENV HOST=0.0.0.0 PORT=8000

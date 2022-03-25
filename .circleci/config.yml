@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  gcp-cli: circleci/gcp-cli@2.4.1
 executors:
   java-11:
     docker:
@@ -91,6 +93,10 @@ jobs:
     - run:
         name: Build
         command: bin/build
+    - gcp-cli/install
+    - run:
+        name: Install Pub/Sub emulator
+        command: gcloud components install beta pubsub-emulator --quiet
     - run:
         name: PyTest with linters
         command: bin/pytest-all

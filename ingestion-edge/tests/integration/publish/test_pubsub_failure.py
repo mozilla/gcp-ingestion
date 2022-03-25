@@ -11,8 +11,8 @@ def test_submit_pubsub_server_error(
     pubsub: Any,
     topic: str,
 ):
-    if pubsub == "google":
-        pytest.skip("requires pubsub emulator")
+    if pubsub != "proxy":
+        pytest.skip("requires pubsub proxy")
 
     # override pubsub status
     publisher.update_topic({"name": topic}, {"paths": ["status_code=internal"]})
@@ -29,8 +29,8 @@ def test_submit_pubsub_timeout(
     pubsub: Any,
     topic: str,
 ):
-    if pubsub == "google":
-        pytest.skip("requires pubsub emulator")
+    if pubsub != "proxy":
+        pytest.skip("requires pubsub proxy")
 
     # override pubsub response time
     publisher.update_topic(

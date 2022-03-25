@@ -1,4 +1,3 @@
-from ingestion_edge.util import AsyncioBatch
 from google.cloud.pubsub_v1 import PublisherClient
 from persistqueue import SQLiteAckQueue
 from sanic import Sanic
@@ -18,7 +17,6 @@ def client() -> PublisherClient:
         client = PublisherClient(channel=grpc.insecure_channel(target=""))
     else:
         client = PublisherClient()
-    client._batch_class = AsyncioBatch
     return client
 
 

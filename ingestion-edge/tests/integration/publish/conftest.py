@@ -23,7 +23,7 @@ def route(request: _pytest.fixtures.SubRequest) -> Tuple[str, str, str]:
 def topic(publisher: PublisherClient, route: Tuple[str, str, str]) -> Iterator[str]:
     name = route[1]
     try:
-        publisher.create_topic(name)
+        publisher.create_topic(name=name)
         delete = True
     except AlreadyExists:
         delete = False
@@ -31,14 +31,14 @@ def topic(publisher: PublisherClient, route: Tuple[str, str, str]) -> Iterator[s
         yield name
     finally:
         if delete:
-            publisher.delete_topic(name)
+            publisher.delete_topic(topic=name)
 
 
 @pytest.fixture
 def subscription(topic: str, subscriber: SubscriberClient) -> Iterator[str]:
     name = topic.replace("/topics/", "/subscriptions/")
     try:
-        subscriber.create_subscription(name, topic)
+        subscriber.create_subscription(name=name, topic=topic)
         delete = True
     except AlreadyExists:
         delete = False
@@ -46,7 +46,7 @@ def subscription(topic: str, subscriber: SubscriberClient) -> Iterator[str]:
         yield name
     finally:
         if delete:
-            subscriber.delete_subscription(name)
+            subscriber.delete_subscription(subscription=name)
 
 
 @pytest.fixture

@@ -5,44 +5,45 @@ services:
   web:
     build: .
     image: &image "${DOCKERHUB_REPO-ingestion-edge}:${CIRCLE_TAG-latest}"
-    environment:
-    - &route_table >-
-      ROUTE_TABLE=[
+    environment: &web-env
+      PUBSUB_EMULATOR_HOST: pubsub:8085
+      ROUTE_TABLE: >-
         [
-          "/stub/<suffix:path>",
-          "projects/test/topics/stub_installer",
-          ["GET"]
-        ],
-        [
-          "/submit/telemetry/<suffix:path>",
-          "projects/test/topics/telemetry"
-        ],
-        [
-          "/submit/sslreports",
-          "projects/test/topics/tls_error_reports",
-          ["post", "put"]
-        ],
-        [
-          "/submit/<suffix:path>",
-          "projects/test/topics/ingestion",
-          ["PoSt", "pUt"]
-        ],
-        [
-          "/submit",
-          "projects/test/topics/ingestion"
+          [
+            "/stub/<suffix:path>",
+            "projects/test/topics/stub_installer",
+            ["GET"]
+          ],
+          [
+            "/submit/telemetry/<suffix:path>",
+            "projects/test/topics/telemetry"
+          ],
+          [
+            "/submit/sslreports",
+            "projects/test/topics/tls_error_reports",
+            ["post", "put"]
+          ],
+          [
+            "/submit/<suffix:path>",
+            "projects/test/topics/ingestion",
+            ["PoSt", "pUt"]
+          ],
+          [
+            "/submit",
+            "projects/test/topics/ingestion"
+          ]
         ]
-      ]
   pubsub:
     build: .
     image: *image
-    command: python -m pubsub_emulator
+    command: gcloud beta emulators pubsub start
     environment:
-      PORT: 8085
+      PUBSUB_EMULATOR_HOST: 0.0.0.0:8085
   test:
     build: .
     image: *image
     command:
     - bin/pytest-all
     environment:
-    - *route_table
-    - REQUIRE_CODE_COVERAGE=false
+      <<: *web-env
+      REQUIRE_CODE_COVERAGE: 'false'

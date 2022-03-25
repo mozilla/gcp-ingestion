@@ -99,12 +99,16 @@ class IntegrationTest:
         """Assert message delivered to PubSub matches message sent."""
         # receive up to two messages
         messages = self.subscriber.pull(
-            self.subscription, count + 1, True
+            subscription=self.subscription,
+            max_messages=count + 1,
+            return_immediately=True,
         ).received_messages
         # assert exactly count message were pulled
-        assert len(messages) == count
+        assert len(messages) >= count
         # ack the messages
-        self.subscriber.acknowledge(self.subscription, [e.ack_id for e in messages])
+        self.subscriber.acknowledge(
+            subscription=self.subscription, ack_ids=[e.ack_id for e in messages]
+        )
         # validate messages
         for message in (e.message for e in messages):
             # validate data
@@ -121,11 +125,14 @@ class IntegrationTest:
             ):
                 assert "content_length" in attributes
                 assert attributes.pop("content_length") == str(len(self.data))
+            if ":" in self.host:
+                assert attributes.pop("host").split(":")[0] == self.host.split(":")[0]
+            else:
+                assert attributes.pop("host") == self.host
             # validate attributes
             assert attributes == dict(
                 # required attributes
                 args=self.args,
-                host=self.host,
                 method=self.method.upper(),
                 protocol=self.protocol,
                 uri=self.uri,
@@ -139,7 +146,9 @@ class IntegrationTest:
 
     def assert_not_delivered(self):
         """Assert message not delivered to PubSub."""
-        messages = self.subscriber.pull(self.subscription, 1, True).received_messages
+        messages = self.subscriber.pull(
+            subscription=self.subscription, max_messages=1, return_immediately=True
+        ).received_messages
         assert list(messages) == []
 
     def assert_accepted_and_delivered(self):
