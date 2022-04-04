@@ -46,7 +46,11 @@ public class FilterByDocType
             .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
       }
 
-      if (allowedDocTypesSet.contains(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+      // We have added Glean-based topsites-impression pings in
+      // https://github.com/mozilla-services/cloudops-infra/pull/3964
+      // We temporarily require contextual-services namespace in order to filter these out.
+      if ("contextual-services".equals(message.getAttribute(Attribute.DOCUMENT_NAMESPACE))
+          && allowedDocTypesSet.contains(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
         out.output(message);
         PerDocTypeCounter.inc(message.getAttributeMap(), "doctype_filter_passed");
       } else {

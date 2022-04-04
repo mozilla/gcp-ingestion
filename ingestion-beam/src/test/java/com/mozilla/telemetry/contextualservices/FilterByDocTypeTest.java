@@ -27,7 +27,8 @@ public class FilterByDocTypeTest {
     String allowedDocTypes = "type-a,type-b,";
 
     List<PubsubMessage> inputDocTypes = Stream.of("type-a", "type-b", "type-c", "type-a", "type-d")
-        .map(docType -> ImmutableMap.<String, String>of(Attribute.DOCUMENT_TYPE, docType))
+        .map(docType -> ImmutableMap.<String, String>of(Attribute.DOCUMENT_TYPE, docType,
+            Attribute.DOCUMENT_NAMESPACE, "contextual-services"))
         .map(attributes -> new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes))
         .collect(Collectors.toList());
 
