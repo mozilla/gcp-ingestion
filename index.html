@@ -827,16 +827,25 @@ deployed to Google Cloud Platform (GCP).</p>
 <p>The components are:</p>
 <ul>
 <li><a href="ingestion-edge">ingestion-edge</a>: a simple Python service for accepting HTTP
-  messages and delivering to Google Cloud Pub/Sub</li>
+  messages and delivering to Google Cloud Pub/Sub
+  (<a href="https://mana.mozilla.org/wiki/display/SRE/Ingestion+Edge">deployment docs 🔒</a>)</li>
 <li><a href="ingestion-beam">ingestion-beam</a>: a Java module defining
   <a href="https://beam.apache.org/">Apache Beam</a> jobs for streaming and batch
-  transformations of ingested messages</li>
+  transformations of ingested messages
+  (<a href="https://mana.mozilla.org/wiki/display/SRE/Ingestion+Beam">deployment docs 🔒</a>)</li>
 <li><a href="ingestion-sink">ingestion-sink</a>: a Java application that runs
   in Kubernetes, reading input from Google Cloud Pub/Sub and emitting
-  records to batch-oriented outputs like GCS or BigQuery</li>
+  records to outputs like GCS or BigQuery
+  (<a href="https://mana.mozilla.org/wiki/display/SRE/Ingestion+Sink">deployment docs 🔒</a>)</li>
 </ul>
 <p>The design behind the system along with various trade offs are documented in
 the <a href="architecture/overview/">architecture section</a>.</p>
+<p>This project requires Java 11.
+To manage multiple local JDKs, consider <a href="https://www.jenv.be/">jenv</a> and the
+<code>jenv enable-plugin maven</code> command.
+Also consider reading through
+<a href="https://cwiki.apache.org/confluence/display/BEAM/Set+up+IntelliJ+from+scratch">Apache Beam's wiki article on IntelliJ IDEA setup</a>
+for some ideas on configuring an IDE environment.</p>
 <p>Feel free to ask us in <code>#data-help</code> on Slack or <code>#telemetry</code> on <code>chat.mozilla.org</code>
 if you have specific questions.</p>
 
