@@ -9,12 +9,15 @@ There are currently four components:
 
 - [ingestion-edge](ingestion-edge): a simple Python service for accepting HTTP
   messages and delivering to Google Cloud Pub/Sub
+  ([deployment docs 🔒](https://mana.mozilla.org/wiki/display/SRE/Ingestion+Edge))
 - [ingestion-beam](ingestion-beam): a Java module defining
   [Apache Beam](https://beam.apache.org/) jobs for streaming and batch
   transformations of ingested messages
+  ([deployment docs 🔒](https://mana.mozilla.org/wiki/display/SRE/Ingestion+Beam))
 - [ingestion-sink](ingestion-sink): a Java application that runs
   in Kubernetes, reading input from Google Cloud Pub/Sub and emitting
   records to outputs like GCS or BigQuery
+  ([deployment docs 🔒](https://mana.mozilla.org/wiki/display/SRE/Ingestion+Sink))
 - [ingestion-core](ingestion-core): a Java module for code shared between
   ingestion-beam and ingestion-sink
 
