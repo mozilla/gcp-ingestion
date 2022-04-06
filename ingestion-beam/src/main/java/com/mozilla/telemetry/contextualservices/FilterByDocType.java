@@ -17,15 +17,28 @@ public class FilterByDocType
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
   private final String allowedDocTypes;
+  private final String allowedNamespaces;
 
   private static transient Set<String> allowedDocTypesSet;
+  private static transient Set<String> allowedNamespacesSet;
 
-  public FilterByDocType(String allowedDocTypes) {
+  public FilterByDocType(String allowedDocTypes, String allowedNamespaces) {
     this.allowedDocTypes = allowedDocTypes;
+    this.allowedNamespaces = allowedNamespaces;
   }
 
-  public static FilterByDocType of(String allowedDocTypes) {
-    return new FilterByDocType(allowedDocTypes);
+  public static FilterByDocType of(String allowedDocTypes, String allowedNamespaces) {
+    return new FilterByDocType(allowedDocTypes, allowedNamespaces);
+  }
+
+  private void parseAllowlistString(String allowlistString, Set<String> allowlist, String argument) {
+    if (allowlist == null) {
+      if (allowlistString == null) {
+        throw new IllegalArgumentException(String.format("Required --%s argument not found", argument));
+      }
+      allowedDocTypesSet = Arrays.stream(allowedDocTypes.split(","))
+              .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+    }
   }
 
   @Override
@@ -38,18 +51,10 @@ public class FilterByDocType
     @ProcessElement
     public void processElement(@Element PubsubMessage message, OutputReceiver<PubsubMessage> out) {
       message = PubsubConstraints.ensureNonNull(message);
-      if (allowedDocTypesSet == null) {
-        if (allowedDocTypes == null) {
-          throw new IllegalArgumentException("Required --allowedDocTypes argument not found");
-        }
-        allowedDocTypesSet = Arrays.stream(allowedDocTypes.split(","))
-            .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
-      }
+      parseAllowlistString(allowedDocTypes, allowedDocTypesSet, "allowedDoctypes");
+      parseAllowlistString(allowedNamespaces, allowedNamespacesSet, "allowedNamespaces");
 
-      // We have added Glean-based topsites-impression pings in
-      // https://github.com/mozilla-services/cloudops-infra/pull/3964
-      // We temporarily require contextual-services namespace in order to filter these out.
-      if ("contextual-services".equals(message.getAttribute(Attribute.DOCUMENT_NAMESPACE))
+      if (allowedNamespacesSet.contains(message.getAttribute(Attribute.DOCUMENT_NAMESPACE))
           && allowedDocTypesSet.contains(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
         out.output(message);
         PerDocTypeCounter.inc(message.getAttributeMap(), "doctype_filter_passed");

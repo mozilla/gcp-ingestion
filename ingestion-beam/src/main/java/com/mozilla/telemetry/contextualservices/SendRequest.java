@@ -26,7 +26,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Send GET requests to reporting endpoint.
  */
 public class SendRequest extends
-    PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
+    PTransform<PCollection<SponsoredInteraction>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
 
@@ -71,13 +71,12 @@ public class SendRequest extends
   }
 
   @Override
-  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
-      PCollection<PubsubMessage> messages) {
-    return messages.apply(
-        MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
-          message = PubsubConstraints.ensureNonNull(message);
+  public Result<PCollection<SponsoredInteraction>, PubsubMessage> expand(
+      PCollection<SponsoredInteraction> interactions) {
+    return interactions.apply(
+        MapElements.into(TypeDescriptor.of(SponsoredInteraction.class)).via((SponsoredInteraction interaction) -> {
 
-          String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
+          String reportingUrl = interaction.reporterURL();
 
           if (reportingUrl == null) {
             throw new IllegalArgumentException("reporting url cannot be null");
@@ -95,9 +94,9 @@ public class SendRequest extends
             throw new RequestContentException(reportingUrl);
           }
 
-          return new PubsubMessage(message.getPayload(), new HashMap<>());
+          return interaction;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
+            .exceptionsVia((ExceptionElement<SponsoredInteraction> ee) -> {
               try {
                 throw ee.exception();
               } catch (UncheckedIOException | RequestContentException e) {

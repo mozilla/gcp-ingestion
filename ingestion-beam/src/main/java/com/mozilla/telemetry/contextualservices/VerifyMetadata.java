@@ -69,7 +69,7 @@ public class VerifyMetadata extends
                 String.format("Invalid Firefox version: %s", version), "user_agent_version");
           }
 
-          // Verify release channel
+          // Verify release channel for specific doctype
           String channel = attributes.get(Attribute.NORMALIZED_CHANNEL);
           // Bug 1737185
           if (doctype.startsWith("quicksuggest-")) {

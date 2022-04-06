@@ -25,6 +25,7 @@ public class FilterByDocTypeTest {
   @Test
   public void testMessagesFiltered() {
     String allowedDocTypes = "type-a,type-b,";
+    String allowedNamespaces = "ns-1,ns-2,";
 
     List<PubsubMessage> inputDocTypes = Stream.of("type-a", "type-b", "type-c", "type-a", "type-d")
         .map(docType -> ImmutableMap.<String, String>of(Attribute.DOCUMENT_TYPE, docType,
@@ -33,7 +34,7 @@ public class FilterByDocTypeTest {
         .collect(Collectors.toList());
 
     PCollection<PubsubMessage> output = pipeline.apply(Create.of(inputDocTypes))
-        .apply(FilterByDocType.of(allowedDocTypes));
+        .apply(FilterByDocType.of(allowedDocTypes, allowedNamespaces));
 
     PAssert.that(output).satisfies(messages -> {
       HashMap<String, Integer> docTypeCount = new HashMap<>();

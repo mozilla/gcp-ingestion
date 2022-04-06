@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 
@@ -33,6 +35,14 @@ public class FailureMessage {
    */
   public static PubsubMessage of(Object caller, String payload, Throwable e) {
     return FailureMessage.of(caller, payload.getBytes(StandardCharsets.UTF_8), e);
+  }
+
+  /**
+   * Return a PubsubMessage wrapping a SponsoredInteraction with attributes describing the error.
+   */
+  public static PubsubMessage of(Object caller, SponsoredInteraction interaction, Throwable e) {
+    PubsubMessage message = new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), interaction.toMap());
+    return FailureMessage.of(caller, message, e);
   }
 
   /**

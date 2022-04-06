@@ -14,7 +14,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Populate some counter metrics; payload passes through unchanged.
  */
 public class EmitCounters
-    extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+    extends PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> {
 
   public static EmitCounters of() {
     return new EmitCounters();
@@ -24,18 +24,19 @@ public class EmitCounters
   }
 
   @Override
-  public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> messages) {
-    return messages.apply(
-        MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
-          message = PubsubConstraints.ensureNonNull(message);
-          Map<String, String> attributes = message.getAttributeMap();
+  public PCollection<SponsoredInteraction> expand(PCollection<SponsoredInteraction> messages) {
+    return messages.apply(MapElements
+            .into(TypeDescriptor.of(SponsoredInteraction.class))
+            .via((SponsoredInteraction interaction) -> {
+              // mock a doctype based on the sponsered interaction fields
+              Map<String, String> attributes = Map.of(Attribute.DOCUMENT_TYPE, interaction.getDocumentType());
 
-          PerDocTypeCounter.inc(attributes, "valid_submission");
-          if (attributes.containsKey(Attribute.REQUEST_ID)) {
-            PerDocTypeCounter.inc(attributes, "valid_submission_merino");
-          }
-          return message;
-        }));
+              PerDocTypeCounter.inc(attributes, "valid_submission");
+              if (interaction.requestID() != null) {
+                PerDocTypeCounter.inc(attributes, "valid_submission_merino");
+              }
+              return interaction;
+            }));
   }
 
 }

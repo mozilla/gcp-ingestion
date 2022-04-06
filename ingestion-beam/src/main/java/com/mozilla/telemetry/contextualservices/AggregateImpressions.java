@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -32,7 +30,7 @@ import org.joda.time.Instant;
  * Count the number of impressions aggregated by reporting URL.
  */
 public class AggregateImpressions
-    extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
+    extends PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> {
 
   private final String aggregationWindowDuration;
 
@@ -45,12 +43,12 @@ public class AggregateImpressions
   }
 
   @Override
-  public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> messages) {
+  public PCollection<SponsoredInteraction> expand(PCollection<SponsoredInteraction> messages) {
     return messages //
-        // Add reporting url as key, pubsub message as value
-        .apply(WithKeys.of((SerializableFunction<PubsubMessage, String>) //
+        // Add reporting url as key, interaction object as value
+        .apply(WithKeys.of((SerializableFunction<SponsoredInteraction, String>) //
         AggregateImpressions::getAggregationKey)) //
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of())) //
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteractionCoder.of())) //
         // Set timestamp to current time
         .apply(WithCurrentTimestamp.of()) //
         // Group impressions into timed windows
@@ -63,10 +61,9 @@ public class AggregateImpressions
   }
 
   @VisibleForTesting
-  static String getAggregationKey(PubsubMessage message) {
-    message = PubsubConstraints.ensureNonNull(message);
+  static String getAggregationKey(SponsoredInteraction interaction) {
 
-    String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
+    String reportingUrl = interaction.reporterURL();
 
     ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
@@ -82,10 +79,10 @@ public class AggregateImpressions
   }
 
   @VisibleForTesting
-  static class BuildAggregateUrl extends DoFn<KV<String, Long>, PubsubMessage> {
+  static class BuildAggregateUrl extends DoFn<KV<String, Long>, SponsoredInteraction> {
 
     @ProcessElement
-    public void processElement(@Element KV<String, Long> input, OutputReceiver<PubsubMessage> out,
+    public void processElement(@Element KV<String, Long> input, OutputReceiver<SponsoredInteraction> out,
         IntervalWindow window) {
       ParsedReportingUrl urlParser = new ParsedReportingUrl(input.getKey());
 
@@ -99,11 +96,12 @@ public class AggregateImpressions
       urlParser.addQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_END,
           Long.toString(windowEnd / 1000));
 
-      Map<String, String> attributeMap = ImmutableMap.of(Attribute.REPORTING_URL,
-          urlParser.toString(), Attribute.SUBMISSION_TIMESTAMP,
-          Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
+      SponsoredInteraction interaction = SponsoredInteraction.builder()
+        .reporterURL(urlParser.toString())
+        .submissionTimestamp(Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000))
+        .build();
 
-      out.output(new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributeMap));
+      out.output(interaction);
     }
   }
 }

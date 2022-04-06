@@ -37,7 +37,7 @@ import org.joda.time.Instant;
  * Transform that maintains state per key in order to label suspicious clicks.
  */
 public class LabelClickSpikes extends
-    PTransform<PCollection<KV<String, PubsubMessage>>, PCollection<KV<String, PubsubMessage>>> {
+    PTransform<PCollection<KV<String, SponsoredInteraction>>, PCollection<KV<String, SponsoredInteraction>>> {
 
   private final Integer maxClicks;
   private final Long windowMillis;
@@ -46,11 +46,11 @@ public class LabelClickSpikes extends
   /**
    * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
    */
-  public static PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> perContextId(
+  public static PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> perContextId(
       Integer maxClicks, Duration windowDuration) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
-        .apply(WithKeys.of((message) -> message.getAttribute(Attribute.CONTEXT_ID))) //
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), PubsubMessageWithAttributesCoder.of()))
+        .apply(WithKeys.of((interaction) -> interaction.contextID())) //
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteractionCoder.of()))
         .apply(WithCurrentTimestamp.of()) //
         .apply(LabelClickSpikes.of(maxClicks, windowDuration)) //
         .apply(Values.create()));
@@ -83,15 +83,14 @@ public class LabelClickSpikes extends
   }
 
   /** Updates the passed attribute map, adding click-status to the reporting URL. */
-  private static void addClickStatusToReportingUrlAttribute(Map<String, String> attributes) {
-    String reportingUrl = attributes.get(Attribute.REPORTING_URL);
+  private static String addClickStatusToReportingUrlAttribute(String reportingUrl) {
     ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
     urlParser.addQueryParam(ParsedReportingUrl.PARAM_CLICK_STATUS,
         ParseReportingUrl.CLICK_STATUS_GHOST);
-    attributes.put(Attribute.REPORTING_URL, urlParser.toString());
+    return urlParser.toString();
   }
 
-  private class Fn extends DoFn<KV<String, PubsubMessage>, KV<String, PubsubMessage>> {
+  private class Fn extends DoFn<KV<String, SponsoredInteraction>, KV<String, SponsoredInteraction>> {
 
     // See https://beam.apache.org/documentation/programming-guide/#state-and-timers
     @StateId("click-state")
@@ -100,9 +99,9 @@ public class LabelClickSpikes extends
     private final TimerSpec clickTimer = TimerSpecs.timer(TimeDomain.PROCESSING_TIME);
 
     @ProcessElement
-    public void process(@Element KV<String, PubsubMessage> element, @Timestamp Instant elementTs,
+    public void process(@Element KV<String, SponsoredInteraction> element, @Timestamp Instant elementTs,
         @StateId("click-state") ValueState<List<Long>> state, @TimerId("click-timer") Timer timer,
-        OutputReceiver<KV<String, PubsubMessage>> out) {
+        OutputReceiver<KV<String, SponsoredInteraction>> out) {
       List<Long> timestamps = updateTimestampState(state, elementTs.getMillis());
 
       // Set a processing-time timer to clear state after windowMillis if no further clicks
@@ -113,11 +112,12 @@ public class LabelClickSpikes extends
       if (timestamps.size() <= maxClicks) {
         out.output(element);
       } else {
-        PubsubMessage message = element.getValue();
-        Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-        addClickStatusToReportingUrlAttribute(attributes);
+        SponsoredInteraction interaction = element.getValue();
+        String reportingURL = addClickStatusToReportingUrlAttribute(interaction.reporterURL());
         ghostClickCounter.inc();
-        out.output(KV.of(element.getKey(), new PubsubMessage(message.getPayload(), attributes)));
+        out.output(KV.of(
+                element.getKey(),
+                SponsoredInteraction.builder().from(interaction).reporterURL(reportingURL).build()));
       }
     }
 
@@ -130,8 +130,8 @@ public class LabelClickSpikes extends
   }
 
   @Override
-  public PCollection<KV<String, PubsubMessage>> expand(
-      PCollection<KV<String, PubsubMessage>> input) {
+  public PCollection<KV<String, SponsoredInteraction>> expand(
+      PCollection<KV<String, SponsoredInteraction>> input) {
     return input.apply(ParDo.of(new Fn()));
   }
 }
