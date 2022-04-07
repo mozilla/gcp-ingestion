@@ -73,7 +73,7 @@ public class SendRequest extends
     return interactions.apply(
         MapElements.into(TypeDescriptor.of(SponsoredInteraction.class)).via((SponsoredInteraction interaction) -> {
 
-          String reportingUrl = interaction.reporterURL();
+          String reportingUrl = interaction.getReportingUrl();
 
           if (reportingUrl == null) {
             throw new IllegalArgumentException("reporting url cannot be null");

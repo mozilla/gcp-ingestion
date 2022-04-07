@@ -31,14 +31,12 @@ public class FilterByDocType
     return new FilterByDocType(allowedDocTypes, allowedNamespaces);
   }
 
-  private void parseAllowlistString(String allowlistString, Set<String> allowlist, String argument) {
-    if (allowlist == null) {
-      if (allowlistString == null) {
-        throw new IllegalArgumentException(String.format("Required --%s argument not found", argument));
-      }
-      allowedDocTypesSet = Arrays.stream(allowedDocTypes.split(","))
-              .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+  private Set<String> parseAllowlistString(String allowlistString, String argument) {
+    if (allowlistString == null) {
+      throw new IllegalArgumentException(String.format("Required --%s argument not found", argument));
     }
+    return Arrays.stream(allowlistString.split(","))
+            .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
   }
 
   @Override
@@ -51,8 +49,10 @@ public class FilterByDocType
     @ProcessElement
     public void processElement(@Element PubsubMessage message, OutputReceiver<PubsubMessage> out) {
       message = PubsubConstraints.ensureNonNull(message);
-      parseAllowlistString(allowedDocTypes, allowedDocTypesSet, "allowedDoctypes");
-      parseAllowlistString(allowedNamespaces, allowedNamespacesSet, "allowedNamespaces");
+      if (allowedNamespacesSet == null || allowedDocTypesSet == null) {
+        allowedDocTypesSet = parseAllowlistString(allowedDocTypes, "allowedDoctypes");
+        allowedNamespacesSet = parseAllowlistString(allowedNamespaces, "allowedNamespaces");
+      }
 
       if (allowedNamespacesSet.contains(message.getAttribute(Attribute.DOCUMENT_NAMESPACE))
           && allowedDocTypesSet.contains(message.getAttribute(Attribute.DOCUMENT_TYPE))) {

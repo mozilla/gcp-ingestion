@@ -16,6 +16,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.beam.sdk.coders.CannotProvideCoderException;
+import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
@@ -34,11 +37,19 @@ public class ParseReportingUrlTest {
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
+  private Coder<SponsoredInteraction> getCoder() {
+    try {
+      return pipeline.getCoderRegistry().getCoder(SponsoredInteraction.class);
+    } catch (CannotProvideCoderException e) {
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
   @Test
   public void testAllowedUrlsLoadAndFilter() throws IOException {
     ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(URL_ALLOW_LIST);
 
-    pipeline.run();
+//    pipeline.run();
 
     List<Set<String>> allowedUrlSets = parseReportingUrl.loadAllowedUrls();
 
@@ -48,25 +59,27 @@ public class ParseReportingUrlTest {
     Assert.assertEquals(expectedClickUrls, allowedUrlSets.get(0));
     Assert.assertEquals(expectedImpressionUrls, allowedUrlSets.get(1));
 
-    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("http://click.com"), "topsites-click"));
+    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("http://click.com"), "click"));
     Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("https://click2.com/a?b=c"), "quicksuggest-click"));
+        parseReportingUrl.isUrlValid(new URL("https://click2.com/a?b=c"), "click"));
     Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("http://abc.click.com"), "topsites-click"));
+        parseReportingUrl.isUrlValid(new URL("http://abc.click.com"), "click"));
     Assert.assertFalse(
-        parseReportingUrl.isUrlValid(new URL("http://abcclick.com"), "topsites-click"));
+        parseReportingUrl.isUrlValid(new URL("http://abcclick.com"), "click"));
     Assert.assertFalse(
-        parseReportingUrl.isUrlValid(new URL("http://click.com"), "topsites-impression"));
+        parseReportingUrl.isUrlValid(new URL("http://click.com"), "impression"));
     Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("https://impression.com/"), "topsites-impression"));
+        parseReportingUrl.isUrlValid(new URL("https://impression.com/"), "impression"));
     Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("https://test.com/"), "topsites-impression"));
-    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("https://test.com/"), "topsites-click"));
+        parseReportingUrl.isUrlValid(new URL("https://test.com/"), "impression"));
+    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("https://test.com/"), "click"));
   }
 
   @Test
   public void testParsedUrlOutput() {
+
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
         Attribute.USER_AGENT_OS, "Windows");
 
     ObjectNode basePayload = Json.createObjectNode();
@@ -93,11 +106,15 @@ public class ParseReportingUrlTest {
       List<SponsoredInteraction> payloads = new ArrayList<>();
       sponsoredInteractions.forEach(payloads::add);
 
-      Assert.assertEquals(1, payloads.size());
+      Assert.assertEquals("1 interaction in output", 1, payloads.size());
 
-      String reportingUrl = payloads.get(0).reporterURL();
+      String reportingUrl = payloads.get(0).getReportingUrl();
 
-      Assert.assertTrue(reportingUrl.startsWith("https://moz.impression.com/?"));
+      System.out.println(payloads);
+
+      Assert.assertTrue(
+        "reportingUrl starts with moz.impression.com",
+        reportingUrl.startsWith("https://moz.impression.com/?"));
       Assert.assertTrue(reportingUrl.contains("param=1"));
       Assert.assertTrue(reportingUrl.contains("id=a"));
       Assert.assertTrue(
@@ -120,10 +137,15 @@ public class ParseReportingUrlTest {
 
   @Test
   public void testRequiredParamCheck() {
-    Map<String, String> attributesImpression = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
-        "topsites-impression", Attribute.USER_AGENT_OS, "Windows");
-    Map<String, String> attributesClick = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
-        Attribute.USER_AGENT_OS, "Windows", Attribute.USER_AGENT_VERSION, "123");
+    Map<String, String> attributesImpression = ImmutableMap.of(
+        Attribute.DOCUMENT_TYPE, "topsites-impression",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+        Attribute.USER_AGENT_OS, "Windows");
+    Map<String, String> attributesClick = ImmutableMap.of(
+        Attribute.DOCUMENT_TYPE, "topsites-click",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+        Attribute.USER_AGENT_OS, "Windows",
+        Attribute.USER_AGENT_VERSION, "123");
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -158,7 +180,7 @@ public class ParseReportingUrlTest {
       return null;
     });
 
-    PAssert.that(result.output()).satisfies(messages -> {
+    PAssert.that(result.output().setCoder(getCoder())).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
       return null;
     });
@@ -177,20 +199,36 @@ public class ParseReportingUrlTest {
 
     List<PubsubMessage> input = ImmutableList.of(
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression", Attribute.USER_AGENT_OS,
-                "Windows", Attribute.GEO_DMA_CODE, "12")),
+            ImmutableMap.of(
+                    Attribute.DOCUMENT_TYPE, "topsites-impression",
+                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+                    Attribute.USER_AGENT_OS, "Windows",
+                    Attribute.GEO_DMA_CODE, "12")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression", Attribute.USER_AGENT_OS,
-                "Windows")),
+            ImmutableMap.of(
+                    Attribute.DOCUMENT_TYPE, "topsites-impression",
+                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+                    Attribute.USER_AGENT_OS, "Windows")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click", Attribute.USER_AGENT_OS,
-                "Windows", Attribute.GEO_DMA_CODE, "34", Attribute.USER_AGENT_VERSION, "87")),
+            ImmutableMap.of(
+                    Attribute.DOCUMENT_TYPE, "topsites-click",
+                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+                    Attribute.USER_AGENT_OS, "Windows",
+                    Attribute.GEO_DMA_CODE, "34",
+                    Attribute.USER_AGENT_VERSION, "87")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-impression",
-                Attribute.USER_AGENT_OS, "Windows", Attribute.GEO_DMA_CODE, "56")),
+            ImmutableMap.of(
+                    Attribute.DOCUMENT_TYPE, "quicksuggest-impression",
+                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+                    Attribute.USER_AGENT_OS, "Windows",
+                    Attribute.GEO_DMA_CODE, "56")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-click", Attribute.USER_AGENT_OS,
-                "Windows", Attribute.GEO_DMA_CODE, "78", Attribute.USER_AGENT_VERSION, "87")));
+            ImmutableMap.of(
+                    Attribute.DOCUMENT_TYPE, "quicksuggest-click",
+                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+                    Attribute.USER_AGENT_OS, "Windows",
+                    Attribute.GEO_DMA_CODE, "78",
+                    Attribute.USER_AGENT_VERSION, "87")));
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
@@ -204,11 +242,11 @@ public class ParseReportingUrlTest {
       return null;
     });
 
-    PAssert.that(result.output()).satisfies(sponsoredInteractions -> {
+    PAssert.that(result.output().setCoder(getCoder())).satisfies(sponsoredInteractions -> {
       Assert.assertEquals(Iterables.size(sponsoredInteractions), 3);
 
       sponsoredInteractions.forEach(interaction -> {
-        String reportingUrl = interaction.reporterURL();
+        String reportingUrl = interaction.getReportingUrl();
         String doctype = interaction.getDocumentType();
 
         if (doctype.equals("topsites-impression")) {

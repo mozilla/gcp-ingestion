@@ -3,13 +3,15 @@ package com.mozilla.telemetry.contextualservices;
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import com.mozilla.telemetry.util.Time;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.beam.sdk.coders.KvCoder;
-import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.SchemaCoder;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -22,6 +24,7 @@ import org.apache.beam.sdk.transforms.windowing.IntervalWindow;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.beam.sdk.values.TypeDescriptor;
 import org.joda.time.Instant;
 
 /**
@@ -40,18 +43,30 @@ public class AggregateImpressions
     return new AggregateImpressions(getAggregationWindowSize);
   }
 
+  private SchemaCoder<SponsoredInteraction> getSchemaCoder() {
+    AutoValueSchema autoValueSchema = new AutoValueSchema();
+    TypeDescriptor<SponsoredInteraction> td = TypeDescriptor.of(SponsoredInteraction.class);
+    return SchemaCoder.of(
+            autoValueSchema.schemaFor(td), td,
+            autoValueSchema.toRowFunction(td),
+            autoValueSchema.fromRowFunction(td)
+    );
+  }
+
   @Override
   public PCollection<SponsoredInteraction> expand(PCollection<SponsoredInteraction> messages) {
     return messages
         // Add reporting url as key, interaction object as value
-        .apply(WithKeys.of((SerializableFunction<SponsoredInteraction, String>) //
-        AggregateImpressions::getAggregationKey)) //
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), SerializableCoder.of(SponsoredInteraction.class))) //
+        .apply(WithKeys.of(
+          (SerializableFunction<SponsoredInteraction, String>)AggregateImpressions::getAggregationKey)
+        )
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), getSchemaCoder()))
         // Set timestamp to current time
-        .apply(WithCurrentTimestamp.of()) //
+        .apply(WithCurrentTimestamp.of())
         // Group impressions into timed windows
         .apply("IntervalWindow",
-            Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration)))) //
+            Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration)))
+        )
         .apply(Count.perKey()) //
         // Create aggregated url by adding impression count as query parameter
         .apply(ParDo.of(new BuildAggregateUrl())) //
@@ -61,7 +76,7 @@ public class AggregateImpressions
   @VisibleForTesting
   static String getAggregationKey(SponsoredInteraction interaction) {
 
-    String reportingUrl = interaction.reporterURL();
+    String reportingUrl = interaction.getReportingUrl();
 
     ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
@@ -95,8 +110,8 @@ public class AggregateImpressions
           Long.toString(windowEnd / 1000));
 
       SponsoredInteraction interaction = SponsoredInteraction.builder()
-        .reporterURL(urlParser.toString())
-        .submissionTimestamp(Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000))
+        .setReportingUrl(urlParser.toString())
+        .setSubmissionTimestamp(Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000))
         .build();
 
       out.output(interaction);

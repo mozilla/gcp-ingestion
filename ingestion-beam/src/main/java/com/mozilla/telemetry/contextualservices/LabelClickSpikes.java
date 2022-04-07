@@ -43,7 +43,7 @@ public class LabelClickSpikes extends
   public static PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> perContextId(
       Integer maxClicks, Duration windowDuration) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
-        .apply(WithKeys.of((interaction) -> interaction.contextID())) //
+        .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
         .apply(WithCurrentTimestamp.of()) //
         .apply(LabelClickSpikes.of(maxClicks, windowDuration)) //
         .apply(Values.create()));
@@ -106,11 +106,11 @@ public class LabelClickSpikes extends
         out.output(element);
       } else {
         SponsoredInteraction interaction = element.getValue();
-        String reportingUrl = addClickStatusToReportingUrlAttribute(interaction.reporterURL());
+        String reportingUrl = addClickStatusToReportingUrlAttribute(interaction.getReportingUrl());
         ghostClickCounter.inc();
         out.output(KV.of(
                 element.getKey(),
-                interaction.toBuilder().reporterURL(reportingUrl).build()));
+                interaction.toBuilder().setReportingUrl(reportingUrl).build()));
       }
     }
 

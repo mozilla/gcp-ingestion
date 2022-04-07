@@ -22,10 +22,10 @@ public class AggregateImpressionsTest {
 
   private SponsoredInteraction.Builder getTestInteraction() {
     return SponsoredInteraction.builder()
-            .interaction("click")
-            .source("topsite")
-            .form("phone")
-            .contextID("1");
+            .setInteractionType("click")
+            .setSource("topsite")
+            .setFormFactor("phone")
+            .setContextId("1");
   }
 
   @Rule
@@ -41,10 +41,9 @@ public class AggregateImpressionsTest {
 
     PAssert.that(output).satisfies(messages -> {
 
-      System.out.printf("%s", Iterables.get(messages, 0));
       Assert.assertEquals(Iterables.size(messages), 1);
 
-      String aggregatedUrl = Iterables.get(messages, 0).reporterURL();
+      String aggregatedUrl = Iterables.get(messages, 0).getReportingUrl();
       ParsedReportingUrl parsedUrl = new ParsedReportingUrl(aggregatedUrl);
 
       Assert.assertTrue(aggregatedUrl.startsWith("https://test.com"));
@@ -65,7 +64,7 @@ public class AggregateImpressionsTest {
   @Test
   public void testGetAggregationKey() {
     String url = "http://test.com?country-code=US&abc=abc&def=a";
-    SponsoredInteraction interaction = getTestInteraction().reporterURL(url).build();
+    SponsoredInteraction interaction = getTestInteraction().setReportingUrl(url).build();
 
     String aggKey = AggregateImpressions.getAggregationKey(interaction);
 
@@ -75,7 +74,6 @@ public class AggregateImpressionsTest {
 
   @Test
   public void testAggregation() {
-
     SponsoredInteraction.Builder baseInteraction = getTestInteraction();
 
     String attributesUrl1 = String.format("https://test.com?%s=US&%s=",
@@ -84,11 +82,11 @@ public class AggregateImpressionsTest {
       ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
 
     List<SponsoredInteraction> input = ImmutableList.of(
-            baseInteraction.reporterURL(attributesUrl1).build(),
-            baseInteraction.reporterURL(attributesUrl2).build(),
-            baseInteraction.reporterURL(attributesUrl1).build(),
-            baseInteraction.reporterURL(attributesUrl1).build(),
-            baseInteraction.reporterURL(attributesUrl2).build()
+            baseInteraction.setReportingUrl(attributesUrl1).build(),
+            baseInteraction.setReportingUrl(attributesUrl2).build(),
+            baseInteraction.setReportingUrl(attributesUrl1).build(),
+            baseInteraction.setReportingUrl(attributesUrl1).build(),
+            baseInteraction.setReportingUrl(attributesUrl2).build()
     );
 
     PCollection<SponsoredInteraction> output = pipeline.apply(Create.of(input))
@@ -99,7 +97,7 @@ public class AggregateImpressionsTest {
       Assert.assertEquals(Iterables.size(interactions), 2);
 
       interactions.forEach(interaction -> {
-        String reportingUrl = interaction.reporterURL();
+        String reportingUrl = interaction.getReportingUrl();
         ParsedReportingUrl parsedUrl = new ParsedReportingUrl(reportingUrl);
 
         String country = parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE);

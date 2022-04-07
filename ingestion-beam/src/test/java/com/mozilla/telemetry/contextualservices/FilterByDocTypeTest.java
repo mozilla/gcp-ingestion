@@ -25,11 +25,15 @@ public class FilterByDocTypeTest {
   @Test
   public void testMessagesFiltered() {
     String allowedDocTypes = "type-a,type-b,";
-    String allowedNamespaces = "contextual-services,ns-2,";
+    String allowedNamespaces = "ns-1,ns-2,";
 
-    List<PubsubMessage> inputDocTypes = Stream.of("type-a", "type-b", "type-c", "type-a", "type-d")
-        .map(docType -> ImmutableMap.<String, String>of(Attribute.DOCUMENT_TYPE, docType,
-            Attribute.DOCUMENT_NAMESPACE, "contextual-services"))
+    List<PubsubMessage> inputDocTypes = Stream.of(
+            List.of("type-a", "ns-1"), List.of("type-b", "ns-2"),
+            List.of("type-b", "ns-3"), List.of("type-a", "ns-1"),
+            List.of("type-d", "ns-1"))
+        .map(tuple -> ImmutableMap.of(
+                Attribute.DOCUMENT_TYPE, tuple.get(0),
+                Attribute.DOCUMENT_NAMESPACE, tuple.get(1)))
         .map(attributes -> new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes))
         .collect(Collectors.toList());
 

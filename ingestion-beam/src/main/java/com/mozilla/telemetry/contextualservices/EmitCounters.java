@@ -2,9 +2,9 @@ package com.mozilla.telemetry.contextualservices;
 
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
-import com.mozilla.telemetry.transforms.PubsubConstraints;
+
 import java.util.Map;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PCollection;
@@ -32,7 +32,7 @@ public class EmitCounters
               Map<String, String> attributes = Map.of(Attribute.DOCUMENT_TYPE, interaction.getDocumentType());
 
               PerDocTypeCounter.inc(attributes, "valid_submission");
-              if (interaction.requestID() != null) {
+              if (interaction.getRequestId() != null) {
                 PerDocTypeCounter.inc(attributes, "valid_submission_merino");
               }
               return interaction;

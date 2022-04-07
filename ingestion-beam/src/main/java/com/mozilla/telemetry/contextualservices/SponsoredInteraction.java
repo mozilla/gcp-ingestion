@@ -12,35 +12,35 @@ import java.io.Serializable;
 public abstract class SponsoredInteraction implements Serializable {
     // These match the values from doctype
     // topsites, quicksuggest
-    public static final String SOURCE_TOPSITE = "topsites";
+    public static final String SOURCE_TOPSITES = "topsites";
     public static final String SOURCE_SUGGEST = "quicksuggest";
     @Nullable
-    abstract String source();
+    abstract String getSource();
 
     // desktop, phone, tablet
     public static final String FORM_DESKTOP = "desktop";
     public static final String FORM_PHONE = "phone";
     public static final String FORM_TABLET = "tablet";
     @Nullable
-    abstract String form();
+    abstract String getFormFactor();
 
     // impression, click
     public static final String INTERACTION_IMPRESSION = "impression";
     public static final String INTERACTION_CLICK = "click";
     @Nullable
-    abstract String interaction();
+    abstract String getInteractionType();
 
     @Nullable
-    abstract String contextID();
+    abstract String getContextId();
 
     @Nullable
-    abstract String reporterURL();
+    abstract String getReportingUrl();
 
     @Nullable
-    abstract String requestID();
+    abstract String getRequestId();
 
     @Nullable
-    abstract String submissionTimestamp();
+    abstract String getSubmissionTimestamp();
 
     abstract Builder toBuilder();
 
@@ -49,25 +49,25 @@ public abstract class SponsoredInteraction implements Serializable {
     }
 
     public String getDocumentType() {
-        return String.format("%s-%s", source(), interaction());
+        return String.format("%s-%s", getSource(), getInteractionType());
     }
 
     @AutoValue.Builder
     public abstract static class Builder {
 
-        public abstract Builder reporterURL(String reporterURL);
+        public abstract Builder setSource(String newSource);
 
-        public abstract Builder contextID(String contextID);
+        public abstract Builder setFormFactor(String newFormFactor);
 
-        public abstract Builder requestID(String requestID);
+        public abstract Builder setInteractionType(String newInteractionType);
 
-        public abstract Builder source(String source);
+        public abstract Builder setContextId(String newContextId);
 
-        public abstract Builder form(String form);
+        public abstract Builder setReportingUrl(String newReportingUrl);
 
-        public abstract Builder interaction(String interaction);
+        public abstract Builder setRequestId(String newRequestId);
 
-        public abstract Builder submissionTimestamp(String submissionTimestamp);
+        public abstract Builder setSubmissionTimestamp(String newSubmissionTimestamp);
 
         public abstract SponsoredInteraction build();
     }
