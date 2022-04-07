@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.state.StateSpec;
@@ -31,7 +30,8 @@ import org.joda.time.Instant;
  * Transform that maintains state per key in order to label suspicious clicks.
  */
 public class LabelClickSpikes extends
-    PTransform<PCollection<KV<String, SponsoredInteraction>>, PCollection<KV<String, SponsoredInteraction>>> {
+    PTransform<PCollection<KV<String, SponsoredInteraction>>,
+      PCollection<KV<String, SponsoredInteraction>>> {
 
   private final Integer maxClicks;
   private final Long windowMillis;
@@ -40,8 +40,10 @@ public class LabelClickSpikes extends
   /**
    * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
    */
-  public static PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> perContextId(
-      Integer maxClicks, Duration windowDuration) {
+  public static PTransform<PCollection<SponsoredInteraction>,
+          PCollection<SponsoredInteraction>> perContextId(
+            Integer maxClicks,
+            Duration windowDuration) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
         .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
         .apply(WithCurrentTimestamp.of()) //
@@ -83,7 +85,8 @@ public class LabelClickSpikes extends
     return urlParser.toString();
   }
 
-  private class Fn extends DoFn<KV<String, SponsoredInteraction>, KV<String, SponsoredInteraction>> {
+  private class Fn
+      extends DoFn<KV<String, SponsoredInteraction>, KV<String, SponsoredInteraction>> {
 
     // See https://beam.apache.org/documentation/programming-guide/#state-and-timers
     @StateId("click-state")
@@ -92,9 +95,9 @@ public class LabelClickSpikes extends
     private final TimerSpec clickTimer = TimerSpecs.timer(TimeDomain.PROCESSING_TIME);
 
     @ProcessElement
-    public void process(@Element KV<String, SponsoredInteraction> element, @Timestamp Instant elementTs,
-        @StateId("click-state") ValueState<List<Long>> state, @TimerId("click-timer") Timer timer,
-        OutputReceiver<KV<String, SponsoredInteraction>> out) {
+    public void process(@Element KV<String, SponsoredInteraction> element,
+        @Timestamp Instant elementTs, @StateId("click-state") ValueState<List<Long>> state,
+        @TimerId("click-timer") Timer timer, OutputReceiver<KV<String, SponsoredInteraction>> out) {
       List<Long> timestamps = updateTimestampState(state, elementTs.getMillis());
 
       // Set a processing-time timer to clear state after windowMillis if no further clicks
@@ -108,9 +111,8 @@ public class LabelClickSpikes extends
         SponsoredInteraction interaction = element.getValue();
         String reportingUrl = addClickStatusToReportingUrlAttribute(interaction.getReportingUrl());
         ghostClickCounter.inc();
-        out.output(KV.of(
-                element.getKey(),
-                interaction.toBuilder().setReportingUrl(reportingUrl).build()));
+        out.output(
+            KV.of(element.getKey(), interaction.toBuilder().setReportingUrl(reportingUrl).build()));
       }
     }
 

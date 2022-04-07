@@ -16,7 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.beam.sdk.coders.CannotProvideCoderException;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -49,7 +48,7 @@ public class ParseReportingUrlTest {
   public void testAllowedUrlsLoadAndFilter() throws IOException {
     ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(URL_ALLOW_LIST);
 
-//    pipeline.run();
+    // pipeline.run();
 
     List<Set<String>> allowedUrlSets = parseReportingUrl.loadAllowedUrls();
 
@@ -60,18 +59,13 @@ public class ParseReportingUrlTest {
     Assert.assertEquals(expectedImpressionUrls, allowedUrlSets.get(1));
 
     Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("http://click.com"), "click"));
-    Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("https://click2.com/a?b=c"), "click"));
-    Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("http://abc.click.com"), "click"));
-    Assert.assertFalse(
-        parseReportingUrl.isUrlValid(new URL("http://abcclick.com"), "click"));
-    Assert.assertFalse(
-        parseReportingUrl.isUrlValid(new URL("http://click.com"), "impression"));
-    Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("https://impression.com/"), "impression"));
-    Assert.assertTrue(
-        parseReportingUrl.isUrlValid(new URL("https://test.com/"), "impression"));
+    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("https://click2.com/a?b=c"), "click"));
+    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("http://abc.click.com"), "click"));
+    Assert.assertFalse(parseReportingUrl.isUrlValid(new URL("http://abcclick.com"), "click"));
+    Assert.assertFalse(parseReportingUrl.isUrlValid(new URL("http://click.com"), "impression"));
+    Assert
+        .assertTrue(parseReportingUrl.isUrlValid(new URL("https://impression.com/"), "impression"));
+    Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("https://test.com/"), "impression"));
     Assert.assertTrue(parseReportingUrl.isUrlValid(new URL("https://test.com/"), "click"));
   }
 
@@ -79,8 +73,7 @@ public class ParseReportingUrlTest {
   public void testParsedUrlOutput() {
 
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
-        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-        Attribute.USER_AGENT_OS, "Windows");
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS, "Windows");
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -112,9 +105,8 @@ public class ParseReportingUrlTest {
 
       System.out.println(payloads);
 
-      Assert.assertTrue(
-        "reportingUrl starts with moz.impression.com",
-        reportingUrl.startsWith("https://moz.impression.com/?"));
+      Assert.assertTrue("reportingUrl starts with moz.impression.com",
+          reportingUrl.startsWith("https://moz.impression.com/?"));
       Assert.assertTrue(reportingUrl.contains("param=1"));
       Assert.assertTrue(reportingUrl.contains("id=a"));
       Assert.assertTrue(
@@ -137,14 +129,11 @@ public class ParseReportingUrlTest {
 
   @Test
   public void testRequiredParamCheck() {
-    Map<String, String> attributesImpression = ImmutableMap.of(
-        Attribute.DOCUMENT_TYPE, "topsites-impression",
-        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+    Map<String, String> attributesImpression = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "topsites-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services",
         Attribute.USER_AGENT_OS, "Windows");
-    Map<String, String> attributesClick = ImmutableMap.of(
-        Attribute.DOCUMENT_TYPE, "topsites-click",
-        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-        Attribute.USER_AGENT_OS, "Windows",
+    Map<String, String> attributesClick = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS, "Windows",
         Attribute.USER_AGENT_VERSION, "123");
 
     ObjectNode basePayload = Json.createObjectNode();
@@ -199,36 +188,25 @@ public class ParseReportingUrlTest {
 
     List<PubsubMessage> input = ImmutableList.of(
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(
-                    Attribute.DOCUMENT_TYPE, "topsites-impression",
-                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-                    Attribute.USER_AGENT_OS, "Windows",
-                    Attribute.GEO_DMA_CODE, "12")),
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+                Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS,
+                "Windows", Attribute.GEO_DMA_CODE, "12")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(
-                    Attribute.DOCUMENT_TYPE, "topsites-impression",
-                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-                    Attribute.USER_AGENT_OS, "Windows")),
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+                Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS,
+                "Windows")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(
-                    Attribute.DOCUMENT_TYPE, "topsites-click",
-                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-                    Attribute.USER_AGENT_OS, "Windows",
-                    Attribute.GEO_DMA_CODE, "34",
-                    Attribute.USER_AGENT_VERSION, "87")),
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click", Attribute.DOCUMENT_NAMESPACE,
+                "contextual-services", Attribute.USER_AGENT_OS, "Windows", Attribute.GEO_DMA_CODE,
+                "34", Attribute.USER_AGENT_VERSION, "87")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(
-                    Attribute.DOCUMENT_TYPE, "quicksuggest-impression",
-                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-                    Attribute.USER_AGENT_OS, "Windows",
-                    Attribute.GEO_DMA_CODE, "56")),
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-impression",
+                Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS,
+                "Windows", Attribute.GEO_DMA_CODE, "56")),
         new PubsubMessage(payloadBytes,
-            ImmutableMap.of(
-                    Attribute.DOCUMENT_TYPE, "quicksuggest-click",
-                    Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-                    Attribute.USER_AGENT_OS, "Windows",
-                    Attribute.GEO_DMA_CODE, "78",
-                    Attribute.USER_AGENT_VERSION, "87")));
+            ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-click",
+                Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS,
+                "Windows", Attribute.GEO_DMA_CODE, "78", Attribute.USER_AGENT_VERSION, "87")));
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
@@ -251,13 +229,13 @@ public class ParseReportingUrlTest {
 
         if (doctype.equals("topsites-impression")) {
           // TODO address this.
-//            if (interaction.getAttribute(Attribute.GEO_DMA_CODE) != null) {
-//              Assert.assertTrue(reportingUrl
-//                  .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
-//            } else {
-//              Assert.assertTrue(
-//                  reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
-//            }
+          // if (interaction.getAttribute(Attribute.GEO_DMA_CODE) != null) {
+          // Assert.assertTrue(reportingUrl
+          // .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
+          // } else {
+          // Assert.assertTrue(
+          // reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+          // }
         } else if (doctype.equals("topsites-click")) {
           Assert.assertTrue(reportingUrl
               .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "34")));

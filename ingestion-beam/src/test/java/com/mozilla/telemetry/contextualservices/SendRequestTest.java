@@ -22,11 +22,8 @@ public class SendRequestTest {
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   private SponsoredInteraction.Builder getTestInteraction() {
-    return SponsoredInteraction.builder()
-            .setInteractionType("click")
-            .setSource("topsite")
-            .setFormFactor("phone")
-            .setContextId("1");
+    return SponsoredInteraction.builder().setInteractionType("click").setSource("topsite")
+        .setFormFactor("phone").setContextId("1");
   }
 
   @Test
@@ -34,8 +31,7 @@ public class SendRequestTest {
     MockWebServer server = new MockWebServer();
 
     SponsoredInteraction interaction = getTestInteraction()
-            .setReportingUrl(server.url("/test").toString())
-            .build();
+        .setReportingUrl(server.url("/test").toString()).build();
 
     System.out.println(interaction);
     List<SponsoredInteraction> input = Collections.singletonList(interaction);
@@ -54,8 +50,7 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(401));
 
     SponsoredInteraction interaction = getTestInteraction()
-            .setReportingUrl(server.url("/test").toString())
-            .build();
+        .setReportingUrl(server.url("/test").toString()).build();
 
     List<SponsoredInteraction> input = ImmutableList.of(interaction, interaction);
 
@@ -79,8 +74,7 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(204));
 
     SponsoredInteraction interaction = getTestInteraction()
-            .setReportingUrl(server.url("/test").toString())
-            .build();
+        .setReportingUrl(server.url("/test").toString()).build();
 
     List<SponsoredInteraction> input = ImmutableList.of(interaction, interaction);
 
@@ -103,8 +97,7 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(302));
 
     SponsoredInteraction interaction = getTestInteraction()
-            .setReportingUrl(server.url("/test").toString())
-            .build();
+        .setReportingUrl(server.url("/test").toString()).build();
 
     List<SponsoredInteraction> input = ImmutableList.of(interaction);
 
@@ -127,9 +120,7 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(200));
 
     String requestUrl = server.url("/test").toString();
-    SponsoredInteraction interaction = getTestInteraction()
-            .setReportingUrl(requestUrl)
-            .build();
+    SponsoredInteraction interaction = getTestInteraction().setReportingUrl(requestUrl).build();
 
     List<SponsoredInteraction> input = ImmutableList.of(interaction);
 

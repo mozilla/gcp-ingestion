@@ -10,7 +10,6 @@ import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import com.mozilla.telemetry.contextualservices.VerifyMetadata;
-import com.mozilla.telemetry.ingestion.core.Constant;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
@@ -67,8 +66,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParseReportingUrl.of(options.getUrlAllowList()))
-        .failuresTo(errorCollections) //
+        .apply(ParseReportingUrl.of(options.getUrlAllowList())).failuresTo(errorCollections) //
         .apply(EmitCounters.of());
 
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
@@ -79,23 +77,23 @@ public class ContextualServicesReporter extends Sink {
 
     // Aggregate impressions.
     PCollection<SponsoredInteraction> aggregated = requests
-        .apply("FilterAggregatedDocTypes",
-            Filter.by((interaction) -> aggregatedDocTypes
-                .contains(interaction.getDocumentType()))) //
-        .apply(AggregateImpressions.of(options.getAggregationWindowDuration())); //
+            .apply("FilterAggregatedDocTypes",
+                    Filter.by((interaction) ->
+                            aggregatedDocTypes.contains(interaction.getDocumentType()))) //
+            .apply(AggregateImpressions.of(options.getAggregationWindowDuration())); //
 
     // Perform windowed click counting per context_id, adding a click-status to the reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> perContextId = requests
-        .apply("FilterPerContextIdDocTypes",
-            Filter.by((interaction) -> perContextIdDocTypes
-                .contains(interaction.getDocumentType()))) //
-        .apply(LabelClickSpikes.perContextId(options.getClickSpikeThreshold(),
-            Time.parseDuration(options.getClickSpikeWindowDuration())));
+            .apply("FilterPerContextIdDocTypes",
+                    Filter
+                          .by((interaction) ->
+                          perContextIdDocTypes.contains(interaction.getDocumentType()))) //
+            .apply(LabelClickSpikes.perContextId(options.getClickSpikeThreshold(),
+                    Time.parseDuration(options.getClickSpikeWindowDuration())));
 
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
-        Filter.by((interaction) -> !unionedDocTypes
-            .contains(interaction.getDocumentType())));
+        Filter.by((interaction) -> !unionedDocTypes.contains(interaction.getDocumentType())));
 
     PCollectionList.of(aggregated).and(perContextId).and(unaggregated) //
         .apply(Flatten.pCollections()) //

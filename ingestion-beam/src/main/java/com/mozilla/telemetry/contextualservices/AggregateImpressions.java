@@ -3,11 +3,9 @@ package com.mozilla.telemetry.contextualservices;
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import com.mozilla.telemetry.util.Time;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
@@ -46,27 +44,22 @@ public class AggregateImpressions
   private SchemaCoder<SponsoredInteraction> getSchemaCoder() {
     AutoValueSchema autoValueSchema = new AutoValueSchema();
     TypeDescriptor<SponsoredInteraction> td = TypeDescriptor.of(SponsoredInteraction.class);
-    return SchemaCoder.of(
-            autoValueSchema.schemaFor(td), td,
-            autoValueSchema.toRowFunction(td),
-            autoValueSchema.fromRowFunction(td)
-    );
+    return SchemaCoder.of(autoValueSchema.schemaFor(td), td, autoValueSchema.toRowFunction(td),
+        autoValueSchema.fromRowFunction(td));
   }
 
   @Override
   public PCollection<SponsoredInteraction> expand(PCollection<SponsoredInteraction> messages) {
     return messages
         // Add reporting url as key, interaction object as value
-        .apply(WithKeys.of(
-          (SerializableFunction<SponsoredInteraction, String>)AggregateImpressions::getAggregationKey)
-        )
+        .apply(WithKeys.of((SerializableFunction<SponsoredInteraction, String>)
+                AggregateImpressions::getAggregationKey))
         .setCoder(KvCoder.of(StringUtf8Coder.of(), getSchemaCoder()))
         // Set timestamp to current time
         .apply(WithCurrentTimestamp.of())
         // Group impressions into timed windows
         .apply("IntervalWindow",
-            Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration)))
-        )
+            Window.into(FixedWindows.of(Time.parseDuration(aggregationWindowDuration))))
         .apply(Count.perKey()) //
         // Create aggregated url by adding impression count as query parameter
         .apply(ParDo.of(new BuildAggregateUrl())) //
@@ -95,8 +88,8 @@ public class AggregateImpressions
   static class BuildAggregateUrl extends DoFn<KV<String, Long>, SponsoredInteraction> {
 
     @ProcessElement
-    public void processElement(@Element KV<String, Long> input, OutputReceiver<SponsoredInteraction> out,
-        IntervalWindow window) {
+    public void processElement(@Element KV<String, Long> input,
+        OutputReceiver<SponsoredInteraction> out, IntervalWindow window) {
       ParsedReportingUrl urlParser = new ParsedReportingUrl(input.getKey());
 
       long impressionCount = input.getValue();
@@ -110,9 +103,9 @@ public class AggregateImpressions
           Long.toString(windowEnd / 1000));
 
       SponsoredInteraction interaction = SponsoredInteraction.builder()
-        .setReportingUrl(urlParser.toString())
-        .setSubmissionTimestamp(Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000))
-        .build();
+          .setReportingUrl(urlParser.toString())
+          .setSubmissionTimestamp(Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000))
+          .build();
 
       out.output(interaction);
     }

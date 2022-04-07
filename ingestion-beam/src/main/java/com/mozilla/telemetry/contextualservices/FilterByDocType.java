@@ -33,10 +33,11 @@ public class FilterByDocType
 
   private Set<String> parseAllowlistString(String allowlistString, String argument) {
     if (allowlistString == null) {
-      throw new IllegalArgumentException(String.format("Required --%s argument not found", argument));
+      throw new IllegalArgumentException(
+          String.format("Required --%s argument not found", argument));
     }
-    return Arrays.stream(allowlistString.split(","))
-            .filter(StringUtils::isNotBlank).collect(Collectors.toSet());
+    return Arrays.stream(allowlistString.split(",")).filter(StringUtils::isNotBlank)
+        .collect(Collectors.toSet());
   }
 
   @Override

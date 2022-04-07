@@ -3,18 +3,12 @@ package com.mozilla.telemetry.contextualservices;
 import com.google.common.collect.Iterables;
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
-
-import org.apache.beam.sdk.coders.CannotProvideCoderException;
-import org.apache.beam.sdk.coders.Coder;
-import org.apache.beam.sdk.coders.KvCoder;
-import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.SchemaCoder;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.TestStream;
 import org.apache.beam.sdk.testing.TestStream.Builder;
-import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
@@ -26,11 +20,8 @@ import org.junit.Test;
 public class LabelClickSpikesTest {
 
   private SponsoredInteraction.Builder getTestInteraction() {
-    return SponsoredInteraction.builder()
-            .setInteractionType("click")
-            .setSource("topsite")
-            .setFormFactor("phone")
-            .setContextId("1");
+    return SponsoredInteraction.builder().setInteractionType("click").setSource("topsite")
+        .setFormFactor("phone").setContextId("1");
   }
 
   @Rule
@@ -39,20 +30,15 @@ public class LabelClickSpikesTest {
   private SchemaCoder<SponsoredInteraction> getCoder() {
     AutoValueSchema autoValueSchema = new AutoValueSchema();
     TypeDescriptor<SponsoredInteraction> td = TypeDescriptor.of(SponsoredInteraction.class);
-    return SchemaCoder.of(
-      autoValueSchema.schemaFor(td), td,
-      autoValueSchema.toRowFunction(td),
-      autoValueSchema.fromRowFunction(td)
-    );
+    return SchemaCoder.of(autoValueSchema.schemaFor(td), td, autoValueSchema.toRowFunction(td),
+        autoValueSchema.fromRowFunction(td));
   }
 
   @Test
   public void testSetsClickStatus() {
 
-    SponsoredInteraction interaction = getTestInteraction()
-            .setContextId("a")
-            .setReportingUrl("https://test.com")
-            .build();
+    SponsoredInteraction interaction = getTestInteraction().setContextId("a")
+        .setReportingUrl("https://test.com").build();
     Builder<SponsoredInteraction> eventBuilder = TestStream.create(getCoder());
 
     // We add 20 messages each only a second apart. The first 10 should saturate the timestamp
@@ -88,10 +74,8 @@ public class LabelClickSpikesTest {
 
   @Test
   public void testIgnoresSlowClickRate() {
-    SponsoredInteraction interaction = getTestInteraction()
-            .setContextId("a")
-            .setReportingUrl("https://test.com")
-            .build();
+    SponsoredInteraction interaction = getTestInteraction().setContextId("a")
+        .setReportingUrl("https://test.com").build();
     Builder<SponsoredInteraction> eventBuilder = TestStream.create(getCoder());
 
     // These 20 messages arrive one minute apart from each other, so old timestamps should
@@ -127,14 +111,11 @@ public class LabelClickSpikesTest {
 
   @Test
   public void testFlushesState() {
-    SponsoredInteraction interaction = getTestInteraction()
-            .setContextId("a")
-            .setReportingUrl("https://test.com")
-            .build();
+    SponsoredInteraction interaction = getTestInteraction().setContextId("a")
+        .setReportingUrl("https://test.com").build();
     SponsoredInteraction[] interactions = new SponsoredInteraction[8];
     Arrays.fill(interactions, interaction);
-    TestStream<SponsoredInteraction> createEvents = TestStream
-        .create(getCoder())
+    TestStream<SponsoredInteraction> createEvents = TestStream.create(getCoder())
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8))
         .advanceProcessingTime(Duration.standardMinutes(4))
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8)) //

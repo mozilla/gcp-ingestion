@@ -23,7 +23,7 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
   void setAllowedDocTypes(String value);
 
   @Description("Comma-separated strings representing a list of namespaces for which "
-          + " to send reporting requests (e.g. contextual-services is a correct argument)")
+      + " to send reporting requests (e.g. contextual-services is a correct argument)")
   @Default.String("contextual-services")
   String getAllowedNamespaces();
 

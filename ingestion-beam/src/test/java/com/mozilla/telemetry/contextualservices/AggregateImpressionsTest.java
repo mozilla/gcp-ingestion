@@ -2,9 +2,7 @@ package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-
 import java.util.List;
-
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -21,11 +19,8 @@ import org.junit.Test;
 public class AggregateImpressionsTest {
 
   private SponsoredInteraction.Builder getTestInteraction() {
-    return SponsoredInteraction.builder()
-            .setInteractionType("click")
-            .setSource("topsite")
-            .setFormFactor("phone")
-            .setContextId("1");
+    return SponsoredInteraction.builder().setInteractionType("click").setSource("topsite")
+        .setFormFactor("phone").setContextId("1");
   }
 
   @Rule
@@ -77,17 +72,16 @@ public class AggregateImpressionsTest {
     SponsoredInteraction.Builder baseInteraction = getTestInteraction();
 
     String attributesUrl1 = String.format("https://test.com?%s=US&%s=",
-      ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
+        ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
     String attributesUrl2 = String.format("https://test.com?%s=DE&%s=",
-      ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
+        ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
 
     List<SponsoredInteraction> input = ImmutableList.of(
-            baseInteraction.setReportingUrl(attributesUrl1).build(),
-            baseInteraction.setReportingUrl(attributesUrl2).build(),
-            baseInteraction.setReportingUrl(attributesUrl1).build(),
-            baseInteraction.setReportingUrl(attributesUrl1).build(),
-            baseInteraction.setReportingUrl(attributesUrl2).build()
-    );
+        baseInteraction.setReportingUrl(attributesUrl1).build(),
+        baseInteraction.setReportingUrl(attributesUrl2).build(),
+        baseInteraction.setReportingUrl(attributesUrl1).build(),
+        baseInteraction.setReportingUrl(attributesUrl1).build(),
+        baseInteraction.setReportingUrl(attributesUrl2).build());
 
     PCollection<SponsoredInteraction> output = pipeline.apply(Create.of(input))
         .apply(AggregateImpressions.of("10m"));

@@ -27,13 +27,11 @@ public class FilterByDocTypeTest {
     String allowedDocTypes = "type-a,type-b,";
     String allowedNamespaces = "ns-1,ns-2,";
 
-    List<PubsubMessage> inputDocTypes = Stream.of(
-            List.of("type-a", "ns-1"), List.of("type-b", "ns-2"),
-            List.of("type-b", "ns-3"), List.of("type-a", "ns-1"),
-            List.of("type-d", "ns-1"))
-        .map(tuple -> ImmutableMap.of(
-                Attribute.DOCUMENT_TYPE, tuple.get(0),
-                Attribute.DOCUMENT_NAMESPACE, tuple.get(1)))
+    List<PubsubMessage> inputDocTypes = Stream
+        .of(List.of("type-a", "ns-1"), List.of("type-b", "ns-2"), List.of("type-b", "ns-3"),
+            List.of("type-a", "ns-1"), List.of("type-d", "ns-1"))
+        .map(tuple -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, tuple.get(0),
+            Attribute.DOCUMENT_NAMESPACE, tuple.get(1)))
         .map(attributes -> new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), attributes))
         .collect(Collectors.toList());
 

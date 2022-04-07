@@ -1,75 +1,78 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.auto.value.AutoValue;
+import java.io.Serializable;
+import javax.annotation.Nullable;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
-
-import javax.annotation.Nullable;
-import java.io.Serializable;
 
 @AutoValue
 @DefaultSchema(AutoValueSchema.class)
 public abstract class SponsoredInteraction implements Serializable {
-    // These match the values from doctype
-    // topsites, quicksuggest
-    public static final String SOURCE_TOPSITES = "topsites";
-    public static final String SOURCE_SUGGEST = "quicksuggest";
-    @Nullable
-    abstract String getSource();
 
-    // desktop, phone, tablet
-    public static final String FORM_DESKTOP = "desktop";
-    public static final String FORM_PHONE = "phone";
-    public static final String FORM_TABLET = "tablet";
-    @Nullable
-    abstract String getFormFactor();
+  // These match the values from doctype
+  // topsites, quicksuggest
+  public static final String SOURCE_TOPSITES = "topsites";
+  public static final String SOURCE_SUGGEST = "quicksuggest";
 
-    // impression, click
-    public static final String INTERACTION_IMPRESSION = "impression";
-    public static final String INTERACTION_CLICK = "click";
-    @Nullable
-    abstract String getInteractionType();
+  @Nullable
+  abstract String getSource();
 
-    @Nullable
-    abstract String getContextId();
+  // desktop, phone, tablet
+  public static final String FORM_DESKTOP = "desktop";
+  public static final String FORM_PHONE = "phone";
+  public static final String FORM_TABLET = "tablet";
 
-    @Nullable
-    abstract String getReportingUrl();
+  @Nullable
+  abstract String getFormFactor();
 
-    @Nullable
-    abstract String getRequestId();
+  // impression, click
+  public static final String INTERACTION_IMPRESSION = "impression";
+  public static final String INTERACTION_CLICK = "click";
 
-    @Nullable
-    abstract String getSubmissionTimestamp();
+  @Nullable
+  abstract String getInteractionType();
 
-    abstract Builder toBuilder();
+  @Nullable
+  abstract String getContextId();
 
-    public static Builder builder() {
-        return new AutoValue_SponsoredInteraction.Builder();
-    }
+  @Nullable
+  abstract String getReportingUrl();
 
-    public String getDocumentType() {
-        return String.format("%s-%s", getSource(), getInteractionType());
-    }
+  @Nullable
+  abstract String getRequestId();
 
-    @AutoValue.Builder
-    public abstract static class Builder {
+  @Nullable
+  abstract String getSubmissionTimestamp();
 
-        public abstract Builder setSource(String newSource);
+  abstract Builder toBuilder();
 
-        public abstract Builder setFormFactor(String newFormFactor);
+  public static Builder builder() {
+    return new AutoValue_SponsoredInteraction.Builder();
+  }
 
-        public abstract Builder setInteractionType(String newInteractionType);
+  public String getDocumentType() {
+    return String.format("%s-%s", getSource(), getInteractionType());
+  }
 
-        public abstract Builder setContextId(String newContextId);
+  @AutoValue.Builder
+  public abstract static class Builder {
 
-        public abstract Builder setReportingUrl(String newReportingUrl);
+    public abstract Builder setSource(String newSource);
 
-        public abstract Builder setRequestId(String newRequestId);
+    public abstract Builder setFormFactor(String newFormFactor);
 
-        public abstract Builder setSubmissionTimestamp(String newSubmissionTimestamp);
+    public abstract Builder setInteractionType(String newInteractionType);
 
-        public abstract SponsoredInteraction build();
-    }
+    public abstract Builder setContextId(String newContextId);
+
+    public abstract Builder setReportingUrl(String newReportingUrl);
+
+    public abstract Builder setRequestId(String newRequestId);
+
+    public abstract Builder setSubmissionTimestamp(String newSubmissionTimestamp);
+
+    public abstract SponsoredInteraction build();
+  }
 
 }

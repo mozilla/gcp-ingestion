@@ -37,13 +37,13 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Extract reporting URL from document and filter out unknown URLs.
  */
 public class ParseReportingUrl extends
-    PTransform<PCollection<PubsubMessage>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
+    PTransform<PCollection<PubsubMessage>,
+      Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 
   private final String urlAllowList;
 
   private static transient Set<String> singletonAllowedImpressionUrls;
   private static transient Set<String> singletonAllowedClickUrls;
-
 
   private static final String NS_DESKTOP = "contextual-services";
 
@@ -73,9 +73,9 @@ public class ParseReportingUrl extends
   }
 
   @Override
-  public Result<PCollection<SponsoredInteraction>, PubsubMessage> expand(PCollection<PubsubMessage> messages) {
-    return messages.apply(MapElements
-        .into(TypeDescriptor.of(SponsoredInteraction.class))
+  public Result<PCollection<SponsoredInteraction>, PubsubMessage> expand(
+      PCollection<PubsubMessage> messages) {
+    return messages.apply(MapElements.into(TypeDescriptor.of(SponsoredInteraction.class))
         .via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
 
@@ -93,44 +93,50 @@ public class ParseReportingUrl extends
           }
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-          String namespace = Objects.requireNonNull(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
-          String documentType = Objects.requireNonNull(message.getAttribute(Attribute.DOCUMENT_TYPE));
+          String namespace = Objects
+              .requireNonNull(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
+          String documentType = Objects
+              .requireNonNull(message.getAttribute(Attribute.DOCUMENT_TYPE));
 
           SponsoredInteraction.Builder interactionBuilder = SponsoredInteraction.builder();
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
-              interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
-              interactionBuilder.setInteractionType(documentType.contains("click") ?
-                  SponsoredInteraction.INTERACTION_CLICK : SponsoredInteraction.INTERACTION_IMPRESSION);
+            interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
+            interactionBuilder.setInteractionType(
+                documentType.contains("click") ? SponsoredInteraction.INTERACTION_CLICK
+                    : SponsoredInteraction.INTERACTION_IMPRESSION);
           } else {
-              interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
-              ArrayNode events = payload.withArray("events");
-              if (events.size() != 1) {
-                  throw new RuntimeException("expect exactly 1 event in ping.");
-              }
-              JsonNode event = events.get(0);
-              String eventName = event.path("name").asText();
-              interactionBuilder.setInteractionType(eventName.contains("click") ?
-                  SponsoredInteraction.INTERACTION_CLICK : SponsoredInteraction.INTERACTION_IMPRESSION);
+            interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
+            ArrayNode events = payload.withArray("events");
+            if (events.size() != 1) {
+              throw new RuntimeException("expect exactly 1 event in ping.");
+            }
+            JsonNode event = events.get(0);
+            String eventName = event.path("name").asText();
+            interactionBuilder.setInteractionType(
+                eventName.contains("click") ? SponsoredInteraction.INTERACTION_CLICK
+                    : SponsoredInteraction.INTERACTION_IMPRESSION);
           }
 
-          interactionBuilder.setSource(documentType.contains(SponsoredInteraction.SOURCE_TOPSITES) ?
-            SponsoredInteraction.SOURCE_TOPSITES : SponsoredInteraction.SOURCE_SUGGEST);
+          interactionBuilder.setSource(documentType.contains(SponsoredInteraction.SOURCE_TOPSITES)
+              ? SponsoredInteraction.SOURCE_TOPSITES
+              : SponsoredInteraction.SOURCE_SUGGEST);
 
           // Store context_id for click counting in subsequent transforms.
           Optional.ofNullable(payload.path(Attribute.CONTEXT_ID).textValue()) //
-                  .ifPresent(interactionBuilder::setContextId);
+              .ifPresent(interactionBuilder::setContextId);
 
           // Store request_id for counting in subsequent transforms.
           Optional.ofNullable(payload.path(Attribute.REQUEST_ID).textValue()) //
               .ifPresent(interactionBuilder::setRequestId);
 
           SponsoredInteraction interaction = interactionBuilder.build();
-          String reportingUrl = extractReportingURL(payload);
+          String reportingUrl = extractReportingUrl(payload);
           ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
-          if (!isUrlValid(urlParser.getReportingUrl(), Objects.requireNonNull(interaction.getInteractionType()))) {
+          if (!isUrlValid(urlParser.getReportingUrl(),
+              Objects.requireNonNull(interaction.getInteractionType()))) {
             PerDocTypeCounter.inc(attributes, "rejected_nonnull_url");
             throw new ParsedReportingUrl.InvalidUrlException(
                 "Reporting URL host not found in allow list: " + reportingUrl);
@@ -138,23 +144,25 @@ public class ParseReportingUrl extends
 
           // ensure parameters based on source and interaction type
           if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-            && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
+              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
             requireParamPresent(urlParser, "ctag");
             requireParamPresent(urlParser, "version");
             requireParamPresent(urlParser, "key");
             requireParamPresent(urlParser, "ci");
           } else if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-                  && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
+              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
             // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
             requireParamPresent(urlParser, "ctag");
             requireParamPresent(urlParser, "custom-data");
             requireParamPresent(urlParser, "sub1");
             requireParamPresent(urlParser, "sub2");
-          } else if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interaction.getInteractionType())
-                  && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
+          } else if (SponsoredInteraction.INTERACTION_IMPRESSION
+              .equals(interaction.getInteractionType())
+              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
             requireParamPresent(urlParser, "id");
-          } else if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interaction.getInteractionType())
-                  && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
+          } else if (SponsoredInteraction.INTERACTION_IMPRESSION
+              .equals(interaction.getInteractionType())
+              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
             // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
             requireParamPresent(urlParser, "custom-data");
             requireParamPresent(urlParser, "sub1");
@@ -179,7 +187,8 @@ public class ParseReportingUrl extends
                 attributes.get(Attribute.GEO_SUBDIVISION1));
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY,
                 getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR,
+                interaction.getFormFactor());
 
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_DMA_CODE,
                 message.getAttribute(Attribute.GEO_DMA_CODE));
@@ -189,8 +198,8 @@ public class ParseReportingUrl extends
           // We are also limiting this to desktop.
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
           if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
-             && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())
-             && SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())) {
+              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())
+              && SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())) {
             String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
             if (userAgentVersion == null) {
               throw new RejectedMessageException(
@@ -215,15 +224,15 @@ public class ParseReportingUrl extends
           PerDocTypeCounter.inc(attributes, "valid_url");
           return interaction.toBuilder().setReportingUrl(reportingUrl).build();
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
-              try {
-                throw ee.exception();
-              } catch (UncheckedIOException | IllegalArgumentException
-                  | ParsedReportingUrl.InvalidUrlException | RejectedMessageException e) {
-                return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
-                    ee.exception());
-              }
-            }));
+        .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException | IllegalArgumentException
+              | ParsedReportingUrl.InvalidUrlException | RejectedMessageException e) {
+            return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
+                ee.exception());
+          }
+        }));
   }
 
   @VisibleForTesting
@@ -308,14 +317,14 @@ public class ParseReportingUrl extends
     }
   }
 
-  private String extractReportingURL(ObjectNode payload) {
-      if (!payload.path(Attribute.REPORTING_URL).isMissingNode()) {
-          return payload.path(Attribute.REPORTING_URL).asText();
-      }
-      return payload.path("metrics").path("url2").path("top_sites_contile_reporting_url").asText();
+  private String extractReportingUrl(ObjectNode payload) {
+    if (!payload.path(Attribute.REPORTING_URL).isMissingNode()) {
+      return payload.path(Attribute.REPORTING_URL).asText();
+    }
+    return payload.path("metrics").path("url2").path("top_sites_contile_reporting_url").asText();
   }
 
-    @VisibleForTesting
+  @VisibleForTesting
   List<Set<String>> loadAllowedUrls() throws IOException {
     if (singletonAllowedImpressionUrls == null || singletonAllowedClickUrls == null) {
       Set<String> allowedImpressionUrls = new HashSet<>();

@@ -23,7 +23,8 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Send GET requests to reporting endpoint.
  */
 public class SendRequest extends
-    PTransform<PCollection<SponsoredInteraction>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
+    PTransform<PCollection<SponsoredInteraction>,
+      Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
 
@@ -70,8 +71,8 @@ public class SendRequest extends
   @Override
   public Result<PCollection<SponsoredInteraction>, PubsubMessage> expand(
       PCollection<SponsoredInteraction> interactions) {
-    return interactions.apply(
-        MapElements.into(TypeDescriptor.of(SponsoredInteraction.class)).via((SponsoredInteraction interaction) -> {
+    return interactions.apply(MapElements.into(TypeDescriptor.of(SponsoredInteraction.class))
+        .via((SponsoredInteraction interaction) -> {
 
           String reportingUrl = interaction.getReportingUrl();
 
@@ -93,14 +94,14 @@ public class SendRequest extends
 
           return interaction;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<SponsoredInteraction> ee) -> {
-              try {
-                throw ee.exception();
-              } catch (UncheckedIOException | RequestContentException e) {
-                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
-                    ee.exception());
-              }
-            }));
+        .exceptionsVia((ExceptionElement<SponsoredInteraction> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException | RequestContentException e) {
+            return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
+                ee.exception());
+          }
+        }));
   }
 
   private void sendRequest(Request request) {
