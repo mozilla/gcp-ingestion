@@ -1,13 +1,10 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
-import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashMap;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;

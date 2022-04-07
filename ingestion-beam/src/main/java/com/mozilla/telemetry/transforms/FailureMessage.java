@@ -41,7 +41,7 @@ public class FailureMessage {
    * Return a PubsubMessage wrapping a SponsoredInteraction with attributes describing the error.
    */
   public static PubsubMessage of(Object caller, SponsoredInteraction interaction, Throwable e) {
-    PubsubMessage message = new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8), interaction.toMap());
+    PubsubMessage message = new PubsubMessage(interaction.toString().getBytes(StandardCharsets.UTF_8), Map.of());
     return FailureMessage.of(caller, message, e);
   }
 

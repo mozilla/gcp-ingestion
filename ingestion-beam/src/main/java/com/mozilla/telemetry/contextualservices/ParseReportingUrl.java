@@ -93,13 +93,13 @@ public class ParseReportingUrl extends
           }
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-          String documentNS = message.getAttribute(Attribute.DOCUMENT_NAMESPACE);
+          String namespace = message.getAttribute(Attribute.DOCUMENT_NAMESPACE);
           String documentType = message.getAttribute(Attribute.DOCUMENT_TYPE);
 
           SponsoredInteraction.Builder interactionBuilder = SponsoredInteraction.builder();
 
           // set fields based on namespace/doctype combos
-          if (NS_DESKTOP.equals(documentNS)) {
+          if (NS_DESKTOP.equals(namespace)) {
               interactionBuilder.form(SponsoredInteraction.FORM_DESKTOP);
               interactionBuilder.interaction("click".equals(documentType) ?
                   SponsoredInteraction.INTERACTION_CLICK : SponsoredInteraction.INTERACTION_IMPRESSION);

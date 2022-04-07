@@ -1,16 +1,14 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import com.mozilla.telemetry.util.Time;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.SerializableCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -44,11 +42,11 @@ public class AggregateImpressions
 
   @Override
   public PCollection<SponsoredInteraction> expand(PCollection<SponsoredInteraction> messages) {
-    return messages //
+    return messages
         // Add reporting url as key, interaction object as value
         .apply(WithKeys.of((SerializableFunction<SponsoredInteraction, String>) //
         AggregateImpressions::getAggregationKey)) //
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteractionCoder.of())) //
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), SerializableCoder.of(SponsoredInteraction.class))) //
         // Set timestamp to current time
         .apply(WithCurrentTimestamp.of()) //
         // Group impressions into timed windows

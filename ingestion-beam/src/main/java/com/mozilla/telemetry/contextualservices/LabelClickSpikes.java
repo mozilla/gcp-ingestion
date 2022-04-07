@@ -1,19 +1,13 @@
 package com.mozilla.telemetry.contextualservices;
 
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.WithCurrentTimestamp;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.beam.sdk.coders.KvCoder;
-import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
+
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.state.StateSpec;
@@ -50,7 +44,6 @@ public class LabelClickSpikes extends
       Integer maxClicks, Duration windowDuration) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
         .apply(WithKeys.of((interaction) -> interaction.contextID())) //
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteractionCoder.of()))
         .apply(WithCurrentTimestamp.of()) //
         .apply(LabelClickSpikes.of(maxClicks, windowDuration)) //
         .apply(Values.create()));
@@ -113,11 +106,11 @@ public class LabelClickSpikes extends
         out.output(element);
       } else {
         SponsoredInteraction interaction = element.getValue();
-        String reportingURL = addClickStatusToReportingUrlAttribute(interaction.reporterURL());
+        String reportingUrl = addClickStatusToReportingUrlAttribute(interaction.reporterURL());
         ghostClickCounter.inc();
         out.output(KV.of(
                 element.getKey(),
-                SponsoredInteraction.builder().from(interaction).reporterURL(reportingURL).build()));
+                interaction.toBuilder().reporterURL(reportingUrl).build()));
       }
     }
 
