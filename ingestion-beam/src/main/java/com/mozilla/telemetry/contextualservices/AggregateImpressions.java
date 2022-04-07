@@ -52,8 +52,8 @@ public class AggregateImpressions
   public PCollection<SponsoredInteraction> expand(PCollection<SponsoredInteraction> messages) {
     return messages
         // Add reporting url as key, interaction object as value
-        .apply(WithKeys.of((SerializableFunction<SponsoredInteraction, String>)
-                AggregateImpressions::getAggregationKey))
+        .apply(WithKeys.of(
+            (SerializableFunction<SponsoredInteraction, String>) AggregateImpressions::getAggregationKey))
         .setCoder(KvCoder.of(StringUtf8Coder.of(), getSchemaCoder()))
         // Set timestamp to current time
         .apply(WithCurrentTimestamp.of())

@@ -23,8 +23,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Send GET requests to reporting endpoint.
  */
 public class SendRequest extends
-    PTransform<PCollection<SponsoredInteraction>,
-      Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
+    PTransform<PCollection<SponsoredInteraction>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
 

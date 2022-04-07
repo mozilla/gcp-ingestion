@@ -30,8 +30,7 @@ import org.joda.time.Instant;
  * Transform that maintains state per key in order to label suspicious clicks.
  */
 public class LabelClickSpikes extends
-    PTransform<PCollection<KV<String, SponsoredInteraction>>,
-      PCollection<KV<String, SponsoredInteraction>>> {
+    PTransform<PCollection<KV<String, SponsoredInteraction>>, PCollection<KV<String, SponsoredInteraction>>> {
 
   private final Integer maxClicks;
   private final Long windowMillis;
@@ -40,10 +39,8 @@ public class LabelClickSpikes extends
   /**
    * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
    */
-  public static PTransform<PCollection<SponsoredInteraction>,
-          PCollection<SponsoredInteraction>> perContextId(
-            Integer maxClicks,
-            Duration windowDuration) {
+  public static PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> perContextId(
+      Integer maxClicks, Duration windowDuration) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
         .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
         .apply(WithCurrentTimestamp.of()) //

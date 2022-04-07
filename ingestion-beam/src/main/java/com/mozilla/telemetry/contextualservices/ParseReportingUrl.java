@@ -37,8 +37,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Extract reporting URL from document and filter out unknown URLs.
  */
 public class ParseReportingUrl extends
-    PTransform<PCollection<PubsubMessage>,
-      Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
+    PTransform<PCollection<PubsubMessage>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 
   private final String urlAllowList;
 
