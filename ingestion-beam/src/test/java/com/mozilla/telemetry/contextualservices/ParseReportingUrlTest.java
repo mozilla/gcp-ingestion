@@ -250,4 +250,75 @@ public class ParseReportingUrlTest {
 
     pipeline.run();
   }
+
+  @Test
+  public void testGleanPings() {
+
+    String expectedReportingUrl = "https://impression.com/?id=foo&param=1";
+    String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix", Attribute.USER_AGENT_OS, "Android");
+
+    ObjectNode basePayload = Json.createObjectNode();
+    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    basePayload.put(Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
+
+    ObjectNode eventObject = Json.createObjectNode();
+    eventObject.put("category", "top_sites");
+    eventObject.put("name", "contile_impression");
+    eventObject.put("timestamp", "0");
+    basePayload.putArray("events").add(eventObject);
+
+    ObjectNode metricsObject = Json.createObjectNode();
+    metricsObject.putObject("url2").put("top_sites_contile_reporting_url", expectedReportingUrl);
+    metricsObject.putObject("uuid").put("top_sites_context_id", contextId);
+
+    basePayload.set("metrics", metricsObject);
+
+    List<PubsubMessage> input = Stream.of(basePayload)
+        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
+        .collect(Collectors.toList());
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that("There are zero failures in the pipeline", result.failures())
+        .satisfies(messages -> {
+          Assert.assertEquals(0, Iterators.size(messages.iterator()));
+          return null;
+        });
+
+    PAssert.that("There is one result in the output and it matches expectations", result.output())
+        .satisfies(sponsoredInteractions -> {
+
+          List<SponsoredInteraction> payloads = new ArrayList<>();
+          sponsoredInteractions.forEach(payloads::add);
+
+          Assert.assertEquals("1 interaction in output", 1, payloads.size());
+
+          String reportingUrl = payloads.get(0).getReportingUrl();
+
+          Assert.assertTrue(String.format("reportingUrl starts with %s", expectedReportingUrl),
+              reportingUrl.startsWith("https://impression.com"));
+          Assert.assertTrue("contains param1", reportingUrl.contains("param=1"));
+          Assert.assertTrue("contains id=foo", reportingUrl.contains("id=foo"));
+          Assert.assertTrue("contains region code",
+              reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
+          Assert.assertTrue("contains os family", reportingUrl
+              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "Android")));
+          Assert.assertTrue("contains country code", reportingUrl
+              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
+          Assert.assertTrue("contains form factor", reportingUrl
+              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "phone")));
+          Assert.assertTrue("contains dma code",
+              reportingUrl.contains(String.format("%s=&", ParsedReportingUrl.PARAM_DMA_CODE))
+                  || reportingUrl
+                      .endsWith(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+
+          return null;
+        });
+
+    pipeline.run();
+  }
 }

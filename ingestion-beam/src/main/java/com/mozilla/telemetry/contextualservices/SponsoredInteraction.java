@@ -45,6 +45,12 @@ public abstract class SponsoredInteraction implements Serializable {
   @Nullable
   abstract String getSubmissionTimestamp();
 
+  @Nullable
+  abstract String getOriginalDocType();
+
+  @Nullable
+  abstract String getOriginalNamespace();
+
   abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -52,6 +58,9 @@ public abstract class SponsoredInteraction implements Serializable {
   }
 
   public String getDocumentType() {
+    if (getOriginalDocType() != null) {
+      return getOriginalDocType();
+    }
     return String.format("%s-%s", getSource(), getInteractionType());
   }
 
@@ -71,6 +80,10 @@ public abstract class SponsoredInteraction implements Serializable {
     public abstract Builder setRequestId(String newRequestId);
 
     public abstract Builder setSubmissionTimestamp(String newSubmissionTimestamp);
+
+    public abstract Builder setOriginalDocType(String newOriginalDocType);
+
+    public abstract Builder setOriginalNamespace(String newOriginalDocumentNamespace);
 
     public abstract SponsoredInteraction build();
   }

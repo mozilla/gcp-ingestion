@@ -51,7 +51,7 @@ public class FilterByDocType
     public void processElement(@Element PubsubMessage message, OutputReceiver<PubsubMessage> out) {
       message = PubsubConstraints.ensureNonNull(message);
       if (allowedNamespacesSet == null || allowedDocTypesSet == null) {
-        allowedDocTypesSet = parseAllowlistString(allowedDocTypes, "allowedDoctypes");
+        allowedDocTypesSet = parseAllowlistString(allowedDocTypes, "allowedDocTypes");
         allowedNamespacesSet = parseAllowlistString(allowedNamespaces, "allowedNamespaces");
       }
 

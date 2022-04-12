@@ -50,11 +50,13 @@ public class ParseReportingUrl extends
   private static final String OS_WINDOWS = "Windows";
   private static final String OS_MAC = "Macintosh";
   private static final String OS_LINUX = "Linux";
+  private static final String OS_ANDROID = "Android";
 
   // Values used for the os-family API parameter
   private static final String PARAM_WINDOWS = "Windows";
   private static final String PARAM_MAC = "macOS";
   private static final String PARAM_LINUX = "Linux";
+  private static final String PARAM_ANDROID = "Android";
 
   // Values for the click-status API parameter
   public static final String CLICK_STATUS_ABUSE = "64";
@@ -94,16 +96,18 @@ public class ParseReportingUrl extends
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
           String namespace = Objects
               .requireNonNull(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
-          String documentType = Objects
-              .requireNonNull(message.getAttribute(Attribute.DOCUMENT_TYPE));
+          String docType = Objects.requireNonNull(message.getAttribute(Attribute.DOCUMENT_TYPE));
 
           SponsoredInteraction.Builder interactionBuilder = SponsoredInteraction.builder();
+
+          interactionBuilder.setOriginalNamespace(namespace);
+          interactionBuilder.setOriginalDocType(docType);
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
             interactionBuilder.setInteractionType(
-                documentType.contains("click") ? SponsoredInteraction.INTERACTION_CLICK
+                docType.contains("click") ? SponsoredInteraction.INTERACTION_CLICK
                     : SponsoredInteraction.INTERACTION_IMPRESSION);
           } else {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
@@ -118,7 +122,7 @@ public class ParseReportingUrl extends
                     : SponsoredInteraction.INTERACTION_IMPRESSION);
           }
 
-          interactionBuilder.setSource(documentType.contains(SponsoredInteraction.SOURCE_TOPSITES)
+          interactionBuilder.setSource(docType.contains(SponsoredInteraction.SOURCE_TOPSITES)
               ? SponsoredInteraction.SOURCE_TOPSITES
               : SponsoredInteraction.SOURCE_SUGGEST);
 
@@ -271,6 +275,8 @@ public class ParseReportingUrl extends
       return PARAM_MAC;
     } else if (userAgentOs.startsWith(OS_LINUX)) {
       return PARAM_LINUX;
+    } else if (userAgentOs.startsWith(OS_ANDROID)) {
+      return PARAM_ANDROID;
     } else {
       throw new RejectedMessageException("Unrecognized OS attribute: " + userAgentOs, "os");
     }
