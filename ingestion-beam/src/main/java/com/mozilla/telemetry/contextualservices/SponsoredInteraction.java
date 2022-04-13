@@ -1,16 +1,20 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.auto.value.AutoValue;
+import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import java.io.Serializable;
 import javax.annotation.Nullable;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
+import org.apache.beam.sdk.schemas.Schema;
+import org.apache.beam.sdk.schemas.SchemaCoder;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
+import org.apache.beam.sdk.values.TypeDescriptor;
 
 @AutoValue
 @DefaultSchema(AutoValueSchema.class)
 public abstract class SponsoredInteraction implements Serializable {
 
-  // These match the values from doctype
+  // These match the values from docType
   // topsites, quicksuggest
   public static final String SOURCE_TOPSITES = "topsites";
   public static final String SOURCE_SUGGEST = "quicksuggest";
@@ -57,11 +61,34 @@ public abstract class SponsoredInteraction implements Serializable {
     return new AutoValue_SponsoredInteraction.Builder();
   }
 
+  /**
+   * Uses the original pubsub message document_type or if that is not available
+   * it will build one based on `source` and `interactionType` fields.
+   * @return String
+   */
   public String getDocumentType() {
     if (getOriginalDocType() != null) {
       return getOriginalDocType();
     }
     return String.format("%s-%s", getSource(), getInteractionType());
+  }
+
+  /**
+   * There are a few places that we can not use an inferred Coder. This provides a
+   * SchemaCoder for the SponsoredInteraction class.
+   *
+   * @return SchemaCoder<SponsoredInteraction>
+   * @throws SchemaNotFoundException when the schema lookup fails.
+   */
+  public static SchemaCoder<SponsoredInteraction> getCoder() throws SchemaNotFoundException {
+    AutoValueSchema autoValueSchema = new AutoValueSchema();
+    TypeDescriptor<SponsoredInteraction> td = TypeDescriptor.of(SponsoredInteraction.class);
+    Schema schema = autoValueSchema.schemaFor(td);
+    if (schema != null) {
+      return SchemaCoder.of(schema, td, autoValueSchema.toRowFunction(td),
+              autoValueSchema.fromRowFunction(td));
+    }
+    throw new SchemaNotFoundException(String.format("No schema found for %s", SponsoredInteraction.class));
   }
 
   @AutoValue.Builder

@@ -3,8 +3,6 @@ package com.mozilla.telemetry.contextualservices;
 import com.google.common.collect.Iterables;
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
-import org.apache.beam.sdk.schemas.AutoValueSchema;
-import org.apache.beam.sdk.schemas.SchemaCoder;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.TestStream;
@@ -12,7 +10,6 @@ import org.apache.beam.sdk.testing.TestStream.Builder;
 import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
 import org.joda.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,19 +24,12 @@ public class LabelClickSpikesTest {
   @Rule
   public TestPipeline pipeline = TestPipeline.create();
 
-  private SchemaCoder<SponsoredInteraction> getCoder() {
-    AutoValueSchema autoValueSchema = new AutoValueSchema();
-    TypeDescriptor<SponsoredInteraction> td = TypeDescriptor.of(SponsoredInteraction.class);
-    return SchemaCoder.of(autoValueSchema.schemaFor(td), td, autoValueSchema.toRowFunction(td),
-        autoValueSchema.fromRowFunction(td));
-  }
-
   @Test
   public void testSetsClickStatus() {
 
     SponsoredInteraction interaction = getTestInteraction().setContextId("a")
         .setReportingUrl("https://test.com").build();
-    Builder<SponsoredInteraction> eventBuilder = TestStream.create(getCoder());
+    Builder<SponsoredInteraction> eventBuilder = TestStream.create(SponsoredInteraction.getCoder());
 
     // We add 20 messages each only a second apart. The first 10 should saturate the timestamp
     // state, then the final 10 should be marked as suspicious via click-status.
@@ -76,7 +66,7 @@ public class LabelClickSpikesTest {
   public void testIgnoresSlowClickRate() {
     SponsoredInteraction interaction = getTestInteraction().setContextId("a")
         .setReportingUrl("https://test.com").build();
-    Builder<SponsoredInteraction> eventBuilder = TestStream.create(getCoder());
+    Builder<SponsoredInteraction> eventBuilder = TestStream.create(SponsoredInteraction.getCoder());
 
     // These 20 messages arrive one minute apart from each other, so old timestamps should
     // expire before we hit the click threshold. These should have no click status set.
@@ -115,7 +105,7 @@ public class LabelClickSpikesTest {
         .setReportingUrl("https://test.com").build();
     SponsoredInteraction[] interactions = new SponsoredInteraction[8];
     Arrays.fill(interactions, interaction);
-    TestStream<SponsoredInteraction> createEvents = TestStream.create(getCoder())
+    TestStream<SponsoredInteraction> createEvents = TestStream.create(SponsoredInteraction.getCoder())
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8))
         .advanceProcessingTime(Duration.standardMinutes(4))
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8)) //

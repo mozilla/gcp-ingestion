@@ -45,6 +45,10 @@ public class ParseReportingUrl extends
   private static transient Set<String> singletonAllowedClickUrls;
 
   private static final String NS_DESKTOP = "contextual-services";
+  private static final String DT_TOPSITES_IMPRESSION = "topsites-impression";
+  private static final String DT_TOPSITES_CLICK = "topsites-click";
+  private static final String DT_QUICKSUGGEST_IMPRESSION = "quicksuggest-impression";
+  private static final String DT_QUICKSUGGEST_CLICK = "quicksuggest-click";
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -106,25 +110,46 @@ public class ParseReportingUrl extends
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
-            interactionBuilder.setInteractionType(
-                docType.contains("click") ? SponsoredInteraction.INTERACTION_CLICK
-                    : SponsoredInteraction.INTERACTION_IMPRESSION);
+            // potential docTypes here are
+            // `topsites-impression`, `topsites-click`
+            // `quicksuggest-impression`, `quicksuggest-click`
+            if (DT_TOPSITES_IMPRESSION.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
+            } else if (DT_TOPSITES_CLICK.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+            } else {
+              throw new InvalidAttributeException("Received unexpected docType: " + docType, docType);
+            }
           } else {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
+            // enforce that the only mobile docType is `topsites-impression`
+            if (!DT_TOPSITES_IMPRESSION.equals(docType)) {
+              throw new InvalidAttributeException("Unexpected docType for mobile ping: " + docType, docType);
+            }
             ArrayNode events = payload.withArray("events");
             if (events.size() != 1) {
               throw new RuntimeException("expect exactly 1 event in ping.");
             }
             JsonNode event = events.get(0);
+            // potential event names are `contile_impression` and `contile_click`
             String eventName = event.path("name").asText();
-            interactionBuilder.setInteractionType(
-                eventName.contains("click") ? SponsoredInteraction.INTERACTION_CLICK
-                    : SponsoredInteraction.INTERACTION_IMPRESSION);
+            if ("contile_impression".equals(eventName)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
+            } else if ("contile_click".equals(eventName)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+            } else {
+              throw new InvalidAttributeException("Received unexpected event name: " + eventName, eventName);
+            }
           }
 
-          interactionBuilder.setSource(docType.contains(SponsoredInteraction.SOURCE_TOPSITES)
-              ? SponsoredInteraction.SOURCE_TOPSITES
-              : SponsoredInteraction.SOURCE_SUGGEST);
+          // Set the source based on the value of the docType
+          if (DT_TOPSITES_CLICK.equals(docType) || DT_TOPSITES_IMPRESSION.equals(docType)) {
+            interactionBuilder.setSource(SponsoredInteraction.SOURCE_TOPSITES);
+          } else if (DT_QUICKSUGGEST_IMPRESSION.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)) {
+            interactionBuilder.setSource(SponsoredInteraction.SOURCE_SUGGEST);
+          } else {
+            throw new InvalidAttributeException("Unexpected docType: " + docType, docType);
+          }
 
           // Store context_id for click counting in subsequent transforms.
           Optional.ofNullable(payload.path(Attribute.CONTEXT_ID).textValue()) //
@@ -198,8 +223,8 @@ public class ParseReportingUrl extends
           }
 
           // We only add these dimensions for topsites clicks, not quicksuggest per
-          // We are also limiting this to desktop.
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
+          // We are also limiting this to desktop.
           if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
               && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())
               && SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())) {
@@ -239,15 +264,15 @@ public class ParseReportingUrl extends
   }
 
   @VisibleForTesting
-  boolean isUrlValid(URL url, String interaction) {
+  boolean isUrlValid(URL url, String interactionType) {
     Set<String> allowedUrls;
 
-    if (interaction.equals("click")) {
+    if (interactionType.equals(SponsoredInteraction.INTERACTION_CLICK)) {
       allowedUrls = singletonAllowedClickUrls;
-    } else if (interaction.equals("impression")) {
+    } else if (interactionType.equals(SponsoredInteraction.INTERACTION_IMPRESSION)) {
       allowedUrls = singletonAllowedImpressionUrls;
     } else {
-      throw new IllegalArgumentException("Invalid doctype: " + interaction);
+      throw new IllegalArgumentException("Invalid interaction type: " + interactionType);
     }
 
     if (allowedUrls.contains(url.getHost())) {

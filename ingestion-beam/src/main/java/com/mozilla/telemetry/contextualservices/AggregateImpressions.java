@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.coders.KvCoder;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.schemas.AutoValueSchema;
-import org.apache.beam.sdk.schemas.SchemaCoder;
 import org.apache.beam.sdk.transforms.Count;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -22,7 +20,6 @@ import org.apache.beam.sdk.transforms.windowing.IntervalWindow;
 import org.apache.beam.sdk.transforms.windowing.Window;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
 import org.joda.time.Instant;
 
 /**
@@ -41,20 +38,13 @@ public class AggregateImpressions
     return new AggregateImpressions(getAggregationWindowSize);
   }
 
-  private SchemaCoder<SponsoredInteraction> getSchemaCoder() {
-    AutoValueSchema autoValueSchema = new AutoValueSchema();
-    TypeDescriptor<SponsoredInteraction> td = TypeDescriptor.of(SponsoredInteraction.class);
-    return SchemaCoder.of(autoValueSchema.schemaFor(td), td, autoValueSchema.toRowFunction(td),
-        autoValueSchema.fromRowFunction(td));
-  }
-
   @Override
   public PCollection<SponsoredInteraction> expand(PCollection<SponsoredInteraction> messages) {
     return messages
         // Add reporting url as key, interaction object as value
         .apply(WithKeys.of(
             (SerializableFunction<SponsoredInteraction, String>) AggregateImpressions::getAggregationKey))
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), getSchemaCoder()))
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteraction.getCoder()))
         // Set timestamp to current time
         .apply(WithCurrentTimestamp.of())
         // Group impressions into timed windows

@@ -48,7 +48,7 @@ public class ParseReportingUrlTest {
   public void testAllowedUrlsLoadAndFilter() throws IOException {
     ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(URL_ALLOW_LIST);
 
-    // pipeline.run();
+    pipeline.run();
 
     List<Set<String>> allowedUrlSets = parseReportingUrl.loadAllowedUrls();
 
@@ -102,8 +102,6 @@ public class ParseReportingUrlTest {
       Assert.assertEquals("1 interaction in output", 1, payloads.size());
 
       String reportingUrl = payloads.get(0).getReportingUrl();
-
-      System.out.println(payloads);
 
       Assert.assertTrue("reportingUrl starts with moz.impression.com",
           reportingUrl.startsWith("https://moz.impression.com/?"));
@@ -194,7 +192,7 @@ public class ParseReportingUrlTest {
         new PubsubMessage(payloadBytes,
             ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
                 Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS,
-                "Windows")),
+                "Linux")),
         new PubsubMessage(payloadBytes,
             ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click", Attribute.DOCUMENT_NAMESPACE,
                 "contextual-services", Attribute.USER_AGENT_OS, "Windows", Attribute.GEO_DMA_CODE,
@@ -228,14 +226,13 @@ public class ParseReportingUrlTest {
         String doctype = interaction.getDocumentType();
 
         if (doctype.equals("topsites-impression")) {
-          // TODO address this.
-          // if (interaction.getAttribute(Attribute.GEO_DMA_CODE) != null) {
-          // Assert.assertTrue(reportingUrl
-          // .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
-          // } else {
-          // Assert.assertTrue(
-          // reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
-          // }
+          if (reportingUrl.contains("Windows")) {
+            Assert.assertTrue(reportingUrl
+                .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
+          } else {
+            Assert.assertTrue(
+                reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+          }
         } else if (doctype.equals("topsites-click")) {
           Assert.assertTrue(reportingUrl
               .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "34")));
@@ -254,27 +251,26 @@ public class ParseReportingUrlTest {
   @Test
   public void testGleanPings() {
 
-    String expectedReportingUrl = "https://impression.com/?id=foo&param=1";
-    String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
-    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
-        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix", Attribute.USER_AGENT_OS, "Android");
-
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
     basePayload.put(Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
 
     ObjectNode eventObject = Json.createObjectNode();
     eventObject.put("category", "top_sites");
-    eventObject.put("name", "contile_impression");
+    eventObject.put("name", "contile_click");
     eventObject.put("timestamp", "0");
     basePayload.putArray("events").add(eventObject);
 
+    String expectedReportingUrl = "https://test.com/?id=foo&param=1&ctag=1&version=1&key=2&ci=4";
+    String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
     ObjectNode metricsObject = Json.createObjectNode();
     metricsObject.putObject("url2").put("top_sites_contile_reporting_url", expectedReportingUrl);
     metricsObject.putObject("uuid").put("top_sites_context_id", contextId);
 
     basePayload.set("metrics", metricsObject);
 
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+            Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix", Attribute.USER_AGENT_OS, "Android");
     List<PubsubMessage> input = Stream.of(basePayload)
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
         .collect(Collectors.toList());
@@ -297,10 +293,17 @@ public class ParseReportingUrlTest {
 
           Assert.assertEquals("1 interaction in output", 1, payloads.size());
 
-          String reportingUrl = payloads.get(0).getReportingUrl();
+          SponsoredInteraction interaction = payloads.get(0);
+          String reportingUrl = interaction.getReportingUrl();
 
-          Assert.assertTrue(String.format("reportingUrl starts with %s", expectedReportingUrl),
-              reportingUrl.startsWith("https://impression.com"));
+          Assert.assertEquals("expect a click interactionType",
+              SponsoredInteraction.INTERACTION_CLICK, interaction.getInteractionType());
+
+          Assert.assertEquals("expect a topsites source",
+                  SponsoredInteraction.SOURCE_TOPSITES, interaction.getSource());
+
+          Assert.assertTrue("reportingUrl starts with test.com",
+              reportingUrl.startsWith("https://test.com"));
           Assert.assertTrue("contains param1", reportingUrl.contains("param=1"));
           Assert.assertTrue("contains id=foo", reportingUrl.contains("id=foo"));
           Assert.assertTrue("contains region code",

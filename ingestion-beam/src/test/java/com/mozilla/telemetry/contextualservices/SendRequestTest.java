@@ -33,7 +33,6 @@ public class SendRequestTest {
     SponsoredInteraction interaction = getTestInteraction()
         .setReportingUrl(server.url("/test").toString()).build();
 
-    System.out.println(interaction);
     List<SponsoredInteraction> input = Collections.singletonList(interaction);
 
     pipeline.apply(Create.of(input)).apply(SendRequest.of(false, false));
