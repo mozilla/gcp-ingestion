@@ -22,6 +22,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 /**
  * Send GET requests to reporting endpoint.
  */
+@SuppressWarnings("checkstyle:lineLength")
 public class SendRequest extends
     PTransform<PCollection<SponsoredInteraction>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 

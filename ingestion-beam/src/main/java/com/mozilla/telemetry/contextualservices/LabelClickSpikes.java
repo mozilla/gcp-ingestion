@@ -29,6 +29,7 @@ import org.joda.time.Instant;
 /**
  * Transform that maintains state per key in order to label suspicious clicks.
  */
+@SuppressWarnings("checkstyle:lineLength")
 public class LabelClickSpikes extends
     PTransform<PCollection<KV<String, SponsoredInteraction>>, PCollection<KV<String, SponsoredInteraction>>> {
 
