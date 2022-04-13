@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.beam.sdk.coders.CannotProvideCoderException;
-import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
@@ -35,14 +33,6 @@ public class ParseReportingUrlTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
-
-  private Coder<SponsoredInteraction> getCoder() {
-    try {
-      return pipeline.getCoderRegistry().getCoder(SponsoredInteraction.class);
-    } catch (CannotProvideCoderException e) {
-      throw new RuntimeException(e.getMessage());
-    }
-  }
 
   @Test
   public void testAllowedUrlsLoadAndFilter() throws IOException {
@@ -167,7 +157,7 @@ public class ParseReportingUrlTest {
       return null;
     });
 
-    PAssert.that(result.output().setCoder(getCoder())).satisfies(messages -> {
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder())).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
       return null;
     });
@@ -218,32 +208,33 @@ public class ParseReportingUrlTest {
       return null;
     });
 
-    PAssert.that(result.output().setCoder(getCoder())).satisfies(sponsoredInteractions -> {
-      Assert.assertEquals(Iterables.size(sponsoredInteractions), 3);
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
+        .satisfies(sponsoredInteractions -> {
+          Assert.assertEquals(Iterables.size(sponsoredInteractions), 3);
 
-      sponsoredInteractions.forEach(interaction -> {
-        String reportingUrl = interaction.getReportingUrl();
-        String doctype = interaction.getDocumentType();
+          sponsoredInteractions.forEach(interaction -> {
+            String reportingUrl = interaction.getReportingUrl();
+            String doctype = interaction.getDocumentType();
 
-        if (doctype.equals("topsites-impression")) {
-          if (reportingUrl.contains("Windows")) {
-            Assert.assertTrue(reportingUrl
-                .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
-          } else {
-            Assert.assertTrue(
-                reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
-          }
-        } else if (doctype.equals("topsites-click")) {
-          Assert.assertTrue(reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "34")));
-        } else {
-          Assert.assertFalse(
-              reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
-        }
-      });
+            if (doctype.equals("topsites-impression")) {
+              if (reportingUrl.contains("Windows")) {
+                Assert.assertTrue(reportingUrl
+                    .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
+              } else {
+                Assert.assertTrue(
+                    reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+              }
+            } else if (doctype.equals("topsites-click")) {
+              Assert.assertTrue(reportingUrl
+                  .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "34")));
+            } else {
+              Assert.assertFalse(
+                  reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+            }
+          });
 
-      return null;
-    });
+          return null;
+        });
 
     pipeline.run();
   }
