@@ -270,7 +270,7 @@ public class ParseReportingUrlTest {
     basePayload.set("metrics", metricsObject);
 
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
-            Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix", Attribute.USER_AGENT_OS, "Android");
+        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix", Attribute.USER_AGENT_OS, "Android");
     List<PubsubMessage> input = Stream.of(basePayload)
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
         .collect(Collectors.toList());
@@ -299,8 +299,8 @@ public class ParseReportingUrlTest {
           Assert.assertEquals("expect a click interactionType",
               SponsoredInteraction.INTERACTION_CLICK, interaction.getInteractionType());
 
-          Assert.assertEquals("expect a topsites source",
-                  SponsoredInteraction.SOURCE_TOPSITES, interaction.getSource());
+          Assert.assertEquals("expect a topsites source", SponsoredInteraction.SOURCE_TOPSITES,
+              interaction.getSource());
 
           Assert.assertTrue("reportingUrl starts with test.com",
               reportingUrl.startsWith("https://test.com"));

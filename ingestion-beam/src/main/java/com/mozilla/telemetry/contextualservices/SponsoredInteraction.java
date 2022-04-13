@@ -77,7 +77,7 @@ public abstract class SponsoredInteraction implements Serializable {
    * There are a few places that we can not use an inferred Coder. This provides a
    * SchemaCoder for the SponsoredInteraction class.
    *
-   * @return SchemaCoder<SponsoredInteraction>
+   * @return The schema coder for a SponsoredInteraction.
    * @throws SchemaNotFoundException when the schema lookup fails.
    */
   public static SchemaCoder<SponsoredInteraction> getCoder() throws SchemaNotFoundException {
@@ -86,9 +86,10 @@ public abstract class SponsoredInteraction implements Serializable {
     Schema schema = autoValueSchema.schemaFor(td);
     if (schema != null) {
       return SchemaCoder.of(schema, td, autoValueSchema.toRowFunction(td),
-              autoValueSchema.fromRowFunction(td));
+          autoValueSchema.fromRowFunction(td));
     }
-    throw new SchemaNotFoundException(String.format("No schema found for %s", SponsoredInteraction.class));
+    throw new SchemaNotFoundException(
+        String.format("No schema found for %s", SponsoredInteraction.class));
   }
 
   @AutoValue.Builder

@@ -113,18 +113,21 @@ public class ParseReportingUrl extends
             // potential docTypes here are
             // `topsites-impression`, `topsites-click`
             // `quicksuggest-impression`, `quicksuggest-click`
-            if (DT_TOPSITES_IMPRESSION.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)) {
+            if (DT_TOPSITES_IMPRESSION.equals(docType)
+                || DT_QUICKSUGGEST_IMPRESSION.equals(docType)) {
               interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
             } else if (DT_TOPSITES_CLICK.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)) {
               interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
             } else {
-              throw new InvalidAttributeException("Received unexpected docType: " + docType, docType);
+              throw new InvalidAttributeException("Received unexpected docType: " + docType,
+                  docType);
             }
           } else {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
             // enforce that the only mobile docType is `topsites-impression`
             if (!DT_TOPSITES_IMPRESSION.equals(docType)) {
-              throw new InvalidAttributeException("Unexpected docType for mobile ping: " + docType, docType);
+              throw new InvalidAttributeException("Unexpected docType for mobile ping: " + docType,
+                  docType);
             }
             ArrayNode events = payload.withArray("events");
             if (events.size() != 1) {
@@ -138,14 +141,16 @@ public class ParseReportingUrl extends
             } else if ("contile_click".equals(eventName)) {
               interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
             } else {
-              throw new InvalidAttributeException("Received unexpected event name: " + eventName, eventName);
+              throw new InvalidAttributeException("Received unexpected event name: " + eventName,
+                  eventName);
             }
           }
 
           // Set the source based on the value of the docType
           if (DT_TOPSITES_CLICK.equals(docType) || DT_TOPSITES_IMPRESSION.equals(docType)) {
             interactionBuilder.setSource(SponsoredInteraction.SOURCE_TOPSITES);
-          } else if (DT_QUICKSUGGEST_IMPRESSION.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)) {
+          } else if (DT_QUICKSUGGEST_IMPRESSION.equals(docType)
+              || DT_QUICKSUGGEST_CLICK.equals(docType)) {
             interactionBuilder.setSource(SponsoredInteraction.SOURCE_SUGGEST);
           } else {
             throw new InvalidAttributeException("Unexpected docType: " + docType, docType);

@@ -105,7 +105,8 @@ public class LabelClickSpikesTest {
         .setReportingUrl("https://test.com").build();
     SponsoredInteraction[] interactions = new SponsoredInteraction[8];
     Arrays.fill(interactions, interaction);
-    TestStream<SponsoredInteraction> createEvents = TestStream.create(SponsoredInteraction.getCoder())
+    TestStream<SponsoredInteraction> createEvents = TestStream
+        .create(SponsoredInteraction.getCoder())
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8))
         .advanceProcessingTime(Duration.standardMinutes(4))
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8)) //
