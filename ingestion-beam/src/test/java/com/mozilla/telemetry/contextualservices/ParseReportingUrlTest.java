@@ -255,7 +255,7 @@ public class ParseReportingUrlTest {
     String expectedReportingUrl = "https://test.com/?id=foo&param=1&ctag=1&version=1&key=2&ci=4";
     String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
     ObjectNode metricsObject = Json.createObjectNode();
-    metricsObject.putObject("url2").put("top_sites_contile_reporting_url", expectedReportingUrl);
+    metricsObject.putObject("url").put("top_sites_contile_reporting_url", expectedReportingUrl);
     metricsObject.putObject("uuid").put("top_sites_context_id", contextId);
 
     basePayload.set("metrics", metricsObject);

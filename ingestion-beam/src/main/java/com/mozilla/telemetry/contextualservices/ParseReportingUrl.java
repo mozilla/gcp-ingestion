@@ -132,7 +132,7 @@ public class ParseReportingUrl extends
             }
             ArrayNode events = payload.withArray("events");
             if (events.size() != 1) {
-              throw new RuntimeException("expect exactly 1 event in ping.");
+              throw new UnexpectedPayloadException("expect exactly 1 event in ping.");
             }
             JsonNode event = events.get(0);
             // potential event names are `contile_impression` and `contile_click`
@@ -262,7 +262,8 @@ public class ParseReportingUrl extends
           try {
             throw ee.exception();
           } catch (UncheckedIOException | IllegalArgumentException
-              | ParsedReportingUrl.InvalidUrlException | RejectedMessageException e) {
+              | ParsedReportingUrl.InvalidUrlException | RejectedMessageException
+              | InvalidAttributeException | UnexpectedPayloadException e) {
             return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
                 ee.exception());
           }
@@ -357,7 +358,7 @@ public class ParseReportingUrl extends
     if (!payload.path(Attribute.REPORTING_URL).isMissingNode()) {
       return payload.path(Attribute.REPORTING_URL).asText();
     }
-    return payload.path("metrics").path("url2").path("top_sites_contile_reporting_url").asText();
+    return payload.path("metrics").path("url").path("top_sites_contile_reporting_url").asText();
   }
 
   @VisibleForTesting

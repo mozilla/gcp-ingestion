@@ -38,6 +38,7 @@ public class FailureMessage {
 
   /**
    * Return a PubsubMessage wrapping a SponsoredInteraction with attributes describing the error.
+   * TODO Investigate refactoring to not import SponsoredInteraction into this higher-level module.
    */
   public static PubsubMessage of(Object caller, SponsoredInteraction interaction, Throwable e) {
     PubsubMessage message = new PubsubMessage(

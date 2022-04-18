@@ -66,7 +66,8 @@ public class ContextualServicesReporter extends Sink {
         .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParseReportingUrl.of(options.getUrlAllowList())).failuresTo(errorCollections) //
+        .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
+        .failuresTo(errorCollections) //
         .apply(EmitCounters.of());
 
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");

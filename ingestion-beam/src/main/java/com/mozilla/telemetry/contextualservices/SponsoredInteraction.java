@@ -1,9 +1,9 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.auto.value.AutoValue;
-import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import java.io.Serializable;
 import javax.annotation.Nullable;
+import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
 import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.SchemaCoder;
@@ -75,12 +75,11 @@ public abstract class SponsoredInteraction implements Serializable {
 
   /**
    * There are a few places that we can not use an inferred Coder. This provides a
-   * SchemaCoder for the SponsoredInteraction class.
+   * SchemaCoder for the SponsoredInteraction class. Returns `null` if a schema cannot be found.
    *
    * @return The schema coder for a SponsoredInteraction.
-   * @throws SchemaNotFoundException when the schema lookup fails.
    */
-  public static SchemaCoder<SponsoredInteraction> getCoder() throws SchemaNotFoundException {
+  public static Coder<SponsoredInteraction> getCoder() {
     AutoValueSchema autoValueSchema = new AutoValueSchema();
     TypeDescriptor<SponsoredInteraction> td = TypeDescriptor.of(SponsoredInteraction.class);
     Schema schema = autoValueSchema.schemaFor(td);
@@ -88,8 +87,7 @@ public abstract class SponsoredInteraction implements Serializable {
       return SchemaCoder.of(schema, td, autoValueSchema.toRowFunction(td),
           autoValueSchema.fromRowFunction(td));
     }
-    throw new SchemaNotFoundException(
-        String.format("No schema found for %s", SponsoredInteraction.class));
+    return null;
   }
 
   @AutoValue.Builder

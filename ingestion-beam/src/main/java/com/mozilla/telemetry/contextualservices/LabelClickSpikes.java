@@ -93,9 +93,11 @@ public class LabelClickSpikes extends
     private final TimerSpec clickTimer = TimerSpecs.timer(TimeDomain.PROCESSING_TIME);
 
     @ProcessElement
-    public void process(@Element KV<String, SponsoredInteraction> element,
-        @Timestamp Instant elementTs, @StateId("click-state") ValueState<List<Long>> state,
-        @TimerId("click-timer") Timer timer, OutputReceiver<KV<String, SponsoredInteraction>> out) {
+    public void process(@Element KV<String, SponsoredInteraction> element, //
+        @Timestamp Instant elementTs, //
+        @StateId("click-state") ValueState<List<Long>> state, //
+        @TimerId("click-timer") Timer timer, //
+        OutputReceiver<KV<String, SponsoredInteraction>> out) {
       List<Long> timestamps = updateTimestampState(state, elementTs.getMillis());
 
       // Set a processing-time timer to clear state after windowMillis if no further clicks
