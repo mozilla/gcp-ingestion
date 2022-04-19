@@ -171,6 +171,8 @@ public class ParseReportingUrlTest {
     inputPayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
     inputPayload.put(Attribute.VERSION, "87.0");
     inputPayload.put(Attribute.REPORTING_URL, "https://test.com?id=a&ctag=1&version=1&key=1&ci=1");
+    String contextId = "aaaa-bbb-ccc-000";
+    inputPayload.put(Attribute.CONTEXT_ID, contextId);
 
     byte[] payloadBytes = Json.asBytes(inputPayload);
 
@@ -231,6 +233,9 @@ public class ParseReportingUrlTest {
               Assert.assertFalse(
                   reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
             }
+
+            Assert.assertEquals("Expect context-id to match", contextId,
+                interaction.getContextId());
           });
 
           return null;
@@ -255,8 +260,8 @@ public class ParseReportingUrlTest {
     String expectedReportingUrl = "https://test.com/?id=foo&param=1&ctag=1&version=1&key=2&ci=4";
     String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
     ObjectNode metricsObject = Json.createObjectNode();
-    metricsObject.putObject("url").put("top_sites_contile_reporting_url", expectedReportingUrl);
-    metricsObject.putObject("uuid").put("top_sites_context_id", contextId);
+    metricsObject.putObject("url").put("top_sites.contile_reporting_url", expectedReportingUrl);
+    metricsObject.putObject("uuid").put("top_sites.context_id", contextId);
 
     basePayload.set("metrics", metricsObject);
 
@@ -292,6 +297,9 @@ public class ParseReportingUrlTest {
 
           Assert.assertEquals("expect a topsites source", SponsoredInteraction.SOURCE_TOPSITES,
               interaction.getSource());
+
+          Assert.assertEquals("expect a context-id to match", contextId,
+              interaction.getContextId());
 
           Assert.assertTrue("reportingUrl starts with test.com",
               reportingUrl.startsWith("https://test.com"));

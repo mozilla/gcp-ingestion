@@ -161,8 +161,7 @@ public class ParseReportingUrl extends
           }
 
           // Store context_id for click counting in subsequent transforms.
-          Optional.ofNullable(payload.path(Attribute.CONTEXT_ID).textValue()) //
-              .ifPresent(interactionBuilder::setContextId);
+          interactionBuilder.setContextId(extractContextId(payload));
 
           // Store request_id for counting in subsequent transforms.
           Optional.ofNullable(payload.path(Attribute.REQUEST_ID).textValue()) //
@@ -362,6 +361,13 @@ public class ParseReportingUrl extends
       return payload.path(Attribute.REPORTING_URL).asText();
     }
     return payload.path("metrics").path("url").path("top_sites.contile_reporting_url").asText();
+  }
+
+  private String extractContextId(ObjectNode payload) {
+    if (!payload.path(Attribute.CONTEXT_ID).isMissingNode()) {
+      return payload.path(Attribute.CONTEXT_ID).asText();
+    }
+    return payload.path("metrics").path("uuid").path("top_sites.context_id").asText();
   }
 
   @VisibleForTesting
