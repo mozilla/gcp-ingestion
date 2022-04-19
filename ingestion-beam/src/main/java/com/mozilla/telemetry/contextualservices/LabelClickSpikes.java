@@ -46,6 +46,7 @@ public class LabelClickSpikes extends
       Integer maxClicks, Duration windowDuration) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
         .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteraction.getCoder())) //
         .apply(WithCurrentTimestamp.of()) //
         .apply(LabelClickSpikes.of(maxClicks, windowDuration)) //
         .apply(Values.create()));

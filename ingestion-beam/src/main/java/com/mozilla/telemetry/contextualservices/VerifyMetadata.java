@@ -41,6 +41,14 @@ public class VerifyMetadata extends
                 "gzip");
           }
 
+          // Special handling for non-desktop pings.
+          // Currently, we pass along all non-desktop pings after validating that the payload is
+          // compressed.
+          String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
+          if ("contextual-services".equals(namespace)) {
+            return message;
+          }
+
           // User agent must be Firefox
           String userAgent = attributes.get(Attribute.USER_AGENT_BROWSER);
           if (!"Firefox".equals(userAgent)) {

@@ -99,9 +99,12 @@ public class ParseReportingUrl extends
           }
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-          String namespace = Objects
-              .requireNonNull(message.getAttribute(Attribute.DOCUMENT_NAMESPACE));
-          String docType = Objects.requireNonNull(message.getAttribute(Attribute.DOCUMENT_TYPE));
+          String namespace = Optional //
+              .ofNullable(message.getAttribute(Attribute.DOCUMENT_NAMESPACE)) //
+              .orElseThrow(() -> new InvalidAttributeException("Missing namespace"));
+          String docType = Optional //
+              .ofNullable(message.getAttribute(Attribute.DOCUMENT_TYPE)) //
+              .orElseThrow(() -> new InvalidAttributeException("Missing docType"));
 
           SponsoredInteraction.Builder interactionBuilder = SponsoredInteraction.builder();
 
@@ -358,7 +361,7 @@ public class ParseReportingUrl extends
     if (!payload.path(Attribute.REPORTING_URL).isMissingNode()) {
       return payload.path(Attribute.REPORTING_URL).asText();
     }
-    return payload.path("metrics").path("url").path("top_sites_contile_reporting_url").asText();
+    return payload.path("metrics").path("url").path("top_sites.contile_reporting_url").asText();
   }
 
   @VisibleForTesting
