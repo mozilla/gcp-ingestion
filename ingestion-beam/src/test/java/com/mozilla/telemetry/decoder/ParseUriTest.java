@@ -49,6 +49,9 @@ public class ParseUriTest extends TestWithDeterministicJson {
             + "{\"uri\":\"/nonexistent_prefix/ce39b608-f595-4c69-b6a6-f7a436604648" //
             + "/main/Firefox/61.0a1/nightly/20180328030202\"" //
             + "},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"uri\":\"/submit/telemetry//update/Firefox/61.0a1" //
+            + "/nightly/20180328030202\"" //
+            + "},\"payload\":\"\"}",
         "{\"attributeMap\":" //
             + "{\"uri\":\"/submit/telemetry/ce39b608-f595-4c69-b6a6-f7a436604648"
             + "/Firefox/61.0a1/nightly/20180328030202\"" //
@@ -92,6 +95,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
             .via(message -> message.getAttribute("exception_class")));
     PAssert.that(exceptions).containsInAnyOrder(
         Arrays.asList("com.mozilla.telemetry.decoder.ParseUri$InvalidUriException",
+            "com.mozilla.telemetry.decoder.ParseUri$InvalidUriException",
             "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
             "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException"));
 

@@ -119,6 +119,14 @@ public class ParseUri {
       // message ID can be removed since it's only used for generating document ID but not used any
       // further
       attributes.remove(Attribute.MESSAGE_ID);
+
+      // Validate attributes
+      try {
+        UUID.fromString(attributes.get(Attribute.DOCUMENT_ID));
+      } catch (IllegalArgumentException e) {
+        throw new InvalidUriException("Entry in document_id place is not a valid UUID");
+      }
+
       return new PubsubMessage(payload, attributes);
     }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
