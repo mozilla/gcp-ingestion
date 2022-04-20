@@ -45,7 +45,7 @@ public class VerifyMetadata extends
           // Currently, we pass along all non-desktop pings after validating that the payload is
           // compressed.
           String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
-          if ("contextual-services".equals(namespace)) {
+          if (!"contextual-services".equals(namespace)) {
             return message;
           }
 

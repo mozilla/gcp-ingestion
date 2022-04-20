@@ -177,4 +177,43 @@ public class VerifyMetadataTest {
     pipeline.run();
   }
 
+  @Test
+  public void testPassNonDesktop() {
+    // Build list of messages with different doctype/version combinations
+    final List<PubsubMessage> input = Streams
+        .zip(Stream.of("topsites-impression", "topsites-click"),
+            Stream.of("org-mozilla-firefox-beta", "contextual-services"),
+            (doctype, namespace) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
+                Attribute.CLIENT_COMPRESSION, "gzip", //
+                Attribute.DOCUMENT_NAMESPACE, namespace))
+        .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
+        .collect(Collectors.toList());
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(VerifyMetadata.of());
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+      PubsubMessage message = Iterables.get(messages, 0);
+
+      String errorMessage = message.getAttribute("error_message");
+      Assert.assertTrue(errorMessage.contains(RejectedMessageException.class.getCanonicalName()));
+
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+      Assert.assertEquals("topsites-impression",
+          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_TYPE));
+      Assert.assertEquals("org-mozilla-firefox-beta",
+          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_NAMESPACE));
+
+      return null;
+    });
+
+    pipeline.run();
+  }
+
 }
