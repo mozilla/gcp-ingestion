@@ -28,6 +28,7 @@ public class VerifyMetadataTest {
   @Test
   public void testRejectUncompressed() {
     Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
         Attribute.USER_AGENT_BROWSER, "Firefox", //
         Attribute.USER_AGENT_VERSION, "90");
 
@@ -69,6 +70,7 @@ public class VerifyMetadataTest {
   @Test
   public void testRejectUserAgent() {
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click", //
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services",
         Attribute.USER_AGENT_BROWSER, "Firefoxd", //
         Attribute.USER_AGENT_VERSION, "90", //
         Attribute.CLIENT_COMPRESSION, "gzip");
@@ -101,6 +103,7 @@ public class VerifyMetadataTest {
         .zip(Stream.of("topsites-click", "quicksuggest-click", "topsites-click"),
             Stream.of("87", "87", "86"),
             (doctype, version) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
+                Attribute.DOCUMENT_NAMESPACE, "contextual-services",
                 Attribute.USER_AGENT_BROWSER, "Firefox", //
                 Attribute.USER_AGENT_VERSION, version, //
                 Attribute.CLIENT_COMPRESSION, "gzip"))
@@ -142,6 +145,7 @@ public class VerifyMetadataTest {
         .zip(Stream.of("quicksuggest-impression", "quicksuggest-click"),
             Stream.of("beta", "release"),
             (doctype, channel) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
+                Attribute.DOCUMENT_NAMESPACE, "contextual-services",
                 Attribute.USER_AGENT_BROWSER, "Firefox", //
                 Attribute.USER_AGENT_VERSION, "93", //
                 Attribute.CLIENT_COMPRESSION, "gzip", //
