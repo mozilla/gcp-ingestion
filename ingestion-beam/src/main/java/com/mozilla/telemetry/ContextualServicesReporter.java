@@ -79,20 +79,20 @@ public class ContextualServicesReporter extends Sink {
     // Aggregate impressions.
     PCollection<SponsoredInteraction> aggregated = requests
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> aggregatedDocTypes //
-            .contains(interaction.getDocumentType(true))))
+            .contains(interaction.getDerivedDocumentType())))
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     // Perform windowed click counting per context_id, adding a click-status to the reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> perContextId = requests
         .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> perContextIdDocTypes //
-            .contains(interaction.getDocumentType(true))))
+            .contains(interaction.getDerivedDocumentType())))
         .apply(LabelClickSpikes.perContextId(options.getClickSpikeThreshold(),
             Time.parseDuration(options.getClickSpikeWindowDuration())));
 
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
         Filter.by((interaction) -> !unionedDocTypes //
-            .contains(interaction.getDocumentType(true))));
+            .contains(interaction.getDerivedDocumentType())));
 
     PCollectionList.of(aggregated).and(perContextId).and(unaggregated).apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))

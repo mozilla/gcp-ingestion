@@ -28,7 +28,12 @@ public class EmitCounters
         .via((SponsoredInteraction interaction) -> {
           // mock attributes based on the sponsored interaction fields
           Map<String, String> attributes = new HashMap<String, String>();
-          attributes.put(Attribute.DOCUMENT_TYPE, interaction.getDocumentType());
+          String originalDocType = interaction.getOriginalDocType();
+          if (originalDocType != null) {
+            attributes.put(Attribute.DOCUMENT_TYPE, originalDocType);
+          } else {
+            attributes.put(Attribute.DOCUMENT_TYPE, interaction.getDerivedDocumentType());
+          }
 
           if (interaction.getOriginalNamespace() != null) {
             attributes.put(Attribute.DOCUMENT_NAMESPACE, interaction.getOriginalNamespace());

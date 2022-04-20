@@ -216,7 +216,7 @@ public class ParseReportingUrlTest {
 
           sponsoredInteractions.forEach(interaction -> {
             String reportingUrl = interaction.getReportingUrl();
-            String doctype = interaction.getDocumentType();
+            String doctype = interaction.getDerivedDocumentType();
 
             if (doctype.equals("topsites-impression")) {
               if (reportingUrl.contains("Windows")) {

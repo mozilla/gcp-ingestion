@@ -66,15 +66,8 @@ public abstract class SponsoredInteraction implements Serializable {
    * it will build one based on `source` and `interactionType` fields.
    * @return String
    */
-  public String getDocumentType(boolean derived) {
-    if (!derived && getOriginalDocType() != null) {
-      return getOriginalDocType();
-    }
+  public String getDerivedDocumentType() {
     return String.format("%s-%s", getSource(), getInteractionType());
-  }
-
-  public String getDocumentType() {
-    return getDocumentType(false);
   }
 
   /**
