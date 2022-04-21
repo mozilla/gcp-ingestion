@@ -7,7 +7,7 @@ Apache Beam jobs.
 The source code lives in the [ingestion-beam](https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-beam)
 subdirectory of the gcp-ingestion repository.
 
-There following are the main Beam classes, please see the respective sections on them in the
+The following are the main Beam classes, please see the respective sections on them in the
 documentation:
 
 - [Decoder job](./decoder-job.md): A job for normalizing ingestion messages
