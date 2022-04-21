@@ -2,10 +2,8 @@ package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -23,15 +21,19 @@ public class SendRequestTest {
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
+  private SponsoredInteraction.Builder getTestInteraction() {
+    return SponsoredInteraction.builder().setInteractionType("click").setSource("topsite")
+        .setFormFactor("phone").setContextId("1");
+  }
+
   @Test
   public void testReportingDisabled() {
     MockWebServer server = new MockWebServer();
 
-    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL,
-        server.url("/test").toString());
+    SponsoredInteraction interaction = getTestInteraction()
+        .setReportingUrl(server.url("/test").toString()).build();
 
-    List<PubsubMessage> input = Collections
-        .singletonList(new PubsubMessage(new byte[0], attributes));
+    List<SponsoredInteraction> input = Collections.singletonList(interaction);
 
     pipeline.apply(Create.of(input)).apply(SendRequest.of(false, false));
 
@@ -46,13 +48,12 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(500));
     server.enqueue(new MockResponse().setResponseCode(401));
 
-    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL,
-        server.url("/test").toString());
+    SponsoredInteraction interaction = getTestInteraction()
+        .setReportingUrl(server.url("/test").toString()).build();
 
-    List<PubsubMessage> input = ImmutableList.of(new PubsubMessage(new byte[0], attributes),
-        new PubsubMessage(new byte[0], attributes));
+    List<SponsoredInteraction> input = ImmutableList.of(interaction, interaction);
 
-    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline
         .apply(Create.of(input)).apply(SendRequest.of(true, false));
 
     PAssert.that(result.failures()).satisfies(messages -> {
@@ -71,13 +72,12 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(200));
     server.enqueue(new MockResponse().setResponseCode(204));
 
-    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL,
-        server.url("/test").toString());
+    SponsoredInteraction interaction = getTestInteraction()
+        .setReportingUrl(server.url("/test").toString()).build();
 
-    List<PubsubMessage> input = ImmutableList.of(new PubsubMessage(new byte[0], attributes),
-        new PubsubMessage(new byte[0], attributes));
+    List<SponsoredInteraction> input = ImmutableList.of(interaction, interaction);
 
-    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline
         .apply(Create.of(input)).apply(SendRequest.of(true, false));
 
     PAssert.that(result.output()).satisfies(messages -> {
@@ -95,13 +95,12 @@ public class SendRequestTest {
     MockWebServer server = new MockWebServer();
     server.enqueue(new MockResponse().setResponseCode(302));
 
-    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL,
-        server.url("/test").toString());
+    SponsoredInteraction interaction = getTestInteraction()
+        .setReportingUrl(server.url("/test").toString()).build();
 
-    List<PubsubMessage> input = Collections
-        .singletonList(new PubsubMessage(new byte[0], attributes));
+    List<SponsoredInteraction> input = ImmutableList.of(interaction);
 
-    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline
         .apply(Create.of(input)).apply(SendRequest.of(true, false));
 
     PAssert.that(result.failures()).satisfies(messages -> {
@@ -120,12 +119,11 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(200));
 
     String requestUrl = server.url("/test").toString();
-    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL, requestUrl);
+    SponsoredInteraction interaction = getTestInteraction().setReportingUrl(requestUrl).build();
 
-    List<PubsubMessage> input = Collections
-        .singletonList(new PubsubMessage(new byte[0], attributes));
+    List<SponsoredInteraction> input = ImmutableList.of(interaction);
 
-    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline
         .apply(Create.of(input)).apply(SendRequest.of(true, true));
 
     PAssert.that(result.failures()).satisfies(messages -> {

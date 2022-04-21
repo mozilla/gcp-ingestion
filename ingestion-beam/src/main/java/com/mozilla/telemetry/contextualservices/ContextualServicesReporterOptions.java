@@ -22,6 +22,13 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setAllowedDocTypes(String value);
 
+  @Description("Comma-separated strings representing a list of namespaces for which "
+      + " to send reporting requests (e.g. contextual-services is a correct argument)")
+  @Default.String("contextual-services")
+  String getAllowedNamespaces();
+
+  void setAllowedNamespaces(String value);
+
   @Description("If set to true, send HTTP requests to reporting URLs.  "
       + "Can be set to false for testing purposes.")
   @Default.Boolean(true)

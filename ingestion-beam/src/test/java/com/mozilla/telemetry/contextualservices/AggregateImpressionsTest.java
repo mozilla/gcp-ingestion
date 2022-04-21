@@ -2,11 +2,7 @@ package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -22,6 +18,11 @@ import org.junit.Test;
 
 public class AggregateImpressionsTest {
 
+  private SponsoredInteraction.Builder getTestInteraction() {
+    return SponsoredInteraction.builder().setInteractionType("click").setSource("topsite")
+        .setFormFactor("phone").setContextId("1");
+  }
+
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
@@ -29,7 +30,7 @@ public class AggregateImpressionsTest {
   public void testBuildAggregateUrl() {
     List<KV<String, Long>> input = ImmutableList.of(KV.of("https://test.com", 4L));
 
-    PCollection<PubsubMessage> output = pipeline.apply(Create.of(input))
+    PCollection<SponsoredInteraction> output = pipeline.apply(Create.of(input))
         .apply(Window.into(FixedWindows.of(Duration.standardMinutes(5))))
         .apply(ParDo.of(new AggregateImpressions.BuildAggregateUrl()));
 
@@ -37,7 +38,7 @@ public class AggregateImpressionsTest {
 
       Assert.assertEquals(Iterables.size(messages), 1);
 
-      String aggregatedUrl = Iterables.get(messages, 0).getAttribute(Attribute.REPORTING_URL);
+      String aggregatedUrl = Iterables.get(messages, 0).getReportingUrl();
       ParsedReportingUrl parsedUrl = new ParsedReportingUrl(aggregatedUrl);
 
       Assert.assertTrue(aggregatedUrl.startsWith("https://test.com"));
@@ -58,10 +59,9 @@ public class AggregateImpressionsTest {
   @Test
   public void testGetAggregationKey() {
     String url = "http://test.com?country-code=US&abc=abc&def=a";
-    Map<String, String> attributes = Collections.singletonMap(Attribute.REPORTING_URL, url);
-    PubsubMessage message = new PubsubMessage(new byte[] {}, attributes);
+    SponsoredInteraction interaction = getTestInteraction().setReportingUrl(url).build();
 
-    String aggKey = AggregateImpressions.getAggregationKey(message);
+    String aggKey = AggregateImpressions.getAggregationKey(interaction);
 
     // Should return url with sorted query params
     Assert.assertEquals(aggKey, "http://test.com?abc=abc&country-code=US&def=a");
@@ -69,28 +69,29 @@ public class AggregateImpressionsTest {
 
   @Test
   public void testAggregation() {
-    Map<String, String> attributesUrl1 = Collections.singletonMap(Attribute.REPORTING_URL,
-        String.format("https://test.com?%s=US&%s=", ParsedReportingUrl.PARAM_COUNTRY_CODE,
-            ParsedReportingUrl.PARAM_REGION_CODE));
-    Map<String, String> attributesUrl2 = Collections.singletonMap(Attribute.REPORTING_URL,
-        String.format("https://test.com?%s=DE&%s=", ParsedReportingUrl.PARAM_COUNTRY_CODE,
-            ParsedReportingUrl.PARAM_REGION_CODE));
+    SponsoredInteraction.Builder baseInteraction = getTestInteraction();
 
-    List<PubsubMessage> input = ImmutableList.of(new PubsubMessage(new byte[0], attributesUrl1),
-        new PubsubMessage(new byte[0], attributesUrl2),
-        new PubsubMessage(new byte[0], attributesUrl1),
-        new PubsubMessage(new byte[0], attributesUrl1),
-        new PubsubMessage(new byte[0], attributesUrl2));
+    String attributesUrl1 = String.format("https://test.com?%s=US&%s=",
+        ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
+    String attributesUrl2 = String.format("https://test.com?%s=DE&%s=",
+        ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
 
-    PCollection<PubsubMessage> output = pipeline.apply(Create.of(input))
+    List<SponsoredInteraction> input = ImmutableList.of(
+        baseInteraction.setReportingUrl(attributesUrl1).build(),
+        baseInteraction.setReportingUrl(attributesUrl2).build(),
+        baseInteraction.setReportingUrl(attributesUrl1).build(),
+        baseInteraction.setReportingUrl(attributesUrl1).build(),
+        baseInteraction.setReportingUrl(attributesUrl2).build());
+
+    PCollection<SponsoredInteraction> output = pipeline.apply(Create.of(input))
         .apply(AggregateImpressions.of("10m"));
 
-    PAssert.that(output).satisfies(messages -> {
+    PAssert.that(output).satisfies(interactions -> {
 
-      Assert.assertEquals(Iterables.size(messages), 2);
+      Assert.assertEquals(Iterables.size(interactions), 2);
 
-      messages.forEach(message -> {
-        String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
+      interactions.forEach(interaction -> {
+        String reportingUrl = interaction.getReportingUrl();
         ParsedReportingUrl parsedUrl = new ParsedReportingUrl(reportingUrl);
 
         String country = parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE);

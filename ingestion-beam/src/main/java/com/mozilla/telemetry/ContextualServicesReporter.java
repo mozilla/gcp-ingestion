@@ -8,8 +8,8 @@ import com.mozilla.telemetry.contextualservices.FilterByDocType;
 import com.mozilla.telemetry.contextualservices.LabelClickSpikes;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
+import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import com.mozilla.telemetry.contextualservices.VerifyMetadata;
-import com.mozilla.telemetry.ingestion.core.Constant;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
@@ -60,9 +60,9 @@ public class ContextualServicesReporter extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    PCollection<PubsubMessage> requests = pipeline //
+    PCollection<SponsoredInteraction> requests = pipeline //
         .apply(options.getInputType().read(options)) //
-        .apply(FilterByDocType.of(options.getAllowedDocTypes())) //
+        .apply(FilterByDocType.of(options.getAllowedDocTypes(), options.getAllowedNamespaces())) //
         .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
@@ -77,28 +77,25 @@ public class ContextualServicesReporter extends Sink {
         .collect(Collectors.toSet());
 
     // Aggregate impressions.
-    PCollection<PubsubMessage> aggregated = requests
-        .apply("FilterAggregatedDocTypes",
-            Filter.by((message) -> aggregatedDocTypes
-                .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
-        .apply(AggregateImpressions.of(options.getAggregationWindowDuration())); //
+    PCollection<SponsoredInteraction> aggregated = requests
+        .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> aggregatedDocTypes //
+            .contains(interaction.getDerivedDocumentType())))
+        .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     // Perform windowed click counting per context_id, adding a click-status to the reporting URL
     // if the count passes a threshold.
-    PCollection<PubsubMessage> perContextId = requests
-        .apply("FilterPerContextIdDocTypes",
-            Filter.by((message) -> perContextIdDocTypes
-                .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE)))) //
+    PCollection<SponsoredInteraction> perContextId = requests
+        .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> perContextIdDocTypes //
+            .contains(interaction.getDerivedDocumentType())))
         .apply(LabelClickSpikes.perContextId(options.getClickSpikeThreshold(),
             Time.parseDuration(options.getClickSpikeWindowDuration())));
 
-    PCollection<PubsubMessage> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
-        Filter.by((message) -> !unionedDocTypes
-            .contains(message.getAttribute(Constant.Attribute.DOCUMENT_TYPE))));
+    PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
+        Filter.by((interaction) -> !unionedDocTypes //
+            .contains(interaction.getDerivedDocumentType())));
 
-    PCollectionList.of(aggregated).and(perContextId).and(unaggregated) //
-        .apply(Flatten.pCollections()) //
-        .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls())) //
+    PCollectionList.of(aggregated).and(perContextId).and(unaggregated).apply(Flatten.pCollections())
+        .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
 
     // Note that there is no write step here for "successes"

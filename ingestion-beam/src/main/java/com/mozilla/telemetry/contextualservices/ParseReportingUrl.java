@@ -1,5 +1,7 @@
 package com.mozilla.telemetry.contextualservices;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -8,6 +10,7 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.Time;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -29,27 +33,37 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.joda.time.Instant;
 
 /**
  * Extract reporting URL from document and filter out unknown URLs.
  */
+@SuppressWarnings("checkstyle:lineLength")
 public class ParseReportingUrl extends
-    PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
+    PTransform<PCollection<PubsubMessage>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 
   private final String urlAllowList;
 
   private static transient Set<String> singletonAllowedImpressionUrls;
   private static transient Set<String> singletonAllowedClickUrls;
 
+  private static final String NS_DESKTOP = "contextual-services";
+  private static final String DT_TOPSITES_IMPRESSION = "topsites-impression";
+  private static final String DT_TOPSITES_CLICK = "topsites-click";
+  private static final String DT_QUICKSUGGEST_IMPRESSION = "quicksuggest-impression";
+  private static final String DT_QUICKSUGGEST_CLICK = "quicksuggest-click";
+
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
   private static final String OS_MAC = "Macintosh";
   private static final String OS_LINUX = "Linux";
+  private static final String OS_ANDROID = "Android";
 
   // Values used for the os-family API parameter
   private static final String PARAM_WINDOWS = "Windows";
   private static final String PARAM_MAC = "macOS";
   private static final String PARAM_LINUX = "Linux";
+  private static final String PARAM_ANDROID = "Android";
 
   // Values for the click-status API parameter
   public static final String CLICK_STATUS_ABUSE = "64";
@@ -67,10 +81,10 @@ public class ParseReportingUrl extends
   }
 
   @Override
-  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
+  public Result<PCollection<SponsoredInteraction>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
-    return messages.apply(
-        MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
+    return messages.apply(MapElements.into(TypeDescriptor.of(SponsoredInteraction.class))
+        .via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
 
           ObjectNode payload;
@@ -87,40 +101,110 @@ public class ParseReportingUrl extends
           }
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+          String namespace = Optional //
+              .ofNullable(message.getAttribute(Attribute.DOCUMENT_NAMESPACE)) //
+              .orElseThrow(() -> new InvalidAttributeException("Missing namespace"));
+          String docType = Optional //
+              .ofNullable(message.getAttribute(Attribute.DOCUMENT_TYPE)) //
+              .orElseThrow(() -> new InvalidAttributeException("Missing docType"));
+          String submissionTimestamp = Optional //
+              .ofNullable(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP)) //
+              .orElseGet(() -> Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
+
+          SponsoredInteraction.Builder interactionBuilder = SponsoredInteraction.builder();
+
+          interactionBuilder.setSubmissionTimestamp(submissionTimestamp);
+          interactionBuilder.setOriginalNamespace(namespace);
+          interactionBuilder.setOriginalDocType(docType);
+
+          // set fields based on namespace/doctype combos
+          if (NS_DESKTOP.equals(namespace)) {
+            interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
+            // potential docTypes here are
+            // `topsites-impression`, `topsites-click`
+            // `quicksuggest-impression`, `quicksuggest-click`
+            if (DT_TOPSITES_IMPRESSION.equals(docType)
+                || DT_QUICKSUGGEST_IMPRESSION.equals(docType)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
+            } else if (DT_TOPSITES_CLICK.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+            } else {
+              throw new InvalidAttributeException("Received unexpected docType: " + docType,
+                  docType);
+            }
+          } else {
+            interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
+            // enforce that the only mobile docType is `topsites-impression`
+            if (!DT_TOPSITES_IMPRESSION.equals(docType)) {
+              throw new InvalidAttributeException("Unexpected docType for mobile ping: " + docType,
+                  docType);
+            }
+            ArrayNode events = payload.withArray("events");
+            if (events.size() != 1) {
+              throw new UnexpectedPayloadException("expect exactly 1 event in ping.");
+            }
+            JsonNode event = events.get(0);
+            // potential event names are `contile_impression` and `contile_click`
+            String eventName = event.path("name").asText();
+            if ("contile_impression".equals(eventName)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
+            } else if ("contile_click".equals(eventName)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+            } else {
+              throw new InvalidAttributeException("Received unexpected event name: " + eventName,
+                  eventName);
+            }
+          }
+
+          // Set the source based on the value of the docType
+          if (DT_TOPSITES_CLICK.equals(docType) || DT_TOPSITES_IMPRESSION.equals(docType)) {
+            interactionBuilder.setSource(SponsoredInteraction.SOURCE_TOPSITES);
+          } else if (DT_QUICKSUGGEST_IMPRESSION.equals(docType)
+              || DT_QUICKSUGGEST_CLICK.equals(docType)) {
+            interactionBuilder.setSource(SponsoredInteraction.SOURCE_SUGGEST);
+          } else {
+            throw new InvalidAttributeException("Unexpected docType: " + docType, docType);
+          }
 
           // Store context_id for click counting in subsequent transforms.
-          Optional.ofNullable(payload.path(Attribute.CONTEXT_ID).textValue()) //
-              .ifPresent(v -> attributes.put(Attribute.CONTEXT_ID, v));
+          interactionBuilder.setContextId(extractContextId(payload));
 
           // Store request_id for counting in subsequent transforms.
           Optional.ofNullable(payload.path(Attribute.REQUEST_ID).textValue()) //
-              .ifPresent(v -> attributes.put(Attribute.REQUEST_ID, v));
+              .ifPresent(interactionBuilder::setRequestId);
 
-          String reportingUrl = payload.path(Attribute.REPORTING_URL).asText();
-
+          SponsoredInteraction interaction = interactionBuilder.build();
+          String reportingUrl = extractReportingUrl(payload);
           ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
 
-          if (!isUrlValid(urlParser.getReportingUrl(), attributes.get(Attribute.DOCUMENT_TYPE))) {
+          if (!isUrlValid(urlParser.getReportingUrl(),
+              Objects.requireNonNull(interaction.getInteractionType()))) {
             PerDocTypeCounter.inc(attributes, "rejected_nonnull_url");
             throw new ParsedReportingUrl.InvalidUrlException(
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
-          if ("topsites-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+          // ensure parameters based on source and interaction type
+          if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
+              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
             requireParamPresent(urlParser, "ctag");
             requireParamPresent(urlParser, "version");
             requireParamPresent(urlParser, "key");
             requireParamPresent(urlParser, "ci");
-          } else if ("quicksuggest-click".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+          } else if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
+              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
             // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
             requireParamPresent(urlParser, "ctag");
             requireParamPresent(urlParser, "custom-data");
             requireParamPresent(urlParser, "sub1");
             requireParamPresent(urlParser, "sub2");
-          } else if ("topsites-impression".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+          } else if (SponsoredInteraction.INTERACTION_IMPRESSION
+              .equals(interaction.getInteractionType())
+              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
             requireParamPresent(urlParser, "id");
-          } else if ("quicksuggest-impression"
-              .equals(message.getAttribute(Attribute.DOCUMENT_TYPE))) {
+          } else if (SponsoredInteraction.INTERACTION_IMPRESSION
+              .equals(interaction.getInteractionType())
+              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
             // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
             requireParamPresent(urlParser, "custom-data");
             requireParamPresent(urlParser, "sub1");
@@ -132,8 +216,7 @@ public class ParseReportingUrl extends
 
           // We only add these dimensions for topsites, not quicksuggest per
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-          if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")
-              || message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-impression")) {
+          if (SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
 
             if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
               throw new RejectedMessageException(
@@ -146,7 +229,8 @@ public class ParseReportingUrl extends
                 attributes.get(Attribute.GEO_SUBDIVISION1));
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY,
                 getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop");
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR,
+                interaction.getFormFactor());
 
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_DMA_CODE,
                 message.getAttribute(Attribute.GEO_DMA_CODE));
@@ -154,7 +238,10 @@ public class ParseReportingUrl extends
 
           // We only add these dimensions for topsites clicks, not quicksuggest per
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-          if (message.getAttribute(Attribute.DOCUMENT_TYPE).equals("topsites-click")) {
+          // We are also limiting this to desktop.
+          if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
+              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())
+              && SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())) {
             String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
             if (userAgentVersion == null) {
               throw new RejectedMessageException(
@@ -176,34 +263,31 @@ public class ParseReportingUrl extends
           }
 
           reportingUrl = urlParser.toString();
-
-          attributes.put(Attribute.REPORTING_URL, reportingUrl);
-          payload.put(Attribute.REPORTING_URL, reportingUrl);
-
           PerDocTypeCounter.inc(attributes, "valid_url");
-          return new PubsubMessage(Json.asBytes(payload), attributes);
+          return interaction.toBuilder().setReportingUrl(reportingUrl).build();
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
-              try {
-                throw ee.exception();
-              } catch (UncheckedIOException | IllegalArgumentException
-                  | ParsedReportingUrl.InvalidUrlException | RejectedMessageException e) {
-                return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
-                    ee.exception());
-              }
-            }));
+        .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException | IllegalArgumentException
+              | ParsedReportingUrl.InvalidUrlException | RejectedMessageException
+              | InvalidAttributeException | UnexpectedPayloadException e) {
+            return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
+                ee.exception());
+          }
+        }));
   }
 
   @VisibleForTesting
-  boolean isUrlValid(URL url, String doctype) {
+  boolean isUrlValid(URL url, String interactionType) {
     Set<String> allowedUrls;
 
-    if (doctype.endsWith("-click")) {
+    if (interactionType.equals(SponsoredInteraction.INTERACTION_CLICK)) {
       allowedUrls = singletonAllowedClickUrls;
-    } else if (doctype.endsWith("-impression")) {
+    } else if (interactionType.equals(SponsoredInteraction.INTERACTION_IMPRESSION)) {
       allowedUrls = singletonAllowedImpressionUrls;
     } else {
-      throw new IllegalArgumentException("Invalid doctype: " + doctype);
+      throw new IllegalArgumentException("Invalid interaction type: " + interactionType);
     }
 
     if (allowedUrls.contains(url.getHost())) {
@@ -231,6 +315,8 @@ public class ParseReportingUrl extends
       return PARAM_MAC;
     } else if (userAgentOs.startsWith(OS_LINUX)) {
       return PARAM_LINUX;
+    } else if (userAgentOs.startsWith(OS_ANDROID)) {
+      return PARAM_ANDROID;
     } else {
       throw new RejectedMessageException("Unrecognized OS attribute: " + userAgentOs, "os");
     }
@@ -274,6 +360,20 @@ public class ParseReportingUrl extends
     } catch (IOException e) {
       throw new IOException("Exception thrown while fetching " + paramName, e);
     }
+  }
+
+  private String extractReportingUrl(ObjectNode payload) {
+    if (!payload.path(Attribute.REPORTING_URL).isMissingNode()) {
+      return payload.path(Attribute.REPORTING_URL).asText();
+    }
+    return payload.path("metrics").path("url").path("top_sites.contile_reporting_url").asText();
+  }
+
+  private String extractContextId(ObjectNode payload) {
+    if (!payload.path(Attribute.CONTEXT_ID).isMissingNode()) {
+      return payload.path(Attribute.CONTEXT_ID).asText();
+    }
+    return payload.path("metrics").path("uuid").path("top_sites.context_id").asText();
   }
 
   @VisibleForTesting
