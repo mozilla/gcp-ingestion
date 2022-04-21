@@ -45,18 +45,9 @@ public class FailureMessage {
    * TODO Investigate refactoring to not import SponsoredInteraction into this higher-level module.
    */
   public static PubsubMessage of(Object caller, SponsoredInteraction interaction, Throwable e) {
-    Map<String, String> attributes = new HashMap<String, String>();
-    attributes.put(Attribute.DOCUMENT_NAMESPACE,
-        Optional.ofNullable(interaction.getOriginalNamespace()).orElse("missing_namespace"));
-    attributes.put(Attribute.DOCUMENT_TYPE,
-        Optional.ofNullable(interaction.getOriginalDocType()).orElse("missing_doctype"));
-    attributes.put(Attribute.SUBMISSION_TIMESTAMP, Optional //
+    Map<String, String> attributes = Map.of(Attribute.SUBMISSION_TIMESTAMP, Optional //
         .ofNullable(interaction.getSubmissionTimestamp()) //
         .orElseGet(() -> Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000)));
-    Map<String, String> additionalAttributes = interaction.getAdditionalAttributes();
-    if (additionalAttributes != null) {
-      attributes.putAll(interaction.getAdditionalAttributes());
-    }
 
     PubsubMessage message = new PubsubMessage(
         interaction.toString().getBytes(StandardCharsets.UTF_8), attributes);

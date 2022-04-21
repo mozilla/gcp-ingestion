@@ -26,8 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -118,17 +116,6 @@ public class ParseReportingUrl extends
           interactionBuilder.setSubmissionTimestamp(submissionTimestamp);
           interactionBuilder.setOriginalNamespace(namespace);
           interactionBuilder.setOriginalDocType(docType);
-
-          // add version and region attributes for better error reporting
-          interactionBuilder.setAdditionalAttributes(Stream //
-              .of(Attribute.DOCUMENT_VERSION, //
-                  Attribute.NORMALIZED_COUNTRY_CODE, //
-                  Attribute.GEO_COUNTRY, //
-                  Attribute.GEO_CITY, //
-                  Attribute.GEO_DMA_CODE) //
-              .filter(attributeName -> attributes.get(attributeName) != null)
-              .collect(Collectors.toMap(attributeName -> attributeName,
-                  attributeName -> attributes.get(attributeName))));
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {

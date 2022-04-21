@@ -2,7 +2,6 @@ package com.mozilla.telemetry.contextualservices;
 
 import com.google.auto.value.AutoValue;
 import java.io.Serializable;
-import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
@@ -56,9 +55,6 @@ public abstract class SponsoredInteraction implements Serializable {
   @Nullable
   public abstract String getOriginalNamespace();
 
-  @Nullable
-  public abstract Map<String, String> getAdditionalAttributes();
-
   abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -111,8 +107,6 @@ public abstract class SponsoredInteraction implements Serializable {
     public abstract Builder setOriginalDocType(String newOriginalDocType);
 
     public abstract Builder setOriginalNamespace(String newOriginalNamespace);
-
-    public abstract Builder setAdditionalAttributes(Map<String, String> newAdditionalAttributes);
 
     public abstract SponsoredInteraction build();
   }
