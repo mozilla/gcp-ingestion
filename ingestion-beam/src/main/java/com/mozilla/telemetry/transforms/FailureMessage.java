@@ -2,12 +2,16 @@ package com.mozilla.telemetry.transforms;
 
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.util.Time;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.joda.time.Instant;
 
 /**
  * A collection of static methods for producing consistently-formatted PubsubMessage
@@ -41,8 +45,21 @@ public class FailureMessage {
    * TODO Investigate refactoring to not import SponsoredInteraction into this higher-level module.
    */
   public static PubsubMessage of(Object caller, SponsoredInteraction interaction, Throwable e) {
+    Map<String, String> attributes = new HashMap<String, String>();
+    attributes.put(Attribute.DOCUMENT_NAMESPACE,
+        Optional.ofNullable(interaction.getOriginalNamespace()).orElse("missing_namespace"));
+    attributes.put(Attribute.DOCUMENT_TYPE,
+        Optional.ofNullable(interaction.getOriginalDocType()).orElse("missing_doctype"));
+    attributes.put(Attribute.SUBMISSION_TIMESTAMP, Optional //
+        .ofNullable(interaction.getSubmissionTimestamp()) //
+        .orElseGet(() -> Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000)));
+    Map<String, String> additionalAttributes = interaction.getAdditionalAttributes();
+    if (additionalAttributes != null) {
+      attributes.putAll(interaction.getAdditionalAttributes());
+    }
+
     PubsubMessage message = new PubsubMessage(
-        interaction.toString().getBytes(StandardCharsets.UTF_8), Map.of());
+        interaction.toString().getBytes(StandardCharsets.UTF_8), attributes);
     return FailureMessage.of(caller, message, e);
   }
 

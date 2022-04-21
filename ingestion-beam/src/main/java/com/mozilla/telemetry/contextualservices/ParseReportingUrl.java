@@ -10,6 +10,7 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
+import com.mozilla.telemetry.util.Time;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +26,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -32,6 +35,7 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.joda.time.Instant;
 
 /**
  * Extract reporting URL from document and filter out unknown URLs.
@@ -105,11 +109,26 @@ public class ParseReportingUrl extends
           String docType = Optional //
               .ofNullable(message.getAttribute(Attribute.DOCUMENT_TYPE)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing docType"));
+          String submissionTimestamp = Optional //
+              .ofNullable(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP)) //
+              .orElseGet(() -> Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
 
           SponsoredInteraction.Builder interactionBuilder = SponsoredInteraction.builder();
 
+          interactionBuilder.setSubmissionTimestamp(submissionTimestamp);
           interactionBuilder.setOriginalNamespace(namespace);
           interactionBuilder.setOriginalDocType(docType);
+
+          // add version and region attributes for better error reporting
+          interactionBuilder.setAdditionalAttributes(Stream //
+              .of(Attribute.DOCUMENT_VERSION, //
+                  Attribute.NORMALIZED_COUNTRY_CODE, //
+                  Attribute.GEO_COUNTRY, //
+                  Attribute.GEO_CITY, //
+                  Attribute.GEO_DMA_CODE) //
+              .filter(attributeName -> attributes.get(attributeName) != null)
+              .collect(Collectors.toMap(attributeName -> attributeName,
+                  attributeName -> attributes.get(attributeName))));
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
