@@ -237,6 +237,7 @@ public class MessageScrubber {
     // Up to the v0.13 Glean enforces a particular user-agent string that a rogue fuzzer is not abiding by
     // https://searchfox.org/mozilla-central/source/third_party/rust/glean-core/src/upload/request.rs#35,72-75
     // The Glean SDK stopped submitting an user-agent after v44.0.0, therefore here we also accept an empty one
+    // see https://bugzilla.mozilla.org/show_bug.cgi?id=1766424
     if ("firefox-desktop".equals(namespace)
         && (userAgent != null && !userAgent.startsWith("Glean"))) {
       throw new UnwantedDataException("1684980");
