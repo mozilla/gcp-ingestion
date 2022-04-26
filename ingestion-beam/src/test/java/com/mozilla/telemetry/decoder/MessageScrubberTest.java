@@ -704,13 +704,12 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(emptyAttributes, Json.createObjectNode()));
 
-    // null agent strings...
+    // missing agent strings are allowed, see https://bugzilla.mozilla.org/show_bug.cgi?id=1766424
     Map<String, String> nullAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
         .build();
 
-    assertThrows(UnwantedDataException.class,
-        () -> MessageScrubber.scrub(nullAttributes, Json.createObjectNode()));
+    MessageScrubber.scrub(nullAttributes, Json.createObjectNode());
 
     Map<String, String> gleanAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
