@@ -234,10 +234,11 @@ public class MessageScrubber {
       throw new UnwantedDataException("1592010");
     }
 
-    // Glean enforces a particular user-agent string that a rogue fuzzer is not abiding by
+    // Up to the v0.13 Glean enforces a particular user-agent string that a rogue fuzzer is not abiding by
     // https://searchfox.org/mozilla-central/source/third_party/rust/glean-core/src/upload/request.rs#35,72-75
+    // Glean stopped submitting user-agent after v0.13, therefore here we also accept an empty one
     if ("firefox-desktop".equals(namespace)
-        && (userAgent == null || !userAgent.startsWith("Glean"))) {
+        && (userAgent != null && !userAgent.startsWith("Glean"))) {
       throw new UnwantedDataException("1684980");
     }
 
