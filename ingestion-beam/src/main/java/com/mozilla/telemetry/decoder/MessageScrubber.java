@@ -178,8 +178,9 @@ public class MessageScrubber {
     final String appVersion = attributes.get(Attribute.APP_VERSION);
     final String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
     final String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
-    // NOTE: this value may be null
+    // NOTE: these values may be null
     final String userAgent = attributes.get(Attribute.USER_AGENT);
+    final String xTelemetryAgent = attributes.get(Attribute.X_TELEMETRY_AGENT);
 
     // Check for toxic data that should be dropped without sending to error output.
     if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
@@ -237,12 +238,15 @@ public class MessageScrubber {
     // Up to the v0.13 Glean enforces a particular user-agent string
     // that a rogue fuzzer is not abiding by
     // https://searchfox.org/mozilla-central/source/third_party/rust/glean-core/src/upload/request.rs#35,72-75
-    // The Glean SDK stopped submitting an user-agent after v44.0.0,
-    // therefore here we also accept an empty one
+    // The Glean SDK stopped submitting a special user-agent after v44.0.0, sending that value
+    // in the X-Telemetry-Agent header instead. We require one of the two to be valid;
     // see https://bugzilla.mozilla.org/show_bug.cgi?id=1766424
-    if ("firefox-desktop".equals(namespace)
-        && (userAgent != null && !userAgent.startsWith("Glean"))) {
-      throw new UnwantedDataException("1684980");
+    if ("firefox-desktop".equals(namespace)) {
+      boolean isValidGleanAgentOldStyle = Strings.nullToEmpty(userAgent).startsWith("Glean");
+      boolean isValidGleanAgentNewStyle = Strings.nullToEmpty(xTelemetryAgent).startsWith("Glean");
+      if (!isValidGleanAgentOldStyle && !isValidGleanAgentNewStyle) {
+        throw new UnwantedDataException("1684980");
+      }
     }
 
     // Check for other signatures that we want to send to error output, but which should appear

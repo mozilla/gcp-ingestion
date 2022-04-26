@@ -692,10 +692,11 @@ public class MessageScrubberTest {
             "Mozilla/5.0 (Windows NT 10.0; rv:78.0) Gecko/20100101 Firefox/78.0")
         .build();
 
+    // Has valid browser user agent, but no X-Telemetry-Agent
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(mozAttributes, Json.createObjectNode()));
 
-    // empty agent strings are also scrubbed
+    // Has neither old-style nor new-style Glean agent string
     Map<String, String> emptyAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
         .put(Attribute.USER_AGENT, "") //
@@ -704,13 +705,15 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class,
         () -> MessageScrubber.scrub(emptyAttributes, Json.createObjectNode()));
 
-    // missing agent strings are allowed, see https://bugzilla.mozilla.org/show_bug.cgi?id=1766424
+    // Has valid new-style Glean agent header
     Map<String, String> nullAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
+        .put(Attribute.X_TELEMETRY_AGENT, "Glean/44.1.1 (Rust on Linux)") //
         .build();
 
     MessageScrubber.scrub(nullAttributes, Json.createObjectNode());
 
+    // Has valid old-style Glean value for user agent
     Map<String, String> gleanAttributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop") //
         .put(Attribute.USER_AGENT, "Glean/33.9.1 (Rust on Windows)") //
