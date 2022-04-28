@@ -87,6 +87,13 @@ public class VerifyMetadata extends
             }
           }
 
+          // Filter out a specific signature associated with fraud in the past;
+          // see https://mozilla-hub.atlassian.net/browse/CONSVC-1764
+          if ("topsites-click".equals(doctype) && "IN".equals(attributes.get(Attribute.GEO_COUNTRY))
+              && "Infonet Comm Enterprises".equals(attributes.get(Attribute.ISP_NAME))) {
+            throw new RejectedMessageException("Matches heuristic from CONSVC-1764");
+          }
+
           return message;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
             .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
