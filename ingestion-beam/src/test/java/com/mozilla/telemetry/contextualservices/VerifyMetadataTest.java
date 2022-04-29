@@ -182,6 +182,51 @@ public class VerifyMetadataTest {
   }
 
   @Test
+  public void testRejectIspCountry() {
+    Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
+        Attribute.CLIENT_COMPRESSION, "gzip", //
+        Attribute.USER_AGENT_BROWSER, "Firefox", //
+        Attribute.USER_AGENT_VERSION, "90");
+
+    Map<String, String> shouldThrow = ImmutableMap.<String, String>builder().putAll(baseAttributes)
+        .put(Attribute.GEO_COUNTRY, "IN").put(Attribute.ISP_NAME, "Infonet Comm Enterprises")
+        .build();
+    Map<String, String> validIsp = ImmutableMap.<String, String>builder().putAll(baseAttributes)
+        .put(Attribute.GEO_COUNTRY, "IN").put(Attribute.ISP_NAME, "Other ISP").build();
+    Map<String, String> validCountry = ImmutableMap.<String, String>builder().putAll(baseAttributes)
+        .put(Attribute.GEO_COUNTRY, "US").put(Attribute.ISP_NAME, "Infonet Comm Enterprises")
+        .build();
+
+    final List<PubsubMessage> input = Arrays.asList(
+        new PubsubMessage(new byte[] {}, baseAttributes),
+        new PubsubMessage(new byte[] {}, shouldThrow), new PubsubMessage(new byte[] {}, validIsp),
+        new PubsubMessage(new byte[] {}, validCountry));
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(VerifyMetadata.of());
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+      PubsubMessage message = Iterables.get(messages, 0);
+
+      String errorMessage = message.getAttribute("error_message");
+      Assert.assertTrue(errorMessage.contains(RejectedMessageException.class.getCanonicalName()));
+      Assert.assertTrue(errorMessage.contains("CONSVC-1764"));
+
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(messages -> {
+      Assert.assertEquals(3, Iterables.size(messages));
+      return null;
+    });
+
+    pipeline.run();
+  }
+
+  @Test
   public void testPassNonDesktop() {
     // Build list of messages with different doctype/version combinations
     final List<PubsubMessage> input = Streams
