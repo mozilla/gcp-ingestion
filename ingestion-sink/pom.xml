@@ -47,15 +47,9 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
-                <version>25.1.0</version>
+                <version>25.2.0</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <!-- explicitly version PubSub Lite until it is included in libraries-bom. -->
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-pubsublite</artifactId>
-                <version>1.5.3</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
