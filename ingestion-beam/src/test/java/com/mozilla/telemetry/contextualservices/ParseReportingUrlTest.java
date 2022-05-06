@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
@@ -159,6 +160,41 @@ public class ParseReportingUrlTest {
 
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder())).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
+      return null;
+    });
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testSuggestOnlineScenarioFilter() {
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "quicksuggest-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+        Attribute.USER_AGENT_OS, "Windows", Attribute.REPORTING_URL,
+        "https://moz.impression.com/?param=1&id=a");
+
+    ObjectNode basePayload = Json.createObjectNode();
+    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    basePayload.put(Attribute.VERSION, "87.0");
+
+    List<PubsubMessage> input = Stream.of("online", "offline", "")
+        .map(scenario -> basePayload.deepCopy().put("scenario", scenario))
+        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
+        .collect(Collectors.toList());
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that(result.failures()).satisfies(messagesIter -> {
+      ArrayList<PubsubMessage> messages = Lists.newArrayList(messagesIter.iterator());
+      Assert.assertEquals(2, messages.size());
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(messagesIter -> {
+      ArrayList<SponsoredInteraction> messages = Lists.newArrayList(messagesIter.iterator());
+      Assert.assertEquals(1, messages.size());
       return null;
     });
 
