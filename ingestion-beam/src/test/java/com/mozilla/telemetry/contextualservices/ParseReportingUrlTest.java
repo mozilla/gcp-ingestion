@@ -170,12 +170,13 @@ public class ParseReportingUrlTest {
   public void testSuggestOnlineScenarioFilter() {
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
         "quicksuggest-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-        Attribute.USER_AGENT_OS, "Windows", Attribute.REPORTING_URL,
-        "https://moz.impression.com/?param=1&id=a");
+        Attribute.USER_AGENT_OS, "Windows");
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
     basePayload.put(Attribute.VERSION, "87.0");
+    basePayload.put(Attribute.REPORTING_URL,
+        "https://moz.impression.com/?partner=1&custom-data=foo&sub1=bar&sub2=baz&adv-id=eggs&v=5");
 
     List<PubsubMessage> input = Stream.of("online", "offline", "")
         .map(scenario -> basePayload.deepCopy().put("scenario", scenario))
