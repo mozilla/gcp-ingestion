@@ -58,6 +58,15 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>google-cloud-pubsub</artifactId>
+                <!-- Versions 1.116.0 to 1.116.4 (at least) produce the following error in stage and
+                  prod, likely from calling ModifyAckDeadline with too many ack ids at once:
+                  com.google.api.gax.rpc.InvalidArgumentException: io.grpc.StatusRuntimeException:
+                  INVALID_ARGUMENT: Request payload size exceeds the limit: 524288 bytes. -->
+                <version>1.115.5</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
