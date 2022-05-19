@@ -65,7 +65,7 @@
                   likely from calling ModifyAckDeadline with too many ack ids at once:
                   com.google.api.gax.rpc.InvalidArgumentException: io.grpc.StatusRuntimeException:
                   INVALID_ARGUMENT: Request payload size exceeds the limit: 524288 bytes. -->
-                <version>1.115.5</version>
+                <version>1.118.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
