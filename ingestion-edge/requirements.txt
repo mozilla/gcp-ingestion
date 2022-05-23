@@ -472,9 +472,9 @@ pep517==0.10.0 \
     --hash=sha256:ac59f3f6b9726a49e15a649474539442cf76e0697e39df4869d25e68e880931b \
     --hash=sha256:eba39d201ef937584ad3343df3581069085bacc95454c80188291d5b3ac7a249
     # via pip-tools
-persist-queue==0.7.0 \
-    --hash=sha256:2571f1c235daf5ebda7bd826de010cc1a867fc14ae6c223f86199f3a0c96c09c \
-    --hash=sha256:e85452d204536fdfc707a72290008dca376b636088a9d5de5eab52cdfde06142
+persist-queue==0.8.0 \
+    --hash=sha256:bdaa4dcfc4b20a9ce1f5cb6da3116b6cb8fe37527d991fd242856ef2cccd218e \
+    --hash=sha256:d0ce1798b457fc233973efe7c262eb5e80642bebe0c05abbe5611ee223511d5f
     # via -r requirements.in
 pip-tools==6.6.1 \
     --hash=sha256:48a26382c8477adf2cca8b9128093f4778fdadaade74bfaab0832d53d9cb256a \
