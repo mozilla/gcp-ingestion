@@ -23,6 +23,7 @@ import com.google.pubsub.v1.Subscription;
 import io.grpc.ManagedChannelBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -67,15 +68,18 @@ public class PubsubTopics extends TestWatcher {
   /**
    * Publish a {@link PubsubMessage} to the topic indicated by {@code index}.
    */
-  public String publish(int index, PubsubMessage message) {
+  public List<String> publish(int index, PubsubMessage... messages) {
     Publisher publisher = publishers.get(index);
-    ApiFuture<String> future = publisher.publish(message);
+    List<ApiFuture<String>> futures = Arrays.stream(messages).map(publisher::publish)
+        .collect(Collectors.toList());
     publisher.publishAllOutstanding();
-    try {
-      return future.get();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return futures.stream().map(future -> {
+      try {
+        return future.get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }).collect(Collectors.toList());
   }
 
   /**
