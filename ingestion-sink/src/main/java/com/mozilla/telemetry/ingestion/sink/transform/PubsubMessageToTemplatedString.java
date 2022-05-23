@@ -20,7 +20,7 @@ import org.apache.commons.text.StringSubstitutor;
  * <p>All message attributes, plus derived attributes provided by {@link DerivedAttributesMap},
  * are available for substitution.
  *
- * @throws IllegalArgumentException if template is not fully resolved for a given message.
+ * <p>Throws IllegalArgumentException if template is not fully resolved for a given message.
  */
 public class PubsubMessageToTemplatedString implements Function<PubsubMessage, String> {
 

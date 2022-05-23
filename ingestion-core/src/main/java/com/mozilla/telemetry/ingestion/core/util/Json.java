@@ -57,7 +57,7 @@ public class Json {
   /**
    * Serialize {@code data} as a {@link String}.
    *
-   * @exception IOException if data cannot be encoded as json.
+   * @throws JsonProcessingException if data cannot be encoded as json.
    */
   public static String asString(Object data) throws JsonProcessingException {
     return MAPPER.writeValueAsString(data);
@@ -80,7 +80,7 @@ public class Json {
   /**
    * Serialize {@code data} as a {@code byte[]}.
    *
-   * @exception IOException if data cannot be encoded as json.
+   * @throws JsonProcessingException if data cannot be encoded as json.
    */
   public static byte[] asBytes(Object data) throws JsonProcessingException {
     return MAPPER.writeValueAsBytes(data);
@@ -127,7 +127,7 @@ public class Json {
    * <p>{@link Schema} does not natively support Jackson deserialization, so we rely on a
    * roundabout method inspired by https://github.com/googleapis/google-cloud-java/issues/2753.
    *
-   * @exception IOException if {@code data} does not contain a valid {@link Schema}.
+   * @throws IOException if {@code data} does not contain a valid {@link Schema}.
    */
   public static Schema readBigQuerySchema(byte[] data) throws IOException {
     List<TableFieldSchema> fieldsList = (List<TableFieldSchema>) JSON_FACTORY //
@@ -145,7 +145,7 @@ public class Json {
   /**
    * Read an instance of {@code klass} from a byte array.
    *
-   * @exception IOException if {@code data} does not contain a valid json object.
+   * @throws IOException if {@code data} does not contain a valid json object.
    */
   public static <T> T readValue(byte[] data, Class<T> klass) throws IOException {
     return MAPPER.treeToValue(readObjectNode(data), klass);
@@ -154,7 +154,7 @@ public class Json {
   /**
    * Read bytes into a tree of {@link com.fasterxml.jackson.databind.JsonNode}.
    *
-   * @exception IOException if {@code data} does not contain a valid json object.
+   * @throws IOException if {@code data} does not contain a valid json object.
    */
   public static ObjectNode readObjectNode(byte[] data) throws IOException {
     // Read data into a tree
@@ -173,7 +173,7 @@ public class Json {
   /**
    * Read bytes into an {@link ArrayNode}.
    *
-   * @exception IOException if {@code data} does not contain a valid json object.
+   * @throws IOException if {@code data} does not contain a valid json object.
    */
   public static ArrayNode readArrayNode(byte[] data) throws IOException {
     // Read data into a tree
@@ -188,7 +188,7 @@ public class Json {
   /**
    * Read String into a {@code Map<String, ?>}.
    *
-   * @exception IOException if {@code data} does not contain a valid json object.
+   * @throws IOException if {@code data} does not contain a valid json object.
    */
   public static Map<String, Object> readMap(String data) throws IOException {
     return asMap(readObjectNode(data.getBytes(StandardCharsets.UTF_8)));
