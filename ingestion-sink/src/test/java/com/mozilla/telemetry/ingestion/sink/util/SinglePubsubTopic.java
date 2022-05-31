@@ -20,8 +20,8 @@ public class SinglePubsubTopic extends PubsubTopics {
     return getTopic(0);
   }
 
-  public String publish(PubsubMessage message) {
-    return publish(0, message);
+  public List<String> publish(PubsubMessage... messages) {
+    return publish(0, messages);
   }
 
   public List<PubsubMessage> pull(int maxMessages, boolean returnImmediately) {

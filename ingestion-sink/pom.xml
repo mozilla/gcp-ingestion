@@ -43,6 +43,15 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Override libraries-bom to use pubsub >= 1.118.0 which fixes:
+                 https://github.com/googleapis/java-pubsub/issues/1126 -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>google-cloud-pubsub-bom</artifactId>
+                <version>1.118.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <!-- Use updated version of libraries-bom incompatible with Beam. -->
             <dependency>
                 <groupId>com.google.cloud</groupId>
@@ -57,15 +66,6 @@
                 <version>${log4j.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-pubsub</artifactId>
-                <!-- Versions 1.116.0 to 1.117.0 (at least) produce the following error under load,
-                  likely from calling ModifyAckDeadline with too many ack ids at once:
-                  com.google.api.gax.rpc.InvalidArgumentException: io.grpc.StatusRuntimeException:
-                  INVALID_ARGUMENT: Request payload size exceeds the limit: 524288 bytes. -->
-                <version>1.115.5</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -129,7 +129,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.5.1</version>
+            <version>4.6.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
