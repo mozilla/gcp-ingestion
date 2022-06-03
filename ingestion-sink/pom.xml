@@ -43,20 +43,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Override libraries-bom to use pubsub >= 1.118.0 which fixes:
-                 https://github.com/googleapis/java-pubsub/issues/1126 -->
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-pubsub-bom</artifactId>
-                <version>1.119.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
             <!-- Use updated version of libraries-bom incompatible with Beam. -->
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
-                <version>25.3.0</version>
+                <version>25.4.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
