@@ -374,15 +374,24 @@ public class ParseReportingUrl extends
   private String extractReportingUrl(ObjectNode payload) {
     if (!payload.path(Attribute.REPORTING_URL).isMissingNode()) {
       return payload.path(Attribute.REPORTING_URL).asText();
+    } else if (!payload.path("metrics").path("url").path("top_sites.contile_reporting_url")
+        .isMissingNode()) {
+      return payload.path("metrics").path("url").path("top_sites.contile_reporting_url").asText();
+    } else {
+      // iOS instrumentation named this metric category as "top_site" rather than "top_sites".
+      return payload.path("metrics").path("url").path("top_site.contile_reporting_url").asText();
     }
-    return payload.path("metrics").path("url").path("top_sites.contile_reporting_url").asText();
   }
 
   private String extractContextId(ObjectNode payload) {
     if (!payload.path(Attribute.CONTEXT_ID).isMissingNode()) {
       return payload.path(Attribute.CONTEXT_ID).asText();
+    } else if (!payload.path("metrics").path("uuid").path("top_sites.context_id").isMissingNode()) {
+      return payload.path("metrics").path("uuid").path("top_sites.context_id").asText();
+    } else {
+      // iOS instrumentation named this metric category as "top_site" rather than "top_sites".
+      return payload.path("metrics").path("uuid").path("top_site.context_id").asText();
     }
-    return payload.path("metrics").path("uuid").path("top_sites.context_id").asText();
   }
 
   @VisibleForTesting
