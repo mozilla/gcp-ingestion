@@ -24,7 +24,6 @@ import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -362,7 +361,7 @@ public class ParseReportingUrlTest {
     pipeline.run();
   }
 
-  @Ignore("Currently fails due to separate issue with user agent parsing")
+  // @Ignore("Currently fails due to separate issue with user agent parsing")
   @Test
   public void testGleanPingAlternateCategoryName() {
 
@@ -386,7 +385,7 @@ public class ParseReportingUrlTest {
     basePayload.set("metrics", metricsObject);
 
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
-        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-ios-firefox", Attribute.USER_AGENT_OS, "iOS");
+        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-ios-firefox");
     List<PubsubMessage> input = Stream.of(basePayload)
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
         .collect(Collectors.toList());
@@ -428,7 +427,7 @@ public class ParseReportingUrlTest {
           Assert.assertTrue("contains region code",
               reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
           Assert.assertTrue("contains os family", reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "Android")));
+              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "iOS")));
           Assert.assertTrue("contains country code", reportingUrl
               .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
           Assert.assertTrue("contains form factor", reportingUrl
