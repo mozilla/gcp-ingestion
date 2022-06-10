@@ -227,8 +227,15 @@ public class ParseReportingUrl extends
 
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_REGION_CODE,
                 attributes.get(Attribute.GEO_SUBDIVISION1));
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY,
-                getOsParam(attributes.get(Attribute.USER_AGENT_OS)));
+            final String osParam;
+            if (namespace.contains("-ios")) {
+              // We currently get null values for parsed OS from user agent on Apple devices,
+              // so we include this as a special case based on document namespace.
+              osParam = "iOS";
+            } else {
+              osParam = getOsParam(attributes.get(Attribute.USER_AGENT_OS));
+            }
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY, osParam);
             urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR,
                 interaction.getFormFactor());
 
