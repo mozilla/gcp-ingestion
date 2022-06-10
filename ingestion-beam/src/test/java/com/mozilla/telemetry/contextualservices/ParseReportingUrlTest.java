@@ -24,6 +24,7 @@ import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -304,6 +305,88 @@ public class ParseReportingUrlTest {
 
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
         Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix", Attribute.USER_AGENT_OS, "Android");
+    List<PubsubMessage> input = Stream.of(basePayload)
+        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
+        .collect(Collectors.toList());
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that("There are zero failures in the pipeline", result.failures())
+        .satisfies(messages -> {
+          Assert.assertEquals(0, Iterators.size(messages.iterator()));
+          return null;
+        });
+
+    PAssert.that("There is one result in the output and it matches expectations", result.output())
+        .satisfies(sponsoredInteractions -> {
+
+          List<SponsoredInteraction> payloads = new ArrayList<>();
+          sponsoredInteractions.forEach(payloads::add);
+
+          Assert.assertEquals("1 interaction in output", 1, payloads.size());
+
+          SponsoredInteraction interaction = payloads.get(0);
+          String reportingUrl = interaction.getReportingUrl();
+
+          Assert.assertEquals("expect a click interactionType",
+              SponsoredInteraction.INTERACTION_CLICK, interaction.getInteractionType());
+
+          Assert.assertEquals("expect a topsites source", SponsoredInteraction.SOURCE_TOPSITES,
+              interaction.getSource());
+
+          Assert.assertEquals("expect a context-id to match", contextId,
+              interaction.getContextId());
+
+          Assert.assertTrue("reportingUrl starts with test.com",
+              reportingUrl.startsWith("https://test.com"));
+          Assert.assertTrue("contains param1", reportingUrl.contains("param=1"));
+          Assert.assertTrue("contains id=foo", reportingUrl.contains("id=foo"));
+          Assert.assertTrue("contains region code",
+              reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
+          Assert.assertTrue("contains os family", reportingUrl
+              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "Android")));
+          Assert.assertTrue("contains country code", reportingUrl
+              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
+          Assert.assertTrue("contains form factor", reportingUrl
+              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "phone")));
+          Assert.assertTrue("contains dma code",
+              reportingUrl.contains(String.format("%s=&", ParsedReportingUrl.PARAM_DMA_CODE))
+                  || reportingUrl
+                      .endsWith(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  @Ignore("Currently fails due to separate issue with user agent parsing")
+  @Test
+  public void testGleanPingAlternateCategoryName() {
+
+    ObjectNode basePayload = Json.createObjectNode();
+    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    basePayload.put(Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
+
+    ObjectNode eventObject = Json.createObjectNode();
+    // On iOS, the category was implemented as "top_site" rather than "top_sites".
+    eventObject.put("category", "top_site");
+    eventObject.put("name", "contile_click");
+    eventObject.put("timestamp", "0");
+    basePayload.putArray("events").add(eventObject);
+
+    String expectedReportingUrl = "https://test.com/?id=foo&param=1&ctag=1&version=1&key=2&ci=4";
+    String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
+    ObjectNode metricsObject = Json.createObjectNode();
+    metricsObject.putObject("url").put("top_site.contile_reporting_url", expectedReportingUrl);
+    metricsObject.putObject("uuid").put("top_site.context_id", contextId);
+
+    basePayload.set("metrics", metricsObject);
+
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-ios-firefox", Attribute.USER_AGENT_OS, "iOS");
     List<PubsubMessage> input = Stream.of(basePayload)
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
         .collect(Collectors.toList());
