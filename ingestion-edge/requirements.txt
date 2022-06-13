@@ -291,9 +291,9 @@ google-cloud-container==2.10.8 \
     --hash=sha256:710e70140c20a93d8d4fe8d37ec835df003b38eabc6e4fd0211888b0ad99c89d \
     --hash=sha256:b38f5126e362a5103f323c050c0e67278e6220dc34a2778fca6c09a1a18ab23b
     # via -r requirements.in
-google-cloud-monitoring==2.9.1 \
-    --hash=sha256:16807a4860eb5431c6eb459e5a61b07d56d2c2deb176af5d6b64304a29292255 \
-    --hash=sha256:600c731aae5eed56299855807e8b3b6b6c877216eb724ccf35f2f3e1741c7022
+google-cloud-monitoring==2.9.2 \
+    --hash=sha256:78f246101ce8e655c19c20ccb9940f56853d813e327c3b3c619079d31e316fdd \
+    --hash=sha256:92488f60b772250a0a5299bc83c9cc3961ab5cf6d9acf8ee884f718210908fc5
     # via -r requirements.in
 google-cloud-pubsub==1.0.2 \
     --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
@@ -519,6 +519,7 @@ protobuf==3.20.1 \
     # via
     #   google-api-core
     #   google-cloud-container
+    #   google-cloud-monitoring
     #   googleapis-common-protos
     #   proto-plus
 psutil==5.9.1 \
