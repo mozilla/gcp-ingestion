@@ -12,15 +12,14 @@ The input of this job is all `contextual-services` namespace messages for deskto
 ## Data flows for Contextual Services
 
 Note that in addition to this near real-time Dataflow job, we have several batch workflows
-for preparing Contextual Services data for both internal analytics use and for sending to
+for preparing Contextual Services data for both internal analytic use and for sending to
 external partners.
 
-Search terms handling starts with [log routing configuration in cloudops-infra](https://github.com/mozilla-services/cloudops-infra/blob/master/projects/merino/tf/modules/log-routing/main.tf) (Mozilla internal)
+Search terms handling starts with [log routing configuration in `cloudops-infra`](https://github.com/mozilla-services/cloudops-infra/blob/master/projects/merino/tf/modules/log-routing/main.tf) (Mozilla internal)
 and then proceeds with a series of nightly scheduled queries defined under [`search_terms_derived`](https://github.com/mozilla/bigquery-etl/tree/main/sql/moz-fx-data-shared-prod/search_terms_derived) in `bigquery-etl`.
 Additional aggregations for clicks and impressions are defined under [`contextual_services_derived`](https://github.com/mozilla/bigquery-etl/tree/main/sql/moz-fx-data-shared-prod/contextual_services_derived) in `bigquery-etl`.
 
 Some daily aggregate data is shared with an external partner via the [`adm_export`](https://github.com/mozilla/telemetry-airflow/blob/main/dags/adm_export.py) DAG defined in `telemetry-airflow`.
-
 
 ## Beam Pipeline Transforms
 
