@@ -13,7 +13,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.4">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.5">
     
     
       
@@ -674,6 +674,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#data-flows-for-contextual-services" class="md-nav__link">
+    Data flows for Contextual Services
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#beam-pipeline-transforms" class="md-nav__link">
     Beam Pipeline Transforms
   </a>
@@ -930,6 +937,13 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#data-flows-for-contextual-services" class="md-nav__link">
+    Data flows for Contextual Services
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#beam-pipeline-transforms" class="md-nav__link">
     Beam Pipeline Transforms
   </a>
@@ -1043,13 +1057,21 @@ to an external partner, with a particular eye towards minimizing the scope of co
 that is shared. For more context, see the
 <a href="https://blog.mozilla.org/data/2021/09/15/data-and-firefox-suggest/">Data and Firefox Suggest blog post</a>.</p>
 <p>The code is defined in the <a href="https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java"><code>com.mozilla.telemetry.ContextualServicesReporter</code></a> class.</p>
-<p>The input of this job is all <code>contextual-services</code> namespace messages, which includes <code>topsites-impression</code>, <code>topsites-click</code>, <code>quicksuggest-impression</code>, and <code>quicksuggest-click</code>.</p>
+<p>The input of this job is all <code>contextual-services</code> namespace messages for desktop Firefox, which includes <code>topsites-impression</code>, <code>topsites-click</code>, <code>quicksuggest-impression</code>, and <code>quicksuggest-click</code>. It also includes <code>topsites-impression</code> pings from various mobile applications.</p>
+<h2 id="data-flows-for-contextual-services">Data flows for Contextual Services</h2>
+<p>Note that in addition to this near real-time Dataflow job, we have several batch workflows
+for preparing Contextual Services data for both internal analytic use and for sending to
+external partners.</p>
+<p>Search terms handling starts with <a href="https://github.com/mozilla-services/cloudops-infra/blob/master/projects/merino/tf/modules/log-routing/main.tf">log routing configuration in <code>cloudops-infra</code></a> (Mozilla internal)
+and then proceeds with a series of nightly scheduled queries defined under <a href="https://github.com/mozilla/bigquery-etl/tree/main/sql/moz-fx-data-shared-prod/search_terms_derived"><code>search_terms_derived</code></a> in <code>bigquery-etl</code>.
+Additional aggregations for clicks and impressions are defined under <a href="https://github.com/mozilla/bigquery-etl/tree/main/sql/moz-fx-data-shared-prod/contextual_services_derived"><code>contextual_services_derived</code></a> in <code>bigquery-etl</code>.</p>
+<p>Some daily aggregate data is shared with an external partner via the <a href="https://github.com/mozilla/telemetry-airflow/blob/main/dags/adm_export.py"><code>adm_export</code></a> DAG defined in <code>telemetry-airflow</code>.</p>
 <h2 id="beam-pipeline-transforms">Beam Pipeline Transforms</h2>
 <p>The following diagram shows the steps in the Beam pipeline. This is up to date as of 2021-08-23.</p>
 <p><img alt="diagrams/ctxt-sender.mmd" src="../../diagrams/ctxt-sender.svg" />
 <strong>Figure</strong>: <em>An overview of the execution graph for the <code>ContextualServicesReporter</code>.</em></p>
 <h3 id="pubsub-republished-topic">Pub/Sub republished topic</h3>
-<p>The input to this job is the subset of decoded messages in the <code>contextual-services</code> namespace.</p>
+<p>The input to this job is the subset of decoded messages in the <code>contextual-services</code> namespace as well as <code>topsites-impression</code> pings from various namespaces associated with mobile applications sending telemetry via Glean.</p>
 <h3 id="filterbydoctype"><code>FilterByDoctype</code></h3>
 <p>This step filters out document types based on the <code>document_type</code> attribute using the <code>--allowedDocTypes</code> pipeline option. For example, this can be used to allow the job to process only sponsored tiles or only Suggest events, or only clicks or only impressions.</p>
 <h3 id="verifymetadata"><code>VerifyMetadata</code></h3>
@@ -1181,7 +1203,7 @@ mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.ContextualServicesR
     <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.expand"], "search": "../../assets/javascripts/workers/search.85cb4492.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f758a944.min.js"></script>
+      <script src="../../assets/javascripts/bundle.431f3d41.min.js"></script>
       
     
   </body>
