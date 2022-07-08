@@ -243,15 +243,6 @@ public class ParseReportingUrl extends
                 message.getAttribute(Attribute.GEO_DMA_CODE));
           }
 
-          // Specific validation for quicksuggest
-          if (SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-            // See https://mozilla-hub.atlassian.net/browse/CONSVC-1777
-            if (!"online".equals(payload.path("scenario").asText())) {
-              throw new RejectedMessageException(
-                  "We send quicksuggest pings only for the online scenario");
-            }
-          }
-
           // We only add these dimensions for topsites clicks, not quicksuggest per
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
           // We are also limiting this to desktop.

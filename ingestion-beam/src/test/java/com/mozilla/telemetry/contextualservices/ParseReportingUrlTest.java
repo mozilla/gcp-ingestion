@@ -167,42 +167,6 @@ public class ParseReportingUrlTest {
   }
 
   @Test
-  public void testSuggestOnlineScenarioFilter() {
-    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
-        "quicksuggest-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-        Attribute.USER_AGENT_OS, "Windows");
-
-    ObjectNode basePayload = Json.createObjectNode();
-    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
-    basePayload.put(Attribute.VERSION, "87.0");
-    basePayload.put(Attribute.REPORTING_URL,
-        "https://moz.impression.com/?partner=1&custom-data=foo&sub1=bar&sub2=baz&adv-id=eggs&v=5");
-
-    List<PubsubMessage> input = Stream.of("online", "offline", "")
-        .map(scenario -> basePayload.deepCopy().put("scenario", scenario))
-        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
-        .collect(Collectors.toList());
-
-    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
-        .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
-
-    PAssert.that(result.failures()).satisfies(messagesIter -> {
-      ArrayList<PubsubMessage> messages = Lists.newArrayList(messagesIter.iterator());
-      Assert.assertEquals(2, messages.size());
-      return null;
-    });
-
-    PAssert.that(result.output()).satisfies(messagesIter -> {
-      ArrayList<SponsoredInteraction> messages = Lists.newArrayList(messagesIter.iterator());
-      Assert.assertEquals(1, messages.size());
-      return null;
-    });
-
-    pipeline.run();
-  }
-
-  @Test
   public void testDmaCode() {
     ObjectNode inputPayload = Json.createObjectNode();
     inputPayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
