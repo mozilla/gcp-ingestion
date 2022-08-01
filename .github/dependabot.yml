@@ -10,7 +10,7 @@ updates:
     interval: daily
   reviewers:
   - relud
-  - jklukas
+  - quiiver
   labels:
   - dependencies
   - java
