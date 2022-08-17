@@ -134,8 +134,8 @@ public class MessageScrubber {
       // Longer-term, they will be available in RemoteSettings at:
       // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
       // Bing
-      "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZM", "MOZO", "MOZT",
-      "MOZW", "MOZSL01", "MOZSL02", "MOZSL03",
+      "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZL", "MOZM", "MOZO",
+      "MOZR", "MOZT", "MOZW", "MOZSL01", "MOZSL02", "MOZSL03",
       // Google
       "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
       "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
