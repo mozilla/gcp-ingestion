@@ -145,7 +145,7 @@ public class MessageScrubber {
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "newext",
-      // Yahoo
+      // Baidu
       "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
   // End copied desktop codes.
   );
