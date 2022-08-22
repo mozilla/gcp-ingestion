@@ -128,7 +128,7 @@ public class MessageScrubber {
       // Additional DDG-specific codes; ideally these would be marked as "none" for organic,
       // but to avoid additional pipeline complexity, we add them as allowed codes here;
       // see bug 1752239.
-      "hz", "h_",
+      "ha", "hs", "hz", "h_",
       // Values below are pulled from search-telemetry-v2.json as defined in
       // https://phabricator.services.mozilla.com/D136768
       // Longer-term, they will be available in RemoteSettings at:
@@ -145,7 +145,7 @@ public class MessageScrubber {
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "newext",
-      // Yahoo
+      // Baidu
       "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
   // End copied desktop codes.
   );
