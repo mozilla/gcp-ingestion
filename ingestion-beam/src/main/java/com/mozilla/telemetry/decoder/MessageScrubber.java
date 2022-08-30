@@ -90,6 +90,7 @@ public class MessageScrubber {
       .put("com-you-browser", "1767077") //
       .put("org-giveasyoulive-donationreminder", "1767078") //
       .put("org-mozilla-firefrd", "1777636") //
+      .put("org-mozilla-firefox-betc", "1786344") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
