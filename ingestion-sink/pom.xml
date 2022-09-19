@@ -86,7 +86,7 @@
         <dependency>
             <!-- Use log4j implementation of slf4j -->
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j18-impl</artifactId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
         </dependency>
         <dependency>
             <!-- Runtime dependency for log4j yaml config support
