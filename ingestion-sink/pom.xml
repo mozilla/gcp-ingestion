@@ -89,6 +89,12 @@
             <artifactId>log4j-slf4j2-impl</artifactId>
         </dependency>
         <dependency>
+            <!-- workaround https://issues.apache.org/jira/browse/LOG4J2-3601 -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <!-- Runtime dependency for log4j yaml config support
                  https://logging.apache.org/log4j/2.x/runtime-dependencies.html#log4j-core -->
             <groupId>com.fasterxml.jackson.dataformat</groupId>
