@@ -14,7 +14,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <log4j.version>2.18.0</log4j.version>
+        <log4j.version>2.19.0</log4j.version>
         <opencensus.version>0.31.1</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
@@ -86,7 +86,13 @@
         <dependency>
             <!-- Use log4j implementation of slf4j -->
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j18-impl</artifactId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+        </dependency>
+        <dependency>
+            <!-- workaround https://issues.apache.org/jira/browse/LOG4J2-3601 -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <!-- Runtime dependency for log4j yaml config support
