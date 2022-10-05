@@ -636,9 +636,9 @@ pytest-mock==3.8.2 \
     --hash=sha256:77f03f4554392558700295e05aed0b1096a20d4a60a4f3ddcde58b0c31c8fca2 \
     --hash=sha256:8a9e226d6c0ef09fcf20c94eb3405c388af438a90f3e39687f84166da82d5948
     # via -r requirements.in
-pytest-mypy==0.9.1 \
-    --hash=sha256:9ffa3bf405c12c5c6be9e92e22bebb6ab2c91b9c32f45b0f0c93af473269ab5c \
-    --hash=sha256:a2505fcf61f1c0c51f950d4623ea8ca2daf6fb2101a5603554bad2e130202083
+pytest-mypy==0.10.0 \
+    --hash=sha256:83843dce75a7ce055efb264ff40dad2ecf7abd4e7bd5e5eda015261d11616abb \
+    --hash=sha256:e74d632685f15a39c31c551a9d8cec4619e24bd396245a6335c5db0ec6d17b6f
     # via -r requirements.in
 pytest-pydocstyle==2.3.0 \
     --hash=sha256:1f2d937349cfeb4965c530a0c0f2442b48c03299558db435b65549719510d32b

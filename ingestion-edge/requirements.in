@@ -13,7 +13,7 @@ pytest-cov==3.0.0
 pytest-env==0.6.2
 pytest-flake8==1.1.1
 pytest-mock==3.8.2
-pytest-mypy==0.9.1
+pytest-mypy==0.10.0
 pytest-pydocstyle==2.3.0
 pytest-sanic==1.7.1
 pytest-timeout==2.1.0
