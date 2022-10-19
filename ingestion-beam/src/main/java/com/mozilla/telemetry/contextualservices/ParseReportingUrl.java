@@ -116,6 +116,7 @@ public class ParseReportingUrl extends
           interactionBuilder.setSubmissionTimestamp(submissionTimestamp);
           interactionBuilder.setOriginalNamespace(namespace);
           interactionBuilder.setOriginalDocType(docType);
+          interactionBuilder.setScenario(this.parseScenario(payload).orElse(null));
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
@@ -269,6 +270,19 @@ public class ParseReportingUrl extends
             }
           }
 
+          // If we're on desktop and quicksuggest then add the attribution source (data sharing
+          // preference) to the `custom-data` query param
+          // https://mozilla-hub.atlassian.net/browse/DENG-392
+          if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
+              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
+
+            String customDataParam = urlParser.getQueryParam(ParsedReportingUrl.PARAM_CUSTOM_DATA);
+            urlParser.addQueryParam(ParsedReportingUrl.PARAM_CUSTOM_DATA,
+                Optional.ofNullable(interaction.getScenario())
+                    .map((pref) -> String.format("%s_%s", customDataParam, pref))
+                    .orElse(customDataParam));
+          }
+
           reportingUrl = urlParser.toString();
           PerDocTypeCounter.inc(attributes, "valid_url");
           return interaction.toBuilder().setReportingUrl(reportingUrl).build();
@@ -367,6 +381,12 @@ public class ParseReportingUrl extends
     } catch (IOException e) {
       throw new IOException("Exception thrown while fetching " + paramName, e);
     }
+  }
+
+  private Optional<String> parseScenario(ObjectNode payload) {
+    return Optional.of(payload.path(Attribute.IMPROVE_SUGGEST_EXPERIENCE))
+        .filter(node -> !node.isMissingNode())
+        .map(node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
   }
 
   private String extractReportingUrl(ObjectNode payload) {

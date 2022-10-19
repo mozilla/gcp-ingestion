@@ -245,6 +245,77 @@ public class ParseReportingUrlTest {
   }
 
   @Test
+  public void testCustomDataParam() {
+    String clickUrl = "https://test.com?v=a&adv-id=1&ctag=1&partner=1&version=1&sub2=1&sub1=1&ci"
+        + "=1&custom-data=1";
+    String impressionUrl = "https://test.com?v=a&id=a&adv-id=1&ctag=1&partner=1&version=1&sub2=1"
+        + "&sub1=1&ci=1&custom-data=1";
+    ObjectNode inputPayload = Json.createObjectNode();
+    inputPayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    inputPayload.put(Attribute.VERSION, "87.0");
+    String contextId = "aaaa-bbb-ccc-000";
+    inputPayload.put(Attribute.CONTEXT_ID, contextId);
+
+    ObjectNode impressionPayload = inputPayload.put(Attribute.REPORTING_URL, impressionUrl);
+    ObjectNode clickPayload = inputPayload.put(Attribute.REPORTING_URL, clickUrl);
+    ImmutableMap attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-impression",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services");
+
+    List<PubsubMessage> input = ImmutableList.of(
+        new PubsubMessage(
+            Json.asBytes(impressionPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "true")),
+            attributes),
+        new PubsubMessage(
+            Json.asBytes(
+                impressionPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "false")),
+            attributes),
+        new PubsubMessage(
+            Json.asBytes(clickPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "true")),
+            attributes),
+        new PubsubMessage(Json.asBytes(clickPayload), attributes));
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    // We expect 3 successful messages.
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
+        .satisfies(sponsoredInteractions -> {
+          Assert.assertEquals(Iterables.size(sponsoredInteractions), 4);
+
+          sponsoredInteractions.forEach(interaction -> {
+            String reportingUrl = interaction.getReportingUrl();
+            String doctype = interaction.getDerivedDocumentType();
+
+            if (doctype.equals("quicksuggest-impression")) {
+              if (interaction.getScenario().equals(SponsoredInteraction.ONLINE)) {
+                Assert.assertTrue(reportingUrl.contains(
+                    String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
+              } else {
+                Assert.assertTrue(reportingUrl.contains(
+                    String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_offline")));
+              }
+            } else if (doctype.equals("quicksuggest-click")) {
+              if (interaction.getScenario().equals(SponsoredInteraction.ONLINE)) {
+                Assert.assertTrue(reportingUrl.contains(
+                    String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
+              } else {
+                Assert.assertTrue(reportingUrl
+                    .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1")));
+              }
+            }
+
+            Assert.assertEquals("Expect context-id to match", contextId,
+                interaction.getContextId());
+          });
+
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  @Test
   public void testGleanPings() {
 
     ObjectNode basePayload = Json.createObjectNode();
