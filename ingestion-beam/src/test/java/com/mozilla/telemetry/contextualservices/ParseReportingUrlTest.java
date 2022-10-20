@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
@@ -258,36 +259,55 @@ public class ParseReportingUrlTest {
 
     ObjectNode impressionPayload = inputPayload.put(Attribute.REPORTING_URL, impressionUrl);
     ObjectNode clickPayload = inputPayload.put(Attribute.REPORTING_URL, clickUrl);
-    ImmutableMap attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-impression",
+    ImmutableMap impressionAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "quicksuggest" + "-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services");
+    ImmutableMap clickAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-click",
         Attribute.DOCUMENT_NAMESPACE, "contextual-services");
 
     List<PubsubMessage> input = ImmutableList.of(
+        new PubsubMessage(Json.asBytes(
+            impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)),
+            impressionAttributes),
+        new PubsubMessage(Json.asBytes(
+            impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, false)),
+            impressionAttributes),
         new PubsubMessage(
-            Json.asBytes(impressionPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "true")),
-            attributes),
-        new PubsubMessage(
-            Json.asBytes(impressionPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "false")),
-            attributes),
-        new PubsubMessage(
-            Json.asBytes(clickPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "true")),
-            attributes),
-        new PubsubMessage(Json.asBytes(clickPayload), attributes));
+            Json.asBytes(
+                clickPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)),
+            clickAttributes),
+        new PubsubMessage(Json.asBytes(clickPayload), clickAttributes));
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
         .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
-    // We expect 3 successful messages.
+    // We expect 4 successful messages.
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
         .satisfies(sponsoredInteractions -> {
           Assert.assertEquals(Iterables.size(sponsoredInteractions), 4);
+
+          long onlineInteractions = StreamSupport.stream(sponsoredInteractions.spliterator(), false)
+              .filter(interaction -> SponsoredInteraction.ONLINE.equals(interaction.getScenario()))
+              .count();
+
+          long offlineInteractions = StreamSupport
+              .stream(sponsoredInteractions.spliterator(), false)
+              .filter(interaction -> SponsoredInteraction.OFFLINE.equals(interaction.getScenario()))
+              .count();
+
+          long nullInteractions = StreamSupport.stream(sponsoredInteractions.spliterator(), false)
+              .filter(interaction -> interaction.getScenario() == null).count();
+
+          Assert.assertEquals(2, onlineInteractions);
+          Assert.assertEquals(1, offlineInteractions);
+          Assert.assertEquals(1, nullInteractions);
 
           sponsoredInteractions.forEach(interaction -> {
             String reportingUrl = interaction.getReportingUrl();
             String doctype = interaction.getDerivedDocumentType();
 
             if (doctype.equals("quicksuggest-impression")) {
-              if (interaction.getScenario().equals(SponsoredInteraction.ONLINE)) {
+              if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
                 Assert.assertTrue(reportingUrl.contains(
                     String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
               } else {
@@ -295,7 +315,7 @@ public class ParseReportingUrlTest {
                     String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_offline")));
               }
             } else if (doctype.equals("quicksuggest-click")) {
-              if (interaction.getScenario().equals(SponsoredInteraction.ONLINE)) {
+              if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
                 Assert.assertTrue(reportingUrl.contains(
                     String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
               } else {

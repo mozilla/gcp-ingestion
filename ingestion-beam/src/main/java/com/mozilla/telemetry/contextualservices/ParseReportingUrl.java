@@ -384,7 +384,7 @@ public class ParseReportingUrl extends
   }
 
   private Optional<String> parseScenario(ObjectNode payload) {
-    return Optional.of(payload.path(Attribute.IMPROVE_SUGGEST_EXPERIENCE))
+    return Optional.of(payload.path(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED))
         .filter(node -> !node.isMissingNode())
         .map(node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
   }
