@@ -266,8 +266,7 @@ public class ParseReportingUrlTest {
             Json.asBytes(impressionPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "true")),
             attributes),
         new PubsubMessage(
-            Json.asBytes(
-                impressionPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "false")),
+            Json.asBytes(impressionPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "false")),
             attributes),
         new PubsubMessage(
             Json.asBytes(clickPayload.put(Attribute.IMPROVE_SUGGEST_EXPERIENCE, "true")),
