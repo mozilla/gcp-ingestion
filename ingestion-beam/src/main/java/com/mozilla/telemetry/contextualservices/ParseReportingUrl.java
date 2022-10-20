@@ -116,7 +116,7 @@ public class ParseReportingUrl extends
           interactionBuilder.setSubmissionTimestamp(submissionTimestamp);
           interactionBuilder.setOriginalNamespace(namespace);
           interactionBuilder.setOriginalDocType(docType);
-          interactionBuilder.setScenario(this.parseScenario(payload).orElse(null));
+          interactionBuilder.setScenario(parseScenario(payload).orElse(null));
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
