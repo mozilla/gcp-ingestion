@@ -36,7 +36,7 @@ public abstract class SponsoredInteraction implements Serializable {
 
   /**
    * Scenario can be either 'online' or 'offline'. The value is parsed from the payload field:
-   * `improve_suggest_experience_check` which is a boolean that represents `online` if true and
+   * `improve_suggest_experience_checked` which is a boolean that represents `online` if true and
    * `offline` if false.
    * @return String
    */
