@@ -34,6 +34,19 @@ public abstract class SponsoredInteraction implements Serializable {
   public static final String INTERACTION_IMPRESSION = "impression";
   public static final String INTERACTION_CLICK = "click";
 
+  /**
+   * Scenario can be either 'online' or 'offline'. The value is parsed from the payload field:
+   * `improve_suggest_experience_checked` which is a boolean that represents `online` if true and
+   * `offline` if false.
+   * @return String
+   */
+  @Nullable
+  abstract String getScenario();
+
+  // scenario values: online/offline
+  public static final String ONLINE = "online";
+  public static final String OFFLINE = "offline";
+
   @Nullable
   abstract String getInteractionType();
 
@@ -93,6 +106,8 @@ public abstract class SponsoredInteraction implements Serializable {
     public abstract Builder setSource(String newSource);
 
     public abstract Builder setFormFactor(String newFormFactor);
+
+    public abstract Builder setScenario(String newScenario);
 
     public abstract Builder setInteractionType(String newInteractionType);
 

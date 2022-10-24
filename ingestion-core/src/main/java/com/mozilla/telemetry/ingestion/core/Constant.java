@@ -29,6 +29,8 @@ public class Constant {
     public static final String GEO_SUBDIVISION1 = "geo_subdivision1";
     public static final String GEO_SUBDIVISION2 = "geo_subdivision2";
     public static final String GEO_DMA_CODE = "geo_dma_code";
+    @SuppressWarnings({ "checkstyle:linelength" })
+    public static final String IMPROVE_SUGGEST_EXPERIENCE_CHECKED = "improve_suggest_experience_checked";
     public static final String ISP_NAME = "isp_name";
     public static final String ISP_ORGANIZATION = "isp_organization";
     public static final String ISP_DB_VERSION = "isp_db_version";
