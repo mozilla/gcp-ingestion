@@ -147,7 +147,11 @@ public class MessageScrubber {
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "newext",
       // Baidu
-      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg"
+      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg",
+      // Ecosia
+      "mzl", "813cf1dd", "16eeffc4",
+      // Qwant
+      "brz-moz", "ff_android", "ff_ios"
   // End copied desktop codes.
   );
 
