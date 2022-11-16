@@ -1,5 +1,4 @@
-from datetime import datetime
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 from kubernetes.client import (
     V1Job,
@@ -52,7 +51,8 @@ def test_flush_released_pvs(api: MagicMock, batch_api: MagicMock):
                 ),
                 status=V1PersistentVolumeStatus(phase="Bound"),
             ),
-            # try to flush because pvc is bound but job was created after jobs were listed
+            # try to flush because pvc is bound but
+            # job was created after jobs were listed
             V1PersistentVolume(
                 metadata=V1ObjectMeta(name="pv-7"),
                 spec=V1PersistentVolumeSpec(
@@ -132,7 +132,7 @@ def test_flush_released_pvs(api: MagicMock, batch_api: MagicMock):
     batch_api.create_namespaced_job.side_effect = create_job
 
     flush_released_pvs(
-        api, batch_api, "command", "env", "image", "namespace", "service-account-name"
+        api, batch_api, ["command"], [], "image", "namespace", "service-account-name"
     )
 
     api.list_persistent_volume.assert_called_once_with()
@@ -144,7 +144,7 @@ def test_flush_released_pvs(api: MagicMock, batch_api: MagicMock):
     api.read_namespaced_persistent_volume_claim.assert_called_once_with(
         "flush-pv-9", "namespace"
     )
-    assert [("pv-9", "flush-pv-9"), ("pv-A", "flush-pv-A"),] == [
+    assert [("pv-9", "flush-pv-9"), ("pv-A", "flush-pv-A")] == [
         (
             call.kwargs["name"],
             call.kwargs["body"].spec.claim_ref
@@ -184,8 +184,8 @@ def test_create_flush_job_raises_server_error(api: MagicMock, batch_api: MagicMo
         flush_released_pvs(
             api,
             batch_api,
-            "command",
-            "env",
+            ["command"],
+            [],
             "image",
             "namespace",
             "service-account-name",
@@ -220,8 +220,8 @@ def test_create_pvc_raises_server_error(api: MagicMock, batch_api: MagicMock):
         flush_released_pvs(
             api,
             batch_api,
-            "command",
-            "env",
+            ["command"],
+            [],
             "image",
             "namespace",
             "service-account-name",

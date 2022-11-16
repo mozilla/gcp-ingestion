@@ -56,9 +56,9 @@ async def test_endpoint(app, kwargs, method, mocker, uri_bytes):
         dict(client=client, q=Q.return_value, metadata_headers={}, **kwargs)
     ]
     assert Q.mock_calls == [
-        mock.call(path=':memory:', auto_resume=False),
+        mock.call(path=":memory:", auto_resume=False),
         mock.call().resume_unack_tasks(),
-        mock.call()._count()
+        mock.call()._count(),
     ]
 
 
@@ -67,7 +67,7 @@ def test_missing_queue_path(app):
     with pytest.raises(TypeError) as e_info:
         publish.init_app(app)
     assert e_info.value.args == (
-        "__init__() missing 1 required positional argument: 'path'",
+        "SQLiteAckQueue.__init__() missing 1 required positional argument: 'path'",
     )
 
 

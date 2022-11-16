@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock
-from time import sleep
 
 from kubernetes.client import (
     V1ObjectMeta,
@@ -42,9 +41,15 @@ def test_delete_detached_pvcs(api: MagicMock):
             # pvc not attached because spec is missing
             V1Pod(),
             # pvc not attached because volumes are missing
-            V1Pod(spec=V1PodSpec(containers=[],),),
+            V1Pod(
+                spec=V1PodSpec(
+                    containers=[],
+                ),
+            ),
             # pvc not attached because volume is not persistent
-            V1Pod(spec=V1PodSpec(containers=[], volumes=[V1Volume(name="queue")]),),
+            V1Pod(
+                spec=V1PodSpec(containers=[], volumes=[V1Volume(name="queue")]),
+            ),
             # pvc not attached because pod is unschedulable due to pvc
             V1Pod(
                 metadata=V1ObjectMeta(
@@ -68,7 +73,7 @@ def test_delete_detached_pvcs(api: MagicMock):
             ),
         ]
     )
-    api.list_namespaced_persistent_volume_claim.return_value = V1PersistentVolumeClaimList(
+    api.list_namespaced_persistent_volume_claim.return_value = V1PersistentVolumeClaimList(  # noqa: E501
         items=[
             # should delete 0-2, 3 is in attached pvcs
             *(
@@ -83,7 +88,9 @@ def test_delete_detached_pvcs(api: MagicMock):
                 for i in range(4)
             ),
             # name does not start with claim prefix
-            V1PersistentVolumeClaim(metadata=V1ObjectMeta(name="other-web-0"),),
+            V1PersistentVolumeClaim(
+                metadata=V1ObjectMeta(name="other-web-0"),
+            ),
         ]
     )
 
@@ -135,7 +142,7 @@ def test_delete_detached_pvcs(api: MagicMock):
 
 def test_delete_detached_pvcs_raises_server_error(api: MagicMock):
     api.list_namespaced_pod.return_value = V1PodList(items=[])
-    api.list_namespaced_persistent_volume_claim.return_value = V1PersistentVolumeClaimList(
+    api.list_namespaced_persistent_volume_claim.return_value = V1PersistentVolumeClaimList(  # noqa: E501
         items=[
             # should be deleted
             V1PersistentVolumeClaim(
