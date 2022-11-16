@@ -67,7 +67,10 @@ parser.add_argument(
     help="Docker command for flush jobs; must drain queue until empty or exit non-zero",
 )
 parser.add_argument(
-    "--env", default=DEFAULT_ENV, type=json.loads, help="env to use for flush jobs",
+    "--env",
+    default=DEFAULT_ENV,
+    type=json.loads,
+    help="env to use for flush jobs",
 )
 parser.add_argument(
     "--image",
@@ -75,7 +78,9 @@ parser.add_argument(
     help="Docker image to use for flush jobs",
 )
 parser.add_argument(
-    "--namespace", default="default", help="Kubernetes namespace to use",
+    "--namespace",
+    default="default",
+    help="Kubernetes namespace to use",
 )
 parser.add_argument(
     "--service-account-name",

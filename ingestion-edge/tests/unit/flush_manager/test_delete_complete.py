@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock
 
 from kubernetes.client import (
     V1Job,
@@ -34,7 +34,8 @@ def test_delete_complete_jobs(api: MagicMock, batch_api: MagicMock):
             # don't delete because already deleted
             V1Job(
                 metadata=V1ObjectMeta(
-                    name="flush-pv-3", deletion_timestamp=datetime.utcnow(),
+                    name="flush-pv-3",
+                    deletion_timestamp=datetime.utcnow(),
                 ),
                 status=V1JobStatus(
                     conditions=[V1JobCondition(status="", type="Complete")]

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from dateutil.parser import parse
 from ingestion_edge import publish
@@ -6,7 +6,7 @@ from multidict import CIMultiDict
 from sqlite3 import DatabaseError
 from unittest.mock import MagicMock
 from sanic.response import HTTPResponse
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 import asyncio
 import pytest
 
@@ -14,7 +14,7 @@ import pytest
 @dataclass
 class MockRequest:
     body: bytes = b"body"
-    headers: CIMultiDict = CIMultiDict(header="header")
+    headers: CIMultiDict = field(default_factory=lambda: CIMultiDict(header="header"))
     host: str = "host"
     ip: str = "ip"
     method: str = "method"
@@ -28,11 +28,11 @@ class ListQueue(list):
         self.append(item)
 
 
-async def call_submit(client=None, q=None, **kwargs) -> HTTPResponse:
+async def call_submit(client=None, q=None, **kwargs) -> Tuple[datetime, HTTPResponse]:
     return (
         datetime.utcnow(),
         await publish.submit(
-            request=MockRequest(**kwargs),
+            request=MockRequest(**kwargs),  # type: ignore
             client=client,
             timeout=None,
             q=q,

@@ -164,7 +164,7 @@ def main():
     """Flush until queue is empty."""
     config = get_config_dict()
     flush = get_flush(config, get_client(config), get_queue(config))
-    asyncio.get_event_loop().run_until_complete(flush.run_until_complete())
+    asyncio.new_event_loop().run_until_complete(flush.run_until_complete())
 
 
 if __name__ == "__main__":
