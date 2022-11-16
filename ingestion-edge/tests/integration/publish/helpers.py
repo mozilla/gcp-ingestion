@@ -64,6 +64,7 @@ class IntegrationTest:
             self.server + self.uri + ("" if not self.args else "?" + self.args),
             data=self.data,
         )
+        print(response)
         assert response.status_code == 200
         assert response.text == ""
 

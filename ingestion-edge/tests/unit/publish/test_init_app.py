@@ -67,7 +67,7 @@ def test_missing_queue_path(app):
     with pytest.raises(TypeError) as e_info:
         publish.init_app(app)
     assert e_info.value.args == (
-        "__init__() missing 1 required positional argument: 'path'",
+        "SQLiteAckQueue.__init__() missing 1 required positional argument: 'path'",
     )
 
 

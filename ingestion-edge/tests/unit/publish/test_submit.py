@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from dateutil.parser import parse
 from ingestion_edge import publish
@@ -14,7 +14,7 @@ import pytest
 @dataclass
 class MockRequest:
     body: bytes = b"body"
-    headers: CIMultiDict = CIMultiDict(header="header")
+    headers: CIMultiDict = field(default_factory=lambda: CIMultiDict(header="header"))
     host: str = "host"
     ip: str = "ip"
     method: str = "method"

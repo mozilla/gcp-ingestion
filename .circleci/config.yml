@@ -33,7 +33,7 @@ jobs:
 
   docs:
     docker:
-    - image: circleci/python:3.8
+    - image: circleci/python:3.11
     steps:
     - checkout
     - run:
@@ -55,7 +55,7 @@ jobs:
   ingestion-edge: &edge
     working_directory: /root/project/ingestion-edge
     docker:
-    - image: python:3.8
+    - image: python:3.11
     steps:
     - &checkout
       checkout:
@@ -84,10 +84,10 @@ jobs:
         keys:
           # when lock files change, use increasingly general patterns to restore cache
           - &cache_key_edge
-            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
-          - python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-
-          - python-packages-v1-{{ .Branch }}-
-          - python-packages-v1-
+            python-3.11-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
+          - python-3.11-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-
+          - python-3.11-packages-v1-{{ .Branch }}-
+          - python-3.11-packages-v1-
     - run:
         name: Build
         command: bin/build
