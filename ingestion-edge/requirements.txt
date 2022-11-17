@@ -223,10 +223,6 @@ dockerflow==2022.8.0 \
     --hash=sha256:cebd5e12ff08be43b02ea4fcaf044fb2cd4cec63c93dbfbe6e3c5b610849924c \
     --hash=sha256:fcb95ea8226551e1fd03c3c82f2b11de50434ddfa63cebc164399dabf5c78908
     # via -r requirements.in
-exceptiongroup==1.0.0rc9 \
-    --hash=sha256:2e3c3fc1538a094aab74fad52d6c33fc94de3dfee3ee01f187c0e0c72aec5337 \
-    --hash=sha256:9086a4a21ef9b31c72181c77c040a074ba0889ee56a7b289ff0afb0d97655f96
-    # via pytest
 filelock==3.0.12 \
     --hash=sha256:18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59 \
     --hash=sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836
@@ -697,9 +693,9 @@ pytest-mock==3.10.0 \
     --hash=sha256:f4c973eeae0282963eb293eb173ce91b091a79c1334455acfac9ddee8a1c784b \
     --hash=sha256:fbbdb085ef7c252a326fd8cdcac0aa3b1333d8811f131bdcc701002e1be7ed4f
     # via -r requirements.in
-pytest-mypy==0.10.0 \
-    --hash=sha256:83843dce75a7ce055efb264ff40dad2ecf7abd4e7bd5e5eda015261d11616abb \
-    --hash=sha256:e74d632685f15a39c31c551a9d8cec4619e24bd396245a6335c5db0ec6d17b6f
+pytest-mypy==0.10.1 \
+    --hash=sha256:7fe68837449334553e224cc86c6dc1b938772399abb64f510a864fb209593a94 \
+    --hash=sha256:ecf541a28df9e5f992936a1613bee231957df2d40efa662cd7c52ace2e64f43f
     # via -r requirements.in
 pytest-pydocstyle==2.3.1 \
     --hash=sha256:58228aef833dc4ed0a3a3216ebc8586f9798c7d0a98832eaf70a17269f773d4e
@@ -804,14 +800,6 @@ toml==0.10.1 \
     #   coverage
     #   pep517
     #   pytest-black
-tomli==2.0.1 \
-    --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
-    --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   black
-    #   build
-    #   mypy
-    #   pytest
 types-protobuf==3.20.4.5 \
     --hash=sha256:97af5ce70d890fdb94cb0c906f5a6624ca2fef58bc04e27990a25509e992a950 \
     --hash=sha256:e9b45008d106e1d10cc77a29d2d344b85c0f01e2e643aaccf32f69e9e81b0cdd
