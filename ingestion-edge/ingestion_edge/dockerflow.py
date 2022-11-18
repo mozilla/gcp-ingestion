@@ -30,7 +30,7 @@ def check_disk_bytes_free(app: Sanic, q: SQLiteAckQueue):
         return [checks.Warning("queue path does not exist", id=NO_QUEUE_WARNING_ID)]
 
     bytes_free = status.f_bfree * status.f_frsize
-    if bytes_free < threshold:
+    if bytes_free < threshold:  # type: ignore
         return [checks.Error("disk bytes free below threshold", id=LOW_DISK_ERROR_ID)]
     else:
         return []

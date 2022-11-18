@@ -21,6 +21,7 @@ class MockRequest:
     path: str = "path"
     query_string: str = "query_string"
     version: str = "version"
+    head: bytes = b""
 
 
 class ListQueue(list):
@@ -67,7 +68,7 @@ def validate(start_time: datetime, response: HTTPResponse, q: ListQueue):
 
 
 @pytest.fixture
-def client() -> MagicMock:
+async def client() -> MagicMock:
     client = MagicMock()
     client.publish.return_value = asyncio.Future()
     return client
