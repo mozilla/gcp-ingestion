@@ -223,10 +223,6 @@ dockerflow==2022.8.0 \
     --hash=sha256:cebd5e12ff08be43b02ea4fcaf044fb2cd4cec63c93dbfbe6e3c5b610849924c \
     --hash=sha256:fcb95ea8226551e1fd03c3c82f2b11de50434ddfa63cebc164399dabf5c78908
     # via -r requirements.in
-exceptiongroup==1.0.0rc9 \
-    --hash=sha256:2e3c3fc1538a094aab74fad52d6c33fc94de3dfee3ee01f187c0e0c72aec5337 \
-    --hash=sha256:9086a4a21ef9b31c72181c77c040a074ba0889ee56a7b289ff0afb0d97655f96
-    # via pytest
 filelock==3.0.12 \
     --hash=sha256:18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59 \
     --hash=sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836
@@ -804,17 +800,9 @@ toml==0.10.1 \
     #   coverage
     #   pep517
     #   pytest-black
-tomli==2.0.1 \
-    --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
-    --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via
-    #   black
-    #   build
-    #   mypy
-    #   pytest
-types-protobuf==3.20.4.5 \
-    --hash=sha256:97af5ce70d890fdb94cb0c906f5a6624ca2fef58bc04e27990a25509e992a950 \
-    --hash=sha256:e9b45008d106e1d10cc77a29d2d344b85c0f01e2e643aaccf32f69e9e81b0cdd
+types-protobuf==4.21.0.0 \
+    --hash=sha256:0682c51c2369c3dc9aaa78d7e2fcf5469690512a22941ac1a3296fb561e4b7ef \
+    --hash=sha256:229f3ad94e4717de19d75143bd657bfcf97c37f9baa658f1515a686f3f0cce43
     # via -r requirements.in
 types-python-dateutil==2.8.19.4 \
     --hash=sha256:351a8ca9afd4aea662f87c1724d2e1ae59f9f5f99691be3b3b11d2393cd3aaa1 \
