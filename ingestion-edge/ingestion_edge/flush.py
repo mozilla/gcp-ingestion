@@ -155,7 +155,7 @@ def init_app(app: Sanic, client: PublisherClient, q: SQLiteAckQueue):
     """Initialize Sanic app with url rules."""
     flush = get_flush(app.config, client, q)
     # schedule periodic flush in background on app start
-    app.listener("before_server_start")(flush.before_server_start)
+    app.listener("before_server_start")(flush.before_server_start)  # type: ignore
     # schedule flush on shutdown
     app.listener("after_server_stop")(flush.after_server_stop)
 
