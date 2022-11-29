@@ -882,9 +882,9 @@ urllib3==1.25.10 \
     # via
     #   kubernetes
     #   requests
-uvicorn==0.19.0 \
-    --hash=sha256:cc277f7e73435748e69e075a721841f7c4a95dba06d12a72fe9874acced16f6f \
-    --hash=sha256:cf538f3018536edb1f4a826311137ab4944ed741d52aeb98846f52215de57f25
+uvicorn==0.20.0 \
+    --hash=sha256:a4e12017b940247f836bc90b72e725d7dfd0c8ed1c51eb365f5ba30d9f5127d8 \
+    --hash=sha256:c3ed1598a5668208723f2bb49336f4509424ad198d6ab2615b7783db58d919fd
     # via -r requirements.in
 uvloop==0.17.0 \
     --hash=sha256:0949caf774b9fcefc7c5756bacbbbd3fc4c05a6b7eebc7c7ad6f825b23998d6d \
