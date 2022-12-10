@@ -13,9 +13,9 @@ import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
+import com.mozilla.telemetry.schema.SchemaStoreSingletonFactory;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.JsonValidator;
 import com.mozilla.telemetry.util.Time;
@@ -26,7 +26,6 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -37,13 +36,15 @@ import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.transforms.FlatMapElements;
+import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ProcessFunction;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 
@@ -75,6 +76,11 @@ public class ParsePayload extends
   private transient PipelineMetadataStore metadataStore;
   private transient CRC32 crc32;
 
+  final TupleTag<PubsubMessage> outputTag = new TupleTag<>() {
+  };
+  final TupleTag<PubsubMessage> failureTag = new TupleTag<>() {
+  };
+
   private ParsePayload(String schemasLocation) {
     this.schemasLocation = schemasLocation;
   }
@@ -82,125 +88,121 @@ public class ParsePayload extends
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
-    return messages.apply(FlatMapElements.into(TypeDescriptor.of(PubsubMessage.class)) //
-        .via(new Fn()) //
-        .exceptionsInto(TypeDescriptor.of(PubsubMessage.class)) //
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
-          try {
-            throw ee.exception();
-          } catch (IOException | SchemaNotFoundException | ValidationException
-              | MessageScrubberException | DeprecatedMessageException e) {
-            return FailureMessage.of(ParsePayload.class.getSimpleName(), //
-                ee.element(), //
-                ee.exception());
-          }
-        }));
+    PCollectionTuple parsed = messages
+        .apply(ParDo.of(new Fn()).withOutputTags(outputTag, TupleTagList.of(failureTag)));
+    return WithFailures.Result.of(parsed.get(outputTag), parsed.get(failureTag));
   }
 
-  private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
+  private class Fn extends DoFn<PubsubMessage, PubsubMessage> {
 
-    @Override
-    public Iterable<PubsubMessage> apply(PubsubMessage message) throws IOException {
-      message = PubsubConstraints.ensureNonNull(message);
-      Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+    @Setup
+    public void setup() {
+      schemaStore = SchemaStoreSingletonFactory.getJsonSchemaStore(schemasLocation);
+      metadataStore = SchemaStoreSingletonFactory.getPipelineMetadataStore(schemasLocation);
+      validator = new JsonValidator();
+    }
 
-      if (schemaStore == null) {
-        schemaStore = JSONSchemaStore.of(schemasLocation, BeamFileInputStream::open);
-      }
-
-      final int submissionBytes = message.getPayload().length;
-
-      ObjectNode json;
+    @ProcessElement
+    public void processElement(@Element PubsubMessage message, MultiOutputReceiver out) {
       try {
-        json = parseTimed(message.getPayload());
-      } catch (IOException e) {
-        Map<String, String> attrs = schemaStore.docTypeExists(message.getAttributeMap())
-            ? message.getAttributeMap()
-            : null; // null attributes will cause docType to show up as "unknown_doc_type"
-        // in metrics
-        PerDocTypeCounter.inc(attrs, "error_json_parse");
-        PerDocTypeCounter.inc(attrs, "error_submission_bytes", submissionBytes);
-        throw e;
-      }
+        message = PubsubConstraints.ensureNonNull(message);
+        Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
-      // In case this message is being replayed from an error output where AddMetadata has already
-      // been applied, we strip out any existing metadata fields and put them into attributes.
-      NestedMetadata.stripPayloadMetadataToAttributes(attributes, json);
+        final int submissionBytes = message.getPayload().length;
 
-      // Check the contents of the message, potentially throwing an exception that causes the
-      // message to be dropped or routed to error output; may also also alter the payload to
-      // redact sensitive fields.
-      try {
-        MessageScrubber.scrub(attributes, json);
-      } catch (MessageShouldBeDroppedException e) {
-        // This message should go to no output, so we return an empty list immediately.
-        return Collections.emptyList();
-      }
-
-      boolean validDocType = schemaStore.docTypeExists(attributes);
-      if (!validDocType) {
-        PerDocTypeCounter.inc(null, "error_invalid_doc_type");
-        PerDocTypeCounter.inc(null, "error_submission_bytes", submissionBytes);
-        throw new SchemaNotFoundException(String.format("No such docType: %s/%s",
-            attributes.get("document_namespace"), attributes.get("document_type")));
-      }
-
-      // If no "document_version" attribute was parsed from the URI, this element must be from the
-      // /submit/telemetry endpoint and we now need to grab version from the payload.
-      if (!attributes.containsKey(Attribute.DOCUMENT_VERSION)) {
+        ObjectNode json;
         try {
-          String version = getVersionFromTelemetryPayload(json);
-          attributes.put(Attribute.DOCUMENT_VERSION, version);
+          json = parseTimed(message.getPayload());
+        } catch (IOException e) {
+          Map<String, String> attrs = schemaStore.docTypeExists(message.getAttributeMap())
+              ? message.getAttributeMap()
+              : null; // null attributes will cause docType to show up as "unknown_doc_type"
+          // in metrics
+          PerDocTypeCounter.inc(attrs, "error_json_parse");
+          PerDocTypeCounter.inc(attrs, "error_submission_bytes", submissionBytes);
+          throw e;
+        }
+
+        // In case this message is being replayed from an error output where AddMetadata has already
+        // been applied, we strip out any existing metadata fields and put them into attributes.
+        NestedMetadata.stripPayloadMetadataToAttributes(attributes, json);
+
+        // Check the contents of the message, potentially throwing an exception that causes the
+        // message to be dropped or routed to error output; may also alter the payload to
+        // redact sensitive fields.
+        try {
+          MessageScrubber.scrub(attributes, json);
+        } catch (MessageShouldBeDroppedException e) {
+          // This message should go to no output, so we return immediately without writing to output
+          // receiver.
+          return;
+        }
+
+        boolean validDocType = schemaStore.docTypeExists(attributes);
+        if (!validDocType) {
+          PerDocTypeCounter.inc(null, "error_invalid_doc_type");
+          PerDocTypeCounter.inc(null, "error_submission_bytes", submissionBytes);
+          throw new SchemaNotFoundException(String.format("No such docType: %s/%s",
+              attributes.get("document_namespace"), attributes.get("document_type")));
+        }
+
+        // If no "document_version" attribute was parsed from the URI, this element must be from the
+        // /submit/telemetry endpoint and we now need to grab version from the payload.
+        if (!attributes.containsKey(Attribute.DOCUMENT_VERSION)) {
+          try {
+            String version = getVersionFromTelemetryPayload(json);
+            attributes.put(Attribute.DOCUMENT_VERSION, version);
+          } catch (SchemaNotFoundException e) {
+            PerDocTypeCounter.inc(attributes, "error_missing_version");
+            PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+            throw e;
+          }
+        }
+
+        // Throws SchemaNotFoundException if there's no schema
+        Schema schema;
+        try {
+          schema = schemaStore.getSchema(attributes);
         } catch (SchemaNotFoundException e) {
-          PerDocTypeCounter.inc(attributes, "error_missing_version");
+          PerDocTypeCounter.inc(attributes, "error_schema_not_found");
           PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
           throw e;
         }
+
+        try {
+          validateTimed(schema, json);
+        } catch (ValidationException e) {
+          PerDocTypeCounter.inc(attributes, "error_schema_validation");
+          PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+          throw e;
+        }
+
+        try {
+          deprecationCheck(attributes);
+        } catch (DeprecatedMessageException e) {
+          PerDocTypeCounter.inc(attributes, "error_deprecated_message");
+          PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+          throw e;
+        }
+
+        addAttributesFromPayload(attributes, json);
+
+        // https://github.com/mozilla/gcp-ingestion/issues/780
+        // We need to be careful to consistently use our util methods (which use Jackson) for
+        // serializing and de-serializing JSON to reduce the possibility of introducing encoding
+        // issues. We previously called json.toString().getBytes() here without specifying a
+        // charset.
+        byte[] normalizedPayload = Json.asBytes(json);
+
+        PerDocTypeCounter.inc(attributes, "valid_submission");
+        PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
+
+        out.get(outputTag).output(new PubsubMessage(normalizedPayload, attributes));
+      } catch (IOException | SchemaNotFoundException | ValidationException
+          | MessageScrubberException | DeprecatedMessageException e) {
+        out.get(failureTag)
+            .output(FailureMessage.of(ParsePayload.class.getSimpleName(), message, e));
       }
-
-      // Throws SchemaNotFoundException if there's no schema
-      Schema schema;
-      try {
-        schema = schemaStore.getSchema(attributes);
-      } catch (SchemaNotFoundException e) {
-        PerDocTypeCounter.inc(attributes, "error_schema_not_found");
-        PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-        throw e;
-      }
-
-      try {
-        validateTimed(schema, json);
-      } catch (ValidationException e) {
-        PerDocTypeCounter.inc(attributes, "error_schema_validation");
-        PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-        throw e;
-      }
-
-      if (metadataStore == null) {
-        metadataStore = PipelineMetadataStore.of(schemasLocation, BeamFileInputStream::open);
-      }
-
-      try {
-        deprecationCheck(attributes);
-      } catch (DeprecatedMessageException e) {
-        PerDocTypeCounter.inc(attributes, "error_deprecated_message");
-        PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-        throw e;
-      }
-
-      addAttributesFromPayload(attributes, json);
-
-      // https://github.com/mozilla/gcp-ingestion/issues/780
-      // We need to be careful to consistently use our util methods (which use Jackson) for
-      // serializing and de-serializing JSON to reduce the possibility of introducing encoding
-      // issues. We previously called json.toString().getBytes() here without specifying a
-      // charset.
-      byte[] normalizedPayload = Json.asBytes(json);
-
-      PerDocTypeCounter.inc(attributes, "valid_submission");
-      PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
-
-      return Collections.singletonList(new PubsubMessage(normalizedPayload, attributes));
     }
   }
 
@@ -361,9 +363,6 @@ public class ParsePayload extends
   }
 
   private void validateTimed(Schema schema, ObjectNode json) throws JsonProcessingException {
-    if (validator == null) {
-      validator = new JsonValidator();
-    }
     long startTime = System.currentTimeMillis();
     validator.validate(schema, json);
     long endTime = System.currentTimeMillis();

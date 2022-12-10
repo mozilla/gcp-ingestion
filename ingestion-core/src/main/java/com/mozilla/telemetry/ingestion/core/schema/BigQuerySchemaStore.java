@@ -65,11 +65,6 @@ public class BigQuerySchemaStore extends SchemaStore<Schema> {
     }
 
     @Override
-    protected void ensureSchemasLoaded() {
-      // load schemas on demand
-    }
-
-    @Override
     public Schema getSchema(String path) {
       // can't find schema without tableId
       throw SchemaNotFoundException.forName(path);
