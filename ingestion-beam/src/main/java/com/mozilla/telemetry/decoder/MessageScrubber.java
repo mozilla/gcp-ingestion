@@ -51,6 +51,7 @@ public class MessageScrubber {
       .put("com-athena-equality-firefox", "1686088") //
       .put("com-authenticatedreality-fireios", "1686087") //
       .put("com-netsweeper-clientfilter-lgfl-homeprotect", "1686085") //
+      .put("com-netsweeper-clientfilter-homeprotectbylgfl", "1804285") //
       .put("com-myie9-xf", "1684918") //
       .put("com-netsweeper-clientfilter-lgfl-socialblocked", "1688689") //
       .put("com-only4free-activate", "1687350") //
