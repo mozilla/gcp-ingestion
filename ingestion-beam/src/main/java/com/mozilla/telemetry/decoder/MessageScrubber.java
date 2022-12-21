@@ -93,6 +93,7 @@ public class MessageScrubber {
       .put("org-mozilla-firefrd", "1777636") //
       .put("org-mozilla-firefox-betc", "1786344") //
       .put("com-max-browser", "1802981") //
+      .put("com-differ-xiaoming", "1806484") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
