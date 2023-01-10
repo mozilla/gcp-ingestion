@@ -228,7 +228,9 @@ dockerflow==2022.8.0 \
 exceptiongroup==1.0.4 \
     --hash=sha256:542adf9dea4055530d6e1279602fa5cb11dab2395fa650b8674eaec35fc4a828 \
     --hash=sha256:bd14967b79cd9bdb54d97323216f8fdf533e278df937aa2a90089e7d6e06e5ec
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   pytest
 filelock==3.0.12 \
     --hash=sha256:18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59 \
     --hash=sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836
@@ -797,7 +799,12 @@ toml==0.10.1 \
 tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   black
+    #   build
+    #   mypy
+    #   pytest
 types-protobuf==4.21.0.1 \
     --hash=sha256:80aa071fcbcf1372222aed7deb97a49757095b71a05edcf14ff89cc8caa4a165 \
     --hash=sha256:d8ce2e1dc54e9b5830e553d31308e87732c916a0b0e288d280bddaa00fa98113
@@ -1064,9 +1071,9 @@ pip==21.3 \
     --hash=sha256:4a1de8f97884ecfc10b48fe61c234f7e7dcf4490a37217011ad9369d899ad5a6 \
     --hash=sha256:741a61baab1dbce2d8ca415effa48a2b6a964564f81a9f4f1fce4c433346c034
     # via pip-tools
-setuptools==54.0.0 \
-    --hash=sha256:34efee89c4c879204f5739ec6d9d3635195b0b7d2b51e25c9261a327367ec5ff \
-    --hash=sha256:d85b57c41e88b69ab87065c964134ec85b7573cbab0fdaa7ef32330ed764600a
+setuptools==65.5.1 \
+    --hash=sha256:d0b9a8433464d5800cbe05094acf5c6d52a91bfac9b52bcfc4d41382be5d5d31 \
+    --hash=sha256:e197a19aa8ec9722928f2206f8de752def0e4c9fc6953527360d1c36d94ddb2f
     # via
     #   google-api-core
     #   google-auth
