@@ -811,9 +811,9 @@ tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
     # via -r requirements.in
-types-protobuf==4.21.0.2 \
-    --hash=sha256:7df483d34ad3fcb1fa7fff1073560d596c9ac1f419cfa851b220c9a93386c998 \
-    --hash=sha256:aeefcf39d637016998b3c7b699750847071b555f7c2e0c9873d42ab6103d1a39
+types-protobuf==4.21.0.3 \
+    --hash=sha256:6c87c7f8df61d57a53de8221777e4fcc3c7ed24419fbf43b8e9f50887f3773fa \
+    --hash=sha256:824109e0fe87525a9d2da4cc4eec36ca004f1a0f3d1c0838cfd2873a484cffdd
     # via -r requirements.in
 types-python-dateutil==2.8.19.6 \
     --hash=sha256:4a6f4cc19ce4ba1a08670871e297bf3802f55d4f129e6aa2443f540b6cf803d2 \
