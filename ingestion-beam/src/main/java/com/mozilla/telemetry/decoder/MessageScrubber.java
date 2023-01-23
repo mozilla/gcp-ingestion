@@ -148,7 +148,7 @@ public class MessageScrubber {
       "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu",
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
-      "ftas", "ftsa", "newext",
+      "ftas", "ftsa", "lm", "newext",
       // Baidu
       "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg",
       // Ecosia
