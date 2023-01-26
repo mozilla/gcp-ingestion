@@ -757,13 +757,13 @@ rsa==4.7 \
     --hash=sha256:69805d6b69f56eb05b62daea3a7dbd7aa44324ad1306445e05da8060232d00f4 \
     --hash=sha256:a8774e55b59fd9fc893b0d05e9bfc6f47081f46ff5b46f39ccf24631b7be356b
     # via google-auth
-sanic==22.6.2 \
-    --hash=sha256:0edb346455ab5fba4304288c40af31c394f3503458b835051694f2607979010b \
-    --hash=sha256:efc3e19eb8c43836ebfd424cb3efc762880b5e3f8fbc07bc125e6d469243a62c
+sanic==22.12.0 \
+    --hash=sha256:84edf46cc17d13264ccec0ae6622e43087498f95644dc336ade74a2d5e6c88cb \
+    --hash=sha256:e5f81115f838956957046b6c52e7a08c1bd6e8ff530ee1376471eaf1579bfffa
     # via -r requirements.in
-sanic-routing==22.3.0 \
-    --hash=sha256:8282fc05659ff2cebbffa4fb69697601fc9d653c34e0b5bdeed04a832e793fb9 \
-    --hash=sha256:fde5a7d4079794b585b9a2904accd0de5a70abf27c82d2658b40c551ef44f703
+sanic-routing==22.8.0 \
+    --hash=sha256:305729b4e0bf01f074044a2a315ff401fa7eeffb009eec1d2c81d35e1038ddfc \
+    --hash=sha256:9a928ed9e19a36bc019223be90a5da0ab88cdd76b101e032510b6a7073c017e9
     # via sanic
 sanic-testing==22.6.0 \
     --hash=sha256:8f006d2332106539cd6f3da8a5c0d1f31472261f3293e43e2c9bbad605e72c5b \
