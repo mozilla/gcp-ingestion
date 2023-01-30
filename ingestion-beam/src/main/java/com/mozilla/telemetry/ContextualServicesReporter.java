@@ -71,7 +71,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(EmitCounters.of());
 
     Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
-    Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click");
+    Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click", "topsites-impression");
     Set<String> unionedDocTypes = Stream
         .concat(aggregatedDocTypes.stream(), perContextIdDocTypes.stream())
         .collect(Collectors.toSet());
