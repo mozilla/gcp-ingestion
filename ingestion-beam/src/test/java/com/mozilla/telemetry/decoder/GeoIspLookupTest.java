@@ -41,28 +41,20 @@ public class GeoIspLookupTest {
     // https://github.com/maxmind/MaxMind-DB/blob/664aeeb08bb50f53a1fdceac763c37f6465e44a4/source-data/GeoIP2-City-Test.json
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}", //
-        "{\"attributeMap\":{\"remote_addr\":\"24.38.243.141\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":{\"isp_name\":\"test\"},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
-            + "{\"remote_addr\":\"10.0.0.2\"" //
-            + ",\"x_forwarded_for\":\"192.168.1.2, 23.32.32.1, 23.32.32.11\"" //
+            + "{\"x_forwarded_for\":\"192.168.1.2, 23.32.32.1\"" //
             + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(//
-        "{\"attributeMap\":" //
-            + "{\"host\":\"test\"" //
-            + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\"" //
-            + "},\"payload\":\"dGVzdA==\"}", //
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}", //
+        "{\"attributeMap\":{\"isp_name\":\"test\"},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"isp_name\":\"Akamai Technologies\"" //
-            + ",\"remote_addr\":\"10.0.0.2\"" //
             + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\"" //
             + ",\"isp_organization\":\"Akamai Technologies\"" //
-            + ",\"x_forwarded_for\":\"192.168.1.2, 23.32.32.1, 23.32.32.11\"}" //
-            + ",\"payload\":\"\"}", //
-        "{\"attributeMap\":" //
-            + "{\"remote_addr\":\"24.38.243.141\"" //
-            + ",\"isp_db_version\":\"2018-01-15T22:27:16Z\"" //
-            + ",\"isp_organization\":\"LAWN MULLEN & GOOD INTERNATIONAL\"}" + ",\"payload\":\"\"}");
+            + ",\"x_forwarded_for\":\"192.168.1.2, 23.32.32.1\"}" //
+            + ",\"payload\":\"\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
@@ -79,7 +71,7 @@ public class GeoIspLookupTest {
             .addNameFilter(MetricNameFilter.inNamespace(GeoIspLookup.Fn.class)).build())
         .getCounters());
 
-    assertEquals(4, counters.size());
+    assertEquals(3, counters.size());
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
