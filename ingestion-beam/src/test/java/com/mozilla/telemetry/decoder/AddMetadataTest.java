@@ -41,12 +41,14 @@ public class AddMetadataTest extends TestWithDeterministicJson {
     final List<String> expectedMain = ImmutableList.of(//
         "{\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
             + ",\"isp\":{\"name\":\"service provider\"}" //
+            + ",\"proxy\":{}" //
             + ",\"user_agent\":{}" //
             + ",\"header\":{\"x_debug_id\":\"mysession\"}}" //
             + ",\"normalized_channel\":\"release\"" //
             + ",\"sample_id\":18}", //
         "{\"metadata\":{\"geo\":{\"country\":\"CA\"}" //
             + ",\"isp\":{\"name\":\"service provider\"}" //
+            + ",\"proxy\":{}" //
             + ",\"user_agent\":{}" //
             + ",\"header\":{\"x_debug_id\":\"mysession\"}}" //
             + ",\"normalized_channel\":\"release\"" //

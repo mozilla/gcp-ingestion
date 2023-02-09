@@ -48,34 +48,88 @@ public class ParseProxyTest extends TestWithDeterministicJson {
             + "},\"payload\":\"staticProxied+++\"}",
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4, 3, 8.8.4.1, 1\"" //
+            + "},\"payload\":\"googleIPv4Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4, 3, 2c0f:fb50::1, 1\"" //
+            + "},\"payload\":\"googleIPv6Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4, 3, 3.2.34.1, 1\"" //
+            + "},\"payload\":\"cloudFrontIPv4Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4, 3, 2600:1ff2:4000::1, 1\"" //
+            + "},\"payload\":\"cloudFrontIPv6Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2, 1\"" //
             + ",\"x_pipeline_proxy\":\"1999-12-31T23:59:59.999999Z\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}",
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
+            + ",\"proxy_list_versions\":\"test\"" //
             + ",\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2\"" //
             + "},\"payload\":\"retried+\"}");
 
+    final String version = "goog.json:2023-02-13T14:04:31.200094" //
+        + ";cloud.json:2023-02-13T14:04:31.200094" //
+        + ";cloudfront:1676326387:2023-02-13-22-13-07";
     final List<String> expected = Arrays.asList(//
-        "{\"attributeMap\":{},\"payload\":\"\"}", //
-        "{\"attributeMap\":{},\"payload\":\"proxied+\"}", //
-        "{\"attributeMap\":{},\"payload\":\"emptyXPP\"}", //
         "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + "{\"proxy_list_versions\":\"" + version + "\"" //
+            + "},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"proxy_list_versions\":\"" + version + "\"" //
+            + "},\"payload\":\"proxied+\"}", //
+        "{\"attributeMap\":" //
+            + "{\"proxy_list_versions\":\"" + version + "\"" //
+            + "},\"payload\":\"emptyXPP\"}", //
+        "{\"attributeMap\":" //
+            + "{\"proxy_list_versions\":\"" + version + "\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"3, 2, 1\"" //
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + "{\"proxy_list_versions\":\"" + version + "\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"4,3,1\"" //
             + "},\"payload\":\"staticProxied+++\"}",
         "{\"attributeMap\":" //
-            + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + "{\"proxy_detected\":\"true\"" //
+            + ",\"proxy_list_versions\":\"" + version + "\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4,3,1\"" //
+            + "},\"payload\":\"googleIPv4Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"proxy_detected\":\"true\"" //
+            + ",\"proxy_list_versions\":\"" + version + "\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4,3,1\"" //
+            + "},\"payload\":\"googleIPv6Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"proxy_detected\":\"true\"" //
+            + ",\"proxy_list_versions\":\"" + version + "\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4,3,1\"" //
+            + "},\"payload\":\"cloudFrontIPv4Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"proxy_detected\":\"true\"" //
+            + ",\"proxy_list_versions\":\"" + version + "\"" //
+            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + ",\"x_forwarded_for\":\"4,3,1\"" //
+            + "},\"payload\":\"cloudFrontIPv6Subnet\"}",
+        "{\"attributeMap\":" //
+            + "{\"proxy_list_versions\":\"" + version + "\"" //
+            + ",\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
-            + ",\"x_forwarded_for\":\"4, 3, 2\"" //
+            + ",\"x_forwarded_for\":\"4,3,1\"" //
             + "},\"payload\":\"proxiedWithTimestamp\"}",
         "{\"attributeMap\":" //
-            + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
+            + "{\"proxy_list_versions\":\"test\"" //
+            + ",\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2\"" //
             + "},\"payload\":\"retried+\"}");
@@ -83,24 +137,33 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of("2.3.4.5,6.7.8.9")) //
+        .apply(ParseProxy.of("2.3.4.5,6.7.8.9", "src/test/resources/google-ip-ranges",
+            "src/test/resources/cloudfront-ip-ranges.json")) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 
-    final PipelineResult result = pipeline.run();
+    ParseProxy.clearSingletonsForTests();
+    final PipelineResult result;
+    try {
+      result = pipeline.run();
+    } finally {
+      // clear singletons to prevent impacting other tests
+      ParseProxy.clearSingletonsForTests();
+    }
 
     final List<MetricResult<Long>> counters = Lists.newArrayList(result.metrics()
         .queryMetrics(MetricsFilter.builder()
             .addNameFilter(MetricNameFilter.inNamespace(ParseProxy.Fn.class)).build())
         .getCounters());
 
-    assertEquals(2, counters.size());
+    assertEquals(4, counters.size());
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
   @Test
   public void testWithGeoCityLookup() {
+
     final List<String> input = Arrays.asList(//
         "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
@@ -134,13 +197,18 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of("no-proxy-ip")) //
+        .apply(ParseProxy.of(null, null, null)) //
         .apply(GeoCityLookup.of("src/test/resources/cityDB/GeoIP2-City-Test.mmdb", null))
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 
-    final PipelineResult result = pipeline.run();
+    ParseProxy.clearSingletonsForTests();
+    try {
+      pipeline.run();
+    } finally {
+      // clear singletons to prevent impacting other tests
+      ParseProxy.clearSingletonsForTests();
+    }
   }
-
 }

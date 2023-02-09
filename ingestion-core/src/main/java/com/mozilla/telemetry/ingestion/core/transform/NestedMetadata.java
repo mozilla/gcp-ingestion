@@ -2,6 +2,7 @@ package com.mozilla.telemetry.ingestion.core.transform;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
@@ -34,6 +35,9 @@ public class NestedMetadata {
 
   private static final String ISP = "isp";
   private static final String ISP_PREFIX = ISP + "_";
+
+  private static final String PROXY = "proxy";
+  private static final String PROXY_PREFIX = PROXY + "_";
 
   private static final String USER_AGENT_PREFIX = Attribute.USER_AGENT + "_";
 
@@ -101,6 +105,7 @@ public class NestedMetadata {
     ObjectNode metadata = Json.createObjectNode();
     metadata.set(GEO, geoFromAttributes(attributes));
     metadata.set(ISP, ispFromAttributes(attributes));
+    metadata.set(PROXY, proxyFromAttributes(attributes));
     metadata.set(Attribute.USER_AGENT, userAgentFromAttributes(attributes));
     metadata.set(HEADER, headersFromAttributes(attributes));
     if (Namespace.TELEMETRY.equals(namespace)) {
@@ -146,6 +151,7 @@ public class NestedMetadata {
         .ifPresent(metadata -> {
           putGeoAttributes(attributes, metadata);
           putIspAttributes(attributes, metadata);
+          putProxyAttributes(attributes, metadata);
           putUserAgentAttributes(attributes, metadata);
           putHeaderAttributes(attributes, metadata);
           putUriAttributes(attributes, metadata);
@@ -187,6 +193,26 @@ public class NestedMetadata {
 
   static void putIspAttributes(Map<String, String> attributes, ObjectNode metadata) {
     putAttributes(attributes, metadata, ISP, ISP_PREFIX);
+  }
+
+  @VisibleForTesting
+  static ObjectNode proxyFromAttributes(Map<String, String> attributes) {
+    ObjectNode proxy = Json.createObjectNode();
+    attributes.keySet().stream() //
+        .filter(k -> k.startsWith(PROXY_PREFIX)) //
+        .forEach(k -> {
+          final String key = k.substring(6);
+          if (Attribute.PROXY_DETECTED.equals(k)) {
+            proxy.put(key, Boolean.valueOf(attributes.get(k)));
+          } else {
+            proxy.put(key, attributes.get(k));
+          }
+        });
+    return proxy;
+  }
+
+  static void putProxyAttributes(Map<String, String> attributes, ObjectNode metadata) {
+    putAttributes(attributes, metadata, PROXY, PROXY_PREFIX);
   }
 
   static ObjectNode userAgentFromAttributes(Map<String, String> attributes) {

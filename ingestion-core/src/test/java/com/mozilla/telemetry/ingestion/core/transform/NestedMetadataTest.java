@@ -39,6 +39,28 @@ public class NestedMetadataTest {
   }
 
   @Test
+  public void testProxyFromAttributes() throws Exception {
+    Map<String, String> attributes = ImmutableMap.of("proxy_detected", "true", //
+        "sample_id", "15", "proxy_list_versions", "google:test;cloudfront:test");
+    ObjectNode proxy = NestedMetadata.proxyFromAttributes(attributes);
+    ObjectNode expected = mapToObjectNode(
+        ImmutableMap.of("detected", true, "list_versions", "google:test;cloudfront:test"));
+    assertEquals(expected, proxy);
+  }
+
+  @Test
+  public void testPutProxyAttributes() throws Exception {
+    ObjectNode metadata = Json.createObjectNode().set("proxy",
+        Json.createObjectNode().put("detected", true)
+            .put("list_versions", "google:test;cloudfront:test").putNull("other"));
+    Map<String, String> attributes = new HashMap<>();
+    NestedMetadata.putProxyAttributes(attributes, metadata);
+    Map<String, String> expected = ImmutableMap.of("proxy_detected", "true", "proxy_list_versions",
+        "google:test;cloudfront:test");
+    assertEquals(expected, attributes);
+  }
+
+  @Test
   public void testUserAgentFromAttributes() throws Exception {
     Map<String, String> attributes = ImmutableMap.of("user_agent_browser", "Firefox", //
         "user_agent_version", "63.0", //
@@ -145,6 +167,7 @@ public class NestedMetadataTest {
             .put("header", ImmutableMap.of("x_debug_id", "mysession")) //
             .put("geo", ImmutableMap.of("country", "CA")) //
             .put("isp", ImmutableMap.of("name", "my isp")) //
+            .put("proxy", ImmutableMap.of()) //
             .put("user_agent", ImmutableMap.of()) //
             .build()) //
         .put("normalized_channel", "release") //

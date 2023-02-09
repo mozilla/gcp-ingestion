@@ -29,6 +29,7 @@ public class Constant {
     public static final String GEO_SUBDIVISION1 = "geo_subdivision1";
     public static final String GEO_SUBDIVISION2 = "geo_subdivision2";
     public static final String GEO_DMA_CODE = "geo_dma_code";
+    public static final String GEO_DB_VERSION = "geo_db_version";
     @SuppressWarnings({ "checkstyle:linelength" })
     public static final String IMPROVE_SUGGEST_EXPERIENCE_CHECKED = "improve_suggest_experience_checked";
     public static final String ISP_NAME = "isp_name";
@@ -43,6 +44,8 @@ public class Constant {
     public static final String NORMALIZED_OS_VERSION = "normalized_os_version";
     public static final String OS = "os";
     public static final String OS_VERSION = "os_version";
+    public static final String PROXY_DETECTED = "proxy_detected";
+    public static final String PROXY_LIST_VERSIONS = "proxy_list_versions";
     public static final String PROXY_TIMESTAMP = "proxy_timestamp";
     public static final String REMOTE_ADDR = "remote_addr";
     public static final String REPORTING_URL = "reporting_url";

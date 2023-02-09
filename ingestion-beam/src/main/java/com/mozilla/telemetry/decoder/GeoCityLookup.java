@@ -199,7 +199,7 @@ public class GeoCityLookup
         }
 
         try {
-          attributes.put("geo_db_version", DateTimeFormatter.ISO_INSTANT
+          attributes.put(Attribute.GEO_DB_VERSION, DateTimeFormatter.ISO_INSTANT
               .format(Instant.ofEpochMilli(geoIP2City.getMetadata().getBuildDate().getTime())));
 
           // Throws UnknownHostException

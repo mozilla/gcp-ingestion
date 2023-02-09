@@ -21,6 +21,19 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setProxyIps(String value);
 
+  @Description("Path (local or gs://) to json file containing a object whose values are lists of "
+      + "IPs and CIDR notation subnets associated with CloudFront that will be ignored for IP "
+      + "lookups, based on https://ip-ranges.amazonaws.com/ip-ranges.json")
+  String getListCloudFrontIps();
+
+  void setListCloudFrontIps(String value);
+
+  @Description("Path (local or gs://) to newline delimited text file of IPs and CIDR notation "
+      + "subnets associated with Google proxies that will be ignored for IP lookups.")
+  String getListGoogleNonCustomerIps();
+
+  void setListGoogleNonCustomerIps(String value);
+
   @Description("Path (local or gs://) to GeoIP2-City.mmdb")
   @Validation.Required
   String getGeoCityDatabase();

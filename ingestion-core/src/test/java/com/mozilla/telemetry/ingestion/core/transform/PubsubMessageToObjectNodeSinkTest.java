@@ -67,6 +67,7 @@ public class PubsubMessageToObjectNodeSinkTest {
         .put("x_pingsender_version", "x_pingsender_version").put("uri", "uri")
         .put("app_build_id", "app_build_id").put("app_name", "app_name")
         .put("app_update_channel", "app_update_channel").put("app_version", "app_version")
+        .put("proxy_detected", "true").put("proxy_list_versions", "proxy_list_versions")
         .put("document_namespace", "telemetry").put("document_type", "document_type")
         .put("document_version", "document_version")
         .put("submission_timestamp", "submission_timestamp").put("document_id", "document_id")
@@ -98,6 +99,9 @@ public class PubsubMessageToObjectNodeSinkTest {
                     ImmutableMap.builder().put("uri", "uri").put("app_build_id", "app_build_id")
                         .put("app_name", "app_name").put("app_update_channel", "app_update_channel")
                         .put("app_version", "app_version").build())
+                .put("proxy",
+                    ImmutableMap.builder().put("detected", true)
+                        .put("list_versions", "proxy_list_versions").build())
                 .put("document_namespace", "telemetry").put("document_type", "document_type")
                 .put("document_version", "document_version").build())
             .put("submission_timestamp", "submission_timestamp").put("document_id", "document_id")
@@ -122,6 +126,7 @@ public class PubsubMessageToObjectNodeSinkTest {
         .put("x_pingsender_version", "x_pingsender_version").put("uri", "uri")
         .put("app_build_id", "app_build_id").put("app_name", "app_name")
         .put("app_update_channel", "app_update_channel").put("app_version", "app_version")
+        .put("proxy_detected", "true").put("proxy_list_versions", "proxy_list_versions")
         .put("document_namespace", "document_namespace").put("document_type", "document_type")
         .put("document_version", "document_version")
         .put("submission_timestamp", "submission_timestamp").put("document_id", "document_id")
@@ -149,6 +154,9 @@ public class PubsubMessageToObjectNodeSinkTest {
                     ImmutableMap.builder().put("date", "date").put("dnt", "dnt")
                         .put("x_debug_id", "x_debug_id")
                         .put("x_pingsender_version", "x_pingsender_version").build())
+                .put("proxy",
+                    ImmutableMap.builder().put("detected", true)
+                        .put("list_versions", "proxy_list_versions").build())
                 .put("document_namespace", "document_namespace")
                 .put("document_type", "document_type").put("document_version", "document_version")
                 .build())
@@ -167,20 +175,27 @@ public class PubsubMessageToObjectNodeSinkTest {
     final ObjectNode actual = DECODED_TRANSFORM
         .apply(ImmutableMap.of("document_namespace", "telemetry"), EMPTY_DATA);
 
-    assertEquals(ImmutableMap.builder().put("metadata",
-        ImmutableMap.builder().put("document_namespace", "telemetry").put("geo", ImmutableMap.of())
-            .put("isp", ImmutableMap.of()).put("header", ImmutableMap.of())
-            .put("user_agent", ImmutableMap.of()).put("uri", ImmutableMap.of()).build())
-        .build(), Json.asMap(actual));
+    assertEquals(
+        ImmutableMap.builder()
+            .put("metadata",
+                ImmutableMap.builder().put("document_namespace", "telemetry")
+                    .put("geo", ImmutableMap.of()).put("isp", ImmutableMap.of())
+                    .put("header", ImmutableMap.of()).put("user_agent", ImmutableMap.of())
+                    .put("uri", ImmutableMap.of()).put("proxy", ImmutableMap.of()).build())
+            .build(),
+        Json.asMap(actual));
   }
 
   @Test
   public void canFormatNonTelemetryAsDecodedWithEmptyValues() {
-    assertEquals(ImmutableMap.builder()
-        .put("metadata",
-            ImmutableMap.builder().put("geo", ImmutableMap.of()).put("isp", ImmutableMap.of())
-                .put("header", ImmutableMap.of()).put("user_agent", ImmutableMap.of()).build())
-        .build(), Json.asMap(DECODED_TRANSFORM.apply(EMPTY_ATTRIBUTES, EMPTY_DATA)));
+    assertEquals(
+        ImmutableMap.builder()
+            .put("metadata",
+                ImmutableMap.builder().put("geo", ImmutableMap.of()).put("isp", ImmutableMap.of())
+                    .put("header", ImmutableMap.of()).put("user_agent", ImmutableMap.of())
+                    .put("proxy", ImmutableMap.of()).build())
+            .build(),
+        Json.asMap(DECODED_TRANSFORM.apply(EMPTY_ATTRIBUTES, EMPTY_DATA)));
   }
 
   private static TypeReference<Map<String, String>> stringMap = //
