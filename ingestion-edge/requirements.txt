@@ -806,9 +806,9 @@ types-python-dateutil==2.8.19.7 \
     --hash=sha256:669751e1e6d4f3dbbff471231740e7ecdae2135b604383e477fe31fd56223967 \
     --hash=sha256:7af5a5d1b80ab1dfa0ba4d879facb382e836a62c2d408c2a509be4680fd8b1c8
     # via -r requirements.in
-types-pyyaml==6.0.12.6 \
-    --hash=sha256:24e76b938d58e68645271eeb149af6022d1da99788e481f959bd284b164f39a1 \
-    --hash=sha256:77b74d0874482f2b42dd566b7277b0a220068595e0fb42689d0c0560f3d1ae9e
+types-pyyaml==6.0.12.7 \
+    --hash=sha256:91c64379a9ae88471a473d1ce0abf6a09c285700a297621b2177163d506584b8 \
+    --hash=sha256:ad40c99142b1812615bac08d5e240d35107a27ec285af501682c685957692f95
     # via -r requirements.in
 types-requests==2.28.11.13 \
     --hash=sha256:3fd332842e8759ea5f7eb7789df8aa772ba155216ccf10ef4aa3b0e5b42e1b46 \
