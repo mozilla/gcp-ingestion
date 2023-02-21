@@ -802,9 +802,9 @@ types-protobuf==4.21.0.6 \
     --hash=sha256:39167012ead0bc5920b6322a1e4dc2d088f66a34b84cce39bb88500e49ac955a \
     --hash=sha256:8c105b906569e9d53ba033465880d9ef17a59bf3ba8ab656d24c9eadb9d8a056
     # via -r requirements.in
-types-python-dateutil==2.8.19.7 \
-    --hash=sha256:669751e1e6d4f3dbbff471231740e7ecdae2135b604383e477fe31fd56223967 \
-    --hash=sha256:7af5a5d1b80ab1dfa0ba4d879facb382e836a62c2d408c2a509be4680fd8b1c8
+types-python-dateutil==2.8.19.8 \
+    --hash=sha256:316c6b107d055bbd06324b71362e6104102220e6988aa4a388550aa3a8ad5d06 \
+    --hash=sha256:6b44741d3e79b2f2ba595f6bfa96f1a5091a00703848547efb3bc5b71df3cf9d
     # via -r requirements.in
 types-pyyaml==6.0.12.6 \
     --hash=sha256:24e76b938d58e68645271eeb149af6022d1da99788e481f959bd284b164f39a1 \
