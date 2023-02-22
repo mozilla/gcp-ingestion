@@ -229,6 +229,10 @@ public class MessageScrubber {
     if ("firefox-desktop".equals(namespace) && "background-update".equals(docType)) {
       throw new MessageShouldBeDroppedException("1784911");
     }
+    if ("firefox-desktop-background-update".equals(namespace)
+        && "new-metric-capture-emulation".equals(docType)) {
+      throw new MessageShouldBeDroppedException("1817821");
+    }
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
