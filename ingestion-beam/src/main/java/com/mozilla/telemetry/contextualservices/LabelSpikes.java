@@ -32,12 +32,12 @@ import org.joda.time.Instant;
  * Transform that maintains state per key in order to label suspicious clicks.
  */
 @SuppressWarnings("checkstyle:lineLength")
-public class LabelClickSpikes extends
+public class LabelSpikes extends
     PTransform<PCollection<KV<String, SponsoredInteraction>>, PCollection<KV<String, SponsoredInteraction>>> {
 
   private final Integer maxClicks;
   private final Long windowMillis;
-  private final Counter ghostClickCounter = Metrics.counter(LabelClickSpikes.class, "ghost_click");
+  private final Counter ghostClickCounter = Metrics.counter(LabelSpikes.class, "ghost_click");
 
   /**
    * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
@@ -48,15 +48,15 @@ public class LabelClickSpikes extends
         .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteraction.getCoder())) //
         .apply(WithCurrentTimestamp.of()) //
-        .apply(LabelClickSpikes.of(maxClicks, windowDuration)) //
+        .apply(LabelSpikes.of(maxClicks, windowDuration)) //
         .apply(Values.create()));
   }
 
-  public static LabelClickSpikes of(Integer maxClicks, Duration windowDuration) {
-    return new LabelClickSpikes(maxClicks, windowDuration);
+  public static LabelSpikes of(Integer maxClicks, Duration windowDuration) {
+    return new LabelSpikes(maxClicks, windowDuration);
   }
 
-  private LabelClickSpikes(Integer maxClicks, Duration windowDuration) {
+  private LabelSpikes(Integer maxClicks, Duration windowDuration) {
     this.maxClicks = maxClicks;
     this.windowMillis = windowDuration.getMillis();
   }

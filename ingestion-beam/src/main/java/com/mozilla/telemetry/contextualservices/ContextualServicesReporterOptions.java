@@ -54,6 +54,19 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setClickSpikeThreshold(Integer value);
 
+  @Description("Duration window when counting impressions for labeling spikes.")
+  @Default.String("3m")
+  String getImpressionSpikeWindowDuration();
+
+  void setImpressionSpikeWindowDuration(String value);
+
+  @Description("Impression count threshold when labeling impression spikes.")
+  // Based on default for click spikes. The daily impressions (~300MM) is ~ 500x more than daily clicks (600K)
+  @Default.Integer(10 * 500)
+  Integer getImpressionSpikeThreshold();
+
+  void setImpressionSpikeThreshold(Integer value);
+
   @Description("If set to true, send successfully requested reporting URLs to"
       + " error output.  SendRequests stage does not continue if true.")
   @Default.Boolean(true)

@@ -5,7 +5,7 @@ import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
 import com.mozilla.telemetry.contextualservices.EmitCounters;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
-import com.mozilla.telemetry.contextualservices.LabelClickSpikes;
+import com.mozilla.telemetry.contextualservices.LabelSpikes;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
@@ -77,25 +77,33 @@ public class ContextualServicesReporter extends Sink {
         .concat(individualImpressions.stream(), individualClicks.stream())
         .collect(Collectors.toSet());
 
+    // Perform windowed click counting per context_id, adding a click-status to the reporting URL
+    // if the count passes a threshold.
+    PCollection<SponsoredInteraction> clicksCountedByContextId = requests
+            .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
+                    .contains(interaction.getDerivedDocumentType())))
+            .apply(LabelSpikes.perContextId(options.getClickSpikeThreshold(),
+                    Time.parseDuration(options.getClickSpikeWindowDuration())));
+
+    // Perform windowed impression counting per context_id, adding an impression-status to the reporting URL
+    // if the count passes a threshold.
+    PCollection<SponsoredInteraction> impressionsCountedByContextId = requests
+            .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualImpressions //
+                    .contains(interaction.getDerivedDocumentType())))
+            .apply(LabelSpikes.perContextId(options.getImpressionSpikeThreshold(),
+                    Time.parseDuration(options.getImpressionSpikeWindowDuration())));
+
     // Aggregate impressions.
     PCollection<SponsoredInteraction> aggregatedImpressions = requests
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
-    // Perform windowed click counting per context_id, adding a click-status to the reporting URL
-    // if the count passes a threshold.
-    PCollection<SponsoredInteraction> perContextId = requests
-        .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
-            .contains(interaction.getDerivedDocumentType())))
-        .apply(LabelClickSpikes.perContextId(options.getClickSpikeThreshold(),
-            Time.parseDuration(options.getClickSpikeWindowDuration())));
-
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
         Filter.by((interaction) -> !unionedDocTypes //
             .contains(interaction.getDerivedDocumentType())));
 
-    PCollectionList.of(aggregatedImpressions).and(perContextId).and(unaggregated).apply(Flatten.pCollections())
+    PCollectionList.of(aggregatedImpressions).and(clicksCountedByContextId).and(unaggregated).apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
 
