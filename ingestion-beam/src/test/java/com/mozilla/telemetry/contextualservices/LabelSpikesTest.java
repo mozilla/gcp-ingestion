@@ -15,7 +15,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.stream.StreamSupport;
 
-public class LabelClickSpikesTest {
+public class LabelSpikesTest {
 
   private SponsoredInteraction.Builder getTestInteraction(String type) {
     return SponsoredInteraction.builder().setInteractionType(type).setSource("topsite")
@@ -26,7 +26,7 @@ public class LabelClickSpikesTest {
   public TestPipeline pipeline = TestPipeline.create();
 
   @Test
-  public void testSetsSpikeStatus() {
+  public void testSetsSpikeStatus_forClicks() {
 
     SponsoredInteraction interaction = getTestInteraction("interaction").setContextId("a")
         .setReportingUrl("https://test.com").build();
@@ -43,7 +43,7 @@ public class LabelClickSpikesTest {
 
     PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3))).apply(Values.create());
+        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)).apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -58,6 +58,45 @@ public class LabelClickSpikesTest {
           .count();
       int expectedWithStatus = 10;
       assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus + " messages with click-status, but found "
+          + countWithStatus);
+      return null;
+    });
+
+    pipeline.run().waitUntilFinish();
+  }
+  @Test
+  public void testSetsSpikeStatus_forImpressions() {
+
+    SponsoredInteraction interaction = getTestInteraction("interaction").setContextId("a")
+        .setReportingUrl("https://test.com").build();
+    Builder<SponsoredInteraction> eventBuilder = TestStream.create(SponsoredInteraction.getCoder());
+
+    // We add 20 messages each only a second apart. The first 10 should saturate the timestamp
+    // state, then the final 10 should be marked as suspicious via impression-status.
+    for (int i = 1; i <= 20; i++) {
+      eventBuilder = eventBuilder.advanceProcessingTime(Duration.standardSeconds(i))
+          .addElements(interaction);
+    }
+
+    TestStream<SponsoredInteraction> createEvents = eventBuilder.advanceWatermarkToInfinity();
+
+    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
+        .apply(WithKeys.of("a")) //
+        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.IMPRESSION)).apply(Values.create());
+
+    PAssert.that(result).satisfies(iter -> {
+      int size = Iterables.size(iter);
+      int expected = 20;
+      assert size == expected : "Expected " + expected + " messages, but found " + size;
+      return null;
+    });
+
+    PAssert.that(result).satisfies(iter -> {
+      long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
+          .filter(m -> m.getReportingUrl().contains("impression-status=1")) //
+          .count();
+      int expectedWithStatus = 10;
+      assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus + " messages with impression-status, but found "
           + countWithStatus);
       return null;
     });
@@ -82,7 +121,7 @@ public class LabelClickSpikesTest {
 
     PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3))).apply(Values.create());
+        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)).apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -118,7 +157,7 @@ public class LabelClickSpikesTest {
 
     PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3))) //
+        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)) //
         .apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {

@@ -1,15 +1,7 @@
 package com.mozilla.telemetry;
 
 import com.google.common.collect.ImmutableSet;
-import com.mozilla.telemetry.contextualservices.AggregateImpressions;
-import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
-import com.mozilla.telemetry.contextualservices.EmitCounters;
-import com.mozilla.telemetry.contextualservices.FilterByDocType;
-import com.mozilla.telemetry.contextualservices.LabelSpikes;
-import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
-import com.mozilla.telemetry.contextualservices.SendRequest;
-import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
-import com.mozilla.telemetry.contextualservices.VerifyMetadata;
+import com.mozilla.telemetry.contextualservices.*;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.util.Time;
 import java.util.ArrayList;
@@ -82,16 +74,22 @@ public class ContextualServicesReporter extends Sink {
     PCollection<SponsoredInteraction> clicksCountedByContextId = requests
             .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
                     .contains(interaction.getDerivedDocumentType())))
-            .apply(LabelSpikes.perContextId(options.getClickSpikeThreshold(),
-                    Time.parseDuration(options.getClickSpikeWindowDuration())));
+            .apply(LabelSpikes.perContextId(
+                    options.getClickSpikeThreshold(),
+                    Time.parseDuration(options.getClickSpikeWindowDuration()),
+                    TelemetryEventType.CLICK
+            ));
 
     // Perform windowed impression counting per context_id, adding an impression-status to the reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> impressionsCountedByContextId = requests
             .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualImpressions //
                     .contains(interaction.getDerivedDocumentType())))
-            .apply(LabelSpikes.perContextId(options.getImpressionSpikeThreshold(),
-                    Time.parseDuration(options.getImpressionSpikeWindowDuration())));
+            .apply(LabelSpikes.perContextId(
+                    options.getImpressionSpikeThreshold(),
+                    Time.parseDuration(options.getImpressionSpikeWindowDuration()),
+                    TelemetryEventType.IMPRESSION
+            ));
 
     // Aggregate impressions.
     PCollection<SponsoredInteraction> aggregatedImpressions = requests

@@ -28,6 +28,8 @@ import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
+import com.mozilla.telemetry.contextualservices.TelemetryEventType;
+
 /**
  * Transform that maintains state per key in order to label suspicious clicks.
  */
@@ -35,30 +37,42 @@ import org.joda.time.Instant;
 public class LabelSpikes extends
     PTransform<PCollection<KV<String, SponsoredInteraction>>, PCollection<KV<String, SponsoredInteraction>>> {
 
-  private final Integer maxClicks;
+  private final Integer maxInteractions;
   private final Long windowMillis;
   private final Counter ghostClickCounter = Metrics.counter(LabelSpikes.class, "ghost_click");
+  private String paramName;
+  private String suspiciousParamValue;
 
   /**
    * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
    */
   public static PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> perContextId(
-      Integer maxClicks, Duration windowDuration) {
+      Integer maxClicks, Duration windowDuration, TelemetryEventType eventType) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
         .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteraction.getCoder())) //
         .apply(WithCurrentTimestamp.of()) //
-        .apply(LabelSpikes.of(maxClicks, windowDuration)) //
+        .apply(LabelSpikes.of(maxClicks, windowDuration, eventType)) //
         .apply(Values.create()));
   }
 
-  public static LabelSpikes of(Integer maxClicks, Duration windowDuration) {
-    return new LabelSpikes(maxClicks, windowDuration);
+  public static LabelSpikes of(Integer maxClicks, Duration windowDuration, TelemetryEventType eventType) {
+    return new LabelSpikes(maxClicks, windowDuration, eventType);
   }
 
-  private LabelSpikes(Integer maxClicks, Duration windowDuration) {
-    this.maxClicks = maxClicks;
+  private LabelSpikes(Integer maxInteractions, Duration windowDuration, TelemetryEventType eventType) {
+    this.maxInteractions = maxInteractions;
     this.windowMillis = windowDuration.getMillis();
+    switch (eventType) {
+      case CLICK:
+        this.paramName = ParsedReportingUrl.PARAM_CLICK_STATUS;
+        this.suspiciousParamValue = ParseReportingUrl.CLICK_STATUS_GHOST;
+        break;
+      case IMPRESSION:
+        this.paramName = ParsedReportingUrl.PARAM_IMPPRESSION_STATUS;
+        this.suspiciousParamValue = ParseReportingUrl.IMPRESSION_STATUS_SUSPICIOUS;
+        break;
+    }
   }
 
   /** Accesses and updates state, adding the current timestamp and cleaning expired values. */
@@ -73,16 +87,15 @@ public class LabelSpikes extends
         .sorted(Comparator.reverseOrder())
         // We conserve memory by keeping only the most recent clicks if we're over the limit;
         // we allow (maxClicks + 1) elements so size checks can use ">" rather than ">=".
-        .limit(maxClicks + 1).collect(Collectors.toList());
+        .limit(maxInteractions + 1).collect(Collectors.toList());
     state.write(timestamps);
     return timestamps;
   }
 
   /** Updates the passed attribute map, adding click-status to the reporting URL. */
-  private static String addClickStatusToReportingUrlAttribute(String reportingUrl) {
+  private static String addStatusToReportingUrlAttribute(String reportingUrl, String paramName, String status) {
     ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
-    urlParser.addQueryParam(ParsedReportingUrl.PARAM_CLICK_STATUS,
-        ParseReportingUrl.CLICK_STATUS_GHOST);
+    urlParser.addQueryParam(paramName, status);
     return urlParser.toString();
   }
 
@@ -108,11 +121,16 @@ public class LabelSpikes extends
       // it will overwrite this timer value.
       timer.offset(Duration.millis(windowMillis)).setRelative();
 
-      if (timestamps.size() <= maxClicks) {
+      if (timestamps.size() <= maxInteractions) {
         out.output(element);
       } else {
         SponsoredInteraction interaction = element.getValue();
-        String reportingUrl = addClickStatusToReportingUrlAttribute(interaction.getReportingUrl());
+
+        String reportingUrl = addStatusToReportingUrlAttribute(
+                interaction.getReportingUrl(),
+                paramName,
+                suspiciousParamValue
+        );
         ghostClickCounter.inc();
         out.output(
             KV.of(element.getKey(), interaction.toBuilder().setReportingUrl(reportingUrl).build()));
