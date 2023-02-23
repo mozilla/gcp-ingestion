@@ -100,7 +100,7 @@ public class ContextualServicesReporter extends Sink {
                 new SerializableFunction<SponsoredInteraction, Boolean>() {
                   @Override
                   public Boolean apply(SponsoredInteraction input) {
-                    return input.getReportingUrl().contains("impression-status=1");
+                    return !input.getReportingUrl().contains("impression-status=1");
                   }
                 }
         ))
@@ -109,11 +109,11 @@ public class ContextualServicesReporter extends Sink {
     PCollection<SponsoredInteraction> aggregatedPossiblyFraudulentImpressions = requests
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
-        .apply("FilterForLegitImpressions", Filter.by(
+        .apply("FilterForPossiblyFraudulentImpressions", Filter.by(
                 new SerializableFunction<SponsoredInteraction, Boolean>() {
                   @Override
                   public Boolean apply(SponsoredInteraction input) {
-                    return !input.getReportingUrl().contains("impression-status=1");
+                    return input.getReportingUrl().contains("impression-status=1");
                   }
                 }
         ))
