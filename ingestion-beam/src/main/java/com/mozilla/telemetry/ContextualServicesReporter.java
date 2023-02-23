@@ -15,6 +15,7 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 
@@ -92,16 +93,41 @@ public class ContextualServicesReporter extends Sink {
             ));
 
     // Aggregate impressions.
-    PCollection<SponsoredInteraction> aggregatedImpressions = requests
+    PCollection<SponsoredInteraction> aggregatedGenuineImpressions = requests
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
+        .apply("FilterForLegitImpressions", Filter.by(
+                new SerializableFunction<SponsoredInteraction, Boolean>() {
+                  @Override
+                  public Boolean apply(SponsoredInteraction input) {
+                    return input.getReportingUrl().contains("impression-status=1");
+                  }
+                }
+        ))
+        .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
+
+    PCollection<SponsoredInteraction> aggregatedPossiblyFraudulentImpressions = requests
+        .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
+            .contains(interaction.getDerivedDocumentType())))
+        .apply("FilterForLegitImpressions", Filter.by(
+                new SerializableFunction<SponsoredInteraction, Boolean>() {
+                  @Override
+                  public Boolean apply(SponsoredInteraction input) {
+                    return !input.getReportingUrl().contains("impression-status=1");
+                  }
+                }
+        ))
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
         Filter.by((interaction) -> !unionedDocTypes //
             .contains(interaction.getDerivedDocumentType())));
 
-    PCollectionList.of(aggregatedImpressions).and(clicksCountedByContextId).and(unaggregated).apply(Flatten.pCollections())
+    PCollectionList.of(aggregatedGenuineImpressions)
+        .and(aggregatedPossiblyFraudulentImpressions)
+        .and(clicksCountedByContextId)
+        .and(unaggregated)
+        .apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
 
