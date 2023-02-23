@@ -37,7 +37,7 @@ public class ParseReportingUrlTest {
 
   @Test
   public void testAllowedUrlsLoadAndFilter() throws IOException {
-    ParseReportingUrl parseReportingUrl = ParseReportingUrl.of(URL_ALLOW_LIST);
+    ParseReportingURL parseReportingUrl = ParseReportingURL.of(URL_ALLOW_LIST);
 
     pipeline.run();
 
@@ -78,7 +78,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+        .apply(ParseReportingURL.of(URL_ALLOW_LIST));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterators.size(messages.iterator()));
@@ -99,16 +99,16 @@ public class ParseReportingUrlTest {
       Assert.assertTrue(reportingUrl.contains("param=1"));
       Assert.assertTrue(reportingUrl.contains("id=a"));
       Assert.assertTrue(
-          reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
+          reportingUrl.contains(String.format("%s=", BuildReportingURL.PARAM_REGION_CODE)));
       Assert.assertTrue(reportingUrl
-          .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "Windows")));
+          .contains(String.format("%s=%s", BuildReportingURL.PARAM_OS_FAMILY, "Windows")));
       Assert.assertTrue(reportingUrl
-          .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
+          .contains(String.format("%s=%s", BuildReportingURL.PARAM_COUNTRY_CODE, "US")));
       Assert.assertTrue(reportingUrl
-          .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "desktop")));
+          .contains(String.format("%s=%s", BuildReportingURL.PARAM_FORM_FACTOR, "desktop")));
       Assert.assertTrue(
-          reportingUrl.contains(String.format("%s=&", ParsedReportingUrl.PARAM_DMA_CODE))
-              || reportingUrl.endsWith(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+          reportingUrl.contains(String.format("%s=&", BuildReportingURL.PARAM_DMA_CODE))
+              || reportingUrl.endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
 
       return null;
     });
@@ -145,7 +145,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+        .apply(ParseReportingURL.of(URL_ALLOW_LIST));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(5, Iterables.size(messages));
@@ -201,7 +201,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+        .apply(ParseReportingURL.of(URL_ALLOW_LIST));
 
     // We expect this test url to fail for suggest impressions and clicks as of
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
@@ -222,17 +222,17 @@ public class ParseReportingUrlTest {
             if (doctype.equals("topsites-impression")) {
               if (reportingUrl.contains("Windows")) {
                 Assert.assertTrue(reportingUrl
-                    .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "12")));
+                    .contains(String.format("%s=%s", BuildReportingURL.PARAM_DMA_CODE, "12")));
               } else {
                 Assert.assertTrue(
-                    reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+                    reportingUrl.contains(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
               }
             } else if (doctype.equals("topsites-click")) {
               Assert.assertTrue(reportingUrl
-                  .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_DMA_CODE, "34")));
+                  .contains(String.format("%s=%s", BuildReportingURL.PARAM_DMA_CODE, "34")));
             } else {
               Assert.assertFalse(
-                  reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+                  reportingUrl.contains(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
             }
 
             Assert.assertEquals("Expect context-id to match", contextId,
@@ -279,7 +279,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+        .apply(ParseReportingURL.of(URL_ALLOW_LIST));
 
     // We expect 4 successful messages.
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
@@ -309,18 +309,18 @@ public class ParseReportingUrlTest {
             if (doctype.equals("quicksuggest-impression")) {
               if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
                 Assert.assertTrue(reportingUrl.contains(
-                    String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
+                    String.format("%s=%s", BuildReportingURL.PARAM_CUSTOM_DATA, "1_online")));
               } else {
                 Assert.assertTrue(reportingUrl.contains(
-                    String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_offline")));
+                    String.format("%s=%s", BuildReportingURL.PARAM_CUSTOM_DATA, "1_offline")));
               }
             } else if (doctype.equals("quicksuggest-click")) {
               if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
                 Assert.assertTrue(reportingUrl.contains(
-                    String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
+                    String.format("%s=%s", BuildReportingURL.PARAM_CUSTOM_DATA, "1_online")));
               } else {
                 Assert.assertTrue(reportingUrl
-                    .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_CUSTOM_DATA, "1")));
+                    .contains(String.format("%s=%s", BuildReportingURL.PARAM_CUSTOM_DATA, "1")));
               }
             }
 
@@ -363,7 +363,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+        .apply(ParseReportingURL.of(URL_ALLOW_LIST));
 
     PAssert.that("There are zero failures in the pipeline", result.failures())
         .satisfies(messages -> {
@@ -396,17 +396,17 @@ public class ParseReportingUrlTest {
           Assert.assertTrue("contains param1", reportingUrl.contains("param=1"));
           Assert.assertTrue("contains id=foo", reportingUrl.contains("id=foo"));
           Assert.assertTrue("contains region code",
-              reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
+              reportingUrl.contains(String.format("%s=", BuildReportingURL.PARAM_REGION_CODE)));
           Assert.assertTrue("contains os family", reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "Android")));
+              .contains(String.format("%s=%s", BuildReportingURL.PARAM_OS_FAMILY, "Android")));
           Assert.assertTrue("contains country code", reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
+              .contains(String.format("%s=%s", BuildReportingURL.PARAM_COUNTRY_CODE, "US")));
           Assert.assertTrue("contains form factor", reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "phone")));
+              .contains(String.format("%s=%s", BuildReportingURL.PARAM_FORM_FACTOR, "phone")));
           Assert.assertTrue("contains dma code",
-              reportingUrl.contains(String.format("%s=&", ParsedReportingUrl.PARAM_DMA_CODE))
+              reportingUrl.contains(String.format("%s=&", BuildReportingURL.PARAM_DMA_CODE))
                   || reportingUrl
-                      .endsWith(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+                      .endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
 
           return null;
         });
@@ -445,7 +445,7 @@ public class ParseReportingUrlTest {
 
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+        .apply(ParseReportingURL.of(URL_ALLOW_LIST));
 
     PAssert.that("There are zero failures in the pipeline", result.failures())
         .satisfies(messages -> {
@@ -478,17 +478,17 @@ public class ParseReportingUrlTest {
           Assert.assertTrue("contains param1", reportingUrl.contains("param=1"));
           Assert.assertTrue("contains id=foo", reportingUrl.contains("id=foo"));
           Assert.assertTrue("contains region code",
-              reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
+              reportingUrl.contains(String.format("%s=", BuildReportingURL.PARAM_REGION_CODE)));
           Assert.assertTrue("contains os family", reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_OS_FAMILY, "iOS")));
+              .contains(String.format("%s=%s", BuildReportingURL.PARAM_OS_FAMILY, "iOS")));
           Assert.assertTrue("contains country code", reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_COUNTRY_CODE, "US")));
+              .contains(String.format("%s=%s", BuildReportingURL.PARAM_COUNTRY_CODE, "US")));
           Assert.assertTrue("contains form factor", reportingUrl
-              .contains(String.format("%s=%s", ParsedReportingUrl.PARAM_FORM_FACTOR, "phone")));
+              .contains(String.format("%s=%s", BuildReportingURL.PARAM_FORM_FACTOR, "phone")));
           Assert.assertTrue("contains dma code",
-              reportingUrl.contains(String.format("%s=&", ParsedReportingUrl.PARAM_DMA_CODE))
+              reportingUrl.contains(String.format("%s=&", BuildReportingURL.PARAM_DMA_CODE))
                   || reportingUrl
-                      .endsWith(String.format("%s=", ParsedReportingUrl.PARAM_DMA_CODE)));
+                      .endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
 
           return null;
         });

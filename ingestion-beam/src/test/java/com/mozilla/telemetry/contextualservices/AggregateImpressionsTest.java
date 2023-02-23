@@ -39,16 +39,16 @@ public class AggregateImpressionsTest {
       Assert.assertEquals(Iterables.size(messages), 1);
 
       String aggregatedUrl = Iterables.get(messages, 0).getReportingUrl();
-      ParsedReportingUrl parsedUrl = new ParsedReportingUrl(aggregatedUrl);
+      BuildReportingURL builtURL = new BuildReportingURL(aggregatedUrl);
 
       Assert.assertTrue(aggregatedUrl.startsWith("https://test.com"));
-      Assert.assertEquals(parsedUrl.getQueryParam("impressions"), "4");
-      Assert.assertNotNull(parsedUrl.getQueryParam("end-timestamp"));
-      Assert.assertFalse(parsedUrl.getQueryParam("end-timestamp").isEmpty());
-      Assert.assertNotNull(parsedUrl.getQueryParam("begin-timestamp"));
-      Assert.assertFalse(parsedUrl.getQueryParam("begin-timestamp").isEmpty());
-      Assert.assertNotEquals(parsedUrl.getQueryParam("begin-timestamp"),
-          parsedUrl.getQueryParam("end-timestamp"));
+      Assert.assertEquals(builtURL.getQueryParam("impressions"), "4");
+      Assert.assertNotNull(builtURL.getQueryParam("end-timestamp"));
+      Assert.assertFalse(builtURL.getQueryParam("end-timestamp").isEmpty());
+      Assert.assertNotNull(builtURL.getQueryParam("begin-timestamp"));
+      Assert.assertFalse(builtURL.getQueryParam("begin-timestamp").isEmpty());
+      Assert.assertNotEquals(builtURL.getQueryParam("begin-timestamp"),
+          builtURL.getQueryParam("end-timestamp"));
 
       return null;
     });
@@ -72,9 +72,9 @@ public class AggregateImpressionsTest {
     SponsoredInteraction.Builder baseInteraction = getTestInteraction();
 
     String attributesUrl1 = String.format("https://test.com?%s=US&%s=",
-        ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
+        BuildReportingURL.PARAM_COUNTRY_CODE, BuildReportingURL.PARAM_REGION_CODE);
     String attributesUrl2 = String.format("https://test.com?%s=DE&%s=",
-        ParsedReportingUrl.PARAM_COUNTRY_CODE, ParsedReportingUrl.PARAM_REGION_CODE);
+        BuildReportingURL.PARAM_COUNTRY_CODE, BuildReportingURL.PARAM_REGION_CODE);
 
     List<SponsoredInteraction> input = ImmutableList.of(
         baseInteraction.setReportingUrl(attributesUrl1).build(),
@@ -92,24 +92,24 @@ public class AggregateImpressionsTest {
 
       interactions.forEach(interaction -> {
         String reportingUrl = interaction.getReportingUrl();
-        ParsedReportingUrl parsedUrl = new ParsedReportingUrl(reportingUrl);
+        BuildReportingURL builtURL = new BuildReportingURL(reportingUrl);
 
-        String country = parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE);
+        String country = builtURL.getQueryParam(BuildReportingURL.PARAM_COUNTRY_CODE);
         if ("US".equals(country)) {
-          Assert.assertEquals(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS), "3");
+          Assert.assertEquals(builtURL.getQueryParam(BuildReportingURL.PARAM_IMPRESSIONS), "3");
         } else if ("DE".equals(country)) {
-          Assert.assertEquals(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS), "2");
+          Assert.assertEquals(builtURL.getQueryParam(BuildReportingURL.PARAM_IMPRESSIONS), "2");
         } else {
           throw new IllegalArgumentException("unknown country value");
         }
 
         // Parameters with no values should still be included
         Assert.assertTrue(
-            reportingUrl.contains(String.format("%s=", ParsedReportingUrl.PARAM_REGION_CODE)));
+            reportingUrl.contains(String.format("%s=", BuildReportingURL.PARAM_REGION_CODE)));
 
         long windowSize = Long
-            .parseLong(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_END))
-            - Long.parseLong(parsedUrl.getQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_BEGIN));
+            .parseLong(builtURL.getQueryParam(BuildReportingURL.PARAM_TIMESTAMP_END))
+            - Long.parseLong(builtURL.getQueryParam(BuildReportingURL.PARAM_TIMESTAMP_BEGIN));
         Assert.assertEquals(windowSize, 600L);
       });
 

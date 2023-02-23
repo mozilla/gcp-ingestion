@@ -58,7 +58,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
+        .apply(ParseReportingURL.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections) //
         .apply(EmitCounters.of());
 

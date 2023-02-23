@@ -28,8 +28,6 @@ import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
-import com.mozilla.telemetry.contextualservices.TelemetryEventType;
-
 /**
  * Transform that maintains state per key in order to label suspicious clicks.
  */
@@ -65,12 +63,12 @@ public class LabelSpikes extends
     this.windowMillis = windowDuration.getMillis();
     switch (eventType) {
       case CLICK:
-        this.paramName = ParsedReportingUrl.PARAM_CLICK_STATUS;
-        this.suspiciousParamValue = ParseReportingUrl.CLICK_STATUS_GHOST;
+        this.paramName = BuildReportingURL.PARAM_CLICK_STATUS;
+        this.suspiciousParamValue = ParseReportingURL.CLICK_STATUS_GHOST;
         break;
       case IMPRESSION:
-        this.paramName = ParsedReportingUrl.PARAM_IMPPRESSION_STATUS;
-        this.suspiciousParamValue = ParseReportingUrl.IMPRESSION_STATUS_SUSPICIOUS;
+        this.paramName = BuildReportingURL.PARAM_IMPPRESSION_STATUS;
+        this.suspiciousParamValue = ParseReportingURL.IMPRESSION_STATUS_SUSPICIOUS;
         break;
     }
   }
@@ -92,11 +90,11 @@ public class LabelSpikes extends
     return timestamps;
   }
 
-  /** Updates the passed attribute map, adding click-status to the reporting URL. */
+  /** Updates the passed attribute map, adding a query param to the reporting URL. */
   private static String addStatusToReportingUrlAttribute(String reportingUrl, String paramName, String status) {
-    ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
-    urlParser.addQueryParam(paramName, status);
-    return urlParser.toString();
+    BuildReportingURL urlBuilder = new BuildReportingURL(reportingUrl);
+    urlBuilder.addQueryParam(paramName, status);
+    return urlBuilder.toString();
   }
 
   private class Fn

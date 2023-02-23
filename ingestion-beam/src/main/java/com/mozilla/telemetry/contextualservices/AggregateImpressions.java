@@ -62,12 +62,12 @@ public class AggregateImpressions
 
     String reportingUrl = interaction.getReportingUrl();
 
-    ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
+    BuildReportingURL urlBuilder = new BuildReportingURL(reportingUrl);
 
     // Rebuild url, sorting query params for consistency across urls
-    List<Map.Entry<String, String>> keyValues = urlParser.getQueryParams().entrySet().stream()
+    List<Map.Entry<String, String>> keyValues = urlBuilder.getQueryParams().entrySet().stream()
         .sorted(Map.Entry.comparingByKey()).collect(Collectors.toList());
-    ParsedReportingUrl aggregationUrl = new ParsedReportingUrl(urlParser.getBaseUrl());
+    BuildReportingURL aggregationUrl = new BuildReportingURL(urlBuilder.getBaseUrl());
     for (Map.Entry<String, String> kv : keyValues) {
       aggregationUrl.addQueryParam(kv.getKey(), kv.getValue());
     }
@@ -81,20 +81,20 @@ public class AggregateImpressions
     @ProcessElement
     public void processElement(@Element KV<String, Long> input,
         OutputReceiver<SponsoredInteraction> out, IntervalWindow window) {
-      ParsedReportingUrl urlParser = new ParsedReportingUrl(input.getKey());
+      BuildReportingURL urlBuilder = new BuildReportingURL(input.getKey());
 
       long impressionCount = input.getValue();
       long windowStart = window.start().getMillis();
       long windowEnd = window.end().getMillis();
 
-      urlParser.addQueryParam(ParsedReportingUrl.PARAM_IMPRESSIONS, Long.toString(impressionCount));
-      urlParser.addQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_BEGIN,
+      urlBuilder.addQueryParam(BuildReportingURL.PARAM_IMPRESSIONS, Long.toString(impressionCount));
+      urlBuilder.addQueryParam(BuildReportingURL.PARAM_TIMESTAMP_BEGIN,
           Long.toString(windowStart / 1000));
-      urlParser.addQueryParam(ParsedReportingUrl.PARAM_TIMESTAMP_END,
+      urlBuilder.addQueryParam(BuildReportingURL.PARAM_TIMESTAMP_END,
           Long.toString(windowEnd / 1000));
 
       SponsoredInteraction interaction = SponsoredInteraction.builder()
-          .setReportingUrl(urlParser.toString())
+          .setReportingUrl(urlBuilder.toString())
           .setSubmissionTimestamp(Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000))
           .build();
 
