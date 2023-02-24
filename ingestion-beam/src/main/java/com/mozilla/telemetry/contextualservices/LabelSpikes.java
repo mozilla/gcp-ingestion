@@ -81,7 +81,8 @@ public class LabelSpikes extends
         this.ghostEventCounter = Metrics.counter(LabelSpikes.class, "ghost_impression");
         break;
       default:
-        throw new Exception("The LabelSpikes class is only set up to evaluate click and impression eventTypes.");
+        throw new Exception(
+            "The LabelSpikes class is only set up to evaluate click and impression eventTypes.");
     }
   }
 

@@ -292,8 +292,8 @@ public class ParseReportingUrl extends
           try {
             throw ee.exception();
           } catch (UncheckedIOException | IllegalArgumentException
-                   | BuildReportingUrl.InvalidUrlException | RejectedMessageException
-                   | InvalidAttributeException | UnexpectedPayloadException e) {
+              | BuildReportingUrl.InvalidUrlException | RejectedMessageException
+              | InvalidAttributeException | UnexpectedPayloadException e) {
             return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
                 ee.exception());
           }
