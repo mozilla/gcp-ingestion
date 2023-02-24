@@ -1,6 +1,8 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.collect.Iterables;
+import java.util.Arrays;
+import java.util.stream.StreamSupport;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.testing.TestStream;
@@ -11,9 +13,6 @@ import org.apache.beam.sdk.values.PCollection;
 import org.joda.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.util.Arrays;
-import java.util.stream.StreamSupport;
 
 public class LabelSpikesTest {
 
@@ -43,7 +42,8 @@ public class LabelSpikesTest {
 
     PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)).apply(Values.create());
+        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
+        .apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -57,13 +57,14 @@ public class LabelSpikesTest {
           .filter(m -> m.getReportingUrl().contains("click-status=65")) //
           .count();
       int expectedWithStatus = 10;
-      assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus + " messages with click-status, but found "
-          + countWithStatus);
+      assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus
+          + " messages with click-status, but found " + countWithStatus);
       return null;
     });
 
     pipeline.run().waitUntilFinish();
   }
+
   @Test
   public void testSetsSpikeStatus_forImpressions() {
 
@@ -82,7 +83,8 @@ public class LabelSpikesTest {
 
     PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.IMPRESSION)).apply(Values.create());
+        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.IMPRESSION))
+        .apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -96,8 +98,8 @@ public class LabelSpikesTest {
           .filter(m -> m.getReportingUrl().contains("impression-status=1")) //
           .count();
       int expectedWithStatus = 10;
-      assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus + " messages with impression-status, but found "
-          + countWithStatus);
+      assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus
+          + " messages with impression-status, but found " + countWithStatus);
       return null;
     });
 
@@ -121,7 +123,8 @@ public class LabelSpikesTest {
 
     PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
         .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)).apply(Values.create());
+        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
+        .apply(Values.create());
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);

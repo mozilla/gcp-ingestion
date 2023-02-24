@@ -54,11 +54,13 @@ public class LabelSpikes extends
         .apply(Values.create()));
   }
 
-  public static LabelSpikes of(Integer maxClicks, Duration windowDuration, TelemetryEventType eventType) {
+  public static LabelSpikes of(Integer maxClicks, Duration windowDuration,
+      TelemetryEventType eventType) {
     return new LabelSpikes(maxClicks, windowDuration, eventType);
   }
 
-  private LabelSpikes(Integer maxInteractions, Duration windowDuration, TelemetryEventType eventType) {
+  private LabelSpikes(Integer maxInteractions, Duration windowDuration,
+      TelemetryEventType eventType) {
     this.maxInteractions = maxInteractions;
     this.windowMillis = windowDuration.getMillis();
     switch (eventType) {
@@ -91,7 +93,8 @@ public class LabelSpikes extends
   }
 
   /** Updates the passed attribute map, adding a query param to the reporting URL. */
-  private static String addStatusToReportingUrlAttribute(String reportingUrl, String paramName, String status) {
+  private static String addStatusToReportingUrlAttribute(String reportingUrl, String paramName,
+      String status) {
     BuildReportingURL urlBuilder = new BuildReportingURL(reportingUrl);
     urlBuilder.addQueryParam(paramName, status);
     return urlBuilder.toString();
@@ -124,11 +127,8 @@ public class LabelSpikes extends
       } else {
         SponsoredInteraction interaction = element.getValue();
 
-        String reportingUrl = addStatusToReportingUrlAttribute(
-                interaction.getReportingUrl(),
-                paramName,
-                suspiciousParamValue
-        );
+        String reportingUrl = addStatusToReportingUrlAttribute(interaction.getReportingUrl(),
+            paramName, suspiciousParamValue);
         ghostClickCounter.inc();
         out.output(
             KV.of(element.getKey(), interaction.toBuilder().setReportingUrl(reportingUrl).build()));

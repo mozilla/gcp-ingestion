@@ -106,8 +106,8 @@ public class ParseReportingUrlTest {
           .contains(String.format("%s=%s", BuildReportingURL.PARAM_COUNTRY_CODE, "US")));
       Assert.assertTrue(reportingUrl
           .contains(String.format("%s=%s", BuildReportingURL.PARAM_FORM_FACTOR, "desktop")));
-      Assert.assertTrue(
-          reportingUrl.contains(String.format("%s=&", BuildReportingURL.PARAM_DMA_CODE))
+      Assert
+          .assertTrue(reportingUrl.contains(String.format("%s=&", BuildReportingURL.PARAM_DMA_CODE))
               || reportingUrl.endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
 
       return null;
@@ -405,8 +405,7 @@ public class ParseReportingUrlTest {
               .contains(String.format("%s=%s", BuildReportingURL.PARAM_FORM_FACTOR, "phone")));
           Assert.assertTrue("contains dma code",
               reportingUrl.contains(String.format("%s=&", BuildReportingURL.PARAM_DMA_CODE))
-                  || reportingUrl
-                      .endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
+                  || reportingUrl.endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
 
           return null;
         });
@@ -487,8 +486,7 @@ public class ParseReportingUrlTest {
               .contains(String.format("%s=%s", BuildReportingURL.PARAM_FORM_FACTOR, "phone")));
           Assert.assertTrue("contains dma code",
               reportingUrl.contains(String.format("%s=&", BuildReportingURL.PARAM_DMA_CODE))
-                  || reportingUrl
-                      .endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
+                  || reportingUrl.endsWith(String.format("%s=", BuildReportingURL.PARAM_DMA_CODE)));
 
           return null;
         });

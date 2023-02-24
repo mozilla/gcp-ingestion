@@ -73,61 +73,54 @@ public class ContextualServicesReporter extends Sink {
     // Perform windowed click counting per context_id, adding a click-status to the reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> clicksCountedByContextId = requests
-            .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
-                    .contains(interaction.getDerivedDocumentType())))
-            .apply(LabelSpikes.perContextId(
-                    options.getClickSpikeThreshold(),
-                    Time.parseDuration(options.getClickSpikeWindowDuration()),
-                    TelemetryEventType.CLICK
-            ));
+        .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
+            .contains(interaction.getDerivedDocumentType())))
+        .apply(LabelSpikes.perContextId(options.getClickSpikeThreshold(),
+            Time.parseDuration(options.getClickSpikeWindowDuration()), TelemetryEventType.CLICK));
 
-    // Perform windowed impression counting per context_id, adding an impression-status to the reporting URL
+    // Perform windowed impression counting per context_id, adding an impression-status to the
+    // reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> impressionsCountedByContextId = requests
-            .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualImpressions //
-                    .contains(interaction.getDerivedDocumentType())))
-            .apply(LabelSpikes.perContextId(
-                    options.getImpressionSpikeThreshold(),
-                    Time.parseDuration(options.getImpressionSpikeWindowDuration()),
-                    TelemetryEventType.IMPRESSION
-            ));
+        .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualImpressions //
+            .contains(interaction.getDerivedDocumentType())))
+        .apply(LabelSpikes.perContextId(options.getImpressionSpikeThreshold(),
+            Time.parseDuration(options.getImpressionSpikeWindowDuration()),
+            TelemetryEventType.IMPRESSION));
 
     // Aggregate impressions.
     PCollection<SponsoredInteraction> aggregatedGenuineImpressions = requests
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
-        .apply("FilterForLegitImpressions", Filter.by(
-                new SerializableFunction<SponsoredInteraction, Boolean>() {
-                  @Override
-                  public Boolean apply(SponsoredInteraction input) {
-                    return !input.getReportingUrl().contains("impression-status=1");
-                  }
-                }
-        ))
+        .apply("FilterForLegitImpressions",
+            Filter.by(new SerializableFunction<SponsoredInteraction, Boolean>() {
+
+              @Override
+              public Boolean apply(SponsoredInteraction input) {
+                return !input.getReportingUrl().contains("impression-status=1");
+              }
+            }))
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     PCollection<SponsoredInteraction> aggregatedPossiblyFraudulentImpressions = requests
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
-        .apply("FilterForPossiblyFraudulentImpressions", Filter.by(
-                new SerializableFunction<SponsoredInteraction, Boolean>() {
-                  @Override
-                  public Boolean apply(SponsoredInteraction input) {
-                    return input.getReportingUrl().contains("impression-status=1");
-                  }
-                }
-        ))
+        .apply("FilterForPossiblyFraudulentImpressions",
+            Filter.by(new SerializableFunction<SponsoredInteraction, Boolean>() {
+
+              @Override
+              public Boolean apply(SponsoredInteraction input) {
+                return input.getReportingUrl().contains("impression-status=1");
+              }
+            }))
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
         Filter.by((interaction) -> !unionedDocTypes //
             .contains(interaction.getDerivedDocumentType())));
 
-    PCollectionList.of(aggregatedGenuineImpressions)
-        .and(aggregatedPossiblyFraudulentImpressions)
-        .and(clicksCountedByContextId)
-        .and(unaggregated)
-        .apply(Flatten.pCollections())
+    PCollectionList.of(aggregatedGenuineImpressions).and(aggregatedPossiblyFraudulentImpressions)
+        .and(clicksCountedByContextId).and(unaggregated).apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
 
