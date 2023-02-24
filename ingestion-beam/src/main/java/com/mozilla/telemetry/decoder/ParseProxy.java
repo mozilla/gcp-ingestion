@@ -20,9 +20,9 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.transforms.MapElements;
+import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.SimpleFunction;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,7 +35,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
 
   /////////
 
-  private static transient ProxyMatcher singletonProxyMatcher;
+  private static ProxyMatcher singletonProxyMatcher;
 
   private final String listGoogleNonCustomerIps;
   private final String listCloudFrontIps;
@@ -65,7 +65,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
   }
 
   @VisibleForTesting
-  public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
+  class Fn extends DoFn<PubsubMessage, PubsubMessage> {
 
     private transient ProxyMatcher proxyMatcher;
 
@@ -77,14 +77,15 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
     private final Distribution teeLatencyTimer = Metrics.distribution(Fn.class,
         "tee_latency_millis");
 
-    @Override
-    public PubsubMessage apply(PubsubMessage message) {
+    @Setup
+    public void setup() {
+      proxyMatcher = getOrCreateSingletonProxyMatcher(listGoogleNonCustomerIps, listCloudFrontIps);
+    }
+
+    @ProcessElement
+    public void processElement(@Element PubsubMessage message, OutputReceiver<PubsubMessage> out) {
       // Prevent null pointer exception
       message = PubsubConstraints.ensureNonNull(message);
-
-      if (proxyMatcher == null) {
-        loadResourcesOnFirstMessage();
-      }
 
       // Copy attributes
       Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
@@ -172,16 +173,12 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       attributes.values().removeIf(Objects::isNull);
 
       // Return new message.
-      return new PubsubMessage(message.getPayload(), attributes);
-    }
-
-    private void loadResourcesOnFirstMessage() {
-      proxyMatcher = getOrCreateSingletonProxyMatcher(listGoogleNonCustomerIps, listCloudFrontIps);
+      out.output(new PubsubMessage(message.getPayload(), attributes));
     }
   }
 
   @Override
   public PCollection<PubsubMessage> expand(PCollection<PubsubMessage> input) {
-    return input.apply(MapElements.via(new Fn()));
+    return input.apply(ParDo.of(new Fn()));
   }
 }
