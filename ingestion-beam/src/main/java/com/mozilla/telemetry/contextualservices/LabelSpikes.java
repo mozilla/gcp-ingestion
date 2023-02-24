@@ -37,7 +37,7 @@ public class LabelSpikes extends
 
   private final Integer maxInteractions;
   private final Long windowMillis;
-  private final Counter ghostClickCounter = Metrics.counter(LabelSpikes.class, "ghost_click");
+  private final Counter ghostEventCounter;
   private String paramName;
   private String suspiciousParamValue;
 
@@ -73,10 +73,12 @@ public class LabelSpikes extends
       case CLICK:
         this.paramName = BuildReportingUrl.PARAM_CLICK_STATUS;
         this.suspiciousParamValue = ParseReportingUrl.CLICK_STATUS_GHOST;
+        this.ghostEventCounter = Metrics.counter(LabelSpikes.class, "ghost_click");
         break;
       case IMPRESSION:
         this.paramName = BuildReportingUrl.PARAM_IMPPRESSION_STATUS;
         this.suspiciousParamValue = ParseReportingUrl.IMPRESSION_STATUS_SUSPICIOUS;
+        this.ghostEventCounter = Metrics.counter(LabelSpikes.class, "ghost_impression");
         break;
       default:
         throw new Exception("The LabelSpikes class is only set up to evaluate click and impression eventTypes.");
@@ -137,7 +139,7 @@ public class LabelSpikes extends
 
         String reportingUrl = addStatusToReportingUrlAttribute(interaction.getReportingUrl(),
             paramName, suspiciousParamValue);
-        ghostClickCounter.inc();
+        ghostEventCounter.inc();
         out.output(
             KV.of(element.getKey(), interaction.toBuilder().setReportingUrl(reportingUrl).build()));
       }
