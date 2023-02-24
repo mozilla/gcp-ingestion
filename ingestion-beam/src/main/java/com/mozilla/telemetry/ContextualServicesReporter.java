@@ -2,14 +2,14 @@ package com.mozilla.telemetry;
 
 import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
-import com.mozilla.telemetry.contextualservices.FilterByDocType;
-import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.EmitCounters;
 import com.mozilla.telemetry.contextualservices.LabelSpikes;
 import com.mozilla.telemetry.contextualservices.TelemetryEventType;
 import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.SendRequest;
+import com.mozilla.telemetry.contextualservices.FilterByDocType;
+import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import com.mozilla.telemetry.contextualservices.VerifyMetadata;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.util.Time;
