@@ -449,9 +449,9 @@ iniconfig==1.0.1 \
     --hash=sha256:80cf40c597eb564e86346103f609d74efce0f6b4d4f30ec8ce9e2c26411ba437 \
     --hash=sha256:e5f92f89355a67de0595932a6c6c02ab4afddc6fcdc0bfc5becd0d60884d3f69
     # via pytest
-kubernetes==25.3.0 \
-    --hash=sha256:213befbb4e5aed95f94950c7eed0c2322fc5a2f8f40932e58d28fdd42d90836c \
-    --hash=sha256:eb42333dad0bb5caf4e66460c6a4a1a36f0f057a040f35018f6c05a699baed86
+kubernetes==26.1.0 \
+    --hash=sha256:5854b0c508e8d217ca205591384ab58389abdae608576f9c9afc35a3c76a366c \
+    --hash=sha256:e3db6800abf7e36c38d2629b5cb6b74d10988ee0cba6fba45595a7cbe60c0042
     # via -r requirements.in
 mccabe==0.6.1 \
     --hash=sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42 \
@@ -798,21 +798,21 @@ tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
     # via -r requirements.in
-types-protobuf==4.21.0.5 \
-    --hash=sha256:46ffa6647e2f8d53a4828e905f8fb0e8ff8c918309b425572dd34ab4d0b48553 \
-    --hash=sha256:819a7c67e69476e39c3f0c9871bbb9ee82313645d317b6daeb60ac95a309dbd3
+types-protobuf==4.21.0.7 \
+    --hash=sha256:5f4c0ba5840d66a9f32bcfd153a5d41c503f409223eae4fda876cdd6b50a638a \
+    --hash=sha256:6ecaddcc7aed2c636745a17c1411932cdef7a035304d50ffd4140297b6b882e8
     # via -r requirements.in
-types-python-dateutil==2.8.19.6 \
-    --hash=sha256:4a6f4cc19ce4ba1a08670871e297bf3802f55d4f129e6aa2443f540b6cf803d2 \
-    --hash=sha256:cfb7d31021c6bce6f3362c69af6e3abb48fe3e08854f02487e844ff910deec2a
+types-python-dateutil==2.8.19.8 \
+    --hash=sha256:316c6b107d055bbd06324b71362e6104102220e6988aa4a388550aa3a8ad5d06 \
+    --hash=sha256:6b44741d3e79b2f2ba595f6bfa96f1a5091a00703848547efb3bc5b71df3cf9d
     # via -r requirements.in
-types-pyyaml==6.0.12.6 \
-    --hash=sha256:24e76b938d58e68645271eeb149af6022d1da99788e481f959bd284b164f39a1 \
-    --hash=sha256:77b74d0874482f2b42dd566b7277b0a220068595e0fb42689d0c0560f3d1ae9e
+types-pyyaml==6.0.12.8 \
+    --hash=sha256:19304869a89d49af00be681e7b267414df213f4eb89634c4495fa62e8f942b9f \
+    --hash=sha256:5314a4b2580999b2ea06b2e5f9a7763d860d6e09cdf21c0e9561daa9cbd60178
     # via -r requirements.in
-types-requests==2.28.11.12 \
-    --hash=sha256:dbc2933635860e553ffc59f5e264264981358baffe6342b925e3eb8261f866ee \
-    --hash=sha256:fd530aab3fc4f05ee36406af168f0836e6f00f1ee51a0b96b7311f82cb675230
+types-requests==2.28.11.14 \
+    --hash=sha256:232792870b60adb07d23175451ab4e6190021b0c584edf052d92d9b993118f06 \
+    --hash=sha256:f84613b0d4c5d0eeb7879dfa05e14a3702b9c1f7a4ee81dfe9b4321b13fe93a1
     # via -r requirements.in
 types-urllib3==1.26.25.4 \
     --hash=sha256:ed6b9e8a8be488796f72306889a06a3fc3cb1aa99af02ab8afb50144d7317e49 \

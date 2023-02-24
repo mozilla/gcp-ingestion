@@ -94,6 +94,7 @@ public class MessageScrubber {
       .put("org-mozilla-firefox-betc", "1786344") //
       .put("com-max-browser", "1802981") //
       .put("com-differ-xiaoming", "1806484") //
+      .put("org-cloudveil-android-browser", "1816487") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -227,6 +228,10 @@ public class MessageScrubber {
     }
     if ("firefox-desktop".equals(namespace) && "background-update".equals(docType)) {
       throw new MessageShouldBeDroppedException("1784911");
+    }
+    if ("firefox-desktop-background-update".equals(namespace)
+        && "new-metric-capture-emulation".equals(docType)) {
+      throw new MessageShouldBeDroppedException("1817821");
     }
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
