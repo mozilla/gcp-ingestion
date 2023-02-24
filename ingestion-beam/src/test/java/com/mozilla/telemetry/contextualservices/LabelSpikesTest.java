@@ -40,10 +40,15 @@ public class LabelSpikesTest {
 
     TestStream<SponsoredInteraction> createEvents = eventBuilder.advanceWatermarkToInfinity();
 
-    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
-        .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
-        .apply(Values.create());
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -81,10 +86,15 @@ public class LabelSpikesTest {
 
     TestStream<SponsoredInteraction> createEvents = eventBuilder.advanceWatermarkToInfinity();
 
-    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
-        .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.IMPRESSION))
-        .apply(Values.create());
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.IMPRESSION))
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -121,10 +131,15 @@ public class LabelSpikesTest {
 
     TestStream<SponsoredInteraction> createEvents = eventBuilder.advanceWatermarkToInfinity();
 
-    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
-        .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
-        .apply(Values.create());
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
@@ -158,10 +173,15 @@ public class LabelSpikesTest {
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8)) //
         .advanceWatermarkToInfinity();
 
-    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
-        .apply(WithKeys.of("a")) //
-        .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)) //
-        .apply(Values.create());
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)) //
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
