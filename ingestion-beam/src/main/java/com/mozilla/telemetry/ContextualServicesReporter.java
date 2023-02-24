@@ -59,7 +59,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
-        .apply(ParseReportingURL.of(options.getUrlAllowList())) //
+        .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections) //
         .apply(EmitCounters.of());
 
@@ -120,7 +120,7 @@ public class ContextualServicesReporter extends Sink {
             .contains(interaction.getDerivedDocumentType())));
 
     PCollectionList.of(aggregatedGenuineImpressions).and(aggregatedPossiblyFraudulentImpressions)
-        .and(clicksCountedByContextId).and(unaggregated).apply(Flatten.pCollections())
+        .and(clicksCountedByContextId).and(impressionsCountedByContextId).and(unaggregated).apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
 

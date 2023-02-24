@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Utility class for parsing and building contextual services reporting URLs.
  */
-public class BuildReportingURL {
+public class BuildReportingUrl {
 
   // API parameter names
   static final String PARAM_COUNTRY_CODE = "country-code";
@@ -41,7 +41,7 @@ public class BuildReportingURL {
     }
   }
 
-  BuildReportingURL(String reportingUrl) {
+  BuildReportingUrl(String reportingUrl) {
     try {
       this.reportingUrl = new URL(reportingUrl);
     } catch (MalformedURLException e) {

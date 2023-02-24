@@ -62,12 +62,12 @@ public class AggregateImpressions
 
     String reportingUrl = interaction.getReportingUrl();
 
-    BuildReportingURL urlBuilder = new BuildReportingURL(reportingUrl);
+    BuildReportingUrl urlBuilder = new BuildReportingUrl(reportingUrl);
 
     // Rebuild url, sorting query params for consistency across urls
     List<Map.Entry<String, String>> keyValues = urlBuilder.getQueryParams().entrySet().stream()
         .sorted(Map.Entry.comparingByKey()).collect(Collectors.toList());
-    BuildReportingURL aggregationUrl = new BuildReportingURL(urlBuilder.getBaseUrl());
+    BuildReportingUrl aggregationUrl = new BuildReportingUrl(urlBuilder.getBaseUrl());
     for (Map.Entry<String, String> kv : keyValues) {
       aggregationUrl.addQueryParam(kv.getKey(), kv.getValue());
     }
@@ -81,16 +81,16 @@ public class AggregateImpressions
     @ProcessElement
     public void processElement(@Element KV<String, Long> input,
         OutputReceiver<SponsoredInteraction> out, IntervalWindow window) {
-      BuildReportingURL urlBuilder = new BuildReportingURL(input.getKey());
+      BuildReportingUrl urlBuilder = new BuildReportingUrl(input.getKey());
 
       long impressionCount = input.getValue();
       long windowStart = window.start().getMillis();
       long windowEnd = window.end().getMillis();
 
-      urlBuilder.addQueryParam(BuildReportingURL.PARAM_IMPRESSIONS, Long.toString(impressionCount));
-      urlBuilder.addQueryParam(BuildReportingURL.PARAM_TIMESTAMP_BEGIN,
+      urlBuilder.addQueryParam(BuildReportingUrl.PARAM_IMPRESSIONS, Long.toString(impressionCount));
+      urlBuilder.addQueryParam(BuildReportingUrl.PARAM_TIMESTAMP_BEGIN,
           Long.toString(windowStart / 1000));
-      urlBuilder.addQueryParam(BuildReportingURL.PARAM_TIMESTAMP_END,
+      urlBuilder.addQueryParam(BuildReportingUrl.PARAM_TIMESTAMP_END,
           Long.toString(windowEnd / 1000));
 
       SponsoredInteraction interaction = SponsoredInteraction.builder()

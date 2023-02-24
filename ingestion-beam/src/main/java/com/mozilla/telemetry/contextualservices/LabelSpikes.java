@@ -46,32 +46,40 @@ public class LabelSpikes extends
    */
   public static PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> perContextId(
       Integer maxClicks, Duration windowDuration, TelemetryEventType eventType) {
-    return PTransform.compose("DetectClickSpikesPerContextId", input -> input //
-        .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteraction.getCoder())) //
-        .apply(WithCurrentTimestamp.of()) //
-        .apply(LabelSpikes.of(maxClicks, windowDuration, eventType)) //
-        .apply(Values.create()));
+    return PTransform.compose("DetectClickSpikesPerContextId", input -> {
+      try {
+        return input //
+            .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
+            .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteraction.getCoder())) //
+            .apply(WithCurrentTimestamp.of()) //
+            .apply(LabelSpikes.of(maxClicks, windowDuration, eventType)) //
+            .apply(Values.create());
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   public static LabelSpikes of(Integer maxClicks, Duration windowDuration,
-      TelemetryEventType eventType) {
+      TelemetryEventType eventType) throws Exception {
     return new LabelSpikes(maxClicks, windowDuration, eventType);
   }
 
   private LabelSpikes(Integer maxInteractions, Duration windowDuration,
-      TelemetryEventType eventType) {
+      TelemetryEventType eventType) throws Exception {
     this.maxInteractions = maxInteractions;
     this.windowMillis = windowDuration.getMillis();
     switch (eventType) {
       case CLICK:
-        this.paramName = BuildReportingURL.PARAM_CLICK_STATUS;
-        this.suspiciousParamValue = ParseReportingURL.CLICK_STATUS_GHOST;
+        this.paramName = BuildReportingUrl.PARAM_CLICK_STATUS;
+        this.suspiciousParamValue = ParseReportingUrl.CLICK_STATUS_GHOST;
         break;
       case IMPRESSION:
-        this.paramName = BuildReportingURL.PARAM_IMPPRESSION_STATUS;
-        this.suspiciousParamValue = ParseReportingURL.IMPRESSION_STATUS_SUSPICIOUS;
+        this.paramName = BuildReportingUrl.PARAM_IMPPRESSION_STATUS;
+        this.suspiciousParamValue = ParseReportingUrl.IMPRESSION_STATUS_SUSPICIOUS;
         break;
+      default:
+        throw new Exception("The LabelSpikes class is only set up to evaluate click and impression eventTypes.");
     }
   }
 
@@ -95,7 +103,7 @@ public class LabelSpikes extends
   /** Updates the passed attribute map, adding a query param to the reporting URL. */
   private static String addStatusToReportingUrlAttribute(String reportingUrl, String paramName,
       String status) {
-    BuildReportingURL urlBuilder = new BuildReportingURL(reportingUrl);
+    BuildReportingUrl urlBuilder = new BuildReportingUrl(reportingUrl);
     urlBuilder.addQueryParam(paramName, status);
     return urlBuilder.toString();
   }
