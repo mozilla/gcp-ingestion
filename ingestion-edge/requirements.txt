@@ -802,17 +802,17 @@ types-protobuf==4.21.0.7 \
     --hash=sha256:5f4c0ba5840d66a9f32bcfd153a5d41c503f409223eae4fda876cdd6b50a638a \
     --hash=sha256:6ecaddcc7aed2c636745a17c1411932cdef7a035304d50ffd4140297b6b882e8
     # via -r requirements.in
-types-python-dateutil==2.8.19.8 \
-    --hash=sha256:316c6b107d055bbd06324b71362e6104102220e6988aa4a388550aa3a8ad5d06 \
-    --hash=sha256:6b44741d3e79b2f2ba595f6bfa96f1a5091a00703848547efb3bc5b71df3cf9d
+types-python-dateutil==2.8.19.9 \
+    --hash=sha256:142a8749c18a3e16bfc5ba95cbd54750e7e613dec30285906602cafbf43c37b4 \
+    --hash=sha256:637716fb3afbdc7eb683f641171f874937af13149cd456a8c63e8f81127a39ed
     # via -r requirements.in
 types-pyyaml==6.0.12.8 \
     --hash=sha256:19304869a89d49af00be681e7b267414df213f4eb89634c4495fa62e8f942b9f \
     --hash=sha256:5314a4b2580999b2ea06b2e5f9a7763d860d6e09cdf21c0e9561daa9cbd60178
     # via -r requirements.in
-types-requests==2.28.11.14 \
-    --hash=sha256:232792870b60adb07d23175451ab4e6190021b0c584edf052d92d9b993118f06 \
-    --hash=sha256:f84613b0d4c5d0eeb7879dfa05e14a3702b9c1f7a4ee81dfe9b4321b13fe93a1
+types-requests==2.28.11.15 \
+    --hash=sha256:a05e4c7bc967518fba5789c341ea8b0c942776ee474c7873129a61161978e586 \
+    --hash=sha256:fc8eaa09cc014699c6b63c60c2e3add0c8b09a410c818b5ac6e65f92a26dde09
     # via -r requirements.in
 types-urllib3==1.26.25.4 \
     --hash=sha256:ed6b9e8a8be488796f72306889a06a3fc3cb1aa99af02ab8afb50144d7317e49 \
