@@ -1,32 +1,23 @@
 package com.mozilla.telemetry;
 
 import com.google.common.collect.ImmutableSet;
-import com.mozilla.telemetry.contextualservices.AggregateImpressions;
-import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
-import com.mozilla.telemetry.contextualservices.EmitCounters;
-import com.mozilla.telemetry.contextualservices.FilterByDocType;
-import com.mozilla.telemetry.contextualservices.LabelSpikes;
-import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
-import com.mozilla.telemetry.contextualservices.SendRequest;
-import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
-import com.mozilla.telemetry.contextualservices.TelemetryEventType;
-import com.mozilla.telemetry.contextualservices.VerifyMetadata;
+import com.mozilla.telemetry.contextualservices.*;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.util.Time;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
-import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Get contextual services pings and send requests to URLs in payload.
@@ -107,7 +98,7 @@ public class ContextualServicesReporter extends Sink {
         Filter.by((interaction) -> !unionedDocTypes //
             .contains(interaction.getDerivedDocumentType())));
 
-      PCollectionList.of(aggregatedImpressions).and(clicksCountedByContextId).and(unaggregated)
+    PCollectionList.of(aggregatedImpressions).and(clicksCountedByContextId).and(unaggregated)
         .apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
