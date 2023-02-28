@@ -98,38 +98,16 @@ public class ContextualServicesReporter extends Sink {
             TelemetryEventType.IMPRESSION));
 
     // Aggregate impressions.
-    PCollection<SponsoredInteraction> aggregatedGenuineImpressions = impressionsCountedByContextId
+    PCollection<SponsoredInteraction> aggregatedImpressions = impressionsCountedByContextId
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
-        .apply("FilterForLegitImpressions",
-            Filter.by(new SerializableFunction<SponsoredInteraction, Boolean>() {
-
-              @Override
-              public Boolean apply(SponsoredInteraction input) {
-                return !input.getReportingUrl().contains("impression-status=1");
-              }
-            }))
-        .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
-
-    PCollection<SponsoredInteraction> aggregatedPossiblyFraudulentImpressions = requests
-        .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
-            .contains(interaction.getDerivedDocumentType())))
-        .apply("FilterForPossiblyFraudulentImpressions",
-            Filter.by(new SerializableFunction<SponsoredInteraction, Boolean>() {
-
-              @Override
-              public Boolean apply(SponsoredInteraction input) {
-                return input.getReportingUrl().contains("impression-status=1");
-              }
-            }))
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
         Filter.by((interaction) -> !unionedDocTypes //
             .contains(interaction.getDerivedDocumentType())));
 
-    PCollectionList.of(aggregatedGenuineImpressions).and(aggregatedPossiblyFraudulentImpressions)
-        .and(clicksCountedByContextId).and(impressionsCountedByContextId).and(unaggregated)
+      PCollectionList.of(aggregatedImpressions).and(clicksCountedByContextId).and(unaggregated)
         .apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
