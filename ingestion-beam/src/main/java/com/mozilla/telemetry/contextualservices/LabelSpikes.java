@@ -45,14 +45,14 @@ public class LabelSpikes extends
    * Composite transform that wraps {@code DetectClickSpikes} with keying by {@code context_id}.
    */
   public static PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> perContextId(
-      Integer maxClicks, Duration windowDuration, TelemetryEventType eventType) {
+      Integer maxInteractions, Duration windowDuration, TelemetryEventType eventType) {
     return PTransform.compose("DetectClickSpikesPerContextId", input -> {
       try {
         return input //
             .apply(WithKeys.of((interaction) -> interaction.getContextId())) //
             .setCoder(KvCoder.of(StringUtf8Coder.of(), SponsoredInteraction.getCoder())) //
             .apply(WithCurrentTimestamp.of()) //
-            .apply(LabelSpikes.of(maxClicks, windowDuration, eventType)) //
+            .apply(LabelSpikes.of(maxInteractions, windowDuration, eventType)) //
             .apply(Values.create());
       } catch (Exception e) {
         throw new RuntimeException(e);
@@ -60,9 +60,9 @@ public class LabelSpikes extends
     });
   }
 
-  public static LabelSpikes of(Integer maxClicks, Duration windowDuration,
+  public static LabelSpikes of(Integer maxInteractions, Duration windowDuration,
       TelemetryEventType eventType) throws Exception {
-    return new LabelSpikes(maxClicks, windowDuration, eventType);
+    return new LabelSpikes(maxInteractions, windowDuration, eventType);
   }
 
   private LabelSpikes(Integer maxInteractions, Duration windowDuration,

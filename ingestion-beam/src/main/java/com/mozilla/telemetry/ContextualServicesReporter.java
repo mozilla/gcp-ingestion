@@ -98,7 +98,7 @@ public class ContextualServicesReporter extends Sink {
             TelemetryEventType.IMPRESSION));
 
     // Aggregate impressions.
-    PCollection<SponsoredInteraction> aggregatedGenuineImpressions = requests
+    PCollection<SponsoredInteraction> aggregatedGenuineImpressions = impressionsCountedByContextId
         .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
         .apply("FilterForLegitImpressions",

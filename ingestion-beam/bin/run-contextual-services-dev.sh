@@ -5,7 +5,26 @@ set -ux
 PROJECT="contextual-services-dev"
 JOB_NAME="contextual-services-reporter-$(whoami)"
 
-mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.ContextualServicesReporter -Dexec.args="\
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]
+then
+  cat << EOF
+  You need to authenticate with gcloud. The commands are:
+
+  gcloud auth login youremail@mozilla.com --update-adc
+  export GOOGLE_APPLICATION_CREDENTIALS=$HOME/.config/gcloud/application_default_credentials.json
+
+  Then you can run
+
+  bash $0
+
+  again.
+EOF
+  exit 1;
+fi
+
+$SCRIPT_DIR/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.ContextualServicesReporter -Dexec.args="\
    --runner=Dataflow \
    --jobName=$JOB_NAME \
    --project=$PROJECT  \

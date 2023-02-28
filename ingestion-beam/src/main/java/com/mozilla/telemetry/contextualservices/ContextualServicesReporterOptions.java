@@ -61,9 +61,9 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
   void setImpressionSpikeWindowDuration(String value);
 
   @Description("Impression count threshold when labeling impression spikes.")
-  // Based on default for click spikes. The daily impressions (~300MM) is ~ 500x more than daily
-  // clicks (600K)
-  @Default.Integer(10 * 500)
+  // The daily average expected impressions per user is around 20.
+  // So if we see more than that in 3 minutes, that's suspicious.
+  @Default.Integer(20)
   Integer getImpressionSpikeThreshold();
 
   void setImpressionSpikeThreshold(Integer value);
