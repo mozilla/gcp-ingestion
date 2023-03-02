@@ -98,8 +98,6 @@ public class ContextualServicesReporter extends Sink {
 
     // Aggregate impressions.
     PCollection<SponsoredInteraction> aggregatedImpressions = impressionsCountedByContextId
-        .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> individualImpressions //
-            .contains(interaction.getDerivedDocumentType())))
         .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
