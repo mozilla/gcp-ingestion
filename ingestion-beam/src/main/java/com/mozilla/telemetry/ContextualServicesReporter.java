@@ -90,8 +90,9 @@ public class ContextualServicesReporter extends Sink {
     // reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> impressionsCountedByContextId = requests
-        .apply("FilterImpressionsPerContextIdDocTypes", Filter.by((interaction) -> individualImpressions //
-            .contains(interaction.getDerivedDocumentType())))
+        .apply("FilterImpressionsPerContextIdDocTypes",
+            Filter.by((interaction) -> individualImpressions //
+                .contains(interaction.getDerivedDocumentType())))
         .apply(LabelSpikes.perContextId(options.getImpressionSpikeThreshold(),
             Time.parseDuration(options.getImpressionSpikeWindowDuration()),
             TelemetryEventType.IMPRESSION));
