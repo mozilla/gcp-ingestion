@@ -81,7 +81,7 @@ public class ContextualServicesReporter extends Sink {
     // Perform windowed click counting per context_id, adding a click-status to the reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> clicksCountedByContextId = requests
-        .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
+        .apply("FilterClicksPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
             .contains(interaction.getDerivedDocumentType())))
         .apply(LabelSpikes.perContextId(options.getClickSpikeThreshold(),
             Time.parseDuration(options.getClickSpikeWindowDuration()), TelemetryEventType.CLICK));
@@ -90,7 +90,7 @@ public class ContextualServicesReporter extends Sink {
     // reporting URL
     // if the count passes a threshold.
     PCollection<SponsoredInteraction> impressionsCountedByContextId = requests
-        .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> individualImpressions //
+        .apply("FilterImpressionsPerContextIdDocTypes", Filter.by((interaction) -> individualImpressions //
             .contains(interaction.getDerivedDocumentType())))
         .apply(LabelSpikes.perContextId(options.getImpressionSpikeThreshold(),
             Time.parseDuration(options.getImpressionSpikeWindowDuration()),
