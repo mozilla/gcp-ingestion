@@ -27,6 +27,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -177,15 +178,17 @@ public class ParsePayload extends
           throw e;
         }
 
+        final PipelineMetadataStore.PipelineMetadata meta = metadataStore.getSchema(attributes);
+
         try {
-          deprecationCheck(attributes);
+          deprecationCheck(attributes, meta);
         } catch (DeprecatedMessageException e) {
           PerDocTypeCounter.inc(attributes, "error_deprecated_message");
           PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
           throw e;
         }
 
-        addAttributesFromPayload(attributes, json);
+        addAttributesFromPayload(attributes, json, meta);
 
         // https://github.com/mozilla/gcp-ingestion/issues/780
         // We need to be careful to consistently use our util methods (which use Jackson) for
@@ -222,7 +225,8 @@ public class ParsePayload extends
     }
   }
 
-  private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json) {
+  private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json,
+      PipelineMetadataStore.PipelineMetadata meta) {
     // Try to get glean-style client_info object.
     JsonNode gleanClientInfo = getGleanClientInfo(json);
 
@@ -269,12 +273,16 @@ public class ParsePayload extends
 
     addClientIdFromPayload(attributes, json);
 
-    // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
-    // allow sampling on non-telemetry pings.
-    Stream.of(attributes.get(Attribute.CLIENT_ID),
-        // "impression_id" is a client_id-like identifier used in activity-stream ping
-        // that do not contain a client_id.
-        json.path("impression_id").textValue()) //
+    // Add sample_id, by hashing an attribute or payload path that contains a UUID, ignore any
+    // attribute or path that is not a valid UUID, and when both are available prefer the attribute
+    String uuidAttribute = meta.sample_id_source_uuid_attribute();
+    List<String> uuidPayloadPath = meta.sample_id_source_uuid_payload_path();
+    if (uuidAttribute == null && uuidPayloadPath == null) {
+      // default to using client_id
+      uuidAttribute = Attribute.CLIENT_ID;
+    }
+    Stream.of(uuidAttribute == null ? null : attributes.get(uuidAttribute), //
+        uuidPayloadPath == null ? null : jsonPathText(json, uuidPayloadPath)) //
         .map(ParsePayload::normalizeUuid) //
         .filter(Objects::nonNull) //
         .findFirst() //
@@ -369,8 +377,8 @@ public class ParsePayload extends
     validateTimer.update(endTime - startTime);
   }
 
-  private void deprecationCheck(Map<String, String> attributes) throws DeprecatedMessageException {
-    PipelineMetadataStore.PipelineMetadata meta = metadataStore.getSchema(attributes);
+  private void deprecationCheck(Map<String, String> attributes,
+      PipelineMetadataStore.PipelineMetadata meta) throws DeprecatedMessageException {
     if (meta.expiration_policy() != null
         && meta.expiration_policy().collect_through_date() != null) {
 
@@ -390,6 +398,14 @@ public class ParsePayload extends
         throw new DeprecatedMessageException();
       }
     }
+  }
+
+  private static String jsonPathText(JsonNode json, List<String> path) {
+    JsonNode node = json;
+    for (String pathElement : path) {
+      node = node.path(pathElement);
+    }
+    return node.asText();
   }
 
   static class DeprecatedMessageException extends RuntimeException {

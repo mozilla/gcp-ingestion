@@ -78,7 +78,11 @@ function insert_testing_schemas() {
   "mozPipelineMetadata": {
     "bq_dataset_family": "test",
     "bq_metadata_format": "structured",
-    "bq_table": "test_v1"
+    "bq_table": "test_v1",
+    "sample_id_source_uuid_attribute": "client_id",
+    "sample_id_source_uuid_payload_path": [
+      "impression_id"
+    ]
   },
   "type" : "object",
   "title" : "default_schema",
@@ -111,6 +115,18 @@ EOF
       {"name": "normalized_channel", "value": "nightly"},
       {"name": "new_attr", "value": "injected_value"}
     ]
+  },
+  "type" : "object"
+}
+EOF
+    mkdir -p schemas/test/sample
+    cat > schemas/test/sample/sample.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "seconds_v1",
+    "sample_id_source_uuid_attribute": "document_id"
   },
   "type" : "object"
 }
