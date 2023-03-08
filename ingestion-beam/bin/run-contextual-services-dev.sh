@@ -7,7 +7,7 @@ JOB_NAME="contextual-services-reporter-$(whoami)"
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-if [ -z "$GOOGLE_APPLICATION_CREDENTIALS" ]
+if [ -z ${GOOGLE_APPLICATION_CREDENTIALS+x} ]
 then
   cat << EOF
   You need to authenticate with gcloud. The commands are:
