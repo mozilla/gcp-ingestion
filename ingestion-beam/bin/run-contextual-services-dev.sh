@@ -24,7 +24,7 @@ EOF
   exit 1;
 fi
 
-$SCRIPT_DIR/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.ContextualServicesReporter -Dexec.args="\
+$SCRIPT_DIR/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.ContextualServicesReporter -e -Dexec.args="\
    --runner=Dataflow \
    --jobName=$JOB_NAME \
    --project=$PROJECT  \
