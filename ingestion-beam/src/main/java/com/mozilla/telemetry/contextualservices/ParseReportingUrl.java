@@ -68,7 +68,7 @@ public class ParseReportingUrl extends
   // Values for the click-status API parameter
   public static final String CLICK_STATUS_ABUSE = "64";
   public static final String CLICK_STATUS_GHOST = "65";
-  public static final String IMPRESSION_STATUS_SUSPICIOUS = "1";
+  public static final String IMPRESSION_STATUS_SUSPICIOUS = "invalid";
 
   // Threshold for IP reputation considered likely abuse.
   private static final int IP_REPUTATION_THRESHOLD = 70;
