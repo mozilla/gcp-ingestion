@@ -54,7 +54,7 @@ public abstract class SponsoredInteraction implements Serializable {
   abstract String getContextId();
 
   @Nullable
-  abstract String getReportingUrl();
+  public abstract String getReportingUrl();
 
   @Nullable
   abstract String getRequestId();

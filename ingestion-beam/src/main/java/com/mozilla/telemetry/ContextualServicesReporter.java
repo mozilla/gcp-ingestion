@@ -5,10 +5,11 @@ import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
 import com.mozilla.telemetry.contextualservices.EmitCounters;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
-import com.mozilla.telemetry.contextualservices.LabelClickSpikes;
+import com.mozilla.telemetry.contextualservices.LabelSpikes;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
 import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
+import com.mozilla.telemetry.contextualservices.TelemetryEventType;
 import com.mozilla.telemetry.contextualservices.VerifyMetadata;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.util.Time;
@@ -70,31 +71,42 @@ public class ContextualServicesReporter extends Sink {
         .failuresTo(errorCollections) //
         .apply(EmitCounters.of());
 
-    Set<String> aggregatedDocTypes = ImmutableSet.of("topsites-impression");
-    Set<String> perContextIdDocTypes = ImmutableSet.of("topsites-click");
-    Set<String> unionedDocTypes = Stream
-        .concat(aggregatedDocTypes.stream(), perContextIdDocTypes.stream())
-        .collect(Collectors.toSet());
+    Set<String> individualImpressions = ImmutableSet.of("topsites-impression");
+    Set<String> individualClicks = ImmutableSet.of("topsites-click");
 
-    // Aggregate impressions.
-    PCollection<SponsoredInteraction> aggregated = requests
-        .apply("FilterAggregatedDocTypes", Filter.by((interaction) -> aggregatedDocTypes //
-            .contains(interaction.getDerivedDocumentType())))
-        .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
+    Set<String> unionedDocTypes = Stream
+        .concat(individualImpressions.stream(), individualClicks.stream())
+        .collect(Collectors.toSet());
 
     // Perform windowed click counting per context_id, adding a click-status to the reporting URL
     // if the count passes a threshold.
-    PCollection<SponsoredInteraction> perContextId = requests
-        .apply("FilterPerContextIdDocTypes", Filter.by((interaction) -> perContextIdDocTypes //
+    PCollection<SponsoredInteraction> clicksCountedByContextId = requests
+        .apply("FilterClicksPerContextIdDocTypes", Filter.by((interaction) -> individualClicks //
             .contains(interaction.getDerivedDocumentType())))
-        .apply(LabelClickSpikes.perContextId(options.getClickSpikeThreshold(),
-            Time.parseDuration(options.getClickSpikeWindowDuration())));
+        .apply(LabelSpikes.perContextId(options.getClickSpikeThreshold(),
+            Time.parseDuration(options.getClickSpikeWindowDuration()), TelemetryEventType.CLICK));
+
+    // Perform windowed impression counting per context_id, adding an impression-status to the
+    // reporting URL
+    // if the count passes a threshold.
+    PCollection<SponsoredInteraction> impressionsCountedByContextId = requests
+        .apply("FilterImpressionsPerContextIdDocTypes",
+            Filter.by((interaction) -> individualImpressions //
+                .contains(interaction.getDerivedDocumentType())))
+        .apply(LabelSpikes.perContextId(options.getImpressionSpikeThreshold(),
+            Time.parseDuration(options.getImpressionSpikeWindowDuration()),
+            TelemetryEventType.IMPRESSION));
+
+    // Aggregate impressions.
+    PCollection<SponsoredInteraction> aggregatedImpressions = impressionsCountedByContextId
+        .apply(AggregateImpressions.of(options.getAggregationWindowDuration()));
 
     PCollection<SponsoredInteraction> unaggregated = requests.apply("FilterUnaggregatedDocTypes",
         Filter.by((interaction) -> !unionedDocTypes //
             .contains(interaction.getDerivedDocumentType())));
 
-    PCollectionList.of(aggregated).and(perContextId).and(unaggregated).apply(Flatten.pCollections())
+    PCollectionList.of(aggregatedImpressions).and(clicksCountedByContextId).and(unaggregated)
+        .apply(Flatten.pCollections())
         .apply(SendRequest.of(options.getReportingEnabled(), options.getLogReportingUrls()))
         .failuresTo(errorCollections);
 
