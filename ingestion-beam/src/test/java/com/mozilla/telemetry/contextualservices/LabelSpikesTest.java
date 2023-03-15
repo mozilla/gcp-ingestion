@@ -78,7 +78,7 @@ public class LabelSpikesTest {
     Builder<SponsoredInteraction> eventBuilder = TestStream.create(SponsoredInteraction.getCoder());
 
     // We add 20 messages each only a second apart. The first 10 should saturate the timestamp
-    // state, then the final 10 should be marked as suspicious via impression-status.
+    // state, then the final 10 should be marked as invalid via custom-data.
     for (int i = 1; i <= 20; i++) {
       eventBuilder = eventBuilder.advanceProcessingTime(Duration.standardSeconds(i))
           .addElements(interaction);
@@ -105,11 +105,11 @@ public class LabelSpikesTest {
 
     PAssert.that(result).satisfies(iter -> {
       long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
-          .filter(m -> m.getReportingUrl().contains("impression-status=1")) //
+          .filter(m -> m.getReportingUrl().contains("custom-data=invalid")) //
           .count();
       int expectedWithStatus = 10;
       assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus
-          + " messages with impression-status, but found " + countWithStatus);
+          + " messages with custom-data=invalid, but found " + countWithStatus);
       return null;
     });
 
