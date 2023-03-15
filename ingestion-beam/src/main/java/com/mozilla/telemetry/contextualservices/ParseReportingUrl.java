@@ -68,6 +68,7 @@ public class ParseReportingUrl extends
   // Values for the click-status API parameter
   public static final String CLICK_STATUS_ABUSE = "64";
   public static final String CLICK_STATUS_GHOST = "65";
+  public static final String IMPRESSION_STATUS_SUSPICIOUS = "1";
 
   // Threshold for IP reputation considered likely abuse.
   private static final int IP_REPUTATION_THRESHOLD = 70;
@@ -176,43 +177,43 @@ public class ParseReportingUrl extends
 
           SponsoredInteraction interaction = interactionBuilder.build();
           String reportingUrl = extractReportingUrl(payload);
-          ParsedReportingUrl urlParser = new ParsedReportingUrl(reportingUrl);
+          BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
 
-          if (!isUrlValid(urlParser.getReportingUrl(),
+          if (!isUrlValid(builtUrl.getReportingUrl(),
               Objects.requireNonNull(interaction.getInteractionType()))) {
             PerDocTypeCounter.inc(attributes, "rejected_nonnull_url");
-            throw new ParsedReportingUrl.InvalidUrlException(
+            throw new BuildReportingUrl.InvalidUrlException(
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
           // ensure parameters based on source and interaction type
           if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
               && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-            requireParamPresent(urlParser, "ctag");
-            requireParamPresent(urlParser, "version");
-            requireParamPresent(urlParser, "key");
-            requireParamPresent(urlParser, "ci");
+            requireParamPresent(builtUrl, "ctag");
+            requireParamPresent(builtUrl, "version");
+            requireParamPresent(builtUrl, "key");
+            requireParamPresent(builtUrl, "ci");
           } else if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
               && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
             // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-            requireParamPresent(urlParser, "ctag");
-            requireParamPresent(urlParser, "custom-data");
-            requireParamPresent(urlParser, "sub1");
-            requireParamPresent(urlParser, "sub2");
+            requireParamPresent(builtUrl, "ctag");
+            requireParamPresent(builtUrl, "custom-data");
+            requireParamPresent(builtUrl, "sub1");
+            requireParamPresent(builtUrl, "sub2");
           } else if (SponsoredInteraction.INTERACTION_IMPRESSION
               .equals(interaction.getInteractionType())
               && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-            requireParamPresent(urlParser, "id");
+            requireParamPresent(builtUrl, "id");
           } else if (SponsoredInteraction.INTERACTION_IMPRESSION
               .equals(interaction.getInteractionType())
               && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
             // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-            requireParamPresent(urlParser, "custom-data");
-            requireParamPresent(urlParser, "sub1");
-            requireParamPresent(urlParser, "sub2");
-            requireParamPresent(urlParser, "partner");
-            requireParamPresent(urlParser, "adv-id");
-            requireParamPresent(urlParser, "v");
+            requireParamPresent(builtUrl, "custom-data");
+            requireParamPresent(builtUrl, "sub1");
+            requireParamPresent(builtUrl, "sub2");
+            requireParamPresent(builtUrl, "partner");
+            requireParamPresent(builtUrl, "adv-id");
+            requireParamPresent(builtUrl, "v");
           }
 
           // We only add these dimensions for topsites, not quicksuggest per
@@ -223,10 +224,10 @@ public class ParseReportingUrl extends
               throw new RejectedMessageException(
                   "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE, "country");
             }
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_COUNTRY_CODE,
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
                 payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
 
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_REGION_CODE,
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_REGION_CODE,
                 attributes.get(Attribute.GEO_SUBDIVISION1));
             final String osParam;
             if (namespace.contains("-ios")) {
@@ -236,11 +237,11 @@ public class ParseReportingUrl extends
             } else {
               osParam = getOsParam(attributes.get(Attribute.USER_AGENT_OS));
             }
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_OS_FAMILY, osParam);
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_FORM_FACTOR,
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_OS_FAMILY, osParam);
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR,
                 interaction.getFormFactor());
 
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_DMA_CODE,
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_DMA_CODE,
                 message.getAttribute(Attribute.GEO_DMA_CODE));
           }
 
@@ -256,7 +257,7 @@ public class ParseReportingUrl extends
                   "Missing required attribute " + Attribute.USER_AGENT_VERSION,
                   "user_agent_version");
             }
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_PRODUCT_VERSION,
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_PRODUCT_VERSION,
                 "firefox_" + userAgentVersion);
             String ipReputationString = attributes.get(Attribute.X_FOXSEC_IP_REPUTATION);
             Integer ipReputation = null;
@@ -266,7 +267,7 @@ public class ParseReportingUrl extends
               // pass
             }
             if (ipReputation != null && ipReputation < IP_REPUTATION_THRESHOLD) {
-              urlParser.addQueryParam(ParsedReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
+              builtUrl.addQueryParam(BuildReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
             }
           }
 
@@ -276,14 +277,14 @@ public class ParseReportingUrl extends
           if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
               && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
 
-            String customDataParam = urlParser.getQueryParam(ParsedReportingUrl.PARAM_CUSTOM_DATA);
-            urlParser.addQueryParam(ParsedReportingUrl.PARAM_CUSTOM_DATA,
+            String customDataParam = builtUrl.getQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA);
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA,
                 Optional.ofNullable(interaction.getScenario())
                     .map((pref) -> String.format("%s_%s", customDataParam, pref))
                     .orElse(customDataParam));
           }
 
-          reportingUrl = urlParser.toString();
+          reportingUrl = builtUrl.toString();
           PerDocTypeCounter.inc(attributes, "valid_url");
           return interaction.toBuilder().setReportingUrl(reportingUrl).build();
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
@@ -291,7 +292,7 @@ public class ParseReportingUrl extends
           try {
             throw ee.exception();
           } catch (UncheckedIOException | IllegalArgumentException
-              | ParsedReportingUrl.InvalidUrlException | RejectedMessageException
+              | BuildReportingUrl.InvalidUrlException | RejectedMessageException
               | InvalidAttributeException | UnexpectedPayloadException e) {
             return FailureMessage.of(ParseReportingUrl.class.getSimpleName(), ee.element(),
                 ee.exception());
@@ -438,7 +439,7 @@ public class ParseReportingUrl extends
     return Arrays.asList(singletonAllowedClickUrls, singletonAllowedImpressionUrls);
   }
 
-  private static void requireParamPresent(ParsedReportingUrl reportingUrl, String paramName) {
+  private static void requireParamPresent(BuildReportingUrl reportingUrl, String paramName) {
     if (reportingUrl.getQueryParam(paramName) == null) {
       throw new RejectedMessageException("Missing required url query parameter: " + paramName,
           paramName);
