@@ -23,7 +23,7 @@ public class BuildReportingUrl {
   static final String PARAM_TIMESTAMP_BEGIN = "begin-timestamp";
   static final String PARAM_TIMESTAMP_END = "end-timestamp";
   static final String PARAM_CLICK_STATUS = "click-status";
-  static final String PARAM_IMPPRESSION_STATUS = "impression-status";
+  static final String PARAM_IMPRESSION_STATUS = "custom-data";
   static final String PARAM_DMA_CODE = "dma-code";
   static final String PARAM_CUSTOM_DATA = "custom-data";
 
