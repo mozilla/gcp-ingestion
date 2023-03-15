@@ -229,7 +229,7 @@ jobs:
           if [ "integration" = "<< parameters.scope >>" ]; then
             export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
             echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-            SCOPE_FLAGS="-Dtest=*IntegrationTest -DfailIfNoTests=false"
+            SCOPE_FLAGS="-Dtest=*IntegrationTest -Dsurefire.failIfNoSpecifiedTests=false"
           else
             SCOPE_FLAGS=
           fi
