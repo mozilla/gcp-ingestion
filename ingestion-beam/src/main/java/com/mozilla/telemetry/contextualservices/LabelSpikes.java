@@ -76,7 +76,7 @@ public class LabelSpikes extends
         this.ghostEventCounter = Metrics.counter(LabelSpikes.class, "ghost_click");
         break;
       case IMPRESSION:
-        this.paramName = BuildReportingUrl.PARAM_IMPPRESSION_STATUS;
+        this.paramName = BuildReportingUrl.PARAM_IMPRESSION_STATUS;
         this.suspiciousParamValue = ParseReportingUrl.IMPRESSION_STATUS_SUSPICIOUS;
         this.ghostEventCounter = Metrics.counter(LabelSpikes.class, "ghost_impression");
         break;
