@@ -810,9 +810,9 @@ types-pyyaml==6.0.12.9 \
     --hash=sha256:5aed5aa66bd2d2e158f75dda22b059570ede988559f030cf294871d3b647e3e8 \
     --hash=sha256:c51b1bd6d99ddf0aa2884a7a328810ebf70a4262c292195d3f4f9a0005f9eeb6
     # via -r requirements.in
-types-requests==2.28.11.15 \
-    --hash=sha256:a05e4c7bc967518fba5789c341ea8b0c942776ee474c7873129a61161978e586 \
-    --hash=sha256:fc8eaa09cc014699c6b63c60c2e3add0c8b09a410c818b5ac6e65f92a26dde09
+types-requests==2.28.11.17 \
+    --hash=sha256:0d580652ce903f643f8c3b494dd01d29367ea57cea0c7ad7f65cf3169092edb0 \
+    --hash=sha256:cc1aba862575019306b2ed134eb1ea994cab1c887a22e18d3383e6dd42e9789b
     # via -r requirements.in
 types-urllib3==1.26.25.4 \
     --hash=sha256:ed6b9e8a8be488796f72306889a06a3fc3cb1aa99af02ab8afb50144d7317e49 \
