@@ -106,6 +106,41 @@ public class ParsePayloadTest {
   }
 
   @Test
+  public void testSampleDocumentId() {
+    String schemasLocation = "schemas.tar.gz";
+    final List<String> input = Arrays
+        .asList("{\"document_id\":\"0E085F25-DD1C-412A-86C7-177D1B5AA5EB\"}");
+    Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline.apply(Create.of(input))
+        .apply(InputFileFormat.text.decode())
+        .apply("AddAttributes", MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+            .via(element -> new PubsubMessage(element.getPayload(), ImmutableMap.of(
+                "document_namespace", "test", "document_type", "sample", "document_version", "1"))))
+        .apply(ParsePayload.of(schemasLocation));
+
+    // document id gets moved into attributes by NestedMetadata.stripPayloadMetadataToAttributes
+    final List<String> expectedPayloads = Arrays.asList("{}");
+    final PCollection<String> payloads = output.output().apply("encodeTextMain",
+        OutputFileFormat.text.encode());
+    PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
+
+    final List<String> expectedAttributes = Arrays
+        .asList("{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"document_id\":\"0E085F25-DD1C-412A-86C7-177D1B5AA5EB\""
+            + ",\"document_type\":\"sample\",\"sample_id\":\"12\"}");
+    final PCollection<String> attributes = output.output()
+        .apply(MapElements.into(TypeDescriptors.strings()).via(m -> {
+          try {
+            return Json.asString(m.getAttributeMap());
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        }));
+    PAssert.that(attributes).containsInAnyOrder(expectedAttributes);
+
+    pipeline.run();
+  }
+
+  @Test
   public void testErrors() {
     String schemasLocation = "schemas.tar.gz";
     final List<String> input = Arrays.asList(
