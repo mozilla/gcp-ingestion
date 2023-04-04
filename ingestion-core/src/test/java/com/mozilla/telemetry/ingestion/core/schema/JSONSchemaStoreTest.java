@@ -26,7 +26,7 @@ public class JSONSchemaStoreTest {
 
   @Test
   public void testNumSchemas() {
-    assertEquals(3, store.numLoadedSchemas());
+    assertEquals(7, store.numLoadedSchemas());
   }
 
   @Test
