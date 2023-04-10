@@ -96,6 +96,7 @@ public class MessageScrubber {
       .put("com-differ-xiaoming", "1806484") //
       .put("org-cloudveil-android-browser", "1816487") //
       .put("com-abaqoo-browser", "1819142") //
+      .put("orn-nomi-noma", "1820615") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
