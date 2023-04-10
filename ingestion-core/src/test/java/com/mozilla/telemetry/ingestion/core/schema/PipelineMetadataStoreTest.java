@@ -2,6 +2,7 @@ package com.mozilla.telemetry.ingestion.core.schema;
 
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableList;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
 import org.junit.Test;
 
@@ -15,6 +16,8 @@ public class PipelineMetadataStoreTest {
     PipelineMetadata meta = store.getSchema("namespace_0/bar/bar.1.schema.json");
     assertEquals("namespace_0", meta.bq_dataset_family());
     assertEquals("/test_string", meta.jwe_mappings().get(0).decrypted_field_path().toString());
+    assertEquals("document_id", meta.sample_id_source_uuid_attribute());
+    assertEquals(ImmutableList.of("impression_id"), meta.sample_id_source_uuid_payload_path());
   }
 
   @Test

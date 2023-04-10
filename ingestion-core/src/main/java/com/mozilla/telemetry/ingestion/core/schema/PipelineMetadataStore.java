@@ -128,6 +128,12 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     @Nullable
     public abstract ExpirationPolicy expiration_policy();
 
+    @Nullable
+    public abstract String sample_id_source_uuid_attribute();
+
+    @Nullable
+    public abstract List<String> sample_id_source_uuid_payload_path();
+
     @AutoValue.Builder
     @JsonPOJOBuilder(withPrefix = "")
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -146,6 +152,10 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
       public abstract Builder jwe_mappings(List<JweMapping> value);
 
       public abstract Builder expiration_policy(ExpirationPolicy value);
+
+      public abstract Builder sample_id_source_uuid_attribute(String value);
+
+      public abstract Builder sample_id_source_uuid_payload_path(List<String> value);
 
       public abstract PipelineMetadata build();
     }
