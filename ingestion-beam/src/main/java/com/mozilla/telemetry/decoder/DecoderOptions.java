@@ -14,13 +14,6 @@ import org.apache.beam.sdk.options.Validation;
  */
 public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
-  @Description("Comma-separated list of static IPs associated with load balancers; "
-      + "will be ignored for IP lookups")
-  @Default.String("35.227.207.240,34.120.208.123")
-  String getProxyIps();
-
-  void setProxyIps(String value);
-
   @Description("Path (local or gs://) to json file containing a object whose values are lists of "
       + "IPs and CIDR notation subnets associated with CloudFront that will be ignored for IP "
       + "lookups, based on https://ip-ranges.amazonaws.com/ip-ranges.json")

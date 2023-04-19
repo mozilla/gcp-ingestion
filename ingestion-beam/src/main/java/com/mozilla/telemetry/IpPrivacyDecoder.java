@@ -66,7 +66,7 @@ public class IpPrivacyDecoder extends Sink {
             .apply("RestrictToMainPings",
                 Filter
                     .by((message) -> "main".equals(message.getAttribute(Attribute.DOCUMENT_TYPE))))
-            .apply(ParseProxy.of(options.getProxyIps(), options.getListGoogleNonCustomerIps(),
+            .apply(ParseProxy.of(options.getListGoogleNonCustomerIps(),
                 options.getListCloudFrontIps())) //
             .apply(ParseIp.of()) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //

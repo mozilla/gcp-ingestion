@@ -63,7 +63,7 @@ public class Decoder extends Sink {
             // We apply ParseProxy and GeoCityLookup and GeoIspLookup first so that IP
             // address is already removed before any message gets routed to error output; see
             // https://github.com/mozilla/gcp-ingestion/issues/1096
-            .apply(ParseProxy.of(options.getProxyIps(), options.getListGoogleNonCustomerIps(),
+            .apply(ParseProxy.of(options.getListGoogleNonCustomerIps(),
                 options.getListCloudFrontIps())) //
             .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //

@@ -150,8 +150,6 @@ public class GeoCityLookup
     private transient Set<Long> allowedCities;
 
     private final Counter countGeoAlreadyApplied = Metrics.counter(Fn.class, "geo_already_applied");
-    private final Counter countIpForwarded = Metrics.counter(Fn.class, "ip_from_x_forwarded_for");
-    private final Counter countIpRemoteAddr = Metrics.counter(Fn.class, "ip_from_remote_addr");
     private final Counter foundIp = Metrics.counter(Fn.class, "found_ip");
     private final Counter foundCity = Metrics.counter(Fn.class, "found_city");
     private final Counter foundCityAllowed = Metrics.counter(Fn.class, "found_city_allowed");
@@ -181,70 +179,60 @@ public class GeoCityLookup
         Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
 
         // Determine client ip
-        String ip;
         String xff = attributes.get(Attribute.X_FORWARDED_FOR);
         if (xff != null) {
-          // Google's load balancer will append the immediate sending client IP and a global
-          // forwarding rule IP to any existing content in X-Forwarded-For as documented in:
-          // https://cloud.google.com/load-balancing/docs/https/#components
-          //
           // In practice, many of the "first" addresses are bogus or internal,
-          // so we target the immediate sending client IP by choosing the second-to-last entry.
+          // so we target the immediate sending client IP by choosing the last entry.
           String[] ips = xff.split("\\s*,\\s*");
-          ip = ips[Math.max(ips.length - 2, 0)];
-          countIpForwarded.inc();
-        } else {
-          ip = attributes.getOrDefault(Attribute.REMOTE_ADDR, "");
-          countIpRemoteAddr.inc();
-        }
+          String ip = ips[Math.max(ips.length - 1, 0)];
 
-        try {
-          attributes.put(Attribute.GEO_DB_VERSION, DateTimeFormatter.ISO_INSTANT
-              .format(Instant.ofEpochMilli(geoIP2City.getMetadata().getBuildDate().getTime())));
+          try {
+            attributes.put(Attribute.GEO_DB_VERSION, DateTimeFormatter.ISO_INSTANT
+                .format(Instant.ofEpochMilli(geoIP2City.getMetadata().getBuildDate().getTime())));
 
-          // Throws UnknownHostException
-          InetAddress ipAddress = InetAddress.getByName(ip);
-          foundIp.inc();
+            // Throws UnknownHostException
+            InetAddress ipAddress = InetAddress.getByName(ip);
+            foundIp.inc();
 
-          // Throws GeoIp2Exception, MalformedInputException, and IOException
-          CityResponse response = geoIP2City.city(ipAddress);
-          foundCity.inc();
+            // Throws GeoIp2Exception, MalformedInputException, and IOException
+            CityResponse response = geoIP2City.city(ipAddress);
+            foundCity.inc();
 
-          String countryCode = response.getCountry().getIsoCode();
-          attributes.put(Attribute.GEO_COUNTRY, countryCode);
+            String countryCode = response.getCountry().getIsoCode();
+            attributes.put(Attribute.GEO_COUNTRY, countryCode);
 
-          Integer dmaCode = response.getLocation().getMetroCode();
-          if (dmaCode != null) {
-            foundDmaCode.inc();
-          }
-
-          City city = response.getCity();
-          if (cityAllowed(city.getGeoNameId())) {
-            attributes.put(Attribute.GEO_CITY, city.getName());
-            foundCityAllowed.inc();
-
+            Integer dmaCode = response.getLocation().getMetroCode();
             if (dmaCode != null) {
-              attributes.put(Attribute.GEO_DMA_CODE, dmaCode.toString());
-              foundDmaCodeAllowed.inc();
+              foundDmaCode.inc();
             }
+
+            City city = response.getCity();
+            if (cityAllowed(city.getGeoNameId())) {
+              attributes.put(Attribute.GEO_CITY, city.getName());
+              foundCityAllowed.inc();
+
+              if (dmaCode != null) {
+                attributes.put(Attribute.GEO_DMA_CODE, dmaCode.toString());
+                foundDmaCodeAllowed.inc();
+              }
+            }
+
+            List<Subdivision> subdivisions = response.getSubdivisions();
+            // Throws IndexOutOfBoundsException
+            attributes.put(Attribute.GEO_SUBDIVISION1, subdivisions.get(0).getIsoCode());
+            foundGeo1.inc();
+            attributes.put(Attribute.GEO_SUBDIVISION2, subdivisions.get(1).getIsoCode());
+            foundGeo2.inc();
+
+          } catch (MalformedInputException ignore) {
+            malformedInput.inc();
+          } catch (UnknownHostException | GeoIp2Exception | IndexOutOfBoundsException ignore) {
+            // ignore these exceptions
           }
-
-          List<Subdivision> subdivisions = response.getSubdivisions();
-          // Throws IndexOutOfBoundsException
-          attributes.put(Attribute.GEO_SUBDIVISION1, subdivisions.get(0).getIsoCode());
-          foundGeo1.inc();
-          attributes.put(Attribute.GEO_SUBDIVISION2, subdivisions.get(1).getIsoCode());
-          foundGeo2.inc();
-
-        } catch (MalformedInputException ignore) {
-          malformedInput.inc();
-        } catch (UnknownHostException | GeoIp2Exception | IndexOutOfBoundsException ignore) {
-          // ignore these exceptions
         }
 
         // remove client ip from attributes
         attributes.remove(Attribute.X_FORWARDED_FOR);
-        attributes.remove(Attribute.REMOTE_ADDR);
 
         // remove null attributes because the coder can't handle them
         attributes.values().removeIf(Objects::isNull);

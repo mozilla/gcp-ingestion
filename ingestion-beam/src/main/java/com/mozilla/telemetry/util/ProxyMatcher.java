@@ -81,7 +81,8 @@ public class ProxyMatcher {
         .map(addrString -> new IPAddressString(addrString).getAddress())
         .collect(Collectors.toList());
     if (versions.isEmpty()) {
-      version = null;
+      // must not be null, because presence is used to detect whether ParseProxy has been applied
+      version = "";
     } else {
       version = String.join(";", versions);
     }
