@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Utility class for parsing and building contextual services reporting URLs.
  */
-public class ParsedReportingUrl {
+public class BuildReportingUrl {
 
   // API parameter names
   static final String PARAM_COUNTRY_CODE = "country-code";
@@ -23,6 +23,7 @@ public class ParsedReportingUrl {
   static final String PARAM_TIMESTAMP_BEGIN = "begin-timestamp";
   static final String PARAM_TIMESTAMP_END = "end-timestamp";
   static final String PARAM_CLICK_STATUS = "click-status";
+  static final String PARAM_IMPRESSION_STATUS = "custom-data";
   static final String PARAM_DMA_CODE = "dma-code";
   static final String PARAM_CUSTOM_DATA = "custom-data";
 
@@ -40,7 +41,7 @@ public class ParsedReportingUrl {
     }
   }
 
-  ParsedReportingUrl(String reportingUrl) {
+  BuildReportingUrl(String reportingUrl) {
     try {
       this.reportingUrl = new URL(reportingUrl);
     } catch (MalformedURLException e) {

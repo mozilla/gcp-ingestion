@@ -14,10 +14,10 @@ import org.joda.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class LabelClickSpikesTest {
+public class LabelSpikesTest {
 
-  private SponsoredInteraction.Builder getTestInteraction() {
-    return SponsoredInteraction.builder().setInteractionType("click").setSource("topsite")
+  private SponsoredInteraction.Builder getTestInteraction(String type) {
+    return SponsoredInteraction.builder().setInteractionType(type).setSource("topsite")
         .setFormFactor("phone").setContextId("1");
   }
 
@@ -25,9 +25,9 @@ public class LabelClickSpikesTest {
   public TestPipeline pipeline = TestPipeline.create();
 
   @Test
-  public void testSetsClickStatus() {
+  public void testSetsSpikeStatus_forClicks() {
 
-    SponsoredInteraction interaction = getTestInteraction().setContextId("a")
+    SponsoredInteraction interaction = getTestInteraction("interaction").setContextId("a")
         .setReportingUrl("https://test.com").build();
     Builder<SponsoredInteraction> eventBuilder = TestStream.create(SponsoredInteraction.getCoder());
 
@@ -40,13 +40,20 @@ public class LabelClickSpikesTest {
 
     TestStream<SponsoredInteraction> createEvents = eventBuilder.advanceWatermarkToInfinity();
 
-    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
-        .apply(WithKeys.of("a")) //
-        .apply(LabelClickSpikes.of(10, Duration.standardMinutes(3))).apply(Values.create());
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
-      assert size == 20 : "Expected 20 messages, but found " + size;
+      int expected = 20;
+      assert size == expected : "Expected " + expected + " messages, but found " + size;
       return null;
     });
 
@@ -54,8 +61,55 @@ public class LabelClickSpikesTest {
       long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
           .filter(m -> m.getReportingUrl().contains("click-status=65")) //
           .count();
-      assert countWithStatus == 10 : ("Expected 10 messages with click-status, but found "
-          + countWithStatus);
+      int expectedWithStatus = 10;
+      assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus
+          + " messages with click-status, but found " + countWithStatus);
+      return null;
+    });
+
+    pipeline.run().waitUntilFinish();
+  }
+
+  @Test
+  public void testSetsSpikeStatus_forImpressions() {
+
+    SponsoredInteraction interaction = getTestInteraction("interaction").setContextId("a")
+        .setReportingUrl("https://test.com").build();
+    Builder<SponsoredInteraction> eventBuilder = TestStream.create(SponsoredInteraction.getCoder());
+
+    // We add 20 messages each only a second apart. The first 10 should saturate the timestamp
+    // state, then the final 10 should be marked as invalid via custom-data.
+    for (int i = 1; i <= 20; i++) {
+      eventBuilder = eventBuilder.advanceProcessingTime(Duration.standardSeconds(i))
+          .addElements(interaction);
+    }
+
+    TestStream<SponsoredInteraction> createEvents = eventBuilder.advanceWatermarkToInfinity();
+
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.IMPRESSION))
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
+    PAssert.that(result).satisfies(iter -> {
+      int size = Iterables.size(iter);
+      int expected = 20;
+      assert size == expected : "Expected " + expected + " messages, but found " + size;
+      return null;
+    });
+
+    PAssert.that(result).satisfies(iter -> {
+      long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
+          .filter(m -> m.getReportingUrl().contains("custom-data=invalid")) //
+          .count();
+      int expectedWithStatus = 10;
+      assert countWithStatus == expectedWithStatus : ("Expected " + expectedWithStatus
+          + " messages with custom-data=invalid, but found " + countWithStatus);
       return null;
     });
 
@@ -64,7 +118,7 @@ public class LabelClickSpikesTest {
 
   @Test
   public void testIgnoresSlowClickRate() {
-    SponsoredInteraction interaction = getTestInteraction().setContextId("a")
+    SponsoredInteraction interaction = getTestInteraction("click").setContextId("a")
         .setReportingUrl("https://test.com").build();
     Builder<SponsoredInteraction> eventBuilder = TestStream.create(SponsoredInteraction.getCoder());
 
@@ -77,13 +131,20 @@ public class LabelClickSpikesTest {
 
     TestStream<SponsoredInteraction> createEvents = eventBuilder.advanceWatermarkToInfinity();
 
-    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
-        .apply(WithKeys.of("a")) //
-        .apply(LabelClickSpikes.of(10, Duration.standardMinutes(3))).apply(Values.create());
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK))
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
-      assert size == 20 : "Expected 20 messages, but found " + size;
+      int expected = 20;
+      assert size == expected : "Expected " + expected + " messages, but found " + size;
       return null;
     });
 
@@ -101,7 +162,7 @@ public class LabelClickSpikesTest {
 
   @Test
   public void testFlushesState() {
-    SponsoredInteraction interaction = getTestInteraction().setContextId("a")
+    SponsoredInteraction interaction = getTestInteraction("click").setContextId("a")
         .setReportingUrl("https://test.com").build();
     SponsoredInteraction[] interactions = new SponsoredInteraction[8];
     Arrays.fill(interactions, interaction);
@@ -112,14 +173,20 @@ public class LabelClickSpikesTest {
         .addElements(interactions[0], Arrays.copyOfRange(interactions, 1, 8)) //
         .advanceWatermarkToInfinity();
 
-    PCollection<SponsoredInteraction> result = pipeline.apply(createEvents) //
-        .apply(WithKeys.of("a")) //
-        .apply(LabelClickSpikes.of(10, Duration.standardMinutes(3))) //
-        .apply(Values.create());
+    PCollection<SponsoredInteraction> result = null;
+    try {
+      result = pipeline.apply(createEvents) //
+          .apply(WithKeys.of("a")) //
+          .apply(LabelSpikes.of(10, Duration.standardMinutes(3), TelemetryEventType.CLICK)) //
+          .apply(Values.create());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
 
     PAssert.that(result).satisfies(iter -> {
       int size = Iterables.size(iter);
-      assert size == 16 : "Expected 16 messages, but found " + size;
+      int expected = 16;
+      assert size == expected : "Expected " + expected + " messages, but found " + size;
       return null;
     });
 
