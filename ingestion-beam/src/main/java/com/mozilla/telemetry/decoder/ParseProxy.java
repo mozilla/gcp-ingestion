@@ -124,6 +124,9 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
             }
           });
 
+      // remove unused ip from attributes
+      attributes.remove(Attribute.REMOTE_ADDR);
+
       // Remove null attributes because the coder can't handle them.
       attributes.values().removeIf(Objects::isNull);
 
