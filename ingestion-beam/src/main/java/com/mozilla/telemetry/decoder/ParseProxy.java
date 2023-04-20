@@ -114,7 +114,8 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
                 }
                 xff.remove(xff.size() - 1); // remove last entry when proxy is detected
                 if (ProxyMatcher.ProxySource.GOOGLE == pt) {
-                  xff.remove(xff.size() - 1); // remove an additional entry for google proxy
+                  break;
+                  // xff.remove(xff.size() - 1); // remove an additional entry for google proxy
                 } else {
                   break;
                 }
