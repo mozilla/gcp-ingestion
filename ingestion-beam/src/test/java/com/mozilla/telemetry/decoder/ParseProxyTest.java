@@ -38,11 +38,11 @@ public class ParseProxyTest extends TestWithDeterministicJson {
             + "},\"payload\":\"notProxied++\"}",
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4, 8.8.4.1, 2, 1\"" //
+            + ",\"x_forwarded_for\":\"5, 4, 8.8.4.1, 2, 1\"" //
             + "},\"payload\":\"googleIPv4Subnet\"}",
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4, 2c0f:fb50::1, 2, 1\"" //
+            + ",\"x_forwarded_for\":\"5, 4, 2c0f:fb50::1, 2, 1\"" //
             + "},\"payload\":\"googleIPv6Subnet\"}",
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
@@ -73,13 +73,13 @@ public class ParseProxyTest extends TestWithDeterministicJson {
             + "{\"proxy_detected\":\"true\"" //
             + ",\"proxy_list_versions\":\"" + version + "\"" //
             + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4\"" //
+            + ",\"x_forwarded_for\":\"5\"" //
             + "},\"payload\":\"googleIPv4Subnet\"}",
         "{\"attributeMap\":" //
             + "{\"proxy_detected\":\"true\"" //
             + ",\"proxy_list_versions\":\"" + version + "\"" //
             + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4\"" //
+            + ",\"x_forwarded_for\":\"5\"" //
             + "},\"payload\":\"googleIPv6Subnet\"}",
         "{\"attributeMap\":" //
             + "{\"proxy_detected\":\"true\"" //

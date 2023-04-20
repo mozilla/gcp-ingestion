@@ -107,9 +107,15 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
               // If any of the configured proxy subnets are present, then remove the proxy IP. See:
               // https://bugzilla.mozilla.org/show_bug.cgi?id=1789992
               final int xffSize = xff.size();
-              while (xff.size() > 0 && proxyMatcher.apply(xff.get(xff.size() - 1))) {
-                // remove last index until no proxy is detected
-                xff.remove(xff.size() - 1);
+              while (xff.size() > 0) {
+                final ProxyMatcher.ProxySource pt = proxyMatcher.apply(xff.get(xff.size() - 1));
+                if (pt == null) {
+                  break; // stop if no proxy is detected
+                }
+                xff.remove(xff.size() - 1); // remove last entry when proxy is detected
+                if (ProxyMatcher.ProxySource.GOOGLE == pt) {
+                  xff.remove(xff.size() - 1); // remove an additional entry for google proxy
+                }
               }
               if (xffSize != xff.size()) {
                 // only count once per message

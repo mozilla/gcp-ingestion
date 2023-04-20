@@ -24,18 +24,23 @@ public class ProxyMatcher {
     return new ProxyMatcher(listGoogleNonCustomerIps, listCloudFrontIps);
   }
 
+  public enum ProxySource {
+    GOOGLE, CLOUD_FRONT
+  }
+
   /////////
 
   private static final Pattern GOOGLE_VERSION_LINE = Pattern
       .compile("((goog|cloud)[.]json) published: (.*)$");
 
   public final String version;
-  private final List<IPAddress> proxies;
+  private final List<IPAddress> googleProxies;
+  private final List<IPAddress> cloudFrontProxies;
 
   private ProxyMatcher(String listGoogleNonCustomerIps, String listCloudFrontIps) {
-    final List<String> addresses = new ArrayList<>();
     final List<String> versions = new ArrayList<>();
     if (!Strings.isNullOrEmpty(listGoogleNonCustomerIps)) {
+      final List<String> googleAddresses = new ArrayList<>();
       try {
         final ReadableByteChannel channel = FileSystems
             .open(FileSystems.matchSingleFileSpec(listGoogleNonCustomerIps).resourceId());
@@ -49,12 +54,16 @@ public class ProxyMatcher {
             versions.add(matcher.group(1) + ":" + matcher.group(3));
           } else if (new IPAddressString(line).getAddress() != null) {
             // add subnet
-            addresses.add(line);
+            googleAddresses.add(line);
           }
         }
       } catch (IOException e) {
         throw new UncheckedIOException("Exception thrown while fetching Google subnets", e);
       }
+      googleProxies = googleAddresses.stream().map(a -> new IPAddressString(a).getAddress())
+          .collect(Collectors.toList());
+    } else {
+      googleProxies = List.of();
     }
 
     if (!Strings.isNullOrEmpty(listCloudFrontIps)) {
@@ -67,19 +76,22 @@ public class ProxyMatcher {
       } catch (IOException e) {
         throw new UncheckedIOException("Exception thrown while fetching CloudFront subnets", e);
       }
-      cloudFront.get("prefixes").elements().forEachRemaining(node -> {
-        addresses.add(node.get("ip_prefix").asText());
-      });
-      cloudFront.get("ipv6_prefixes").elements().forEachRemaining(node -> {
-        addresses.add(node.get("ipv6_prefix").asText());
-      });
       versions.add("cloudfront:" + cloudFront.get("syncToken").asText() + ":"
           + cloudFront.get("createDate").asText());
+      final List<String> cloudFrontAddresses = new ArrayList<>();
+      cloudFront.get("prefixes").elements().forEachRemaining(node -> {
+        cloudFrontAddresses.add(node.get("ip_prefix").asText());
+      });
+      cloudFront.get("ipv6_prefixes").elements().forEachRemaining(node -> {
+        cloudFrontAddresses.add(node.get("ipv6_prefix").asText());
+      });
+      cloudFrontProxies = cloudFrontAddresses.stream()
+          .map(addrString -> new IPAddressString(addrString).getAddress())
+          .collect(Collectors.toList());
+    } else {
+      cloudFrontProxies = List.of();
     }
 
-    this.proxies = addresses.stream()
-        .map(addrString -> new IPAddressString(addrString).getAddress())
-        .collect(Collectors.toList());
     if (versions.isEmpty()) {
       // must not be null, because presence is used to detect whether ParseProxy has been applied
       version = "";
@@ -88,12 +100,19 @@ public class ProxyMatcher {
     }
   }
 
-  /** Check whether address is from any proxies. */
-  public boolean apply(String address) {
+  /** Check whether address is from any proxies, and return the number of entries to remove from
+   *  X-Forwarded-For.
+   */
+  public ProxySource apply(String address) {
     final IPAddress ipAddress = new IPAddressString(address).getAddress();
-    if (ipAddress == null) {
-      return false;
+    if (ipAddress != null) {
+      if (googleProxies.stream().anyMatch(subnet -> subnet.contains(ipAddress))) {
+        return ProxySource.GOOGLE;
+      }
+      if (cloudFrontProxies.stream().anyMatch(subnet -> subnet.contains(ipAddress))) {
+        return ProxySource.CLOUD_FRONT;
+      }
     }
-    return proxies.stream().anyMatch(subnet -> subnet.contains(ipAddress));
+    return null;
   }
 }
