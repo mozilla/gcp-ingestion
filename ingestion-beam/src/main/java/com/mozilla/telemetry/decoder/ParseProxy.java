@@ -87,7 +87,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
               // we are likely reprocessing a message from error output.
               countProxySubnetAlreadyApplied.inc();
             } else {
-              attributes.put(Attribute.PROXY_LIST_VERSIONS, proxyMatcher.version);
+              attributes.put(Attribute.PROXY_LIST_VERSIONS, String.join(",", xff));
 
               // Google's load balancer will append the immediate sending client IP and a global
               // forwarding rule IP to any existing content in X-Forwarded-For as documented in:
