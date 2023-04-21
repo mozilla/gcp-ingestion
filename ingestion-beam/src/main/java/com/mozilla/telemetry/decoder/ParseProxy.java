@@ -119,8 +119,11 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
                   } else {
                     attributes.put(Attribute.PROXY_LIST_VERSIONS, String.join("|", xff));
                   }
-                  break;
-                  // xff.remove(xff.size() - 1); // remove an additional entry for google proxy
+                  try {
+                    xff.remove(xff.size() - 1); // remove an additional entry for google proxy
+                  } catch (Exception e) {
+                    attributes.put(Attribute.X_DEBUG_ID, "whd");
+                  }
                 } else {
                   break;
                 }
