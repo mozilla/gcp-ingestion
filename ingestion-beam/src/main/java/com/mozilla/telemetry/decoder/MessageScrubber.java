@@ -97,6 +97,8 @@ public class MessageScrubber {
       .put("org-cloudveil-android-browser", "1816487") //
       .put("com-abaqoo-browser", "1819142") //
       .put("orn-nomi-noma", "1820615") //
+      .put("com-readboy-firefox", "1833203") //
+      .put("website-carbon-ios-browser", "1833204") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
