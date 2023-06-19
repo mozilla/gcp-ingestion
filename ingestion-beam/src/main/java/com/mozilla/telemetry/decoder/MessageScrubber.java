@@ -101,6 +101,8 @@ public class MessageScrubber {
       .put("website-carbon-ios-browser", "1833204") //
       .put("viu-politica", "1826535") //
       .put("com-freespoke-app", "1834366") //
+      .put("com-ruiyi-testsystem", "1828562") //
+      .put("org-mozilla-fenix-mod", "1835701") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
