@@ -102,18 +102,18 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>5.3.26</version>
+            <version>5.3.27</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
-            <version>4.10.0</version>
+            <version>4.11.0</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
-            <version>4.10.0</version>
+            <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
