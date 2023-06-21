@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.schema;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.util.BeamFileInputStream;
@@ -21,6 +22,12 @@ public class SchemaStoreSingletonFactory {
   private static volatile PipelineMetadataStore pipelineMetadataStore;
 
   private SchemaStoreSingletonFactory() {
+  }
+
+  @VisibleForTesting
+  public static synchronized void clearSingletonsForTests() {
+    jsonSchemaStore = null;
+    pipelineMetadataStore = null;
   }
 
   /**
