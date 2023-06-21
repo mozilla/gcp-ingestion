@@ -26,13 +26,11 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
@@ -48,7 +46,6 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionTuple;
 import org.apache.beam.sdk.values.TupleTag;
 import org.apache.beam.sdk.values.TupleTagList;
-import org.everit.json.schema.ObjectSchema;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 
@@ -74,11 +71,6 @@ public class ParsePayload extends
       "json_validate_millis");
 
   private final String schemasLocation;
-
-  // When splitting pings, most metadata fields are in attributes and included in all resulting
-  // pings from there, but fields in this set need to be copied to the payload of each ping.
-  private static final Set<String> additionalMetadataFields = Set.of("clientId", "client_id",
-      "client_info");
 
   private transient JsonValidator validator;
   private transient JSONSchemaStore schemaStore;
@@ -198,74 +190,17 @@ public class ParsePayload extends
 
         addAttributesFromPayload(attributes, json, meta);
 
-        // Optionally split message into multiple messages based on pipeline metadata
-        final PipelineMetadataStore.SplitConfig splitConfig = meta.split_config();
-        final List<PubsubMessage> messages = new ArrayList<>();
-        if (splitConfig == null || splitConfig.preserve_original()) {
-          // https://github.com/mozilla/gcp-ingestion/issues/780
-          // We need to be careful to consistently use our util methods (which use Jackson) for
-          // serializing and de-serializing JSON to reduce the possibility of introducing encoding
-          // issues. We previously called json.toString().getBytes() here without specifying a
-          // charset.
-          messages.add(new PubsubMessage(Json.asBytes(json), attributes));
-        }
-
-        if (splitConfig != null) {
-          for (PipelineMetadataStore.SplitConfigTarget subsetConfig : splitConfig.subsets()) {
-            final Map<String, String> subsetAttributes = new HashMap<>(attributes);
-            subsetAttributes.put(Attribute.DOCUMENT_NAMESPACE, subsetConfig.document_namespace());
-            subsetAttributes.put(Attribute.DOCUMENT_TYPE, subsetConfig.document_type());
-            subsetAttributes.put(Attribute.DOCUMENT_VERSION, subsetConfig.document_version());
-            final ObjectNode subsetJson = Json.createObjectNode();
-            final ObjectSchema subsetSchema;
-            try {
-              subsetSchema = (ObjectSchema) schemaStore.getSchema(subsetAttributes);
-            } catch (SchemaNotFoundException e) {
-              PerDocTypeCounter.inc(attributes, "error_schema_not_found");
-              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-              throw e;
-            }
-            jsonMove(json, subsetJson, subsetSchema, true);
-            try {
-              validateTimed(subsetSchema, subsetJson);
-            } catch (ValidationException e) {
-              PerDocTypeCounter.inc(attributes, "error_schema_validation");
-              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-              throw e;
-            }
-            messages.add(new PubsubMessage(Json.asBytes(subsetJson), subsetAttributes));
-          }
-
-          if (splitConfig.remainder() != null) {
-            final Map<String, String> remainderAttributes = new HashMap<>(attributes);
-            remainderAttributes.put(Attribute.DOCUMENT_NAMESPACE,
-                splitConfig.remainder().document_namespace());
-            remainderAttributes.put(Attribute.DOCUMENT_TYPE,
-                splitConfig.remainder().document_type());
-            remainderAttributes.put(Attribute.DOCUMENT_VERSION,
-                splitConfig.remainder().document_version());
-            final Schema remainderSchema;
-            try {
-              remainderSchema = schemaStore.getSchema(remainderAttributes);
-            } catch (SchemaNotFoundException e) {
-              PerDocTypeCounter.inc(attributes, "error_schema_not_found");
-              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-              throw e;
-            }
-            try {
-              validateTimed(remainderSchema, json);
-            } catch (ValidationException e) {
-              PerDocTypeCounter.inc(attributes, "error_schema_validation");
-              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-              throw e;
-            }
-            messages.add(new PubsubMessage(Json.asBytes(json), remainderAttributes));
-          }
-        }
+        // https://github.com/mozilla/gcp-ingestion/issues/780
+        // We need to be careful to consistently use our util methods (which use Jackson) for
+        // serializing and de-serializing JSON to reduce the possibility of introducing encoding
+        // issues. We previously called json.toString().getBytes() here without specifying a
+        // charset.
+        byte[] normalizedPayload = Json.asBytes(json);
 
         PerDocTypeCounter.inc(attributes, "valid_submission");
         PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
-        messages.forEach(out.get(outputTag)::output);
+
+        out.get(outputTag).output(new PubsubMessage(normalizedPayload, attributes));
       } catch (IOException | SchemaNotFoundException | ValidationException
           | MessageScrubberException | DeprecatedMessageException e) {
         out.get(failureTag)
@@ -471,34 +406,6 @@ public class ParsePayload extends
       node = node.path(pathElement);
     }
     return node.asText();
-  }
-
-  private static void jsonMove(ObjectNode json, ObjectNode subsetJson, ObjectSchema subsetSchema,
-      boolean isRoot) {
-    if (isRoot) {
-      for (String propertyName : additionalMetadataFields) {
-        if (json.has(propertyName)) {
-          subsetJson.set(propertyName, json.get(propertyName));
-        }
-      }
-    }
-    // for now only support moving explicitly defined properties, with no additional properties
-    subsetSchema.getPropertySchemas().forEach((propertyName, propertySchema) -> {
-      if (json.has(propertyName)) {
-        if (propertySchema instanceof ObjectSchema) {
-          if (json.path(propertyName).isObject()) {
-            ObjectNode obj = Json.createObjectNode();
-            subsetJson.set(propertyName, obj);
-            jsonMove((ObjectNode) json.path(propertyName), obj, (ObjectSchema) propertySchema,
-                false);
-          }
-        } else if (!isRoot || !additionalMetadataFields.contains(propertyName)) {
-          // don't remove additionalMetadataFields from json.
-          // only support recursing into object schemas.
-          subsetJson.set(propertyName, json.remove(propertyName));
-        }
-      }
-    });
   }
 
   static class DeprecatedMessageException extends RuntimeException {
