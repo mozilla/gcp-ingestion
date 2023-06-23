@@ -226,13 +226,6 @@ public class ParsePayload extends
               throw e;
             }
             jsonMove(json, subsetJson, subsetSchema, true);
-            try {
-              validateTimed(subsetSchema, subsetJson);
-            } catch (ValidationException e) {
-              PerDocTypeCounter.inc(attributes, "error_schema_validation");
-              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-              throw e;
-            }
             messages.add(new PubsubMessage(Json.asBytes(subsetJson), subsetAttributes));
           }
 
@@ -244,21 +237,6 @@ public class ParsePayload extends
                 splitConfig.remainder().document_type());
             remainderAttributes.put(Attribute.DOCUMENT_VERSION,
                 splitConfig.remainder().document_version());
-            final Schema remainderSchema;
-            try {
-              remainderSchema = schemaStore.getSchema(remainderAttributes);
-            } catch (SchemaNotFoundException e) {
-              PerDocTypeCounter.inc(attributes, "error_schema_not_found");
-              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-              throw e;
-            }
-            try {
-              validateTimed(remainderSchema, json);
-            } catch (ValidationException e) {
-              PerDocTypeCounter.inc(attributes, "error_schema_validation");
-              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-              throw e;
-            }
             messages.add(new PubsubMessage(Json.asBytes(json), remainderAttributes));
           }
         }
