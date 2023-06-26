@@ -79,10 +79,6 @@ public class GeoIspLookup
     private final Counter foundIp = Metrics.counter(GeoIspLookup.Fn.class, "found_ip");
     private final Counter countIspAlreadyApplied = Metrics.counter(Fn.class, "isp_already_applied");
     private final Counter foundIsp = Metrics.counter(Fn.class, "found_isp");
-    private final Counter countIpForwarded = Metrics.counter(GeoIspLookup.Fn.class,
-        "ip_from_x_forwarded_for");
-    private final Counter countIpRemoteAddr = Metrics.counter(GeoIspLookup.Fn.class,
-        "ip_from_remote_addr");
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
@@ -103,39 +99,30 @@ public class GeoIspLookup
         Map<String, String> attributes = new HashMap<String, String>(message.getAttributeMap());
 
         // Determine client ip
-        String ip;
         String xff = attributes.get(Attribute.X_FORWARDED_FOR);
 
         if (xff != null) {
-          // Google's load balancer will append the immediate sending client IP and a global
-          // forwarding rule IP to any existing content in X-Forwarded-For as documented in:
-          // https://cloud.google.com/load-balancing/docs/https/#components
-          //
           // In practice, many of the "first" addresses are bogus or internal,
-          // so we target the immediate sending client IP by choosing the second-to-last entry.
+          // so we target the immediate sending client IP by choosing the last entry.
           String[] ips = xff.split("\\s*,\\s*");
-          ip = ips[Math.max(ips.length - 2, 0)];
-          countIpForwarded.inc();
-        } else {
-          ip = attributes.getOrDefault(Attribute.REMOTE_ADDR, "");
-          countIpRemoteAddr.inc();
-        }
+          String ip = ips[Math.max(ips.length - 1, 0)];
 
-        try {
-          attributes.put(Attribute.ISP_DB_VERSION, DateTimeFormatter.ISO_INSTANT
-              .format(Instant.ofEpochMilli(ispReader.getMetadata().getBuildDate().getTime())));
+          try {
+            attributes.put(Attribute.ISP_DB_VERSION, DateTimeFormatter.ISO_INSTANT
+                .format(Instant.ofEpochMilli(ispReader.getMetadata().getBuildDate().getTime())));
 
-          // Throws UnknownHostException
-          InetAddress ipAddress = InetAddress.getByName(ip);
-          foundIp.inc();
+            // Throws UnknownHostException
+            InetAddress ipAddress = InetAddress.getByName(ip);
+            foundIp.inc();
 
-          IspResponse response = ispReader.isp(ipAddress);
-          foundIsp.inc();
+            IspResponse response = ispReader.isp(ipAddress);
+            foundIsp.inc();
 
-          attributes.put(Attribute.ISP_NAME, response.getIsp());
-          attributes.put(Attribute.ISP_ORGANIZATION, response.getOrganization());
-        } catch (UnknownHostException | GeoIp2Exception ignore) {
-          // ignore these exceptions
+            attributes.put(Attribute.ISP_NAME, response.getIsp());
+            attributes.put(Attribute.ISP_ORGANIZATION, response.getOrganization());
+          } catch (UnknownHostException | GeoIp2Exception ignore) {
+            // ignore these exceptions
+          }
         }
 
         // remove null attributes because the coder can't handle them

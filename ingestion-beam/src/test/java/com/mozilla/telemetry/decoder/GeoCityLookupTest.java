@@ -41,21 +41,14 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
     // https://github.com/maxmind/MaxMind-DB/blob/664aeeb08bb50f53a1fdceac763c37f6465e44a4/source-data/GeoIP2-City-Test.json
     final List<String> input = Arrays.asList(
         "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}", //
-        "{\"attributeMap\":{\"remote_addr\":\"202.196.224.0\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":{\"geo_country\":\"test\"},\"payload\":\"dGVzdA==\"}", //
         "{\"attributeMap\":" //
-            + "{\"remote_addr\":\"10.0.0.2\"" //
-            + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
+            + "{\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56\"" //
             + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(//
-        "{\"attributeMap\":" //
-            + "{\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
-            + ",\"host\":\"test\"" //
-            + "},\"payload\":\"dGVzdA==\"}", //
-        "{\"attributeMap\":" //
-            + "{\"geo_country\":\"PH\"" //
-            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
-            + "},\"payload\":\"\"}", //
+        "{\"attributeMap\":{\"host\":\"test\"},\"payload\":\"dGVzdA==\"}", //
+        "{\"attributeMap\":{\"geo_country\":\"test\"},\"payload\":\"dGVzdA==\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_city\":\"Milton\"" //
             + ",\"geo_country\":\"US\"" //
@@ -79,15 +72,14 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
             .addNameFilter(MetricNameFilter.inNamespace(GeoCityLookup.Fn.class)).build())
         .getCounters());
 
-    assertEquals(8, counters.size());
+    assertEquals(7, counters.size());
     counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
   }
 
   @Test
   public void testCityRejected() {
     final List<String> input = Arrays.asList("{\"attributeMap\":" //
-        + "{\"remote_addr\":\"10.0.0.2\"" //
-        + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
+        + "{\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56\"" //
         + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList("{\"attributeMap\":" //
@@ -111,8 +103,7 @@ public class GeoCityLookupTest extends TestWithDeterministicJson {
   @Test
   public void testCityAllowed() {
     final List<String> input = Arrays.asList("{\"attributeMap\":" //
-        + "{\"remote_addr\":\"10.0.0.2\"" //
-        + ",\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56, 60.1.1.1\"" //
+        + "{\"x_forwarded_for\":\"192.168.1.2, 216.160.83.56\"" //
         + "},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList("{\"attributeMap\":" //
