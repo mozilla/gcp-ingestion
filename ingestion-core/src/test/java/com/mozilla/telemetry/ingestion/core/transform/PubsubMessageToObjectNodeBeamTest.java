@@ -477,8 +477,7 @@ public class PubsubMessageToObjectNodeBeamTest {
         .put("date", "Mon, 12 Mar 2018 21:02:18 GMT").put("dnt", "1")
         .put("host", "incoming.telemetry.mozilla.org").put("user_agent", "pingsender/1.0")
         .put("x_forwarded_for", "10.98.132.74, 103.3.237.12").put("x_pingsender_version", "1.0")
-        .put("x_debug_id", "my_debug_session_1")
-        .put("x_pipeline_proxy", "2018-03-12T21:02:18.123456Z").build();
+        .put("x_debug_id", "my_debug_session_1").build();
     byte[] data = "test".getBytes(StandardCharsets.UTF_8);
     Map<String, String> expected = ImmutableMap.<String, String>builder().putAll(attributes)
         .put("payload", "dGVzdA==").build();

@@ -53,10 +53,6 @@ This document specifies the architecture for GCP Ingestion as a whole.
 - Must not ack messages read from PubSub until they are delivered
 - Must apply the following transforms in order
   ([implementations here](../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/)):
-  1. Parse `x_pipeline_proxy` attribute; if present with a valid value in
-     [the edge submission timestamp format](https://github.com/mozilla/gcp-ingestion/blob/main/docs/edge.md#submission-timestamp-format),
-     archive the value of `submission_timestamp` to `proxy_timestamp` and
-     replace with the `x_pipeline_proxy` value
   1. Resolve GeoIP from `remote_addr` or `x_forwarded_for` attribute into
      `geo_*` attributes
   1. Parse `uri` attribute into multiple attributes

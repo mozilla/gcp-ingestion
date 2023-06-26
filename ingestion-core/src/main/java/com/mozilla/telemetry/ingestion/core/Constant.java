@@ -29,6 +29,7 @@ public class Constant {
     public static final String GEO_SUBDIVISION1 = "geo_subdivision1";
     public static final String GEO_SUBDIVISION2 = "geo_subdivision2";
     public static final String GEO_DMA_CODE = "geo_dma_code";
+    public static final String GEO_DB_VERSION = "geo_db_version";
     @SuppressWarnings({ "checkstyle:linelength" })
     public static final String IMPROVE_SUGGEST_EXPERIENCE_CHECKED = "improve_suggest_experience_checked";
     public static final String ISP_NAME = "isp_name";
@@ -43,7 +44,6 @@ public class Constant {
     public static final String NORMALIZED_OS_VERSION = "normalized_os_version";
     public static final String OS = "os";
     public static final String OS_VERSION = "os_version";
-    public static final String PROXY_TIMESTAMP = "proxy_timestamp";
     public static final String REMOTE_ADDR = "remote_addr";
     public static final String REPORTING_URL = "reporting_url";
     public static final String REQUEST_ID = "request_id";
@@ -60,7 +60,6 @@ public class Constant {
     public static final String X_FOXSEC_IP_REPUTATION = "x_foxsec_ip_reputation";
     public static final String X_LB_TAGS = "x_lb_tags";
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";
-    public static final String X_PIPELINE_PROXY = "x_pipeline_proxy";
     public static final String X_SOURCE_TAGS = "x_source_tags";
     public static final String X_TELEMETRY_AGENT = "x_telemetry_agent";
   }
