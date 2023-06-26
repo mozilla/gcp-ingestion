@@ -2,9 +2,12 @@ package com.mozilla.telemetry.decoder;
 
 import static org.junit.Assert.assertEquals;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
+import com.mozilla.telemetry.ingestion.core.schema.TestConstant;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
+import com.mozilla.telemetry.schema.SchemaStoreSingletonFactory;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,6 +34,7 @@ public class ParsePayloadTest {
   @Test
   public void testSampleId() {
     String schemasLocation = "schemas.tar.gz";
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
     ParsePayload transform = ParsePayload.of(schemasLocation);
     assertEquals(67L, transform.calculateSampleId("2907648d-711b-4e9f-94b5-52a2b40a44b1"));
     assertEquals(17L, transform.calculateSampleId("90210716-99f8-0a4f-8119-9bfc16cd68a3"));
@@ -51,6 +55,7 @@ public class ParsePayloadTest {
   @Test
   public void testOutput() {
     String schemasLocation = "schemas.tar.gz";
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
     final List<String> input = Arrays.asList("{}", "{\"id\":null}", "[]", "{",
         "{\"clientId\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\"}",
         "{\"clientId\":\"2907648D-711B-4E9F-94B5-52A2B40A44B1\"}",
@@ -108,6 +113,7 @@ public class ParsePayloadTest {
   @Test
   public void testSampleDocumentId() {
     String schemasLocation = "schemas.tar.gz";
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
     final List<String> input = Arrays
         .asList("{\"document_id\":\"0E085F25-DD1C-412A-86C7-177D1B5AA5EB\"}");
     Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline.apply(Create.of(input))
@@ -143,6 +149,7 @@ public class ParsePayloadTest {
   @Test
   public void testErrors() {
     String schemasLocation = "schemas.tar.gz";
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
     final List<String> input = Arrays.asList(
         // non-json payload
         "{\"attributeMap\":" + "{\"document_namespace\":\"eng-workflow\""
@@ -175,6 +182,7 @@ public class ParsePayloadTest {
   @Test
   public void testVersionInPayload() {
     String schemasLocation = "schemas.tar.gz";
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
 
     // printf '{"version":4}' | base64 -> eyJ2ZXJzaW9uIjo0fQ==
     String input = "{\"attributeMap\":" //
@@ -202,6 +210,7 @@ public class ParsePayloadTest {
   @Test
   public void testMetadataInPayload() {
     String schemasLocation = "schemas.tar.gz";
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
 
     String input = "{\"id\":null,\"document_id\":\"2c3a0767-d84a-4d02-8a92-fa54a3376049\""
         + ",\"metadata\":{\"document_namespace\":\"test\",\"document_type\":\"test\""
@@ -230,6 +239,7 @@ public class ParsePayloadTest {
   public void testDeprecation() {
     // expiration-policy schema sets a do not collect date of 2022-03-01
     String schemasLocation = "schemas.tar.gz";
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
     List<PubsubMessage> input = Arrays.asList(
         new PubsubMessage("{}".getBytes(StandardCharsets.UTF_8),
             ImmutableMap.of("document_namespace", "test", "document_type", "expiration-policy",
@@ -246,6 +256,71 @@ public class ParsePayloadTest {
     PAssert.that(result.output()).containsInAnyOrder(input.get(1));
     PAssert.that(exceptions).containsInAnyOrder(
         "com.mozilla.telemetry.decoder.ParsePayload$DeprecatedMessageException");
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testPingSplitting() throws IOException {
+    String schemasLocation = TestConstant.SCHEMAS_LOCATION;
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
+
+    final List<PubsubMessage> input = Arrays.asList(
+        // preserve original, create both subset and remainder
+        new PubsubMessage(
+            Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of("int", 1, "string", "str1"),
+                "test_int", 2, "test_string", "str2")),
+            ImmutableMap.of("document_namespace", "test_split", "document_type", "preserve",
+                "document_version", "1")),
+        // destroy original, create subset and discard remainder
+        new PubsubMessage(
+            Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of("int", 3, "string", "str3"),
+                "test_int", 4, "test_string", "str4")),
+            ImmutableMap.of("document_namespace", "test_split", "document_type", "destroy",
+                "document_version", "1")));
+    Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline.apply(Create.of(input))
+        .apply(ParsePayload.of(schemasLocation));
+
+    final List<String> expected = Arrays.asList(//
+        "{\"attributes\":"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"preserve\"},"
+            + "\"data\":{\"payload\":{\"int\":1,\"string\":\"str1\"},\"test_int\":2,\"test_string\":\"str2\"}}",
+        "{\"attributes\":"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"subset\"},"
+            + "\"data\":{\"payload\":{\"int\":1},\"test_int\":2}}",
+        "{\"attributes\":"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"remainder\"},"
+            + "\"data\":{\"payload\":{\"string\":\"str1\"},\"test_string\":\"str2\"}}",
+        "{\"attributes\":"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"subset\"},"
+            + "\"data\":{\"payload\":{\"int\":3},\"test_int\":4}}");
+
+    final PCollection<String> outputString = output.output().apply("encodeOutput",
+        MapElements.into(TypeDescriptors.strings()).via(m -> {
+          ObjectNode result = Json.createObjectNode();
+          result.set("attributes", Json.asObjectNode(m.getAttributeMap()));
+          try {
+            result.set("data", Json.readObjectNode(m.getPayload()));
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+          return Json.asString(result);
+        }));
+    PAssert.that(outputString).containsInAnyOrder(expected);
+
+    final List<String> expectedError = List.of();
+    final PCollection<String> failures = output.failures().apply("encodeFailures",
+        MapElements.into(TypeDescriptors.strings()).via(m -> {
+          ObjectNode result = Json.createObjectNode();
+          result.set("attributes", Json.asObjectNode(m.getAttributeMap()));
+          try {
+            result.set("data", Json.readObjectNode(m.getPayload()));
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+          return Json.asString(result);
+        }));
+    PAssert.that(failures).containsInAnyOrder(expectedError);
 
     pipeline.run();
   }
