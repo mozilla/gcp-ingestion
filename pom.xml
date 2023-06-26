@@ -63,7 +63,7 @@
         <avro.version>1.8.2</avro.version>
 
         <!-- The version pulled in by avro does not support Apple Silicon as of Jan 2022 -->
-        <snappy.version>1.1.10.0</snappy.version>
+        <snappy.version>1.1.10.1</snappy.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
@@ -105,7 +105,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>32.0.0-jre</version>
+            <version>32.0.1-jre</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -118,7 +118,7 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.12.0</version>
+            <version>2.13.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.everit-org.json-schema</groupId>
@@ -305,7 +305,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.1.2</version>
                 <configuration>
                     <reportFormat>plain</reportFormat>
                     <excludes>
