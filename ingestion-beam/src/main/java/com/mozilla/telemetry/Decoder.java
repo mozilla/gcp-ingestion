@@ -4,6 +4,7 @@ import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GeoIspLookup;
+import com.mozilla.telemetry.decoder.ParseLogEntry;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -68,6 +69,11 @@ public class Decoder extends Sink {
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
                 .withClientCompressionRecorded()))
+
+        // Special case: parsing structured telemetry pings submitted from Cloud Logging
+        .map(p -> options.getLogIngestionEnabled()
+            ? p.apply(ParseLogEntry.of()).failuresTo(failureCollections)
+            : p)
 
         // URI Parsing
         .map(p -> p //

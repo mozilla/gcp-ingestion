@@ -83,6 +83,12 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setAetKmsEnabled(Boolean value);
 
+  @Description("If set to true, enable ingestion of messages sent from Cloud Logging.")
+  @Default.Boolean(false)
+  Boolean getLogIngestionEnabled();
+
+  void setLogIngestionEnabled(Boolean value);
+
   /*
    * Subinterface and static methods.
    */
