@@ -58,6 +58,10 @@ DEFAULT_ENV = [
     for name in get_config_dict()
     if name in os.environ
 ]
+FLUSH_JOB_REQUESTS_CPU = os.environ.get("FLUSH_JOB_REQUESTS_CPU", "100m")
+FLUSH_JOB_REQUESTS_MEMORY = os.environ.get("FLUSH_JOB_REQUESTS_MEMORY", "100Mi")
+FLUSH_JOB_LIMITS_CPU = os.environ.get("FLUSH_JOB_LIMITS_CPU", None)
+FLUSH_JOB_LIMITS_MEMORY = os.environ.get("FLUSH_JOB_LIMITS_MEMORY", "500Mi")
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -197,6 +201,24 @@ def _create_flush_job(
                                         V1VolumeMount(mount_path="/data", name="queue")
                                     ],
                                     env=env,
+                                    resources=V1ResourceRequirements(
+                                        requests={
+                                            key: value
+                                            for key, value in (
+                                                ("cpu", FLUSH_JOB_REQUESTS_CPU),
+                                                ("memory", FLUSH_JOB_REQUESTS_MEMORY),
+                                            )
+                                            if value
+                                        },
+                                        limits={
+                                            key: value
+                                            for key, value in (
+                                                ("cpu", FLUSH_JOB_LIMITS_CPU),
+                                                ("memory", FLUSH_JOB_LIMITS_MEMORY),
+                                            )
+                                            if value
+                                        },
+                                    ),
                                 )
                             ],
                             restart_policy="OnFailure",
