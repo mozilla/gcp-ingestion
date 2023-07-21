@@ -83,7 +83,8 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setAetKmsEnabled(Boolean value);
 
-  @Description("If set to true, enable ingestion of messages sent from Cloud Logging.")
+  @Description("If set to true, enable ingestion of messages sent from Cloud Logging."
+      + "See com.mozilla.telemetry.decoder.ParseLogEntry.")
   @Default.Boolean(false)
   Boolean getLogIngestionEnabled();
 

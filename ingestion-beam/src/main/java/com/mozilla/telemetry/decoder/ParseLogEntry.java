@@ -20,6 +20,10 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 /**
  * Transforms messages from Cloud Logging into a format compatible with structured ingestion.
  *
+ * <p>This is intended for consuming Glean server-side events delivered to Pub/Sub via Cloud Logging.
+ * See https://github.com/mozilla/glean_parser/blob/936347569fa2f952d2dcb4f3267eebcff8a42d8d/glean_parser/javascript_server.py
+ * for glean_parser outputter used to generate client code for submitting these events.
+ *
  * <p>Messages sent from the telemetry edge service are passed on without transformation.
  */
 public class ParseLogEntry extends
