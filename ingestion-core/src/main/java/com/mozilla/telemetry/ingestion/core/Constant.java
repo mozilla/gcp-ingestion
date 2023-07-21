@@ -49,6 +49,7 @@ public class Constant {
     public static final String REQUEST_ID = "request_id";
     public static final String SAMPLE_ID = "sample_id";
     public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
+    public static final String POSITION = "position";
     public static final String URI = "uri";
     public static final String USER_AGENT = "user_agent";
     public static final String USER_AGENT_BROWSER = "user_agent_browser";

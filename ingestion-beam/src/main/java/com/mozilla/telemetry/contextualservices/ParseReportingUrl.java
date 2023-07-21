@@ -111,6 +111,9 @@ public class ParseReportingUrl extends
           String submissionTimestamp = Optional //
               .ofNullable(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP)) //
               .orElseGet(() -> Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
+          String position = Optional //
+              .ofNullable(message.getAttribute(Attribute.POSITION)) //
+              .orElseGet(() -> "no_position");
 
           SponsoredInteraction.Builder interactionBuilder = SponsoredInteraction.builder();
 
@@ -118,6 +121,7 @@ public class ParseReportingUrl extends
           interactionBuilder.setOriginalNamespace(namespace);
           interactionBuilder.setOriginalDocType(docType);
           interactionBuilder.setScenario(parseScenario(payload).orElse(null));
+          interactionBuilder.setPosition(position);
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
@@ -240,6 +244,7 @@ public class ParseReportingUrl extends
             builtUrl.addQueryParam(BuildReportingUrl.PARAM_OS_FAMILY, osParam);
             builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR,
                 interaction.getFormFactor());
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_POSITION, interaction.getPosition());
 
             builtUrl.addQueryParam(BuildReportingUrl.PARAM_DMA_CODE,
                 message.getAttribute(Attribute.GEO_DMA_CODE));

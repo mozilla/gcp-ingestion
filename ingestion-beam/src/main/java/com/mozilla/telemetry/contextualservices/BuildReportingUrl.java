@@ -16,6 +16,7 @@ public class BuildReportingUrl {
   static final String PARAM_COUNTRY_CODE = "country-code";
   static final String PARAM_REGION_CODE = "region-code";
   static final String PARAM_OS_FAMILY = "os-family";
+  static final String PARAM_POSITION = "position";
   static final String PARAM_FORM_FACTOR = "form-factor";
   static final String PARAM_PRODUCT_VERSION = "product-version";
   static final String PARAM_ID = "id";

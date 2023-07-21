@@ -63,8 +63,12 @@ public class ParseReportingUrlTest {
   @Test
   public void testParsedUrlOutput() {
 
-    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
-        Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS, "Windows");
+    Map<String, String> attributes = ImmutableMap.of(
+            Attribute.DOCUMENT_TYPE, "topsites-impression",
+            Attribute.DOCUMENT_NAMESPACE, "contextual-services",
+            Attribute.USER_AGENT_OS, "Windows",
+            Attribute.POSITION, "1"
+    );
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -106,6 +110,8 @@ public class ParseReportingUrlTest {
           .contains(String.format("%s=%s", BuildReportingUrl.PARAM_COUNTRY_CODE, "US")));
       Assert.assertTrue(reportingUrl
           .contains(String.format("%s=%s", BuildReportingUrl.PARAM_FORM_FACTOR, "desktop")));
+      Assert.assertTrue(reportingUrl
+          .contains(String.format("%s=%s", BuildReportingUrl.PARAM_POSITION, "1")));
       Assert
           .assertTrue(reportingUrl.contains(String.format("%s=&", BuildReportingUrl.PARAM_DMA_CODE))
               || reportingUrl.endsWith(String.format("%s=", BuildReportingUrl.PARAM_DMA_CODE)));
