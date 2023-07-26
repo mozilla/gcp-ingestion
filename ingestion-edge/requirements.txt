@@ -399,9 +399,9 @@ grpcio==1.53.0 \
     #   google-api-core
     #   googleapis-common-protos
     #   grpc-google-iam-v1
-gunicorn==20.1.0 \
-    --hash=sha256:9dcc4547dbb1cb284accfb15ab5667a0e5d1881cc443e0677b4882a4067a807e \
-    --hash=sha256:e0a968b5ba15f8a328fdfd7ab1fcb5af4470c28aaf7e55df02a99bc13138e6e8
+gunicorn==21.2.0 \
+    --hash=sha256:3213aa5e8c24949e792bcacfc176fef362e7aac80b76c56f6b5122bf350722f0 \
+    --hash=sha256:88ec8bff1d634f98e61b9f65bc4bf3cd918a90806c6f5c48bc5603849ec81033
     # via -r requirements.in
 h11==0.12.0 \
     --hash=sha256:36a3cb8c0a032f56e2da7084577878a035d3b61d104230d4bd49c0c6b555a9c6 \
@@ -542,6 +542,7 @@ packaging==20.4 \
     # via
     #   build
     #   google-api-core
+    #   gunicorn
     #   pytest
 pathspec==0.10.2 \
     --hash=sha256:88c2606f2c1e818b978540f73ecc908e13999c6c3a383daf3705652ae79807a5 \
@@ -1081,5 +1082,4 @@ setuptools==67.1.0 \
     # via
     #   google-api-core
     #   google-auth
-    #   gunicorn
     #   pip-tools
