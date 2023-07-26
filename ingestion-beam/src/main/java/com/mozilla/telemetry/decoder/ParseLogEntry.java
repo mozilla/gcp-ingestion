@@ -8,8 +8,6 @@ import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Optional;
-import java.util.UUID;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -21,6 +19,10 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
  * Transforms messages from Cloud Logging into a format compatible with structured ingestion.
+ *
+ * <p>This is intended for consuming Glean server-side events delivered to Pub/Sub via Cloud Logging.
+ * See https://github.com/mozilla/glean_parser/blob/936347569fa2f952d2dcb4f3267eebcff8a42d8d/glean_parser/javascript_server.py
+ * for glean_parser outputter used to generate client code for submitting these events.
  *
  * <p>Messages sent from the telemetry edge service are passed on without transformation.
  */
@@ -56,10 +58,8 @@ public class ParseLogEntry extends
       }
       countLogEntryPayload.inc();
 
-      // Initialize attributes and payload.
       ObjectNode logEntry;
       HashMap<String, String> attributes = new HashMap<>();
-      ObjectNode json = Json.createObjectNode();
       try {
         logEntry = Json.readObjectNode(m.getPayload());
       } catch (IOException e) {
@@ -69,44 +69,28 @@ public class ParseLogEntry extends
 
       // Extract relevant data and attributes based on the LogEntry content.
       JsonNode fields = logEntry.path("jsonPayload").path("Fields");
-      String documentId = Optional.ofNullable(logEntry.path("insertId").textValue())
-          .map(id -> attributes.put(Attribute.DOCUMENT_ID,
-              UUID.nameUUIDFromBytes(id.getBytes(StandardCharsets.UTF_8)).toString()))
-          .orElse(UUID.randomUUID().toString());
-      attributes.put(Attribute.DOCUMENT_ID, documentId);
-      Optional.ofNullable(logEntry.path("receiveTimestamp").textValue())
-          .ifPresent(v -> attributes.put(Attribute.SUBMISSION_TIMESTAMP, v));
-      Optional.ofNullable(fields.path("userAgent").textValue())
-          .ifPresent(v -> attributes.put(Attribute.USER_AGENT, v));
-      String event = fields.path("event").textValue();
-      String ecosystemAnonId = fields.path("ecosystemAnonId").textValue();
-      attributes.put(Attribute.URI,
-          String.format("/submit/firefox-accounts/account-ecosystem/1/%s", documentId));
 
-      // Event-specific logic.
-      if ("oauth.token.created".equals(event) && ecosystemAnonId != null) {
-        // See https://github.com/mozilla/fxa/pull/5929
-        json.put("ecosystem_anon_id", ecosystemAnonId);
-        // See https://github.com/mozilla/fxa/pull/6410
-        Optional.ofNullable(fields.path("clientId").textValue())
-            .ifPresent(v -> json.put("oauth_client_id", v));
-      } else if ("account.updateEcosystemAnonId.complete".equals(event)) {
-        Optional.ofNullable(logEntry.path("next").textValue())
-            .ifPresent(v -> json.put("ecosystem_anon_id", v));
-        Optional.ofNullable(logEntry.path("current").textValue())
-            .ifPresent(v -> json.set("previous_ecosystem_anon_ids", Json.createArrayNode().add(v)));
-      } else {
+      String documentId = fields.path("document_id").textValue();
+      String documentNamespace = fields.path("document_namespace").textValue();
+      String documentType = fields.path("document_type").textValue();
+      String documentVersion = fields.path("document_version").textValue();
+      String payload = fields.path("payload").textValue();
+      String receiveTimestamp = logEntry.path("receiveTimestamp").textValue();
+
+      boolean isValidLogEntry = documentId != null && documentNamespace != null
+          && documentType != null && documentVersion != null && payload != null
+          && receiveTimestamp != null;
+      if (!isValidLogEntry) {
         throw new InvalidLogEntryException(
             "Message has no submission_timestamp but is not in a known LogEntry format");
       }
 
-      // Add some additional fields if present.
-      json.put("event", event);
-      Optional.ofNullable(fields.path("country").textValue())
-          .ifPresent(v -> json.put("country", v));
-      Optional.ofNullable(fields.path("region").textValue()).ifPresent(v -> json.put("region", v));
+      attributes.put(Attribute.DOCUMENT_ID, documentId);
+      attributes.put(Attribute.SUBMISSION_TIMESTAMP, receiveTimestamp);
+      attributes.put(Attribute.URI, String.format("/submit/%s/%s/%s/%s", documentNamespace,
+          documentType, documentVersion, documentId));
 
-      return new PubsubMessage(Json.asBytes(json), attributes);
+      return new PubsubMessage(payload.getBytes(StandardCharsets.UTF_8), attributes);
     }).exceptionsInto(td).exceptionsVia(ee -> {
       try {
         throw ee.exception();
