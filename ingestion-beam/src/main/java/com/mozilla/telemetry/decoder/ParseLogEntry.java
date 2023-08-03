@@ -90,6 +90,16 @@ public class ParseLogEntry extends
       attributes.put(Attribute.URI, String.format("/submit/%s/%s/%s/%s", documentNamespace,
           documentType, documentVersion, documentId));
 
+      String userAgent = fields.path("user_agent").textValue();
+      String clientIpAddress = fields.path("ip_address").textValue();
+
+      if (userAgent != null) {
+        attributes.put(Attribute.USER_AGENT, userAgent);
+      }
+      if (clientIpAddress != null) {
+        attributes.put(Attribute.X_FORWARDED_FOR, clientIpAddress);
+      }
+
       return new PubsubMessage(payload.getBytes(StandardCharsets.UTF_8), attributes);
     }).exceptionsInto(td).exceptionsVia(ee -> {
       try {

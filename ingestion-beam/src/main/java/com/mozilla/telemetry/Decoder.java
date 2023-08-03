@@ -70,10 +70,14 @@ public class Decoder extends Sink {
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
                 .withClientCompressionRecorded()))
 
-        // Special case: parsing structured telemetry pings submitted from Cloud Logging
-        .map(p -> options.getLogIngestionEnabled()
-            ? p.apply(ParseLogEntry.of()).failuresTo(failureCollections)
-            : p)
+        // Special case: parsing structured telemetry pings submitted from Cloud Logging.
+        // We do GeoIP decoding here again because we need to extract an IP address from the
+        // message payload envelope in `ParseLogEntry`.
+        .map(p -> options.getLogIngestionEnabled() ? p //
+            .apply(ParseLogEntry.of())//
+            .failuresTo(failureCollections) //
+            .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
+            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) : p)
 
         // URI Parsing
         .map(p -> p //
