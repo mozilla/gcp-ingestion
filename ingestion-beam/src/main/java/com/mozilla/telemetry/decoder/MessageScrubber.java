@@ -104,6 +104,7 @@ public class MessageScrubber {
       .put("com-ruiyi-testsystem", "1828562") //
       .put("org-mozilla-fenix-mod", "1835701") //
       .put("org-immersivel-firefox", "1841614") //
+      .put("com-wheatleygroup-firefox", "1847643") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
