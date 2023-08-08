@@ -145,6 +145,18 @@ EOF
   "type" : "object"
 }
 EOF
+    mkdir -p schemas/test/geoip-skip
+    cat > schemas/test/geoip-skip/geoip-skip.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "geoip_skip_v1",
+    "geoip_skip_entries": 1
+  },
+  "type" : "object"
+}
+EOF
     mkdir -p schemas/my-namespace/my-test
     cat > schemas/my-namespace/my-test/my-test.1.bq << 'EOF'
 [

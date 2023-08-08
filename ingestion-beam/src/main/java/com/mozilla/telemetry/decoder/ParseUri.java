@@ -67,68 +67,134 @@ public class ParseUri {
     return map;
   }
 
-  /** Factory method to create mapper instance. */
-  public static MapWithFailures<PubsubMessage, PubsubMessage, PubsubMessage> of() {
-    return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
-      message = PubsubConstraints.ensureNonNull(message);
-      // Copy attributes
-      final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
-      byte[] payload = message.getPayload();
+  private static PubsubMessage apply(PubsubMessage message) {
+    message = PubsubConstraints.ensureNonNull(message);
+    // Copy attributes
+    final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+    byte[] payload = message.getPayload();
 
-      // parse uri based on prefix
-      final String uri = attributes.get(Attribute.URI);
+    // parse uri based on prefix
+    final String uri = attributes.get(Attribute.URI);
 
-      // Throws an exception on certain URI patterns to signal that the message should be rejected.
-      MessageScrubber.scrubByUri(uri);
-
-      if (uri == null) {
-        // We should only have a missing uri attribute if we're replaying messages from decoded
-        // payloads in which case they already have parsed URI attributes encoded in the payload
-        // and these will be recovered in ParsePayload.
-        return message;
-      } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
-        // We don't yet have access to the version field, so we delay populating the
-        // document_version
-        // attribute until the ParsePayload step where we have map-like access to the JSON content.
-        attributes.put(Attribute.DOCUMENT_NAMESPACE, TELEMETRY);
+    if (uri == null) {
+      // We should only have a missing uri attribute if we're replaying messages from decoded
+      // payloads in which case they already have parsed URI attributes encoded in the payload
+      // and these will be recovered in ParsePayload.
+      return message;
+    } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
+      // We don't yet have access to the version field, so we delay populating the
+      // document_version
+      // attribute until the ParsePayload step where we have map-like access to the JSON content.
+      try {
         attributes.putAll(zip(TELEMETRY_URI_SUFFIX_ELEMENTS,
             uri.substring(TELEMETRY_URI_PREFIX.length()).split("/")));
-      } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
+        // only add namespace if previous line didn't throw an exception
+        attributes.put(Attribute.DOCUMENT_NAMESPACE, TELEMETRY);
+      } catch (UnexpectedPathElementsException ignore) {
+        // defer exception to ParseUri::applyFailures
+      }
+    } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
+      try {
         attributes.putAll(zip(GENERIC_URI_SUFFIX_ELEMENTS,
             uri.substring(GENERIC_URI_PREFIX.length()).split("/")));
-      } else if (uri.startsWith(StubUri.PREFIX)) {
-        try {
-          payload = StubUri.parse(uri, attributes);
-        } catch (IOException e) {
-          throw new UncheckedIOException(e);
-        }
+      } catch (UnexpectedPathElementsException ignore) {
+        // defer exception to ParseUri::applyFailures
+      }
+    } else if (uri.startsWith(StubUri.PREFIX)) {
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, "firefox-installer");
+      attributes.put(Attribute.DOCUMENT_TYPE, "install");
+      attributes.put(Attribute.DOCUMENT_VERSION, "1");
 
-        if (attributes.get(Attribute.MESSAGE_ID) == null) {
-          attributes.put(Attribute.DOCUMENT_ID, UUID.randomUUID().toString().toLowerCase());
-        } else {
-          // convert PubSub message ID to document ID which will be a V3 UUID using a null namespace
-          // See https://stackoverflow.com/a/55296637
-          UUID documentId = UUID.nameUUIDFromBytes(
-              attributes.get(Attribute.MESSAGE_ID).getBytes(StandardCharsets.UTF_8));
-          attributes.put(Attribute.DOCUMENT_ID, documentId.toString().toLowerCase());
-        }
+      if (attributes.get(Attribute.MESSAGE_ID) == null) {
+        attributes.put(Attribute.DOCUMENT_ID, UUID.randomUUID().toString().toLowerCase());
       } else {
-        throw new InvalidUriException("Unknown URI prefix");
+        // convert PubSub message ID to document ID which will be a V3 UUID using a null namespace
+        // See https://stackoverflow.com/a/55296637
+        UUID documentId = UUID.nameUUIDFromBytes(
+            attributes.get(Attribute.MESSAGE_ID).getBytes(StandardCharsets.UTF_8));
+        attributes.put(Attribute.DOCUMENT_ID, documentId.toString().toLowerCase());
       }
+    } else {
+      return message;
+    }
 
-      // message ID can be removed since it's only used for generating document ID but not used any
-      // further
-      attributes.remove(Attribute.MESSAGE_ID);
+    // message ID can be removed since it's only used for generating document ID but not used any
+    // further
+    attributes.remove(Attribute.MESSAGE_ID);
 
-      // Validate attributes
+    return new PubsubMessage(payload, attributes);
+  }
+
+  private static PubsubMessage applyFailures(PubsubMessage message) {
+    message = PubsubConstraints.ensureNonNull(message);
+
+    final String uri = message.getAttribute(Attribute.URI);
+
+    // Throws an exception on certain URI patterns to signal that the message should be rejected.
+    MessageScrubber.scrubByUri(uri);
+
+    if (uri == null) {
+      // We should only have a missing uri attribute if we're replaying messages from decoded
+      // payloads in which case they already have parsed URI attributes encoded in the payload
+      // and these will be recovered in ParsePayload.
+      return message;
+      // nothing to add here
+    } else if (uri.startsWith(StubUri.PREFIX)) {
       try {
-        UUID.fromString(attributes.get(Attribute.DOCUMENT_ID));
-      } catch (IllegalArgumentException e) {
-        throw new InvalidUriException("Entry in document_id place is not a valid UUID");
+        // create new message with updated payload
+        message = new PubsubMessage(StubUri.parse(uri), message.getAttributeMap());
+      } catch (IOException e) {
+        throw new UncheckedIOException(e);
       }
+    } else if (uri.startsWith(TELEMETRY_URI_PREFIX)) {
+      // induce failures previously ignored in ParseUri::apply
+      zip(TELEMETRY_URI_SUFFIX_ELEMENTS, uri.substring(TELEMETRY_URI_PREFIX.length()).split("/"));
+    } else if (uri.startsWith(GENERIC_URI_PREFIX)) {
+      // induce failures previously ignored in ParseUri::apply
+      zip(GENERIC_URI_SUFFIX_ELEMENTS, uri.substring(GENERIC_URI_PREFIX.length()).split("/"));
+    } else {
+      throw new InvalidUriException("Unknown URI prefix");
+    }
 
-      return new PubsubMessage(payload, attributes);
-    }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+    // Validate attributes
+    try {
+      UUID.fromString(message.getAttribute(Attribute.DOCUMENT_ID));
+    } catch (IllegalArgumentException e) {
+      throw new InvalidUriException("Entry in document_id place is not a valid UUID");
+    }
+
+    return message;
+  }
+
+  /** Factory method to create mapper instance. */
+  public static MapWithFailures<PubsubMessage, PubsubMessage, PubsubMessage> of() {
+    return MapElements.into(TypeDescriptor.of(PubsubMessage.class))
+        .via((PubsubMessage message) -> applyFailures(apply(message)))
+        .exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException | InvalidUriException | MessageScrubberException e) {
+            return FailureMessage.of(ParseUri.class.getSimpleName(), //
+                ee.element(), //
+                ee.exception());
+          }
+        });
+  }
+
+  /** Factory method to create mapper instance without failures. */
+  public static MapElements<PubsubMessage, PubsubMessage> withoutFailures() {
+    return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(ParseUri::apply);
+  }
+
+  /**
+   * Factory method to create mapper instance to add failures.
+   *
+   * <p>Only use after withoutFailures has been applied.
+   */
+  public static MapWithFailures<PubsubMessage, PubsubMessage, PubsubMessage> addFailures() {
+    return MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via(ParseUri::applyFailures)
+        .exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
@@ -286,11 +352,7 @@ public class ParseUri {
       return payload;
     }
 
-    private static byte[] parse(String uri, Map<String, String> attributes)
-        throws InvalidUriException, IOException {
-      attributes.put("document_namespace", "firefox-installer");
-      attributes.put("document_type", "install");
-      attributes.put("document_version", "1");
+    private static byte[] parse(String uri) throws InvalidUriException, IOException {
       // Split uri into path elements
       String[] elements = uri.substring(PREFIX.length()).split("/");
       // Initialize payload based on ping version
