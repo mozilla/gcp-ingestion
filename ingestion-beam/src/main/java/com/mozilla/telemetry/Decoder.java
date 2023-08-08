@@ -2,6 +2,7 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
+import com.mozilla.telemetry.decoder.ExtractIpFromLogEntry;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GeoIspLookup;
 import com.mozilla.telemetry.decoder.ParseLogEntry;
@@ -71,13 +72,15 @@ public class Decoder extends Sink {
                 .withClientCompressionRecorded()))
 
         // Special case: parsing structured telemetry pings submitted from Cloud Logging.
-        // We do GeoIP decoding here again because we need to extract an IP address from the
-        // message payload envelope in `ParseLogEntry`.
         .map(p -> options.getLogIngestionEnabled() ? p //
-            .apply(ParseLogEntry.of())//
-            .failuresTo(failureCollections) //
+            // We first extract IP address from the log entry and remove it from the payload
+            // for consistency with the standard flow.
+            .apply(ExtractIpFromLogEntry.of()) //
             .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
-            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) : p)
+            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
+            // Now we can parse the log entry and route failures to error output
+            .apply(ParseLogEntry.of())//
+            .failuresTo(failureCollections) : p)
 
         // URI Parsing
         .map(p -> p //
