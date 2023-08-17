@@ -38,7 +38,7 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of()) //
+        .apply(ParseProxy.of(null)) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
@@ -73,8 +73,41 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of()) //
+        .apply(ParseProxy.of(null)) //
         .apply(GeoCityLookup.of("src/test/resources/cityDB/GeoIP2-City-Test.mmdb", null))
+        .apply(OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testGeoipSkip() {
+    final List<String> input = Arrays.asList(//
+        // Note that payloads are interpreted as base64 strings, so we sometimes add '+'
+        // to pad them out to be valid base64.
+        "{\"attributeMap\":{\"x_forwarded_for\":\"4, 3, 2, 1\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"document_namespace\":\"test\"" //
+            + ",\"document_type\":\"geoip-skip\"" //
+            + ",\"document_version\":\"1\"" //
+            + ",\"x_forwarded_for\":\"4, 3, 2, 1\"" //
+            + "},\"payload\":\"test\"}");
+
+    final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":{\"x_forwarded_for\":\"4,3\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"document_namespace\":\"test\"" //
+            + ",\"document_type\":\"geoip-skip\"" //
+            + ",\"document_version\":\"1\"" //
+            + ",\"x_forwarded_for\":\"4\"" //
+            + "},\"payload\":\"test\"}");
+
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()) //
+        .apply(ParseProxy.of("schemas.tar.gz")) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);

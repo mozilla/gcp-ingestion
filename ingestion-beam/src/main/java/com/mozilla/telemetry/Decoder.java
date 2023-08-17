@@ -62,10 +62,13 @@ public class Decoder extends Sink {
         // Input
         .map(p -> p //
             .apply(options.getInputType().read(options)) //
+            // We apply ParseUri without failures here, and add failures later, so that parseProxy
+            // can use pipeline metadata to adjust what IP to use for geo lookups.
+            .apply("ParseUri", ParseUri.withoutFailures()) //
             // We apply ParseProxy and GeoCityLookup and GeoIspLookup first so that IP
             // address is already removed before any message gets routed to error output; see
             // https://github.com/mozilla/gcp-ingestion/issues/1096
-            .apply(ParseProxy.of()) //
+            .apply(ParseProxy.of(options.getSchemasLocation())) //
             .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
@@ -82,9 +85,9 @@ public class Decoder extends Sink {
             .apply(ParseLogEntry.of())//
             .failuresTo(failureCollections) : p)
 
-        // URI Parsing
+        // Add parse uri failures separately so that they don't prevent geo lookups
         .map(p -> p //
-            .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections))
+            .apply("ParseUriAddFailures", ParseUri.addFailures()).failuresTo(failureCollections))
 
         // Special case: decryption of Rally/Pioneer payloads. There is a
         // separate decoder instance that only contains pioneer-* and rally-*
