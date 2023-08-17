@@ -54,7 +54,7 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
-        <auto-value.version>1.10.2</auto-value.version>
+        <auto-value.version>1.10.3</auto-value.version>
         <beam.version>2.42.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
@@ -105,7 +105,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>32.1.1-jre</version>
+            <version>32.1.2-jre</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -290,7 +290,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.12.1</version>
+                        <version>10.12.2</version>
                     </dependency>
                 </dependencies>
                 <executions>

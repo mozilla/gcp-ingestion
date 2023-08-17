@@ -8,6 +8,7 @@ import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -59,7 +60,7 @@ public class ParseLogEntry extends
       countLogEntryPayload.inc();
 
       ObjectNode logEntry;
-      HashMap<String, String> attributes = new HashMap<>();
+      Map<String, String> attributes = new HashMap<String, String>(m.getAttributeMap());
       try {
         logEntry = Json.readObjectNode(m.getPayload());
       } catch (IOException e) {
@@ -89,6 +90,12 @@ public class ParseLogEntry extends
       attributes.put(Attribute.SUBMISSION_TIMESTAMP, receiveTimestamp);
       attributes.put(Attribute.URI, String.format("/submit/%s/%s/%s/%s", documentNamespace,
           documentType, documentVersion, documentId));
+
+      String userAgent = fields.path("user_agent").textValue();
+
+      if (userAgent != null) {
+        attributes.put(Attribute.USER_AGENT, userAgent);
+      }
 
       return new PubsubMessage(payload.getBytes(StandardCharsets.UTF_8), attributes);
     }).exceptionsInto(td).exceptionsVia(ee -> {
