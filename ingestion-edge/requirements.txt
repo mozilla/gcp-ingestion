@@ -333,9 +333,9 @@ google-cloud-monitoring==2.9.2 \
     --hash=sha256:78f246101ce8e655c19c20ccb9940f56853d813e327c3b3c619079d31e316fdd \
     --hash=sha256:92488f60b772250a0a5299bc83c9cc3961ab5cf6d9acf8ee884f718210908fc5
     # via -r requirements.in
-google-cloud-pubsub==1.0.2 \
-    --hash=sha256:12ff565ef00e4ca19d2ae26ae4515070094ba857d7c7024370dbed81fc7d58ab \
-    --hash=sha256:afb08eb558f3e4d836e6f77443f81555d6921ffc888c7c3085acd1205fba6e8c
+google-cloud-pubsub==2.13.1 \
+    --hash=sha256:3f9c79714c52298b9e249a46660c1bf0d457f67928bcecf0d8ec7a06bcc6cc54 \
+    --hash=sha256:ececfe913d87ca2fb22816268139ec645495ee75eef1042a6771eb1773b09b17
     # via -r requirements.in
 googleapis-common-protos[grpc]==1.56.2 \
     --hash=sha256:023eaea9d8c1cceccd9587c6af6c20f33eeeb05d4148670f2b0322dc1511700c \
@@ -343,6 +343,7 @@ googleapis-common-protos[grpc]==1.56.2 \
     # via
     #   google-api-core
     #   grpc-google-iam-v1
+    #   grpcio-status
 grpc-google-iam-v1==0.12.4 \
     --hash=sha256:312801ae848aeb8408c099ea372b96d253077e7851aae1a9e745df984f81f20c \
     --hash=sha256:3f0ac2c940b9a855d7ce7e31fde28bddb0d9ac362d32d07c67148306931a0e30
@@ -397,8 +398,14 @@ grpcio==1.53.0 \
     --hash=sha256:fdc6191587de410a184550d4143e2b24a14df495c86ca15e59508710681690ac
     # via
     #   google-api-core
+    #   google-cloud-pubsub
     #   googleapis-common-protos
     #   grpc-google-iam-v1
+    #   grpcio-status
+grpcio-status==1.48.2 \
+    --hash=sha256:2c33bbdbe20188b2953f46f31af669263b6ee2a9b2d38fa0d36ee091532e21bf \
+    --hash=sha256:53695f45da07437b7c344ee4ef60d370fd2850179f5a28bb26d8e2aa1102ec11
+    # via google-cloud-pubsub
 gunicorn==21.2.0 \
     --hash=sha256:3213aa5e8c24949e792bcacfc176fef362e7aac80b76c56f6b5122bf350722f0 \
     --hash=sha256:88ec8bff1d634f98e61b9f65bc4bf3cd918a90806c6f5c48bc5603849ec81033
@@ -574,6 +581,7 @@ proto-plus==1.18.1 \
     # via
     #   google-cloud-container
     #   google-cloud-monitoring
+    #   google-cloud-pubsub
 protobuf==3.20.2 \
     --hash=sha256:03d76b7bd42ac4a6e109742a4edf81ffe26ffd87c5993126d894fe48a120396a \
     --hash=sha256:09e25909c4297d71d97612f04f41cea8fa8510096864f2835ad2f3b3df5a5559 \
@@ -601,7 +609,9 @@ protobuf==3.20.2 \
     #   google-api-core
     #   google-cloud-container
     #   google-cloud-monitoring
+    #   google-cloud-pubsub
     #   googleapis-common-protos
+    #   grpcio-status
     #   proto-plus
 psutil==5.9.5 \
     --hash=sha256:104a5cc0e31baa2bcf67900be36acde157756b9c44017b86b2c049f11957887d \

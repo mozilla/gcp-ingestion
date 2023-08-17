@@ -3,7 +3,7 @@ dockerflow==2022.8.0
 exceptiongroup  # for pytest on python<=3.10
 google-cloud-container==2.10.8
 google-cloud-monitoring==2.9.2
-google-cloud-pubsub==1.0.2
+google-cloud-pubsub==2.13.1
 gunicorn==21.2.0
 kubernetes==27.2.0
 persist-queue==0.8.1
