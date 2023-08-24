@@ -88,8 +88,9 @@ public class ParseLogEntry extends
 
       attributes.put(Attribute.DOCUMENT_ID, documentId);
       attributes.put(Attribute.SUBMISSION_TIMESTAMP, receiveTimestamp);
-      attributes.put(Attribute.URI, String.format("/submit/%s/%s/%s/%s", documentNamespace,
-          documentType, documentVersion, documentId));
+      attributes.put(Attribute.DOCUMENT_NAMESPACE, documentNamespace);
+      attributes.put(Attribute.DOCUMENT_TYPE, documentType);
+      attributes.put(Attribute.DOCUMENT_VERSION, documentVersion);
 
       String userAgent = fields.path("user_agent").textValue();
 
