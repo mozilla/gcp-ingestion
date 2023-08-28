@@ -58,13 +58,13 @@ public class AggregateImpressionsTest {
 
   @Test
   public void testGetAggregationKey() {
-    String url = "http://test.com?position=3&country-code=US&abc=abc&def=a";
+    String url = "http://test.com?slot-number=3&country-code=US&abc=abc&def=a";
     SponsoredInteraction interaction = getTestInteraction().setReportingUrl(url).build();
 
     String aggKey = AggregateImpressions.getAggregationKey(interaction);
 
     // Should return url with sorted query params
-    Assert.assertEquals(aggKey, "http://test.com?abc=abc&country-code=US&def=a&position=3");
+    Assert.assertEquals(aggKey, "http://test.com?abc=abc&country-code=US&def=a&slot-number=3");
   }
 
   @Test
