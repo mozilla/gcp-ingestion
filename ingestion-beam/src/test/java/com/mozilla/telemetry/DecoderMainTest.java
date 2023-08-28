@@ -211,6 +211,41 @@ public class DecoderMainTest extends TestWithDeterministicJson {
     // NOTE: equivalent to --pioneerKmsEnabled=true
   }
 
+  /**
+   * Test ingestion of log entry payloads.
+   * This tests two scenarios:
+   * 1. A correct log entry payload that should be decoded successfully and
+   *    have standard attributes applied (including Geo information).
+   * 2. An incorrect log entry payload that is missing client_info that
+   *    should be routed to the error output.
+   */
+  @Test
+  public void testLogEntryPayload() {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
+    String input = resourceDir + "/logentries.ndjson";
+    String output = outputPath + "/out/out";
+    String errorOutput = outputPath + "/error/error";
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--logIngestionEnabled=true" });
+
+    List<String> outputLines = Lines.files(output + "*.ndjson");
+    List<String> expectedOutputLines = Lines.files(resourceDir + "/logentries-output.ndjson");
+    assertThat("Main output differed from expectation", outputLines,
+        matchesInAnyOrder(expectedOutputLines));
+
+    List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
+    List<String> expectedErrorLines = Lines.files(resourceDir + "/logentries-error-output.ndjson");
+    assertThat("Error output differed from expectation", errorOutputLines,
+        matchesInAnyOrder(expectedErrorLines));
+  }
+
   @Test
   public void testIdempotence() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();
