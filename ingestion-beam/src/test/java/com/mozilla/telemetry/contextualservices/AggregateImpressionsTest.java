@@ -72,12 +72,14 @@ public class AggregateImpressionsTest {
     SponsoredInteraction.Builder baseInteraction = getTestInteraction();
 
     String attributesUrl1 = String.format("https://test.com?%s=US&%s=&%s=1",
-        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE, BuildReportingUrl.PARAM_POSITION);
+        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE,
+        BuildReportingUrl.PARAM_POSITION);
     String attributesUrl2 = String.format("https://test.com?%s=DE&%s=&%s=1",
-        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE, BuildReportingUrl.PARAM_POSITION);
+        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE,
+        BuildReportingUrl.PARAM_POSITION);
     String attributesUrl3 = String.format("https://test.com?%s=DE&%s=&%s=2",
-            BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE, BuildReportingUrl.PARAM_POSITION);
-
+        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE,
+        BuildReportingUrl.PARAM_POSITION);
 
     List<SponsoredInteraction> input = ImmutableList.of(
         baseInteraction.setReportingUrl(attributesUrl1).build(),
