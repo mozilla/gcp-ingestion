@@ -20,7 +20,7 @@ public class AggregateImpressionsTest {
 
   private SponsoredInteraction.Builder getTestInteraction() {
     return SponsoredInteraction.builder().setInteractionType("click").setSource("topsite")
-        .setFormFactor("phone").setContextId("1");
+        .setFormFactor("phone").setContextId("1").setPosition("3");
   }
 
   @Rule
@@ -58,29 +58,36 @@ public class AggregateImpressionsTest {
 
   @Test
   public void testGetAggregationKey() {
-    String url = "http://test.com?country-code=US&abc=abc&def=a";
+    String url = "http://test.com?slot-number=3&country-code=US&abc=abc&def=a";
     SponsoredInteraction interaction = getTestInteraction().setReportingUrl(url).build();
 
     String aggKey = AggregateImpressions.getAggregationKey(interaction);
 
     // Should return url with sorted query params
-    Assert.assertEquals(aggKey, "http://test.com?abc=abc&country-code=US&def=a");
+    Assert.assertEquals(aggKey, "http://test.com?abc=abc&country-code=US&def=a&slot-number=3");
   }
 
   @Test
   public void testAggregation() {
     SponsoredInteraction.Builder baseInteraction = getTestInteraction();
 
-    String attributesUrl1 = String.format("https://test.com?%s=US&%s=",
-        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE);
-    String attributesUrl2 = String.format("https://test.com?%s=DE&%s=",
-        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE);
+    String attributesUrl1 = String.format("https://test.com?%s=US&%s=&%s=1",
+        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE,
+        BuildReportingUrl.PARAM_POSITION);
+    String attributesUrl2 = String.format("https://test.com?%s=DE&%s=&%s=1",
+        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE,
+        BuildReportingUrl.PARAM_POSITION);
+    String attributesUrl3 = String.format("https://test.com?%s=DE&%s=&%s=2",
+        BuildReportingUrl.PARAM_COUNTRY_CODE, BuildReportingUrl.PARAM_REGION_CODE,
+        BuildReportingUrl.PARAM_POSITION);
 
     List<SponsoredInteraction> input = ImmutableList.of(
         baseInteraction.setReportingUrl(attributesUrl1).build(),
         baseInteraction.setReportingUrl(attributesUrl2).build(),
         baseInteraction.setReportingUrl(attributesUrl1).build(),
         baseInteraction.setReportingUrl(attributesUrl1).build(),
+        baseInteraction.setReportingUrl(attributesUrl3).build(),
+        baseInteraction.setReportingUrl(attributesUrl3).build(),
         baseInteraction.setReportingUrl(attributesUrl2).build());
 
     PCollection<SponsoredInteraction> output = pipeline.apply(Create.of(input))
@@ -88,19 +95,22 @@ public class AggregateImpressionsTest {
 
     PAssert.that(output).satisfies(interactions -> {
 
-      Assert.assertEquals(Iterables.size(interactions), 2);
+      Assert.assertEquals(Iterables.size(interactions), 3);
 
       interactions.forEach(interaction -> {
         String reportingUrl = interaction.getReportingUrl();
         BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
 
         String country = builtUrl.getQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE);
+        String position = builtUrl.getQueryParam(BuildReportingUrl.PARAM_POSITION);
         if ("US".equals(country)) {
           Assert.assertEquals(builtUrl.getQueryParam(BuildReportingUrl.PARAM_IMPRESSIONS), "3");
-        } else if ("DE".equals(country)) {
+        } else if ("DE".equals(country) && "1".equals(position)) {
+          Assert.assertEquals(builtUrl.getQueryParam(BuildReportingUrl.PARAM_IMPRESSIONS), "2");
+        } else if ("DE".equals(country) && "2".equals(position)) {
           Assert.assertEquals(builtUrl.getQueryParam(BuildReportingUrl.PARAM_IMPRESSIONS), "2");
         } else {
-          throw new IllegalArgumentException("unknown country value");
+          throw new IllegalArgumentException("unknown value in reporting url parameters");
         }
 
         // Parameters with no values should still be included

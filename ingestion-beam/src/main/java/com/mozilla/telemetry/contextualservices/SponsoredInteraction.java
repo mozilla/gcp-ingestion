@@ -57,6 +57,9 @@ public abstract class SponsoredInteraction implements Serializable {
   public abstract String getReportingUrl();
 
   @Nullable
+  abstract String getPosition();
+
+  @Nullable
   abstract String getRequestId();
 
   @Nullable
@@ -106,6 +109,8 @@ public abstract class SponsoredInteraction implements Serializable {
     public abstract Builder setSource(String newSource);
 
     public abstract Builder setFormFactor(String newFormFactor);
+
+    public abstract Builder setPosition(String newPosition);
 
     public abstract Builder setScenario(String newScenario);
 
