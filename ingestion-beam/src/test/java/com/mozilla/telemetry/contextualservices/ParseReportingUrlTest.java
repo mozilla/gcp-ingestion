@@ -338,16 +338,95 @@ public class ParseReportingUrlTest {
   }
 
   @Test
+  public void testGleanPingPosition() {
+
+    ObjectNode basePayload = Json.createObjectNode();
+    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    basePayload.put(Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
+
+    ObjectNode eventExtra = Json.createObjectNode();
+    eventExtra.put(Attribute.POSITION, "1");
+
+    ObjectNode eventObject = Json.createObjectNode();
+    eventObject.put("category", "top_sites");
+    eventObject.put("name", "contile_impression");
+    eventObject.put("timestamp", "0");
+    eventObject.set("extra", eventExtra);
+    basePayload.putArray("events").add(eventObject);
+
+    String expectedReportingUrl = "https://test.com/?id=foo&param=1&ctag=1&version=1&key=2&ci=4";
+    String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
+    ObjectNode metricsObject = Json.createObjectNode();
+    metricsObject.putObject("url").put("top_sites.contile_reporting_url", expectedReportingUrl);
+    metricsObject.putObject("uuid").put("top_sites.context_id", contextId);
+
+    basePayload.set("metrics", metricsObject);
+
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
+        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix", Attribute.USER_AGENT_OS, "Android");
+    List<PubsubMessage> input = Stream.of(basePayload)
+        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
+        .collect(Collectors.toList());
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that("There are zero failures in the pipeline", result.failures())
+        .satisfies(messages -> {
+          Assert.assertEquals(0, Iterators.size(messages.iterator()));
+          return null;
+        });
+
+    PAssert.that("There is one result in the output and it matches expectations", result.output())
+        .satisfies(sponsoredInteractions -> {
+
+          List<SponsoredInteraction> payloads = new ArrayList<>();
+          sponsoredInteractions.forEach(payloads::add);
+
+          Assert.assertEquals("1 interaction in output", 1, payloads.size());
+
+          SponsoredInteraction interaction = payloads.get(0);
+          String reportingUrl = interaction.getReportingUrl();
+
+          System.out.println(reportingUrl);
+
+          Assert.assertEquals("expect an impression interactionType",
+              SponsoredInteraction.INTERACTION_IMPRESSION, interaction.getInteractionType());
+
+          Assert.assertEquals("expect a topsites source", SponsoredInteraction.SOURCE_TOPSITES,
+              interaction.getSource());
+
+          Assert.assertEquals("expect a context-id to match", contextId,
+              interaction.getContextId());
+
+          Assert.assertTrue("reportingUrl starts with test.com",
+              reportingUrl.startsWith("https://test.com"));
+
+          Assert.assertTrue("contains position parameter",
+              reportingUrl.contains(String.format("%s=%s", BuildReportingUrl.PARAM_POSITION, "1")));
+
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  @Test
   public void testGleanPings() {
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
     basePayload.put(Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
 
+    ObjectNode eventExtra = Json.createObjectNode();
+    eventExtra.put("position", "1");
+
     ObjectNode eventObject = Json.createObjectNode();
     eventObject.put("category", "top_sites");
     eventObject.put("name", "contile_click");
     eventObject.put("timestamp", "0");
+    eventObject.set("extra", eventExtra);
     basePayload.putArray("events").add(eventObject);
 
     String expectedReportingUrl = "https://test.com/?id=foo&param=1&ctag=1&version=1&key=2&ci=4";

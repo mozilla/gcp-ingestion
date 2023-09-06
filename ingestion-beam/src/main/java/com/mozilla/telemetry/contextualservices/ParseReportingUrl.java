@@ -118,7 +118,6 @@ public class ParseReportingUrl extends
           interactionBuilder.setOriginalNamespace(namespace);
           interactionBuilder.setOriginalDocType(docType);
           interactionBuilder.setScenario(parseScenario(payload).orElse(null));
-          interactionBuilder.setPosition(parsePosition(payload).orElse("no_position"));
 
           // set fields based on namespace/doctype combos
           if (NS_DESKTOP.equals(namespace)) {
@@ -135,6 +134,9 @@ public class ParseReportingUrl extends
               throw new InvalidAttributeException("Received unexpected docType: " + docType,
                   docType);
             }
+
+            // parse position for desktop.
+            interactionBuilder.setPosition(parsePosition(payload).orElse("no_position"));
           } else {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
             // enforce that the only mobile docType is `topsites-impression`
@@ -157,6 +159,10 @@ public class ParseReportingUrl extends
               throw new InvalidAttributeException("Received unexpected event name: " + eventName,
                   eventName);
             }
+
+            // parse position for mobile
+            interactionBuilder
+                .setPosition(parsePosition(event.path("extra")).orElse("no_position"));
           }
 
           // Set the source based on the value of the docType
@@ -396,7 +402,10 @@ public class ParseReportingUrl extends
         .map(node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
   }
 
-  private Optional<String> parsePosition(ObjectNode payload) {
+  private Optional<String> parsePosition(JsonNode payload) {
+    if (payload.isMissingNode()) {
+      return Optional.empty();
+    }
     return Optional.of(payload.path(Attribute.POSITION)).filter(node -> !node.isMissingNode())
         .map(node -> node.asText());
   }
