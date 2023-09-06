@@ -64,12 +64,12 @@ public class ParseReportingUrlTest {
   public void testParsedUrlOutput() {
 
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-impression",
-        Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS, "Windows",
-        Attribute.POSITION, "1");
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS, "Windows");
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
     basePayload.put(Attribute.VERSION, "87.0");
+    basePayload.put(Attribute.POSITION, "1");
 
     List<PubsubMessage> input = Stream
         .of("https://moz.impression.com/?param=1&id=a", "https://other.com?id=b")
