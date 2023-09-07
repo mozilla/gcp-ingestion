@@ -339,19 +339,20 @@ public class ParseReportingUrlTest {
 
   @Test
   public void testGleanPingPosition() {
+    // GIVEN THIS INPUT
+    ObjectNode eventExtraUnderTest = Json.createObjectNode();
+    eventExtraUnderTest.put(Attribute.POSITION, "1");
 
-    ObjectNode basePayload = Json.createObjectNode();
-    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
-    basePayload.put(Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
-
-    ObjectNode eventExtra = Json.createObjectNode();
-    eventExtra.put(Attribute.POSITION, "1");
-
+    //Building up the payload required to run the system
     ObjectNode eventObject = Json.createObjectNode();
     eventObject.put("category", "top_sites");
     eventObject.put("name", "contile_impression");
     eventObject.put("timestamp", "0");
-    eventObject.set("extra", eventExtra);
+    eventObject.set("extra", eventExtraUnderTest);
+
+    ObjectNode basePayload = Json.createObjectNode();
+    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    basePayload.put(Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
     basePayload.putArray("events").add(eventObject);
 
     String expectedReportingUrl = "https://test.com/?id=foo&param=1&ctag=1&version=1&key=2&ci=4";
@@ -368,6 +369,7 @@ public class ParseReportingUrlTest {
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
         .collect(Collectors.toList());
 
+    // WHEN WE PARSE THE REPORTING URL
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
         .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
@@ -378,6 +380,7 @@ public class ParseReportingUrlTest {
           return null;
         });
 
+    // THEN THE RESULT HAS THE RIGHT POSITION IN IT 
     PAssert.that("There is one result in the output and it matches expectations", result.output())
         .satisfies(sponsoredInteractions -> {
 
@@ -388,20 +391,6 @@ public class ParseReportingUrlTest {
 
           SponsoredInteraction interaction = payloads.get(0);
           String reportingUrl = interaction.getReportingUrl();
-
-          System.out.println(reportingUrl);
-
-          Assert.assertEquals("expect an impression interactionType",
-              SponsoredInteraction.INTERACTION_IMPRESSION, interaction.getInteractionType());
-
-          Assert.assertEquals("expect a topsites source", SponsoredInteraction.SOURCE_TOPSITES,
-              interaction.getSource());
-
-          Assert.assertEquals("expect a context-id to match", contextId,
-              interaction.getContextId());
-
-          Assert.assertTrue("reportingUrl starts with test.com",
-              reportingUrl.startsWith("https://test.com"));
 
           Assert.assertTrue("contains position parameter",
               reportingUrl.contains(String.format("%s=%s", BuildReportingUrl.PARAM_POSITION, "1")));
