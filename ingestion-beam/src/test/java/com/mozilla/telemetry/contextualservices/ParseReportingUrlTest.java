@@ -343,7 +343,7 @@ public class ParseReportingUrlTest {
     ObjectNode eventExtraUnderTest = Json.createObjectNode();
     eventExtraUnderTest.put(Attribute.POSITION, "1");
 
-    //Building up the payload required to run the system
+    // Building up the payload required to run the system
     ObjectNode eventObject = Json.createObjectNode();
     eventObject.put("category", "top_sites");
     eventObject.put("name", "contile_impression");
@@ -380,7 +380,7 @@ public class ParseReportingUrlTest {
           return null;
         });
 
-    // THEN THE RESULT HAS THE RIGHT POSITION IN IT 
+    // THEN THE RESULT HAS THE RIGHT POSITION IN IT
     PAssert.that("There is one result in the output and it matches expectations", result.output())
         .satisfies(sponsoredInteractions -> {
 
