@@ -75,6 +75,13 @@ public interface ContextualServicesReporterOptions extends SinkOptions, Pipeline
 
   void setLogReportingUrls(Boolean value);
 
+  @Description("If set to true, reject messages from the namespace contextual_services for firefox"
+      + " versions >= 116.  This is to prevent double reporting messages available from FoG.")
+  @Default.Boolean(false)
+  Boolean getLimitLegacyDesktopVersion();
+
+  void setLimitLegacyDesktopVersion(Boolean value);
+
   @Hidden
   interface Parsed extends ContextualServicesReporterOptions, SinkOptions.Parsed {
   }

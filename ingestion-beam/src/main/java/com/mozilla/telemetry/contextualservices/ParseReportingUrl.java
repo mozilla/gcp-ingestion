@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
@@ -48,11 +50,19 @@ public class ParseReportingUrl extends
   private static transient Set<String> singletonAllowedImpressionUrls;
   private static transient Set<String> singletonAllowedClickUrls;
 
+  // namespaces and doctypes for legacy telemetry
   private static final String NS_DESKTOP = "contextual-services";
   private static final String DT_TOPSITES_IMPRESSION = "topsites-impression";
   private static final String DT_TOPSITES_CLICK = "topsites-click";
   private static final String DT_QUICKSUGGEST_IMPRESSION = "quicksuggest-impression";
   private static final String DT_QUICKSUGGEST_CLICK = "quicksuggest-click";
+
+  // namespaces, doctypes, and metric paths for firefox-desktop glean telemetry
+  private static final String NS_FOG = "firefox-desktop";
+  private static final String DT_TOPSITES = "top-sites";
+  private static final String DT_QUICKSUGGEST = "quick-suggest";
+  private static final Map<String, List<String>> DT_TO_METRIC_SOURCES = ImmutableMap.of(DT_TOPSITES,
+      ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"));
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -118,11 +128,42 @@ public class ParseReportingUrl extends
           interactionBuilder.setSubmissionTimestamp(submissionTimestamp);
           interactionBuilder.setOriginalNamespace(namespace);
           interactionBuilder.setOriginalDocType(docType);
-          interactionBuilder.setScenario(parseScenario(payload).orElse(null));
 
           // set fields based on namespace/doctype combos
-          if (NS_DESKTOP.equals(namespace)) {
+          final ObjectNode metrics;
+          if (NS_FOG.equals(namespace)) {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
+
+            // determine metric sources from docType
+            final List<String> metricSources = DT_TO_METRIC_SOURCES.getOrDefault(docType, null);
+            if (metricSources == null) {
+              throw new InvalidAttributeException("Received unexpected docType: " + docType,
+                  docType);
+            }
+            metrics = extractMetrics(metricSources, payload);
+
+            // parse interaction type
+            String pingType = optionalNode(metrics.path("ping_type"))
+                .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
+            if (DT_TOPSITES_IMPRESSION.equals(pingType)
+                || DT_QUICKSUGGEST_IMPRESSION.equals(pingType)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
+            } else if (DT_TOPSITES_CLICK.equals(pingType)
+                || DT_QUICKSUGGEST_CLICK.equals(pingType)) {
+              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+            } else {
+              throw new InvalidAttributeException("Received unexpected ping_type: " + pingType,
+                  pingType);
+            }
+
+            // parse match_type for desktop
+            interactionBuilder.setMatchType(parseMatchType(metrics).orElse(null));
+
+            // parse position
+            interactionBuilder.setPosition(parsePosition(metrics).orElse("no_position"));
+          } else if (NS_DESKTOP.equals(namespace)) {
+            interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
+            metrics = payload;
             // potential docTypes here are
             // `topsites-impression`, `topsites-click`
             // `quicksuggest-impression`, `quicksuggest-click`
@@ -148,6 +189,8 @@ public class ParseReportingUrl extends
               throw new InvalidAttributeException("Unexpected docType for mobile ping: " + docType,
                   docType);
             }
+            // iOS instrumentation named the metric category as "top_site" rather than "top_sites".
+            metrics = extractMetrics(ImmutableList.of("top_sites", "top_site"), payload);
             ArrayNode events = payload.withArray("events");
             if (events.size() != 1) {
               throw new UnexpectedPayloadException("expect exactly 1 event in ping.");
@@ -169,10 +212,13 @@ public class ParseReportingUrl extends
                 .setPosition(parsePosition(event.path("extra")).orElse("no_position"));
           }
 
+          interactionBuilder.setScenario(parseScenario(metrics).orElse(null));
+
           // Set the source based on the value of the docType
-          if (DT_TOPSITES_CLICK.equals(docType) || DT_TOPSITES_IMPRESSION.equals(docType)) {
+          if (DT_TOPSITES.equals(docType) || DT_TOPSITES_CLICK.equals(docType)
+              || DT_TOPSITES_IMPRESSION.equals(docType)) {
             interactionBuilder.setSource(SponsoredInteraction.SOURCE_TOPSITES);
-          } else if (DT_QUICKSUGGEST_IMPRESSION.equals(docType)
+          } else if (DT_QUICKSUGGEST.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
               || DT_QUICKSUGGEST_CLICK.equals(docType)) {
             interactionBuilder.setSource(SponsoredInteraction.SOURCE_SUGGEST);
           } else {
@@ -180,14 +226,14 @@ public class ParseReportingUrl extends
           }
 
           // Store context_id for click counting in subsequent transforms.
-          interactionBuilder.setContextId(extractContextId(payload));
+          interactionBuilder.setContextId(extractContextId(metrics));
 
           // Store request_id for counting in subsequent transforms.
-          Optional.ofNullable(payload.path(Attribute.REQUEST_ID).textValue()) //
+          Optional.ofNullable(metrics.path(Attribute.REQUEST_ID).textValue()) //
               .ifPresent(interactionBuilder::setRequestId);
 
           SponsoredInteraction interaction = interactionBuilder.build();
-          String reportingUrl = extractReportingUrl(payload);
+          String reportingUrl = extractReportingUrl(metrics);
           BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
 
           if (!isUrlValid(builtUrl.getReportingUrl(),
@@ -403,51 +449,29 @@ public class ParseReportingUrl extends
     }
   }
 
-  private Optional<String> parseScenario(ObjectNode payload) {
-    return Optional.of(payload.path(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED))
-        .filter(node -> !node.isMissingNode())
-        .map(node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
+  private Optional<String> parseScenario(ObjectNode metrics) {
+    return optionalNode(metrics.path(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED),
+        metrics.path("improve_suggest_experience")).map(
+            node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
   }
 
-  private Optional<String> parseMatchType(JsonNode payload) {
-    if (payload.isMissingNode()) {
-      return Optional.empty();
-    }
-    return Optional.of(payload.path(Attribute.MATCH_TYPE)).filter(node -> !node.isMissingNode())
-        .map(node -> node.asText())
+  private Optional<String> parseMatchType(JsonNode metrics) {
+    return optionalNode(metrics.path(Attribute.MATCH_TYPE)).map(JsonNode::asText)
         .map(mt -> "firefox-suggest".equals(mt) ? SponsoredInteraction.FX_SUGGEST
             : SponsoredInteraction.BEST_MATCH);
   }
 
-  private Optional<String> parsePosition(JsonNode payload) {
-    if (payload.isMissingNode()) {
-      return Optional.empty();
-    }
-    return Optional.of(payload.path(Attribute.POSITION)).filter(node -> !node.isMissingNode())
-        .map(node -> node.asText());
+  private Optional<String> parsePosition(JsonNode metrics) {
+    return optionalNode(metrics.path(Attribute.POSITION)).map(JsonNode::asText);
   }
 
-  private String extractReportingUrl(ObjectNode payload) {
-    if (!payload.path(Attribute.REPORTING_URL).isMissingNode()) {
-      return payload.path(Attribute.REPORTING_URL).asText();
-    } else if (!payload.path("metrics").path("url").path("top_sites.contile_reporting_url")
-        .isMissingNode()) {
-      return payload.path("metrics").path("url").path("top_sites.contile_reporting_url").asText();
-    } else {
-      // iOS instrumentation named this metric category as "top_site" rather than "top_sites".
-      return payload.path("metrics").path("url").path("top_site.contile_reporting_url").asText();
-    }
+  private String extractReportingUrl(ObjectNode metrics) {
+    return optionalNode(metrics.path(Attribute.REPORTING_URL),
+        metrics.path("contile_reporting_url")).map(JsonNode::asText).orElse("");
   }
 
-  private String extractContextId(ObjectNode payload) {
-    if (!payload.path(Attribute.CONTEXT_ID).isMissingNode()) {
-      return payload.path(Attribute.CONTEXT_ID).asText();
-    } else if (!payload.path("metrics").path("uuid").path("top_sites.context_id").isMissingNode()) {
-      return payload.path("metrics").path("uuid").path("top_sites.context_id").asText();
-    } else {
-      // iOS instrumentation named this metric category as "top_site" rather than "top_sites".
-      return payload.path("metrics").path("uuid").path("top_site.context_id").asText();
-    }
+  private String extractContextId(ObjectNode metrics) {
+    return optionalNode(metrics.path(Attribute.CONTEXT_ID)).map(JsonNode::asText).orElse("");
   }
 
   @VisibleForTesting
@@ -481,5 +505,24 @@ public class ParseReportingUrl extends
       throw new RejectedMessageException("Missing required url query parameter: " + paramName,
           paramName);
     }
+  }
+
+  @VisibleForTesting
+  static ObjectNode extractMetrics(List<String> metricSources, ObjectNode payload) {
+    final ObjectNode result = Json.createObjectNode();
+    payload.path("metrics").forEach(node -> node.fields().forEachRemaining(entry -> {
+      final String key = entry.getKey();
+      for (String ms : metricSources) {
+        if (key.startsWith(ms + ".")) {
+          final String subKey = key.substring(ms.length() + 1);
+          result.set(subKey, entry.getValue());
+        }
+      }
+    }));
+    return result;
+  }
+
+  private static Optional<JsonNode> optionalNode(JsonNode... nodes) {
+    return Stream.of(nodes).filter(n -> !n.isMissingNode()).findFirst();
   }
 }
