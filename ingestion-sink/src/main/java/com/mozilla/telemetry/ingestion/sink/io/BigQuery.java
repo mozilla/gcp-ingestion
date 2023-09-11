@@ -77,8 +77,8 @@ public class BigQuery {
     /** Constructor. */
     public Write(com.google.cloud.bigquery.BigQuery bigQuery, long maxBytes, int maxMessages,
         Duration maxDelay, PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
-        PubsubMessageToObjectNode encoder) {
-      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor);
+        boolean enableOpenCensus, PubsubMessageToObjectNode encoder) {
+      super(maxBytes, maxMessages, maxDelay, batchKeyTemplate, executor, enableOpenCensus);
       this.bigQuery = bigQuery;
       this.encoder = encoder;
     }
@@ -165,8 +165,9 @@ public class BigQuery {
 
     /** Constructor. */
     public Load(com.google.cloud.bigquery.BigQuery bigQuery, Storage storage, long maxBytes,
-        int maxFiles, Duration maxDelay, Executor executor, Delete delete) {
-      super(maxBytes, maxFiles, maxDelay, null, executor);
+        int maxFiles, Duration maxDelay, Executor executor, boolean enableOpenCensus,
+        Delete delete) {
+      super(maxBytes, maxFiles, maxDelay, null, executor, enableOpenCensus);
       this.bigQuery = bigQuery;
       this.storage = storage;
       this.delete = delete;

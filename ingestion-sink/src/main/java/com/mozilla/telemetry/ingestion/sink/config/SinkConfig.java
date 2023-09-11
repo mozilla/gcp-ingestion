@@ -44,6 +44,10 @@ public class SinkConfig {
   private SinkConfig() {
   }
 
+  private static final String ENABLE_OPEN_CENSUS = "ENABLE_OPEN_CENSUS";
+
+  private static final Set<String> COMMON_ENV_VARS = ImmutableSet.of(ENABLE_OPEN_CENSUS);
+
   private static final String INPUT_COMPRESSION = "INPUT_COMPRESSION";
   private static final String INPUT_PARALLELISM = "INPUT_PARALLELISM";
   private static final String INPUT_PIPE = "INPUT_PIPE";
@@ -135,18 +139,23 @@ public class SinkConfig {
     private final OutputType type;
     private final Function<PubsubMessage, CompletableFuture<Void>> write;
 
-    private Output(OutputType outputType, Function<PubsubMessage, CompletableFuture<Void>> write) {
+    @VisibleForTesting
+    public final Env commonEnv;
+
+    private Output(OutputType outputType, Function<PubsubMessage, CompletableFuture<Void>> write,
+        Env commonEnv) {
       this.type = outputType;
       this.write = write;
+      this.commonEnv = commonEnv;
     }
 
     public Output via(Function<PubsubMessage, CompletableFuture<Void>> write) {
-      return new Output(this.type, write);
+      return new Output(this.type, write, commonEnv);
     }
 
     public Output errorsVia(Function<PubsubMessage, CompletableFuture<Void>> errors,
         int maxAttempts) {
-      return new Output(this.type, new WriteWithErrors(write, errors, maxAttempts));
+      return new Output(this.type, new WriteWithErrors(write, errors, maxAttempts), commonEnv);
     }
 
     public CompletableFuture<Void> apply(PubsubMessage message) {
@@ -158,7 +167,7 @@ public class SinkConfig {
     pipe {
 
       @Override
-      Output getOutput(Env env, Executor executor) {
+      Output getOutput(Env env, Env commonEnv, Executor executor) {
         final String outputPipe = env.getString(OUTPUT_PIPE);
         final PrintStream pipe;
         switch (outputPipe) {
@@ -182,8 +191,11 @@ public class SinkConfig {
               throw new IllegalArgumentException(e);
             }
         }
-        return new Output(this, Pipe.Write.of(pipe, env.optString(OUTPUT_TABLE)
-            .map(PubsubMessageToTemplatedString::forBigQuery).orElse(null), getFormat(env)));
+        return new Output(this,
+            Pipe.Write.of(pipe, env.optString(OUTPUT_TABLE)
+                .map(PubsubMessageToTemplatedString::forBigQuery).orElse(null),
+                getFormat(env, commonEnv)),
+            commonEnv);
       }
     },
 
@@ -195,38 +207,40 @@ public class SinkConfig {
       }
 
       @Override
-      Output getOutput(Env env, Executor executor) {
+      Output getOutput(Env env, Env commonEnv, Executor executor) {
         return new Output(this, new Pubsub.Write(env.getString(OUTPUT_TOPIC), executor, b -> b,
-            getOutputCompression(env))::withoutResult);
+            getOutputCompression(env))::withoutResult, commonEnv);
       }
     },
 
     gcs {
 
       @Override
-      Output getOutput(Env env, Executor executor) {
+      Output getOutput(Env env, Env commonEnv, Executor executor) {
         return new Output(this,
             new Gcs.Write.Ndjson(getGcsService(env),
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
                 PubsubMessageToTemplatedString.of(getGcsOutputBucket(env)), executor,
-                getFormat(env), ignore -> CompletableFuture.completedFuture(null))
-                    .withOpenCensusMetrics());
+                getEnableOpenCensus(commonEnv), getFormat(env, commonEnv),
+                ignore -> CompletableFuture.completedFuture(null)),
+            commonEnv);
       }
     },
 
     bigQueryLoad {
 
       @Override
-      Output getOutput(Env env, Executor executor) {
+      Output getOutput(Env env, Env commonEnv, Executor executor) {
         final Storage storage = getGcsService(env);
         final Function<Blob, CompletableFuture<Void>> bigQueryLoad = new BigQuery.Load(
             getBigQueryService(env), storage, env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
             env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
             env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), executor,
+            getEnableOpenCensus(commonEnv),
             // don't delete files until successfully loaded
-            BigQuery.Load.Delete.onSuccess).withOpenCensusMetrics();
+            BigQuery.Load.Delete.onSuccess);
         // Messages may be delivered more than once, so check whether the blob has been deleted.
         // The blob is never deleted in this mode unless it has already been successfully loaded
         // to BigQuery. If the blob does not exist, it must have been deleted, because Cloud
@@ -243,7 +257,8 @@ public class SinkConfig {
                     return CompletableFuture.completedFuture((Void) null);
                   }
                   return bigQueryLoad.apply(blob);
-                }));
+                }),
+            commonEnv);
       }
 
       // Allow enough outstanding elements to fill one batch per table.
@@ -268,40 +283,41 @@ public class SinkConfig {
     bigQueryFiles {
 
       @Override
-      Output getOutput(Env env, Executor executor) {
-        Output pubsubWrite = pubsub.getOutput(env, executor);
+      Output getOutput(Env env, Env commonEnv, Executor executor) {
+        final Output pubsubWrite = pubsub.getOutput(env, commonEnv, executor);
         return new Output(this,
             new Gcs.Write.Ndjson(getGcsService(env),
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
                 PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)), executor,
-                getFormat(env),
+                getEnableOpenCensus(commonEnv), getFormat(env, commonEnv),
                 // BigQuery Load API limits maximum load requests per table per day to 1,000 so send
                 // blobInfo to pubsub and require loads be run separately to reduce maximum latency
-                blobInfo -> pubsubWrite.apply(BlobIdToPubsubMessage.encode(blobInfo.getBlobId())))
-                    .withOpenCensusMetrics());
+                blobInfo -> pubsubWrite.apply(BlobIdToPubsubMessage.encode(blobInfo.getBlobId()))),
+            commonEnv);
       }
     },
 
     bigQueryStreaming {
 
       @Override
-      Output getOutput(Env env, Executor executor) {
+      Output getOutput(Env env, Env commonEnv, Executor executor) {
         return new Output(this,
             new BigQuery.Write(getBigQueryService(env),
                 env.getLong(BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
                 env.getInt(BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
                 env.getDuration(BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
                 PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)), executor,
-                getFormat(env)).withOpenCensusMetrics());
+                getEnableOpenCensus(commonEnv), getFormat(env, commonEnv)),
+            commonEnv);
       }
     },
 
     bigQueryMixed {
 
       @Override
-      Output getOutput(Env env, Executor executor) {
+      Output getOutput(Env env, Env commonEnv, Executor executor) {
         final com.google.cloud.bigquery.BigQuery bigQuery = getBigQueryService(env);
         final Storage storage = getGcsService(env);
         final Function<Blob, CompletableFuture<Void>> bigQueryLoad;
@@ -309,30 +325,31 @@ public class SinkConfig {
           // BigQuery Load API limits maximum load requests per table per day to 1,000 so if
           // OUTPUT_TOPIC is present send blobInfo to pubsub and run load jobs separately
           final Function<PubsubMessage, CompletableFuture<Void>> pubsubOutput = pubsub
-              .getOutput(env, executor);
+              .getOutput(env, commonEnv, executor);
           bigQueryLoad = blob -> pubsubOutput.apply(BlobIdToPubsubMessage.encode(blob.getBlobId()));
         } else {
           bigQueryLoad = new BigQuery.Load(bigQuery, storage,
               env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
               env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
               env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY), executor,
+              getEnableOpenCensus(commonEnv),
               // files will be recreated if not successfully loaded
-              BigQuery.Load.Delete.always).withOpenCensusMetrics();
+              BigQuery.Load.Delete.always);
         }
         // Combine bigQueryFiles and bigQueryLoad without an intermediate PubSub topic
-        Function<PubsubMessage, CompletableFuture<Void>> fileOutput = new Gcs.Write.Ndjson(storage,
-            env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
+        final Function<PubsubMessage, CompletableFuture<Void>> fileOutput = new Gcs.Write.Ndjson(
+            storage, env.getLong(BATCH_MAX_BYTES, DEFAULT_BATCH_MAX_BYTES),
             env.getInt(BATCH_MAX_MESSAGES, DEFAULT_BATCH_MAX_MESSAGES),
             env.getDuration(BATCH_MAX_DELAY, DEFAULT_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(getBigQueryOutputBucket(env)), executor,
-            getFormat(env), bigQueryLoad).withOpenCensusMetrics();
+            getEnableOpenCensus(commonEnv), getFormat(env, commonEnv), bigQueryLoad);
         // Like bigQueryStreaming, but use STREAMING_ prefix env vars for batch configuration
-        Function<PubsubMessage, CompletableFuture<Void>> streamingOutput = new BigQuery.Write(
+        final Function<PubsubMessage, CompletableFuture<Void>> streamingOutput = new BigQuery.Write(
             bigQuery, env.getLong(STREAMING_BATCH_MAX_BYTES, DEFAULT_STREAMING_BATCH_MAX_BYTES),
             env.getInt(STREAMING_BATCH_MAX_MESSAGES, DEFAULT_STREAMING_BATCH_MAX_MESSAGES),
             env.getDuration(STREAMING_BATCH_MAX_DELAY, DEFAULT_STREAMING_BATCH_MAX_DELAY),
             PubsubMessageToTemplatedString.forBigQuery(env.getString(OUTPUT_TABLE)), executor,
-            getFormat(env)).withOpenCensusMetrics();
+            getEnableOpenCensus(commonEnv), getFormat(env, commonEnv));
         // fallbackOutput sends messages to fileOutput when rejected by streamingOutput due to size
         Function<PubsubMessage, CompletableFuture<Void>> fallbackOutput = message -> streamingOutput
             .apply(message).thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
@@ -364,12 +381,12 @@ public class SinkConfig {
         } else {
           mixedOutput = fallbackOutput;
         }
-        return new Output(this, mixedOutput);
+        return new Output(this, mixedOutput, commonEnv);
       }
     };
 
     // Each case in the enum must implement this method to define how to write out messages.
-    abstract Output getOutput(Env env, Executor executor);
+    abstract Output getOutput(Env env, Env commonEnv, Executor executor);
 
     // Cases in the enum may override this method set a more appropriate default.
     long getDefaultMaxOutstandingElementCount() {
@@ -421,7 +438,12 @@ public class SinkConfig {
     }
   }
 
-  private static PubsubMessageToObjectNode getFormat(Env env) {
+  @VisibleForTesting
+  public static boolean getEnableOpenCensus(Env commonEnv) {
+    return commonEnv.getBool(ENABLE_OPEN_CENSUS, false);
+  }
+
+  private static PubsubMessageToObjectNode getFormat(Env env, Env commonEnv) {
     final String format = env.getString(OUTPUT_FORMAT, "raw").toLowerCase();
     switch (format) {
       case "raw":
@@ -429,8 +451,14 @@ public class SinkConfig {
       case "decoded":
         return PubsubMessageToObjectNode.Decoded.of();
       case "payload":
-        return PubsubMessageToObjectNode.Payload.of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null),
-            env.getString(SCHEMAS_LOCATION, null), FileInputStream::new).withOpenCensusMetrics();
+        final PubsubMessageToObjectNode.Payload withoutMetrics = PubsubMessageToObjectNode.Payload
+            .of(env.getStrings(STRICT_SCHEMA_DOCTYPES, null), env.getString(SCHEMAS_LOCATION, null),
+                FileInputStream::new);
+        if (getEnableOpenCensus(commonEnv)) {
+          return withoutMetrics.withOpenCensusMetrics();
+        } else {
+          return withoutMetrics;
+        }
       case "beam":
         return PubsubMessageToObjectNode.Beam.of();
       default:
@@ -470,6 +498,7 @@ public class SinkConfig {
 
   /** Return a configured output transform. */
   public static Output getOutput() {
+    final Env commonEnv = new Env(COMMON_ENV_VARS);
     final Env outputEnv = new Env(OUTPUT_ENV_VARS);
     final Env errorEnv = new Env(OUTPUT_ENV_VARS, "ERROR_");
     // Executor to use for CompletableFutures in outputs instead of ForkJoinPool.commonPool(),
@@ -478,14 +507,15 @@ public class SinkConfig {
     // that may be slow synchronous IO. As of 2020-04-25 there are 89 tables for telemetry and 118
     // tables for structured.
     final Executor executor = new ForkJoinPool(outputEnv.getInt(OUTPUT_PARALLELISM, 150));
-    final Output output = OutputType.get(outputEnv).getOutput(outputEnv, executor);
+    final Output output = OutputType.get(outputEnv).getOutput(outputEnv, commonEnv, executor);
 
     // Handle error output if configured.
     final Output withErrors;
     if (outputEnv.containsKey(OUTPUT_MAX_ATTEMPTS) || !errorEnv.isEmpty()) {
       OutputType errorOutputType = OutputType.get(errorEnv);
       if (errorOutputType.validErrorOutput()) {
-        withErrors = output.errorsVia(errorOutputType.getOutput(errorEnv, executor).write,
+        withErrors = output.errorsVia(
+            errorOutputType.getOutput(errorEnv, commonEnv, executor).write,
             outputEnv.getInt(OUTPUT_MAX_ATTEMPTS, DEFAULT_OUTPUT_MAX_ATTEMPTS));
       } else {
         throw new IllegalArgumentException(
@@ -495,6 +525,7 @@ public class SinkConfig {
       withErrors = output;
     }
 
+    // defer checking commonEnv to getInput in case it's used there
     outputEnv.requireAllVarsUsed();
     errorEnv.requireAllVarsUsed();
     return withErrors;
@@ -546,9 +577,12 @@ public class SinkConfig {
       }
       // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
       // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
-      StackdriverStatsExporter.createAndRegister();
+      if (getEnableOpenCensus(output.commonEnv)) {
+        StackdriverStatsExporter.createAndRegister();
+      }
     }
     env.requireAllVarsUsed();
+    output.commonEnv.requireAllVarsUsed();
     return input;
   }
 }

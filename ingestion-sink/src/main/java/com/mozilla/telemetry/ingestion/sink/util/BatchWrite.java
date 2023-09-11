@@ -73,6 +73,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
   private static final Aggregation.Sum SUM_AGG = Aggregation.Sum.create();
   private static final Aggregation.Count COUNT_AGG = Aggregation.Count.create();
 
+  private final boolean enableOpenCensus;
   private final MeasureLong batchCount;
   private final MeasureLong batchBytes;
   private final MeasureLong batchMessages;
@@ -89,54 +90,59 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
 
   /** Constructor. */
   public BatchWrite(long maxBytes, int maxMessages, Duration maxDelay,
-      PubsubMessageToTemplatedString batchKeyTemplate, Executor executor) {
+      PubsubMessageToTemplatedString batchKeyTemplate, Executor executor,
+      boolean enableOpenCensus) {
     this.maxBytes = maxBytes;
     this.maxMessages = maxMessages;
     this.maxDelay = maxDelay;
     this.batchKeyTemplate = batchKeyTemplate;
     this.executor = executor;
+    this.enableOpenCensus = enableOpenCensus;
+    if (enableOpenCensus) {
+      // create OpenCensus measures with a class name prefix
+      final String shortClassName = this.getClass().getName().replaceAll(".*[.]", "");
+      final String batchType = shortClassName.replace('$', '_').toLowerCase();
+      totalBytes = MeasureLong.create(batchType + "_total_bytes",
+          "The number of bytes received in " + shortClassName, "B");
+      totalMessages = MeasureLong.create(batchType + "_total_messages",
+          "The number of messages received in " + shortClassName, "1");
+      batchCount = MeasureLong.create(batchType + "_batch_count",
+          "The number of batches closed in " + shortClassName, "1");
+      batchBytes = MeasureLong.create(batchType + "_batch_bytes",
+          "Distribution of the number of bytes in a batch in " + shortClassName, "B");
+      batchMessages = MeasureLong.create(batchType + "_batch_messages",
+          "Distribution of the number of messages in a batch in " + shortClassName, "1");
+      batchDelay = MeasureLong.create(batchType + "_batch_delay",
+          "Distribution of the number of milliseconds a batch waited for messages in "
+              + shortClassName,
+          "ms");
 
-    // create OpenCensus measures with a class name prefix
-    final String shortClassName = this.getClass().getName().replaceAll(".*[.]", "");
-    final String batchType = shortClassName.replace('$', '_').toLowerCase();
-    totalBytes = MeasureLong.create(batchType + "_total_bytes",
-        "The number of bytes received in " + shortClassName, "B");
-    totalMessages = MeasureLong.create(batchType + "_total_messages",
-        "The number of messages received in " + shortClassName, "1");
-    batchCount = MeasureLong.create(batchType + "_batch_count",
-        "The number of batches closed in " + shortClassName, "1");
-    batchBytes = MeasureLong.create(batchType + "_batch_bytes",
-        "Distribution of the number of bytes in a batch in " + shortClassName, "B");
-    batchMessages = MeasureLong.create(batchType + "_batch_messages",
-        "Distribution of the number of messages in a batch in " + shortClassName, "1");
-    batchDelay = MeasureLong.create(batchType + "_batch_delay",
-        "Distribution of the number of milliseconds a batch waited for messages in "
-            + shortClassName,
-        "ms");
-  }
-
-  /**
-   * Register a view for every measure.
-   *
-   * <p>If this is not called, e.g. during unit tests, recorded values will not be exported.
-   */
-  public Function<InputT, CompletableFuture<Void>> withOpenCensusMetrics() {
-    final ViewManager viewManager = Stats.getViewManager();
-    ImmutableMap.<MeasureLong, Aggregation>builder().put(batchCount, COUNT_AGG)
-        .put(batchBytes, BATCH_BYTES_AGG).put(batchMessages, BATCH_MESSAGES_AGG)
-        .put(batchDelay, BATCH_DELAY_AGG).put(totalBytes, SUM_AGG).put(totalMessages, SUM_AGG)
-        .build()
-        .forEach((measure, aggregation) -> viewManager
-            .registerView(View.create(View.Name.create(measure.getName()), measure.getDescription(),
-                measure, aggregation, ImmutableList.of())));
-    return this;
+      // register a view for every measure
+      final ViewManager viewManager = Stats.getViewManager();
+      ImmutableMap.<MeasureLong, Aggregation>builder().put(batchCount, COUNT_AGG)
+          .put(batchBytes, BATCH_BYTES_AGG).put(batchMessages, BATCH_MESSAGES_AGG)
+          .put(batchDelay, BATCH_DELAY_AGG).put(totalBytes, SUM_AGG).put(totalMessages, SUM_AGG)
+          .build()
+          .forEach((measure, aggregation) -> viewManager
+              .registerView(View.create(View.Name.create(measure.getName()),
+                  measure.getDescription(), measure, aggregation, ImmutableList.of())));
+    } else {
+      batchCount = null;
+      batchBytes = null;
+      batchMessages = null;
+      batchDelay = null;
+      totalBytes = null;
+      totalMessages = null;
+    }
   }
 
   /** Record metrics for a Batch. */
   private void recordBatchMetrics(long bytes, int messages, long delayMillis) {
-    STATS_RECORDER.newMeasureMap().put(batchCount, 1).put(batchBytes, bytes)
-        .put(batchMessages, messages).put(batchDelay, delayMillis).put(totalBytes, bytes)
-        .put(totalMessages, messages).record();
+    if (enableOpenCensus) {
+      STATS_RECORDER.newMeasureMap().put(batchCount, 1).put(batchBytes, bytes)
+          .put(batchMessages, messages).put(batchDelay, delayMillis).put(totalBytes, bytes)
+          .put(totalMessages, messages).record();
+    }
   }
 
   @VisibleForTesting

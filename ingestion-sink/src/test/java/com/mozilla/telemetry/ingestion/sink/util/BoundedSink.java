@@ -26,7 +26,9 @@ public class BoundedSink {
       final int currentMessages = counter.incrementAndGet();
       if (currentMessages >= messageCount) {
         input.get().stopAsync();
-        StackdriverStatsExporter.unregister();
+        if (SinkConfig.getEnableOpenCensus(output.commonEnv)) {
+          StackdriverStatsExporter.unregister();
+        }
       }
       return v;
     }))));

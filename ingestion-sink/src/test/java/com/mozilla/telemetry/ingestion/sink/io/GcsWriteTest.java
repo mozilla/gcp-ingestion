@@ -44,7 +44,7 @@ public class GcsWriteTest {
   public void mockBigQueryResponse() {
     storage = mock(Storage.class);
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, MAX_DELAY, BATCH_KEY_TEMPLATE,
-        ForkJoinPool.commonPool(), PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
+        ForkJoinPool.commonPool(), false, PubsubMessageToObjectNode.Raw.of(), this::batchCloseHook);
   }
 
   @Test
@@ -58,7 +58,7 @@ public class GcsWriteTest {
   @Test
   public void canSendWithNoDelay() {
     output = new Gcs.Write.Ndjson(storage, MAX_BYTES, MAX_MESSAGES, Duration.ofMillis(0),
-        BATCH_KEY_TEMPLATE, ForkJoinPool.commonPool(), PubsubMessageToObjectNode.Raw.of(),
+        BATCH_KEY_TEMPLATE, ForkJoinPool.commonPool(), false, PubsubMessageToObjectNode.Raw.of(),
         this::batchCloseHook);
     output.apply(EMPTY_MESSAGE).join();
     assertEquals(1, output.batches.get(BATCH_KEY).size);
