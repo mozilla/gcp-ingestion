@@ -14,7 +14,7 @@ public class BatchWriteTest {
     int batchCount = 0;
 
     private NoopBatchWrite(long maxBytes, int maxMessages, Duration maxDelay) {
-      super(maxBytes, maxMessages, maxDelay, null, ForkJoinPool.commonPool());
+      super(maxBytes, maxMessages, maxDelay, null, ForkJoinPool.commonPool(), false);
     }
 
     @Override

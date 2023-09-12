@@ -46,7 +46,7 @@ public class BigQueryLoadTest {
     when(blob.getBlobId()).thenReturn(BlobId.of("bucket", name));
     when(blob.getSize()).thenReturn(1L);
     try {
-      new BigQuery.Load(bigQuery, storage, 0, 0, Duration.ZERO, ForkJoinPool.commonPool(),
+      new BigQuery.Load(bigQuery, storage, 0, 0, Duration.ZERO, ForkJoinPool.commonPool(), false,
           BigQuery.Load.Delete.onSuccess).apply(blob).join();
     } catch (CompletionException e) {
       if (e.getCause() instanceof BigQuery.BigQueryErrors) {

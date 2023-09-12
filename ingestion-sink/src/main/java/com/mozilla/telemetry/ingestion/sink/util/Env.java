@@ -85,6 +85,10 @@ public class Env {
     return optString(key).map(Long::new).orElse(defaultValue);
   }
 
+  public Boolean getBool(String key, Boolean defaultValue) {
+    return optString(key).map(Boolean::valueOf).orElse(defaultValue);
+  }
+
   public Duration getDuration(String key, String defaultValue) {
     return Time.parseJavaDuration(getString(key, defaultValue));
   }
