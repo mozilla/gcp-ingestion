@@ -9,8 +9,7 @@ updates:
   schedule:
     interval: daily
   reviewers:
-  - relud
-  - quiiver
+  - mozilla/data-platform-infra-wg
   labels:
   - dependencies
   - java
@@ -21,7 +20,7 @@ updates:
   schedule:
     interval: daily
   reviewers:
-  - relud
+  - mozilla/data-platform-infra-wg
   labels:
   - dependencies
   - java
@@ -30,7 +29,7 @@ updates:
   schedule:
     interval: daily
   reviewers:
-  - relud
+  - mozilla/data-platform-infra-wg
   labels:
   - dependencies
   - python
