@@ -810,17 +810,17 @@ tomli==2.0.1 \
     --hash=sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc \
     --hash=sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f
     # via -r requirements.in
-types-protobuf==4.24.0.1 \
-    --hash=sha256:90adea3b693d6a40d8ef075c58fe6b5cc6e01fe1496301a7e6fc70398dcff92e \
-    --hash=sha256:df203a204e4ae97d4cca4c9cf725262579dd7857a19f9e7fc74871ccfa073c01
+types-protobuf==4.24.0.3 \
+    --hash=sha256:048ca006a08ac0563ff04a86ddcdda6f8877b024f5ff89ed6180510b017c3a91 \
+    --hash=sha256:6652be32c647a855cd9c01e6c556ecdc94988188c4de89942ad13e906537aaee
     # via -r requirements.in
 types-python-dateutil==2.8.19.14 \
     --hash=sha256:1f4f10ac98bb8b16ade9dbee3518d9ace017821d94b057a425b069f834737f4b \
     --hash=sha256:f977b8de27787639986b4e28963263fd0e5158942b3ecef91b9335c130cb1ce9
     # via -r requirements.in
-types-pyyaml==6.0.12.11 \
-    --hash=sha256:7d340b19ca28cddfdba438ee638cd4084bde213e501a3978738543e27094775b \
-    --hash=sha256:a461508f3096d1d5810ec5ab95d7eeecb651f3a15b71959999988942063bf01d
+types-pyyaml==6.0.12.12 \
+    --hash=sha256:334373d392fde0fdf95af5c3f1661885fa10c52167b14593eb856289e1855062 \
+    --hash=sha256:c05bc6c158facb0676674b7f11fe3960db4f389718e19e62bd2b84d6205cfd24
     # via -r requirements.in
 types-requests==2.31.0.2 \
     --hash=sha256:56d181c85b5925cbc59f4489a57e72a8b2166f18273fd8ba7b6fe0c0b986f12a \
