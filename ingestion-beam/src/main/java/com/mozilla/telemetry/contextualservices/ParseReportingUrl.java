@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -296,8 +295,7 @@ public class ParseReportingUrl extends
 
             Stream<Optional<String>> customDataElements = Stream.of(
                 Optional.ofNullable(interaction.getScenario()),
-                Optional.ofNullable(interaction.getMatchType())
-            );
+                Optional.ofNullable(interaction.getMatchType()));
 
             String originalValue = builtUrl.getQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA);
             String customDataParam = customDataElements.filter(opt -> !opt.isEmpty())
@@ -417,8 +415,7 @@ public class ParseReportingUrl extends
       return Optional.empty();
     }
     return Optional.of(payload.path(Attribute.MATCH_TYPE)).filter(node -> !node.isMissingNode())
-        .map(node -> node.asText())
-        .map(mt -> "firefox-suggest".equals(mt) ? "reg" : "top");
+        .map(node -> node.asText()).map(mt -> "firefox-suggest".equals(mt) ? "reg" : "top");
   }
 
   private Optional<String> parsePosition(JsonNode payload) {

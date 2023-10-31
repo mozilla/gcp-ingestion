@@ -270,21 +270,15 @@ public class ParseReportingUrlTest {
 
     List<PubsubMessage> input = ImmutableList.of(
         new PubsubMessage(Json.asBytes(
-            impressionPayload.deepCopy()
-                .put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)
-                .put(Attribute.MATCH_TYPE, "firefox-suggest")
-        ), impressionAttributes),
+            impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)
+                .put(Attribute.MATCH_TYPE, "firefox-suggest")),
+            impressionAttributes),
         new PubsubMessage(Json.asBytes(
             impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, false)
-                .put(Attribute.MATCH_TYPE, "best-match")
-        ),
+                .put(Attribute.MATCH_TYPE, "best-match")),
             impressionAttributes),
-        new PubsubMessage(
-            Json.asBytes(
-                clickPayload.deepCopy()
-                    .put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)
-                    .putNull(Attribute.MATCH_TYPE)
-            ),
+        new PubsubMessage(Json.asBytes(clickPayload.deepCopy()
+            .put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true).putNull(Attribute.MATCH_TYPE)),
             clickAttributes),
         new PubsubMessage(Json.asBytes(clickPayload), clickAttributes));
 
