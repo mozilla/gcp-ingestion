@@ -298,8 +298,7 @@ public class ParseReportingUrl extends
                 Optional.ofNullable(interaction.getMatchType()));
 
             String originalValue = builtUrl.getQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA);
-            String customDataParam = customDataElements.filter(opt -> !opt.isEmpty())
-                .flatMap(Optional::stream)
+            String customDataParam = customDataElements.flatMap(Optional::stream)
                 .reduce(originalValue, (output, param) -> String.format("%s_%s", output, param));
             builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
           }
