@@ -414,7 +414,9 @@ public class ParseReportingUrl extends
       return Optional.empty();
     }
     return Optional.of(payload.path(Attribute.MATCH_TYPE)).filter(node -> !node.isMissingNode())
-        .map(node -> node.asText()).map(mt -> "firefox-suggest".equals(mt) ? SponsoredInteraction.FX_SUGGEST : SponsoredInteraction.BEST_MATCH);
+        .map(node -> node.asText())
+        .map(mt -> "firefox-suggest".equals(mt) ? SponsoredInteraction.FX_SUGGEST
+            : SponsoredInteraction.BEST_MATCH);
   }
 
   private Optional<String> parsePosition(JsonNode payload) {
