@@ -257,6 +257,7 @@ public class ParseReportingUrlTest {
     ObjectNode inputPayload = Json.createObjectNode();
     inputPayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
     inputPayload.put(Attribute.VERSION, "87.0");
+
     String contextId = "aaaa-bbb-ccc-000";
     inputPayload.put(Attribute.CONTEXT_ID, contextId);
 
@@ -269,14 +270,15 @@ public class ParseReportingUrlTest {
 
     List<PubsubMessage> input = ImmutableList.of(
         new PubsubMessage(Json.asBytes(
-            impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)),
+            impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)
+                .put(Attribute.MATCH_TYPE, "firefox-suggest")),
             impressionAttributes),
         new PubsubMessage(Json.asBytes(
-            impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, false)),
+            impressionPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, false)
+                .put(Attribute.MATCH_TYPE, "best-match")),
             impressionAttributes),
-        new PubsubMessage(
-            Json.asBytes(
-                clickPayload.deepCopy().put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true)),
+        new PubsubMessage(Json.asBytes(clickPayload.deepCopy()
+            .put(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED, true).putNull(Attribute.MATCH_TYPE)),
             clickAttributes),
         new PubsubMessage(Json.asBytes(clickPayload), clickAttributes));
 
@@ -312,10 +314,10 @@ public class ParseReportingUrlTest {
             if (doctype.equals("quicksuggest-impression")) {
               if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
                 Assert.assertTrue(reportingUrl.contains(
-                    String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
+                    String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1_online_reg")));
               } else {
                 Assert.assertTrue(reportingUrl.contains(
-                    String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1_offline")));
+                    String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1_offline_top")));
               }
             } else if (doctype.equals("quicksuggest-click")) {
               if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
