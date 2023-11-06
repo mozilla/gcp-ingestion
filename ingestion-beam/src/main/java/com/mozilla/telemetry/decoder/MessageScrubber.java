@@ -107,6 +107,7 @@ public class MessageScrubber {
       .put("com-wheatleygroup-firefox", "1847643") //
       .put("com-work-custchrome", "1859282") //
       .put("com-mykarma-karmasearch", "1860820") //
+      .put("org-mozilla-fennec-mylinux", "1863385") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
