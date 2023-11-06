@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsonorg.JsonOrgModule;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.bigquery.model.TableFieldSchema;
 import com.google.api.services.bigquery.model.TableSchema;
 import com.google.cloud.bigquery.Schema;
@@ -32,7 +32,7 @@ public class Json {
    */
   protected static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
+  private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
 
   @VisibleForTesting
   static final Method SCHEMA_FROM_PB = Arrays.stream(Schema.class.getDeclaredMethods())
