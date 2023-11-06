@@ -63,6 +63,13 @@ public abstract class SponsoredInteraction implements Serializable {
   abstract String getRequestId();
 
   @Nullable
+  abstract String getMatchType();
+
+  // match type values: top/reg
+  public static final String BEST_MATCH = "top";
+  public static final String FX_SUGGEST = "reg";
+
+  @Nullable
   public abstract String getSubmissionTimestamp();
 
   @Nullable
@@ -110,8 +117,6 @@ public abstract class SponsoredInteraction implements Serializable {
 
     public abstract Builder setFormFactor(String newFormFactor);
 
-    public abstract Builder setPosition(String newPosition);
-
     public abstract Builder setScenario(String newScenario);
 
     public abstract Builder setInteractionType(String newInteractionType);
@@ -120,7 +125,11 @@ public abstract class SponsoredInteraction implements Serializable {
 
     public abstract Builder setReportingUrl(String newReportingUrl);
 
+    public abstract Builder setPosition(String newPosition);
+
     public abstract Builder setRequestId(String newRequestId);
+
+    public abstract Builder setMatchType(String newMatchType);
 
     public abstract Builder setSubmissionTimestamp(String newSubmissionTimestamp);
 

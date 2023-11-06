@@ -106,6 +106,7 @@ public class MessageScrubber {
       .put("org-immersivel-firefox", "1841614") //
       .put("com-wheatleygroup-firefox", "1847643") //
       .put("com-work-custchrome", "1859282") //
+      .put("com-mykarma-karmasearch", "1860820") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -151,7 +152,7 @@ public class MessageScrubber {
       // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
       // Bing
       "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZL", "MOZM", "MOZO",
-      "MOZR", "MOZT", "MOZW", "MOZX", "MOZSL01", "MOZSL02", "MOZSL03",
+      "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03",
       // Google
       "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
       "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
