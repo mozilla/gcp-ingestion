@@ -81,7 +81,7 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
                 final Integer geoipSkipEntries = metadataStore.getSchema(attributes)
                     .geoip_skip_entries();
                 if (geoipSkipEntries != null) {
-                  for (int i = 0; i < geoipSkipEntries; i++) {
+                  for (int i = 0; i < geoipSkipEntries && xff.size() > 0; i++) {
                     xff.remove(xff.size() - 1);
                   }
                 }
