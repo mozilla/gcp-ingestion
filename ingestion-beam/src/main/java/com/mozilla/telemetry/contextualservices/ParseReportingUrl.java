@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -134,6 +135,9 @@ public class ParseReportingUrl extends
               throw new InvalidAttributeException("Received unexpected docType: " + docType,
                   docType);
             }
+
+            // parse match_type for desktop
+            interactionBuilder.setMatchType(parseMatchType(payload).orElse(null));
 
             // parse position for desktop.
             interactionBuilder.setPosition(parsePosition(payload).orElse("no_position"));
@@ -289,11 +293,14 @@ public class ParseReportingUrl extends
           if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
               && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
 
-            String customDataParam = builtUrl.getQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA);
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA,
-                Optional.ofNullable(interaction.getScenario())
-                    .map((pref) -> String.format("%s_%s", customDataParam, pref))
-                    .orElse(customDataParam));
+            Stream<Optional<String>> customDataElements = Stream.of(
+                Optional.ofNullable(interaction.getScenario()),
+                Optional.ofNullable(interaction.getMatchType()));
+
+            String originalValue = builtUrl.getQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA);
+            String customDataParam = customDataElements.flatMap(Optional::stream)
+                .reduce(originalValue, (output, param) -> String.format("%s_%s", output, param));
+            builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
           }
 
           reportingUrl = builtUrl.toString();
@@ -400,6 +407,16 @@ public class ParseReportingUrl extends
     return Optional.of(payload.path(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED))
         .filter(node -> !node.isMissingNode())
         .map(node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
+  }
+
+  private Optional<String> parseMatchType(JsonNode payload) {
+    if (payload.isMissingNode()) {
+      return Optional.empty();
+    }
+    return Optional.of(payload.path(Attribute.MATCH_TYPE)).filter(node -> !node.isMissingNode())
+        .map(node -> node.asText())
+        .map(mt -> "firefox-suggest".equals(mt) ? SponsoredInteraction.FX_SUGGEST
+            : SponsoredInteraction.BEST_MATCH);
   }
 
   private Optional<String> parsePosition(JsonNode payload) {
