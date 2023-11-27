@@ -9,7 +9,6 @@ import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.schema.SchemaStoreSingletonFactory;
 import com.mozilla.telemetry.util.Json;
-import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +26,7 @@ import org.apache.beam.sdk.values.TypeDescriptors;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ParsePayloadTest extends TestWithDeterministicJson {
+public class ParsePayloadTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -79,17 +78,20 @@ public class ParsePayloadTest extends TestWithDeterministicJson {
     PAssert.that(main).containsInAnyOrder(expectedMain);
 
     final List<String> expectedAttributes = Arrays.asList(
-        "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":\"1\"}",
-        "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":\"1\"}",
-        "{\"client_id\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\",\"document_namespace\":\"test\""
-            + ",\"document_type\":\"test\",\"document_version\":\"1\",\"sample_id\":\"67\"}",
-        "{\"client_id\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\",\"document_namespace\":\"test\""
-            + ",\"document_type\":\"test\",\"document_version\":\"1\",\"sample_id\":\"67\"}",
-        "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":\"1\""
-            + ",\"sample_id\":\"67\"}",
-        "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":\"1\"}",
-        "{\"document_namespace\":\"test\",\"document_type\":\"test\",\"document_version\":\"1\""
-            + ",\"sample_id\":\"67\"}");
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\",\"document_type\":\"test\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\",\"document_type\":\"test\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"client_id\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\""
+            + ",\"document_type\":\"test\",\"sample_id\":\"67\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"client_id\":\"2907648d-711b-4e9f-94b5-52a2b40a44b1\""
+            + ",\"document_type\":\"test\",\"sample_id\":\"67\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"document_type\":\"test\",\"sample_id\":\"67\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"document_type\":\"test\"}",
+        "{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"document_type\":\"test\",\"sample_id\":\"67\"}");
     final PCollection<String> attributes = output.output()
         .apply(MapElements.into(TypeDescriptors.strings()).via(m -> {
           try {
@@ -128,9 +130,9 @@ public class ParsePayloadTest extends TestWithDeterministicJson {
     PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
     final List<String> expectedAttributes = Arrays
-        .asList("{\"document_id\":\"0E085F25-DD1C-412A-86C7-177D1B5AA5EB\""
-            + ",\"document_namespace\":\"test\",\"document_type\":\"sample\""
-            + ",\"document_version\":\"1\",\"sample_id\":\"12\"}");
+        .asList("{\"document_namespace\":\"test\",\"document_version\":\"1\""
+            + ",\"document_id\":\"0E085F25-DD1C-412A-86C7-177D1B5AA5EB\""
+            + ",\"document_type\":\"sample\",\"sample_id\":\"12\"}");
     final PCollection<String> attributes = output.output()
         .apply(MapElements.into(TypeDescriptors.strings()).via(m -> {
           try {
@@ -281,16 +283,16 @@ public class ParsePayloadTest extends TestWithDeterministicJson {
 
     final List<String> expected = Arrays.asList(//
         "{\"attributes\":"
-            + "{\"document_namespace\":\"test_split\",\"document_type\":\"preserve\",\"document_version\":\"1\"},"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"preserve\"},"
             + "\"data\":{\"payload\":{\"int\":1,\"string\":\"str1\"},\"test_int\":2,\"test_string\":\"str2\"}}",
         "{\"attributes\":"
-            + "{\"document_namespace\":\"test_split\",\"document_type\":\"subset\",\"document_version\":\"1\"},"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"subset\"},"
             + "\"data\":{\"payload\":{\"int\":1},\"test_int\":2}}",
         "{\"attributes\":"
-            + "{\"document_namespace\":\"test_split\",\"document_type\":\"remainder\",\"document_version\":\"1\"},"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"remainder\"},"
             + "\"data\":{\"payload\":{\"string\":\"str1\"},\"test_string\":\"str2\"}}",
         "{\"attributes\":"
-            + "{\"document_namespace\":\"test_split\",\"document_type\":\"subset\",\"document_version\":\"1\"},"
+            + "{\"document_namespace\":\"test_split\",\"document_version\":\"1\",\"document_type\":\"subset\"},"
             + "\"data\":{\"payload\":{\"int\":3},\"test_int\":4}}");
 
     final PCollection<String> outputString = output.output().apply("encodeOutput",

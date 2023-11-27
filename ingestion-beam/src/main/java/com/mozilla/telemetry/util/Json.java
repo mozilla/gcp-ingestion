@@ -125,13 +125,5 @@ public class Json extends com.mozilla.telemetry.ingestion.core.util.Json {
     // Ignore messageId when serializing to JSON, but read during deserialization.
     @JsonIgnore
     abstract String getMessageId();
-
-    // orderingKey and topic were added to PubsubMessage after v2.42.0 of Beam SDK.
-    // We're excluding them from the serialized JSON to avoid breaking existing tests.
-    @JsonIgnore
-    abstract String getOrderingKey();
-
-    @JsonIgnore
-    abstract String getTopic();
   }
 }
