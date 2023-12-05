@@ -1,6 +1,8 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -24,6 +26,7 @@ public class FilterByDocTypeTest {
 
   @Test
   public void testMessagesFiltered() {
+    FilterByDocType.clearSingletonsForTests();
     String allowedDocTypes = "type-a,type-b,";
     String allowedNamespaces = "ns-1,ns-2,";
 
@@ -36,7 +39,7 @@ public class FilterByDocTypeTest {
         .collect(Collectors.toList());
 
     PCollection<PubsubMessage> output = pipeline.apply(Create.of(inputDocTypes))
-        .apply(FilterByDocType.of(allowedDocTypes, allowedNamespaces));
+        .apply(FilterByDocType.of(allowedDocTypes, allowedNamespaces, false));
 
     PAssert.that(output).satisfies(messages -> {
       HashMap<String, Integer> docTypeCount = new HashMap<>();
@@ -50,6 +53,39 @@ public class FilterByDocTypeTest {
       Map<String, Integer> expected = ImmutableMap.of("type-a", 2, "type-b", 1);
 
       Assert.assertEquals(expected, docTypeCount);
+
+      return null;
+    });
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testRejectFirefoxVersion() {
+    FilterByDocType.clearSingletonsForTests();
+    // Build list of messages with different doctype/version combinations
+    final List<PubsubMessage> input = Streams
+        .zip(Stream.of("topsites-click", "quicksuggest-click", "topsites-click"),
+            Stream.of("87", "87", "86", "116"),
+            (doctype, version) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
+                Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
+                Attribute.USER_AGENT_BROWSER, "Firefox", //
+                Attribute.USER_AGENT_VERSION, version, //
+                Attribute.CLIENT_COMPRESSION, "gzip"))
+        .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
+        .collect(Collectors.toList());
+
+    PCollection<PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(FilterByDocType.of("topsites-click,quicksuggest-click,topsites-click",
+            "contextual-services", true));
+
+    PAssert.that(result).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+      Assert.assertEquals("topsites-click",
+          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_TYPE));
+      Assert.assertEquals("87",
+          Iterables.get(messages, 0).getAttribute(Attribute.USER_AGENT_VERSION));
 
       return null;
     });

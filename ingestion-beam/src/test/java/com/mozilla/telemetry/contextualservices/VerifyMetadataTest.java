@@ -97,48 +97,6 @@ public class VerifyMetadataTest {
   }
 
   @Test
-  public void testRejectFirefoxVersion() {
-    // Build list of messages with different doctype/version combinations
-    final List<PubsubMessage> input = Streams
-        .zip(Stream.of("topsites-click", "quicksuggest-click", "topsites-click"),
-            Stream.of("87", "87", "86"),
-            (doctype, version) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
-                Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
-                Attribute.USER_AGENT_BROWSER, "Firefox", //
-                Attribute.USER_AGENT_VERSION, version, //
-                Attribute.CLIENT_COMPRESSION, "gzip"))
-        .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
-        .collect(Collectors.toList());
-
-    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
-        .apply(Create.of(input)) //
-        .apply(VerifyMetadata.of());
-
-    PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterables.size(messages));
-      PubsubMessage message = Iterables.get(messages, 0);
-
-      String errorMessage = message.getAttribute("error_message");
-      Assert.assertTrue(errorMessage.contains(RejectedMessageException.class.getCanonicalName()));
-      Assert.assertTrue(errorMessage.contains("Firefox version"));
-
-      return null;
-    });
-
-    PAssert.that(result.output()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-      Assert.assertEquals("topsites-click",
-          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_TYPE));
-      Assert.assertEquals("87",
-          Iterables.get(messages, 0).getAttribute(Attribute.USER_AGENT_VERSION));
-
-      return null;
-    });
-
-    pipeline.run();
-  }
-
-  @Test
   public void testRejectChannel() {
     // Build list of messages with different doctype/version combinations
     final List<PubsubMessage> input = Streams
