@@ -61,6 +61,7 @@ public class ParseReportingUrl extends
   private static final String NS_FOG = "firefox-desktop";
   private static final String DT_TOPSITES = "top-sites";
   private static final String DT_QUICKSUGGEST = "quick-suggest";
+  private static final String DT_SEARCHWITH = "search-with";
   private static final Map<String, List<String>> DT_TO_METRIC_SOURCES = ImmutableMap.of(DT_TOPSITES,
       ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"));
 
@@ -221,6 +222,8 @@ public class ParseReportingUrl extends
           } else if (DT_QUICKSUGGEST.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
               || DT_QUICKSUGGEST_CLICK.equals(docType)) {
             interactionBuilder.setSource(SponsoredInteraction.SOURCE_SUGGEST);
+          } else if (DT_SEARCHWITH.equals(docType)) {
+            interactionBuilder.setSource(SponsoredInteraction.SOURCE_SEARCHWITH);
           } else {
             throw new InvalidAttributeException("Unexpected docType: " + docType, docType);
           }
