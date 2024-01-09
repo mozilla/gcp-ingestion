@@ -39,6 +39,13 @@ public class EmitCounters
             attributes.put(Attribute.DOCUMENT_NAMESPACE, interaction.getOriginalNamespace());
           }
 
+          String interactionType = interaction.getInteractionType();
+          if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interactionType)) {
+            PerDocTypeCounter.inc(attributes, "valid_impression_url");
+          } else if (SponsoredInteraction.INTERACTION_CLICK.equals(interactionType)) {
+            PerDocTypeCounter.inc(attributes, "valid_click_url");
+          }
+
           PerDocTypeCounter.inc(attributes, "valid_submission");
           if (interaction.getRequestId() != null) {
             PerDocTypeCounter.inc(attributes, "valid_submission_merino");
