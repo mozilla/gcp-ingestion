@@ -245,7 +245,7 @@ public class ParseUri {
     public static final String FUNNELCAKE = "funnelcake";
 
     public static final Pattern PING_VERSION_PATTERN = Pattern
-        .compile(String.format("^v(?<%s>[6-8])(-(?<%s>\\d+))?$", VERSION, FUNNELCAKE));
+        .compile(String.format("^v(?<%s>[6-9])(-(?<%s>\\d+))?$", VERSION, FUNNELCAKE));
 
     public static final Map<String, Integer> SUFFIX_LENGTH = ImmutableMap.of("6", 36, "7", 37, "8",
         39, "9", 41);
