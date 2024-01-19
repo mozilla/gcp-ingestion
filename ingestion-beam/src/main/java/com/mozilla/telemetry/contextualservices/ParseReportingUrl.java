@@ -144,17 +144,22 @@ public class ParseReportingUrl extends
             metrics = extractMetrics(metricSources, payload);
 
             // parse interaction type
-            String pingType = optionalNode(metrics.path("ping_type"))
-                .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
-            if (DT_TOPSITES_IMPRESSION.equals(pingType)
-                || DT_QUICKSUGGEST_IMPRESSION.equals(pingType)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
-            } else if (DT_TOPSITES_CLICK.equals(pingType)
-                || DT_QUICKSUGGEST_CLICK.equals(pingType)) {
+            if (DT_SEARCHWITH.equals(docType)) {
+              // search with doesn't have a pingType
               interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
             } else {
-              throw new InvalidAttributeException("Received unexpected ping_type: " + pingType,
-                  pingType);
+              String pingType = optionalNode(metrics.path("ping_type"))
+                  .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
+              if (DT_TOPSITES_IMPRESSION.equals(pingType)
+                  || DT_QUICKSUGGEST_IMPRESSION.equals(pingType)) {
+                interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
+              } else if (DT_TOPSITES_CLICK.equals(pingType)
+                  || DT_QUICKSUGGEST_CLICK.equals(pingType)) {
+                interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+              } else {
+                throw new InvalidAttributeException("Received unexpected ping_type: " + pingType,
+                    pingType);
+              }
             }
 
             // parse match_type for desktop
