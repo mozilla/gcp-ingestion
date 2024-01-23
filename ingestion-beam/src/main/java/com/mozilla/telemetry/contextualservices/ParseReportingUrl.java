@@ -135,6 +135,7 @@ public class ParseReportingUrl extends
           final ObjectNode metrics;
           if (NS_FOG.equals(namespace)) {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
+
             // determine metric sources from docType
             final List<String> metricSources = DT_TO_METRIC_SOURCES.getOrDefault(docType, null);
             if (metricSources == null) {
@@ -142,6 +143,7 @@ public class ParseReportingUrl extends
                   docType);
             }
             metrics = extractMetrics(metricSources, payload);
+
             // parse interaction type
             if (DT_SEARCHWITH.equals(docType)) {
               // search with doesn't have a pingType
