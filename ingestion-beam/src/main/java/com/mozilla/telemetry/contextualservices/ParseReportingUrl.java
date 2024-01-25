@@ -61,8 +61,10 @@ public class ParseReportingUrl extends
   private static final String NS_FOG = "firefox-desktop";
   private static final String DT_TOPSITES = "top-sites";
   private static final String DT_QUICKSUGGEST = "quick-suggest";
+  private static final String DT_SEARCHWITH = "search-with";
   private static final Map<String, List<String>> DT_TO_METRIC_SOURCES = ImmutableMap.of(DT_TOPSITES,
-      ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"));
+      ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"),
+      DT_SEARCHWITH, ImmutableList.of("search_with"));
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -143,17 +145,22 @@ public class ParseReportingUrl extends
             metrics = extractMetrics(metricSources, payload);
 
             // parse interaction type
-            String pingType = optionalNode(metrics.path("ping_type"))
-                .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
-            if (DT_TOPSITES_IMPRESSION.equals(pingType)
-                || DT_QUICKSUGGEST_IMPRESSION.equals(pingType)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
-            } else if (DT_TOPSITES_CLICK.equals(pingType)
-                || DT_QUICKSUGGEST_CLICK.equals(pingType)) {
+            if (DT_SEARCHWITH.equals(docType)) {
+              // search with doesn't have a pingType
               interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
             } else {
-              throw new InvalidAttributeException("Received unexpected ping_type: " + pingType,
-                  pingType);
+              String pingType = optionalNode(metrics.path("ping_type"))
+                  .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
+              if (DT_TOPSITES_IMPRESSION.equals(pingType)
+                  || DT_QUICKSUGGEST_IMPRESSION.equals(pingType)) {
+                interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
+              } else if (DT_TOPSITES_CLICK.equals(pingType)
+                  || DT_QUICKSUGGEST_CLICK.equals(pingType)) {
+                interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+              } else {
+                throw new InvalidAttributeException("Received unexpected ping_type: " + pingType,
+                    pingType);
+              }
             }
 
             // parse match_type for desktop
@@ -221,6 +228,8 @@ public class ParseReportingUrl extends
           } else if (DT_QUICKSUGGEST.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
               || DT_QUICKSUGGEST_CLICK.equals(docType)) {
             interactionBuilder.setSource(SponsoredInteraction.SOURCE_SUGGEST);
+          } else if (DT_SEARCHWITH.equals(docType)) {
+            interactionBuilder.setSource(SponsoredInteraction.SOURCE_SEARCHWITH);
           } else {
             throw new InvalidAttributeException("Unexpected docType: " + docType, docType);
           }
