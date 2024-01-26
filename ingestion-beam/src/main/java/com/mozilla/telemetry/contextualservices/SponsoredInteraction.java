@@ -15,9 +15,10 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public abstract class SponsoredInteraction implements Serializable {
 
   // These match the values from docType
-  // topsites, quicksuggest
+  // topsites, quicksuggest, searchwith
   public static final String SOURCE_TOPSITES = "topsites";
   public static final String SOURCE_SUGGEST = "quicksuggest";
+  public static final String SOURCE_SEARCHWITH = "searchwith";
 
   @Nullable
   abstract String getSource();

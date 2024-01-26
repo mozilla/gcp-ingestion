@@ -891,4 +891,50 @@ public class ParseReportingUrlTest {
 
     pipeline.run();
   }
+
+  @Test
+  public void testSearchWith() {
+    final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "search-with",
+        Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS, "Windows");
+
+    List<PubsubMessage> input = Stream
+        .of("https://moz.click.com/?param=1&id=a", "https://other.com?id=b").map(url -> {
+          final ObjectNode payload = Json.createObjectNode();
+          payload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+          payload.put(Attribute.VERSION, "87.0");
+          final ObjectNode metrics = payload.putObject("metrics");
+          metrics.putObject("url").put("search_with." + Attribute.REPORTING_URL, url);
+          return payload;
+        }).map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
+        .collect(Collectors.toList());
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(1, Iterators.size(messages.iterator()));
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(sponsoredInteractions -> {
+
+      List<SponsoredInteraction> payloads = new ArrayList<>();
+      sponsoredInteractions.forEach(payloads::add);
+
+      Assert.assertEquals("1 interaction in output", 1, payloads.size());
+
+      String reportingUrl = payloads.get(0).getReportingUrl();
+      System.out.println(reportingUrl);
+
+      Assert.assertTrue("reportingUrl starts with moz.impression.com",
+          reportingUrl.startsWith("https://moz.click.com/?"));
+      Assert.assertTrue(reportingUrl.contains("param=1"));
+      Assert.assertTrue(reportingUrl.contains("id=a"));
+
+      return null;
+    });
+
+    pipeline.run();
+  }
 }
