@@ -1465,8 +1465,7 @@ a <code>"payload"</code> field with base64 encoding, and each attribute encoded 
 This is the format used for <code>payload_bytes_raw.*</code> tables.</p>
 <p>When <code>OUTPUT_FORMAT</code> is <code>decoded</code> messages will have bytes encoded as with
 <code>OUTPUT_FORMAT=raw</code>, but attributes will be encoded using the nested metadata
-format of decoded pings. This is the format used for <code>payload_bytes_decoded.*</code>
-tables.</p>
+format of decoded pings. This format is currently unused.</p>
 <p>When <code>OUTPUT_FORMAT</code> is <code>payload</code> messages will have bytes decoded as JSON, and
 will be transformed to coerce types and use snake case for compatibility with BigQuery.
 This is the format used for <code>*_live.*</code> tables. This requires specifying a local
