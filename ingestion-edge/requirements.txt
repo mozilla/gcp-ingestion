@@ -653,9 +653,9 @@ pytest==7.4.2 \
     #   pytest-mypy
     #   pytest-pydocstyle
     #   pytest-timeout
-pytest-asyncio==0.21.1 \
-    --hash=sha256:40a7eae6dded22c7b604986855ea48400ab15b069ae38116e8c01238e9eeb64d \
-    --hash=sha256:8666c1c8ac02631d7c51ba282e0c69a8a452b211ffedf2599099845da5c5c37b
+pytest-asyncio==0.23.4 \
+    --hash=sha256:2143d9d9375bf372a73260e4114541485e84fca350b0b6b92674ca56ff5f7ea2 \
+    --hash=sha256:b0079dfac14b60cd1ce4691fbfb1748fe939db7d0234b5aba97197d10fbe0fef
     # via -r requirements.in
 pytest-black==0.3.12 \
     --hash=sha256:1d339b004f764d6cd0f06e690f6dd748df3d62e6fe1a692d6a5500ac2c5b75a5
