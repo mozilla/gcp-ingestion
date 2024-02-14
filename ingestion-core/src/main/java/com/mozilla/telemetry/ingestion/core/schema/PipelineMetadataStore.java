@@ -169,13 +169,10 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
       return new AutoValue_PipelineMetadataStore_PipelineMetadata.Builder();
     }
 
-    @Nullable
     public abstract String bq_dataset_family();
 
-    @Nullable
     public abstract String bq_table();
 
-    @Nullable
     public abstract String bq_metadata_format();
 
     @Nullable
