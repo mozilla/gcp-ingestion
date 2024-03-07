@@ -683,9 +683,9 @@ pytest-mypy==0.10.3 \
 pytest-pydocstyle==2.3.2 \
     --hash=sha256:a30b28d49607b2fcd7b24678ab6c4e27a288710a34b3a0f1f90f3497e88771c3
     # via -r requirements.in
-pytest-timeout==2.1.0 \
-    --hash=sha256:c07ca07404c612f8abbe22294b23c368e2e5104b521c1790195561f37e1ac3d9 \
-    --hash=sha256:f6f50101443ce70ad325ceb4473c4255e9d74e3c7cd0ef827309dfa4c0d975c6
+pytest-timeout==2.3.1 \
+    --hash=sha256:12397729125c6ecbdaca01035b9e5239d4db97352320af155b3f5de1ba5165d9 \
+    --hash=sha256:68188cb703edfc6a18fad98dc25a3c61e9f24d644b0b70f33af545219fc7813e
     # via -r requirements.in
 python-dateutil==2.8.2 \
     --hash=sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86 \
