@@ -295,6 +295,7 @@ public class ParseReportingUrl extends
     }
 
     if (ipReputation != null && ipReputation < IP_REPUTATION_THRESHOLD) {
+      PerDocTypeCounter.inc(attributes, "rejected_low_ip_reputation");
       builtUrl.addQueryParam(BuildReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
     }
   }
