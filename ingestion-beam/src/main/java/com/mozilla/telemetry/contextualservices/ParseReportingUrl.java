@@ -66,6 +66,13 @@ public class ParseReportingUrl extends
       ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"),
       DT_SEARCHWITH, ImmutableList.of("search_with"));
 
+  // namespaces and doctypes for Firefox Mobile glean telemetry
+  private static final String NS_IOS = "firefox-ios";
+  private static final String NS_ANDROID = "fenix";
+  private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
+  private static final String PT_MOBILE_QUICKSUGGEST_IMPRESSION = "fxsuggest-impression";
+  private static final String PT_MOBILE_QUICKSUGGEST_CLICK = "fxsuggest-click";
+
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
   private static final String OS_MAC = "Macintosh";
@@ -173,6 +180,14 @@ public class ParseReportingUrl extends
 
             // parse position for desktop.
             interactionBuilder.setPosition(parsePosition(payload).orElse("no_position"));
+          } else if (NS_IOS.equals(namespace) || NS_ANDROID.equals(namespace)) {
+            interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
+            metrics = extractMetrics(ImmutableList.of("fx_suggest"), payload);
+
+            String pingType = optionalNode(metrics.path("ping_type"))
+                .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
+
+            interactionBuilder.setInteractionType(extractInteractionType(pingType));
           } else {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
             // enforce that the only mobile docType is `topsites-impression`
@@ -449,7 +464,7 @@ public class ParseReportingUrl extends
     }
 
     if (DT_QUICKSUGGEST.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
-        || DT_QUICKSUGGEST_CLICK.equals(docType)) {
+        || DT_QUICKSUGGEST_CLICK.equals(docType) || DT_MOBILE_QUICKSUGGEST.equals(docType)) {
       return SponsoredInteraction.SOURCE_SUGGEST;
     }
 
@@ -462,12 +477,13 @@ public class ParseReportingUrl extends
 
   private static String extractInteractionType(String docType) {
     if (DT_TOPSITES_IMPRESSION.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
+        || PT_MOBILE_QUICKSUGGEST_IMPRESSION.equals(docType)
         || "contile_impression".equals(docType)) {
       return SponsoredInteraction.INTERACTION_IMPRESSION;
     }
 
     if (DT_TOPSITES_CLICK.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)
-        || "contile_click".equals(docType)) {
+        || PT_MOBILE_QUICKSUGGEST_CLICK.equals(docType) || "contile_click".equals(docType)) {
       return SponsoredInteraction.INTERACTION_CLICK;
     }
 

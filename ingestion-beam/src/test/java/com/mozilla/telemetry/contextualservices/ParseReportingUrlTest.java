@@ -729,7 +729,59 @@ public class ParseReportingUrlTest {
   }
 
   @Test
-  public void testMobilePings() {
+  public void testMobileSuggestPings() {
+    final String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
+
+    ObjectNode basePayload = Json.createObjectNode();
+    ObjectNode metrics = basePayload.putObject("metrics");
+    metrics.putObject("url").put("fx_suggest.reporting_url",
+        "https://test.com?v=a&adv-id=1&ctag=1&partner=1&version=1&sub2=1&sub1=1&ci=1&custom-data=1");
+    metrics.putObject("string").put("fx_suggest.ping_type", "fxsuggest-impression");
+    metrics.putObject("uuid").put("fx_suggest.context_id", contextId);
+
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "fx-suggest",
+        Attribute.DOCUMENT_NAMESPACE, "firefox-ios");
+
+    List<PubsubMessage> input = Stream.of(basePayload)
+        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
+        .collect(Collectors.toList());
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that("There are zero failures in the pipeline", result.failures())
+        .satisfies(messages -> {
+          Assert.assertEquals(0, Iterators.size(messages.iterator()));
+          return null;
+        });
+
+    PAssert.that("There is one result in the output and it matches expectations", result.output())
+        .satisfies(sponsoredInteractions -> {
+
+          List<SponsoredInteraction> payloads = new ArrayList<>();
+          sponsoredInteractions.forEach(payloads::add);
+
+          Assert.assertEquals("1 interaction in output", 1, payloads.size());
+
+          SponsoredInteraction interaction = payloads.get(0);
+
+          Assert.assertEquals("expect an impression interactionType",
+              SponsoredInteraction.INTERACTION_IMPRESSION, interaction.getInteractionType());
+
+          Assert.assertEquals("expect a suggest source", SponsoredInteraction.SOURCE_SUGGEST,
+              interaction.getSource());
+
+          Assert.assertEquals("expect context id to match", contextId, interaction.getContextId());
+
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testMobileTopSitesPings() {
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
