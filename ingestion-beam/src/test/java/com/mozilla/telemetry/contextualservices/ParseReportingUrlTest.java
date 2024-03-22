@@ -740,7 +740,7 @@ public class ParseReportingUrlTest {
     metrics.putObject("uuid").put("fx_suggest.context_id", contextId);
 
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "fx-suggest",
-        Attribute.DOCUMENT_NAMESPACE, "firefox-ios");
+        Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix");
 
     List<PubsubMessage> input = Stream.of(basePayload)
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
