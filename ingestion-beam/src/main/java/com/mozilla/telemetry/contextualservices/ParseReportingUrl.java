@@ -66,9 +66,7 @@ public class ParseReportingUrl extends
       ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"),
       DT_SEARCHWITH, ImmutableList.of("search_with"));
 
-  // namespaces and doctypes for Firefox Mobile glean telemetry
-  private static final String NS_IOS = "firefox-ios";
-  private static final String NS_ANDROID = "fenix";
+  // doctypes for Firefox Mobile glean telemetry
   private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
   private static final String PT_MOBILE_QUICKSUGGEST_IMPRESSION = "fxsuggest-impression";
   private static final String PT_MOBILE_QUICKSUGGEST_CLICK = "fxsuggest-click";
@@ -180,37 +178,45 @@ public class ParseReportingUrl extends
 
             // parse position for desktop.
             interactionBuilder.setPosition(parsePosition(payload).orElse("no_position"));
-          } else if (NS_IOS.equals(namespace) || NS_ANDROID.equals(namespace)) {
-            interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
-            metrics = extractMetrics(ImmutableList.of("fx_suggest"), payload);
-
-            String pingType = optionalNode(metrics.path("ping_type"))
-                .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
-
-            interactionBuilder.setInteractionType(extractInteractionType(pingType));
           } else {
+            // Namespace is one of the many mobile namespaces:
+            // * org-mozilla-fenix
+            // * org-mozilla-firefox
+            // * org-mozilla-firefox-beta
+            // * org-mozilla-ios-fennec
+            // * org-mozilla-ios-firefox
+            // * org-mozilla-ios-firefoxbeta
+
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
-            // enforce that the only mobile docType is `topsites-impression`
-            if (!DT_TOPSITES_IMPRESSION.equals(docType)) {
+
+            if (DT_MOBILE_QUICKSUGGEST.equals(docType)) {
+              metrics = extractMetrics(ImmutableList.of("fx_suggest"), payload);
+
+              String pingType = optionalNode(metrics.path("ping_type"))
+                  .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
+
+              interactionBuilder.setInteractionType(extractInteractionType(pingType));
+            } else if (DT_TOPSITES_IMPRESSION.equals(docType)) {
+              // iOS instrumentation named the metric category as "top_site" rather than
+              // "top_sites".
+              metrics = extractMetrics(ImmutableList.of("top_sites", "top_site"), payload);
+              ArrayNode events = payload.withArray("events");
+              if (events.size() != 1) {
+                throw new UnexpectedPayloadException("expect exactly 1 event in ping.");
+              }
+              JsonNode event = events.get(0);
+
+              // potential event names are `contile_impression` and `contile_click`
+              String eventName = event.path("name").asText();
+              interactionBuilder.setInteractionType(extractInteractionType(eventName));
+
+              // parse position for mobile
+              interactionBuilder
+                  .setPosition(parsePosition(event.path("extra")).orElse("no_position"));
+            } else {
               throw new InvalidAttributeException("Unexpected docType for mobile ping: " + docType,
                   docType);
             }
-
-            // iOS instrumentation named the metric category as "top_site" rather than "top_sites".
-            metrics = extractMetrics(ImmutableList.of("top_sites", "top_site"), payload);
-            ArrayNode events = payload.withArray("events");
-            if (events.size() != 1) {
-              throw new UnexpectedPayloadException("expect exactly 1 event in ping.");
-            }
-            JsonNode event = events.get(0);
-
-            // potential event names are `contile_impression` and `contile_click`
-            String eventName = event.path("name").asText();
-            interactionBuilder.setInteractionType(extractInteractionType(eventName));
-
-            // parse position for mobile
-            interactionBuilder
-                .setPosition(parsePosition(event.path("extra")).orElse("no_position"));
           }
 
           interactionBuilder.setScenario(parseScenario(metrics).orElse(null));
