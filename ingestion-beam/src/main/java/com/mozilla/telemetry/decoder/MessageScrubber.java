@@ -111,6 +111,11 @@ public class MessageScrubber {
       .put("com-internet-smartphonebrowser", "1864572") //
       .put("com-ecosia-ecosiaapp", "1883854") //
       .put("com-ecosia-ecosiaapp-firefox", "1883854") //
+      .put("org-luxxle-luxxle", "1884755") //
+      .put("net-decentr-ios-browser", "1884754") //
+      .put("com-immersivetranslate-immersive-translate-browser", "1884752") //
+      .put("com-immersivetranslate-browser", "1884751") //
+      .put("com-jio-web-ios", "1887756") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
