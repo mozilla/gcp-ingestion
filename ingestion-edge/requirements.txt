@@ -666,9 +666,9 @@ pytest-cov==5.0.0 \
     --hash=sha256:4f0764a1219df53214206bf1feea4633c3b558a2925c8b59f144f682861ce652 \
     --hash=sha256:5837b58e9f6ebd335b0f8060eecce69b662415b16dc503883a02f45dfeb14857
     # via -r requirements.in
-pytest-env==1.0.1 \
-    --hash=sha256:603fe216e8e03a5d134989cb41317c59aabef013d2250c71b864ab0798fbe6f6 \
-    --hash=sha256:e8faf927c6fcdbbc8fe3317506acc116713c9708d01652a0fd945f9ae27b71aa
+pytest-env==1.1.0 \
+    --hash=sha256:33a630a3db07068528c16f061350664d0146519824bd8c87b4cb120fff202ad9 \
+    --hash=sha256:86f2dbc05a78cfbb42a4be19e04fd7b4ef364127d0118af2f59b4dcccfd773bf
     # via -r requirements.in
 pytest-flake8==1.1.1 \
     --hash=sha256:ba4f243de3cb4c2486ed9e70752c80dd4b636f7ccb27d4eba763c35ed0cd316e \
@@ -805,6 +805,7 @@ tomli==2.0.1 \
     #   mypy
     #   pip-tools
     #   pytest
+    #   pytest-env
 types-protobuf==4.24.0.3 \
     --hash=sha256:048ca006a08ac0563ff04a86ddcdda6f8877b024f5ff89ed6180510b017c3a91 \
     --hash=sha256:6652be32c647a855cd9c01e6c556ecdc94988188c4de89942ad13e906537aaee
