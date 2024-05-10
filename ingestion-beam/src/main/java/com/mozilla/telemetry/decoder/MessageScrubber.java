@@ -116,6 +116,7 @@ public class MessageScrubber {
       .put("com-immersivetranslate-immersive-translate-browser", "1884752") //
       .put("com-immersivetranslate-browser", "1884751") //
       .put("com-jio-web-ios", "1887756") //
+      .put("com-pekobbrowser-unblocksites", "1896079") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
