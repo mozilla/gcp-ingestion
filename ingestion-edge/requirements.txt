@@ -314,11 +314,12 @@ google-auth==2.29.0 \
     --hash=sha256:d452ad095688cd52bae0ad6fafe027f6a6d6f560e810fec20914e17a09526415
     # via
     #   google-api-core
+    #   google-cloud-container
     #   google-cloud-monitoring
     #   kubernetes
-google-cloud-container==2.10.8 \
-    --hash=sha256:710e70140c20a93d8d4fe8d37ec835df003b38eabc6e4fd0211888b0ad99c89d \
-    --hash=sha256:b38f5126e362a5103f323c050c0e67278e6220dc34a2778fca6c09a1a18ab23b
+google-cloud-container==2.46.0 \
+    --hash=sha256:0864712af56ca81a4c14c57a5d95f89cb24da7f32e0872799303b265eb2af5c5 \
+    --hash=sha256:de46d9fb2db69a5f23e0d5637c4cf397525c02c6f2549182449ba2b6fecaee5c
     # via -r requirements.in
 google-cloud-monitoring==2.19.3 \
     --hash=sha256:37641e537986fd2227f8738b879d605a8cdf4c315cdc60e86e109347ab1ca1d7 \
@@ -338,9 +339,7 @@ googleapis-common-protos[grpc]==1.56.2 \
 grpc-google-iam-v1==0.12.4 \
     --hash=sha256:312801ae848aeb8408c099ea372b96d253077e7851aae1a9e745df984f81f20c \
     --hash=sha256:3f0ac2c940b9a855d7ce7e31fde28bddb0d9ac362d32d07c67148306931a0e30
-    # via
-    #   google-cloud-container
-    #   google-cloud-pubsub
+    # via google-cloud-pubsub
 grpcio==1.53.2 \
     --hash=sha256:07b83c06e7d113044cf3da15ca52f578c5f3dca299af711e9a589c1b71eb8be5 \
     --hash=sha256:0c9e42f2499c8603af1d88771dc97e2c6b0310c278337058fd7fd1ddb35ab853 \
