@@ -1,5 +1,5 @@
 aiohttp==3.9.5
-dockerflow==2022.8.0
+dockerflow==2024.4.2
 exceptiongroup  # for pytest on python<=3.10
 google-cloud-container==2.46.0
 google-cloud-monitoring==2.19.3
