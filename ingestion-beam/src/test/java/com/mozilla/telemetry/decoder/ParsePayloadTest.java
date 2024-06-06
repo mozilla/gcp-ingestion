@@ -341,7 +341,7 @@ public class ParsePayloadTest extends TestWithDeterministicJson {
         .apply(ParsePayload.of(schemasLocation));
 
     final List<String> expected = Arrays
-        .asList("{\"data\":{\"creation_date\": \"2024-01-01T12:00:00.000Z\"}}");
+        .asList("{\"data\":{\"creationDate\":\"2024-01-01T12:00:00.000Z\"}}");
 
     final PCollection<String> outputString = output.output().apply("decodePayload",
         MapElements.into(TypeDescriptors.strings()).via(m -> {
