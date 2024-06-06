@@ -1,0 +1,16 @@
+{
+  "$schema" : "http://json-schema.org/draft-04/schema#",
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "format",
+    "bq_metadata_format": "structured",
+    "bq_table": "datetime_v1"
+  },
+  "type" : "object",
+  "properties" : {
+    "creationDate": {
+      "format": "date-time",
+      "type": "string"
+    }
+  },
+  "required" : []
+}

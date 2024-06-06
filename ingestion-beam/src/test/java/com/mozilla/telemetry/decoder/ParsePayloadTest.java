@@ -15,6 +15,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
@@ -319,6 +320,45 @@ public class ParsePayloadTest extends TestWithDeterministicJson {
           return Json.asString(result);
         }));
     PAssert.that(failures).containsInAnyOrder(expectedError);
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testJsonFormatValidation() throws IOException {
+    String schemasLocation = TestConstant.SCHEMAS_LOCATION;
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
+
+    Map<String, String> attributes = ImmutableMap.of("document_namespace", "format",
+        "document_type", "datetime", "document_version", "1");
+
+    final List<PubsubMessage> input = Arrays.asList(
+        new PubsubMessage(Json.asBytes(ImmutableMap.of("creationDate", "2024-01-01T12:00:00.000Z")),
+            attributes),
+        new PubsubMessage(Json.asBytes(ImmutableMap.of("creationDate", "2024-01-01")), attributes));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline.apply(Create.of(input))
+        .apply(ParsePayload.of(schemasLocation));
+
+    final List<String> expected = Arrays
+        .asList("{\"data\":{\"creation_date\": \"2024-01-01T12:00:00.000Z\"}}");
+
+    final PCollection<String> outputString = output.output().apply("decodePayload",
+        MapElements.into(TypeDescriptors.strings()).via(m -> {
+          ObjectNode result = Json.createObjectNode();
+          try {
+            result.set("data", Json.readObjectNode(m.getPayload()));
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+          return Json.asString(result);
+        }));
+    PAssert.that(outputString).containsInAnyOrder(expected);
+
+    PCollection<String> exceptions = output.failures().apply(MapElements
+        .into(TypeDescriptors.strings()).via(message -> message.getAttribute("exception_class")));
+
+    PAssert.that(exceptions).containsInAnyOrder("org.everit.json.schema.ValidationException");
 
     pipeline.run();
   }
