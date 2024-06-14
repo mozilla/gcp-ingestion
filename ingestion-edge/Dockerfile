@@ -13,7 +13,7 @@ ENV VENV=false
 RUN bin/build
 
 FROM base
-RUN echo 'deb http://deb.debian.org/debian buster-backports main' >> /etc/apt/sources.list && \
+RUN echo 'deb http://archive.debian.org/debian buster-backports main' >> /etc/apt/sources.list && \
   apt-get update && \
   apt-get install -qqy --target-release buster-backports wrk
 COPY --from=build /usr/local /usr/local
