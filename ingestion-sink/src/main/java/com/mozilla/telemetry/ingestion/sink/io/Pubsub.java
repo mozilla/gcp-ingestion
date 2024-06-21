@@ -50,7 +50,8 @@ public class Pubsub {
               logger.error("failed to deliver message", exception.getCause());
               logger.error("failed message type: "
                   + message.getAttributesMap().getOrDefault(Attribute.DOCUMENT_NAMESPACE, "?") + "/"
-                  + message.getAttributesMap().getOrDefault(Attribute.DOCUMENT_TYPE, "?"));
+                  + message.getAttributesMap().getOrDefault(Attribute.DOCUMENT_TYPE, "?") + " "
+                  + message.getAttributesMap().getOrDefault(Attribute.SUBMISSION_TIMESTAMP, "?"));
             }
             consumer.nack();
           }
