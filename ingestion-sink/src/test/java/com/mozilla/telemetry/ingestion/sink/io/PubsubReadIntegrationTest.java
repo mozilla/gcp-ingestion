@@ -104,7 +104,9 @@ public class PubsubReadIntegrationTest {
     assertThat(logs.getListAppender("STDOUT").getMessages(),
         contains(containsString("java.lang.RuntimeException: batch"),
             containsString("java.lang.RuntimeException: single"),
-            containsString("java.lang.RuntimeException: single")));
+            containsString("failed message type: ?/?"),
+            containsString("java.lang.RuntimeException: single"),
+            containsString("failed message type: ?/?")));
   }
 
   @Rule
