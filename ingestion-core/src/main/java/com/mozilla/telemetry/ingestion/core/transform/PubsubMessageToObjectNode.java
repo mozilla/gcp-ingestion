@@ -436,7 +436,11 @@ public abstract class PubsubMessageToObjectNode {
 
         // A record of key and value indicates we need to transformForBqSchema a map to an array.
       } else if (isMapType(field)) {
-        expandMapType(jsonFieldName, (ObjectNode) value, field, parent, additionalProperties);
+        try {
+          expandMapType(jsonFieldName, (ObjectNode) value, field, parent, additionalProperties);
+        } catch (ClassCastException e) {
+          System.out.println(e);
+        }
 
         // A record with a single "list" field and a list value should be expanded appropriately.
       } else if (isNestedListType(field, value)) {

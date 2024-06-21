@@ -229,4 +229,42 @@ public class PubsubMessageToObjectNodeSinkTest {
           Json.asMap(transform.apply(input.get(i).getKey(), input.get(i).getValue())));
     }
   }
+
+  @Test
+  public void canHandleWeirdMetricsPayload() throws IOException {
+    PubsubMessageToObjectNode transform = PubsubMessageToObjectNode //
+        .Payload.of(ImmutableList.of("firefox_desktop/metrics"), TestConstant.SCHEMAS_LOCATION,
+            FileInputStream::new);
+
+    final List<Map.Entry<Map<String, String>, byte[]>> input;
+    final String inputPath = Resources.getResource("testdata/payload-weird-metrics-input.ndjson")
+        .getPath();
+    try (Stream<String> stream = Files.lines(Paths.get(inputPath))) {
+      input = stream.map(IOFunction.unchecked(Json::readObjectNode))
+          .flatMap(IOFunction.unchecked(PubsubMessageToObjectNodeSinkTest::asPubsubMessage))
+          .collect(Collectors.toList());
+    }
+
+    final List<Map<String, Object>> expected;
+    final String expectedPath = Resources
+        .getResource("testdata/payload-weird-metrics-expected.ndjson").getPath();
+    try (Stream<String> stream = Files.lines(Paths.get(expectedPath))) {
+      expected = stream.map(IOFunction.unchecked(Json::readObjectNode)).map(node -> {
+        // convert additional_properties to a json string if present
+        if (node.hasNonNull(FieldName.ADDITIONAL_PROPERTIES)) {
+          node.put(FieldName.ADDITIONAL_PROPERTIES,
+              Json.asString(node.get(FieldName.ADDITIONAL_PROPERTIES)));
+        }
+        return node;
+      }).map(IOFunction.unchecked(Json::asMap)).collect(Collectors.toList());
+    }
+
+    assertEquals(expected.size(), input.size());
+
+    for (int i = 0; i < expected.size(); i++) {
+      assertEquals(expected.get(i),
+          Json.asMap(transform.apply(input.get(i).getKey(), input.get(i).getValue())));
+    }
+  }
+
 }
