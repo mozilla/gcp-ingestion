@@ -46,7 +46,8 @@ public class Pubsub {
                   batchExc.getCause()));
             } else {
               // log exception specific to this message
-              logger.error("failed to deliver message", exception.getCause());
+              logger.error("failed to deliver message", exception.getCause(),
+                  exception.getStackTrace());
             }
             consumer.nack();
           }
