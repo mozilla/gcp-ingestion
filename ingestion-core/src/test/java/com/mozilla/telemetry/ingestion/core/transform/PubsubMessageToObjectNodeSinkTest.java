@@ -245,4 +245,12 @@ public class PubsubMessageToObjectNodeSinkTest {
 
   }
 
+  @Test
+  public void canFormatAsPayloadWithDuplicateNormalizedMapFieldName() throws IOException {
+    transformAndTestOutput(null,
+        "testdata/payload-format-duplicate-normalized-map-field-input.ndjson",
+        "testdata/payload-format-duplicate-normalized-map-field-expected.ndjson");
+
+  }
+
 }
