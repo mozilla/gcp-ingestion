@@ -71,6 +71,9 @@ public abstract class SponsoredInteraction implements Serializable {
   public static final String FX_SUGGEST = "reg";
 
   @Nullable
+  abstract String getAdvertiser();
+
+  @Nullable
   public abstract String getSubmissionTimestamp();
 
   @Nullable
@@ -131,6 +134,8 @@ public abstract class SponsoredInteraction implements Serializable {
     public abstract Builder setRequestId(String newRequestId);
 
     public abstract Builder setMatchType(String newMatchType);
+
+    public abstract Builder setAdvertiser(String newAdvertiser);
 
     public abstract Builder setSubmissionTimestamp(String newSubmissionTimestamp);
 

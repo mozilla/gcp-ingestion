@@ -70,13 +70,14 @@ public class ParseReportingUrlTest {
     metrics.putObject("quantity").put("quick_suggest.position", 1);
     final String contextId = "aaaa-bbb-ccc-000";
     metrics.putObject("uuid").put("quick_suggest.context_id", contextId);
+    metrics.putObject("string").put("quick_suggest.advertiser", "newAdvertiser");
 
     ObjectNode expect = Json.createObjectNode();
     expect.put("reporting_url", "http://click.com");
-    expect.put("ping_type", "quicksuggest-click");
     expect.put("improve_suggest_experience", false);
     expect.put("position", 1);
     expect.put("context_id", contextId);
+    expect.put("advertiser", "newAdvertiser");
     ObjectNode actual = ParseReportingUrl.extractMetrics(ImmutableList.of("quick_suggest"),
         payload);
     if (!expect.equals(actual)) {
@@ -508,6 +509,7 @@ public class ParseReportingUrlTest {
             stringMetrics.put(metricPrefix + "match_type",
                 scenario ? "firefox-suggest" : "best-match");
           }
+          stringMetrics.put(metricPrefix + "advertiser", "amazon");
           metrics.putObject("uuid").put(metricPrefix + Attribute.CONTEXT_ID, contextId);
           if (!"click".equals(interactionType) || scenario) {
             metrics.putObject("boolean").put(metricPrefix + "improve_suggest_experience", scenario);
@@ -523,7 +525,101 @@ public class ParseReportingUrlTest {
     // We expect 4 successful messages.
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
         .satisfies(sponsoredInteractions -> {
-          Assert.assertEquals(Iterables.size(sponsoredInteractions), 4);
+          Assert.assertEquals(4, Iterables.size(sponsoredInteractions));
+
+          long onlineInteractions = StreamSupport.stream(sponsoredInteractions.spliterator(), false)
+              .filter(interaction -> SponsoredInteraction.ONLINE.equals(interaction.getScenario()))
+              .count();
+
+          long offlineInteractions = StreamSupport
+              .stream(sponsoredInteractions.spliterator(), false)
+              .filter(interaction -> SponsoredInteraction.OFFLINE.equals(interaction.getScenario()))
+              .count();
+
+          long nullInteractions = StreamSupport.stream(sponsoredInteractions.spliterator(), false)
+              .filter(interaction -> interaction.getScenario() == null).count();
+
+          Assert.assertEquals(2, onlineInteractions);
+          Assert.assertEquals(1, offlineInteractions);
+          Assert.assertEquals(1, nullInteractions);
+
+          sponsoredInteractions.forEach(interaction -> {
+            String reportingUrl = interaction.getReportingUrl();
+            String doctype = interaction.getDerivedDocumentType();
+
+            if (doctype.equals("quicksuggest-impression")) {
+              if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
+                Assert.assertTrue(reportingUrl.contains(
+                    String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1_online_reg")));
+              } else {
+                Assert.assertTrue(reportingUrl.contains(
+                    String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1_offline_top")));
+              }
+            } else if (doctype.equals("quicksuggest-click")) {
+              if (SponsoredInteraction.ONLINE.equals(interaction.getScenario())) {
+                Assert.assertTrue(reportingUrl.contains(
+                    String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1_online")));
+              } else {
+                Assert.assertTrue(reportingUrl
+                    .contains(String.format("%s=%s", BuildReportingUrl.PARAM_CUSTOM_DATA, "1")));
+              }
+            }
+
+            Assert.assertEquals("Expect context-id to match", contextId,
+                interaction.getContextId());
+          });
+
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testCustomDataParamAmazon() {
+    final String clickUrl = "https://test.com?v=a&adv-id=1&ctag=1&partner=1&version=1&sub1=1&custom-data=1&ctaid=1&source=1";
+
+    final String impressionUrl = "https://test.com?v=a&id=a&adv-id=1&ctag=1&partner=1&version=1&sub2=1"
+        + "&sub1=1&ci=1&custom-data=1";
+
+    final String contextId = "aaaa-bbb-ccc-000";
+
+    List<PubsubMessage> input = Stream.of("impression", "click")
+        .flatMap(interactionType -> Stream.of(true, false).map(scenario -> {
+          final ObjectNode payload = Json.createObjectNode();
+          payload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+          payload.put(Attribute.VERSION, "116.0");
+          final ObjectNode metrics = payload.putObject("metrics");
+          final String metricPrefix = "quick_suggest.";
+          metrics.putObject("url").put(metricPrefix + Attribute.REPORTING_URL,
+              "click".equals(interactionType) ? clickUrl : impressionUrl);
+          final ObjectNode stringMetrics = metrics.putObject("string");
+          stringMetrics.put(metricPrefix + "ping_type", "quicksuggest-" + interactionType);
+          if ("click".equals(interactionType)) {
+            if (scenario) {
+              stringMetrics.putNull(metricPrefix + "match_type");
+            }
+          } else {
+            stringMetrics.put(metricPrefix + "match_type",
+                scenario ? "firefox-suggest" : "best-match");
+          }
+          stringMetrics.put(metricPrefix + "advertiser", "anAdvertiser");
+          metrics.putObject("uuid").put(metricPrefix + Attribute.CONTEXT_ID, contextId);
+          if (!"click".equals(interactionType) || scenario) {
+            metrics.putObject("boolean").put(metricPrefix + "improve_suggest_experience", scenario);
+          }
+          return new PubsubMessage(Json.asBytes(payload), ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+              "quick-suggest", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop"));
+        })).collect(Collectors.toList());
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    // We expect 4 successful messages.
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
+        .satisfies(sponsoredInteractions -> {
+          Assert.assertEquals(4, Iterables.size(sponsoredInteractions));
 
           long onlineInteractions = StreamSupport.stream(sponsoredInteractions.spliterator(), false)
               .filter(interaction -> SponsoredInteraction.ONLINE.equals(interaction.getScenario()))
@@ -587,7 +683,8 @@ public class ParseReportingUrlTest {
     inputPayload.put(Attribute.CONTEXT_ID, contextId);
 
     ObjectNode impressionPayload = inputPayload.put(Attribute.REPORTING_URL, impressionUrl);
-    ObjectNode clickPayload = inputPayload.put(Attribute.REPORTING_URL, clickUrl);
+    ObjectNode clickPayload = inputPayload.put(Attribute.REPORTING_URL, clickUrl)
+        .put(Attribute.ADVERTISER, "amazon");
     ImmutableMap impressionAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
         "quicksuggest" + "-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services");
     ImmutableMap clickAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quicksuggest-click",
@@ -614,7 +711,7 @@ public class ParseReportingUrlTest {
     // We expect 4 successful messages.
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
         .satisfies(sponsoredInteractions -> {
-          Assert.assertEquals(Iterables.size(sponsoredInteractions), 4);
+          Assert.assertEquals(4, Iterables.size(sponsoredInteractions));
 
           long onlineInteractions = StreamSupport.stream(sponsoredInteractions.spliterator(), false)
               .filter(interaction -> SponsoredInteraction.ONLINE.equals(interaction.getScenario()))
