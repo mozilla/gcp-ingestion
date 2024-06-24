@@ -576,7 +576,7 @@ public class ParseReportingUrlTest {
   }
 
   @Test
-  public void testCustomDataParamOtherAdvertisers() {
+  public void testCustomDataParamAmazon() {
     final String clickUrl = "https://test.com?v=a&adv-id=1&ctag=1&partner=1&version=1&sub1=1&custom-data=1&ctaid=1&source=1";
 
     final String impressionUrl = "https://test.com?v=a&id=a&adv-id=1&ctag=1&partner=1&version=1&sub2=1"
