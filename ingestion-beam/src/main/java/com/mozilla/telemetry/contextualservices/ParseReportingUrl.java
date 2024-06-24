@@ -546,6 +546,7 @@ public class ParseReportingUrl extends
         && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
       // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
       // Per https://mozilla-hub.atlassian.net/browse/AE-443
+      //AMP behaviour varies by advertiser name.
       if ("amazon".equals(interaction.getAdvertiser())) {
         requireParamPresent(builtUrl, "ctag");
         requireParamPresent(builtUrl, "custom-data");
