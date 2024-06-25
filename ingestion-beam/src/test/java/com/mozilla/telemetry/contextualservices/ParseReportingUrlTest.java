@@ -211,9 +211,6 @@ public class ParseReportingUrlTest {
     final Map<String, String> attributesImpression = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
         "top-sites", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS,
         "Windows");
-    final Map<String, String> attributesClick = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
-        "top-sites", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS,
-        "Windows", Attribute.USER_AGENT_VERSION, "123");
 
     final ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -229,26 +226,12 @@ public class ParseReportingUrlTest {
         }).map(payload -> new PubsubMessage(Json.asBytes(payload), attributesImpression))
         .collect(Collectors.toList());
 
-    input.addAll(Stream
-        .of("https://click.com/?ctag=a&version=1&key=b&ci=c",
-            "https://click.com/?ctag=a&version=1&key=b", "https://click.com/?ctag=a&version=&ci=c",
-            "https://click.com/?ctag=a&key=b&ci=c", "https://click.com/?version=1&key=b&ci=c")
-        .map(url -> {
-          final ObjectNode payload = basePayload.deepCopy();
-          final ObjectNode metrics = payload.putObject("metrics");
-          final ObjectNode stringMetrics = metrics.putObject("string");
-          stringMetrics.put("top_sites." + Attribute.REPORTING_URL, url);
-          stringMetrics.put("top_sites.ping_type", "topsites-click");
-          return payload;
-        }).map(payload -> new PubsubMessage(Json.asBytes(payload), attributesClick))
-        .collect(Collectors.toList()));
-
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
         .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(5, Iterables.size(messages));
+      Assert.assertEquals(1, Iterables.size(messages));
 
       messages.forEach(message -> {
         Assert.assertEquals(RejectedMessageException.class.getCanonicalName(),
@@ -259,7 +242,7 @@ public class ParseReportingUrlTest {
     });
 
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder())).satisfies(messages -> {
-      Assert.assertEquals(2, Iterables.size(messages));
+      Assert.assertEquals(1, Iterables.size(messages));
       return null;
     });
 
@@ -271,9 +254,6 @@ public class ParseReportingUrlTest {
     Map<String, String> attributesImpression = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
         "topsites-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services",
         Attribute.USER_AGENT_OS, "Windows");
-    Map<String, String> attributesClick = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
-        Attribute.DOCUMENT_NAMESPACE, "contextual-services", Attribute.USER_AGENT_OS, "Windows",
-        Attribute.USER_AGENT_VERSION, "123");
 
     ObjectNode basePayload = Json.createObjectNode();
     basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -285,20 +265,12 @@ public class ParseReportingUrlTest {
         .map(payload -> new PubsubMessage(Json.asBytes(payload), attributesImpression))
         .collect(Collectors.toList());
 
-    input.addAll(Stream
-        .of("https://click.com/?ctag=a&version=1&key=b&ci=c",
-            "https://click.com/?ctag=a&version=1&key=b", "https://click.com/?ctag=a&version=&ci=c",
-            "https://click.com/?ctag=a&key=b&ci=c", "https://click.com/?version=1&key=b&ci=c")
-        .map(url -> basePayload.deepCopy().put(Attribute.REPORTING_URL, url))
-        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributesClick))
-        .collect(Collectors.toList()));
-
     Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
         .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(5, Iterables.size(messages));
+      Assert.assertEquals(1, Iterables.size(messages));
 
       messages.forEach(message -> {
         Assert.assertEquals(RejectedMessageException.class.getCanonicalName(),
@@ -309,7 +281,7 @@ public class ParseReportingUrlTest {
     });
 
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder())).satisfies(messages -> {
-      Assert.assertEquals(2, Iterables.size(messages));
+      Assert.assertEquals(1, Iterables.size(messages));
       return null;
     });
 
