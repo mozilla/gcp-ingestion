@@ -535,14 +535,6 @@ public class ParseReportingUrl extends
   private static void validateRequiredParameters(BuildReportingUrl builtUrl,
       SponsoredInteraction interaction) {
     if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-      requireParamPresent(builtUrl, "ctag");
-      requireParamPresent(builtUrl, "version");
-      requireParamPresent(builtUrl, "key");
-      requireParamPresent(builtUrl, "ci");
-    }
-
-    if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
         && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
       // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
       // Per https://mozilla-hub.atlassian.net/browse/AE-443
