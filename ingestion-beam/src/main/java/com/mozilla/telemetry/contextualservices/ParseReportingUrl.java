@@ -545,10 +545,7 @@ public class ParseReportingUrl extends
         requireParamPresent(builtUrl, "sub1");
         requireParamPresent(builtUrl, "sub2");
       } else {
-        requireParamPresent(builtUrl, "partner");
         requireParamPresent(builtUrl, "sub1");
-        requireParamPresent(builtUrl, "ctaid");
-        requireParamPresent(builtUrl, "source");
         requireParamPresent(builtUrl, "custom-data");
         requireParamPresent(builtUrl, "ctag");
       }
