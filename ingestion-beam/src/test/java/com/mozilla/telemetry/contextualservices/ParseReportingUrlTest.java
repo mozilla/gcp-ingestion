@@ -207,88 +207,6 @@ public class ParseReportingUrlTest {
   }
 
   @Test
-  public void testRequiredParamCheck() {
-    final Map<String, String> attributesImpression = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
-        "top-sites", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS,
-        "Windows");
-
-    final ObjectNode basePayload = Json.createObjectNode();
-    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
-    basePayload.put(Attribute.VERSION, "87.0");
-
-    List<PubsubMessage> input = Stream
-        .of("https://moz.impression.com/?id=a", "https://moz.impression.com/?").map(url -> {
-          final ObjectNode payload = basePayload.deepCopy();
-          final ObjectNode metrics = payload.putObject("metrics");
-          metrics.putObject("url").put("top_sites." + Attribute.REPORTING_URL, url);
-          metrics.putObject("string").put("top_sites.ping_type", "topsites-impression");
-          return payload;
-        }).map(payload -> new PubsubMessage(Json.asBytes(payload), attributesImpression))
-        .collect(Collectors.toList());
-
-    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
-        .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
-
-    PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-
-      messages.forEach(message -> {
-        Assert.assertEquals(RejectedMessageException.class.getCanonicalName(),
-            message.getAttribute("exception_class"));
-      });
-
-      return null;
-    });
-
-    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder())).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-      return null;
-    });
-
-    pipeline.run();
-  }
-
-  @Test
-  public void testLegacyRequiredParamCheck() {
-    Map<String, String> attributesImpression = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
-        "topsites-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services",
-        Attribute.USER_AGENT_OS, "Windows");
-
-    ObjectNode basePayload = Json.createObjectNode();
-    basePayload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
-    basePayload.put(Attribute.VERSION, "87.0");
-
-    List<PubsubMessage> input = Stream
-        .of("https://moz.impression.com/?id=a", "https://moz.impression.com/?")
-        .map(url -> basePayload.deepCopy().put(Attribute.REPORTING_URL, url))
-        .map(payload -> new PubsubMessage(Json.asBytes(payload), attributesImpression))
-        .collect(Collectors.toList());
-
-    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
-        .apply(Create.of(input)) //
-        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
-
-    PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-
-      messages.forEach(message -> {
-        Assert.assertEquals(RejectedMessageException.class.getCanonicalName(),
-            message.getAttribute("exception_class"));
-      });
-
-      return null;
-    });
-
-    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder())).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-      return null;
-    });
-
-    pipeline.run();
-  }
-
-  @Test
   public void testDmaCode() {
     final String contextId = "aaaa-bbb-ccc-000";
 
@@ -333,17 +251,14 @@ public class ParseReportingUrlTest {
         .apply(Create.of(input)) //
         .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
-    // We expect this test url to fail for suggest impressions and clicks as of
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-    // so we get 2 failures and 3 successful messages.
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterators.size(messages.iterator()));
+      Assert.assertEquals(0, Iterators.size(messages.iterator()));
       return null;
     });
 
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
         .satisfies(sponsoredInteractions -> {
-          Assert.assertEquals(Iterables.size(sponsoredInteractions), 3);
+          Assert.assertEquals(Iterables.size(sponsoredInteractions), 5);
 
           sponsoredInteractions.forEach(interaction -> {
             String reportingUrl = interaction.getReportingUrl();
@@ -412,17 +327,14 @@ public class ParseReportingUrlTest {
         .apply(Create.of(input)) //
         .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
 
-    // We expect this test url to fail for suggest impressions and clicks as of
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-    // so we get 2 failures and 3 successful messages.
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterators.size(messages.iterator()));
+      Assert.assertEquals(0, Iterators.size(messages.iterator()));
       return null;
     });
 
     PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
         .satisfies(sponsoredInteractions -> {
-          Assert.assertEquals(Iterables.size(sponsoredInteractions), 3);
+          Assert.assertEquals(Iterables.size(sponsoredInteractions), 5);
 
           sponsoredInteractions.forEach(interaction -> {
             String reportingUrl = interaction.getReportingUrl();

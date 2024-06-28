@@ -248,9 +248,6 @@ public class ParseReportingUrl extends
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
-          // ensure parameters based on source and interaction type
-          validateRequiredParameters(builtUrl, interaction);
-
           // We only add these dimensions for topsites, not quicksuggest per
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
           if (SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
@@ -530,49 +527,6 @@ public class ParseReportingUrl extends
       singletonAllowedClickUrls = allowedClickUrls;
     }
     return Arrays.asList(singletonAllowedClickUrls, singletonAllowedImpressionUrls);
-  }
-
-  private static void validateRequiredParameters(BuildReportingUrl builtUrl,
-      SponsoredInteraction interaction) {
-    if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-      // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-      // Per https://mozilla-hub.atlassian.net/browse/AE-443
-      // AMP behaviour varies by advertiser name.
-      if ("amazon".equals(interaction.getAdvertiser())) {
-        requireParamPresent(builtUrl, "ctag");
-        requireParamPresent(builtUrl, "custom-data");
-        requireParamPresent(builtUrl, "sub1");
-        requireParamPresent(builtUrl, "sub2");
-      } else {
-        requireParamPresent(builtUrl, "sub1");
-        requireParamPresent(builtUrl, "custom-data");
-        requireParamPresent(builtUrl, "ctag");
-      }
-    }
-
-    if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-      requireParamPresent(builtUrl, "id");
-    }
-
-    if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-      // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-      requireParamPresent(builtUrl, "custom-data");
-      requireParamPresent(builtUrl, "sub1");
-      requireParamPresent(builtUrl, "sub2");
-      requireParamPresent(builtUrl, "partner");
-      requireParamPresent(builtUrl, "adv-id");
-      requireParamPresent(builtUrl, "v");
-    }
-  }
-
-  private static void requireParamPresent(BuildReportingUrl reportingUrl, String paramName) {
-    if (reportingUrl.getQueryParam(paramName) == null) {
-      throw new RejectedMessageException("Missing required url query parameter: " + paramName,
-          paramName);
-    }
   }
 
   @VisibleForTesting
