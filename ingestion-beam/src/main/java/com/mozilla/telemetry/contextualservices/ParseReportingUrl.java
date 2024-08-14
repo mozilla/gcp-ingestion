@@ -167,6 +167,9 @@ public class ParseReportingUrl extends
 
             // parse position
             interactionBuilder.setPosition(parsePosition(metrics).orElse("no_position"));
+
+            // parse advertiser
+            interactionBuilder.setAdvertiser(parseAdvertiser(metrics).orElse(null));
           } else if (NS_DESKTOP.equals(namespace)) {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
             metrics = payload;
@@ -178,6 +181,9 @@ public class ParseReportingUrl extends
 
             // parse position for desktop.
             interactionBuilder.setPosition(parsePosition(payload).orElse("no_position"));
+
+            // parse advertiser
+            interactionBuilder.setAdvertiser(parseAdvertiser(metrics).orElse(null));
           } else {
             // Namespace is one of the many mobile namespaces:
             // * org-mozilla-fenix
@@ -241,9 +247,6 @@ public class ParseReportingUrl extends
             throw new BuildReportingUrl.InvalidUrlException(
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
-
-          // ensure parameters based on source and interaction type
-          validateRequiredParameters(builtUrl, interaction);
 
           // We only add these dimensions for topsites, not quicksuggest per
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
@@ -454,6 +457,10 @@ public class ParseReportingUrl extends
     return optionalNode(metrics.path(Attribute.POSITION)).map(JsonNode::asText);
   }
 
+  private Optional<String> parseAdvertiser(JsonNode metrics) {
+    return optionalNode(metrics.path(Attribute.ADVERTISER)).map(JsonNode::asText);
+  }
+
   private String extractReportingUrl(ObjectNode metrics) {
     return optionalNode(metrics.path(Attribute.REPORTING_URL),
         metrics.path("contile_reporting_url")).map(JsonNode::asText).orElse("");
@@ -520,49 +527,6 @@ public class ParseReportingUrl extends
       singletonAllowedClickUrls = allowedClickUrls;
     }
     return Arrays.asList(singletonAllowedClickUrls, singletonAllowedImpressionUrls);
-  }
-
-  private static void validateRequiredParameters(BuildReportingUrl builtUrl,
-      SponsoredInteraction interaction) {
-    if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-      requireParamPresent(builtUrl, "ctag");
-      requireParamPresent(builtUrl, "version");
-      requireParamPresent(builtUrl, "key");
-      requireParamPresent(builtUrl, "ci");
-    }
-
-    if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-      // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-      requireParamPresent(builtUrl, "ctag");
-      requireParamPresent(builtUrl, "custom-data");
-      requireParamPresent(builtUrl, "sub1");
-      requireParamPresent(builtUrl, "sub2");
-    }
-
-    if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-      requireParamPresent(builtUrl, "id");
-    }
-
-    if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interaction.getInteractionType())
-        && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-      // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-      requireParamPresent(builtUrl, "custom-data");
-      requireParamPresent(builtUrl, "sub1");
-      requireParamPresent(builtUrl, "sub2");
-      requireParamPresent(builtUrl, "partner");
-      requireParamPresent(builtUrl, "adv-id");
-      requireParamPresent(builtUrl, "v");
-    }
-  }
-
-  private static void requireParamPresent(BuildReportingUrl reportingUrl, String paramName) {
-    if (reportingUrl.getQueryParam(paramName) == null) {
-      throw new RejectedMessageException("Missing required url query parameter: " + paramName,
-          paramName);
-    }
   }
 
   @VisibleForTesting
