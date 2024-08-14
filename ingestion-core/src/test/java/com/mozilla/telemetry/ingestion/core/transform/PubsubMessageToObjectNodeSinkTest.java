@@ -242,15 +242,10 @@ public class PubsubMessageToObjectNodeSinkTest {
     transformAndTestOutput(null,
         "testdata/payload-format-duplicate-normalized-field-names-input.ndjson",
         "testdata/payload-format-duplicate-normalized-field-names-expected.ndjson");
-
-  }
-
-  @Test
-  public void canFormatAsPayloadWithDuplicateNormalizedMapFieldName() throws IOException {
+    // This is the failure scenario discovered in
+    // https://github.com/mozilla/gcp-ingestion/issues/2609
     transformAndTestOutput(null,
         "testdata/payload-format-duplicate-normalized-map-field-input.ndjson",
         "testdata/payload-format-duplicate-normalized-map-field-expected.ndjson");
-
   }
-
 }
