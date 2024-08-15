@@ -1,1 +1,1 @@
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.map":{"key":"value"},"test_map":{"key":"value"}}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.map":{"key":"value"},"test_map":{"key":"lost_value"}}}

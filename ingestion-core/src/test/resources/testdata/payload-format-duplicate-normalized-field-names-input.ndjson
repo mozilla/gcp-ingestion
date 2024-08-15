@@ -1,10 +1,10 @@
-{"attributeMap":{"document_namespace":"namespace_0","document_type":"bar","document_version":"1"},"payload":{"payload":{"test_int":-2, "test.int":-2}}}
-{"attributeMap":{"document_namespace":"namespace_0","document_type":"bar","document_version":"1"},"payload":{"payload":{"test.int":-2, "test_int":-2}}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"field":"value"}],"test.repeated_record":[{"field":"value"}],"test_record":{"key":"value"},"test.record":{"key":"value"}}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.repeated_record":[{"field":"value"}],"test_repeated_record":[{"field":"value"}],"test.record":{"key":"value"},"test_record":{"key":"value"}}}
+{"attributeMap":{"document_namespace":"namespace_0","document_type":"bar","document_version":"1"},"payload":{"payload":{"test_int":-3, "test.int":-2}}}
+{"attributeMap":{"document_namespace":"namespace_0","document_type":"bar","document_version":"1"},"payload":{"payload":{"test.int":-2, "test_int":-3}}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"field":"lost_value"}],"test.repeated_record":[{"field":"value"}],"test_record":{"key":"lost_value"},"test.record":{"key":"value"}}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.repeated_record":[{"field":"value"}],"test_repeated_record":[{"field":"lost_value"}],"test.record":{"key":"value"},"test_record":{"key":"lost_value"}}}
 {"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_record":[{"field":"value"},{"reject":"value","alsoReject":null},{"field":null}]}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_tuple":[["string",5,true]],"test.repeated_tuple":[["string",5,true]]}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.repeated_tuple":[["string",5,true]],"test_repeated_tuple":[["string",5,true]]}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_tuple":["string",5,true],"test.tuple":["string",5,true]}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.tuple":["string",5,true],"test_tuple":["string",5,true]}}
-{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_map":{"key":"value"},"test.map":{"key":"value"}}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_repeated_tuple":[["string",4,true]],"test.repeated_tuple":[["string",5,true]]}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.repeated_tuple":[["string",5,true]],"test_repeated_tuple":[["string",4,true]]}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_tuple":["string",4,true],"test.tuple":["string",5,true]}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test.tuple":["string",5,true],"test_tuple":["string",4,true]}}
+{"attributeMap":{"document_namespace":"live-sink","document_type":"test","document_version":"1"},"payload":{"test_map":{"key":"lost_value"},"test.map":{"key":"value"}}}
