@@ -309,6 +309,7 @@ public abstract class PubsubMessageToObjectNode {
     protected void incrementNotCoercedToInt() {
     }
 
+    /** measure rate of CoercedToFloat. */
     protected void incrementCoercedToFloat() {
     }
 
