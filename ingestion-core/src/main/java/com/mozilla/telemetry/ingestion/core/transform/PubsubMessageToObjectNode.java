@@ -171,6 +171,10 @@ public abstract class PubsubMessageToObjectNode {
           "The number of values coerced to integers", "1");
       private static final MeasureLong NOT_COERCED_TO_INT = MeasureLong.create("not_coerced_to_int",
           "The number of values that failed to be coerced to int", "1");
+      private static final MeasureLong COERCED_TO_FLOAT = MeasureLong.create("coerced_to_float",
+          "The number of values coerced to floats", "1");
+      private static final MeasureLong NOT_COERCED_TO_FLOAT = MeasureLong.create(
+          "not_coerced_to_float", "The number of values that failed to be coerced to float", "1");
       private static final MeasureLong NOT_COERCED_TO_BOOL = MeasureLong.create(
           "not_coerced_to_bool", "The number of values that failed to be coerced to bool", "1");
       private static final MeasureLong INVALID_HISTOGRAM_TYPE = MeasureLong.create(
@@ -196,7 +200,7 @@ public abstract class PubsubMessageToObjectNode {
       private static void setupOpenCensus() {
         ViewManager viewManager = Stats.getViewManager();
         for (MeasureLong measure : ImmutableList.of(COERCED_TO_INT, NOT_COERCED_TO_INT,
-            NOT_COERCED_TO_BOOL)) {
+            COERCED_TO_FLOAT, NOT_COERCED_TO_FLOAT, NOT_COERCED_TO_BOOL)) {
           viewManager.registerView(View.create(Name.create(measure.getName()),
               measure.getDescription(), measure, COUNT_AGGREGATION, ImmutableList.of()));
         }
@@ -212,6 +216,18 @@ public abstract class PubsubMessageToObjectNode {
       @Override
       protected void incrementNotCoercedToInt() {
         STATS_RECORDER.newMeasureMap().put(NOT_COERCED_TO_INT, 1).record();
+      }
+
+      /** measure rate of CoercedToFloat. */
+      @Override
+      protected void incrementCoercedToFloat() {
+        STATS_RECORDER.newMeasureMap().put(COERCED_TO_FLOAT, 1).record();
+      }
+
+      /** measure rate of NotCoercedToFloat. */
+      @Override
+      protected void incrementNotCoercedToFloat() {
+        STATS_RECORDER.newMeasureMap().put(NOT_COERCED_TO_FLOAT, 1).record();
       }
 
       /** measure rate of NotCoercedToBool. */
@@ -291,6 +307,14 @@ public abstract class PubsubMessageToObjectNode {
 
     /** measure rate of NotCoercedToInt. */
     protected void incrementNotCoercedToInt() {
+    }
+
+    /** measure rate of CoercedToFloat. */
+    protected void incrementCoercedToFloat() {
+    }
+
+    /** measure rate of NotCoercedToFloat. */
+    protected void incrementNotCoercedToFloat() {
     }
 
     /** measure rate of NotCoercedToBool. */
@@ -666,6 +690,21 @@ public abstract class PubsubMessageToObjectNode {
           return Optional.of(IntNode.valueOf(o.asBoolean() ? 1 : 0));
         } else {
           incrementNotCoercedToInt();
+          return Optional.empty();
+        }
+        // Our BigQuery schemas use Standard SQL type names, but the BQ API expects legacy SQL
+        // type names, so we may end up with technically invalid types of FLOAT that we need to
+        // check for.
+      } else if (field.getType() == LegacySQLTypeName.FLOAT
+          || StandardSQLTypeName.FLOAT64.name().equals(field.getType().name())) {
+        if (o.isNumber()) {
+          return Optional.of(o);
+        } else if (o.isBoolean()) {
+          incrementCoercedToFloat();
+          // We assume that false is equivalent to zero and true to 1.
+          return Optional.of(IntNode.valueOf(o.asBoolean() ? 1 : 0));
+        } else {
+          incrementNotCoercedToFloat();
           return Optional.empty();
         }
         // Our BigQuery schemas use Standard SQL type names, but the BQ API expects legacy SQL
