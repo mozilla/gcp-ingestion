@@ -1,0 +1,10 @@
+{"additional_properties":{},"payload":{"test_int":-2}}
+{"additional_properties":{},"payload":{"test_int":-2}}
+{"additional_properties":{},"test_repeated_record":[{"field":"value"}],"test_record":{"key":"value"}}
+{"additional_properties":{},"test_repeated_record":[{"field":"value"}],"test_record":{"key":"value"}}
+{"additional_properties":{"test_repeated_record":[{},{"reject":"value","alsoReject":null},{}]},"test_repeated_record":[{"field":"value"},{},{}]}
+{"additional_properties":{},"test_repeated_tuple":[{"f0_":"string","f1_":5,"f2_":true}]}
+{"additional_properties":{},"test_repeated_tuple":[{"f0_":"string","f1_":5,"f2_":true}]}
+{"additional_properties":{},"test_tuple":{"f0_":"string","f1_":5,"f2_":true}}
+{"additional_properties":{},"test_tuple":{"f0_":"string","f1_":5,"f2_":true}}
+{"additional_properties":{},"test_map":[{"key":"key","value":"value"}]}
