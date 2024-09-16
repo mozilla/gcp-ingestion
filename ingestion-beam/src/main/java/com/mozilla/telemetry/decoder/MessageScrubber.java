@@ -119,6 +119,7 @@ public class MessageScrubber {
       .put("com-pekobbrowser-unblocksites", "1896079") //
       .put("com-eusoft-trans-en", "1902673") //
       .put("com-goodtoolapps-zeus", "1907131") //
+      .put("io-orbitmobile-firefox", "1919089") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
