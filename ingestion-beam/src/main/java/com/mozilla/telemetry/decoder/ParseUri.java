@@ -289,7 +289,7 @@ public class ParseUri {
         putString("download_ip"), putString("attribution"),
         putIntegerAsString("profile_cleanup_prompt"), putBool("profile_cleanup_requested"),
         putString("distribution_id"), putString("distribution_version"),
-        putString("stub_build_id"));
+        putInteger("windows_ubr"), putString("stub_build_id"));
 
     private static BiConsumer<String, ObjectNode> ignore() {
       return (value, payload) -> {
