@@ -34,34 +34,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setGeoIspDatabase(String value);
 
-  @Description("If set to true, enable decryption of Pioneer payloads.")
-  @Default.Boolean(false)
-  Boolean getPioneerEnabled();
-
-  void setPioneerEnabled(Boolean value);
-
-  @Description("Path (local or gs://) to JSON array of metadata entries enumerating encrypted"
-      + " private keys, Cloud KMS resource ids for decrypting those keys, and their corresponding"
-      + " document namespaces; this must be set if Pioneer is enabled.")
-  String getPioneerMetadataLocation();
-
-  void setPioneerMetadataLocation(String value);
-
-  @Description("If set to true, assume that all private keys are encrypted with the associated"
-      + " KMS resourceId. Otherwise ignore KMS and assume all private keys are stored in plaintext."
-      + " This may be used for debugging.")
-  @Default.Boolean(true)
-  Boolean getPioneerKmsEnabled();
-
-  void setPioneerKmsEnabled(Boolean value);
-
-  @Hidden
-  @Description("Decompress pioneer pings.")
-  @Default.Boolean(true)
-  Boolean getPioneerDecompressPayload();
-
-  void setPioneerDecompressPayload(Boolean value);
-
   @Description("If set to true, enable decryption of Account Ecosystem Telemetry identifiers.")
   @Default.Boolean(false)
   Boolean getAetEnabled();
