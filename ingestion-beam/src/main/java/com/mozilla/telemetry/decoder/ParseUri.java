@@ -288,7 +288,7 @@ public class ParseUri {
         putBoolPerCode(ImmutableMap.of("set_default", 2)), //
         putString("download_ip"), putString("attribution"),
         putIntegerAsString("profile_cleanup_prompt"), putBool("profile_cleanup_requested"),
-        putString("distribution_id"), putString("distribution_version"),
+        putString("distribution_id"), putString("distribution_version"), //
         putInteger("windows_ubr"), putString("stub_build_id"));
 
     private static BiConsumer<String, ObjectNode> ignore() {
