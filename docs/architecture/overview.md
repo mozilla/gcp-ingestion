@@ -10,7 +10,7 @@ This document specifies the architecture for GCP Ingestion as a whole.
   Firefox) to a set of PubSub `Raw Topics`, routing messages based on `uri`
 - `Raw Topics` are the first layer of a "pipeline family"; the diagram shows
   only the "structured" pipeline family, but there are also deployments
-  for "telemetry", "stub-installer", and "pioneer"
+  for "telemetry" and "stub-installer"
 - The `Raw Sink` job copies messages from a PubSub `Raw Topic` to
   `BigQuery`
 - The Dataflow `Decoder` job decodes messages from the PubSub `Raw Topic` to
