@@ -90,6 +90,9 @@ public class FilterByDocType
         } else if ("top-sites".equals(doctype) || "quick-suggest".equals(doctype)) {
           minVersion = 116;
           isLegacyDesktop = false;
+        } else if ("search-with".equals(doctype)) {
+          minVersion = 122;
+          isLegacyDesktop = false;
         } else {
           PerDocTypeCounter.inc(message.getAttributeMap(), "doctype_filter_unhandled");
           return; // drop message

@@ -61,8 +61,15 @@ public class ParseReportingUrl extends
   private static final String NS_FOG = "firefox-desktop";
   private static final String DT_TOPSITES = "top-sites";
   private static final String DT_QUICKSUGGEST = "quick-suggest";
+  private static final String DT_SEARCHWITH = "search-with";
   private static final Map<String, List<String>> DT_TO_METRIC_SOURCES = ImmutableMap.of(DT_TOPSITES,
-      ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"));
+      ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"),
+      DT_SEARCHWITH, ImmutableList.of("search_with"));
+
+  // doctypes for Firefox Mobile glean telemetry
+  private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
+  private static final String PT_MOBILE_QUICKSUGGEST_IMPRESSION = "fxsuggest-impression";
+  private static final String PT_MOBILE_QUICKSUGGEST_CLICK = "fxsuggest-click";
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -143,87 +150,85 @@ public class ParseReportingUrl extends
             metrics = extractMetrics(metricSources, payload);
 
             // parse interaction type
-            String pingType = optionalNode(metrics.path("ping_type"))
-                .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
-            if (DT_TOPSITES_IMPRESSION.equals(pingType)
-                || DT_QUICKSUGGEST_IMPRESSION.equals(pingType)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
-            } else if (DT_TOPSITES_CLICK.equals(pingType)
-                || DT_QUICKSUGGEST_CLICK.equals(pingType)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
+            final String interactionType;
+            if (DT_SEARCHWITH.equals(docType)) {
+              // search with doesn't have a pingType
+              interactionType = SponsoredInteraction.INTERACTION_CLICK;
             } else {
-              throw new InvalidAttributeException("Received unexpected ping_type: " + pingType,
-                  pingType);
+              String pingType = optionalNode(metrics.path("ping_type"))
+                  .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
+
+              interactionType = extractInteractionType(pingType);
             }
+            interactionBuilder.setInteractionType(interactionType);
 
             // parse match_type for desktop
             interactionBuilder.setMatchType(parseMatchType(metrics).orElse(null));
 
             // parse position
             interactionBuilder.setPosition(parsePosition(metrics).orElse("no_position"));
+
+            // parse advertiser
+            interactionBuilder.setAdvertiser(parseAdvertiser(metrics).orElse(null));
           } else if (NS_DESKTOP.equals(namespace)) {
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_DESKTOP);
             metrics = payload;
-            // potential docTypes here are
-            // `topsites-impression`, `topsites-click`
-            // `quicksuggest-impression`, `quicksuggest-click`
-            if (DT_TOPSITES_IMPRESSION.equals(docType)
-                || DT_QUICKSUGGEST_IMPRESSION.equals(docType)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
-            } else if (DT_TOPSITES_CLICK.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
-            } else {
-              throw new InvalidAttributeException("Received unexpected docType: " + docType,
-                  docType);
-            }
+
+            interactionBuilder.setInteractionType(extractInteractionType(docType));
 
             // parse match_type for desktop
             interactionBuilder.setMatchType(parseMatchType(payload).orElse(null));
 
             // parse position for desktop.
             interactionBuilder.setPosition(parsePosition(payload).orElse("no_position"));
+
+            // parse advertiser
+            interactionBuilder.setAdvertiser(parseAdvertiser(metrics).orElse(null));
           } else {
+            // Namespace is one of the many mobile namespaces:
+            // * org-mozilla-fenix
+            // * org-mozilla-firefox
+            // * org-mozilla-firefox-beta
+            // * org-mozilla-ios-fennec
+            // * org-mozilla-ios-firefox
+            // * org-mozilla-ios-firefoxbeta
+
             interactionBuilder.setFormFactor(SponsoredInteraction.FORM_PHONE);
-            // enforce that the only mobile docType is `topsites-impression`
-            if (!DT_TOPSITES_IMPRESSION.equals(docType)) {
+
+            if (DT_MOBILE_QUICKSUGGEST.equals(docType)) {
+              metrics = extractMetrics(ImmutableList.of("fx_suggest"), payload);
+
+              String pingType = optionalNode(metrics.path("ping_type"))
+                  .orElseThrow(() -> new InvalidAttributeException("Missing ping_type")).asText();
+
+              interactionBuilder.setInteractionType(extractInteractionType(pingType));
+            } else if (DT_TOPSITES_IMPRESSION.equals(docType)) {
+              // iOS instrumentation named the metric category as "top_site" rather than
+              // "top_sites".
+              metrics = extractMetrics(ImmutableList.of("top_sites", "top_site"), payload);
+              ArrayNode events = payload.withArray("events");
+              if (events.size() != 1) {
+                throw new UnexpectedPayloadException("expect exactly 1 event in ping.");
+              }
+              JsonNode event = events.get(0);
+
+              // potential event names are `contile_impression` and `contile_click`
+              String eventName = event.path("name").asText();
+              interactionBuilder.setInteractionType(extractInteractionType(eventName));
+
+              // parse position for mobile
+              interactionBuilder
+                  .setPosition(parsePosition(event.path("extra")).orElse("no_position"));
+            } else {
               throw new InvalidAttributeException("Unexpected docType for mobile ping: " + docType,
                   docType);
             }
-            // iOS instrumentation named the metric category as "top_site" rather than "top_sites".
-            metrics = extractMetrics(ImmutableList.of("top_sites", "top_site"), payload);
-            ArrayNode events = payload.withArray("events");
-            if (events.size() != 1) {
-              throw new UnexpectedPayloadException("expect exactly 1 event in ping.");
-            }
-            JsonNode event = events.get(0);
-            // potential event names are `contile_impression` and `contile_click`
-            String eventName = event.path("name").asText();
-            if ("contile_impression".equals(eventName)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_IMPRESSION);
-            } else if ("contile_click".equals(eventName)) {
-              interactionBuilder.setInteractionType(SponsoredInteraction.INTERACTION_CLICK);
-            } else {
-              throw new InvalidAttributeException("Received unexpected event name: " + eventName,
-                  eventName);
-            }
-
-            // parse position for mobile
-            interactionBuilder
-                .setPosition(parsePosition(event.path("extra")).orElse("no_position"));
           }
 
           interactionBuilder.setScenario(parseScenario(metrics).orElse(null));
 
           // Set the source based on the value of the docType
-          if (DT_TOPSITES.equals(docType) || DT_TOPSITES_CLICK.equals(docType)
-              || DT_TOPSITES_IMPRESSION.equals(docType)) {
-            interactionBuilder.setSource(SponsoredInteraction.SOURCE_TOPSITES);
-          } else if (DT_QUICKSUGGEST.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
-              || DT_QUICKSUGGEST_CLICK.equals(docType)) {
-            interactionBuilder.setSource(SponsoredInteraction.SOURCE_SUGGEST);
-          } else {
-            throw new InvalidAttributeException("Unexpected docType: " + docType, docType);
-          }
+          interactionBuilder.setSource(extractSource(docType));
 
           // Store context_id for click counting in subsequent transforms.
           interactionBuilder.setContextId(extractContextId(metrics));
@@ -243,68 +248,11 @@ public class ParseReportingUrl extends
                 "Reporting URL host not found in allow list: " + reportingUrl);
           }
 
-          // ensure parameters based on source and interaction type
-          if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-            requireParamPresent(builtUrl, "ctag");
-            requireParamPresent(builtUrl, "version");
-            requireParamPresent(builtUrl, "key");
-            requireParamPresent(builtUrl, "ci");
-          } else if (SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())
-              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-            // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-            requireParamPresent(builtUrl, "ctag");
-            requireParamPresent(builtUrl, "custom-data");
-            requireParamPresent(builtUrl, "sub1");
-            requireParamPresent(builtUrl, "sub2");
-          } else if (SponsoredInteraction.INTERACTION_IMPRESSION
-              .equals(interaction.getInteractionType())
-              && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-            requireParamPresent(builtUrl, "id");
-          } else if (SponsoredInteraction.INTERACTION_IMPRESSION
-              .equals(interaction.getInteractionType())
-              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-            // Per https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
-            requireParamPresent(builtUrl, "custom-data");
-            requireParamPresent(builtUrl, "sub1");
-            requireParamPresent(builtUrl, "sub2");
-            requireParamPresent(builtUrl, "partner");
-            requireParamPresent(builtUrl, "adv-id");
-            requireParamPresent(builtUrl, "v");
-          }
-
           // We only add these dimensions for topsites, not quicksuggest per
           // https://bugzilla.mozilla.org/show_bug.cgi?id=1738974
           if (SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())) {
-
-            if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
-              throw new RejectedMessageException(
-                  "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE, "country");
-            }
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
-                payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
-
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_REGION_CODE,
-                attributes.get(Attribute.GEO_SUBDIVISION1));
-            final String osParam;
-            if (namespace.contains("-ios")) {
-              // We currently get null values for parsed OS from user agent on Apple devices,
-              // so we include this as a special case based on document namespace.
-              osParam = "iOS";
-            } else {
-              osParam = getOsParam(attributes.get(Attribute.USER_AGENT_OS));
-            }
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_OS_FAMILY, osParam);
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR,
-                interaction.getFormFactor());
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_DMA_CODE,
-                message.getAttribute(Attribute.GEO_DMA_CODE));
-
-            // if `topsites` impression then add the `position` parameter as `slot-number`
-            if (SponsoredInteraction.INTERACTION_IMPRESSION
-                .equals(interaction.getInteractionType())) {
-              builtUrl.addQueryParam(BuildReportingUrl.PARAM_POSITION, interaction.getPosition());
-            }
+            addAdditionalDimensionsForTopSites(builtUrl, payload, message, attributes, namespace,
+                interaction);
           }
 
           // We only add these dimensions for topsites clicks, not quicksuggest per
@@ -313,24 +261,7 @@ public class ParseReportingUrl extends
           if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
               && SponsoredInteraction.SOURCE_TOPSITES.equals(interaction.getSource())
               && SponsoredInteraction.INTERACTION_CLICK.equals(interaction.getInteractionType())) {
-            String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
-            if (userAgentVersion == null) {
-              throw new RejectedMessageException(
-                  "Missing required attribute " + Attribute.USER_AGENT_VERSION,
-                  "user_agent_version");
-            }
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_PRODUCT_VERSION,
-                "firefox_" + userAgentVersion);
-            String ipReputationString = attributes.get(Attribute.X_FOXSEC_IP_REPUTATION);
-            Integer ipReputation = null;
-            try {
-              ipReputation = Integer.parseInt(ipReputationString);
-            } catch (NumberFormatException ignore) {
-              // pass
-            }
-            if (ipReputation != null && ipReputation < IP_REPUTATION_THRESHOLD) {
-              builtUrl.addQueryParam(BuildReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
-            }
+            addAdditionalDimensionsForTopSitesClicks(builtUrl, attributes);
           }
 
           // If we're on desktop and quicksuggest then add the attribution source (data sharing
@@ -338,15 +269,7 @@ public class ParseReportingUrl extends
           // https://mozilla-hub.atlassian.net/browse/DENG-392
           if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
               && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-
-            Stream<Optional<String>> customDataElements = Stream.of(
-                Optional.ofNullable(interaction.getScenario()),
-                Optional.ofNullable(interaction.getMatchType()));
-
-            String originalValue = builtUrl.getQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA);
-            String customDataParam = customDataElements.flatMap(Optional::stream)
-                .reduce(originalValue, (output, param) -> String.format("%s_%s", output, param));
-            builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
+            addAdditionalDimensionsForSuggest(builtUrl, interaction);
           }
 
           reportingUrl = builtUrl.toString();
@@ -363,6 +286,75 @@ public class ParseReportingUrl extends
                 ee.exception());
           }
         }));
+  }
+
+  private static void addAdditionalDimensionsForSuggest(BuildReportingUrl builtUrl,
+      SponsoredInteraction interaction) {
+    Stream<Optional<String>> customDataElements = Stream.of(
+        Optional.ofNullable(interaction.getScenario()),
+        Optional.ofNullable(interaction.getMatchType()));
+
+    String originalValue = builtUrl.getQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA);
+    String customDataParam = customDataElements.flatMap(Optional::stream).reduce(originalValue,
+        (output, param) -> String.format("%s_%s", output, param));
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
+  }
+
+  private static void addAdditionalDimensionsForTopSitesClicks(BuildReportingUrl builtUrl,
+      Map<String, String> attributes) {
+    String userAgentVersion = attributes.get(Attribute.USER_AGENT_VERSION);
+    if (userAgentVersion == null) {
+      throw new RejectedMessageException(
+          "Missing required attribute " + Attribute.USER_AGENT_VERSION, "user_agent_version");
+    }
+
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_PRODUCT_VERSION, "firefox_" + userAgentVersion);
+
+    String ipReputationString = attributes.get(Attribute.X_FOXSEC_IP_REPUTATION);
+    Integer ipReputation = null;
+    try {
+      ipReputation = Integer.parseInt(ipReputationString);
+    } catch (NumberFormatException ignore) {
+      // pass
+    }
+
+    if (ipReputation != null && ipReputation < IP_REPUTATION_THRESHOLD) {
+      PerDocTypeCounter.inc(attributes, "rejected_low_ip_reputation");
+      builtUrl.addQueryParam(BuildReportingUrl.PARAM_CLICK_STATUS, CLICK_STATUS_ABUSE);
+    }
+  }
+
+  private static void addAdditionalDimensionsForTopSites(BuildReportingUrl builtUrl,
+      ObjectNode payload, PubsubMessage message, Map<String, String> attributes, String namespace,
+      SponsoredInteraction interaction) {
+    if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
+      throw new RejectedMessageException(
+          "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE, "country");
+    }
+
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
+        payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_REGION_CODE,
+        attributes.get(Attribute.GEO_SUBDIVISION1));
+
+    final String osParam;
+    if (namespace.contains("-ios")) {
+      // We currently get null values for parsed OS from user agent on Apple devices,
+      // so we include this as a special case based on document namespace.
+      osParam = "iOS";
+    } else {
+      osParam = getOsParam(attributes.get(Attribute.USER_AGENT_OS));
+    }
+
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_OS_FAMILY, osParam);
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_DMA_CODE,
+        message.getAttribute(Attribute.GEO_DMA_CODE));
+
+    // if `topsites` impression then add the `position` parameter as `slot-number`
+    if (SponsoredInteraction.INTERACTION_IMPRESSION.equals(interaction.getInteractionType())) {
+      builtUrl.addQueryParam(BuildReportingUrl.PARAM_POSITION, interaction.getPosition());
+    }
   }
 
   @VisibleForTesting
@@ -392,7 +384,7 @@ public class ParseReportingUrl extends
    *
    * @throws RejectedMessageException if the given OS value is not recognized
    */
-  private String getOsParam(String userAgentOs) {
+  private static String getOsParam(String userAgentOs) {
     if (userAgentOs == null) {
       throw new RejectedMessageException("Missing required OS attribute", "os");
     }
@@ -465,6 +457,10 @@ public class ParseReportingUrl extends
     return optionalNode(metrics.path(Attribute.POSITION)).map(JsonNode::asText);
   }
 
+  private Optional<String> parseAdvertiser(JsonNode metrics) {
+    return optionalNode(metrics.path(Attribute.ADVERTISER)).map(JsonNode::asText);
+  }
+
   private String extractReportingUrl(ObjectNode metrics) {
     return optionalNode(metrics.path(Attribute.REPORTING_URL),
         metrics.path("contile_reporting_url")).map(JsonNode::asText).orElse("");
@@ -472,6 +468,39 @@ public class ParseReportingUrl extends
 
   private String extractContextId(ObjectNode metrics) {
     return optionalNode(metrics.path(Attribute.CONTEXT_ID)).map(JsonNode::asText).orElse("");
+  }
+
+  private static String extractSource(String docType) {
+    if (DT_TOPSITES.equals(docType) || DT_TOPSITES_CLICK.equals(docType)
+        || DT_TOPSITES_IMPRESSION.equals(docType)) {
+      return SponsoredInteraction.SOURCE_TOPSITES;
+    }
+
+    if (DT_QUICKSUGGEST.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
+        || DT_QUICKSUGGEST_CLICK.equals(docType) || DT_MOBILE_QUICKSUGGEST.equals(docType)) {
+      return SponsoredInteraction.SOURCE_SUGGEST;
+    }
+
+    if (DT_SEARCHWITH.equals(docType)) {
+      return SponsoredInteraction.SOURCE_SEARCHWITH;
+    }
+
+    throw new InvalidAttributeException("Unexpected docType: " + docType, docType);
+  }
+
+  private static String extractInteractionType(String docType) {
+    if (DT_TOPSITES_IMPRESSION.equals(docType) || DT_QUICKSUGGEST_IMPRESSION.equals(docType)
+        || PT_MOBILE_QUICKSUGGEST_IMPRESSION.equals(docType)
+        || "contile_impression".equals(docType)) {
+      return SponsoredInteraction.INTERACTION_IMPRESSION;
+    }
+
+    if (DT_TOPSITES_CLICK.equals(docType) || DT_QUICKSUGGEST_CLICK.equals(docType)
+        || PT_MOBILE_QUICKSUGGEST_CLICK.equals(docType) || "contile_click".equals(docType)) {
+      return SponsoredInteraction.INTERACTION_CLICK;
+    }
+
+    throw new InvalidAttributeException("Received unexpected docType: " + docType, docType);
   }
 
   @VisibleForTesting
@@ -498,13 +527,6 @@ public class ParseReportingUrl extends
       singletonAllowedClickUrls = allowedClickUrls;
     }
     return Arrays.asList(singletonAllowedClickUrls, singletonAllowedImpressionUrls);
-  }
-
-  private static void requireParamPresent(BuildReportingUrl reportingUrl, String paramName) {
-    if (reportingUrl.getQueryParam(paramName) == null) {
-      throw new RejectedMessageException("Missing required url query parameter: " + paramName,
-          paramName);
-    }
   }
 
   @VisibleForTesting

@@ -94,6 +94,15 @@ public class PubsubMessageToObjectNodeBeamTest {
   }
 
   @Test
+  public void testCoerceBooleanToFloat() throws Exception {
+    ObjectNode parent = Json.createObjectNode().put("payload", true);
+    List<Field> bqFields = ImmutableList.of(Field.of("payload", LegacySQLTypeName.FLOAT));
+    Map<String, Object> expected = ImmutableMap.of("payload", 1);
+    TRANSFORM.transformForBqSchema(parent, bqFields, null);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Test
   public void testCoerceMapValueToString() throws Exception {
     String mainPing = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
         + "{\"timestamps.first_paint\":5405}}}}}";

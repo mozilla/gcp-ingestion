@@ -10,6 +10,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.ProjectSubscriptionName;
 import com.google.pubsub.v1.ProjectTopicName;
 import com.google.pubsub.v1.PubsubMessage;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchException;
 import java.io.IOException;
@@ -47,6 +48,10 @@ public class Pubsub {
             } else {
               // log exception specific to this message
               logger.error("failed to deliver message", exception.getCause());
+              logger.error("failed message type: "
+                  + message.getAttributesMap().getOrDefault(Attribute.DOCUMENT_NAMESPACE, "?") + "/"
+                  + message.getAttributesMap().getOrDefault(Attribute.DOCUMENT_TYPE, "?") + " "
+                  + message.getAttributesMap().getOrDefault(Attribute.SUBMISSION_TIMESTAMP, "?"));
             }
             consumer.nack();
           }

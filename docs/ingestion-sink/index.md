@@ -147,8 +147,7 @@ This is the format used for `payload_bytes_raw.*` tables.
 
 When `OUTPUT_FORMAT` is `decoded` messages will have bytes encoded as with
 `OUTPUT_FORMAT=raw`, but attributes will be encoded using the nested metadata
-format of decoded pings. This is the format used for `payload_bytes_decoded.*`
-tables.
+format of decoded pings. This format is currently unused.
 
 When `OUTPUT_FORMAT` is `payload` messages will have bytes decoded as JSON, and
 will be transformed to coerce types and use snake case for compatibility with BigQuery.
