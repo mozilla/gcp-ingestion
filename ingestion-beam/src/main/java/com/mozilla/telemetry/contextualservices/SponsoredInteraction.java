@@ -15,9 +15,10 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public abstract class SponsoredInteraction implements Serializable {
 
   // These match the values from docType
-  // topsites, quicksuggest
+  // topsites, quicksuggest, searchwith
   public static final String SOURCE_TOPSITES = "topsites";
   public static final String SOURCE_SUGGEST = "quicksuggest";
+  public static final String SOURCE_SEARCHWITH = "searchwith";
 
   @Nullable
   abstract String getSource();
@@ -68,6 +69,9 @@ public abstract class SponsoredInteraction implements Serializable {
   // match type values: top/reg
   public static final String BEST_MATCH = "top";
   public static final String FX_SUGGEST = "reg";
+
+  @Nullable
+  abstract String getAdvertiser();
 
   @Nullable
   public abstract String getSubmissionTimestamp();
@@ -130,6 +134,8 @@ public abstract class SponsoredInteraction implements Serializable {
     public abstract Builder setRequestId(String newRequestId);
 
     public abstract Builder setMatchType(String newMatchType);
+
+    public abstract Builder setAdvertiser(String newAdvertiser);
 
     public abstract Builder setSubmissionTimestamp(String newSubmissionTimestamp);
 

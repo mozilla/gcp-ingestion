@@ -63,7 +63,8 @@ public class ContextualServicesReporter extends Sink {
 
     PCollection<SponsoredInteraction> requests = pipeline //
         .apply(options.getInputType().read(options)) //
-        .apply(FilterByDocType.of(options.getAllowedDocTypes(), options.getAllowedNamespaces())) //
+        .apply(FilterByDocType.of(options.getAllowedDocTypes(), options.getAllowedNamespaces(),
+            options.getLimitLegacyDesktopVersion())) //
         .apply(VerifyMetadata.of()) //
         .failuresTo(errorCollections) //
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //

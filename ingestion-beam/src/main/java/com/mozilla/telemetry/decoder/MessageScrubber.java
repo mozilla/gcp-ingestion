@@ -109,6 +109,18 @@ public class MessageScrubber {
       .put("com-mykarma-karmasearch", "1860820") //
       .put("org-mozilla-fennec-mylinux", "1863385") //
       .put("com-internet-smartphonebrowser", "1864572") //
+      .put("com-ecosia-ecosiaapp", "1883854") //
+      .put("com-ecosia-ecosiaapp-firefox", "1883854") //
+      .put("org-luxxle-luxxle", "1884755") //
+      .put("net-decentr-ios-browser", "1884754") //
+      .put("com-immersivetranslate-immersive-translate-browser", "1884752") //
+      .put("com-immersivetranslate-browser", "1884751") //
+      .put("com-jio-web-ios", "1887756") //
+      .put("com-pekobbrowser-unblocksites", "1896079") //
+      .put("com-eusoft-trans-en", "1902673") //
+      .put("com-goodtoolapps-zeus", "1907131") //
+      .put("io-orbitmobile-firefox", "1919089") //
+      .put("app-borderfree-borderfree", "1921529") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap

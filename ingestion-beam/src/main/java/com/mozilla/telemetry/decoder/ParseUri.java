@@ -245,10 +245,10 @@ public class ParseUri {
     public static final String FUNNELCAKE = "funnelcake";
 
     public static final Pattern PING_VERSION_PATTERN = Pattern
-        .compile(String.format("^v(?<%s>[6-8])(-(?<%s>\\d+))?$", VERSION, FUNNELCAKE));
+        .compile(String.format("^v(?<%s>[6-9])(-(?<%s>\\d+))?$", VERSION, FUNNELCAKE));
 
     public static final Map<String, Integer> SUFFIX_LENGTH = ImmutableMap.of("6", 36, "7", 37, "8",
-        39);
+        39, "9", 41);
 
     public static final List<BiConsumer<String, ObjectNode>> HANDLERS = ImmutableList.of(//
         ignore(), // ping_version handled by parsePingVersion
@@ -287,7 +287,9 @@ public class ParseUri {
         // Default browser setting code
         putBoolPerCode(ImmutableMap.of("set_default", 2)), //
         putString("download_ip"), putString("attribution"),
-        putIntegerAsString("profile_cleanup_prompt"), putBool("profile_cleanup_requested"));
+        putIntegerAsString("profile_cleanup_prompt"), putBool("profile_cleanup_requested"),
+        putString("distribution_id"), putString("distribution_version"), //
+        putInteger("windows_ubr"), putString("stub_build_id"));
 
     private static BiConsumer<String, ObjectNode> ignore() {
       return (value, payload) -> {

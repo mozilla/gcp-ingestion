@@ -23,6 +23,9 @@ public class VerifyMetadata extends
     return new VerifyMetadata();
   }
 
+  private VerifyMetadata() {
+  }
+
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
@@ -45,7 +48,7 @@ public class VerifyMetadata extends
           // Currently, we pass along all non-desktop pings after validating that the payload is
           // compressed.
           String namespace = attributes.get(Attribute.DOCUMENT_NAMESPACE);
-          if (!"contextual-services".equals(namespace)) {
+          if (!"contextual-services".equals(namespace) && !"firefox-desktop".equals(namespace)) {
             return message;
           }
 
@@ -55,41 +58,11 @@ public class VerifyMetadata extends
             throw new RejectedMessageException("Invalid user agent: " + userAgent, "user_agent");
           }
 
-          // Verify Firefox version
-          String doctype = attributes.get(Attribute.DOCUMENT_TYPE);
-          int minVersion;
-          if (doctype.startsWith("topsites-")) {
-            minVersion = 87;
-          } else if (doctype.startsWith("quicksuggest-")) {
-            minVersion = 89;
-          } else {
-            throw new IllegalArgumentException("Unrecognized doctype: " + doctype);
-          }
-          String version = attributes.get(Attribute.USER_AGENT_VERSION);
-          try {
-            if (version == null || minVersion > Integer.parseInt(version)) {
-              throw new RejectedMessageException(
-                  String.format("Firefox version does not match doctype: %s, %s", version, doctype),
-                  "user_agent_version");
-            }
-          } catch (NumberFormatException e) {
-            throw new RejectedMessageException(
-                String.format("Invalid Firefox version: %s", version), "user_agent_version");
-          }
-
-          // Verify release channel for specific doctype
-          String channel = attributes.get(Attribute.NORMALIZED_CHANNEL);
-          // Bug 1737185
-          if (doctype.startsWith("quicksuggest-")) {
-            if (!"release".equals(channel)) {
-              throw new RejectedMessageException(
-                  String.format("Disallowed channel %s for doctype %s: ", channel, doctype));
-            }
-          }
-
           // Filter out a specific signature associated with fraud in the past;
           // see https://mozilla-hub.atlassian.net/browse/CONSVC-1764
-          if ("topsites-click".equals(doctype) && "IN".equals(attributes.get(Attribute.GEO_COUNTRY))
+          String doctype = attributes.get(Attribute.DOCUMENT_TYPE);
+          if (("topsites-click".equals(doctype) || "top-sites".equals(doctype))
+              && "IN".equals(attributes.get(Attribute.GEO_COUNTRY))
               && "Infonet Comm Enterprises".equals(attributes.get(Attribute.ISP_NAME))) {
             throw new RejectedMessageException("Matches heuristic from CONSVC-1764");
           }
