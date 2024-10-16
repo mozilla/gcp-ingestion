@@ -1101,27 +1101,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/rally-job/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Rally Decoder Job
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../ingestion-beam/republisher-job/" class="md-nav__link">
         
   
@@ -1467,7 +1446,7 @@
   Firefox) to a set of PubSub <code>Raw Topics</code>, routing messages based on <code>uri</code></li>
 <li><code>Raw Topics</code> are the first layer of a "pipeline family"; the diagram shows
   only the "structured" pipeline family, but there are also deployments
-  for "telemetry", "stub-installer", and "pioneer"</li>
+  for "telemetry" and "stub-installer"</li>
 <li>The <code>Raw Sink</code> job copies messages from a PubSub <code>Raw Topic</code> to
   <code>BigQuery</code></li>
 <li>The Dataflow <code>Decoder</code> job decodes messages from the PubSub <code>Raw Topic</code> to
