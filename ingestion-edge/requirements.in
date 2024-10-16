@@ -1,4 +1,4 @@
-aiohttp==3.9.5
+aiohttp==3.10.3
 dockerflow==2022.8.0
 exceptiongroup  # for pytest on python<=3.10
 google-cloud-container==2.46.0
