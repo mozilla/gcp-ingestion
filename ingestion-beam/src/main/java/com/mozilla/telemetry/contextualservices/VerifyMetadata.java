@@ -58,19 +58,9 @@ public class VerifyMetadata extends
             throw new RejectedMessageException("Invalid user agent: " + userAgent, "user_agent");
           }
 
-          // Verify release channel for specific doctype
-          String doctype = attributes.get(Attribute.DOCUMENT_TYPE);
-          String channel = attributes.get(Attribute.NORMALIZED_CHANNEL);
-          // Bug 1737185
-          if (doctype.startsWith("quicksuggest-") || "quick-suggest".equals(doctype)) {
-            if (!"release".equals(channel)) {
-              throw new RejectedMessageException(
-                  String.format("Disallowed channel %s for doctype %s: ", channel, doctype));
-            }
-          }
-
           // Filter out a specific signature associated with fraud in the past;
           // see https://mozilla-hub.atlassian.net/browse/CONSVC-1764
+          String doctype = attributes.get(Attribute.DOCUMENT_TYPE);
           if (("topsites-click".equals(doctype) || "top-sites".equals(doctype))
               && "IN".equals(attributes.get(Attribute.GEO_COUNTRY))
               && "Infonet Comm Enterprises".equals(attributes.get(Attribute.ISP_NAME))) {
