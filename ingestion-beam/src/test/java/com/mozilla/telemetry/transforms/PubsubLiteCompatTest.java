@@ -10,8 +10,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.JsonFormat;
 import com.mozilla.telemetry.ingestion.core.util.IOFunction;
-import com.mozilla.telemetry.options.OutputFileFormat;
-import com.mozilla.telemetry.util.Json;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Function;
@@ -83,25 +81,24 @@ public class PubsubLiteCompatTest {
               .build())
           .setCursor(Cursor.newBuilder().setOffset(1).build()).build());
 
-  private static final List<String> expectedFromLite = Stream.of(//
+  private static final List<PubsubMessage> expectedFromLite = Stream.of(//
       new PubsubMessage("".getBytes(StandardCharsets.UTF_8), ImmutableMap.of()),
       new PubsubMessage("payload".getBytes(StandardCharsets.UTF_8),
           ImmutableMap.of("meta", "data", "message_id", "1")))
-      .map(IOFunction.unchecked(Json::asString)).collect(Collectors.toList());
+      .collect(Collectors.toList());
 
   @Test
   public void testFromPubsubLiteFunction() throws Exception {
-    List<String> actual = inputFromLite.stream().map(PubsubLiteCompat::fromPubsubLite)
-        .map(IOFunction.unchecked(Json::asString)).collect(Collectors.toList());
+    List<PubsubMessage> actual = inputFromLite.stream().map(PubsubLiteCompat::fromPubsubLite)
+        .collect(Collectors.toList());
     assertEquals(expectedFromLite, actual);
   }
 
   @Test
   public void testFromPubsubLiteTransform() throws Exception {
-    PCollection<String> result = pipeline //
+    PCollection<PubsubMessage> result = pipeline //
         .apply(Create.of(inputFromLite)) //
-        .apply(PubsubLiteCompat.fromPubsubLite()) //
-        .apply("OutputFileFormat.json", OutputFileFormat.json.encode());
+        .apply(PubsubLiteCompat.fromPubsubLite());
     PAssert.that(result).containsInAnyOrder(expectedFromLite);
     pipeline.run();
   }
