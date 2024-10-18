@@ -121,6 +121,8 @@ public class MessageScrubber {
       .put("com-goodtoolapps-zeus", "1907131") //
       .put("io-orbitmobile-firefox", "1919089") //
       .put("app-borderfree-borderfree", "1921529") //
+      .put("com-ff2024-01-firefox", "1925612") //
+      .put("org-mozilla-firefox-cp", "1925615") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
