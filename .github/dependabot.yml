@@ -6,6 +6,9 @@ updates:
   - dependency-name: com.google.cloud:libraries-bom
   - dependency-name: com.fasterxml.jackson:jackson-bom
   - dependency-name: org.apache.avro:avro
+  - dependency-name: org.springframework:spring-core
+    # Spring 6 requires Java 17
+    versions: [">=6.0.0"]
   schedule:
     interval: daily
   reviewers:
