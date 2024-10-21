@@ -20,9 +20,11 @@ public class BeamDependenciesIntegrationTest {
   public void checkVersions() throws Exception {
     final String beamVersion = System.getProperty("beam.version");
     final Pom beamCore = getPom("org.apache.beam", "beam-sdks-java-core", beamVersion);
+    final Pom avroExtension = getPom("org.apache.beam", "beam-sdks-java-extensions-avro",
+        beamVersion);
 
     final Map<String, Optional<String>> expectedVersions = ImmutableMap.of(//
-        "avro.version", beamCore.getVersion("org.apache.avro", "avro"), //
+        "avro.version", avroExtension.getVersion("org.apache.avro", "avro"), //
         "jackson.version", beamCore.getVersion("com.fasterxml.jackson.core", "jackson-core"));
 
     final Map<String, Optional<String>> actualVersions = ImmutableMap.of(//
