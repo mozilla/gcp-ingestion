@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.avro;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -96,7 +97,7 @@ public class PubsubMessageRecordFormatterTest {
     GenericRecord shape = (GenericRecord) record.get("shape");
     GenericRecord quad = (GenericRecord) shape.get("quadrilateral");
     assertEquals(true, quad.get("rhombus"));
-    assertEquals(null, shape.get("triangle"));
+    assertFalse(shape.hasField("triangle"));
   }
 
   @Test
@@ -338,6 +339,6 @@ public class PubsubMessageRecordFormatterTest {
     assertEquals(true, record.get("test_dot"));
     assertEquals(true, record.get("_test_prefix_hyphen"));
     assertEquals(true, record.get("_0_test_prefix_number"));
-    assertEquals(null, record.get("$test_bad_symbol"));
+    assertFalse(record.hasField("$test_bad_symbol"));
   }
 }
