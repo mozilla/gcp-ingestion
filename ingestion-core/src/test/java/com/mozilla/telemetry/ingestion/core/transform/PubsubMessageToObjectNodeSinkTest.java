@@ -195,9 +195,6 @@ public class PubsubMessageToObjectNodeSinkTest {
 
   private void transformAndTestOutput(List<String> strictSchemaDocTypes, String inputMessagesPath,
       String outputMessagesPath) throws IOException {
-    PubsubMessageToObjectNode transform = PubsubMessageToObjectNode //
-        .Payload.of(strictSchemaDocTypes, TestConstant.SCHEMAS_LOCATION, FileInputStream::new);
-
     final List<Map.Entry<Map<String, String>, byte[]>> input;
     final String inputPath = Resources.getResource(inputMessagesPath).getPath();
     try (Stream<String> stream = Files.lines(Paths.get(inputPath))) {
@@ -220,6 +217,9 @@ public class PubsubMessageToObjectNodeSinkTest {
     }
 
     assertEquals(expected.size(), input.size());
+
+    PubsubMessageToObjectNode transform = PubsubMessageToObjectNode //
+        .Payload.of(strictSchemaDocTypes, TestConstant.SCHEMAS_LOCATION, FileInputStream::new);
 
     for (int i = 0; i < expected.size(); i++) {
       assertEquals(expected.get(i),
