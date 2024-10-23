@@ -123,6 +123,7 @@ public class MessageScrubber {
       .put("app-borderfree-borderfree", "1921529") //
       .put("com-ff2024-01-firefox", "1925612") //
       .put("org-mozilla-firefox-cp", "1925615") //
+      .put("com-feifan-topvan", "1924135") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
