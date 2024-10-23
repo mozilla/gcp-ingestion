@@ -137,9 +137,10 @@
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core-test</artifactId>
+            <artifactId>log4j-core</artifactId>
             <!-- specify version because test-jars are not included in log4j-bom -->
             <version>${log4j.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
