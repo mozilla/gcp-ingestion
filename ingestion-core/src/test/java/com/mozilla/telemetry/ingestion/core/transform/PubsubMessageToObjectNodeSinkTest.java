@@ -193,15 +193,10 @@ public class PubsubMessageToObjectNodeSinkTest {
         Json.asBytes(node.get(FieldName.PAYLOAD))).entrySet().stream();
   }
 
-  @Test
-  public void canFormatAsPayload() throws IOException {
-    PubsubMessageToObjectNode transform = PubsubMessageToObjectNode //
-        .Payload.of(ImmutableList.of("namespace_0/foo"), TestConstant.SCHEMAS_LOCATION,
-            FileInputStream::new);
-
+  private void transformAndTestOutput(List<String> strictSchemaDocTypes, String inputMessagesPath,
+      String outputMessagesPath) throws IOException {
     final List<Map.Entry<Map<String, String>, byte[]>> input;
-    final String inputPath = Resources.getResource("testdata/payload-format-input.ndjson")
-        .getPath();
+    final String inputPath = Resources.getResource(inputMessagesPath).getPath();
     try (Stream<String> stream = Files.lines(Paths.get(inputPath))) {
       input = stream.map(IOFunction.unchecked(Json::readObjectNode))
           .flatMap(IOFunction.unchecked(PubsubMessageToObjectNodeSinkTest::asPubsubMessage))
@@ -209,8 +204,7 @@ public class PubsubMessageToObjectNodeSinkTest {
     }
 
     final List<Map<String, Object>> expected;
-    final String expectedPath = Resources.getResource("testdata/payload-format-expected.ndjson")
-        .getPath();
+    final String expectedPath = Resources.getResource(outputMessagesPath).getPath();
     try (Stream<String> stream = Files.lines(Paths.get(expectedPath))) {
       expected = stream.map(IOFunction.unchecked(Json::readObjectNode)).map(node -> {
         // convert additional_properties to a json string if present
@@ -224,9 +218,34 @@ public class PubsubMessageToObjectNodeSinkTest {
 
     assertEquals(expected.size(), input.size());
 
+    PubsubMessageToObjectNode transform = PubsubMessageToObjectNode //
+        .Payload.of(strictSchemaDocTypes, TestConstant.SCHEMAS_LOCATION, FileInputStream::new);
+
     for (int i = 0; i < expected.size(); i++) {
       assertEquals(expected.get(i),
           Json.asMap(transform.apply(input.get(i).getKey(), input.get(i).getValue())));
     }
+  }
+
+  @Test
+  public void canFormatAsPayload() throws IOException {
+    transformAndTestOutput(ImmutableList.of("namespace_0/foo"),
+        "testdata/payload-format-input.ndjson", "testdata/payload-format-expected.ndjson");
+  }
+
+  @Test
+  public void canFormatAsPayloadWIthDuplicateNormalizedFieldNames() throws IOException {
+    // This test is to ensure that the transform does not fail when different JSON field names are
+    // normalized to the same BQ field name. It was added as a response to
+    // https://github.com/mozilla/gcp-ingestion/issues/2609 and uses excessively detailed inputs to
+    // ensure that while fixing this issue we do not modify current behavior of the sink.
+    transformAndTestOutput(null,
+        "testdata/payload-format-duplicate-normalized-field-names-input.ndjson",
+        "testdata/payload-format-duplicate-normalized-field-names-expected.ndjson");
+    // This is the failure scenario discovered in
+    // https://github.com/mozilla/gcp-ingestion/issues/2609
+    transformAndTestOutput(null,
+        "testdata/payload-format-duplicate-normalized-map-field-input.ndjson",
+        "testdata/payload-format-duplicate-normalized-map-field-expected.ndjson");
   }
 }
