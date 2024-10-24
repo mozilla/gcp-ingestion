@@ -7,7 +7,7 @@ google-cloud-pubsub==1.0.2
 gunicorn==22.0.0
 kubernetes==28.1.0
 persist-queue==0.8.1
-pip-tools==7.3.0
+pip-tools==7.4.1
 psutil==6.1.0
 pytest-asyncio==0.24.0
 pytest-black==0.3.12
