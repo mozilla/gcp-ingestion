@@ -810,9 +810,9 @@ tomli==2.0.1 \
     #   pip-tools
     #   pytest
     #   pytest-env
-types-protobuf==5.26.0.20240422 \
-    --hash=sha256:e4dc2554d342501d5aebc3c71203868b51118340e105fc190e3a64ca1be43831 \
-    --hash=sha256:e6074178109f97efe9f0b20a035ba61d7c3b03e867eb47d254d2b2ab6a805e36
+types-protobuf==5.28.0.20240924 \
+    --hash=sha256:5cecf612ccdefb7dc95f7a51fb502902f20fc2e6681cd500184aaa1b3931d6a7 \
+    --hash=sha256:d181af8a256e5a91ce8d5adb53496e880efd9144c7d54483e3653332b60296f0
     # via -r requirements.in
 types-python-dateutil==2.8.19.14 \
     --hash=sha256:1f4f10ac98bb8b16ade9dbee3518d9ace017821d94b057a425b069f834737f4b \
