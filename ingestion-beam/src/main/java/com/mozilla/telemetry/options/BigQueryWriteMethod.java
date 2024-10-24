@@ -5,7 +5,7 @@ import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.Write.Method;
 
 /**
  * Enum describing the types of inserts we can make to BigQuery, along with options that we need
- * to set differently for the two types; see https://cloud.google.com/bigquery/quotas
+ * to set differently for the two types; see https://cloud.google.com/bigquery/quotas.
  */
 public enum BigQueryWriteMethod {
   streaming(Method.STREAMING_INSERTS, 1000 * 1000), //

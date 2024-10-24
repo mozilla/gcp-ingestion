@@ -11,7 +11,6 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.SanitizeAttributes;
-import com.mozilla.telemetry.decoder.rally.DecryptPayloads;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
@@ -88,20 +87,6 @@ public class Decoder extends Sink {
         // Add parse uri failures separately so that they don't prevent geo lookups
         .map(p -> p //
             .apply("ParseUriAddFailures", ParseUri.addFailures()).failuresTo(failureCollections))
-
-        // Special case: decryption of Rally/Pioneer payloads. There is a
-        // separate decoder instance that only contains pioneer-* and rally-*
-        // documents as per bugs 1628539 and 1675479. All messages sent in
-        // plaintext not intended for Rally/Pioneer will be rejected in some
-        // form (e.g. KeyNotFound or Validation errors). Both legacy messages
-        // sent to the `telemetry.pioneer-study` doctype and the glean.js-styled
-        // messages are supported respectively.
-        .map(p -> options.getPioneerEnabled() ? p //
-            .apply("DecryptRallyAndPioneerPayloads",
-                DecryptPayloads.of(options.getPioneerMetadataLocation(),
-                    options.getSchemasLocation(), options.getPioneerKmsEnabled(),
-                    options.getPioneerDecompressPayload())) //
-            .failuresTo(failureCollections) : p)
 
         // Main output
         .map(p -> p //

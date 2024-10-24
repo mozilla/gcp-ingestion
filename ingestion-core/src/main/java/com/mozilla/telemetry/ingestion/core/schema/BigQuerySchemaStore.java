@@ -64,12 +64,6 @@ public class BigQuerySchemaStore extends SchemaStore<Schema> {
       super(null, null);
     }
 
-    @Override
-    public Schema getSchema(String path) {
-      // can't find schema without tableId
-      throw SchemaNotFoundException.forName(path);
-    }
-
     // We have hit rate limiting issues that have sent valid data to error output, so we make the
     // retry settings a bit more generous; see https://github.com/mozilla/gcp-ingestion/issues/651
     private static final RetrySettings RETRY_SETTINGS = ServiceOptions //
@@ -79,6 +73,12 @@ public class BigQuerySchemaStore extends SchemaStore<Schema> {
         .build();
     private transient Cache<TableId, Schema> tableSchemaCache;
     private transient BigQuery bqService;
+
+    @Override
+    public Schema getSchema(String path) {
+      // can't find schema without tableId
+      throw SchemaNotFoundException.forName(path);
+    }
 
     @Override
     public Schema getSchema(TableId tableId, Map<String, String> attributes) {

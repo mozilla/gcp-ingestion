@@ -93,6 +93,11 @@ public class PubsubMessageToTableRow implements Serializable {
         "coerced_to_int");
     private static final Counter notCoercedToInt = Metrics.counter(PubsubMessageToTableRow.class,
         "not_coerced_to_int");
+
+    private static final Counter coercedToFloat = Metrics.counter(PubsubMessageToTableRow.class,
+        "coerced_to_float");
+    private static final Counter notCoercedToFloat = Metrics.counter(PubsubMessageToTableRow.class,
+        "not_coerced_to_float");
     private static final Counter notCoercedToBool = Metrics.counter(PubsubMessageToTableRow.class,
         "not_coerced_to_bool");
     private static final Counter invalidHistogramType = Metrics
@@ -114,6 +119,17 @@ public class PubsubMessageToTableRow implements Serializable {
     @Override
     protected void incrementNotCoercedToInt() {
       notCoercedToInt.inc();
+    }
+
+    @Override
+    protected void incrementCoercedToFloat() {
+      coercedToFloat.inc();
+    }
+
+    /** measure rate of NotCoercedToInt. */
+    @Override
+    protected void incrementNotCoercedToFloat() {
+      notCoercedToFloat.inc();
     }
 
     /** measure rate of NotCoercedToBool. */
