@@ -82,7 +82,7 @@
         <dependency>
             <groupId>com.maxmind.geoip2</groupId>
             <artifactId>geoip2</artifactId>
-            <version>4.1.0</version>
+            <version>4.2.1</version>
         </dependency>
         <!-- Following https://github.com/apache/beam/blob/v2.20.0/examples/java/build.gradle#L64 -->
         <dependency>
@@ -115,7 +115,7 @@
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
-            <version>4.11.0</version>
+            <version>4.12.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -130,7 +130,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.1.1</version>
+                <version>3.5.0</version>
                 <configuration>
                     <skip>false</skip>
                 </configuration>
