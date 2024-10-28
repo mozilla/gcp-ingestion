@@ -63,7 +63,7 @@
         <avro.version>1.11.3</avro.version>
 
         <!-- The version pulled in by avro does not support Apple Silicon as of Jan 2022 -->
-        <snappy.version>1.1.10.5</snappy.version>
+        <snappy.version>1.1.10.7</snappy.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
