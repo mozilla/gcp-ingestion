@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.decoder;
 
+import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.io.Read;
 import com.mozilla.telemetry.options.InputFileFormat;
@@ -51,6 +52,25 @@ public class ExtractIpFromLogEntryTest {
     final PCollection<String> payloads = output.apply("encodeText", OutputFileFormat.text.encode());
     PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
+    pipeline.run();
+  }
+
+  @Test
+  public void canHandleMalformedMessage() {
+    String inputPath = Resources.getResource("testdata").getPath();
+    // This file contains a single message without the expected `Fields` object
+    String input = inputPath + "/logentry_malformed.ndjson";
+
+    PCollection<PubsubMessage> output = pipeline
+        .apply(new Read.FileInput(input, InputFileFormat.json)).apply(ExtractIpFromLogEntry.of());
+
+    // Assert that output contains single message
+    PAssert.that(output).satisfies(messages -> {
+      assert Iterables.size(messages) == 1;
+      return null;
+    });
+
+    // Pipeline should run and not throw an exception on the malformed message
     pipeline.run();
   }
 }
