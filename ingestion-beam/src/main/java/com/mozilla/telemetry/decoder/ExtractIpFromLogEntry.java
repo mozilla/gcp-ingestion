@@ -56,25 +56,30 @@ public class ExtractIpFromLogEntry
         final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
         logEntry = Json.readObjectNode(message.getPayload());
-        ObjectNode jsonPayload = (ObjectNode) logEntry.path("jsonPayload");
-        ObjectNode fields = (ObjectNode) jsonPayload.path("Fields");
-        JsonNode ipAddress = fields.remove("ip_address");
-        if (ipAddress != null) {
-          // if ipAddress is null, it means it wasn't present in the payload
-          String clientIpAddress = ipAddress.textValue();
-          attributes.put(Attribute.X_FORWARDED_FOR, clientIpAddress);
-          countIpExtracted.inc();
+        if (logEntry.path("jsonPayload").isObject()) {
+          ObjectNode jsonPayload = (ObjectNode) logEntry.path("jsonPayload");
+          if (jsonPayload.path("Fields").isObject()) {
+            ObjectNode fields = (ObjectNode) jsonPayload.path("Fields");
+            JsonNode ipAddress = fields.remove("ip_address");
+            if (ipAddress != null) {
+              // if ipAddress is null, it means it wasn't present in the payload
+              String clientIpAddress = ipAddress.textValue();
+              attributes.put(Attribute.X_FORWARDED_FOR, clientIpAddress);
+              countIpExtracted.inc();
 
-          jsonPayload.replace("Fields", fields);
-          logEntry.replace("jsonPayload", jsonPayload);
-          byte[] sanitizedPayload = logEntry.toString().getBytes(StandardCharsets.UTF_8);
+              jsonPayload.replace("Fields", fields);
+              logEntry.replace("jsonPayload", jsonPayload);
+              byte[] sanitizedPayload = logEntry.toString().getBytes(StandardCharsets.UTF_8);
 
-          return new PubsubMessage(sanitizedPayload, attributes);
-        } else {
-          return message;
+              return new PubsubMessage(sanitizedPayload, attributes);
+            }
+          }
         }
+        return message;
 
-      } catch (IOException e) {
+      } catch (IOException | ClassCastException e) {
+        // java.lang.ClassCastException: class com.fasterxml.jackson.databind.node.MissingNode
+        // cannot be cast to class com.fasterxml.jackson.databind.node.ObjectNode
         throw new ParseLogEntry.InvalidLogEntryException(
             "Message has no submission_timestamp but could not be parsed as LogEntry JSON");
       }
