@@ -56,10 +56,12 @@ public class ExtractIpFromLogEntry
         final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
         logEntry = Json.readObjectNode(message.getPayload());
-        if (logEntry.path("jsonPayload").isObject()) {
-          ObjectNode jsonPayload = (ObjectNode) logEntry.path("jsonPayload");
-          if (jsonPayload.path("Fields").isObject()) {
-            ObjectNode fields = (ObjectNode) jsonPayload.path("Fields");
+        JsonNode maybeJsonPayloadNode = logEntry.path("jsonPayload");
+        if (maybeJsonPayloadNode.isObject()) {
+          ObjectNode jsonPayload = (ObjectNode) maybeJsonPayloadNode;
+          JsonNode maybeFieldsNode = jsonPayload.path("Fields");
+          if (maybeFieldsNode.isObject()) {
+            ObjectNode fields = (ObjectNode) maybeFieldsNode;
             JsonNode ipAddress = fields.remove("ip_address");
             if (ipAddress != null) {
               // if ipAddress is null, it means it wasn't present in the payload
