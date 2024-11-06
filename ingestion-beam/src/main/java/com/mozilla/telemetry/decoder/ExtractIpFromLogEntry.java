@@ -77,9 +77,7 @@ public class ExtractIpFromLogEntry
         }
         return message;
 
-      } catch (IOException | ClassCastException e) {
-        // java.lang.ClassCastException: class com.fasterxml.jackson.databind.node.MissingNode
-        // cannot be cast to class com.fasterxml.jackson.databind.node.ObjectNode
+      } catch (IOException e) {
         throw new ParseLogEntry.InvalidLogEntryException(
             "Message has no submission_timestamp but could not be parsed as LogEntry JSON");
       }
