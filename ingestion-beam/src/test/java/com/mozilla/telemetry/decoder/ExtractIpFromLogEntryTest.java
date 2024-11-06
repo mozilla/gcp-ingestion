@@ -1,6 +1,5 @@
 package com.mozilla.telemetry.decoder;
 
-import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.io.Read;
 import com.mozilla.telemetry.options.InputFileFormat;
@@ -64,11 +63,10 @@ public class ExtractIpFromLogEntryTest {
     PCollection<PubsubMessage> output = pipeline
         .apply(new Read.FileInput(input, InputFileFormat.json)).apply(ExtractIpFromLogEntry.of());
 
-    // Assert that output contains single message
-    PAssert.that(output).satisfies(messages -> {
-      assert Iterables.size(messages) == 1;
-      return null;
-    });
+    final List<String> expectedPayloads = Arrays.asList(
+        "{\"insertId\":\"i7ymfvfsay14vgp7\",\"jsonPayload\":{\"EnvVersion\":\"2.0\",\"Logger\":\"fxa-oauth-server\",\"Pid\":26,\"Severity\":6,\"Timestamp\":1.6879373570750001e+18,\"Type\":\"glean-server-event\"},\"labels\":{\"compute.googleapis.com/resource_name\":\"gke-custom-fluentbit-default-pool-3fa9e570-j753\",\"k8s-pod/component\":\"test-js-logger\",\"k8s-pod/pod-template-hash\":\"584d9fc78c\"},\"logName\":\"projects/akomar-server-telemetry-poc/logs/stdout\",\"receiveTimestamp\":\"2023-06-28T07:29:17.288291899Z\",\"resource\":{\"labels\":{\"cluster_name\":\"custom-fluentbit\",\"container_name\":\"test-js-logger\",\"location\":\"us-east1-b\",\"namespace_name\":\"default\",\"pod_name\":\"test-js-logger-584d9fc78c-pz9x9\",\"project_id\":\"akomar-server-telemetry-poc\"},\"type\":\"k8s_container\"},\"severity\":\"INFO\",\"timestamp\":\"2023-06-28T07:29:17.075926141Z\"}");
+    final PCollection<String> payloads = output.apply("encodeText", OutputFileFormat.text.encode());
+    PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
     // Pipeline should run and not throw an exception on the malformed message
     pipeline.run();
