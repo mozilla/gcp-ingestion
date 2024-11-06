@@ -7,13 +7,16 @@ import com.mozilla.telemetry.io.Read.FileInput;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.Json;
+import java.util.List;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
+import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.values.PCollection;
 import org.junit.Rule;
 import org.junit.Test;
 
+@SuppressWarnings("checkstyle:lineLength")
 public class ParseLogEntryTest {
 
   @Rule
@@ -48,13 +51,39 @@ public class ParseLogEntryTest {
                     .put("app_display_version", "0.0.0").put("app_channel", "development").build())
                 .build());
 
-    PCollection<PubsubMessage> output = pipeline.apply(new FileInput(input, InputFileFormat.json))
-        .apply(ParseLogEntry.of()).output();
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> outputWithFailures = pipeline
+        .apply(new FileInput(input, InputFileFormat.json)).apply(ParseLogEntry.of());
 
-    PAssert.that(output.apply(OutputFileFormat.text.encode()))
+    PAssert.that(outputWithFailures.output().apply(OutputFileFormat.text.encode()))
         .containsInAnyOrder(ImmutableList.of(expected));
+
+    PAssert.that(outputWithFailures.failures()).empty();
 
     pipeline.run();
   }
 
+  @Test
+  public void canHandleMalformedMessage() {
+    String inputPath = Resources.getResource("testdata").getPath();
+    // This file contains a single message without the expected `Fields` object
+    String input = inputPath + "/logentry_malformed.ndjson";
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> outputWithFailures = pipeline
+        .apply(new FileInput(input, InputFileFormat.json)).apply(ParseLogEntry.of());
+
+    // output should be empty
+    PAssert.that(outputWithFailures.output()).empty();
+
+    // message should go to error stream
+    PAssert.that(outputWithFailures.failures() //
+        .apply("EncodeTextError", OutputFileFormat.json.encode())).satisfies(collection -> {
+          List<String> errors = ImmutableList.copyOf(collection);
+          assert errors.size() == 1;
+          assert errors.get(0).contains(
+              "{\"attributeMap\":{\"error_message\":\"com.mozilla.telemetry.decoder.ParseLogEntry$InvalidLogEntryException: Message has no submission_timestamp but is not in a known LogEntry format\",\"exception_class\":\"com.mozilla.telemetry.decoder.ParseLogEntry$InvalidLogEntryException\"");
+          return null;
+        });
+
+    pipeline.run();
+  }
 }
