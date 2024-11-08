@@ -62,7 +62,7 @@ public class BuildReportingUrl {
             .map(param -> param.split("="))
             .collect(Collectors.toMap(item -> item[0], item -> item.length > 1 ? item[1] : ""));
       }
-    } catch(IllegalStateException e) {
+    } catch (IllegalStateException e) {
       throw new InvalidUrlException("Reporting URL contains duplicate query keys: " + reportingUrl);
     }
   }
