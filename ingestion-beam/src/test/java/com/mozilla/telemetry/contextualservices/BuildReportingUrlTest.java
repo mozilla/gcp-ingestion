@@ -8,10 +8,8 @@ public class BuildReportingUrlTest {
 
   @Test
   public void testDuplicateQueryKeys() {
-    assertThrows(
-        BuildReportingUrl.InvalidUrlException.class,
-        () -> new BuildReportingUrl("https://example.com?foo=bar&foo=bar")
-    );
+    assertThrows(BuildReportingUrl.InvalidUrlException.class,
+        () -> new BuildReportingUrl("https://example.com?foo=bar&foo=bar"));
   }
 
 }
