@@ -54,12 +54,16 @@ public class BuildReportingUrl {
       throw new InvalidUrlException("Reporting URL null or missing: " + reportingUrl);
     }
 
-    if (this.reportingUrl.getQuery() == null) {
-      queryParams = new HashMap<>();
-    } else {
-      queryParams = Arrays.stream(this.reportingUrl.getQuery().split("&"))
-          .map(param -> param.split("="))
-          .collect(Collectors.toMap(item -> item[0], item -> item.length > 1 ? item[1] : ""));
+    try {
+      if (this.reportingUrl.getQuery() == null) {
+        queryParams = new HashMap<>();
+      } else {
+        queryParams = Arrays.stream(this.reportingUrl.getQuery().split("&"))
+            .map(param -> param.split("="))
+            .collect(Collectors.toMap(item -> item[0], item -> item.length > 1 ? item[1] : ""));
+      }
+    } catch(IllegalStateException e) {
+      throw new InvalidUrlException("Reporting URL contains duplicate query keys: " + reportingUrl);
     }
   }
 
