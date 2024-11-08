@@ -1,8 +1,8 @@
 package com.mozilla.telemetry.contextualservices;
 
-import org.junit.Test;
-
 import static org.junit.Assert.assertThrows;
+
+import org.junit.Test;
 
 public class BuildReportingUrlTest {
 
