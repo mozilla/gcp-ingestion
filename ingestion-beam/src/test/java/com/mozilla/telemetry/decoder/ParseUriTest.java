@@ -170,39 +170,89 @@ public class ParseUriTest extends TestWithDeterministicJson {
               .put("0",
                   "\"succeeded\":true,\"user_cancelled\":false,\"out_of_retries\":false,"
                       + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false")
-              .put("1",
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+             .put("1",
                   "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
                       + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false")
+                      + "\"install_timeout\":false,\"unknown_error\":true,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
               .put("10",
                   "\"succeeded\":false,\"user_cancelled\":true,\"out_of_retries\":false,"
                       + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false")
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
               .put("11",
                   "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":true,"
                       + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false")
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
               .put("20",
                   "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
                       + "\"file_error\":true,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false")
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
               .put("21",
                   "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
                       + "\"file_error\":false,\"sig_not_trusted\":true,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false")
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
               .put("22",
                   "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
                       + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":true,"
-                      + "\"install_timeout\":false")
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
               .put("23",
                   "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
                       + "\"file_error\":false,\"sig_not_trusted\":true,\"sig_unexpected\":true,"
-                      + "\"install_timeout\":false")
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+
+
+              .put("24",
+                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":true,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+               .put("25",
+                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":true,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+              .put("26",
+                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":true,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+              .put("27",
+                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":true,\"writeable_req_not_met\":false")
+              .put("28",
+                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":true")
               .put("30",
                   "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
                       + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":true")
+                      + "\"install_timeout\":true,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
               .build(), //
           // Launch code
           ImmutableMap.of(//
