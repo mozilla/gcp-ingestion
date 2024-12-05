@@ -150,150 +150,149 @@ public class ParseUriTest extends TestWithDeterministicJson {
     }
   }
 
-  private static final Map<String, String> VALID_V6_DIMENSIONS = joinCases(
-      Arrays.asList(validStringCases("build_channel"), //
-          validStringCases("update_channel"), //
-          validStringCases("locale"), //
-          // Build architecture code
-          ImmutableMap.of(//
-              "0", "\"64bit_build\":false", //
-              "1", "\"64bit_build\":true"),
-          // OS architecture code
-          ImmutableMap.of(//
-              "0", "\"64bit_os\":false", //
-              "1", "\"64bit_os\":true"), //
-          ImmutableMap.of("1/2/3", "\"os_version\":\"1.2.3\""), //
-          validStringCases("service_pack"), //
-          validBoolCases("server_os"), //
-          // Exit code
-          new ImmutableMap.Builder<String, String>() //
-              .put("0",
-                  "\"succeeded\":true,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-             .put("1",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":true,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("10",
-                  "\"succeeded\":false,\"user_cancelled\":true,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("11",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":true,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("20",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":true,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("21",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":true,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("22",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":true,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("23",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":true,\"sig_unexpected\":true,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+  private static final Map<String, String> VALID_V6_DIMENSIONS = joinCases(Arrays.asList(
+      validStringCases("build_channel"), //
+      validStringCases("update_channel"), //
+      validStringCases("locale"), //
+      // Build architecture code
+      ImmutableMap.of(//
+          "0", "\"64bit_build\":false", //
+          "1", "\"64bit_build\":true"),
+      // OS architecture code
+      ImmutableMap.of(//
+          "0", "\"64bit_os\":false", //
+          "1", "\"64bit_os\":true"), //
+      ImmutableMap.of("1/2/3", "\"os_version\":\"1.2.3\""), //
+      validStringCases("service_pack"), //
+      validBoolCases("server_os"), //
+      // Exit code
+      new ImmutableMap.Builder<String, String>() //
+          .put("0",
+              "\"succeeded\":true,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("1",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":true,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("10",
+              "\"succeeded\":false,\"user_cancelled\":true,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("11",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":true,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("20",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":true,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("21",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":true,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("22",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":true,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("23",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":true,\"sig_unexpected\":true,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
 
-
-              .put("24",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":true,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-               .put("25",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":true,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("26",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":true,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .put("27",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":true,\"writeable_req_not_met\":false")
-              .put("28",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":true")
-              .put("30",
-                  "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
-                      + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
-                      + "\"install_timeout\":true,\"unknown_error\":false,\"sig_check_timeout\":false,"
-                      + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
-                      + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
-              .build(), //
-          // Launch code
-          ImmutableMap.of(//
-              "0", "\"old_running\":false,\"new_launched\":false", //
-              "1", "\"old_running\":true,\"new_launched\":false", //
-              "2", "\"old_running\":false,\"new_launched\":true"), //
-          validIntCases("download_retries"), //
-          validIntCases("bytes_downloaded"), //
-          validIntCases("download_size"), //
-          validIntCases("intro_time"), //
-          validIntCases("options_time"), //
-          validIntCases("download_time"), //
-          ImmutableMap.of("", ""), // ignored field
-          validIntCases("download_latency"), //
-          validIntCases("preinstall_time"), //
-          validIntCases("install_time"), //
-          validIntCases("finish_time"), //
-          // Initial install requirements code
-          ImmutableMap.of(//
-              "0", "\"disk_space_error\":false,\"no_write_access\":false", //
-              "1", "\"disk_space_error\":true,\"no_write_access\":false", //
-              "2", "\"disk_space_error\":false,\"no_write_access\":true"), //
-          validBoolCases("manual_download"), //
-          validBoolCases("had_old_install"), //
-          validStringCases("old_version"), //
-          validStringCases("old_build_id"), //
-          validStringCases("version"), //
-          validStringCases("build_id"), //
-          validBoolCases("default_path"), //
-          validBoolCases("admin_user"), //
-          // Default browser status code
-          ImmutableMap.of(//
-              "0", "\"new_default\":false,\"old_default\":false", //
-              "1", "\"new_default\":true,\"old_default\":false", //
-              "2", "\"new_default\":false,\"old_default\":true"), //
-          // Default browser setting code
-          ImmutableMap.of(//
-              "0", "\"set_default\":false", //
-              "1", "\"set_default\":false", //
-              "2", "\"set_default\":true"), //
-          validStringCases("download_ip")));
+          .put("24",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":true,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("25",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":true,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("26",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":true,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .put("27",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":true,\"writeable_req_not_met\":false")
+          .put("28",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":false,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":true")
+          .put("30",
+              "\"succeeded\":false,\"user_cancelled\":false,\"out_of_retries\":false,"
+                  + "\"file_error\":false,\"sig_not_trusted\":false,\"sig_unexpected\":false,"
+                  + "\"install_timeout\":true,\"unknown_error\":false,\"sig_check_timeout\":false,"
+                  + "\"hardware_req_not_met\":false,\"os_version_req_not_met\":false,"
+                  + "\"disk_space_req_not_met\":false,\"writeable_req_not_met\":false")
+          .build(), //
+      // Launch code
+      ImmutableMap.of(//
+          "0", "\"old_running\":false,\"new_launched\":false", //
+          "1", "\"old_running\":true,\"new_launched\":false", //
+          "2", "\"old_running\":false,\"new_launched\":true"), //
+      validIntCases("download_retries"), //
+      validIntCases("bytes_downloaded"), //
+      validIntCases("download_size"), //
+      validIntCases("intro_time"), //
+      validIntCases("options_time"), //
+      validIntCases("download_time"), //
+      ImmutableMap.of("", ""), // ignored field
+      validIntCases("download_latency"), //
+      validIntCases("preinstall_time"), //
+      validIntCases("install_time"), //
+      validIntCases("finish_time"), //
+      // Initial install requirements code
+      ImmutableMap.of(//
+          "0", "\"disk_space_error\":false,\"no_write_access\":false", //
+          "1", "\"disk_space_error\":true,\"no_write_access\":false", //
+          "2", "\"disk_space_error\":false,\"no_write_access\":true"), //
+      validBoolCases("manual_download"), //
+      validBoolCases("had_old_install"), //
+      validStringCases("old_version"), //
+      validStringCases("old_build_id"), //
+      validStringCases("version"), //
+      validStringCases("build_id"), //
+      validBoolCases("default_path"), //
+      validBoolCases("admin_user"), //
+      // Default browser status code
+      ImmutableMap.of(//
+          "0", "\"new_default\":false,\"old_default\":false", //
+          "1", "\"new_default\":true,\"old_default\":false", //
+          "2", "\"new_default\":false,\"old_default\":true"), //
+      // Default browser setting code
+      ImmutableMap.of(//
+          "0", "\"set_default\":false", //
+          "1", "\"set_default\":false", //
+          "2", "\"set_default\":true"), //
+      validStringCases("download_ip")));
 
   private static final Map<String, String> VALID_V7_DIMENSIONS = joinCases(
       Arrays.asList(VALID_V6_DIMENSIONS, validStringCases("attribution")));
