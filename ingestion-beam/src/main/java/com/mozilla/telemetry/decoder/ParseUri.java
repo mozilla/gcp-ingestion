@@ -263,7 +263,7 @@ public class ParseUri {
         appendString(Attribute.OS_VERSION, "."), //
         putString("service_pack"), putBool("server_os"),
         // Exit code
-        putBoolPerCodeSet(new ImmutableMap.Builder<String, Set<Integer>>()
+        putBoolPerCodeSet(new ImmutableMap.Builder<String, Set<Integer>>() //
             .put("succeeded", ImmutableSet.of(0)) //
             .put("user_cancelled", ImmutableSet.of(10)) //
             .put("out_of_retries", ImmutableSet.of(11)) //
