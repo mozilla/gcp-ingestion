@@ -264,16 +264,20 @@ public class ParseUri {
         putString("service_pack"), putBool("server_os"),
         // Exit code
         putBoolPerCodeSet(new ImmutableMap.Builder<String, Set<Integer>>()
-            .put("succeeded", ImmutableSet.of(0)).put("user_cancelled", ImmutableSet.of(10))
-            .put("out_of_retries", ImmutableSet.of(11)).put("file_error", ImmutableSet.of(20))
-            .put("sig_not_trusted", ImmutableSet.of(21, 23))
-            .put("sig_unexpected", ImmutableSet.of(22, 23))
-            .put("install_timeout", ImmutableSet.of(30)).put("unknown_error", ImmutableSet.of(1))
-            .put("sig_check_timeout", ImmutableSet.of(24))
-            .put("hardware_req_not_met", ImmutableSet.of(25))
-            .put("os_version_req_not_met", ImmutableSet.of(26))
-            .put("disk_space_req_not_met", ImmutableSet.of(27))
-            .put("writeable_req_not_met", ImmutableSet.of(28)).build()),
+            .put("succeeded", ImmutableSet.of(0)) //
+            .put("user_cancelled", ImmutableSet.of(10)) //
+            .put("out_of_retries", ImmutableSet.of(11)) //
+            .put("file_error", ImmutableSet.of(20)) //
+            .put("sig_not_trusted", ImmutableSet.of(21, 23)) //
+            .put("sig_unexpected", ImmutableSet.of(22, 23)) //
+            .put("install_timeout", ImmutableSet.of(30)) //
+            .put("unknown_error", ImmutableSet.of(1)) //
+            .put("sig_check_timeout", ImmutableSet.of(24)) //
+            .put("hardware_req_not_met", ImmutableSet.of(25)) //
+            .put("os_version_req_not_met", ImmutableSet.of(26)) //
+            .put("disk_space_req_not_met", ImmutableSet.of(27)) //
+            .put("writeable_req_not_met", ImmutableSet.of(28)) //
+            .build()),
         // Launch code
         putBoolPerCode(ImmutableMap.of("old_running", 1, "new_launched", 2)),
         putInteger("download_retries"), putInteger("bytes_downloaded"), putInteger("download_size"),
