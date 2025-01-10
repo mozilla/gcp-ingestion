@@ -247,8 +247,9 @@ public class ParseUri {
     public static final Pattern PING_VERSION_PATTERN = Pattern
         .compile(String.format("^v(?<%s>[6-9]|1[0-9])(-(?<%s>\\d+))?$", VERSION, FUNNELCAKE));
 
+    // set v9 to 43 to backfill UnexpectedPathElementsException
     public static final Map<String, Integer> SUFFIX_LENGTH = ImmutableMap.of("6", 36, "7", 37, "8",
-        39, "9", 41, "10", 43);
+        39, "9", 43, "10", 43);
 
     /**
      * NOTE: When adding new fields here, the version must be incremented on the client.
