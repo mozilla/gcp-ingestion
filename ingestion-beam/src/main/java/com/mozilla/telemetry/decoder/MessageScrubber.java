@@ -348,6 +348,17 @@ public class MessageScrubber {
       }
     }
 
+    if (bug1934302Affected(namespace, docType)) {
+      if (json.path("windows_ubr").isTextual()) {
+        try {
+          json.put("windows_ubr", Integer.parseInt(json.path("windows_ubr").asText()));
+          markBugCounter("1934302");
+        } catch (NumberFormatException e) {
+          // can't convert and will be rejected by schema validation
+        }
+      }
+    }
+
     if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
       processForBug1751753(json);
     }
@@ -485,6 +496,10 @@ public class MessageScrubber {
     return "mozillavpn".equals(namespace) && "main".equals(docType)
         && ParsePayload.getGleanClientInfo(json).path("telemetry_sdk_build").asText("")
             .matches("0[.]([0-9]|1[0-6])[.].*"); // < 0.17
+  }
+
+  private static boolean bug1934302Affected(String namespace, String docType) {
+    return "firefox-installer".equals(namespace) && "install".equals(docType);
   }
 
   // See bug 1751753 for explanation of context.
