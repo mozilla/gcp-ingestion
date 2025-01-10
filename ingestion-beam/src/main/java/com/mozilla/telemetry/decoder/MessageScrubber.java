@@ -120,6 +120,12 @@ public class MessageScrubber {
       .put("com-eusoft-trans-en", "1902673") //
       .put("com-goodtoolapps-zeus", "1907131") //
       .put("io-orbitmobile-firefox", "1919089") //
+      .put("app-borderfree-borderfree", "1921529") //
+      .put("com-ff2024-01-firefox", "1925612") //
+      .put("org-mozilla-firefox-cp", "1925615") //
+      .put("com-feifan-topvan", "1924135") //
+      .put("com-feifan-chrome-ios-dev", "1930793") //
+      .put("us-spotco-fennec-dos", "1938660") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap

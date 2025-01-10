@@ -53,4 +53,22 @@ public class ExtractIpFromLogEntryTest {
 
     pipeline.run();
   }
+
+  @Test
+  public void canHandleMalformedMessage() {
+    String inputPath = Resources.getResource("testdata").getPath();
+    // This file contains a single message without the expected `Fields` object
+    String input = inputPath + "/logentry_malformed.ndjson";
+
+    PCollection<PubsubMessage> output = pipeline
+        .apply(new Read.FileInput(input, InputFileFormat.json)).apply(ExtractIpFromLogEntry.of());
+
+    final List<String> expectedPayloads = Arrays.asList(
+        "{\"insertId\":\"i7ymfvfsay14vgp7\",\"jsonPayload\":{\"EnvVersion\":\"2.0\",\"Logger\":\"fxa-oauth-server\",\"Pid\":26,\"Severity\":6,\"Timestamp\":1.6879373570750001e+18,\"Type\":\"glean-server-event\"},\"labels\":{\"compute.googleapis.com/resource_name\":\"gke-custom-fluentbit-default-pool-3fa9e570-j753\",\"k8s-pod/component\":\"test-js-logger\",\"k8s-pod/pod-template-hash\":\"584d9fc78c\"},\"logName\":\"projects/akomar-server-telemetry-poc/logs/stdout\",\"receiveTimestamp\":\"2023-06-28T07:29:17.288291899Z\",\"resource\":{\"labels\":{\"cluster_name\":\"custom-fluentbit\",\"container_name\":\"test-js-logger\",\"location\":\"us-east1-b\",\"namespace_name\":\"default\",\"pod_name\":\"test-js-logger-584d9fc78c-pz9x9\",\"project_id\":\"akomar-server-telemetry-poc\"},\"type\":\"k8s_container\"},\"severity\":\"INFO\",\"timestamp\":\"2023-06-28T07:29:17.075926141Z\"}");
+    final PCollection<String> payloads = output.apply("encodeText", OutputFileFormat.text.encode());
+    PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
+
+    // Pipeline should run and not throw an exception on the malformed message
+    pipeline.run();
+  }
 }

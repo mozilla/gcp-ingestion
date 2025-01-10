@@ -119,7 +119,6 @@ public class ParseReportingUrl extends
             throw new UncheckedIOException(e);
           }
 
-          Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
           String namespace = Optional //
               .ofNullable(message.getAttribute(Attribute.DOCUMENT_NAMESPACE)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing namespace"));
@@ -240,6 +239,8 @@ public class ParseReportingUrl extends
           SponsoredInteraction interaction = interactionBuilder.build();
           String reportingUrl = extractReportingUrl(metrics);
           BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
+
+          Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
           if (!isUrlValid(builtUrl.getReportingUrl(),
               Objects.requireNonNull(interaction.getInteractionType()))) {

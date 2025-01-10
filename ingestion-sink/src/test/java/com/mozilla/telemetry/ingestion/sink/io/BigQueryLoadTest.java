@@ -34,8 +34,8 @@ public class BigQueryLoadTest {
     bigQuery = mock(com.google.cloud.bigquery.BigQuery.class);
     job = mock(Job.class);
     jobStatus = mock(JobStatus.class);
-    when(bigQuery.create(any(JobInfo.class), any())).thenReturn(job);
-    when(job.waitFor(any())).thenReturn(job);
+    when(bigQuery.create(any(JobInfo.class))).thenReturn(job);
+    when(job.waitFor()).thenReturn(job);
     when(job.getStatus()).thenReturn(jobStatus);
   }
 

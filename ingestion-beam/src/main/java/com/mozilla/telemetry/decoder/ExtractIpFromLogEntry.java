@@ -56,23 +56,28 @@ public class ExtractIpFromLogEntry
         final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
         logEntry = Json.readObjectNode(message.getPayload());
-        ObjectNode jsonPayload = (ObjectNode) logEntry.path("jsonPayload");
-        ObjectNode fields = (ObjectNode) jsonPayload.path("Fields");
-        JsonNode ipAddress = fields.remove("ip_address");
-        if (ipAddress != null) {
-          // if ipAddress is null, it means it wasn't present in the payload
-          String clientIpAddress = ipAddress.textValue();
-          attributes.put(Attribute.X_FORWARDED_FOR, clientIpAddress);
-          countIpExtracted.inc();
+        JsonNode maybeJsonPayloadNode = logEntry.path("jsonPayload");
+        if (maybeJsonPayloadNode.isObject()) {
+          ObjectNode jsonPayload = (ObjectNode) maybeJsonPayloadNode;
+          JsonNode maybeFieldsNode = jsonPayload.path("Fields");
+          if (maybeFieldsNode.isObject()) {
+            ObjectNode fields = (ObjectNode) maybeFieldsNode;
+            JsonNode ipAddress = fields.remove("ip_address");
+            if (ipAddress != null) {
+              // if ipAddress is null, it means it wasn't present in the payload
+              String clientIpAddress = ipAddress.textValue();
+              attributes.put(Attribute.X_FORWARDED_FOR, clientIpAddress);
+              countIpExtracted.inc();
 
-          jsonPayload.replace("Fields", fields);
-          logEntry.replace("jsonPayload", jsonPayload);
-          byte[] sanitizedPayload = logEntry.toString().getBytes(StandardCharsets.UTF_8);
+              jsonPayload.replace("Fields", fields);
+              logEntry.replace("jsonPayload", jsonPayload);
+              byte[] sanitizedPayload = logEntry.toString().getBytes(StandardCharsets.UTF_8);
 
-          return new PubsubMessage(sanitizedPayload, attributes);
-        } else {
-          return message;
+              return new PubsubMessage(sanitizedPayload, attributes);
+            }
+          }
         }
+        return message;
 
       } catch (IOException e) {
         throw new ParseLogEntry.InvalidLogEntryException(
