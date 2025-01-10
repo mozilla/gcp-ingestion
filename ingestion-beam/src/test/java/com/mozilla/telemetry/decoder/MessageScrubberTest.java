@@ -759,6 +759,41 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testRedactForBug1934302() throws Exception {
+    final Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-installer")
+        .put(Attribute.DOCUMENT_TYPE, "install").build();
+
+    // int as string
+    ObjectNode json = Json
+        .readObjectNode(("{\"windows_ubr\": \"123\"}").getBytes(StandardCharsets.UTF_8));
+
+    MessageScrubber.scrub(attributes, json);
+    assertTrue(json.path("windows_ubr").isInt());
+    assertEquals(123, json.path("windows_ubr").asInt());
+
+    // no windows_ubr
+    json = Json.readObjectNode(("{}").getBytes(StandardCharsets.UTF_8));
+
+    MessageScrubber.scrub(attributes, json);
+    assertFalse(json.has("windows_ubr"));
+
+    // invalid int should do nothing
+    json = Json.readObjectNode(("{\"windows_ubr\": \"abc\"}").getBytes(StandardCharsets.UTF_8));
+
+    MessageScrubber.scrub(attributes, json);
+    assertTrue(json.path("windows_ubr").isTextual());
+    assertEquals(json.path("windows_ubr").asText(), "abc");
+
+    // already int should do nothing
+    json = Json.readObjectNode(("{\"windows_ubr\": 1024}").getBytes(StandardCharsets.UTF_8));
+
+    MessageScrubber.scrub(attributes, json);
+    assertTrue(json.path("windows_ubr").isInt());
+    assertEquals(json.path("windows_ubr").asInt(), 1024);
+  }
+
+  @Test
   public void testScrubValidDocument() {
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
         .put(Attribute.DOCUMENT_NAMESPACE, "namespace") //
