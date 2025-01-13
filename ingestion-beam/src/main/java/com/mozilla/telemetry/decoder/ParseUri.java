@@ -251,8 +251,8 @@ public class ParseUri {
         39, "9", 41, "10", 43);
 
     /**
-     * NOTE: When adding new fields here, the version must be incremented on the client and the
-     * version must be added to the SUFFIX_LENGTH map above
+     * NOTE: When adding new fields here, the version must be incremented on the client.
+     * The version must then be added to the SUFFIX_LENGTH map above.
      */
     public static final List<BiConsumer<String, ObjectNode>> HANDLERS = ImmutableList.of(//
         ignore(), // ping_version handled by parsePingVersion
