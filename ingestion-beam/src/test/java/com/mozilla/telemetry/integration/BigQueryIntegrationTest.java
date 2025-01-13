@@ -308,7 +308,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
   }
 
   /**
-   * This test will fail if the submission_timestamp is over six years from the current date.
+   * This test will fail if the submission_timestamp is over five years from the current date.
    * Update the timestamps in testdata/bigquery-integration/input-raw-format.ndjson if this happens.
    */
   @Test
