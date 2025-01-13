@@ -250,6 +250,10 @@ public class ParseUri {
     public static final Map<String, Integer> SUFFIX_LENGTH = ImmutableMap.of("6", 36, "7", 37, "8",
         39, "9", 41, "10", 43);
 
+    /**
+     * NOTE: When adding new fields here, the version must be incremented on the client and the
+     * version must be added to the SUFFIX_LENGTH map above
+     */
     public static final List<BiConsumer<String, ObjectNode>> HANDLERS = ImmutableList.of(//
         ignore(), // ping_version handled by parsePingVersion
         putString("build_channel"), putString("update_channel"), putString("locale"),
