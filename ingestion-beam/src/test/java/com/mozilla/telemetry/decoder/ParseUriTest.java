@@ -302,6 +302,16 @@ public class ParseUriTest extends TestWithDeterministicJson {
           validIntAsStringCases("profile_cleanup_prompt"), //
           validBoolCases("profile_cleanup_requested")));
 
+  private static final Map<String, String> VALID_V9_DIMENSIONS = joinCases(
+      Arrays.asList(VALID_V8_DIMENSIONS, //
+          validStringCases("distribution_id"), //
+          validStringCases("distribution_version")));
+
+  private static final Map<String, String> VALID_V10_DIMENSIONS = joinCases(
+      Arrays.asList(VALID_V9_DIMENSIONS, //
+          validIntCases("windows_ubr"), //
+          validStringCases("stub_build_id")));
+
   private static final Map<String, String> VALID_V6_CASES = joinCases(Arrays.asList(//
       ImmutableMap.of("v6", "\"ping_version\":\"v6\"", //
           "v6-1", "\"ping_version\":\"v6-1\",\"funnelcake\":\"1\""), //
@@ -317,25 +327,42 @@ public class ParseUriTest extends TestWithDeterministicJson {
           "v8-3", "\"ping_version\":\"v8-3\",\"funnelcake\":\"3\""), //
       VALID_V8_DIMENSIONS));
 
+  private static final Map<String, String> VALID_V9_CASES = joinCases(Arrays.asList(//
+      ImmutableMap.of("v9", "\"ping_version\":\"v9\"", //
+          "v9-3", "\"ping_version\":\"v9-3\",\"funnelcake\":\"3\""), //
+      VALID_V9_DIMENSIONS));
+
+  private static final Map<String, String> VALID_V10_CASES = joinCases(Arrays.asList(//
+      ImmutableMap.of("v10", "\"ping_version\":\"v10\"", //
+          "v10-3", "\"ping_version\":\"v10-3\",\"funnelcake\":\"3\""), //
+      VALID_V10_DIMENSIONS));
+
   @Test
   public void testStubUri() {
     final List<String> input = Streams.stream(Iterables.concat(//
         VALID_V6_CASES.keySet(), //
         VALID_V7_CASES.keySet(), //
         VALID_V8_CASES.keySet(), //
+        VALID_V9_CASES.keySet(), //
+        VALID_V10_CASES.keySet(), //
         Arrays.asList(//
             "v6/" + String.join("/", Collections.nCopies(35, " ")), //
             "v7/" + String.join("/", Collections.nCopies(36, " ")), //
             "v8/" + String.join("/", Collections.nCopies(38, " ")), //
-            "", "v6", "v7", "v8")))
-        .map(v -> "{\"attributeMap\":{\"message_id\":\"00000000001\",\"uri\":\"/stub/" + v
+            "v9/" + String.join("/", Collections.nCopies(40, " ")), //
+            "v10/" + String.join("/", Collections.nCopies(42, " ")), //
+            "v6", "v7", "v8", "v9", "v10", // UnexpectedPathElementsException
+            "", "v1", "v61", "v21" // UnknownPingVersionException
+        ))).map(v -> "{\"attributeMap\":{\"message_id\":\"00000000001\",\"uri\":\"/stub/" + v
             + "\"},\"payload\":\"\"}")
         .collect(Collectors.toList());
 
     final List<String> expectedPayloads = Streams.stream(Iterables.concat(//
         VALID_V6_CASES.values(), //
         VALID_V7_CASES.values(), //
-        VALID_V8_CASES.values())) //
+        VALID_V8_CASES.values(), //
+        VALID_V9_CASES.values(), //
+        VALID_V10_CASES.values())) //
         .map(v -> sortJSON("{\"installer_type\":\"stub\",\"installer_version\":\"\"," + v + "}"))
         .collect(Collectors.toList());
     final List<String> expectedAttributes = Collections.nCopies(expectedPayloads.size(),
@@ -343,10 +370,19 @@ public class ParseUriTest extends TestWithDeterministicJson {
             + "\"document_namespace\":\"firefox-installer\"," //
             + "\"document_type\":\"install\",\"document_version\":\"1\"}");
     final List<String> expectedExceptions = Arrays.asList(
-        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
-        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
-        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        // "", v1, v61, v21 should be unknown
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",
+        // one exception of each type for each version
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
+        "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException");
