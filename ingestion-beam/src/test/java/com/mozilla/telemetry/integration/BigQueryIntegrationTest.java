@@ -307,6 +307,10 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
         matchesInAnyOrder(Lists.newArrayList("{\"type\":\"main\"}", null, "{\"type\":\"main\"}")));
   }
 
+  /**
+   * This test will fail if the submission_timestamp is over five years from the current date.
+   * Update the timestamps in testdata/bigquery-integration/input-raw-format.ndjson if this happens.
+   */
   @Test
   public void canLoadRawFormat() throws Exception {
     String table = "my_test_table";
@@ -351,17 +355,17 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
     assertEquals(
         Json.asString(ImmutableMap.<String, String>builder()
-            .put("submission_timestamp", "2020-01-12T21:02:18.123456Z")
+            .put("submission_timestamp", "2026-01-10T21:02:18.123456Z")
             .put("uri",
                 "/submit/telemetry/6c49ec73-4350-45a0-9c8a-6c8f5aded0cf/main/Firefox/58.0.2"
                     + "/release/20180206200532")
             .put("protocol", "HTTP/1.1").put("method", "POST").put("args", "v=4")
             .put("remote_addr", "172.31.32.5").put("content_length", "4722")
-            .put("date", "Mon, 12 Jan 2020 21:02:18 GMT").put("dnt", "1")
+            .put("date", "Sat, 10 Jan 2026 21:02:18 GMT").put("dnt", "1")
             .put("host", "incoming.telemetry.mozilla.org").put("user_agent", "pingsender/1.0")
             .put("x_forwarded_for", "10.98.132.74, 103.3.237.12").put("x_pingsender_version", "1.0")
             .put("x_debug_id", "my_debug_session_1")
-            .put("x_pipeline_proxy", "2020-01-12T21:02:18.123456Z")
+            .put("x_pipeline_proxy", "2026-01-10T21:02:18.123456Z")
             // ensure this value stayed compressed when loaded
             .put("payload", "H4sIAJBj8l4AAytJLS4BAAx+f9gEAAAA").build()),
         String.join("\n",
@@ -431,7 +435,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
                     .<String, String>builder().put("country", "US").put("subdivision1", "WA")
                     .put("subdivision2", "Clark").put("city", "Vancouver").build())
             .put("header",
-                ImmutableMap.<String, String>builder().put("date", "Mon, 12 Jan 2020 21:02:18 GMT")
+                ImmutableMap.<String, String>builder().put("date", "Sat, 10 Jan 2026 21:02:18 GMT")
                     .put("dnt", "1").put("x_pingsender_version", "1.0")
                     .put("x_debug_id", "my_debug_session_1").build())
             .put("uri",
@@ -441,7 +445,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
             .put("user_agent", ImmutableMap.<String, String>builder().put("browser", "pingsender")
                 .put("browser_version", "1.0").put("os", "Windows").put("os_version", "10").build())
             .build())
-        .put("submission_timestamp", "2020-01-12T21:02:18.123456Z")
+        .put("submission_timestamp", "2026-01-10T21:02:18.123456Z")
         .put("normalized_app_name", "Firefox").put("normalized_country_code", "US")
         .put("normalized_os", "Windows").put("normalized_os_version", "10").put("sample_id", 42)
         // ensure this value stayed compressed when loaded
@@ -457,7 +461,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
         "--outputFileCompression=UNCOMPRESSED",
         "--bqSelectedFields=payload,normalized_channel,normalized_app_name,submission_timestamp",
         "--bqRowRestriction=CAST(submission_timestamp AS DATE)"
-            + " BETWEEN '2020-01-10' AND '2020-01-14'",
+            + " BETWEEN '2026-01-08' AND '2026-01-12'",
         "--outputType=file", "--outputFileFormat=json", "--output=" + fileOutput,
         "--errorOutputType=stderr" });
 
@@ -468,7 +472,7 @@ public class BigQueryIntegrationTest extends TestWithDeterministicJson {
     assertEquals("Output read from BigQuery differed from expectation",
         Json.asString(ImmutableMap.of("attributeMap",
             ImmutableMap.of("normalized_app_name", "Firefox", //
-                "submission_timestamp", "2020-01-12T21:02:18.123456Z"),
+                "submission_timestamp", "2026-01-10T21:02:18.123456Z"),
             // ensure this value was decompressed when read
             "payload", "dGVzdA==")),
         outputLines.get(0));
