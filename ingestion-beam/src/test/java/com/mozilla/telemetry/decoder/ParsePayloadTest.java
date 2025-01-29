@@ -322,4 +322,26 @@ public class ParsePayloadTest extends TestWithDeterministicJson {
 
     pipeline.run();
   }
+
+  @Test
+  public void testMessagesDropped() throws IOException {
+    // ParsePayload should not output anything to output or error when
+    // MessageShouldBeDroppedException is thrown
+    String schemasLocation = TestConstant.SCHEMAS_LOCATION;
+    SchemaStoreSingletonFactory.clearSingletonsForTests();
+
+    final List<PubsubMessage> input = Arrays.asList(
+        new PubsubMessage(Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of())),
+            ImmutableMap.of("document_namespace", "drop", "document_type", "account-ecosystem")),
+        new PubsubMessage(Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of())), ImmutableMap
+            .of("document_namespace", "firefox-desktop", "document_type", "background-update")));
+
+    Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline.apply(Create.of(input))
+        .apply(ParsePayload.of(schemasLocation));
+
+    PAssert.that(output.output()).empty();
+    PAssert.that(output.failures()).empty();
+
+    pipeline.run();
+  }
 }
