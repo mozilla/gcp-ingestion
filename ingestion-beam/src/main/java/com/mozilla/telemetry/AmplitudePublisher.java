@@ -1,6 +1,17 @@
 package com.mozilla.telemetry;
 
+import com.mozilla.telemetry.amplitude.AmplitudeEvent;
 import com.mozilla.telemetry.amplitude.AmplitudePublisherOptions;
+import com.mozilla.telemetry.amplitude.FilterByDocType;
+import com.mozilla.telemetry.amplitude.ParseAmplitudeEvents;
+import com.mozilla.telemetry.decoder.AddMetadata;
+import com.mozilla.telemetry.decoder.ParsePayload;
+import com.mozilla.telemetry.decoder.ParseUri;
+import com.mozilla.telemetry.decoder.ParseUserAgent;
+import com.mozilla.telemetry.decoder.SanitizeAttributes;
+import com.mozilla.telemetry.transforms.DecompressPayload;
+import com.mozilla.telemetry.transforms.LimitPayloadSize;
+import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
@@ -45,24 +56,22 @@ public class AmplitudePublisher extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    // Optional.of(pipeline) //
-    // .map(p -> p //
-    // .apply(options.getInputType().read(options)) //
-    // .apply(ParseUri.of()).failuresTo(errorCollections) //
-    // .apply(ParseProxy.of(options.getSchemasLocation())) //
-    // .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
-    // .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
-    // .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
-    // .withClientCompressionRecorded()))
-    // .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(failureCollections) //
-    // .apply("ParsePayload", ParsePayload.of(options.getSchemasLocation())) //
-    // .failuresTo(failureCollections) //
-    // .apply(ParseUserAgent.of()) //
-    // .apply(NormalizeAttributes.of()) //
-    // .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
-    // .apply("AddMetadata", AddMetadata.of()).failuresTo(failureCollections) //
-    // .apply(options.getOutputType().write(options)).failuresTo(failureCollections); // todo
-    // sendrequest instead
+    PCollection<AmplitudeEvent> events = pipeline //
+        .apply(options.getInputType().read(options)) //
+        .apply(ParseUri.of()).failuresTo(errorCollections) //
+        .apply(FilterByDocType.of(options.getAllowedDocTypes(), options.getAllowedNamespaces())) //
+        .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
+            .withClientCompressionRecorded())
+        .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
+        .apply("ParsePayload", ParsePayload.of(options.getSchemasLocation())) //
+        .failuresTo(errorCollections) //
+        .apply(ParseUserAgent.of()) //
+        .apply(NormalizeAttributes.of()) //
+        .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
+        .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
+        .apply(ParseAmplitudeEvents.of()).failuresTo(errorCollections); //
+
+    // todo: filter and send
 
     // Note that there is no write step here for "successes"
     // since the purpose of this job is sending to the Amplitude API.
