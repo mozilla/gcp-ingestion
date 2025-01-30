@@ -330,11 +330,19 @@ public class ParsePayloadTest extends TestWithDeterministicJson {
     String schemasLocation = TestConstant.SCHEMAS_LOCATION;
     SchemaStoreSingletonFactory.clearSingletonsForTests();
 
-    final List<PubsubMessage> input = Arrays.asList(
-        new PubsubMessage(Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of())),
-            ImmutableMap.of("document_namespace", "drop", "document_type", "account-ecosystem")),
-        new PubsubMessage(Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of())), ImmutableMap
-            .of("document_namespace", "firefox-desktop", "document_type", "background-update")));
+    final List<PubsubMessage> input = Arrays
+        .asList(
+            new PubsubMessage(Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of())),
+                ImmutableMap.of("document_namespace", "drop", "document_type",
+                    "account-ecosystem")),
+            new PubsubMessage(Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of())),
+                ImmutableMap.of("document_namespace", "firefox-desktop", "document_type",
+                    "background-update")),
+            new PubsubMessage(
+                Json.asBytes(ImmutableMap.of("payload", ImmutableMap.of(), "search_query",
+                    "somequery", "matched_keywords", "query")),
+                ImmutableMap.of("document_namespace", "contextual-services", "document_type",
+                    "quicksuggest-impression")));
 
     Result<PCollection<PubsubMessage>, PubsubMessage> output = pipeline.apply(Create.of(input))
         .apply(ParsePayload.of(schemasLocation));
