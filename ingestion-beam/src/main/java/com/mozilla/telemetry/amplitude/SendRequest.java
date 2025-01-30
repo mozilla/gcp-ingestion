@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.amplitude;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.json.JSONObject;
 
 /**
  * Send GET requests to reporting endpoint.
@@ -31,7 +33,9 @@ public class SendRequest extends
   private final Distribution requestTimer = Metrics.distribution(SendRequest.class,
       "reporting_request_millis");
   private final Boolean reportingEnabled;
-  private final String amplitudeUrl;
+
+  // public static final MediaType JSON
+  // = MediaType.parse("application/json; charset=utf-8");
 
   private static class HttpRequestException extends IOException {
 
@@ -58,13 +62,12 @@ public class SendRequest extends
     }
   }
 
-  public SendRequest(Boolean reportingEnabled, String amplitudeUrl) {
+  public SendRequest(Boolean reportingEnabled) {
     this.reportingEnabled = reportingEnabled;
-    this.amplitudeUrl = amplitudeUrl;
   }
 
-  public static SendRequest of(Boolean reportingEnabled, String amplitudeUrl) {
-    return new SendRequest(reportingEnabled, amplitudeUrl);
+  public static SendRequest of(Boolean reportingEnabled) {
+    return new SendRequest(reportingEnabled);
   }
 
   @Override
@@ -75,7 +78,11 @@ public class SendRequest extends
 
           getOrCreateHttpClient();
 
-          Request request = new Request.Builder().url(this.amplitudeUrl).build();
+          JSONObject body = new JSONObject();
+          body.put("api_key", Attribute.AMPLITUDE_API_KEY);
+          // body.put("events", )
+
+          Request request = new Request.Builder().url("https://api2.amplitude.com/batch").build();
 
           if (reportingEnabled) {
             sendRequest(request);

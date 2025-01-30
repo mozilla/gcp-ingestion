@@ -25,7 +25,7 @@ public class SendRequestTest {
     List<PubsubMessage> input = Collections
         .singletonList(new PubsubMessage(new byte[0], attributes));
 
-    pipeline.apply(Create.of(input)).apply(SendRequest.of(false, "http://test.com"));
+    pipeline.apply(Create.of(input)).apply(SendRequest.of(false));
 
     pipeline.run();
 
