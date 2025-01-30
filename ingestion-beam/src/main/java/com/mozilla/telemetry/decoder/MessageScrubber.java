@@ -266,6 +266,12 @@ public class MessageScrubber {
       throw new MessageShouldBeDroppedException("1817821");
     }
 
+    if (bug1712850Affected(attributes)) {
+      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
+        throw new MessageShouldBeDroppedException("1712850");
+      }
+    }
+
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
     if (IGNORED_NAMESPACES.containsKey(namespace)) {
@@ -339,14 +345,6 @@ public class MessageScrubber {
           markBugCounter("1642386");
         });
       });
-    }
-
-    if (bug1712850Affected(attributes)) {
-      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
-        json.put("search_query", "");
-        json.put("matched_keywords", "");
-        markBugCounter("1712850");
-      }
     }
 
     if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {

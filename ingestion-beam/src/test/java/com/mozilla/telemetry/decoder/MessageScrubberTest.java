@@ -350,7 +350,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testRedactForBug1712850() throws Exception {
+  public void testShouldScrubBug1712850() throws Exception {
     ObjectNode json = Json.readObjectNode(("{\n" //
         + "  \"search_query\": \"abc\",\n" //
         + "  \"matched_keywords\": \"abc\"\n" //
@@ -362,9 +362,11 @@ public class MessageScrubberTest {
 
     assertTrue(json.hasNonNull("search_query"));
     assertTrue(json.hasNonNull("matched_keywords"));
-    MessageScrubber.scrub(attributes, json);
-    assertEquals("", json.path("search_query").asText());
-    assertEquals("", json.path("matched_keywords").asText());
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, json));
+
+    // valid document
+    MessageScrubber.scrub(attributes, Json.createObjectNode());
   }
 
   @Test
