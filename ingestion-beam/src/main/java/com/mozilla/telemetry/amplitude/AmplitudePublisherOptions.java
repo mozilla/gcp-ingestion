@@ -8,11 +8,11 @@ import org.apache.beam.sdk.options.PipelineOptions;
 
 public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions {
 
-  @Description("Path (local or gs://) to CSV text file containing event categories"
+  @Description("Path (local or gs://) to CSV text file containing events "
       + "that should be published to Amplitude")
-  String getEventCategoryAllowList();
+  String getEventsAllowList();
 
-  void setEventCategoryAllowList(String value);
+  void setEventsAllowList(String value);
 
   @Description("Comma-separated strings representing a list of doc types for which "
       + " to send reporting requests; doc types are not namespace qualified "

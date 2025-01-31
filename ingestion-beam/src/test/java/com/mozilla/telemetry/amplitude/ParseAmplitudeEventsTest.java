@@ -1,13 +1,12 @@
 package com.mozilla.telemetry.amplitude;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableList;
 import com.mozilla.telemetry.util.Json;
+import java.util.ArrayList;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.junit.Rule;
 import org.junit.Test;
-import java.util.ArrayList;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 public class ParseAmplitudeEventsTest {
 

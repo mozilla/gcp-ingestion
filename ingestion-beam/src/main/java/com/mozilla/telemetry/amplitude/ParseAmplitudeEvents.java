@@ -7,9 +7,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.time.Instant;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -21,9 +26,6 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import java.time.format.DateTimeFormatter;
-import java.time.Instant;
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
  * Convert PubSub Message with event data to Amplitude event.
@@ -31,11 +33,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 public class ParseAmplitudeEvents extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<AmplitudeEvent>, PubsubMessage>> {
 
-  public static ParseAmplitudeEvents of() {
-    return new ParseAmplitudeEvents();
+  private final String eventsAllowList;
+
+  public static ParseAmplitudeEvents of(String eventsAllowList) {
+    return new ParseAmplitudeEvents(eventsAllowList);
   }
 
-  private ParseAmplitudeEvents() {
+  private ParseAmplitudeEvents(String eventsAllowList) {
+    this.eventsAllowList = eventsAllowList;
   }
 
   @Override
@@ -59,7 +64,8 @@ public class ParseAmplitudeEvents extends
               .ofNullable(message.getAttribute(Attribute.DOCUMENT_TYPE)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing docType"));
           long submissionTimestamp = Optional //
-              .ofNullable(timstampStringToMillis(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP))) //
+              .ofNullable(
+                  timstampStringToMillis(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP))) //
               .orElseGet(() -> (Instant.now().toEpochMilli()));
           String clientId = Optional //
               .ofNullable(message.getAttribute(Attribute.CLIENT_ID)) //
@@ -68,8 +74,10 @@ public class ParseAmplitudeEvents extends
               .ofNullable(message.getAttribute(Attribute.APP_VERSION)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing appVersion"));
 
-
-            ArrayList<ObjectNode> events = extractEvents(payload);
+          try {
+            List<String[]> allowedEvents = readAllowedEventsFromFile(eventsAllowList, namespace,
+                docType);
+            ArrayList<ObjectNode> events = extractEvents(payload, allowedEvents);
 
             return events.stream().map((ObjectNode event) -> {
               AmplitudeEvent.Builder amplitudeEventBuilder = AmplitudeEvent.builder();
@@ -83,13 +91,16 @@ public class ParseAmplitudeEvents extends
 
               return amplitudeEventBuilder.build();
             }).collect(Collectors.toList());
-
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
 
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
         .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
           try {
             throw ee.exception();
-          } catch (UncheckedIOException | IOException | IllegalArgumentException | InvalidAttributeException e) {
+          } catch (UncheckedIOException | IOException | IllegalArgumentException
+              | InvalidAttributeException e) {
             return FailureMessage.of(ParseAmplitudeEvents.class.getSimpleName(), ee.element(),
                 ee.exception());
           }
@@ -101,22 +112,49 @@ public class ParseAmplitudeEvents extends
     return Instant.parse(timestamp).toEpochMilli();
   }
 
-    /**
-   *
-   * @throws IOException
-   */
+  private List<String[]> readAllowedEventsFromFile(String fileLocation, String namespace,
+      String docType) throws IOException {
+    if (fileLocation == null) {
+      throw new IllegalArgumentException("File location must be defined");
+    }
+
+    try (InputStream inputStream = BeamFileInputStream.open(fileLocation);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader reader = new BufferedReader(inputStreamReader)) {
+      List<String[]> eventList = new ArrayList<>();
+
+      while (reader.ready()) {
+        String line = reader.readLine();
+
+        if (line != null && !line.isEmpty()) {
+          String[] separated = line.split(",");
+
+          if (separated.length != 4) {
+            throw new IllegalArgumentException(
+                "Invalid mapping: " + line + "; four-column csv expected");
+          }
+
+          if (separated[0] == namespace && separated[1] == docType) {
+            eventList.add(separated);
+          }
+        }
+      }
+
+      return eventList;
+    } catch (IOException e) {
+      throw new IOException("Exception thrown while fetching " + fileLocation, e);
+    }
+  }
+
   @VisibleForTesting
-  static ArrayList<ObjectNode> extractEvents(ObjectNode payload) {
+  static ArrayList<ObjectNode> extractEvents(ObjectNode payload, List<String[]> allowedEvents)
+      throws IOException {
     ArrayList<ObjectNode> events = new ArrayList<ObjectNode>();
 
     payload.path("events").forEach(event -> {
       final ObjectNode result = Json.createObjectNode();
-      JsonNode eventCategory = event.get("category");
-      JsonNode eventName = event.get("name");
-
-      System.err.println(Json.asString(event));
-
-      System.err.println(Json.asString(eventName));
+      final JsonNode eventCategory = event.get("category");
+      final JsonNode eventName = event.get("name");
 
       if (eventCategory != null) {
         String eventType = eventCategory.asText();
@@ -125,10 +163,22 @@ public class ParseAmplitudeEvents extends
           eventType = eventCategory.asText() + "." + eventName.asText();
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        result.put("event_type", eventType);
-        result.put("event_properties", result.get("extra"));
-        events.add(result);
+        if (allowedEvents.stream().anyMatch(c -> {
+          if (c[2] == eventCategory.asText()) {
+            if (c[3] == null) {
+              return true;
+            } else if (c[3] == eventName.asText()) {
+              return true;
+            }
+          }
+
+          return false;
+        })) {
+          ObjectMapper mapper = new ObjectMapper();
+          result.put("event_type", eventType);
+          result.put("event_properties", result.get("extra"));
+          events.add(result);
+        }
       }
     });
 

@@ -69,7 +69,7 @@ public class AmplitudePublisher extends Sink {
         .apply(NormalizeAttributes.of()) //
         .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
         .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
-        .apply(ParseAmplitudeEvents.of()).failuresTo(errorCollections); //
+        .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections); //
 
     // todo: filter and send
 
