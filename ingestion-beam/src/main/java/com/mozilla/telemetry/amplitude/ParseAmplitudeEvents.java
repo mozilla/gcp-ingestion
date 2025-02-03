@@ -86,7 +86,7 @@ public class ParseAmplitudeEvents extends
               amplitudeEventBuilder.setUserId(clientId);
               amplitudeEventBuilder.setAppVersion(appVersion);
               amplitudeEventBuilder.setEventType(event.get("event_type").toString());
-              amplitudeEventBuilder.setEventProperties(event.get("event_properties"));
+              amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
               // todo: handle event timestamp
 
               return amplitudeEventBuilder.build();
@@ -176,7 +176,7 @@ public class ParseAmplitudeEvents extends
         })) {
           ObjectMapper mapper = new ObjectMapper();
           result.put("event_type", eventType);
-          result.put("event_properties", result.get("extra"));
+          result.put("event_extras", result.get("extra"));
           events.add(result);
         }
       }

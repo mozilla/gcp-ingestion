@@ -7,8 +7,10 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
@@ -19,6 +21,7 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -26,7 +29,7 @@ import org.json.JSONObject;
  */
 @SuppressWarnings("checkstyle:lineLength")
 public class SendRequest extends
-    PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
+    PTransform<PCollection<AmplitudeEvent>, Result<PCollection<AmplitudeEvent>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
 
@@ -34,8 +37,7 @@ public class SendRequest extends
       "reporting_request_millis");
   private final Boolean reportingEnabled;
 
-  // public static final MediaType JSON
-  // = MediaType.parse("application/json; charset=utf-8");
+  public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
   private static class HttpRequestException extends IOException {
 
@@ -71,33 +73,38 @@ public class SendRequest extends
   }
 
   @Override
-  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
-      PCollection<PubsubMessage> interactions) {
-    return interactions.apply(MapElements.into(TypeDescriptor.of(PubsubMessage.class))
-        .via((PubsubMessage interaction) -> {
+  public Result<PCollection<AmplitudeEvent>, PubsubMessage> expand(
+      PCollection<AmplitudeEvent> events) {
+    return events.apply(
+        MapElements.into(TypeDescriptor.of(AmplitudeEvent.class)).via((AmplitudeEvent event) -> {
 
           getOrCreateHttpClient();
 
           JSONObject body = new JSONObject();
           body.put("api_key", Attribute.AMPLITUDE_API_KEY);
-          // body.put("events", )
 
-          Request request = new Request.Builder().url("https://api2.amplitude.com/batch").build();
+          JSONArray jsonEvents = new JSONArray();
+          jsonEvents.put(event.toJson());
+          body.put("events", jsonEvents);
+
+          RequestBody requestBody = RequestBody.create(body.toString(), JSON);
+          Request request = new Request.Builder().url("https://api2.amplitude.com/batch")
+              .post(requestBody).build();
 
           if (reportingEnabled) {
             sendRequest(request);
           }
 
-          return interaction;
+          return event;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
-          try {
-            throw ee.exception();
-          } catch (UncheckedIOException | RequestContentException e) {
-            return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
-                ee.exception());
-          }
-        }));
+            .exceptionsVia((ExceptionElement<AmplitudeEvent> ee) -> {
+              try {
+                throw ee.exception();
+              } catch (UncheckedIOException e) {
+                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
+                    ee.exception());
+              }
+            }));
   }
 
   private void sendRequest(Request request) {
@@ -106,8 +113,6 @@ public class SendRequest extends
 
       long requestDuration = response.receivedResponseAtMillis() - response.sentRequestAtMillis();
       requestTimer.update(requestDuration);
-
-      // todo transform payload etc
 
       // TODO: first iteration of job does not retry requests on errors
       if (response.isRedirect()) {
