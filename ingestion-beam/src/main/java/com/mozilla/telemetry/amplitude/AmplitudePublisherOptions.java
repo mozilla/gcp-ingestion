@@ -41,6 +41,11 @@ public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions 
 
   void setBatchWindowDuration(String value);
 
+  @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
+  Double getRandomSampleRatio();
+
+  void setRandomSampleRatio(Double value);
+
   @Hidden
   interface Parsed extends AmplitudePublisherOptions, SinkOptions.Parsed {
   }
