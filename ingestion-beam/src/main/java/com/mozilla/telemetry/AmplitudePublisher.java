@@ -10,15 +10,18 @@ import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.SanitizeAttributes;
+import com.mozilla.telemetry.republisher.RandomSampler;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
+import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
@@ -57,10 +60,23 @@ public class AmplitudePublisher extends Sink {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> errorCollections = new ArrayList<>();
 
-    PCollection<AmplitudeEvent> events = pipeline //
+    PCollection<PubsubMessage> messages = pipeline //
         .apply(options.getInputType().read(options)) //
         .apply(ParseUri.of()).failuresTo(errorCollections) //
-        .apply(FilterByDocType.of(options.getAllowedDocTypes(), options.getAllowedNamespaces())) //
+        .apply(FilterByDocType.of(options.getAllowedDocTypes(), options.getAllowedNamespaces()));
+
+    // Random sample.
+    if (options.getRandomSampleRatio() != null) {
+      final Double ratio = options.getRandomSampleRatio();
+      messages //
+          .apply("SampleBySampleIdOrRandomNumber", Filter.by(message -> {
+            message = PubsubConstraints.ensureNonNull(message);
+            String sampleId = message.getAttribute("sample_id");
+            return RandomSampler.filterBySampleIdOrRandomNumber(sampleId, ratio);
+          })).apply("RepublishRandomSample", options.getOutputType().write(options));
+    }
+
+    PCollection<AmplitudeEvent> events = messages
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
             .withClientCompressionRecorded())
         .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
@@ -72,8 +88,6 @@ public class AmplitudePublisher extends Sink {
         .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
         .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
         .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections); //
-
-    // todo: sample optionally
 
     // Note that there is no write step here for "successes"
     // since the purpose of this job is sending to the Amplitude API.
