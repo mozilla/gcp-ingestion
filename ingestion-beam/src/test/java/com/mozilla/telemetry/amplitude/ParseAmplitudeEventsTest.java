@@ -3,6 +3,7 @@ package com.mozilla.telemetry.amplitude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.util.Json;
+import java.io.IOException;
 import java.util.ArrayList;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.junit.Rule;
@@ -14,7 +15,7 @@ public class ParseAmplitudeEventsTest {
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   @Test
-  public void testExtractEvents() throws JsonProcessingException {
+  public void testExtractEvents() throws JsonProcessingException, IOException {
     final ObjectNode payload = Json.createObjectNode();
 
     ObjectNode eventObject = Json.createObjectNode();
@@ -29,7 +30,12 @@ public class ParseAmplitudeEventsTest {
     String nullValue = null;
     expectedEventObject.put("event_properties", nullValue);
     expect.add(expectedEventObject);
-    ArrayList<ObjectNode> actual = ParseAmplitudeEvents.extractEvents(payload);
+
+    ArrayList<String[]> allowedEvents = new ArrayList<>();
+    allowedEvents
+        .add(new String[] { "firefox_desktop", "quick-suggest", "top_site", "contile_click" });
+
+    ArrayList<ObjectNode> actual = ParseAmplitudeEvents.extractEvents(payload, allowedEvents);
     if (!expect.equals(actual)) {
       System.err.println(Json.asString(actual));
       System.err.println(Json.asString(expect));

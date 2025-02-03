@@ -4,6 +4,7 @@ import com.mozilla.telemetry.amplitude.AmplitudeEvent;
 import com.mozilla.telemetry.amplitude.AmplitudePublisherOptions;
 import com.mozilla.telemetry.amplitude.FilterByDocType;
 import com.mozilla.telemetry.amplitude.ParseAmplitudeEvents;
+import com.mozilla.telemetry.amplitude.SendRequest;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseUri;
@@ -69,9 +70,10 @@ public class AmplitudePublisher extends Sink {
         .apply(NormalizeAttributes.of()) //
         .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
         .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
-        .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections); //
+        .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
+        .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections); //
 
-    // todo: filter and send
+    // todo: sample optionally
 
     // Note that there is no write step here for "successes"
     // since the purpose of this job is sending to the Amplitude API.
