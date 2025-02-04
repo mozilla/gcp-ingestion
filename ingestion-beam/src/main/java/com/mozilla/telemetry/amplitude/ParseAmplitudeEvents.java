@@ -33,14 +33,16 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 public class ParseAmplitudeEvents extends
     PTransform<PCollection<PubsubMessage>, Result<PCollection<AmplitudeEvent>, PubsubMessage>> {
 
-  private final String eventsAllowList;
+  private final String eventsAllowListPath;
 
-  public static ParseAmplitudeEvents of(String eventsAllowList) {
-    return new ParseAmplitudeEvents(eventsAllowList);
+  private static transient List<String[]> singletonAllowedEvents;
+
+  public static ParseAmplitudeEvents of(String eventsAllowListPath) {
+    return new ParseAmplitudeEvents(eventsAllowListPath);
   }
 
-  private ParseAmplitudeEvents(String eventsAllowList) {
-    this.eventsAllowList = eventsAllowList;
+  private ParseAmplitudeEvents(String eventsAllowListPath) {
+    this.eventsAllowListPath = eventsAllowListPath;
   }
 
   @Override
@@ -57,6 +59,12 @@ public class ParseAmplitudeEvents extends
             throw new UncheckedIOException(e);
           }
 
+          try {
+            readAllowedEventsFromFile();
+          } catch (IOException e) {
+            throw new UncheckedIOException(e);
+          }
+
           String namespace = Optional //
               .ofNullable(message.getAttribute(Attribute.DOCUMENT_NAMESPACE)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing namespace"));
@@ -65,19 +73,16 @@ public class ParseAmplitudeEvents extends
               .orElseThrow(() -> new InvalidAttributeException("Missing docType"));
           long submissionTimestamp = Optional //
               .ofNullable(
-                  timstampStringToMillis(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP))) //
+                  timestampStringToMillis(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP))) //
               .orElseGet(() -> (Instant.now().toEpochMilli()));
           String clientId = Optional //
               .ofNullable(message.getAttribute(Attribute.CLIENT_ID)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing clientId"));
           String appVersion = Optional //
-              .ofNullable(message.getAttribute(Attribute.APP_VERSION)) //
-              .orElseThrow(() -> new InvalidAttributeException("Missing appVersion"));
+              .ofNullable(message.getAttribute(Attribute.APP_VERSION)).orElseGet(() -> (null));
 
           try {
-            List<String[]> allowedEvents = readAllowedEventsFromFile(eventsAllowList, namespace,
-                docType);
-            ArrayList<ObjectNode> events = extractEvents(payload, allowedEvents);
+            ArrayList<ObjectNode> events = extractEvents(payload, namespace, docType);
 
             return events.stream().map((ObjectNode event) -> {
               AmplitudeEvent.Builder amplitudeEventBuilder = AmplitudeEvent.builder();
@@ -85,7 +90,7 @@ public class ParseAmplitudeEvents extends
               amplitudeEventBuilder.setTime(submissionTimestamp);
               amplitudeEventBuilder.setUserId(clientId);
               amplitudeEventBuilder.setAppVersion(appVersion);
-              amplitudeEventBuilder.setEventType(event.get("event_type").toString());
+              amplitudeEventBuilder.setEventType(event.get("event_type").asText());
               amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
               // todo: handle event timestamp
 
@@ -108,20 +113,23 @@ public class ParseAmplitudeEvents extends
   }
 
   @VisibleForTesting
-  static long timstampStringToMillis(String timestamp) {
+  static long timestampStringToMillis(String timestamp) {
     return Instant.parse(timestamp).toEpochMilli();
   }
 
-  private List<String[]> readAllowedEventsFromFile(String fileLocation, String namespace,
-      String docType) throws IOException {
-    if (fileLocation == null) {
+  List<String[]> readAllowedEventsFromFile() throws IOException {
+    if (singletonAllowedEvents != null) {
+      return singletonAllowedEvents;
+    }
+
+    if (eventsAllowListPath == null) {
       throw new IllegalArgumentException("File location must be defined");
     }
 
-    try (InputStream inputStream = BeamFileInputStream.open(fileLocation);
+    try (InputStream inputStream = BeamFileInputStream.open(eventsAllowListPath);
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
         BufferedReader reader = new BufferedReader(inputStreamReader)) {
-      List<String[]> eventList = new ArrayList<>();
+      singletonAllowedEvents = new ArrayList<String[]>();
 
       while (reader.ready()) {
         String line = reader.readLine();
@@ -134,20 +142,18 @@ public class ParseAmplitudeEvents extends
                 "Invalid mapping: " + line + "; four-column csv expected");
           }
 
-          if (separated[0] == namespace && separated[1] == docType) {
-            eventList.add(separated);
-          }
+          singletonAllowedEvents.add(separated);
         }
       }
 
-      return eventList;
+      return singletonAllowedEvents;
     } catch (IOException e) {
-      throw new IOException("Exception thrown while fetching " + fileLocation, e);
+      throw new IOException("Exception thrown while fetching " + eventsAllowListPath, e);
     }
   }
 
   @VisibleForTesting
-  static ArrayList<ObjectNode> extractEvents(ObjectNode payload, List<String[]> allowedEvents)
+  static ArrayList<ObjectNode> extractEvents(ObjectNode payload, String namespace, String docType)
       throws IOException {
     ArrayList<ObjectNode> events = new ArrayList<ObjectNode>();
 
@@ -163,13 +169,10 @@ public class ParseAmplitudeEvents extends
           eventType = eventCategory.asText() + "." + eventName.asText();
         }
 
-        if (allowedEvents.stream().anyMatch(c -> {
-          if (c[2] == eventCategory.asText()) {
-            if (c[3] == null) {
-              return true;
-            } else if (c[3] == eventName.asText()) {
-              return true;
-            }
+        if (singletonAllowedEvents.stream().anyMatch(c -> {
+          if (c[0].equals(namespace) && c[1].equals(docType) && c[2].equals(eventCategory.asText())
+              && (c[3].equals("*") || c[3].equals(eventName.asText()))) {
+            return true;
           }
 
           return false;
