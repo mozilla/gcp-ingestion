@@ -18,7 +18,7 @@ public class SendRequestTest {
 
   private AmplitudeEvent.Builder getTestAmplitudeEvent() {
     return AmplitudeEvent.builder().setUserId("test").setEventType("category.event")
-        .setTime(1738620582500l);
+        .setTime(1738620582500L);
   }
 
   @Test
@@ -30,7 +30,7 @@ public class SendRequestTest {
     AmplitudeEvent event = getTestAmplitudeEvent().build();
     List<AmplitudeEvent> input = ImmutableList.of(event);
 
-    pipeline.apply(Create.of(input));
+    pipeline.apply(Create.of(input)).apply(SendRequest.of(false));
 
     pipeline.run();
 
