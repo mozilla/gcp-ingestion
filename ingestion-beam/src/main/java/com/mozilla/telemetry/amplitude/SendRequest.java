@@ -1,9 +1,13 @@
 package com.mozilla.telemetry.amplitude;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
+import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import okhttp3.HttpUrl;
@@ -21,8 +25,6 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 /**
  * Send GET requests to reporting endpoint.
@@ -80,12 +82,16 @@ public class SendRequest extends
 
           getOrCreateHttpClient();
 
-          JSONObject body = new JSONObject();
+          ObjectNode body = Json.createObjectNode();
           body.put("api_key", Attribute.AMPLITUDE_API_KEY);
 
-          JSONArray jsonEvents = new JSONArray();
-          jsonEvents.put(event.toJson());
-          body.put("events", jsonEvents);
+          try {
+            ArrayNode jsonEvents = Json.createArrayNode();
+            jsonEvents.add(event.toJson());
+            body.put("events", jsonEvents);
+          } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+          }
 
           RequestBody requestBody = RequestBody.create(body.toString(), JSON);
           Request request = new Request.Builder().url("https://api2.amplitude.com/batch")

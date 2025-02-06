@@ -15,10 +15,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.time.Instant;
-import java.util.*;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -65,34 +66,29 @@ public class ParseAmplitudeEvents extends
             throw new UncheckedIOException(e);
           }
 
-          String namespace = Optional //
+          final String namespace = Optional //
               .ofNullable(message.getAttribute(Attribute.DOCUMENT_NAMESPACE)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing namespace"));
-          String docType = Optional //
+          final String docType = Optional //
               .ofNullable(message.getAttribute(Attribute.DOCUMENT_TYPE)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing docType"));
-          long submissionTimestamp = Optional //
-              .ofNullable(
-                  timestampStringToMillis(message.getAttribute(Attribute.SUBMISSION_TIMESTAMP))) //
-              .orElseGet(() -> (Instant.now().toEpochMilli()));
-          String clientId = Optional //
+          final String clientId = Optional //
               .ofNullable(message.getAttribute(Attribute.CLIENT_ID)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing clientId"));
-          String appVersion = Optional //
+          final String appVersion = Optional //
               .ofNullable(message.getAttribute(Attribute.APP_VERSION)).orElseGet(() -> (null));
 
           try {
-            ArrayList<ObjectNode> events = extractEvents(payload, namespace, docType);
+            final ArrayList<ObjectNode> events = extractEvents(payload, namespace, docType);
 
             return events.stream().map((ObjectNode event) -> {
               AmplitudeEvent.Builder amplitudeEventBuilder = AmplitudeEvent.builder();
 
-              amplitudeEventBuilder.setTime(submissionTimestamp);
+              amplitudeEventBuilder.setTime(extractTimestamp(payload, event));
               amplitudeEventBuilder.setUserId(clientId);
               amplitudeEventBuilder.setAppVersion(appVersion);
               amplitudeEventBuilder.setEventType(event.get("event_type").asText());
               amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
-              // todo: handle event timestamp
 
               return amplitudeEventBuilder.build();
             }).collect(Collectors.toList());
@@ -115,6 +111,25 @@ public class ParseAmplitudeEvents extends
   @VisibleForTesting
   static long timestampStringToMillis(String timestamp) {
     return Instant.parse(timestamp).toEpochMilli();
+  }
+
+  @VisibleForTesting
+  private static long extractTimestamp(ObjectNode payload, ObjectNode event) {
+    JsonNode gleanTimestamp = event.path("event_extras").path(Attribute.GLEAN_TIMESTAMP);
+
+    if (!gleanTimestamp.isMissingNode()) {
+      return gleanTimestamp.asLong();
+    }
+
+    JsonNode startTime = payload.path(Attribute.PING_INFO).path(Attribute.PARSED_START_TIME);
+    JsonNode eventTime = event.path(Attribute.TIMESTAMP);
+
+    if (!startTime.isMissingNode() && !eventTime.isMissingNode()) {
+      long timestampMillis = timestampStringToMillis(startTime.textValue());
+      return timestampMillis + eventTime.asLong();
+    }
+
+    return Instant.now().toEpochMilli();
   }
 
   List<String[]> readAllowedEventsFromFile() throws IOException {
@@ -162,10 +177,10 @@ public class ParseAmplitudeEvents extends
       final JsonNode eventCategory = event.get("category");
       final JsonNode eventName = event.get("name");
 
-      if (eventCategory != null) {
+      if (eventCategory != null && !eventCategory.isNull()) {
         String eventType = eventCategory.asText();
 
-        if (eventName != null) {
+        if (eventName != null && !eventName.isNull()) {
           eventType = eventCategory.asText() + "." + eventName.asText();
         }
 
@@ -179,12 +194,17 @@ public class ParseAmplitudeEvents extends
         })) {
           ObjectMapper mapper = new ObjectMapper();
           result.put("event_type", eventType);
-          result.put("event_extras", result.get("extra"));
+          result.put("event_extras", event.get("extra"));
+          result.put("timestamp", event.get(Attribute.TIMESTAMP));
           events.add(result);
         }
       }
     });
 
     return events;
+  }
+
+  private static Optional<JsonNode> optionalNode(JsonNode... nodes) {
+    return Stream.of(nodes).filter(n -> !n.isMissingNode()).findFirst();
   }
 }

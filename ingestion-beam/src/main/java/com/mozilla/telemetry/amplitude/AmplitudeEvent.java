@@ -1,6 +1,10 @@
 package com.mozilla.telemetry.amplitude;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.auto.value.AutoValue;
+import com.mozilla.telemetry.util.Json;
 import java.io.Serializable;
 import javax.annotation.Nullable;
 import org.apache.beam.sdk.coders.Coder;
@@ -9,7 +13,6 @@ import org.apache.beam.sdk.schemas.Schema;
 import org.apache.beam.sdk.schemas.SchemaCoder;
 import org.apache.beam.sdk.schemas.annotations.DefaultSchema;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import org.json.JSONObject;
 
 @AutoValue
 @DefaultSchema(AutoValueSchema.class)
@@ -36,16 +39,20 @@ public abstract class AmplitudeEvent implements Serializable {
     return new AutoValue_AmplitudeEvent.Builder();
   }
 
-  public JSONObject toJson() {
-    JSONObject json = new JSONObject();
-    json.put("user_id", this.getUserId());
+  /** 
+   * Convert amplitude event to JSON to send in HTTP request.
+  */
+  public ObjectNode toJson() throws JsonProcessingException {
+    final ObjectNode json = Json.createObjectNode();
+    json.put("user_id", getUserId());
 
-    JSONObject eventExtras = new JSONObject();
-    eventExtras.put("extras", new JSONObject(this.getEventExtras()));
+    final ObjectNode eventExtras = Json.createObjectNode();
+    ObjectMapper objectMapper = new ObjectMapper();
+    eventExtras.put("extras", objectMapper.readValue(getEventExtras(), ObjectNode.class));
     json.put("event_properties", eventExtras);
 
-    if (this.getAppVersion() != null) {
-      json.put("app_version", this.getAppVersion());
+    if (getAppVersion() != null) {
+      json.put("app_version", getAppVersion());
     }
 
     return json;
