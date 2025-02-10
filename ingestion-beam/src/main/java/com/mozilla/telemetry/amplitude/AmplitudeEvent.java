@@ -30,9 +30,6 @@ public abstract class AmplitudeEvent implements Serializable {
   @Nullable
   abstract String getEventExtras();
 
-  // @Nullable
-  // abstract Map<String, Object> getUserProperties();
-
   abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -90,8 +87,6 @@ public abstract class AmplitudeEvent implements Serializable {
     public abstract Builder setTime(long newTime);
 
     public abstract Builder setEventExtras(String newEventExtras);
-
-    // public abstract Builder setUserProperties(Map<String, Object> newUserProperties);
 
     public abstract Builder setAppVersion(String newAppVersion);
 

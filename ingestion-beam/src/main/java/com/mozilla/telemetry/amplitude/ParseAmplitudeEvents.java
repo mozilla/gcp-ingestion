@@ -60,6 +60,9 @@ public class ParseAmplitudeEvents extends
             throw new UncheckedIOException(e);
           }
 
+          // A CSV file contains a set of event names and categories that should be sent to
+          // Amplitude.
+          // This is to limit the event volume and cost in Amplitude.
           try {
             readAllowedEventsFromFile();
           } catch (IOException e) {
@@ -78,6 +81,7 @@ public class ParseAmplitudeEvents extends
           final String appVersion = Optional //
               .ofNullable(message.getAttribute(Attribute.APP_VERSION)).orElseGet(() -> (null));
 
+          // each event from the payload is mapped to a separate Amplitude event
           try {
             final ArrayList<ObjectNode> events = extractEvents(payload, namespace, docType);
 
@@ -113,6 +117,11 @@ public class ParseAmplitudeEvents extends
     return Instant.parse(timestamp).toEpochMilli();
   }
 
+  /**
+   * Compute the event timestamp.
+   * Based on the same logic used in:
+   * https://github.com/mozilla/bigquery-etl/blob/cb1f059c1ba3437747baced399b09b3b89725024/sql_generators/glean_usage/templates/events_stream_v1.query.sql#L127-L130
+   */
   @VisibleForTesting
   private static long extractTimestamp(ObjectNode payload, ObjectNode event) {
     JsonNode gleanTimestamp = event.path("event_extras").path(Attribute.GLEAN_TIMESTAMP);
@@ -167,6 +176,9 @@ public class ParseAmplitudeEvents extends
     }
   }
 
+  /**
+   * Read events from ping payload, filter based on allowed events and return as JSON.
+   */
   @VisibleForTesting
   static ArrayList<ObjectNode> extractEvents(ObjectNode payload, String namespace, String docType)
       throws IOException {
