@@ -3,7 +3,6 @@ package com.mozilla.telemetry.amplitude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
@@ -38,6 +37,7 @@ public class SendRequest extends
   private final Distribution requestTimer = Metrics.distribution(SendRequest.class,
       "reporting_request_millis");
   private final Boolean reportingEnabled;
+  private final String amplitudeUrl;
 
   public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -55,23 +55,22 @@ public class SendRequest extends
     }
   }
 
-  /**
-   * Used to log requests for debugging purposes.
-   */
-  @VisibleForTesting
-  static class RequestContentException extends RuntimeException {
-
-    RequestContentException(String url) {
-      super("Reporting URL sent: " + url);
-    }
-  }
-
   public SendRequest(Boolean reportingEnabled) {
     this.reportingEnabled = reportingEnabled;
+    this.amplitudeUrl = "https://api2.amplitude.com";
+  }
+
+  public SendRequest(Boolean reportingEnabled, String amplitudeUrl) {
+    this.reportingEnabled = reportingEnabled;
+    this.amplitudeUrl = amplitudeUrl;
   }
 
   public static SendRequest of(Boolean reportingEnabled) {
     return new SendRequest(reportingEnabled);
+  }
+
+  public static SendRequest of(Boolean reportingEnabled, String amplitudeUrl) {
+    return new SendRequest(reportingEnabled, amplitudeUrl);
   }
 
   @Override
@@ -88,14 +87,15 @@ public class SendRequest extends
           try {
             ArrayNode jsonEvents = Json.createArrayNode();
             jsonEvents.add(event.toJson());
+
             body.put("events", jsonEvents);
           } catch (JsonProcessingException e) {
             throw new UncheckedIOException(e);
           }
 
           RequestBody requestBody = RequestBody.create(body.toString(), JSON);
-          Request request = new Request.Builder().url("https://api2.amplitude.com/batch")
-              .post(requestBody).build();
+          Request request = new Request.Builder().url(amplitudeUrl + "/batch").post(requestBody)
+              .build();
 
           if (reportingEnabled) {
             sendRequest(request);

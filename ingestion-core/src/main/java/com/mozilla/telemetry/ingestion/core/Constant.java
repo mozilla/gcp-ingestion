@@ -31,6 +31,7 @@ public class Constant {
     public static final String GEO_SUBDIVISION2 = "geo_subdivision2";
     public static final String GEO_DMA_CODE = "geo_dma_code";
     public static final String GEO_DB_VERSION = "geo_db_version";
+    public static final String GLEAN_TIMESTAMP = "glean_timestamp";
     @SuppressWarnings({ "checkstyle:linelength" })
     public static final String IMPROVE_SUGGEST_EXPERIENCE_CHECKED = "improve_suggest_experience_checked";
     public static final String ISP_NAME = "isp_name";
@@ -41,6 +42,8 @@ public class Constant {
     public static final String NORMALIZED_APP_NAME = "normalized_app_name";
     public static final String NORMALIZED_CHANNEL = "normalized_channel";
     public static final String NORMALIZED_COUNTRY_CODE = "normalized_country_code";
+    public static final String PARSED_START_TIME = "parsed_start_time";
+    public static final String PING_INFO = "ping_info";
     public static final String NORMALIZED_OS = "normalized_os";
     public static final String NORMALIZED_OS_VERSION = "normalized_os_version";
     public static final String OS = "os";
@@ -50,6 +53,7 @@ public class Constant {
     public static final String REQUEST_ID = "request_id";
     public static final String SAMPLE_ID = "sample_id";
     public static final String SUBMISSION_TIMESTAMP = "submission_timestamp";
+    public static final String TIMESTAMP = "timestamp";
     public static final String POSITION = "position";
     public static final String MATCH_TYPE = "match_type";
     public static final String ADVERTISER = "advertiser";
