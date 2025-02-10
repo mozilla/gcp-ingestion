@@ -26,7 +26,7 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
- * Send GET requests to reporting endpoint.
+ * Send GET requests to Amplitude endpoint.
  */
 @SuppressWarnings("checkstyle:lineLength")
 public class SendRequest extends
