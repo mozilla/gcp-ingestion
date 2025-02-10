@@ -151,18 +151,18 @@ public class ParseAmplitudeEventsTest {
     final ArrayNode events1 = payload1.putArray("events");
 
     String nullValue = null;
-    ObjectNode eventObject1 = Json.createObjectNode();
-    eventObject1.put("category", "bookmark");
-    eventObject1.put("name", nullValue);
-    eventObject1.put(Attribute.TIMESTAMP, "10");
+    ObjectNode bookmarkEventObject = Json.createObjectNode();
+    bookmarkEventObject.put("category", "bookmark");
+    bookmarkEventObject.put("name", nullValue);
+    bookmarkEventObject.put(Attribute.TIMESTAMP, "10");
 
-    ObjectNode eventObject2 = Json.createObjectNode();
-    eventObject2.put("category", "bookmark");
-    eventObject2.put("name", "add");
-    eventObject2.put(Attribute.TIMESTAMP, "10");
+    ObjectNode bookmarkAddEventObject = Json.createObjectNode();
+    bookmarkAddEventObject.put("category", "bookmark");
+    bookmarkAddEventObject.put("name", "add");
+    bookmarkAddEventObject.put(Attribute.TIMESTAMP, "10");
 
-    events1.add(eventObject1);
-    events1.add(eventObject2);
+    events1.add(bookmarkEventObject);
+    events1.add(bookmarkAddEventObject);
 
     final ObjectNode payload2 = Json.createObjectNode();
     payload2.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -170,39 +170,39 @@ public class ParseAmplitudeEventsTest {
 
     final ArrayNode events2 = payload2.putArray("events");
 
-    ObjectNode eventObject3 = Json.createObjectNode();
-    eventObject3.put("category", "bookmark");
-    eventObject3.put("name", "test");
-    eventObject3.put(Attribute.TIMESTAMP, "10");
+    ObjectNode bookmarkTestEventObject = Json.createObjectNode();
+    bookmarkTestEventObject.put("category", "bookmark");
+    bookmarkTestEventObject.put("name", "test");
+    bookmarkTestEventObject.put(Attribute.TIMESTAMP, "10");
 
     // gets filtered due to non-matching category
-    ObjectNode eventObject4 = Json.createObjectNode();
-    eventObject4.put("category", "test");
-    eventObject4.put("name", "foo");
-    eventObject4.put(Attribute.TIMESTAMP, "1");
+    ObjectNode testFooEventObject = Json.createObjectNode();
+    testFooEventObject.put("category", "test");
+    testFooEventObject.put("name", "foo");
+    testFooEventObject.put(Attribute.TIMESTAMP, "1");
 
-    events2.add(eventObject3);
-    events2.add(eventObject4);
+    events2.add(bookmarkTestEventObject);
+    events2.add(testFooEventObject);
 
     // gets filtered due to non-matching doctype and namespace
-    final Map<String, String> attributes2 = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "test",
+    final Map<String, String> incorrectAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "test",
         Attribute.CLIENT_ID, "xxx", Attribute.DOCUMENT_NAMESPACE, "test", Attribute.USER_AGENT_OS,
         "Windows", Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
 
     final ObjectNode payload3 = Json.createObjectNode();
     final ArrayNode events3 = payload3.putArray("events");
 
-    ObjectNode eventObject5 = Json.createObjectNode();
-    eventObject5.put("category", "bookmark");
-    eventObject5.put("name", "xxxxx");
-    eventObject5.put(Attribute.TIMESTAMP, "0");
+    ObjectNode bookmarkXxxxEventObject = Json.createObjectNode();
+    bookmarkXxxxEventObject.put("category", "bookmark");
+    bookmarkXxxxEventObject.put("name", "xxxxx");
+    bookmarkXxxxEventObject.put(Attribute.TIMESTAMP, "0");
 
-    events3.add(eventObject5);
+    events3.add(bookmarkXxxxEventObject);
 
     List<PubsubMessage> input = ImmutableList.of(
         new PubsubMessage(Json.asBytes(payload1), attributes),
         new PubsubMessage(Json.asBytes(payload2), attributes),
-        new PubsubMessage(Json.asBytes(payload3), attributes2));
+        new PubsubMessage(Json.asBytes(payload3), incorrectAttributes));
 
     Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
