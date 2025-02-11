@@ -36,9 +36,9 @@ public class SendRequestTest {
     MockWebServer server = new MockWebServer();
 
     AmplitudeEvent event = getTestAmplitudeEvent().build();
-    List<AmplitudeEvent> input = ImmutableList.of(event);
+    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event));
 
-    pipeline.apply(Create.of(input)).apply(SendRequest.of(false));
+    pipeline.apply(Create.of(input)).apply(SendRequest.of(false, 10));
 
     pipeline.run();
 
@@ -53,10 +53,11 @@ public class SendRequestTest {
 
     AmplitudeEvent event = getTestAmplitudeEvent().build();
 
-    List<AmplitudeEvent> input = ImmutableList.of(event, event);
+    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event),
+        ImmutableList.of(event));
 
-    WithFailures.Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(true, server.url("/batch").toString()));
+    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+        .apply(Create.of(input)).apply(SendRequest.of(true, 10, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -76,10 +77,35 @@ public class SendRequestTest {
 
     AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
 
-    List<AmplitudeEvent> input = ImmutableList.of(event, event);
+    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event),
+        ImmutableList.of(event));
 
-    WithFailures.Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(true, server.url("/batch").toString()));
+    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+        .apply(Create.of(input)).apply(SendRequest.of(true, 1, server.url("/batch").toString()));
+
+    PAssert.that(result.output()).satisfies(messages -> {
+      Assert.assertEquals(2, Iterables.size(messages));
+      return null;
+    });
+
+    pipeline.run();
+
+    Assert.assertEquals(2, server.getRequestCount());
+  }
+
+  @Test
+  public void testSuccessfulBatchSend() throws JsonProcessingException {
+    MockWebServer server = new MockWebServer();
+    server.enqueue(new MockResponse().setResponseCode(200));
+    server.enqueue(new MockResponse().setResponseCode(204));
+
+    AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
+
+    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event, event),
+        ImmutableList.of(event, event));
+
+    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+        .apply(Create.of(input)).apply(SendRequest.of(true, 2, server.url("/batch").toString()));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -98,10 +124,10 @@ public class SendRequestTest {
 
     AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
 
-    List<AmplitudeEvent> input = ImmutableList.of(event);
+    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event));
 
-    WithFailures.Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of(true, server.url("/batch").toString()));
+    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+        .apply(Create.of(input)).apply(SendRequest.of(true, 1, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));

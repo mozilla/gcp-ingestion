@@ -35,11 +35,23 @@ public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions 
 
   void setReportingEnabled(Boolean value);
 
-  @Description("Duration window for batching reporting requests.")
-  @Default.String("10m")
-  String getBatchWindowDuration();
+  @Description("Maximum number of event batches sent to Amplitude API per second.")
+  @Default.Integer(10)
+  Integer getMaxBatchesPerSecond();
 
-  void setBatchWindowDuration(String value);
+  void setMaxBatchesPerSecond(Integer value);
+
+  @Description("Maximum number of Amplitude events in a single batch.")
+  @Default.Integer(10)
+  Integer getMaxEventBatchSize();
+
+  void setMaxEventBatchSize(Integer value);
+
+  @Description("Minimum number of Amplitude events in a single batch.")
+  @Default.Integer(1)
+  Integer getMinEventBatchSize();
+
+  void seMinEventBatchSize(Integer value);
 
   @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
   Double getRandomSampleRatio();

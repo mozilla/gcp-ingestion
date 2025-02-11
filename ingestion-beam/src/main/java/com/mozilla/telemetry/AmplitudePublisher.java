@@ -23,6 +23,9 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
+import org.apache.beam.sdk.transforms.GroupIntoBatches;
+import org.apache.beam.sdk.transforms.Values;
+import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 
@@ -76,7 +79,7 @@ public class AmplitudePublisher extends Sink {
           })).apply("RepublishRandomSample", options.getOutputType().write(options));
     }
 
-    PCollection<AmplitudeEvent> events = messages
+    PCollection<Iterable<AmplitudeEvent>> events = messages
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
             .withClientCompressionRecorded())
         .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
@@ -87,7 +90,10 @@ public class AmplitudePublisher extends Sink {
         .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
         .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
         .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
-        .apply(SendRequest.of(options.getReportingEnabled())).failuresTo(errorCollections); //
+        .apply(WithKeys.of((AmplitudeEvent event) -> ""))
+        .apply(GroupIntoBatches.ofSize(options.getMaxEventBatchSize())).apply(Values.create())
+        .apply(SendRequest.of(options.getReportingEnabled(), options.getMaxBatchesPerSecond()))
+        .failuresTo(errorCollections); //
 
     // Note that there is no write step here for "successes"
     // since the purpose of this job is sending to the Amplitude API.
