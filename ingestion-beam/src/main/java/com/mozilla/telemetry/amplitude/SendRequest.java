@@ -30,7 +30,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  */
 @SuppressWarnings("checkstyle:lineLength")
 public class SendRequest extends
-    PTransform<PCollection<AmplitudeEvent>, Result<PCollection<AmplitudeEvent>, PubsubMessage>> {
+    PTransform<PCollection<Iterable<AmplitudeEvent>>, Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
 
@@ -38,6 +38,7 @@ public class SendRequest extends
       "reporting_request_millis");
   private final Boolean reportingEnabled;
   private final String amplitudeUrl;
+  private final Integer maxBatchesPerSecond;
 
   public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -55,62 +56,73 @@ public class SendRequest extends
     }
   }
 
-  public SendRequest(Boolean reportingEnabled) {
+  /**
+   * Constructor without custom Amplitude URL.
+   */
+  public SendRequest(Boolean reportingEnabled, Integer maxBatchesPerSecond) {
     this.reportingEnabled = reportingEnabled;
     this.amplitudeUrl = "https://api2.amplitude.com";
+    this.maxBatchesPerSecond = maxBatchesPerSecond;
   }
 
-  public SendRequest(Boolean reportingEnabled, String amplitudeUrl) {
+  /**
+   * Constructor with custom Amplitude API URL.
+   */
+  public SendRequest(Boolean reportingEnabled, Integer maxBatchesPerSecond, String amplitudeUrl) {
     this.reportingEnabled = reportingEnabled;
     this.amplitudeUrl = amplitudeUrl;
+    this.maxBatchesPerSecond = maxBatchesPerSecond;
   }
 
-  public static SendRequest of(Boolean reportingEnabled) {
-    return new SendRequest(reportingEnabled);
+  public static SendRequest of(Boolean reportingEnabled, Integer maxBatchesPerSecond) {
+    return new SendRequest(reportingEnabled, maxBatchesPerSecond);
   }
 
-  public static SendRequest of(Boolean reportingEnabled, String amplitudeUrl) {
-    return new SendRequest(reportingEnabled, amplitudeUrl);
+  public static SendRequest of(Boolean reportingEnabled, Integer maxBatchesPerSecond,
+      String amplitudeUrl) {
+    return new SendRequest(reportingEnabled, maxBatchesPerSecond, amplitudeUrl);
   }
 
   @Override
-  public Result<PCollection<AmplitudeEvent>, PubsubMessage> expand(
-      PCollection<AmplitudeEvent> events) {
-    return events.apply(
-        MapElements.into(TypeDescriptor.of(AmplitudeEvent.class)).via((AmplitudeEvent event) -> {
+  public Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> expand(
+      PCollection<Iterable<AmplitudeEvent>> eventBatches) {
+    TypeDescriptor<Iterable<AmplitudeEvent>> td = new TypeDescriptor<Iterable<AmplitudeEvent>>() {
+    };
+    return eventBatches.apply(MapElements.into(td).via((Iterable<AmplitudeEvent> eventBatch) -> {
+      getOrCreateHttpClient();
+      ObjectNode body = Json.createObjectNode();
+      body.put("api_key", Attribute.AMPLITUDE_API_KEY);
 
-          getOrCreateHttpClient();
+      ArrayNode jsonEvents = Json.createArrayNode();
 
-          ObjectNode body = Json.createObjectNode();
-          body.put("api_key", Attribute.AMPLITUDE_API_KEY);
+      for (AmplitudeEvent event : eventBatch) {
+        try {
+          jsonEvents.add(event.toJson());
+        } catch (JsonProcessingException e) {
+          throw new UncheckedIOException(e);
+        }
+      }
 
+      body.put("events", jsonEvents);
+
+      RequestBody requestBody = RequestBody.create(body.toString(), JSON);
+      Request request = new Request.Builder().url(amplitudeUrl + "/batch").post(requestBody)
+          .build();
+
+      if (reportingEnabled) {
+        sendRequest(request);
+      }
+
+      return eventBatch;
+    }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+        .exceptionsVia((ExceptionElement<Iterable<AmplitudeEvent>> ee) -> {
           try {
-            ArrayNode jsonEvents = Json.createArrayNode();
-            jsonEvents.add(event.toJson());
-
-            body.put("events", jsonEvents);
-          } catch (JsonProcessingException e) {
-            throw new UncheckedIOException(e);
+            throw ee.exception();
+          } catch (UncheckedIOException e) {
+            return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
+                ee.exception());
           }
-
-          RequestBody requestBody = RequestBody.create(body.toString(), JSON);
-          Request request = new Request.Builder().url(amplitudeUrl + "/batch").post(requestBody)
-              .build();
-
-          if (reportingEnabled) {
-            sendRequest(request);
-          }
-
-          return event;
-        }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<AmplitudeEvent> ee) -> {
-              try {
-                throw ee.exception();
-              } catch (UncheckedIOException e) {
-                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
-                    ee.exception());
-              }
-            }));
+        }));
   }
 
   private void sendRequest(Request request) {
