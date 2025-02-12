@@ -16,14 +16,17 @@ BigQuery
 CircleCI
 CLI
 cron
+CSV
 Dataflow
 datapipeline
 dataset
+datasets
 deduplicate
 deduplication
 DNS
 Dockerflow
 DocType
+doctype
 e.g.
 EC2
 encodings
@@ -57,6 +60,7 @@ JSON
 JVM
 JWE
 KMS
+KPIs
 Kubernetes
 lookups
 MacOS
@@ -70,6 +74,7 @@ namespaces
 natively
 nginx
 ok
+per-doctype
 pre-production
 protobuf
 PubSub
@@ -93,6 +98,7 @@ TCP
 templating
 timestamp
 timestamps
+todo
 TLS
 UDF
 unencoded

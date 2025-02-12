@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.common.collect.ImmutableMap;
+import com.mozilla.telemetry.amplitude.AmplitudeEvent;
 import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.util.Time;
@@ -51,6 +52,19 @@ public class FailureMessage {
 
     PubsubMessage message = new PubsubMessage(
         interaction.toString().getBytes(StandardCharsets.UTF_8), attributes);
+    return FailureMessage.of(caller, message, e);
+  }
+
+  /**
+   * Return a PubsubMessage wrapping a AmplitudeEvent batch with attributes describing the error.
+   * TODO Investigate refactoring to not import AmplitudeEvent into this higher-level module.
+   */
+  public static PubsubMessage of(Object caller, Iterable<AmplitudeEvent> events, Throwable e) {
+    Map<String, String> attributes = Map.of(Attribute.SUBMISSION_TIMESTAMP,
+        Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
+
+    PubsubMessage message = new PubsubMessage(events.toString().getBytes(StandardCharsets.UTF_8),
+        attributes);
     return FailureMessage.of(caller, message, e);
   }
 
