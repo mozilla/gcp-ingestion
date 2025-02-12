@@ -23,12 +23,13 @@ public class SendRequestTest {
 
   private AmplitudeEvent.Builder getTestAmplitudeEvent() {
     return AmplitudeEvent.builder().setUserId("test").setEventType("category.event")
-        .setTime(1738620582500L);
+        .setPlatform("firefox-desktop").setTime(1738620582500L);
   }
 
   private AmplitudeEvent.Builder getTestAmplitudeEventWithExtras() {
     return AmplitudeEvent.builder().setUserId("test").setEventType("category.event")
-        .setTime(1738620582500L).setEventExtras("{\"test\": 12, \"foo\": true}");
+        .setPlatform("firefox-desktop").setTime(1738620582500L)
+        .setEventExtras("{\"test\": 12, \"foo\": true}");
   }
 
   @Test
