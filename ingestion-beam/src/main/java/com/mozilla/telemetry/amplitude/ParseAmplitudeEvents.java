@@ -80,6 +80,13 @@ public class ParseAmplitudeEvents extends
               .orElseThrow(() -> new InvalidAttributeException("Missing clientId"));
           final String appVersion = Optional //
               .ofNullable(message.getAttribute(Attribute.APP_VERSION)).orElseGet(() -> (null));
+          final String osName = Optional //
+              .ofNullable(message.getAttribute(Attribute.NORMALIZED_OS)).orElseGet(() -> (null));
+          final String osVersion = Optional //
+              .ofNullable(message.getAttribute(Attribute.NORMALIZED_OS_VERSION))
+              .orElseGet(() -> (null));
+          final String country = Optional //
+              .ofNullable(message.getAttribute(Attribute.GEO_COUNTRY)).orElseGet(() -> (null));
 
           // each event from the payload is mapped to a separate Amplitude event
           try {
@@ -91,6 +98,10 @@ public class ParseAmplitudeEvents extends
               amplitudeEventBuilder.setTime(extractTimestamp(payload, event));
               amplitudeEventBuilder.setUserId(clientId);
               amplitudeEventBuilder.setAppVersion(appVersion);
+              amplitudeEventBuilder.setPlatform(namespace);
+              amplitudeEventBuilder.setOsName(osName);
+              amplitudeEventBuilder.setOsVersion(osVersion);
+              amplitudeEventBuilder.setCountry(country);
               amplitudeEventBuilder.setEventType(event.get("event_type").asText());
               amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
 
