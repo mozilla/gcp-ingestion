@@ -24,11 +24,22 @@ public abstract class AmplitudeEvent implements Serializable {
 
   public abstract long getTime();
 
+  public abstract String getPlatform();
+
   @Nullable
   abstract String getAppVersion();
 
   @Nullable
   abstract String getEventExtras();
+
+  @Nullable
+  abstract String getOsName();
+
+  @Nullable
+  abstract String getOsVersion();
+
+  @Nullable
+  abstract String getCountry();
 
   abstract Builder toBuilder();
 
@@ -52,9 +63,22 @@ public abstract class AmplitudeEvent implements Serializable {
     }
 
     json.put("event_properties", eventExtras);
+    json.put("platform", getPlatform());
 
     if (getAppVersion() != null) {
       json.put("app_version", getAppVersion());
+    }
+
+    if (getOsName() != null) {
+      json.put("os_name", getOsName());
+    }
+
+    if (getOsVersion() != null) {
+      json.put("os_version", getOsVersion());
+    }
+
+    if (getCountry() != null) {
+      json.put("country", getCountry());
     }
 
     return json;
@@ -85,6 +109,14 @@ public abstract class AmplitudeEvent implements Serializable {
     public abstract Builder setEventType(String newEventType);
 
     public abstract Builder setTime(long newTime);
+
+    public abstract Builder setPlatform(String newPlatform);
+
+    public abstract Builder setOsName(String newOsName);
+
+    public abstract Builder setOsVersion(String newVersion);
+
+    public abstract Builder setCountry(String newCountry);
 
     public abstract Builder setEventExtras(String newEventExtras);
 
