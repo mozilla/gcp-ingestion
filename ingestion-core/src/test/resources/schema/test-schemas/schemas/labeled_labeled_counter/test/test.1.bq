@@ -1,0 +1,40 @@
+[
+  {
+    "fields": [
+      {
+        "fields": [
+          {
+            "fields": [
+              {
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "fields": [
+                  {
+                    "name": "key",
+                    "type": "STRING"
+                  },
+                  {
+                    "name": "value",
+                    "type": "INTEGER"
+                  }
+                ],
+                "mode": "REPEATED",
+                "name": "value",
+                "type": "RECORD"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "uploader_send_failure_type_per_ping",
+            "type": "RECORD"
+          }
+        ],
+        "name": "labeled_labeled_counter",
+        "type": "RECORD"
+      }
+    ],
+    "name": "metrics",
+    "type": "RECORD"
+  }
+]
