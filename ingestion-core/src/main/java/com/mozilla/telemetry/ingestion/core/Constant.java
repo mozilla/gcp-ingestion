@@ -10,7 +10,6 @@ public class Constant {
     private Attribute() {
     }
 
-    public static final String AMPLITUDE_API_KEY = "amplitude_api_key";
     public static final String APP_BUILD_ID = "app_build_id";
     public static final String APP_NAME = "app_name";
     public static final String APP_UPDATE_CHANNEL = "app_update_channel";

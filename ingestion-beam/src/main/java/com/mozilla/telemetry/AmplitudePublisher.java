@@ -28,6 +28,15 @@ import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
+import org.apache.beam.sdk.coders.SerializableCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
+import org.apache.beam.sdk.coders.KvCoder;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.BufferedReader;
+import com.mozilla.telemetry.util.BeamFileInputStream;
+
 
 /**
  * Get event data and publish to Amplitude.
@@ -79,6 +88,8 @@ public class AmplitudePublisher extends Sink {
           })).apply("RepublishRandomSample", options.getOutputType().write(options));
     }
 
+    final String apiKey = readAmplitudeApiKeyFromFile(options.getApiKey());
+   
     PCollection<Iterable<AmplitudeEvent>> events = messages
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
             .withClientCompressionRecorded())
@@ -91,8 +102,9 @@ public class AmplitudePublisher extends Sink {
         .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
         .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
         .apply(WithKeys.of((AmplitudeEvent event) -> ""))
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), AmplitudeEvent.getCoder()))
         .apply(GroupIntoBatches.ofSize(options.getMaxEventBatchSize())).apply(Values.create())
-        .apply(SendRequest.of(options.getReportingEnabled(), options.getMaxBatchesPerSecond()))
+        .apply(SendRequest.of(apiKey, options.getReportingEnabled(), options.getMaxBatchesPerSecond()))
         .failuresTo(errorCollections); //
 
     // Note that there is no write step here for "successes"
@@ -105,5 +117,26 @@ public class AmplitudePublisher extends Sink {
         .output();
 
     return pipeline.run();
+  }
+
+  static String readAmplitudeApiKeyFromFile(String path) {
+    String apiKey = null;
+    try (InputStream inputStream = BeamFileInputStream.open(path);
+        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+        BufferedReader reader = new BufferedReader(inputStreamReader)) {
+
+      while (reader.ready()) {
+        String line = reader.readLine();
+
+        if (line != null && !line.isEmpty()) {
+          apiKey = line;
+          break;
+        }
+      }
+    } catch (IOException e) {
+      System.err.println("Exception thrown while fetching " + path);
+    }
+
+    return apiKey;
   }
 }

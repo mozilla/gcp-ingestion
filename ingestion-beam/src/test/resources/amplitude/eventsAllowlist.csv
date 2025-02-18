@@ -2,3 +2,4 @@ firefox-desktop,events,accessibility,dynamic_text
 org-mozilla-fenix,events,nimbus_events,enroll_failed
 firefox-desktop,quick-suggest,top_site,contile_click
 firefox-desktop,events,bookmark,*
+org-mozilla-ios-firefox,events,bookmark,*
