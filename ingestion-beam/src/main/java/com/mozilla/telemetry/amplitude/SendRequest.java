@@ -39,6 +39,7 @@ public class SendRequest extends
   private final Boolean reportingEnabled;
   private final String amplitudeUrl;
   private final Integer maxBatchesPerSecond;
+  private final String apiKey;
 
   public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -59,28 +60,30 @@ public class SendRequest extends
   /**
    * Constructor without custom Amplitude URL.
    */
-  public SendRequest(Boolean reportingEnabled, Integer maxBatchesPerSecond) {
+  public SendRequest(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond) {
     this.reportingEnabled = reportingEnabled;
     this.amplitudeUrl = "https://api2.amplitude.com";
     this.maxBatchesPerSecond = maxBatchesPerSecond;
+    this.apiKey = apiKey;
   }
 
   /**
    * Constructor with custom Amplitude API URL.
    */
-  public SendRequest(Boolean reportingEnabled, Integer maxBatchesPerSecond, String amplitudeUrl) {
+  public SendRequest(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond, String amplitudeUrl) {
     this.reportingEnabled = reportingEnabled;
     this.amplitudeUrl = amplitudeUrl;
     this.maxBatchesPerSecond = maxBatchesPerSecond;
+    this.apiKey = apiKey;
   }
 
-  public static SendRequest of(Boolean reportingEnabled, Integer maxBatchesPerSecond) {
-    return new SendRequest(reportingEnabled, maxBatchesPerSecond);
+  public static SendRequest of(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond) {
+    return new SendRequest(apiKey, reportingEnabled, maxBatchesPerSecond);
   }
 
-  public static SendRequest of(Boolean reportingEnabled, Integer maxBatchesPerSecond,
+  public static SendRequest of(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond,
       String amplitudeUrl) {
-    return new SendRequest(reportingEnabled, maxBatchesPerSecond, amplitudeUrl);
+    return new SendRequest(apiKey, reportingEnabled, maxBatchesPerSecond, amplitudeUrl);
   }
 
   @Override
@@ -91,7 +94,7 @@ public class SendRequest extends
     return eventBatches.apply(MapElements.into(td).via((Iterable<AmplitudeEvent> eventBatch) -> {
       getOrCreateHttpClient();
       ObjectNode body = Json.createObjectNode();
-      body.put("api_key", Attribute.AMPLITUDE_API_KEY);
+      body.put("api_key", this.apiKey);
 
       ArrayNode jsonEvents = Json.createArrayNode();
 

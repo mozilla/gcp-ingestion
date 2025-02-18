@@ -14,6 +14,11 @@ public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions 
 
   void setEventsAllowList(String value);
 
+  @Description("Path (local or gs://) to a text file containing the Amplitude API key")
+  String getApiKey();
+
+  void setApiKey(String value);
+
   @Description("Comma-separated strings representing a list of doc types for which "
       + " to send reporting requests; doc types are not namespace qualified "
       + "(e.g. quicksuggest-click is a correct argument)")
@@ -51,7 +56,7 @@ public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions 
   @Default.Integer(1)
   Integer getMinEventBatchSize();
 
-  void seMinEventBatchSize(Integer value);
+  void setMinEventBatchSize(Integer value);
 
   @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
   Double getRandomSampleRatio();

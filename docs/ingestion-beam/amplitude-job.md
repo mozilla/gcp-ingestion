@@ -75,10 +75,10 @@ This job can be deployed in a sandbox project for testing.
 
 There are a few required components to get a job running:
 
-- A PubSub subscription on a republished topic
-- A BigQuery table with the `payload_bytes_error` schema used for error output
-- A URL allowed list stored in GCS
-- The Beam pipeline running on Dataflow, reading from the PubSub subscription, and writing to the BigQuery table
+- Upload a `.ndjson` file with example payload data to a GCS bucket
+- A event allowed list stored in GCS
+- Optionally, if reporting is enabled, a file with the Amplitude API key uploaded to GCS
+- The Beam pipeline running on Dataflow, reading from the input, and sending data to Amplitude
 
 Example script to start the Dataflow job from the ingestion-beam directory:
 
@@ -89,25 +89,29 @@ set -ux
 
 PROJECT="amplitude-dev"
 JOB_NAME="amplitude"
+path="$BUCKET/data/*.ndjson"
 
-mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.AmplitudePublisher -Dexec.args="\
-   --runner=Dataflow \
-   --jobName=$JOB_NAME \
-   --project=$PROJECT  \
-   --inputType=pubsub \
-   --input='projects/amplitude-dev/subscriptions/amplitude-input' \
-   --outputTableRowFormat=payload \
-   --errorBqWriteMethod=streaming \
-   --errorOutputType=bigquery \
-   --errorOutput=$PROJECT:amplitude.reporting_errors \
-   --region=us-central1 \
-   --usePublicIps=true \
-   --gcsUploadBufferSizeBytes=16777216 \
-   --eventsAllowList=gs://amplitude-data-dev/eventsAllowList.csv \
-   --allowedDocTypes=events, \
-   --reportingEnabled=false \
-   --maxNumWorkers=2 \
-   --numWorkers=1 \
-   --autoscalingAlgorithm=THROUGHPUT_BASED \
+mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.AmplitudePublisher -Dexec.args="\
+    --runner=Dataflow \
+    --jobName=$JOB_NAME \
+    --project=$PROJECT  \
+    --geoCityDatabase=gs://moz-fx-data-prod-geoip/GeoIP2-City/20241105/GeoIP2-City.mmdb \
+    --geoCityFilter=gs://moz-fx-data-prod-dataflow-templates/cities15000.txt \
+    --geoIspDatabase=gs://moz-fx-data-prod-geoip/GeoIP2-ISP/20241101/GeoIP2-ISP.mmdb \
+    --schemasLocation=gs://moz-fx-data-prod-dataflow/schemas/202411060452_e01d1666.tar.gz \
+    --inputType=file \
+    --input=$path \
+    --bqReadMethod=storageapi \
+    --outputType=bigquery \
+    --bqWriteMethod=file_loads \
+    --output=${PROJECT}:test.output_v1 \
+    --errorOutputType=bigquery \
+    --errorOutput=${PROJECT}:payload_bytes_error.structured \
+    --gcsUploadBufferSizeBytes=16777216 \
+    --tempLocation=amplitude-data-dev/temp/bq-loads \
+    --eventsAllowList=amplitude-data-dev/eventsAllowlist.csv \
+    --apiKey=amplitude-data-dev/apiKey \
+    --region=us-central1 \
 "
 ```
+
