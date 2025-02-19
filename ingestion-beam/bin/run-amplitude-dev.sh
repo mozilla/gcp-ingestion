@@ -19,7 +19,9 @@ $SCRIPT_DIR/mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Ampl
     --geoCityDatabase=gs://moz-fx-data-prod-geoip/GeoIP2-City/20241105/GeoIP2-City.mmdb \
     --geoCityFilter=gs://moz-fx-data-prod-dataflow-templates/cities15000.txt \
     --geoIspDatabase=gs://moz-fx-data-prod-geoip/GeoIP2-ISP/20241101/GeoIP2-ISP.mmdb \
-    --schemasLocation=gs://moz-fx-data-prod-dataflow/schemas/202411060452_e01d1666.tar.gz \
+    --schemasLocation=${BUCKET}/schemas/schemas.tar.gz \
+    --allowedNamespaces=org-mozilla-ios-firefox,org-mozilla-ios-firefoxbeta \
+    --allowedDocTypes=events \
     --inputType=file \
     --input=$path \
     --bqReadMethod=storageapi \
@@ -32,5 +34,6 @@ $SCRIPT_DIR/mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Ampl
     --tempLocation=${BUCKET}/temp/bq-loads \
     --eventsAllowList=${BUCKET}/eventsAllowlist.csv \
     --apiKey=${BUCKET}/apiKey \
+    --maxEventBatchSize=10 \
     --region=us-central1 \
 "

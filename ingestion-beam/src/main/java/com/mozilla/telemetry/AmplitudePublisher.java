@@ -15,10 +15,17 @@ import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
+import com.mozilla.telemetry.util.BeamFileInputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.coders.KvCoder;
+import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
@@ -28,15 +35,6 @@ import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
-import org.apache.beam.sdk.coders.SerializableCoder;
-import org.apache.beam.sdk.coders.StringUtf8Coder;
-import org.apache.beam.sdk.coders.KvCoder;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.BufferedReader;
-import com.mozilla.telemetry.util.BeamFileInputStream;
-
 
 /**
  * Get event data and publish to Amplitude.
@@ -89,7 +87,7 @@ public class AmplitudePublisher extends Sink {
     }
 
     final String apiKey = readAmplitudeApiKeyFromFile(options.getApiKey());
-   
+
     PCollection<Iterable<AmplitudeEvent>> events = messages
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
             .withClientCompressionRecorded())
@@ -104,7 +102,8 @@ public class AmplitudePublisher extends Sink {
         .apply(WithKeys.of((AmplitudeEvent event) -> ""))
         .setCoder(KvCoder.of(StringUtf8Coder.of(), AmplitudeEvent.getCoder()))
         .apply(GroupIntoBatches.ofSize(options.getMaxEventBatchSize())).apply(Values.create())
-        .apply(SendRequest.of(apiKey, options.getReportingEnabled(), options.getMaxBatchesPerSecond()))
+        .apply(
+            SendRequest.of(apiKey, options.getReportingEnabled(), options.getMaxBatchesPerSecond()))
         .failuresTo(errorCollections); //
 
     // Note that there is no write step here for "successes"
