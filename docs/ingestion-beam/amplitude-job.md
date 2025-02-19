@@ -114,4 +114,3 @@ mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.AmplitudePublish
     --region=us-central1 \
 "
 ```
-

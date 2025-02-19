@@ -56,28 +56,29 @@ public abstract class AmplitudeEvent implements Serializable {
 
     final ObjectNode eventExtras = Json.createObjectNode();
     ObjectMapper objectMapper = new ObjectMapper();
-    if (getEventExtras() == null) {
+    if (getEventExtras() == null || getEventExtras().equals("null")) {
       eventExtras.put("extras", (ObjectNode) new ObjectMapper().readTree("{}"));
     } else {
       eventExtras.put("extras", (ObjectNode) new ObjectMapper().readTree(getEventExtras()));
     }
 
     json.put("event_properties", eventExtras);
+    json.put("event_type", getEventType());
     json.put("platform", getPlatform());
 
-    if (getAppVersion() != null) {
+    if (getAppVersion() != null && !getAppVersion().equals("null")) {
       json.put("app_version", getAppVersion());
     }
 
-    if (getOsName() != null) {
+    if (getOsName() != null && !getOsName().equals("null")) {
       json.put("os_name", getOsName());
     }
 
-    if (getOsVersion() != null) {
+    if (getOsVersion() != null && !getOsVersion().equals("null")) {
       json.put("os_version", getOsVersion());
     }
 
-    if (getCountry() != null) {
+    if (getCountry() != null && !getCountry().equals("null")) {
       json.put("country", getCountry());
     }
 

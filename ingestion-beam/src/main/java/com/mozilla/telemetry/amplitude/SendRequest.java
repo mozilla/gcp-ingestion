@@ -3,7 +3,6 @@ package com.mozilla.telemetry.amplitude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.util.Json;
@@ -70,14 +69,16 @@ public class SendRequest extends
   /**
    * Constructor with custom Amplitude API URL.
    */
-  public SendRequest(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond, String amplitudeUrl) {
+  public SendRequest(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond,
+      String amplitudeUrl) {
     this.reportingEnabled = reportingEnabled;
     this.amplitudeUrl = amplitudeUrl;
     this.maxBatchesPerSecond = maxBatchesPerSecond;
     this.apiKey = apiKey;
   }
 
-  public static SendRequest of(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond) {
+  public static SendRequest of(String apiKey, Boolean reportingEnabled,
+      Integer maxBatchesPerSecond) {
     return new SendRequest(apiKey, reportingEnabled, maxBatchesPerSecond);
   }
 

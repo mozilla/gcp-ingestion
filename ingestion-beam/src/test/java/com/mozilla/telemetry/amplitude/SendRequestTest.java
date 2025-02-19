@@ -16,19 +16,18 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-
 public class SendRequestTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   private AmplitudeEvent.Builder getTestAmplitudeEvent() {
-    return AmplitudeEvent.builder().setUserId("test").setEventType("category.event")
+    return AmplitudeEvent.builder().setUserId("test123").setEventType("category.event")
         .setPlatform("firefox-desktop").setTime(1738620582500L);
   }
 
   private AmplitudeEvent.Builder getTestAmplitudeEventWithExtras() {
-    return AmplitudeEvent.builder().setUserId("test").setEventType("category.event")
+    return AmplitudeEvent.builder().setUserId("test123").setEventType("category.event")
         .setPlatform("firefox-desktop").setTime(1738620582500L)
         .setEventExtras("{\"test\": 12, \"foo\": true}");
   }
@@ -59,7 +58,8 @@ public class SendRequestTest {
         ImmutableList.of(event));
 
     WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of("key", true, 10, server.url("/batch").toString()));
+        .apply(Create.of(input))
+        .apply(SendRequest.of("key", true, 10, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -83,7 +83,8 @@ public class SendRequestTest {
         ImmutableList.of(event));
 
     WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of("key", true, 1, server.url("/batch").toString()));
+        .apply(Create.of(input))
+        .apply(SendRequest.of("key", true, 1, server.url("/batch").toString()));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -107,7 +108,8 @@ public class SendRequestTest {
         ImmutableList.of(event, event));
 
     WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of("key", true, 2, server.url("/batch").toString()));
+        .apply(Create.of(input))
+        .apply(SendRequest.of("key", true, 2, server.url("/batch").toString()));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -129,7 +131,8 @@ public class SendRequestTest {
     List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event));
 
     WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
-        .apply(Create.of(input)).apply(SendRequest.of("key", true, 1, server.url("/batch").toString()));
+        .apply(Create.of(input))
+        .apply(SendRequest.of("key", true, 1, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));

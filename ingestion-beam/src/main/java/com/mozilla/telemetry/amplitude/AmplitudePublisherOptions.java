@@ -52,12 +52,6 @@ public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions 
 
   void setMaxEventBatchSize(Integer value);
 
-  @Description("Minimum number of Amplitude events in a single batch.")
-  @Default.Integer(1)
-  Integer getMinEventBatchSize();
-
-  void setMinEventBatchSize(Integer value);
-
   @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
   Double getRandomSampleRatio();
 
