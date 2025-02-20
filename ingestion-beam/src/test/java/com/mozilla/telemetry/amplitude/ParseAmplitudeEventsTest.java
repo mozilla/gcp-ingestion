@@ -45,6 +45,8 @@ public class ParseAmplitudeEventsTest {
     expectedAllowedEvents
         .add(new String[] { "firefox-desktop", "quick-suggest", "top_site", "contile_click" });
     expectedAllowedEvents.add(new String[] { "firefox-desktop", "events", "bookmark", "*" });
+    expectedAllowedEvents
+        .add(new String[] { "org-mozilla-ios-firefox", "events", "bookmark", "*" });
     List<String[]> allowedEvents = parseAmplitudeEvents.readAllowedEventsFromFile();
     assert expectedAllowedEvents.size() == allowedEvents.size();
 
@@ -147,6 +149,10 @@ public class ParseAmplitudeEventsTest {
 
     ObjectNode pingInfo = Json.createObjectNode();
     pingInfo.put(Attribute.PARSED_START_TIME, "2022-03-15T16:42:38Z");
+
+    ObjectNode experiments = Json.createObjectNode();
+    experiments.put("experiment1", "test");
+    pingInfo.put(Attribute.EXPERIMENTS, experiments);
     payload1.put(Attribute.PING_INFO, pingInfo);
     final ArrayNode events1 = payload1.putArray("events");
 

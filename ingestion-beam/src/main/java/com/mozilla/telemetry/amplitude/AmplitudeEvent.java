@@ -41,6 +41,15 @@ public abstract class AmplitudeEvent implements Serializable {
   @Nullable
   abstract String getCountry();
 
+  @Nullable
+  abstract String getDeviceModel();
+
+  @Nullable
+  abstract String getDeviceManufacturer();
+
+  @Nullable
+  abstract String getExperiments();
+
   abstract Builder toBuilder();
 
   public static Builder builder() {
@@ -57,9 +66,15 @@ public abstract class AmplitudeEvent implements Serializable {
     final ObjectNode eventExtras = Json.createObjectNode();
     ObjectMapper objectMapper = new ObjectMapper();
     if (getEventExtras() == null || getEventExtras().equals("null")) {
-      eventExtras.put("extras", (ObjectNode) new ObjectMapper().readTree("{}"));
+      eventExtras.put("extra", (ObjectNode) new ObjectMapper().readTree("{}"));
     } else {
-      eventExtras.put("extras", (ObjectNode) new ObjectMapper().readTree(getEventExtras()));
+      eventExtras.put("extra", (ObjectNode) new ObjectMapper().readTree(getEventExtras()));
+    }
+
+    if (getExperiments() == null || getExperiments().equals("null")) {
+      eventExtras.put("experiments", (ObjectNode) new ObjectMapper().readTree("{}"));
+    } else {
+      eventExtras.put("experiments", (ObjectNode) new ObjectMapper().readTree(getExperiments()));
     }
 
     json.put("event_properties", eventExtras);
@@ -80,6 +95,14 @@ public abstract class AmplitudeEvent implements Serializable {
 
     if (getCountry() != null && !getCountry().equals("null")) {
       json.put("country", getCountry());
+    }
+
+    if (getDeviceModel() != null && !getDeviceModel().equals("null")) {
+      json.put("device_model", getDeviceModel());
+    }
+
+    if (getDeviceManufacturer() != null && !getDeviceManufacturer().equals("null")) {
+      json.put("device_manufacturer", getDeviceManufacturer());
     }
 
     return json;
@@ -108,6 +131,12 @@ public abstract class AmplitudeEvent implements Serializable {
     public abstract Builder setUserId(String newUserId);
 
     public abstract Builder setEventType(String newEventType);
+
+    public abstract Builder setDeviceModel(String newDeviceModel);
+
+    public abstract Builder setDeviceManufacturer(String newDeviceManufacturer);
+
+    public abstract Builder setExperiments(String newExperiments);
 
     public abstract Builder setTime(long newTime);
 

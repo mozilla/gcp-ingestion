@@ -13,12 +13,18 @@ public class AmplitudeEventTest {
 
     AmplitudeEvent eventWithExtras = AmplitudeEvent.builder().setUserId("test")
         .setEventType("bookmark.event").setPlatform("firefox-desktop").setTime(1738620582500L)
-        .setEventExtras("{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"}").build();
+        .setEventExtras("{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"}")
+        .setExperiments(
+            "{\"experiment1\":{\"branch\":null},\"experiment2\":{\"branch\":\"branch_b\","
+                + "\"extra\":{\"type\":\"experiment_type\"}}}")
+        .build();
 
     String expectedJsonEvent = "{\"user_id\":\"test\",\"event_properties\":"
-        + "{\"extras\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
+        + "{\"extra\":{},\"experiments\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
     String expectedJsonEventWithExtras = "{\"user_id\":\"test\",\"event_properties\":"
-        + "{\"extras\":{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"}},"
+        + "{\"extra\":{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"},"
+        + "\"experiments\":{\"experiment1\":{\"branch\":null},\"experiment2\":"
+        + "{\"branch\":\"branch_b\",\"extra\":{\"type\":\"experiment_type\"}}}},"
         + "\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
 
     Assert.assertEquals(event.toJson().toString(), expectedJsonEvent);
@@ -32,7 +38,7 @@ public class AmplitudeEventTest {
         .setEventExtras("null").build();
 
     String expectedJsonEvent = "{\"user_id\":\"test\",\"event_properties\":"
-        + "{\"extras\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
+        + "{\"extra\":{},\"experiments\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
 
     Assert.assertEquals(eventWithNullExtras.toJson().toString(), expectedJsonEvent);
   }

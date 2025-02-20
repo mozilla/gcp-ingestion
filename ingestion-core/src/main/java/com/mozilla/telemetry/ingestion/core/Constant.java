@@ -19,11 +19,14 @@ public class Constant {
     public static final String CLIENT_IP = "client_ip";
     public static final String CONTEXT_ID = "context_id";
     public static final String DATE = "date";
+    public static final String DEVICE_MODEL = "device_model";
+    public static final String DEVICE_MANUFACTURER = "device_manufacturer";
     public static final String DNT = "dnt";
     public static final String DOCUMENT_ID = "document_id";
     public static final String DOCUMENT_NAMESPACE = "document_namespace";
     public static final String DOCUMENT_TYPE = "document_type";
     public static final String DOCUMENT_VERSION = "document_version";
+    public static final String EXPERIMENTS = "experiments";
     public static final String GEO_CITY = "geo_city";
     public static final String GEO_COUNTRY = "geo_country";
     public static final String GEO_SUBDIVISION1 = "geo_subdivision1";
