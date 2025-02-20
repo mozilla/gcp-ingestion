@@ -87,6 +87,19 @@ public class ParseAmplitudeEvents extends
               .orElseGet(() -> (null));
           final String country = Optional //
               .ofNullable(message.getAttribute(Attribute.GEO_COUNTRY)).orElseGet(() -> (null));
+          final String device_model = Optional //
+              .ofNullable(message.getAttribute(Attribute.DEVICE_MODEL)).orElseGet(() -> (null));
+          final String device_manufacturer = Optional //
+              .ofNullable(message.getAttribute(Attribute.DEVICE_MANUFACTURER))
+              .orElseGet(() -> (null));
+
+          final JsonNode experimentsNode = payload.path(Attribute.PING_INFO)
+              .path(Attribute.EXPERIMENTS);
+          String experimentsPayload = null;
+          if (!experimentsNode.isMissingNode()) {
+            experimentsPayload = experimentsNode.toString();
+          }
+          final String experiments = experimentsPayload;
 
           // each event from the payload is mapped to a separate Amplitude event
           try {
@@ -102,6 +115,9 @@ public class ParseAmplitudeEvents extends
               amplitudeEventBuilder.setOsName(osName);
               amplitudeEventBuilder.setOsVersion(osVersion);
               amplitudeEventBuilder.setCountry(country);
+              amplitudeEventBuilder.setDeviceModel(device_model);
+              amplitudeEventBuilder.setDeviceManufacturer(device_manufacturer);
+              amplitudeEventBuilder.setExperiments(experiments);
               amplitudeEventBuilder.setEventType(event.get("event_type").asText());
               amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
 
@@ -208,7 +224,8 @@ public class ParseAmplitudeEvents extends
         }
 
         if (singletonAllowedEvents.stream().anyMatch(c -> {
-          if (c[0].equals(namespace) && c[1].equals(docType) && c[2].equals(eventCategory.asText())
+          if (c[0].equals(namespace) && c[1].equals(docType)
+              && (c[2].equals(eventCategory.asText()) || c[2].equals("*"))
               && (c[3].equals("*") || c[3].equals(eventName.asText()))) {
             return true;
           }
