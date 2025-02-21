@@ -151,7 +151,9 @@ public class ParseAmplitudeEventsTest {
     pingInfo.put(Attribute.PARSED_START_TIME, "2022-03-15T16:42:38Z");
 
     ObjectNode experiments = Json.createObjectNode();
-    experiments.put("experiment1", "test");
+    ObjectNode experiment1 = Json.createObjectNode();
+    experiment1.put("branch", "b1");
+    experiments.put("experiment1", experiment1);
     pingInfo.put(Attribute.EXPERIMENTS, experiments);
     payload1.put(Attribute.PING_INFO, pingInfo);
     final ArrayNode events1 = payload1.putArray("events");

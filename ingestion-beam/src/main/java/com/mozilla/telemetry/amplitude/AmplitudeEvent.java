@@ -1,11 +1,13 @@
 package com.mozilla.telemetry.amplitude;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.auto.value.AutoValue;
 import com.mozilla.telemetry.util.Json;
 import java.io.Serializable;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.beam.sdk.coders.Coder;
 import org.apache.beam.sdk.schemas.AutoValueSchema;
@@ -48,7 +50,7 @@ public abstract class AmplitudeEvent implements Serializable {
   abstract String getDeviceManufacturer();
 
   @Nullable
-  abstract String getExperiments();
+  abstract Map<String, String> getExperiments();
 
   abstract Builder toBuilder();
 
@@ -66,15 +68,14 @@ public abstract class AmplitudeEvent implements Serializable {
     final ObjectNode eventExtras = Json.createObjectNode();
     ObjectMapper objectMapper = new ObjectMapper();
     if (getEventExtras() == null || getEventExtras().equals("null")) {
-      eventExtras.put("extra", (ObjectNode) new ObjectMapper().readTree("{}"));
+      eventExtras.put("extra", objectMapper.readTree("{}"));
     } else {
-      eventExtras.put("extra", (ObjectNode) new ObjectMapper().readTree(getEventExtras()));
+      eventExtras.put("extra", objectMapper.readTree(getEventExtras()));
     }
 
-    if (getExperiments() == null || getExperiments().equals("null")) {
-      eventExtras.put("experiments", (ObjectNode) new ObjectMapper().readTree("{}"));
-    } else {
-      eventExtras.put("experiments", (ObjectNode) new ObjectMapper().readTree(getExperiments()));
+    if (getExperiments() != null) {
+      json.put("user_properties", objectMapper.convertValue(getExperiments(), JsonNode.class));
+
     }
 
     json.put("event_properties", eventExtras);
@@ -136,7 +137,7 @@ public abstract class AmplitudeEvent implements Serializable {
 
     public abstract Builder setDeviceManufacturer(String newDeviceManufacturer);
 
-    public abstract Builder setExperiments(String newExperiments);
+    public abstract Builder setExperiments(Map<String, String> newExperiments);
 
     public abstract Builder setTime(long newTime);
 

@@ -1,6 +1,8 @@
 package com.mozilla.telemetry.amplitude;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -11,20 +13,19 @@ public class AmplitudeEventTest {
     AmplitudeEvent event = AmplitudeEvent.builder().setUserId("test").setEventType("bookmark.event")
         .setPlatform("firefox-desktop").setTime(1738620582500L).build();
 
+    Map<String, String> experiments = new HashMap<>();
+    experiments.put("experiment1", null);
+    experiments.put("experiment2", "branch_b");
     AmplitudeEvent eventWithExtras = AmplitudeEvent.builder().setUserId("test")
         .setEventType("bookmark.event").setPlatform("firefox-desktop").setTime(1738620582500L)
         .setEventExtras("{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"}")
-        .setExperiments(
-            "{\"experiment1\":{\"branch\":null},\"experiment2\":{\"branch\":\"branch_b\","
-                + "\"extra\":{\"type\":\"experiment_type\"}}}")
-        .build();
+        .setExperiments(experiments).build();
 
     String expectedJsonEvent = "{\"user_id\":\"test\",\"event_properties\":"
-        + "{\"extra\":{},\"experiments\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
-    String expectedJsonEventWithExtras = "{\"user_id\":\"test\",\"event_properties\":"
-        + "{\"extra\":{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"},"
-        + "\"experiments\":{\"experiment1\":{\"branch\":null},\"experiment2\":"
-        + "{\"branch\":\"branch_b\",\"extra\":{\"type\":\"experiment_type\"}}}},"
+        + "{\"extra\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
+    String expectedJsonEventWithExtras = "{\"user_id\":\"test\",\"user_properties\":"
+        + "{\"experiment2\":\"branch_b\",\"experiment1\":null},\"event_properties\":"
+        + "{\"extra\":{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"}},"
         + "\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
 
     Assert.assertEquals(event.toJson().toString(), expectedJsonEvent);
@@ -38,7 +39,7 @@ public class AmplitudeEventTest {
         .setEventExtras("null").build();
 
     String expectedJsonEvent = "{\"user_id\":\"test\",\"event_properties\":"
-        + "{\"extra\":{},\"experiments\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
+        + "{\"extra\":{}},\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\"}";
 
     Assert.assertEquals(eventWithNullExtras.toJson().toString(), expectedJsonEvent);
   }
