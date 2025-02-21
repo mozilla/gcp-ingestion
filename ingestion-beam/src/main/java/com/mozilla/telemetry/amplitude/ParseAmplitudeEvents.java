@@ -16,7 +16,10 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,11 +98,17 @@ public class ParseAmplitudeEvents extends
 
           final JsonNode experimentsNode = payload.path(Attribute.PING_INFO)
               .path(Attribute.EXPERIMENTS);
-          String experimentsPayload = null;
+          final Map<String, String> experiments = new HashMap<>();
           if (!experimentsNode.isMissingNode()) {
-            experimentsPayload = experimentsNode.toString();
+            Iterator<Map.Entry<String, JsonNode>> fields = experimentsNode.fields();
+            while (fields.hasNext()) {
+              Map.Entry<String, JsonNode> field = fields.next();
+              String experiment = field.getKey();
+              String branch = field.getValue().get("branch").asText();
+              experiments.put(experiment, branch);
+            }
           }
-          final String experiments = experimentsPayload;
+          // final Map<String, String> experiments = experimentsPayload;
 
           // each event from the payload is mapped to a separate Amplitude event
           try {
