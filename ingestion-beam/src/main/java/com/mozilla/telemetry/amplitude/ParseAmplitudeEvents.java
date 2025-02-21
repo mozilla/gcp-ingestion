@@ -108,7 +108,6 @@ public class ParseAmplitudeEvents extends
               experiments.put(experiment, branch);
             }
           }
-          // final Map<String, String> experiments = experimentsPayload;
 
           // each event from the payload is mapped to a separate Amplitude event
           try {
