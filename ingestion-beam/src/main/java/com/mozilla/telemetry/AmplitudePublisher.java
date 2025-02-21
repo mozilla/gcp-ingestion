@@ -35,6 +35,7 @@ import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
+import org.joda.time.Duration;
 
 /**
  * Get event data and publish to Amplitude.
@@ -101,7 +102,12 @@ public class AmplitudePublisher extends Sink {
         .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
         .apply(WithKeys.of((AmplitudeEvent event) -> ""))
         .setCoder(KvCoder.of(StringUtf8Coder.of(), AmplitudeEvent.getCoder()))
-        .apply(GroupIntoBatches.ofSize(options.getMaxEventBatchSize())).apply(Values.create())
+        .apply(
+            GroupIntoBatches.<String, AmplitudeEvent>ofSize(options.getMaxEventBatchSize())
+                .withMaxBufferingDuration(
+                    Duration.standardSeconds(options.getMaxBufferingDuration()))
+                .withShardedKey())
+        .apply(Values.create())
         .apply(
             SendRequest.of(apiKey, options.getReportingEnabled(), options.getMaxBatchesPerSecond()))
         .failuresTo(errorCollections); //

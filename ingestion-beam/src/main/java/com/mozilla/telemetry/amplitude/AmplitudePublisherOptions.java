@@ -52,6 +52,12 @@ public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions 
 
   void setMaxEventBatchSize(Integer value);
 
+  @Description("Maximum buffering duration when batching events in seconds")
+  @Default.Integer(1)
+  Integer getMaxBufferingDuration();
+
+  void setMaxBufferingDuration(Integer value);
+
   @Description("A sampling ratio between 0.0 and 1.0; if not set, no random sample is produced")
   Double getRandomSampleRatio();
 
