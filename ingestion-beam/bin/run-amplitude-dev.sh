@@ -2,7 +2,7 @@
 
 set -exo pipefail
 
-PROJECT="ascholtz-dev"
+PROJECT=""
 JOB_NAME="amplitude-test"
 BUCKET="gs://$PROJECT"
 
@@ -34,6 +34,6 @@ $SCRIPT_DIR/mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Ampl
     --tempLocation=${BUCKET}/temp/bq-loads \
     --eventsAllowList=${BUCKET}/eventsAllowlist.csv \
     --apiKey=${BUCKET}/apiKey \
-    --maxEventBatchSize=10 \
+    --maxEventBatchSize=50 \
     --region=us-central1 \
 "
