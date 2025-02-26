@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.coders.KvCoder;
@@ -31,8 +33,8 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.GroupIntoBatches;
-import org.apache.beam.sdk.transforms.Values;
 import org.apache.beam.sdk.transforms.WithKeys;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
 import org.joda.time.Duration;
@@ -87,9 +89,9 @@ public class AmplitudePublisher extends Sink {
           })).apply("RepublishRandomSample", options.getOutputType().write(options));
     }
 
-    final String apiKey = readAmplitudeApiKeyFromFile(options.getApiKey());
+    final Map<String, String> apiKeys = readAmplitudeApiKeysFromFile(options.getApiKeys());
 
-    PCollection<Iterable<AmplitudeEvent>> events = messages
+    PCollection<KV<String, Iterable<AmplitudeEvent>>> events = messages
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
             .withClientCompressionRecorded())
         .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
@@ -100,16 +102,13 @@ public class AmplitudePublisher extends Sink {
         .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
         .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
         .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
-        .apply(WithKeys.of((AmplitudeEvent event) -> ""))
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), AmplitudeEvent.getCoder()))
-        .apply(
-            GroupIntoBatches.<String, AmplitudeEvent>ofSize(options.getMaxEventBatchSize())
-                .withMaxBufferingDuration(
-                    Duration.standardSeconds(options.getMaxBufferingDuration()))
-                .withShardedKey())
-        .apply(Values.create())
-        .apply(
-            SendRequest.of(apiKey, options.getReportingEnabled(), options.getMaxBatchesPerSecond()))
+        .apply(WithKeys.of((AmplitudeEvent event) -> event.getPlatform())) //
+        .setCoder(KvCoder.of(StringUtf8Coder.of(), AmplitudeEvent.getCoder())) //
+        // events from same app can be batched and sent to Amplitude in one request
+        .apply(GroupIntoBatches.<String, AmplitudeEvent>ofSize(options.getMaxEventBatchSize()) //
+            .withMaxBufferingDuration(Duration.standardSeconds(options.getMaxBufferingDuration())))
+        .apply(SendRequest.of(apiKeys, options.getReportingEnabled(), //
+            options.getMaxBatchesPerSecond()))
         .failuresTo(errorCollections); //
 
     // Note that there is no write step here for "successes"
@@ -124,8 +123,15 @@ public class AmplitudePublisher extends Sink {
     return pipeline.run();
   }
 
-  static String readAmplitudeApiKeyFromFile(String path) {
-    String apiKey = null;
+  /**
+   * Reads Amplitude API keys from CSV.
+   * Each app has their own API key, which maps to an Amplitude project.
+   * Expected format:
+   * org-mozilla-ios-firefox,api key
+   * org-mozilla-fenix,api key
+   */
+  static Map<String, String> readAmplitudeApiKeysFromFile(String path) {
+    Map<String, String> apiKeys = new HashMap<>();
     try (InputStream inputStream = BeamFileInputStream.open(path);
         InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
         BufferedReader reader = new BufferedReader(inputStreamReader)) {
@@ -134,7 +140,8 @@ public class AmplitudePublisher extends Sink {
         String line = reader.readLine();
 
         if (line != null && !line.isEmpty()) {
-          apiKey = line;
+          String[] data = line.split(",");
+          apiKeys.put(data[0], data[1]);
           break;
         }
       }
@@ -142,6 +149,6 @@ public class AmplitudePublisher extends Sink {
       System.err.println("Exception thrown while fetching " + path);
     }
 
-    return apiKey;
+    return apiKeys;
   }
 }

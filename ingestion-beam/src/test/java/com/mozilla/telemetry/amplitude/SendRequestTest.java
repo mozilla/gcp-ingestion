@@ -3,7 +3,9 @@ package com.mozilla.telemetry.amplitude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -11,6 +13,7 @@ import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.WithFailures;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -32,14 +35,21 @@ public class SendRequestTest {
         .setEventExtras("{\"test\": 12, \"foo\": true}");
   }
 
+  private Map<String, String> getApiKeys() {
+    Map<String, String> apiKeys = new HashMap<>();
+    apiKeys.put("firefox-desktop", "test");
+    return apiKeys;
+  }
+
   @Test
   public void testReportingDisabled() {
     MockWebServer server = new MockWebServer();
 
     AmplitudeEvent event = getTestAmplitudeEvent().build();
-    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event));
+    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList
+        .of(KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    pipeline.apply(Create.of(input)).apply(SendRequest.of("key", false, 10));
+    pipeline.apply(Create.of(input)).apply(SendRequest.of(getApiKeys(), false, 10));
 
     pipeline.run();
 
@@ -54,12 +64,13 @@ public class SendRequestTest {
 
     AmplitudeEvent event = getTestAmplitudeEvent().build();
 
-    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event),
-        ImmutableList.of(event));
+    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList.of(
+        KV.of("firefox-desktop", ImmutableList.of(event)),
+        KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of("key", true, 10, server.url("/batch").toString()));
+        .apply(SendRequest.of(getApiKeys(), true, 10, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -79,12 +90,13 @@ public class SendRequestTest {
 
     AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
 
-    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event),
-        ImmutableList.of(event));
+    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList.of(
+        KV.of("firefox-desktop", ImmutableList.of(event)),
+        KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of("key", true, 1, server.url("/batch").toString()));
+        .apply(SendRequest.of(getApiKeys(), true, 1, server.url("/batch").toString()));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -104,12 +116,13 @@ public class SendRequestTest {
 
     AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
 
-    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event, event),
-        ImmutableList.of(event, event));
+    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList.of(
+        KV.of("firefox-desktop", ImmutableList.of(event, event)),
+        KV.of("firefox-desktop", ImmutableList.of(event, event)));
 
-    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of("key", true, 2, server.url("/batch").toString()));
+        .apply(SendRequest.of(getApiKeys(), true, 2, server.url("/batch").toString()));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -128,11 +141,12 @@ public class SendRequestTest {
 
     AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
 
-    List<Iterable<AmplitudeEvent>> input = ImmutableList.of(ImmutableList.of(event));
+    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList
+        .of(KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    WithFailures.Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of("key", true, 1, server.url("/batch").toString()));
+        .apply(SendRequest.of(getApiKeys(), true, 1, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));
