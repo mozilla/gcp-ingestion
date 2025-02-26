@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.values.KV;
 import org.joda.time.Instant;
 
 /**
@@ -59,7 +60,8 @@ public class FailureMessage {
    * Return a PubsubMessage wrapping a AmplitudeEvent batch with attributes describing the error.
    * TODO Investigate refactoring to not import AmplitudeEvent into this higher-level module.
    */
-  public static PubsubMessage of(Object caller, Iterable<AmplitudeEvent> events, Throwable e) {
+  public static PubsubMessage of(Object caller, KV<String, Iterable<AmplitudeEvent>> events,
+      Throwable e) {
     Map<String, String> attributes = Map.of(Attribute.SUBMISSION_TIMESTAMP,
         Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
 

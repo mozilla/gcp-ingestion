@@ -8,6 +8,7 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Map;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -21,15 +22,16 @@ import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
+import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
- * Send GET requests to Amplitude endpoint.
+ * Send GET requests of event batches to Amplitude endpoint.
  */
 @SuppressWarnings("checkstyle:lineLength")
 public class SendRequest extends
-    PTransform<PCollection<Iterable<AmplitudeEvent>>, Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage>> {
+    PTransform<PCollection<KV<String, Iterable<AmplitudeEvent>>>, Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
 
@@ -38,7 +40,7 @@ public class SendRequest extends
   private final Boolean reportingEnabled;
   private final String amplitudeUrl;
   private final Integer maxBatchesPerSecond;
-  private final String apiKey;
+  private final Map<String, String> apiKeys;
 
   public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -59,74 +61,82 @@ public class SendRequest extends
   /**
    * Constructor without custom Amplitude URL.
    */
-  public SendRequest(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond) {
+  public SendRequest(Map<String, String> apiKeys, Boolean reportingEnabled,
+      Integer maxBatchesPerSecond) {
     this.reportingEnabled = reportingEnabled;
     this.amplitudeUrl = "https://api2.amplitude.com";
     this.maxBatchesPerSecond = maxBatchesPerSecond;
-    this.apiKey = apiKey;
+    this.apiKeys = apiKeys;
   }
 
   /**
    * Constructor with custom Amplitude API URL.
    */
-  public SendRequest(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond,
-      String amplitudeUrl) {
+  public SendRequest(Map<String, String> apiKeys, Boolean reportingEnabled,
+      Integer maxBatchesPerSecond, String amplitudeUrl) {
     this.reportingEnabled = reportingEnabled;
     this.amplitudeUrl = amplitudeUrl;
     this.maxBatchesPerSecond = maxBatchesPerSecond;
-    this.apiKey = apiKey;
+    this.apiKeys = apiKeys;
   }
 
-  public static SendRequest of(String apiKey, Boolean reportingEnabled,
+  public static SendRequest of(Map<String, String> apiKeys, Boolean reportingEnabled,
       Integer maxBatchesPerSecond) {
-    return new SendRequest(apiKey, reportingEnabled, maxBatchesPerSecond);
+    return new SendRequest(apiKeys, reportingEnabled, maxBatchesPerSecond);
   }
 
-  public static SendRequest of(String apiKey, Boolean reportingEnabled, Integer maxBatchesPerSecond,
-      String amplitudeUrl) {
-    return new SendRequest(apiKey, reportingEnabled, maxBatchesPerSecond, amplitudeUrl);
+  public static SendRequest of(Map<String, String> apiKeys, Boolean reportingEnabled,
+      Integer maxBatchesPerSecond, String amplitudeUrl) {
+    return new SendRequest(apiKeys, reportingEnabled, maxBatchesPerSecond, amplitudeUrl);
   }
 
   @Override
-  public Result<PCollection<Iterable<AmplitudeEvent>>, PubsubMessage> expand(
-      PCollection<Iterable<AmplitudeEvent>> eventBatches) {
-    TypeDescriptor<Iterable<AmplitudeEvent>> td = new TypeDescriptor<Iterable<AmplitudeEvent>>() {
+  public Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> expand(
+      PCollection<KV<String, Iterable<AmplitudeEvent>>> eventBatches) {
+    TypeDescriptor<KV<String, Iterable<AmplitudeEvent>>> td = new TypeDescriptor<KV<String, Iterable<AmplitudeEvent>>>() {
     };
-    return eventBatches.apply(MapElements.into(td).via((Iterable<AmplitudeEvent> eventBatch) -> {
-      getOrCreateHttpClient();
-      ObjectNode body = Json.createObjectNode();
-      body.put("api_key", this.apiKey);
+    return eventBatches
+        .apply(MapElements.into(td).via((KV<String, Iterable<AmplitudeEvent>> eventBatch) -> {
+          getOrCreateHttpClient();
+          ObjectNode body = Json.createObjectNode();
 
-      ArrayNode jsonEvents = Json.createArrayNode();
-
-      for (AmplitudeEvent event : eventBatch) {
-        try {
-          jsonEvents.add(event.toJson());
-        } catch (JsonProcessingException e) {
-          throw new UncheckedIOException(e);
-        }
-      }
-
-      body.put("events", jsonEvents);
-
-      RequestBody requestBody = RequestBody.create(body.toString(), JSON);
-      Request request = new Request.Builder().url(amplitudeUrl + "/batch").post(requestBody)
-          .build();
-
-      if (reportingEnabled) {
-        sendRequest(request);
-      }
-
-      return eventBatch;
-    }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((ExceptionElement<Iterable<AmplitudeEvent>> ee) -> {
-          try {
-            throw ee.exception();
-          } catch (UncheckedIOException e) {
-            return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
-                ee.exception());
+          if (apiKeys.containsKey(eventBatch.getKey())) {
+            body.put("api_key", this.apiKeys.get(eventBatch.getKey()));
+          } else {
+            throw new UncheckedIOException(
+                new IOException("No API key for " + eventBatch.getKey()));
           }
-        }));
+
+          ArrayNode jsonEvents = Json.createArrayNode();
+
+          for (AmplitudeEvent event : eventBatch.getValue()) {
+            try {
+              jsonEvents.add(event.toJson());
+            } catch (JsonProcessingException e) {
+              throw new UncheckedIOException(e);
+            }
+          }
+
+          body.put("events", jsonEvents);
+
+          RequestBody requestBody = RequestBody.create(body.toString(), JSON);
+          Request request = new Request.Builder().url(amplitudeUrl + "/batch").post(requestBody)
+              .build();
+
+          if (reportingEnabled) {
+            sendRequest(request);
+          }
+
+          return eventBatch;
+        }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
+            .exceptionsVia((ExceptionElement<KV<String, Iterable<AmplitudeEvent>>> ee) -> {
+              try {
+                throw ee.exception();
+              } catch (UncheckedIOException e) {
+                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
+                    ee.exception());
+              }
+            }));
   }
 
   private void sendRequest(Request request) {

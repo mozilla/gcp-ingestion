@@ -15,9 +15,9 @@ public interface AmplitudePublisherOptions extends SinkOptions, PipelineOptions 
   void setEventsAllowList(String value);
 
   @Description("Path (local or gs://) to a text file containing the Amplitude API key")
-  String getApiKey();
+  String getApiKeys();
 
-  void setApiKey(String value);
+  void setApiKeys(String value);
 
   @Description("Comma-separated strings representing a list of doc types for which "
       + " to send reporting requests; doc types are not namespace qualified "

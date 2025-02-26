@@ -176,6 +176,12 @@ public class ParseAmplitudeEvents extends
     return Instant.now().toEpochMilli();
   }
 
+  /**
+   * Reads allowed document name, document type, event category and event name combination from CSV.
+   * Expected format:
+   * org-mozilla-ios-firefox,events,bookmark,*
+   * org-mozilla-fenix,events,nimbus_events,enroll_failed
+   */
   List<String[]> readAllowedEventsFromFile() throws IOException {
     if (singletonAllowedEvents != null) {
       return singletonAllowedEvents;
