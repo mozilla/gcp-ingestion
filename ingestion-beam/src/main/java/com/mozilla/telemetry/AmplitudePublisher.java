@@ -5,15 +5,7 @@ import com.mozilla.telemetry.amplitude.AmplitudePublisherOptions;
 import com.mozilla.telemetry.amplitude.FilterByDocType;
 import com.mozilla.telemetry.amplitude.ParseAmplitudeEvents;
 import com.mozilla.telemetry.amplitude.SendRequest;
-import com.mozilla.telemetry.decoder.AddMetadata;
-import com.mozilla.telemetry.decoder.ParsePayload;
-import com.mozilla.telemetry.decoder.ParseUri;
-import com.mozilla.telemetry.decoder.ParseUserAgent;
-import com.mozilla.telemetry.decoder.SanitizeAttributes;
 import com.mozilla.telemetry.republisher.RandomSampler;
-import com.mozilla.telemetry.transforms.DecompressPayload;
-import com.mozilla.telemetry.transforms.LimitPayloadSize;
-import com.mozilla.telemetry.transforms.NormalizeAttributes;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import java.io.BufferedReader;
@@ -75,7 +67,6 @@ public class AmplitudePublisher extends Sink {
 
     PCollection<PubsubMessage> messages = pipeline //
         .apply(options.getInputType().read(options)) //
-        .apply(ParseUri.of()).failuresTo(errorCollections) //
         .apply(FilterByDocType.of(options.getAllowedDocTypes(), options.getAllowedNamespaces()));
 
     // Random sample.
