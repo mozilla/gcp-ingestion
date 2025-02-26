@@ -95,21 +95,15 @@ mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.AmplitudePublish
     --runner=Dataflow \
     --jobName=$JOB_NAME \
     --project=$PROJECT  \
-    --geoCityDatabase=gs://moz-fx-data-prod-geoip/GeoIP2-City/20241105/GeoIP2-City.mmdb \
-    --geoCityFilter=gs://moz-fx-data-prod-dataflow-templates/cities15000.txt \
-    --geoIspDatabase=gs://moz-fx-data-prod-geoip/GeoIP2-ISP/20241101/GeoIP2-ISP.mmdb \
-    --schemasLocation=gs://moz-fx-data-prod-dataflow/schemas/202411060452_e01d1666.tar.gz \
     --inputType=file \
     --input=$path \
     --bqReadMethod=storageapi \
     --outputType=bigquery \
     --bqWriteMethod=file_loads \
-    --output=${PROJECT}:test.output_v1 \
     --errorOutputType=stderr \
-    --gcsUploadBufferSizeBytes=16777216 \
     --tempLocation=amplitude-data-dev/temp/bq-loads \
     --eventsAllowList=amplitude-data-dev/eventsAllowlist.csv \
-    --apiKey=amplitude-data-dev/apiKey \
+    --apiKeys=amplitude-data-dev/apiKeys.csv \
     --region=us-central1 \
 "
 ```
