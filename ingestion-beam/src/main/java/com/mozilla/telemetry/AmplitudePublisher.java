@@ -92,15 +92,6 @@ public class AmplitudePublisher extends Sink {
     final Map<String, String> apiKeys = readAmplitudeApiKeysFromFile(options.getApiKeys());
 
     PCollection<KV<String, Iterable<AmplitudeEvent>>> events = messages
-        .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
-            .withClientCompressionRecorded())
-        .apply("LimitPayloadSize", LimitPayloadSize.toMB(8)).failuresTo(errorCollections) //
-        .apply("ParsePayload", ParsePayload.of(options.getSchemasLocation())) //
-        .failuresTo(errorCollections) //
-        .apply(ParseUserAgent.of()) //
-        .apply(NormalizeAttributes.of()) //
-        .apply(SanitizeAttributes.of(options.getSchemasLocation())) //
-        .apply("AddMetadata", AddMetadata.of()).failuresTo(errorCollections) //
         .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
         .apply(WithKeys.of((AmplitudeEvent event) -> event.getPlatform())) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), AmplitudeEvent.getCoder())) //
