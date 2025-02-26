@@ -14,11 +14,6 @@ The goal is to have event data in Amplitude that is as close as possible to the 
 
 The input to this job is the subset of decoded messages from various namespaces that have pings with event data.
 
-### Parse URI
-
-Attempt to extract attributes from `uri`, on failure send messages to the
-configured error output.
-
 ### Decompress
 
 Attempt to decompress payload with gzip, on failure pass the message through
@@ -31,20 +26,6 @@ Depending on what Pub/Sub topic the job is configured to read from, this will al
 ### [optional] Sampling
 
 Optionally, a sampling can be configured for the job. This is to reduce the number of events that get sent to the Amplitude API.
-
-### Parse Payload
-
-Parse the message body as a `UTF-8` encoded JSON payload and drop some specific fields.
-
-### Parse User Agent
-
-Attempt to extract browser, browser version, and os from the `user_agent`
-attribute, drop any nulls, and remove `user_agent` from attributes.
-
-### Write Metadata Into the Payload
-
-Add a nested `metadata` field and several `normalized_*` attributes into the
-payload body.
 
 ### Parse Amplitude Events
 
