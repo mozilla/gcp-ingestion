@@ -126,6 +126,8 @@ public class MessageScrubber {
       .put("com-feifan-topvan", "1924135") //
       .put("com-feifan-chrome-ios-dev", "1930793") //
       .put("us-spotco-fennec-dos", "1938660") //
+      .put("com-atomic-browser-ios-client", "1941536") //
+      .put("org-lilo-browser-chrome-ios-herebedragons", "1947334") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -177,7 +179,8 @@ public class MessageScrubber {
       "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
       "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
       "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
-      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu", "ubuntu-sn",
+      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "firefox-b-vv", "firefox-b-tf",
+      "ubuntu", "ubuntu-sn",
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "lm", "newext",
@@ -265,6 +268,16 @@ public class MessageScrubber {
       throw new MessageShouldBeDroppedException("1817821");
     }
 
+    if (bug1712850Affected(attributes)) {
+      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
+        throw new MessageShouldBeDroppedException("1712850");
+      }
+    }
+
+    if (deng7762Affected(namespace, docType)) {
+      throw new MessageShouldBeDroppedException("deng7762");
+    }
+
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
     if (IGNORED_NAMESPACES.containsKey(namespace)) {
@@ -338,14 +351,6 @@ public class MessageScrubber {
           markBugCounter("1642386");
         });
       });
-    }
-
-    if (bug1712850Affected(attributes)) {
-      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
-        json.put("search_query", "");
-        json.put("matched_keywords", "");
-        markBugCounter("1712850");
-      }
     }
 
     if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
@@ -503,6 +508,14 @@ public class MessageScrubber {
                 DESKTOP_SEARCH_CONTENT_PATTERN);
           }
         });
+  }
+
+  // See https://mozilla-hub.atlassian.net/browse/DENG-7762
+  private static boolean deng7762Affected(String namespace, String docType) {
+    return ("org-mozilla-fenix".equals(namespace) //
+        || "org-mozilla-firefox-beta".equals(namespace) //
+        || "org-mozilla-firefox".equals(namespace)) //
+        && "user-characteristics".equals(docType);
   }
 
   private static void sanitizeDesktopSearchKeys(ObjectNode searchNode, Pattern pattern) {

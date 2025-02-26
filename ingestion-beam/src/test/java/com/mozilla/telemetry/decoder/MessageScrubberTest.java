@@ -350,7 +350,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testRedactForBug1712850() throws Exception {
+  public void testShouldScrubBug1712850() throws Exception {
     ObjectNode json = Json.readObjectNode(("{\n" //
         + "  \"search_query\": \"abc\",\n" //
         + "  \"matched_keywords\": \"abc\"\n" //
@@ -362,9 +362,11 @@ public class MessageScrubberTest {
 
     assertTrue(json.hasNonNull("search_query"));
     assertTrue(json.hasNonNull("matched_keywords"));
-    MessageScrubber.scrub(attributes, json);
-    assertEquals("", json.path("search_query").asText());
-    assertEquals("", json.path("matched_keywords").asText());
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, json));
+
+    // valid document
+    MessageScrubber.scrub(attributes, Json.createObjectNode());
   }
 
   @Test
@@ -770,5 +772,32 @@ public class MessageScrubberTest {
         // USER_AGENT may be null
         .build();
     MessageScrubber.scrub(attributes, Json.createObjectNode());
+  }
+
+  @Test
+  public void testDropDeng7762() {
+    final ImmutableMap.Builder<String, String> attributeBuilder = ImmutableMap
+        .<String, String>builder().put(Attribute.DOCUMENT_TYPE, "user-characteristics")
+        .put(Attribute.X_TELEMETRY_AGENT, "Glean");
+
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(
+            attributeBuilder.put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix").build(),
+            Json.createObjectNode()));
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributeBuilder
+            .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox").buildKeepingLast(),
+            Json.createObjectNode()));
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributeBuilder
+            .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox-beta").buildKeepingLast(),
+            Json.createObjectNode()));
+
+    // valid documents
+    MessageScrubber.scrub(
+        attributeBuilder.put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop").buildKeepingLast(),
+        Json.createObjectNode());
+    MessageScrubber.scrub(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox",
+        Attribute.DOCUMENT_TYPE, "metrics"), Json.createObjectNode());
   }
 }
