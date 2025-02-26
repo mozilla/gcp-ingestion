@@ -63,10 +63,7 @@ public class SendRequest extends
    */
   public SendRequest(Map<String, String> apiKeys, Boolean reportingEnabled,
       Integer maxBatchesPerSecond) {
-    this.reportingEnabled = reportingEnabled;
-    this.amplitudeUrl = "https://api2.amplitude.com";
-    this.maxBatchesPerSecond = maxBatchesPerSecond;
-    this.apiKeys = apiKeys;
+    this(apiKeys, reportingEnabled, maxBatchesPerSecond, "https://api2.amplitude.com");
   }
 
   /**
