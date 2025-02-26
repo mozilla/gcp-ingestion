@@ -6,6 +6,7 @@ import com.mozilla.telemetry.amplitude.FilterByDocType;
 import com.mozilla.telemetry.amplitude.ParseAmplitudeEvents;
 import com.mozilla.telemetry.amplitude.SendRequest;
 import com.mozilla.telemetry.republisher.RandomSampler;
+import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import com.mozilla.telemetry.util.BeamFileInputStream;
 import java.io.BufferedReader;
@@ -83,6 +84,8 @@ public class AmplitudePublisher extends Sink {
     final Map<String, String> apiKeys = readAmplitudeApiKeysFromFile(options.getApiKeys());
 
     PCollection<KV<String, Iterable<AmplitudeEvent>>> events = messages
+        .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
+            .withClientCompressionRecorded())
         .apply(ParseAmplitudeEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
         .apply(WithKeys.of((AmplitudeEvent event) -> event.getPlatform())) //
         .setCoder(KvCoder.of(StringUtf8Coder.of(), AmplitudeEvent.getCoder())) //
