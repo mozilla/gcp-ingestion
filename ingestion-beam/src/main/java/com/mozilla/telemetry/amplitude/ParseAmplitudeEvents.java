@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.FlatMapElements;
 import org.apache.beam.sdk.transforms.PTransform;
@@ -111,7 +112,7 @@ public class ParseAmplitudeEvents extends
 
           // each event from the payload is mapped to a separate Amplitude event
           try {
-            final ArrayList<ObjectNode> events = extractEvents(payload, namespace, docType);
+            final List<ObjectNode> events = extractEvents(payload, namespace, docType);
 
             return events.stream().map((ObjectNode event) -> {
               AmplitudeEvent.Builder amplitudeEventBuilder = AmplitudeEvent.builder();
@@ -221,41 +222,40 @@ public class ParseAmplitudeEvents extends
    * Read events from ping payload, filter based on allowed events and return as JSON.
    */
   @VisibleForTesting
-  static ArrayList<ObjectNode> extractEvents(ObjectNode payload, String namespace, String docType)
+  static List<ObjectNode> extractEvents(ObjectNode payload, String namespace, String docType)
       throws IOException {
-    ArrayList<ObjectNode> events = new ArrayList<ObjectNode>();
+    ObjectMapper mapper = new ObjectMapper();
 
-    payload.path("events").forEach(event -> {
-      final ObjectNode result = Json.createObjectNode();
+    return StreamSupport.stream(payload.path("events").spliterator(), false).map(event -> {
+      final ObjectNode result = mapper.createObjectNode();
       final JsonNode eventCategory = event.get("category");
       final JsonNode eventName = event.get("name");
+      String eventType = "";
 
       if (eventCategory != null && !eventCategory.isNull()) {
-        String eventType = eventCategory.asText();
+        eventType = eventCategory.asText();
 
         if (eventName != null && !eventName.isNull()) {
-          eventType = eventCategory.asText() + "." + eventName.asText();
-        }
-
-        if (singletonAllowedEvents.stream().anyMatch(c -> {
-          if (c[0].equals(namespace) && c[1].equals(docType)
-              && (c[2].equals(eventCategory.asText()) || c[2].equals("*"))
-              && (c[3].equals("*") || c[3].equals(eventName.asText()))) {
-            return true;
-          }
-
-          return false;
-        })) {
-          ObjectMapper mapper = new ObjectMapper();
-          result.put("event_type", eventType);
-          result.put("event_extras", event.get("extra"));
-          result.put("timestamp", event.get(Attribute.TIMESTAMP));
-          events.add(result);
+          eventType += "." + eventName.asText();
         }
       }
-    });
 
-    return events;
+      if (isEventAllowed(namespace, docType, eventCategory, eventName)) {
+        result.put("event_type", eventType);
+        result.put("event_extras", event.get("extra"));
+        result.put("timestamp", event.get(Attribute.TIMESTAMP));
+        return result;
+      }
+      return null;
+    }).filter(result -> result != null).collect(Collectors.toList());
+  }
+
+  static boolean isEventAllowed(String namespace, String docType, JsonNode eventCategory,
+      JsonNode eventName) {
+    return singletonAllowedEvents.stream()
+        .anyMatch(c -> c[0].equals(namespace) && c[1].equals(docType)
+            && (c[2].equals(eventCategory.asText()) || c[2].equals("*"))
+            && (c[3].equals("*") || c[3].equals(eventName.asText())));
   }
 
   private static Optional<JsonNode> optionalNode(JsonNode... nodes) {
