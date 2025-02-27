@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../decoder-job/">
+        <link rel="prev" href="../">
       
       
-        <link rel="next" href="../republisher-job/">
+        <link rel="next" href="../contextual-services-job/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Ingestion Testing Workflow - GCP Ingestion</title>
+        <title>Amplitude Publisher Job - GCP Ingestion</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ingestion-testing-workflow" class="md-skip">
+        <a href="#amplitude-publisher-job" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Ingestion Testing Workflow
+              Amplitude Publisher Job
             
           </span>
         </div>
@@ -839,10 +839,31 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../amplitude-job/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Amplitude Publisher Job
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -852,6 +873,122 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#beam-pipeline-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Beam Pipeline Transforms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Beam Pipeline Transforms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pubsub-republished-topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pub/Sub republished topic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decompress" class="md-nav__link">
+    <span class="md-ellipsis">
+      Decompress
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-by-doc-type-and-namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Filter by Doc Type and Namespaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      [optional] Sampling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parse-amplitude-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parse Amplitude Events
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batching-of-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batching of Events
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#send-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      Send request
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#working-with-the-beam-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with the Beam Job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test Deployment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -905,31 +1042,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Ingestion Testing Workflow
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../ingestion_testing_workflow/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -939,53 +1055,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#setting-up-the-gcs-project" class="md-nav__link">
-    <span class="md-ellipsis">
-      Setting up the GCS project
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#bootstrapping-schemas-from-mozilla-pipeline-schemas" class="md-nav__link">
-    <span class="md-ellipsis">
-      Bootstrapping schemas from mozilla-pipeline-schemas
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#building-the-project" class="md-nav__link">
-    <span class="md-ellipsis">
-      Building the project
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1147,29 +1216,98 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setting-up-the-gcs-project" class="md-nav__link">
+  <a href="#beam-pipeline-transforms" class="md-nav__link">
     <span class="md-ellipsis">
-      Setting up the GCS project
+      Beam Pipeline Transforms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Beam Pipeline Transforms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pubsub-republished-topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pub/Sub republished topic
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#bootstrapping-schemas-from-mozilla-pipeline-schemas" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#decompress" class="md-nav__link">
     <span class="md-ellipsis">
-      Bootstrapping schemas from mozilla-pipeline-schemas
+      Decompress
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#building-the-project" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#filter-by-doc-type-and-namespaces" class="md-nav__link">
     <span class="md-ellipsis">
-      Building the project
+      Filter by Doc Type and Namespaces
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      [optional] Sampling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parse-amplitude-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parse Amplitude Events
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batching-of-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batching of Events
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#send-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      Send request
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#working-with-the-beam-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with the Beam Job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test Deployment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1192,75 +1330,65 @@
   
 
 
-<h1 id="ingestion-testing-workflow">Ingestion Testing Workflow</h1>
-<p>The ingestion-beam handles data flow of documents from the edge into various
-sinks. You may be interested in standing up a small testing instance to validate
-the integration of the various components.</p>
-<p><img alt="diagrams/workflow.mmd" src="../../diagrams/workflow.svg" />
-<strong>Figure</strong>: <em>An overview of the various components necessary to query BigQuery
-against data from a PubSub subscription.</em></p>
-<h2 id="setting-up-the-gcs-project">Setting up the GCS project</h2>
-<p>Read through <a href="https://github.com/whd/gcp-quickstart"><code>whd/gcp-quickstart</code></a> for details
-about the sandbox environment that is provided by data operations.</p>
+<h1 id="amplitude-publisher-job">Amplitude Publisher Job</h1>
+<p>The Amplitude publisher job sends a specific set of events to the Amplitude batch API. This job is currently used to run a proof-of-concept evaluation of Amplitude on a subset of events. For more context see: https://mozilla-hub.atlassian.net/browse/DENG-7616</p>
+<p>The code is defined in the <a href="https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/AmplitudePublisher.java"><code>com.mozilla.telemetry.AmplitudePublisher</code></a> class.</p>
+<p>This job reads from per doctype Pub/Sub topics of specific applications.</p>
+<h2 id="beam-pipeline-transforms">Beam Pipeline Transforms</h2>
+<p>The goal is to have event data in Amplitude that is as close as possible to the data used for calculating KPIs and is used for other creating other datasets in BigQuery. Therefore, the transformation steps closely resemble <a href="https://mozilla.github.io/gcp-ingestion/ingestion-beam/decoder-job/">those of the Decoder job</a>.</p>
+<h3 id="pubsub-republished-topic">Pub/Sub republished topic</h3>
+<p>The input to this job is the subset of decoded messages from various namespaces that have pings with event data.</p>
+<h3 id="decompress">Decompress</h3>
+<p>Attempt to decompress payload with gzip, on failure pass the message through
+unmodified.</p>
+<h3 id="filter-by-doc-type-and-namespaces">Filter by Doc Type and Namespaces</h3>
+<p>Depending on what Pub/Sub topic the job is configured to read from, this will allow to filter for specific namespaces and doc types that should be processed further.</p>
+<h3 id="optional-sampling">[optional] Sampling</h3>
+<p>Optionally, a sampling can be configured for the job. This is to reduce the number of events that get sent to the Amplitude API.</p>
+<h3 id="parse-amplitude-events">Parse Amplitude Events</h3>
+<p>This step reads an external CSV configuration file that contains a set of events that should be sent do Amplitude. The format of this file is as follows:</p>
+<pre><code class="language-csv">&lt;namespace&gt;,&lt;doc type&gt;,&lt;event category&gt;,&lt;event name or '*'&gt;
+</code></pre>
+<p>The <code>events</code> are getting parsed from the message payload and transformed into individual events that can be sent to the Amplitude API. Events that don't match the allow list are being filtered out.</p>
+<h3 id="batching-of-events">Batching of Events</h3>
+<p>Since the Amplitude API has <a href="https://amplitude.com/docs/apis/analytics/batch-event-upload#considerations">limitations</a> around how many events can be sent in a single request and how many requests can be sent withing a second, this step creates batches of events.</p>
+<h3 id="send-request">Send request</h3>
+<p>This step sends batched events to the Amplitude API.
+// todo: retry mechanism on failures which can happen when API limits are exceeded</p>
+<h3 id="working-with-the-beam-job">Working with the Beam Job</h3>
+<p>Options specific to this job are found in https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/amplitude/AmplitudePublisherOptions.java</p>
+<h3 id="test-deployment">Test Deployment</h3>
+<p>This job can be deployed in a sandbox project for testing.</p>
+<p>There are a few required components to get a job running:</p>
 <ul>
-<li>Install the <a href="https://cloud.google.com/sdk/">Google Cloud SDK</a></li>
-<li>Navigate to the <a href="https://cloud.google.com/sdk/">Google Cloud Console</a></li>
-<li>Create a new project under <code>firefox.gcp.mozilla.com/dataops/sandbox</code></li>
-<li><code>gcloud config set project &lt;PROJECT&gt;</code></li>
-<li>Create a PubSub subscription (see <code>gcp-quickstart/pubsub.sh</code>)</li>
-<li>Create a GCS bucket</li>
-<li><code>gsutil mb gs://&lt;PROJECT&gt;</code></li>
-<li>Enable the <a href="https://console.cloud.google.com/marketplace/details/google/dataflow.googleapis.com">Dataflow API</a></li>
-<li>Create a service account and store the key locally</li>
+<li>Upload a <code>.ndjson</code> file with example payload data to a GCS bucket</li>
+<li>A event allowed list stored in GCS</li>
+<li>Optionally, if reporting is enabled, a file with the Amplitude API key uploaded to GCS</li>
+<li>The Beam pipeline running on Dataflow, reading from the input, and sending data to Amplitude</li>
 </ul>
-<h2 id="bootstrapping-schemas-from-mozilla-pipeline-schemas">Bootstrapping schemas from <code>mozilla-pipeline-schemas</code></h2>
-<ul>
-<li>Download the latest schemas from <code>mozilla-pipeline-schemas</code> using <code>bin/download-schemas</code>.</li>
-<li>This script may also inject testing resources into the resulting archive.</li>
-<li>A <code>schemas.tar.gz</code> will appear at the project root.</li>
-<li>Copy generated BigQuery schemas using <code>bin/copy-bq-schemas</code>.</li>
-<li>Schemas will be written to <code>bq-schemas/</code> with a <code>.bq</code> extension</li>
-<li>Schemas can be generated directly from JSON Schema using <code>bin/generate-bq-schemas</code>
-  <code>bq-schemas/
-  ├── activity-stream.impression-stats.1.bq
-  ├── coverage.coverage.1.bq
-  ├── edge-validator.error-report.1.bq
-  ├── eng-workflow.bmobugs.1.bq
-  ....</code></li>
-<li>Update the BigQuery table in the current project using <code>bin/update-bq-table</code>.</li>
-<li>This may take several minutes. Read the script for usage information.</li>
-<li>Each namespace will be given its own dataset and each document type its own table.</li>
-<li>Verify that tables have been updated by viewing the BigQuery console.</li>
-<li>Download a copy of sampled documents using <code>bin/download-document-sample</code></li>
-<li>Upload this to your project's data bucket e.g. <code>gs://$PROJECT/data/</code></li>
-</ul>
-<h2 id="building-the-project">Building the project</h2>
-<p>Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.</p>
-<pre><code class="language-bash"># this must be an absolute path
-export GOOGLE_APPLICATION_CREDENTIALS=keys.json
-PROJECT=$(gcloud config get-value project)
-BUCKET=&quot;gs://$PROJECT&quot;
+<p>Example script to start the Dataflow job from the ingestion-beam directory:</p>
+<pre><code>#!/bin/bash
 
+set -ux
+
+PROJECT=&quot;amplitude-dev&quot;
+JOB_NAME=&quot;amplitude&quot;
 path=&quot;$BUCKET/data/*.ndjson&quot;
 
-# use local maven instead of the docker container in bin/mvn, otherwise make sure to mount
-# credentials into the proper location in the container
-mvn compile exec:java -Dexec.args=&quot;\
+mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.AmplitudePublisher -Dexec.args=&quot;\
     --runner=Dataflow \
-    --project=$PROJECT \
-    --autoscalingAlgorithm=NONE \
-    --workerMachineType=n1-standard-1 \
-    --numWorkers=1 \
-    --gcpTempLocation=$BUCKET/tmp \
-    --inputFileFormat=json \
+    --jobName=$JOB_NAME \
+    --project=$PROJECT  \
     --inputType=file \
-    --input=$path\
+    --input=$path \
+    --bqReadMethod=storageapi \
     --outputType=bigquery \
-    --output=$PROJECT:test_ingestion.\${document_namespace}__\${document_type}_v\${document_version} \
     --bqWriteMethod=file_loads \
-    --tempLocation=$BUCKET/temp/bq-loads \
-    --errorOutputType=file \
-    --errorOutput=$BUCKET/error/ \
+    --errorOutputType=stderr \
+    --tempLocation=amplitude-data-dev/temp/bq-loads \
+    --eventsAllowList=amplitude-data-dev/eventsAllowlist.csv \
+    --apiKeys=amplitude-data-dev/apiKeys.csv \
+    --region=us-central1 \
 &quot;
 </code></pre>
 
