@@ -71,13 +71,13 @@ public class ParseAmplitudeEventsTest {
     expectedEventObject.put("event_extras", nullValue);
     expectedEventObject.put("timestamp", "0");
 
-    ArrayList<ObjectNode> expect = new ArrayList<ObjectNode>();
+    List<ObjectNode> expect = new ArrayList<ObjectNode>();
     expect.add(expectedEventObject);
 
     ParseAmplitudeEvents parseAmplitudeEvents = ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST);
     parseAmplitudeEvents.readAllowedEventsFromFile();
 
-    ArrayList<ObjectNode> actual = parseAmplitudeEvents.extractEvents(payload, "firefox-desktop",
+    List<ObjectNode> actual = parseAmplitudeEvents.extractEvents(payload, "firefox-desktop",
         "quick-suggest");
     if (!expect.equals(actual)) {
       System.err.println(Json.asString(actual));
