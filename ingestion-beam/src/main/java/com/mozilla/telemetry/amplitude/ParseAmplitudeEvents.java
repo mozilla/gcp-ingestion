@@ -192,30 +192,32 @@ public class ParseAmplitudeEvents extends
       throw new IllegalArgumentException("File location must be defined");
     }
 
-    try (InputStream inputStream = BeamFileInputStream.open(eventsAllowListPath);
-        InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-        BufferedReader reader = new BufferedReader(inputStreamReader)) {
-      singletonAllowedEvents = new ArrayList<String[]>();
+    synchronized (ParseAmplitudeEvents.class) {
+      try (InputStream inputStream = BeamFileInputStream.open(eventsAllowListPath);
+          InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+          BufferedReader reader = new BufferedReader(inputStreamReader)) {
+        singletonAllowedEvents = new ArrayList<String[]>();
 
-      while (reader.ready()) {
-        String line = reader.readLine();
+        while (reader.ready()) {
+          String line = reader.readLine();
 
-        if (line != null && !line.isEmpty()) {
-          String[] separated = line.split(",");
+          if (line != null && !line.isEmpty()) {
+            String[] separated = line.split(",");
 
-          if (separated.length != 4) {
-            throw new IllegalArgumentException(
-                "Invalid mapping: " + line + "; four-column csv expected");
+            if (separated.length != 4) {
+              throw new IllegalArgumentException(
+                  "Invalid mapping: " + line + "; four-column csv expected");
+            }
+
+            singletonAllowedEvents.add(separated);
           }
-
-          singletonAllowedEvents.add(separated);
         }
+      } catch (IOException e) {
+        throw new IOException("Exception thrown while fetching " + eventsAllowListPath, e);
       }
-
-      return singletonAllowedEvents;
-    } catch (IOException e) {
-      throw new IOException("Exception thrown while fetching " + eventsAllowListPath, e);
     }
+
+    return singletonAllowedEvents;
   }
 
   /**
