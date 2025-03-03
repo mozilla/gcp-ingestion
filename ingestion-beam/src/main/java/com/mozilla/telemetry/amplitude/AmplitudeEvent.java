@@ -50,6 +50,9 @@ public abstract class AmplitudeEvent implements Serializable {
   abstract String getDeviceManufacturer();
 
   @Nullable
+  abstract String getLanguage();
+
+  @Nullable
   abstract Map<String, String> getExperiments();
 
   abstract Builder toBuilder();
@@ -73,17 +76,20 @@ public abstract class AmplitudeEvent implements Serializable {
       eventExtras.put("extra", objectMapper.readTree(getEventExtras()));
     }
 
-    if (getExperiments() != null) {
-      json.put("user_properties", objectMapper.convertValue(getExperiments(), JsonNode.class));
+    ObjectNode userProperties = Json.createObjectNode();
 
+    if (getExperiments() != null) {
+      userProperties = (ObjectNode) objectMapper.convertValue(getExperiments(), JsonNode.class);
     }
 
     json.put("event_properties", eventExtras);
     json.put("event_type", getEventType());
+    userProperties.put("platform", getPlatform());
     json.put("platform", getPlatform());
 
     if (getAppVersion() != null && !getAppVersion().equals("null")) {
       json.put("app_version", getAppVersion());
+      userProperties.put("version", getAppVersion());
     }
 
     if (getOsName() != null && !getOsName().equals("null")) {
@@ -94,17 +100,31 @@ public abstract class AmplitudeEvent implements Serializable {
       json.put("os_version", getOsVersion());
     }
 
+    if (getOsName() != null && !getOsName().equals("null") && getOsVersion() != null
+        && !getOsVersion().equals("null")) {
+      userProperties.put("os", getOsName() + " " + getOsVersion());
+    }
+
     if (getCountry() != null && !getCountry().equals("null")) {
       json.put("country", getCountry());
+      userProperties.put("country", getCountry());
     }
 
     if (getDeviceModel() != null && !getDeviceModel().equals("null")) {
       json.put("device_model", getDeviceModel());
+      userProperties.put("device_model", getDeviceModel());
     }
 
     if (getDeviceManufacturer() != null && !getDeviceManufacturer().equals("null")) {
       json.put("device_manufacturer", getDeviceManufacturer());
+      userProperties.put("device_manufacturer", getDeviceModel());
     }
+
+    if (getLanguage() != null && !getLanguage().equals("null")) {
+      userProperties.put("language", getLanguage());
+    }
+
+    json.put("user_properties", userProperties);
 
     return json;
   }
@@ -148,6 +168,8 @@ public abstract class AmplitudeEvent implements Serializable {
     public abstract Builder setOsVersion(String newVersion);
 
     public abstract Builder setCountry(String newCountry);
+
+    public abstract Builder setLanguage(String newLanguage);
 
     public abstract Builder setEventExtras(String newEventExtras);
 
