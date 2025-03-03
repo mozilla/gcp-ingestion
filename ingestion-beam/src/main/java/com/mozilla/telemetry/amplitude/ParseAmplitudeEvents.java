@@ -40,7 +40,7 @@ public class ParseAmplitudeEvents extends
 
   private final String eventsAllowListPath;
 
-  private static transient List<String[]> singletonAllowedEvents;
+  private static transient volatile List<String[]> singletonAllowedEvents;
 
   public static ParseAmplitudeEvents of(String eventsAllowListPath) {
     return new ParseAmplitudeEvents(eventsAllowListPath);
@@ -193,27 +193,29 @@ public class ParseAmplitudeEvents extends
     }
 
     synchronized (ParseAmplitudeEvents.class) {
-      try (InputStream inputStream = BeamFileInputStream.open(eventsAllowListPath);
-          InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-          BufferedReader reader = new BufferedReader(inputStreamReader)) {
-        singletonAllowedEvents = new ArrayList<String[]>();
+      if (singletonAllowedEvents == null) {
+        try (InputStream inputStream = BeamFileInputStream.open(eventsAllowListPath);
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader reader = new BufferedReader(inputStreamReader)) {
+          singletonAllowedEvents = new ArrayList<String[]>();
 
-        while (reader.ready()) {
-          String line = reader.readLine();
+          while (reader.ready()) {
+            String line = reader.readLine();
 
-          if (line != null && !line.isEmpty()) {
-            String[] separated = line.split(",");
+            if (line != null && !line.isEmpty()) {
+              String[] separated = line.split(",");
 
-            if (separated.length != 4) {
-              throw new IllegalArgumentException(
-                  "Invalid mapping: " + line + "; four-column csv expected");
+              if (separated.length != 4) {
+                throw new IllegalArgumentException(
+                    "Invalid mapping: " + line + "; four-column csv expected");
+              }
+
+              singletonAllowedEvents.add(separated);
             }
-
-            singletonAllowedEvents.add(separated);
           }
+        } catch (IOException e) {
+          throw new IOException("Exception thrown while fetching " + eventsAllowListPath, e);
         }
-      } catch (IOException e) {
-        throw new IOException("Exception thrown while fetching " + eventsAllowListPath, e);
       }
     }
 
