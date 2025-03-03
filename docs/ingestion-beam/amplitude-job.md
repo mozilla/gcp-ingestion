@@ -12,7 +12,7 @@ The goal is to have event data in Amplitude that is as close as possible to the 
 
 ### Pub/Sub republished topic
 
-The input to this job is the subset of decoded messages from various namespaces that have pings with event data.
+The input to this job is the subset of decoded messages from various namespaces that have pings with event data and `metrics` pings.
 
 ### Decompress
 
@@ -36,6 +36,11 @@ This step reads an external CSV configuration file that contains a set of events
 ```
 
 The `events` are getting parsed from the message payload and transformed into individual events that can be sent to the Amplitude API. Events that don't match the allow list are being filtered out.
+
+This step also maps `metrics` pings to `user_activity` events, which are sent to Amplitude to indicate that a user was active on a given day.
+For the POC, the decision was made to use the `metrics` ping instead of the more precise `baseline` ping because the event volume for baseline pings is significantly higher and would exceed Amplitude storage limits. The `metrics` ping gets sent at most once a day per client, resulting a much lower volume. However, it's important to note that these pings may not reliably indicate active client sessions, as they are scheduled to be sent at 4 a.m. client time. If the browser is closed and not running at this time, the metrics ping may be sent later.
+
+For the POC, the metrics ping is considered as good enough. If/when this moves to production, coming up with a more accurate way to measure user activity might be needed.
 
 ### Batching of Events
 
