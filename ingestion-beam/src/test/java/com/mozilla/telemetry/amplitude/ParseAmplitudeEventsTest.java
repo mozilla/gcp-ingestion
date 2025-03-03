@@ -278,4 +278,40 @@ public class ParseAmplitudeEventsTest {
 
     pipeline.run();
   }
+
+  @Test
+  public void testParsedAmplitudeEventsMetricsPing() {
+    final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "metrics",
+        Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS, "Windows",
+        Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z", Attribute.CLIENT_ID, "xxx");
+
+    final ObjectNode payload = Json.createObjectNode();
+    payload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    payload.put(Attribute.VERSION, "87.0");
+
+    List<PubsubMessage> input = ImmutableList
+        .of(new PubsubMessage(Json.asBytes(payload), attributes));
+
+    Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST));
+
+    PAssert.that(result.output()).satisfies(amplitudeEvents -> {
+      List<AmplitudeEvent> payloads = new ArrayList<>();
+      amplitudeEvents.forEach(payloads::add);
+
+      Assert.assertEquals("1 event in output", 1, payloads.size());
+
+      Assert.assertTrue("event type is user_activity",
+          payloads.get(0).getEventType().equals("user_activity"));
+      Assert.assertTrue("amplitude event user ID is xxx",
+          payloads.get(0).getUserId().equals("xxx"));
+      Assert.assertTrue("amplitude event app version is null",
+          payloads.get(0).getAppVersion() == null);
+
+      return null;
+    });
+
+    pipeline.run();
+  }
 }

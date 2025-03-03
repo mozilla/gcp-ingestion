@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -112,29 +113,52 @@ public class ParseAmplitudeEvents extends
             }
           }
 
-          // each event from the payload is mapped to a separate Amplitude event
           try {
-            final List<ObjectNode> events = extractEvents(payload, namespace, docType);
+            if (docType.equals("metrics")) {
+              // For the POC, metric pings are used to indicate whether a client was active on a
+              // given day.
+              // This is not a 100% accurate representation of user activity, but close enough for
+              // the POC.
+              // See https://mozilla-hub.atlassian.net/browse/DENG-7616
+              AmplitudeEvent.Builder userActivityEventBuilder = AmplitudeEvent.builder();
 
-            return events.stream().map((ObjectNode event) -> {
-              AmplitudeEvent.Builder amplitudeEventBuilder = AmplitudeEvent.builder();
+              userActivityEventBuilder.setTime(Instant.now().toEpochMilli());
+              userActivityEventBuilder.setUserId(clientId);
+              userActivityEventBuilder.setAppVersion(appVersion);
+              userActivityEventBuilder.setPlatform(namespace);
+              userActivityEventBuilder.setOsName(osName);
+              userActivityEventBuilder.setOsVersion(osVersion);
+              userActivityEventBuilder.setCountry(country);
+              userActivityEventBuilder.setDeviceModel(device_model);
+              userActivityEventBuilder.setDeviceManufacturer(device_manufacturer);
+              userActivityEventBuilder.setLanguage(locale);
+              userActivityEventBuilder.setExperiments(experiments);
+              userActivityEventBuilder.setEventType("user_activity");
 
-              amplitudeEventBuilder.setTime(extractTimestamp(payload, event));
-              amplitudeEventBuilder.setUserId(clientId);
-              amplitudeEventBuilder.setAppVersion(appVersion);
-              amplitudeEventBuilder.setPlatform(namespace);
-              amplitudeEventBuilder.setOsName(osName);
-              amplitudeEventBuilder.setOsVersion(osVersion);
-              amplitudeEventBuilder.setCountry(country);
-              amplitudeEventBuilder.setDeviceModel(device_model);
-              amplitudeEventBuilder.setDeviceManufacturer(device_manufacturer);
-              amplitudeEventBuilder.setLanguage(locale);
-              amplitudeEventBuilder.setExperiments(experiments);
-              amplitudeEventBuilder.setEventType(event.get("event_type").asText());
-              amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
+              return ImmutableList.of(userActivityEventBuilder.build());
+            } else {
+              // each event from the payload is mapped to a separate Amplitude event
+              final List<ObjectNode> events = extractEvents(payload, namespace, docType);
+              return events.stream().map((ObjectNode event) -> {
+                AmplitudeEvent.Builder amplitudeEventBuilder = AmplitudeEvent.builder();
 
-              return amplitudeEventBuilder.build();
-            }).collect(Collectors.toList());
+                amplitudeEventBuilder.setTime(extractTimestamp(payload, event));
+                amplitudeEventBuilder.setUserId(clientId);
+                amplitudeEventBuilder.setAppVersion(appVersion);
+                amplitudeEventBuilder.setPlatform(namespace);
+                amplitudeEventBuilder.setOsName(osName);
+                amplitudeEventBuilder.setOsVersion(osVersion);
+                amplitudeEventBuilder.setCountry(country);
+                amplitudeEventBuilder.setDeviceModel(device_model);
+                amplitudeEventBuilder.setDeviceManufacturer(device_manufacturer);
+                amplitudeEventBuilder.setLanguage(locale);
+                amplitudeEventBuilder.setExperiments(experiments);
+                amplitudeEventBuilder.setEventType(event.get("event_type").asText());
+                amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
+
+                return amplitudeEventBuilder.build();
+              }).collect(Collectors.toList());
+            }
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
