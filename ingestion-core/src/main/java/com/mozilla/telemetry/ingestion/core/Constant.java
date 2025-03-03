@@ -40,6 +40,7 @@ public class Constant {
     public static final String ISP_ORGANIZATION = "isp_organization";
     public static final String ISP_DB_VERSION = "isp_db_version";
     public static final String HOST = "host";
+    public static final String LOCALE = "locale";
     public static final String MESSAGE_ID = "message_id";
     public static final String NORMALIZED_APP_NAME = "normalized_app_name";
     public static final String NORMALIZED_CHANNEL = "normalized_channel";

@@ -96,6 +96,8 @@ public class ParseAmplitudeEvents extends
           final String device_manufacturer = Optional //
               .ofNullable(message.getAttribute(Attribute.DEVICE_MANUFACTURER))
               .orElseGet(() -> (null));
+          final String locale = Optional //
+              .ofNullable(message.getAttribute(Attribute.LOCALE)).orElseGet(() -> (null));
 
           final JsonNode experimentsNode = payload.path(Attribute.PING_INFO)
               .path(Attribute.EXPERIMENTS);
@@ -126,6 +128,7 @@ public class ParseAmplitudeEvents extends
               amplitudeEventBuilder.setCountry(country);
               amplitudeEventBuilder.setDeviceModel(device_model);
               amplitudeEventBuilder.setDeviceManufacturer(device_manufacturer);
+              amplitudeEventBuilder.setLanguage(locale);
               amplitudeEventBuilder.setExperiments(experiments);
               amplitudeEventBuilder.setEventType(event.get("event_type").asText());
               amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
