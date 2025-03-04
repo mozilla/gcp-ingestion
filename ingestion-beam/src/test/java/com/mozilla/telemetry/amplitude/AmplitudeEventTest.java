@@ -26,8 +26,8 @@ public class AmplitudeEventTest {
         + "\"user_properties\":{\"platform\":\"firefox-desktop\",\"language\":\"en\"}}";
     String expectedJsonEventWithExtras = "{\"user_id\":\"test\",\"event_properties\":"
         + "{\"extra\":{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"}},"
-        + "\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\",\"user_properties\":"
-        + "{\"experiment2\":\"branch_b\",\"experiment1\":null,\"platform\":\"firefox-desktop\"}}";
+        + "\"event_type\":\"bookmark.event\",\"platform\":\"firefox-desktop\",\"user_properties\":{"
+        + "\"experiments\":{\"experiment2\":\"branch_b\",\"experiment1\":null},\"platform\":\"firefox-desktop\"}}";
 
     Assert.assertEquals(event.toJson().toString(), expectedJsonEvent);
     Assert.assertEquals(eventWithExtras.toJson().toString(), expectedJsonEventWithExtras);
