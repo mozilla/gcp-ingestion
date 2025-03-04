@@ -79,7 +79,8 @@ public abstract class AmplitudeEvent implements Serializable {
     ObjectNode userProperties = Json.createObjectNode();
 
     if (getExperiments() != null) {
-      userProperties = (ObjectNode) objectMapper.convertValue(getExperiments(), JsonNode.class);
+      userProperties.put("experiments",
+          objectMapper.convertValue(getExperiments(), JsonNode.class));
     }
 
     json.put("event_properties", eventExtras);
