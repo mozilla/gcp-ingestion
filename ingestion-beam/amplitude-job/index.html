@@ -1337,7 +1337,7 @@
 <h2 id="beam-pipeline-transforms">Beam Pipeline Transforms</h2>
 <p>The goal is to have event data in Amplitude that is as close as possible to the data used for calculating KPIs and is used for other creating other datasets in BigQuery. Therefore, the transformation steps closely resemble <a href="https://mozilla.github.io/gcp-ingestion/ingestion-beam/decoder-job/">those of the Decoder job</a>.</p>
 <h3 id="pubsub-republished-topic">Pub/Sub republished topic</h3>
-<p>The input to this job is the subset of decoded messages from various namespaces that have pings with event data.</p>
+<p>The input to this job is the subset of decoded messages from various namespaces that have pings with event data and <code>metrics</code> pings.</p>
 <h3 id="decompress">Decompress</h3>
 <p>Attempt to decompress payload with gzip, on failure pass the message through
 unmodified.</p>
@@ -1350,6 +1350,9 @@ unmodified.</p>
 <pre><code class="language-csv">&lt;namespace&gt;,&lt;doc type&gt;,&lt;event category&gt;,&lt;event name or '*'&gt;
 </code></pre>
 <p>The <code>events</code> are getting parsed from the message payload and transformed into individual events that can be sent to the Amplitude API. Events that don't match the allow list are being filtered out.</p>
+<p>This step also maps <code>metrics</code> pings to <code>user_activity</code> events, which are sent to Amplitude to indicate that a user was active on a given day.
+For the POC, the decision was made to use the <code>metrics</code> ping instead of the more precise <code>baseline</code> ping because the event volume for baseline pings is significantly higher and would exceed Amplitude storage limits. The <code>metrics</code> ping gets sent at most once a day per client, resulting a much lower volume. However, it's important to note that these pings may not reliably indicate active client sessions, as they are scheduled to be sent at 4 a.m. client time. If the browser is closed and not running at this time, the metrics ping may be sent later.</p>
+<p>For the POC, the metrics ping is considered as good enough. If/when this moves to production, coming up with a more accurate way to measure user activity might be needed.</p>
 <h3 id="batching-of-events">Batching of Events</h3>
 <p>Since the Amplitude API has <a href="https://amplitude.com/docs/apis/analytics/batch-event-upload#considerations">limitations</a> around how many events can be sent in a single request and how many requests can be sent withing a second, this step creates batches of events.</p>
 <h3 id="send-request">Send request</h3>
