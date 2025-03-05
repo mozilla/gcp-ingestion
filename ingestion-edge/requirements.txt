@@ -563,9 +563,9 @@ pathspec==0.10.2 \
     --hash=sha256:88c2606f2c1e818b978540f73ecc908e13999c6c3a383daf3705652ae79807a5 \
     --hash=sha256:8f6bf73e5758fd365ef5d58ce09ac7c27d2833a8d7da51712eac6e27e35141b0
     # via black
-persist-queue==0.8.1 \
-    --hash=sha256:9ea2c2fa80edc1ce9f683665c3ebe78bbe71d08868206d0c67a81135182a19f9 \
-    --hash=sha256:e1938d3ac6d9b61692c115f8ddcada8d9a31f22506782585e39588a41ecfa5aa
+persist-queue==1.0.0 \
+    --hash=sha256:3ffb746902d3023fd09eb46897609fdee6c77b1641f19e2fc8d98d744bdfc845 \
+    --hash=sha256:81bb20030b480fcacecc3abe6261480c818246f4d838fdf0217e36c2552a5f3a
     # via -r requirements.in
 pip-tools==7.4.1 \
     --hash=sha256:4c690e5fbae2f21e87843e89c26191f0d9454f362d8acdbd695716493ec8b3a9 \
