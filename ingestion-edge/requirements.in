@@ -4,7 +4,7 @@ exceptiongroup  # for pytest on python<=3.10
 google-cloud-container==2.52.0
 google-cloud-monitoring==2.22.2
 google-cloud-pubsub==1.0.2
-gunicorn==22.0.0
+gunicorn==23.0.0
 kubernetes==28.1.0
 persist-queue==0.8.1
 pip-tools==7.4.1
