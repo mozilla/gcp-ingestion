@@ -127,7 +127,6 @@ public class AmplitudePublisher extends Sink {
         if (line != null && !line.isEmpty()) {
           String[] data = line.split(",");
           apiKeys.put(data[0], data[1]);
-          break;
         }
       }
     } catch (IOException e) {
