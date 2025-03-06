@@ -28,6 +28,8 @@ public abstract class AmplitudeEvent implements Serializable {
 
   public abstract String getPlatform();
 
+  public abstract Integer getSampleId();
+
   @Nullable
   abstract String getAppVersion();
 
@@ -67,6 +69,7 @@ public abstract class AmplitudeEvent implements Serializable {
   public ObjectNode toJson() throws JsonProcessingException {
     final ObjectNode json = Json.createObjectNode();
     json.put("user_id", getUserId());
+    json.put("sample_id", getSampleId());
 
     final ObjectNode eventExtras = Json.createObjectNode();
     ObjectMapper objectMapper = new ObjectMapper();
@@ -77,6 +80,7 @@ public abstract class AmplitudeEvent implements Serializable {
     }
 
     ObjectNode userProperties = Json.createObjectNode();
+    userProperties.put("sample_id", getSampleId());
 
     if (getExperiments() != null) {
       userProperties.put("experiments",
@@ -151,6 +155,8 @@ public abstract class AmplitudeEvent implements Serializable {
   public abstract static class Builder {
 
     public abstract Builder setUserId(String newUserId);
+
+    public abstract Builder setSampleId(Integer newSampleId);
 
     public abstract Builder setEventType(String newEventType);
 

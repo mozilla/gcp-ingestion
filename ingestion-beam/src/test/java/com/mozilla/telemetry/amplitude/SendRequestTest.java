@@ -25,13 +25,13 @@ public class SendRequestTest {
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   private AmplitudeEvent.Builder getTestAmplitudeEvent() {
-    return AmplitudeEvent.builder().setUserId("test123").setEventType("category.event")
-        .setPlatform("firefox-desktop").setTime(1738620582500L);
+    return AmplitudeEvent.builder().setUserId("test123").setSampleId(1)
+        .setEventType("category.event").setPlatform("firefox-desktop").setTime(1738620582500L);
   }
 
   private AmplitudeEvent.Builder getTestAmplitudeEventWithExtras() {
-    return AmplitudeEvent.builder().setUserId("test123").setEventType("category.event")
-        .setPlatform("firefox-desktop").setTime(1738620582500L)
+    return AmplitudeEvent.builder().setUserId("test123").setSampleId(1)
+        .setEventType("category.event").setPlatform("firefox-desktop").setTime(1738620582500L)
         .setEventExtras("{\"test\": 12, \"foo\": true}");
   }
 

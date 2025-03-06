@@ -83,6 +83,9 @@ public class ParseAmplitudeEvents extends
           final String clientId = Optional //
               .ofNullable(message.getAttribute(Attribute.CLIENT_ID)) //
               .orElseThrow(() -> new InvalidAttributeException("Missing clientId"));
+          final Integer sampleId = Optional //
+              .ofNullable(Integer.parseInt(message.getAttribute(Attribute.SAMPLE_ID))) //
+              .orElseThrow(() -> new InvalidAttributeException("Missing sampleId"));
           final String appVersion = Optional //
               .ofNullable(message.getAttribute(Attribute.APP_VERSION)).orElseGet(() -> (null));
           final String osName = Optional //
@@ -124,6 +127,7 @@ public class ParseAmplitudeEvents extends
 
               userActivityEventBuilder.setTime(Instant.now().toEpochMilli());
               userActivityEventBuilder.setUserId(clientId);
+              userActivityEventBuilder.setSampleId(sampleId);
               userActivityEventBuilder.setAppVersion(appVersion);
               userActivityEventBuilder.setPlatform(namespace);
               userActivityEventBuilder.setOsName(osName);
@@ -144,6 +148,7 @@ public class ParseAmplitudeEvents extends
 
                 amplitudeEventBuilder.setTime(extractTimestamp(payload, event));
                 amplitudeEventBuilder.setUserId(clientId);
+                amplitudeEventBuilder.setSampleId(sampleId);
                 amplitudeEventBuilder.setAppVersion(appVersion);
                 amplitudeEventBuilder.setPlatform(namespace);
                 amplitudeEventBuilder.setOsName(osName);
