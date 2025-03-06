@@ -89,8 +89,9 @@ public class ParseAmplitudeEventsTest {
   @Test
   public void testParsedAmplitudeEvents() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "events",
-        Attribute.CLIENT_ID, "xxx", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop",
-        Attribute.USER_AGENT_OS, "Windows", Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
+        Attribute.CLIENT_ID, "xxx", Attribute.SAMPLE_ID, "1", Attribute.DOCUMENT_NAMESPACE,
+        "firefox-desktop", Attribute.USER_AGENT_OS, "Windows", Attribute.SUBMISSION_TIMESTAMP,
+        "2022-03-15T16:42:38Z");
 
     List<PubsubMessage> input = Stream.of("dynamic_text", "non_existing").map(eventName -> {
       final ObjectNode payload = Json.createObjectNode();
@@ -126,6 +127,7 @@ public class ParseAmplitudeEventsTest {
           payloads.get(0).getEventType().equals("accessibility.dynamic_text"));
       Assert.assertTrue("amplitude event user ID is xxx",
           payloads.get(0).getUserId().equals("xxx"));
+      Assert.assertTrue("amplitude event sample ID is 1", payloads.get(0).getSampleId() == 1);
       Assert.assertTrue("amplitude event app version is null",
           payloads.get(0).getAppVersion() == null);
       Assert.assertTrue("amplitude event timestamp is ",
@@ -140,8 +142,9 @@ public class ParseAmplitudeEventsTest {
   @Test
   public void testParsedAmplitudeEventsEventTimestamps() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "events",
-        Attribute.CLIENT_ID, "xxx", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop",
-        Attribute.USER_AGENT_OS, "Windows", Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
+        Attribute.CLIENT_ID, "xxx", Attribute.SAMPLE_ID, "1", Attribute.DOCUMENT_NAMESPACE,
+        "firefox-desktop", Attribute.USER_AGENT_OS, "Windows", Attribute.SUBMISSION_TIMESTAMP,
+        "2022-03-15T16:42:38Z");
 
     final ObjectNode payload1 = Json.createObjectNode();
     payload1.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -194,8 +197,8 @@ public class ParseAmplitudeEventsTest {
 
     // gets filtered due to non-matching doctype and namespace
     final Map<String, String> incorrectAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "test",
-        Attribute.CLIENT_ID, "xxx", Attribute.DOCUMENT_NAMESPACE, "test", Attribute.USER_AGENT_OS,
-        "Windows", Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
+        Attribute.CLIENT_ID, "xxx", Attribute.SAMPLE_ID, "1", Attribute.DOCUMENT_NAMESPACE, "test",
+        Attribute.USER_AGENT_OS, "Windows", Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
 
     final ObjectNode payload3 = Json.createObjectNode();
     final ArrayNode events3 = payload3.putArray("events");
@@ -247,7 +250,7 @@ public class ParseAmplitudeEventsTest {
   public void testParsedAmplitudeEventsWithMissingClientId() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "events",
         Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS, "Windows",
-        Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z");
+        Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z", Attribute.SAMPLE_ID, "1");
 
     final ObjectNode payload = Json.createObjectNode();
     payload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -283,7 +286,8 @@ public class ParseAmplitudeEventsTest {
   public void testParsedAmplitudeEventsMetricsPing() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "metrics",
         Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS, "Windows",
-        Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z", Attribute.CLIENT_ID, "xxx");
+        Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z", Attribute.CLIENT_ID, "xxx",
+        Attribute.SAMPLE_ID, "1");
 
     final ObjectNode payload = Json.createObjectNode();
     payload.put(Attribute.NORMALIZED_COUNTRY_CODE, "US");

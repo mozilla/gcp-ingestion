@@ -5,6 +5,7 @@ import com.mozilla.telemetry.amplitude.AmplitudePublisherOptions;
 import com.mozilla.telemetry.amplitude.FilterByDocType;
 import com.mozilla.telemetry.amplitude.ParseAmplitudeEvents;
 import com.mozilla.telemetry.amplitude.SendRequest;
+import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.republisher.RandomSampler;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -76,7 +77,7 @@ public class AmplitudePublisher extends Sink {
       messages //
           .apply("SampleBySampleIdOrRandomNumber", Filter.by(message -> {
             message = PubsubConstraints.ensureNonNull(message);
-            String sampleId = message.getAttribute("sample_id");
+            String sampleId = message.getAttribute(Attribute.SAMPLE_ID);
             return RandomSampler.filterBySampleIdOrRandomNumber(sampleId, ratio);
           })).apply("RepublishRandomSample", options.getOutputType().write(options));
     }
