@@ -65,8 +65,10 @@ public class FilterByDocTypeTest {
     FilterByDocType.clearSingletonsForTests();
     // Build list of messages with different doctype/version combinations
     final List<PubsubMessage> input = Streams
-        .zip(Stream.of("topsites-click", "quicksuggest-click", "topsites-click"),
-            Stream.of("87", "87", "86", "116"),
+        .zip(
+            Stream.of("topsites-click", "quicksuggest-click", "topsites-click", "top-sites",
+                "top-sites", "top-sites"),
+            Stream.of("87", "87", "86", "115", "136", "137"),
             (doctype, version) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
                 Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
                 Attribute.USER_AGENT_BROWSER, "Firefox", //
@@ -77,19 +79,23 @@ public class FilterByDocTypeTest {
 
     PCollection<PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(FilterByDocType.of("topsites-click,quicksuggest-click,topsites-click",
+        .apply(FilterByDocType.of("topsites-click,quicksuggest-click,top-sites",
             "contextual-services", true));
 
     PAssert.that(result).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-      Assert.assertEquals("topsites-click",
-          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_TYPE));
-      Assert.assertEquals("87",
-          Iterables.get(messages, 0).getAttribute(Attribute.USER_AGENT_VERSION));
-
+      Assert.assertEquals(2, Iterables.size(messages));
+      messages.forEach(message -> {
+        String documentType = message.getAttribute(Attribute.DOCUMENT_TYPE);
+        if ("top-sites".equals(documentType)) {
+          Assert.assertEquals("136", message.getAttribute(Attribute.USER_AGENT_VERSION));
+        } else if ("topsites-click".equals(documentType)) {
+          Assert.assertEquals("87", message.getAttribute(Attribute.USER_AGENT_VERSION));
+        } else {
+          throw new IllegalArgumentException("unknown document type");
+        }
+      });
       return null;
     });
-
     pipeline.run();
   }
 }
