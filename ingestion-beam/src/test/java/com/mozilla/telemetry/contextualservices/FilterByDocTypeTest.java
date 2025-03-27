@@ -66,9 +66,9 @@ public class FilterByDocTypeTest {
     // Build list of messages with different doctype/version combinations
     final List<PubsubMessage> input = Streams
         .zip(
-            Stream.of("topsites-click", "quicksuggest-click", "topsites-click", "top-sites",
-                "top-sites", "top-sites"),
-            Stream.of("87", "87", "86", "115", "136", "137"),
+            Stream.of("topsites-click", "quick-suggest", "topsites-click", "top-sites", "top-sites",
+                "top-sites", "search-with", "search-with", "search-with"),
+            Stream.of("87", "87", "86", "115", "136", "137", "121", "122", "123"),
             (doctype, version) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
                 Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
                 Attribute.USER_AGENT_BROWSER, "Firefox", //
@@ -79,8 +79,8 @@ public class FilterByDocTypeTest {
 
     PCollection<PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(FilterByDocType.of("topsites-click,quicksuggest-click,top-sites",
-            "contextual-services", true));
+        .apply(FilterByDocType.of("topsites-click,quick-suggest,top-sites", "contextual-services",
+            true));
 
     PAssert.that(result).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
