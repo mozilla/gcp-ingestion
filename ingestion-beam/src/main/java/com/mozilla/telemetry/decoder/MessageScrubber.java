@@ -128,6 +128,10 @@ public class MessageScrubber {
       .put("us-spotco-fennec-dos", "1938660") //
       .put("com-atomic-browser-ios-client", "1941536") //
       .put("org-lilo-browser-chrome-ios-herebedragons", "1947334") //
+      .put("com-xyz-aba", "1952966") //
+      .put("org-codesista-firefox-titan", "1953225") //
+      .put("com-android-vending", "1955662") //
+      .put("org-cloudnexus365-flonbrowser", "1955660") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
