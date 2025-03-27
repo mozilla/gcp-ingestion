@@ -67,8 +67,8 @@ public class FilterByDocTypeTest {
     final List<PubsubMessage> input = Streams
         .zip(
             Stream.of("topsites-click", "quick-suggest", "topsites-click", "top-sites", "top-sites",
-                "top-sites", "search-with", "search-with"),
-            Stream.of("87", "87", "86", "115", "136", "137", "121", "122"),
+                "top-sites", "search-with", "search-with", "unsupported-ping"),
+            Stream.of("87", "87", "86", "115", "136", "137", "121", "122", "123"),
             (doctype, version) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
                 Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
                 Attribute.USER_AGENT_BROWSER, "Firefox", //
@@ -79,7 +79,8 @@ public class FilterByDocTypeTest {
 
     PCollection<PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(FilterByDocType.of("topsites-click,quick-suggest,top-sites,search-with",
+        .apply(FilterByDocType.of(
+            "topsites-click,quick-suggest,top-sites,search-with,unsupported-ping",
             "contextual-services", true));
 
     PAssert.that(result).satisfies(messages -> {
