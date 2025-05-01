@@ -278,10 +278,6 @@ public class MessageScrubber {
       }
     }
 
-    if (deng7762Affected(namespace, docType)) {
-      throw new MessageShouldBeDroppedException("deng7762");
-    }
-
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
     if (IGNORED_NAMESPACES.containsKey(namespace)) {
@@ -512,14 +508,6 @@ public class MessageScrubber {
                 DESKTOP_SEARCH_CONTENT_PATTERN);
           }
         });
-  }
-
-  // See https://mozilla-hub.atlassian.net/browse/DENG-7762
-  private static boolean deng7762Affected(String namespace, String docType) {
-    return ("org-mozilla-fenix".equals(namespace) //
-        || "org-mozilla-firefox-beta".equals(namespace) //
-        || "org-mozilla-firefox".equals(namespace)) //
-        && "user-characteristics".equals(docType);
   }
 
   private static void sanitizeDesktopSearchKeys(ObjectNode searchNode, Pattern pattern) {

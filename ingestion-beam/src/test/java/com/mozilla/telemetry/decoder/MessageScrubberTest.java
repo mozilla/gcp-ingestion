@@ -773,31 +773,4 @@ public class MessageScrubberTest {
         .build();
     MessageScrubber.scrub(attributes, Json.createObjectNode());
   }
-
-  @Test
-  public void testDropDeng7762() {
-    final ImmutableMap.Builder<String, String> attributeBuilder = ImmutableMap
-        .<String, String>builder().put(Attribute.DOCUMENT_TYPE, "user-characteristics")
-        .put(Attribute.X_TELEMETRY_AGENT, "Glean");
-
-    assertThrows(MessageShouldBeDroppedException.class,
-        () -> MessageScrubber.scrub(
-            attributeBuilder.put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-fenix").build(),
-            Json.createObjectNode()));
-    assertThrows(MessageShouldBeDroppedException.class,
-        () -> MessageScrubber.scrub(attributeBuilder
-            .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox").buildKeepingLast(),
-            Json.createObjectNode()));
-    assertThrows(MessageShouldBeDroppedException.class,
-        () -> MessageScrubber.scrub(attributeBuilder
-            .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox-beta").buildKeepingLast(),
-            Json.createObjectNode()));
-
-    // valid documents
-    MessageScrubber.scrub(
-        attributeBuilder.put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop").buildKeepingLast(),
-        Json.createObjectNode());
-    MessageScrubber.scrub(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox",
-        Attribute.DOCUMENT_TYPE, "metrics"), Json.createObjectNode());
-  }
 }
