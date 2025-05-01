@@ -270,7 +270,11 @@ public class ParseReportingUrl extends
           // https://mozilla-hub.atlassian.net/browse/DENG-392
           if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
               && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-            addAdditionalDimensionsForSuggest(builtUrl, interaction);
+            addCustomDataForDesktopSuggest(builtUrl, interaction);
+          }
+
+          if (SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
+            addAdditionalDimensionsForInternationalSuggest(builtUrl, interaction, payload);
           }
 
           reportingUrl = builtUrl.toString();
@@ -289,7 +293,7 @@ public class ParseReportingUrl extends
         }));
   }
 
-  private static void addAdditionalDimensionsForSuggest(BuildReportingUrl builtUrl,
+  private static void addCustomDataForDesktopSuggest(BuildReportingUrl builtUrl,
       SponsoredInteraction interaction) {
     Stream<Optional<String>> customDataElements = Stream.of(
         Optional.ofNullable(interaction.getScenario()),
@@ -299,6 +303,24 @@ public class ParseReportingUrl extends
     String customDataParam = customDataElements.flatMap(Optional::stream).reduce(originalValue,
         (output, param) -> String.format("%s_%s", output, param));
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
+  }
+
+  private static void addAdditionalDimensionsForInternationalSuggest(BuildReportingUrl builtUrl,
+      SponsoredInteraction interaction, ObjectNode payload) {
+    // Do not add additional parameters for legacy suggest URLs
+    String baseUrl = builtUrl.getBaseUrl();
+    if (baseUrl.contains("ampxdirect.com") || baseUrl.startsWith("https://imp.mt48.net/static")) {
+      return;
+    }
+
+    if (!payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
+      throw new RejectedMessageException(
+          "Missing required payload value " + Attribute.NORMALIZED_COUNTRY_CODE, "country");
+    }
+
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
+        payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
   }
 
   private static void addAdditionalDimensionsForTopSitesClicks(BuildReportingUrl builtUrl,
