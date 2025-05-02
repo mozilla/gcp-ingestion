@@ -716,7 +716,6 @@ public class ParseReportingUrlTest {
     final String contextId = "aaaaaaaa-cc1d-49db-927d-3ea2fc2ae9c1";
 
     ObjectNode basePayload = Json.createObjectNode();
-
     ObjectNode metrics = basePayload.putObject("metrics");
     metrics.putObject("url").put("fx_suggest.reporting_url",
         "https://test.com?v=a&adv-id=1&ctag=1&partner=1&version=1&sub2=1&sub1=1&ci=1&custom-data=1");
