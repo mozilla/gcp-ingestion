@@ -43,8 +43,10 @@ public class ParseReportingUrlTest {
 
     List<Set<String>> allowedUrlSets = parseReportingUrl.loadAllowedUrls();
 
-    Set<String> expectedClickUrls = ImmutableSet.of("click.com", "click2.com", "test.com");
-    Set<String> expectedImpressionUrls = ImmutableSet.of("impression.com", "test.com");
+    Set<String> expectedClickUrls = ImmutableSet.of("click.com", "click2.com", "test.com",
+        "admarketplace.net", "ampxdirect.com");
+    Set<String> expectedImpressionUrls = ImmutableSet.of("impression.com", "test.com",
+        "imp.mt48.net");
 
     Assert.assertEquals(expectedClickUrls, allowedUrlSets.get(0));
     Assert.assertEquals(expectedImpressionUrls, allowedUrlSets.get(1));
@@ -918,6 +920,92 @@ public class ParseReportingUrlTest {
           Assert.assertTrue("contains dma code",
               reportingUrl.contains(String.format("%s=&", BuildReportingUrl.PARAM_DMA_CODE))
                   || reportingUrl.endsWith(String.format("%s=", BuildReportingUrl.PARAM_DMA_CODE)));
+
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  @Test
+  public void testInternationalSuggest() {
+    // Context IDs are not relevant to the behavior; we just use them to simplify the assertions
+    final String legacyContextId = "legacy-context-id";
+    final String noCountryContextId = "no-country-context-id";
+
+    ObjectNode basePayload = Json.createObjectNode().put(Attribute.NORMALIZED_COUNTRY_CODE, "GB");
+
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quick-suggest",
+        Attribute.DOCUMENT_NAMESPACE, "firefox-desktop");
+
+    ObjectNode impressionPayload = basePayload.deepCopy();
+    ObjectNode impressionMetrics = impressionPayload.putObject("metrics");
+    impressionMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-impression");
+    impressionMetrics.putObject("url").put("quick_suggest.reporting_url",
+        "https://imp.mt48.net/imp?foo=bar");
+
+    ObjectNode clickPayload = basePayload.deepCopy();
+    ObjectNode clickMetrics = clickPayload.putObject("metrics");
+    clickMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-click");
+    clickMetrics.putObject("url").put("quick_suggest.reporting_url",
+        "https://bridge.pdx1.admarketplace.net/ctp?foo=bar");
+
+    ObjectNode legacyImpressionPayload = basePayload.deepCopy();
+    ObjectNode legacyImpressionMetrics = legacyImpressionPayload.putObject("metrics");
+    legacyImpressionMetrics.putObject("uuid").put("quick_suggest.context_id", legacyContextId);
+    legacyImpressionMetrics.putObject("string").put("quick_suggest.ping_type",
+        "quicksuggest-impression");
+    legacyImpressionMetrics.putObject("url").put("quick_suggest.reporting_url",
+        "https://imp.mt48.net/static?foo=bar");
+
+    ObjectNode legacyClickPayload = basePayload.deepCopy();
+    ObjectNode legacyClickMetrics = legacyClickPayload.putObject("metrics");
+    legacyClickMetrics.putObject("uuid").put("quick_suggest.context_id", legacyContextId);
+    legacyClickMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-click");
+    legacyClickMetrics.putObject("url").put("quick_suggest.reporting_url",
+        "https://mozillacla.ampxdirect.com/?foo=bar");
+
+    // Don't set a country code if we can't determine the user's country
+    ObjectNode noCountryPayload = Json.createObjectNode();
+    ObjectNode noCountryMetrics = noCountryPayload.putObject("metrics");
+    noCountryMetrics.putObject("uuid").put("quick_suggest.context_id", noCountryContextId);
+    noCountryMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-impression");
+    noCountryMetrics.putObject("url").put("quick_suggest.reporting_url",
+        "https://imp.mt48.net/imp?foo=bar");
+
+    List<PubsubMessage> input = ImmutableList.of(
+        new PubsubMessage(Json.asBytes(impressionPayload), attributes),
+        new PubsubMessage(Json.asBytes(clickPayload), attributes),
+        new PubsubMessage(Json.asBytes(legacyImpressionPayload), attributes),
+        new PubsubMessage(Json.asBytes(legacyClickPayload), attributes),
+        new PubsubMessage(Json.asBytes(noCountryPayload), attributes));
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
+        .satisfies(sponsoredInteractions -> {
+          Assert.assertEquals(5, Iterables.size(sponsoredInteractions));
+
+          sponsoredInteractions.forEach(interaction -> {
+            String reportingUrl = interaction.getReportingUrl();
+
+            boolean shouldAddCountryCode = true;
+            boolean shouldAddFormFactor = true;
+
+            if (interaction.getContextId().equals(noCountryContextId)) {
+              shouldAddCountryCode = false;
+            } else if (interaction.getContextId().equals(legacyContextId)) {
+              shouldAddCountryCode = false;
+              shouldAddFormFactor = false;
+            }
+
+            Assert.assertEquals("country-code in reporting url", shouldAddCountryCode,
+                reportingUrl.contains("country-code=GB"));
+            Assert.assertEquals("form-factor in reporting url", shouldAddFormFactor,
+                reportingUrl.contains("form-factor=desktop"));
+          });
 
           return null;
         });

@@ -265,12 +265,15 @@ public class ParseReportingUrl extends
             addAdditionalDimensionsForTopSitesClicks(builtUrl, attributes);
           }
 
-          // If we're on desktop and quicksuggest then add the attribution source (data sharing
-          // preference) to the `custom-data` query param
-          // https://mozilla-hub.atlassian.net/browse/DENG-392
-          if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())
-              && SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
-            addAdditionalDimensionsForSuggest(builtUrl, interaction);
+          if (SponsoredInteraction.SOURCE_SUGGEST.equals(interaction.getSource())) {
+            // If we're on desktop and quicksuggest then add the attribution source (data sharing
+            // preference) to the `custom-data` query param
+            // https://mozilla-hub.atlassian.net/browse/DENG-392
+            if (SponsoredInteraction.FORM_DESKTOP.equals(interaction.getFormFactor())) {
+              addCustomDataForDesktopSuggest(builtUrl, interaction);
+            }
+
+            addAdditionalDimensionsForInternationalSuggest(builtUrl, interaction, payload);
           }
 
           reportingUrl = builtUrl.toString();
@@ -289,7 +292,7 @@ public class ParseReportingUrl extends
         }));
   }
 
-  private static void addAdditionalDimensionsForSuggest(BuildReportingUrl builtUrl,
+  private static void addCustomDataForDesktopSuggest(BuildReportingUrl builtUrl,
       SponsoredInteraction interaction) {
     Stream<Optional<String>> customDataElements = Stream.of(
         Optional.ofNullable(interaction.getScenario()),
@@ -299,6 +302,32 @@ public class ParseReportingUrl extends
     String customDataParam = customDataElements.flatMap(Optional::stream).reduce(originalValue,
         (output, param) -> String.format("%s_%s", output, param));
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
+  }
+
+  private static void addAdditionalDimensionsForInternationalSuggest(BuildReportingUrl builtUrl,
+      SponsoredInteraction interaction, ObjectNode payload) {
+    // Do not add additional parameters for legacy suggest URLs.
+    //
+    // Glean events do not indicate how the suggest data was sourced (from the AMP SFTP server or
+    // the new AMP Suggest API), so we resort to looking at the reporting URL.
+    //
+    // AMP uses {mozillacla,firefoxmobilecla}.ampxdirect.com for click URLs and
+    // https://imp.mt48.net/static for impression URLs for suggestions sourced from the SFTP server
+    // (i.e. US suggestions currently).
+    //
+    // They use bridge.*.admarketplace.net for click URLs and and https://imp.mt48.net/imp for
+    // impression URLs for suggestions sourced from the Suggest API.
+    String baseUrl = builtUrl.getBaseUrl();
+    if (baseUrl.contains("ampxdirect.com") || baseUrl.startsWith("https://imp.mt48.net/static")) {
+      return;
+    }
+
+    if (payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
+      builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
+          payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+    }
+
+    builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
   }
 
   private static void addAdditionalDimensionsForTopSitesClicks(BuildReportingUrl builtUrl,
