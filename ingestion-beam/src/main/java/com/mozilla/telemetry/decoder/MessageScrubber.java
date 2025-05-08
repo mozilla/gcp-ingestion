@@ -132,6 +132,7 @@ public class MessageScrubber {
       .put("org-codesista-firefox-titan", "1953225") //
       .put("com-android-vending", "1955662") //
       .put("org-cloudnexus365-flonbrowser", "1955660") //
+      .put("org-mozilla-limit", "1965334") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
