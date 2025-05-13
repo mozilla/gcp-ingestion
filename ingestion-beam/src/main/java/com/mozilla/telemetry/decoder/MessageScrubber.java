@@ -124,6 +124,15 @@ public class MessageScrubber {
       .put("com-ff2024-01-firefox", "1925612") //
       .put("org-mozilla-firefox-cp", "1925615") //
       .put("com-feifan-topvan", "1924135") //
+      .put("com-feifan-chrome-ios-dev", "1930793") //
+      .put("us-spotco-fennec-dos", "1938660") //
+      .put("com-atomic-browser-ios-client", "1941536") //
+      .put("org-lilo-browser-chrome-ios-herebedragons", "1947334") //
+      .put("com-xyz-aba", "1952966") //
+      .put("org-codesista-firefox-titan", "1953225") //
+      .put("com-android-vending", "1955662") //
+      .put("org-cloudnexus365-flonbrowser", "1955660") //
+      .put("org-mozilla-limit", "1965334") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -169,13 +178,14 @@ public class MessageScrubber {
       // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
       // Bing
       "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZL", "MOZM", "MOZO",
-      "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03",
+      "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03", "MZTOF", "MZCP",
       // Google
       "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
       "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
       "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
       "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
-      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "ubuntu", "ubuntu-sn",
+      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "firefox-b-vv", "firefox-b-tf",
+      "ubuntu", "ubuntu-sn",
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "lm", "newext",
@@ -263,6 +273,12 @@ public class MessageScrubber {
       throw new MessageShouldBeDroppedException("1817821");
     }
 
+    if (bug1712850Affected(attributes)) {
+      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
+        throw new MessageShouldBeDroppedException("1712850");
+      }
+    }
+
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
     if (IGNORED_NAMESPACES.containsKey(namespace)) {
@@ -336,14 +352,6 @@ public class MessageScrubber {
           markBugCounter("1642386");
         });
       });
-    }
-
-    if (bug1712850Affected(attributes)) {
-      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
-        json.put("search_query", "");
-        json.put("matched_keywords", "");
-        markBugCounter("1712850");
-      }
     }
 
     if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
