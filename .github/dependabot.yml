@@ -17,8 +17,6 @@ updates:
     versions: [ ">=2.2.0" ]
   schedule:
     interval: daily
-  reviewers:
-  - mozilla/data-platform-infra-wg
   labels:
   - dependencies
   - java
@@ -28,8 +26,6 @@ updates:
   - dependency-name: com.google.cloud:libraries-bom
   schedule:
     interval: daily
-  reviewers:
-  - mozilla/data-platform-infra-wg
   labels:
   - dependencies
   - java
@@ -37,8 +33,6 @@ updates:
   directory: /ingestion-edge
   schedule:
     interval: daily
-  reviewers:
-  - mozilla/data-platform-infra-wg
   labels:
   - dependencies
   - python
