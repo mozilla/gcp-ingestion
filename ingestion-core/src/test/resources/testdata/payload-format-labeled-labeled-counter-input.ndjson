@@ -1,0 +1,1 @@
+{"attributeMap":{"document_namespace":"labeled-labeled-counter","document_type":"test","document_version":"1"},"payload":{"metrics":{"labeled_labeled_counter":{"uploader.send_failure_type_per_ping":{"baseline":{"eOK":2,"eTimeout":22},"metrics":{"eTimeout":1}}}}}}
