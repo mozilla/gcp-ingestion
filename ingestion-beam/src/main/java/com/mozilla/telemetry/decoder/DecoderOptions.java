@@ -34,6 +34,16 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setGeoIspDatabase(String value);
 
+  @Description("Path (local or gs://) to GeoIP2-Enterprise.mmdb. Optional")
+  String getGeoEnterpriseDatabase();
+
+  void setGeoEnterpriseDatabase(String value);
+
+  @Description("Path (local or gs://) to GeoIP2-Anonymous-IP.mmdb. Optional")
+  String getGeoAnonymousIPDatabase();
+
+  void setGeoAnonymousIPDatabase(String value);
+
   @Description("If set to true, enable decryption of Account Ecosystem Telemetry identifiers.")
   @Default.Boolean(false)
   Boolean getAetEnabled();

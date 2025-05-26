@@ -68,7 +68,8 @@ public class Decoder extends Sink {
             // address is already removed before any message gets routed to error output; see
             // https://github.com/mozilla/gcp-ingestion/issues/1096
             .apply(ParseProxy.of(options.getSchemasLocation())) //
-            .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
+            .apply(GeoIspLookup.of(options.getGeoIspDatabase(), options.getGeoEnterpriseDatabase(),
+                options.getGeoAnonymousIPDatabase())) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
                 .withClientCompressionRecorded()))

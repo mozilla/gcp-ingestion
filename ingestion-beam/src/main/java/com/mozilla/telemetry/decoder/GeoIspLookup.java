@@ -4,6 +4,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.maxmind.db.CHMCache;
 import com.maxmind.geoip2.DatabaseReader;
 import com.maxmind.geoip2.exception.GeoIp2Exception;
+import com.maxmind.geoip2.model.AnonymousIpResponse;
+import com.maxmind.geoip2.model.EnterpriseResponse;
 import com.maxmind.geoip2.model.IspResponse;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
@@ -34,18 +36,30 @@ import org.apache.beam.sdk.values.PCollection;
 public class GeoIspLookup
     extends PTransform<PCollection<PubsubMessage>, PCollection<PubsubMessage>> {
 
+  public static GeoIspLookup of(String ispDatabase, String enterpriseDatabase,
+      String anonymousIpDatabase) {
+    return new GeoIspLookup(ispDatabase, enterpriseDatabase, anonymousIpDatabase);
+  }
+
+  // TODO: remove and update tests
   public static GeoIspLookup of(String ispDatabase) {
-    return new GeoIspLookup(ispDatabase);
+    return new GeoIspLookup(ispDatabase, null, null);
   }
 
   /////////
 
   private static transient DatabaseReader singletonIspReader;
+  private static transient DatabaseReader singletonEnterpriseReader;
+  private static transient DatabaseReader singletonAnonymousReader;
 
   private final String geoIspDatabase;
+  private final String enterpriseDatabase;
+  private final String anonymousIpDatabase;
 
-  private GeoIspLookup(String ispDatabase) {
+  private GeoIspLookup(String ispDatabase, String enterpriseDatabase, String anonymousIpDatabase) {
     this.geoIspDatabase = ispDatabase;
+    this.enterpriseDatabase = enterpriseDatabase;
+    this.anonymousIpDatabase = anonymousIpDatabase;
   }
 
   @VisibleForTesting
@@ -53,32 +67,61 @@ public class GeoIspLookup
     singletonIspReader = null;
   }
 
+  private static synchronized DatabaseReader getOrCreateDatabaseReader(String fileLocation,
+      String outputName) throws IOException {
+    File mmdb;
+
+    try {
+      InputStream inputStream = BeamFileInputStream.open(fileLocation);
+      Path mmdbPath = Paths.get(System.getProperty("java.io.tmpdir"),
+          String.format("%s.mmdb", outputName));
+      Files.copy(inputStream, mmdbPath, StandardCopyOption.REPLACE_EXISTING);
+      mmdb = mmdbPath.toFile();
+    } catch (IOException e) {
+      throw new IOException(
+          String.format("Exception thrown while fetching configured %s", outputName), e);
+    }
+
+    return new DatabaseReader.Builder(mmdb).withCache(new CHMCache()).build();
+  }
+
   private static synchronized DatabaseReader getOrCreateSingletonIspReader(String ispDatabase)
       throws IOException {
     if (singletonIspReader == null) {
-      File mmdb;
-
-      try {
-        InputStream inputStream = BeamFileInputStream.open(ispDatabase);
-        Path mmdbPath = Paths.get(System.getProperty("java.io.tmpdir"), "GeoIspLookup.mmdb");
-        Files.copy(inputStream, mmdbPath, StandardCopyOption.REPLACE_EXISTING);
-        mmdb = mmdbPath.toFile();
-      } catch (IOException e) {
-        throw new IOException("Exception thrown while fetching configured geoIspDatabase", e);
-      }
-      singletonIspReader = new DatabaseReader.Builder(mmdb).withCache(new CHMCache()).build();
+      singletonIspReader = getOrCreateDatabaseReader(ispDatabase, "GeoIspLookup");
     }
     return singletonIspReader;
+  }
+
+  private static synchronized DatabaseReader getOrCreateSingletonEnterpriseReader(
+      String enterpriseReader) throws IOException {
+    if (singletonEnterpriseReader == null) {
+      singletonEnterpriseReader = getOrCreateDatabaseReader(enterpriseReader,
+          "GeoEnterpriseLookup");
+    }
+    return singletonEnterpriseReader;
+  }
+
+  private static synchronized DatabaseReader getOrCreateSingletonAnonymousReader(
+      String anonymousReader) throws IOException {
+    if (singletonAnonymousReader == null) {
+      singletonAnonymousReader = getOrCreateDatabaseReader(anonymousReader, "GeoAnonymousLookup");
+    }
+    return singletonAnonymousReader;
   }
 
   @VisibleForTesting
   public class Fn extends SimpleFunction<PubsubMessage, PubsubMessage> {
 
     private transient DatabaseReader ispReader;
+    private transient DatabaseReader enterpriseReader;
+    private transient DatabaseReader anonymousReader;
 
     private final Counter foundIp = Metrics.counter(GeoIspLookup.Fn.class, "found_ip");
     private final Counter countIspAlreadyApplied = Metrics.counter(Fn.class, "isp_already_applied");
     private final Counter foundIsp = Metrics.counter(Fn.class, "found_isp");
+    private final Counter foundEnterpriseIsp = Metrics.counter(Fn.class, "found_enterprise_isp");
+    private final Counter foundAnonymousIp = Metrics.counter(Fn.class, "found_anonymous_ip");
 
     @Override
     public PubsubMessage apply(PubsubMessage message) {
@@ -107,21 +150,59 @@ public class GeoIspLookup
           String[] ips = xff.split("\\s*,\\s*");
           String ip = ips[Math.max(ips.length - 1, 0)];
 
+          attributes.put(Attribute.ISP_DB_VERSION, DateTimeFormatter.ISO_INSTANT
+              .format(Instant.ofEpochMilli(ispReader.getMetadata().getBuildDate().getTime())));
+
+          InetAddress ipAddress = null;
           try {
-            attributes.put(Attribute.ISP_DB_VERSION, DateTimeFormatter.ISO_INSTANT
-                .format(Instant.ofEpochMilli(ispReader.getMetadata().getBuildDate().getTime())));
-
-            // Throws UnknownHostException
-            InetAddress ipAddress = InetAddress.getByName(ip);
+            ipAddress = InetAddress.getByName(ip);
             foundIp.inc();
-
-            IspResponse response = ispReader.isp(ipAddress);
-            foundIsp.inc();
-
-            attributes.put(Attribute.ISP_NAME, response.getIsp());
-            attributes.put(Attribute.ISP_ORGANIZATION, response.getOrganization());
-          } catch (UnknownHostException | GeoIp2Exception ignore) {
+          } catch (UnknownHostException ignore) {
             // ignore these exceptions
+          }
+
+          if (ipAddress != null) {
+            try {
+              IspResponse ispResponse = ispReader.isp(ipAddress);
+              foundIsp.inc();
+
+              attributes.put(Attribute.ISP_NAME, ispResponse.getIsp());
+              attributes.put(Attribute.ISP_ORGANIZATION, ispResponse.getOrganization());
+            } catch (GeoIp2Exception ignore) {
+              // ignore these exceptions
+            }
+
+            try {
+              EnterpriseResponse enterpriseResponse = enterpriseReader.enterprise(ipAddress);
+              foundEnterpriseIsp.inc();
+
+              attributes.put(Attribute.ISP_USER_TYPE, enterpriseResponse.getTraits().getUserType());
+              attributes.put(Attribute.ISP_CONNECTION_TYPE,
+                  enterpriseResponse.getTraits().getConnectionType() == null ? null
+                      : enterpriseResponse.getTraits().getConnectionType().toString());
+            } catch (GeoIp2Exception ignore) {
+              // ignore these exceptions
+            }
+
+            try {
+              AnonymousIpResponse anonymousResponse = anonymousReader.anonymousIp(ipAddress);
+              foundAnonymousIp.inc();
+
+              attributes.put(Attribute.ISP_IS_ANONYMOUS,
+                  Boolean.toString(anonymousResponse.isAnonymous()));
+              attributes.put(Attribute.ISP_IS_ANONYMOUS_VPN,
+                  Boolean.toString(anonymousResponse.isAnonymousVpn()));
+              attributes.put(Attribute.ISP_IS_HOSTING_PROVIDER,
+                  Boolean.toString(anonymousResponse.isHostingProvider()));
+              attributes.put(Attribute.ISP_IS_PUBLIC_PROXY,
+                  Boolean.toString(anonymousResponse.isPublicProxy()));
+              attributes.put(Attribute.ISP_IS_RESIDENTIAL_PROXY,
+                  Boolean.toString(anonymousResponse.isResidentialProxy()));
+              attributes.put(Attribute.ISP_IS_TOR_EXIT_NODE,
+                  Boolean.toString(anonymousResponse.isTorExitNode()));
+            } catch (GeoIp2Exception ignore) {
+              // ignore these exceptions
+            }
           }
         }
 
@@ -141,6 +222,14 @@ public class GeoIspLookup
       }
 
       ispReader = getOrCreateSingletonIspReader(geoIspDatabase);
+
+      if (enterpriseDatabase != null) {
+        enterpriseReader = getOrCreateSingletonEnterpriseReader(enterpriseDatabase);
+      }
+
+      if (anonymousIpDatabase != null) {
+        anonymousReader = getOrCreateSingletonAnonymousReader(anonymousIpDatabase);
+      }
     }
   }
 

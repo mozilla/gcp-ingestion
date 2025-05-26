@@ -36,9 +36,17 @@ public class Constant {
     public static final String GLEAN_TIMESTAMP = "glean_timestamp";
     @SuppressWarnings({ "checkstyle:linelength" })
     public static final String IMPROVE_SUGGEST_EXPERIENCE_CHECKED = "improve_suggest_experience_checked";
+    public static final String ISP_CONNECTION_TYPE = "isp_connection_type";
+    public static final String ISP_IS_ANONYMOUS = "isp_is_anonymous";
+    public static final String ISP_IS_ANONYMOUS_VPN = "isp_is_anonymous_vpn";
+    public static final String ISP_IS_HOSTING_PROVIDER = "isp_is_hosting_provider";
+    public static final String ISP_IS_PUBLIC_PROXY = "isp_is_public_proxy";
+    public static final String ISP_IS_RESIDENTIAL_PROXY = "isp_is_residential_proxy";
+    public static final String ISP_IS_TOR_EXIT_NODE = "isp_is_tor_exit_node";
     public static final String ISP_NAME = "isp_name";
     public static final String ISP_ORGANIZATION = "isp_organization";
     public static final String ISP_DB_VERSION = "isp_db_version";
+    public static final String ISP_USER_TYPE = "isp_user_type";
     public static final String HOST = "host";
     public static final String LOCALE = "locale";
     public static final String MESSAGE_ID = "message_id";
