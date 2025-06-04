@@ -18,7 +18,7 @@ See https://docs.github.com/en/repositories/managing-your-repositorys-settings-a
 
 ## Merging Guidelines
 
-- Only merge changes to `main` that you want to propagate to production automatically
+- If the PR affects Beam jobs (`ingestion-core` or `ingestion-beam`), only merge changes to `main` if you want them to be propagated automatically to production.
 - Check [pipeline latency](https://yardstick.mozilla.org/d/bZHv1mUMk/pipeline-latency?orgId=1&from=now-6h&to=now) before merging, particularly if:
   - The merge will occur within 2 hours of the UTC date change, or
   - You are merging multiple PRs in quick suggestion
