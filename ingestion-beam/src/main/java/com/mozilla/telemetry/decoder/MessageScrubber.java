@@ -134,6 +134,9 @@ public class MessageScrubber {
       .put("org-cloudnexus365-flonbrowser", "1955660") //
       .put("org-mozilla-limit", "1965334") //
       .put("com-edu-assistant", "1967600") //
+      .put("com-log-edcationcloud", "1971192") //
+      .put("djb-pengpenggop-aha", "1971191") //
+      .put("com-immersivetranslate-browser-babel", "1971190") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
