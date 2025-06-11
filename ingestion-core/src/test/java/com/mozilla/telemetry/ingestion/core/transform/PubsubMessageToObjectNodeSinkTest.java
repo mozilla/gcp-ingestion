@@ -248,4 +248,11 @@ public class PubsubMessageToObjectNodeSinkTest {
         "testdata/payload-format-duplicate-normalized-map-field-input.ndjson",
         "testdata/payload-format-duplicate-normalized-map-field-expected.ndjson");
   }
+
+  @Test
+  public void canFormatAsPayloadWithLabeledLabeledCounter() throws IOException {
+    transformAndTestOutput(ImmutableList.of(""),
+        "testdata/payload-format-labeled-labeled-counter-input.ndjson",
+        "testdata/payload-format-labeled-labeled-counter-expected.ndjson");
+  }
 }
