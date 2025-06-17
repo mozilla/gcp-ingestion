@@ -30,7 +30,7 @@
             "type": "RECORD"
           }
         ],
-        "name": "labeled_labeled_counter",
+        "name": "dual_labeled_counter",
         "type": "RECORD"
       }
     ],

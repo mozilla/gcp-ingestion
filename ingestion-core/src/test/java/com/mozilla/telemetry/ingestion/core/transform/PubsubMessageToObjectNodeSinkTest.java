@@ -250,9 +250,9 @@ public class PubsubMessageToObjectNodeSinkTest {
   }
 
   @Test
-  public void canFormatAsPayloadWithLabeledLabeledCounter() throws IOException {
+  public void canFormatAsPayloadWithDualLabeledCounter() throws IOException {
     transformAndTestOutput(ImmutableList.of(""),
-        "testdata/payload-format-labeled-labeled-counter-input.ndjson",
-        "testdata/payload-format-labeled-labeled-counter-expected.ndjson");
+        "testdata/payload-format-dual-labeled-counter-input.ndjson",
+        "testdata/payload-format-dual-labeled-counter-expected.ndjson");
   }
 }
