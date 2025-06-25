@@ -1,0 +1,45 @@
+[
+  {
+    "fields": [
+      {
+        "fields": [
+          {
+            "description": "Test dual labeled counter metric",
+            "fields": [
+              {
+                "mode": "REQUIRED",
+                "name": "key",
+                "type": "STRING"
+              },
+              {
+                "fields": [
+                  {
+                    "mode": "REQUIRED",
+                    "name": "key",
+                    "type": "STRING"
+                  },
+                  {
+                    "mode": "REQUIRED",
+                    "name": "value",
+                    "type": "INT64"
+                  }
+                ],
+                "mode": "REPEATED",
+                "name": "value",
+                "type": "RECORD"
+              }
+            ],
+            "mode": "REPEATED",
+            "name": "uploader_send_failure_type_per_ping",
+            "type": "RECORD"
+          }
+        ],
+        "mode": "NULLABLE",
+        "name": "dual_labeled_counter",
+        "type": "RECORD"
+      }
+    ],
+    "name": "metrics",
+    "type": "RECORD"
+  }
+]
