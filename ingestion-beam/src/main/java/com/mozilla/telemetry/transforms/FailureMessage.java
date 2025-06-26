@@ -3,6 +3,7 @@ package com.mozilla.telemetry.transforms;
 import com.google.common.collect.ImmutableMap;
 import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.posthog.PosthogEvent;
 import com.mozilla.telemetry.util.Time;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.beam.sdk.io.FileIO.ReadableFile;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.values.KV;
 import org.joda.time.Instant;
 
 /**
@@ -51,6 +53,20 @@ public class FailureMessage {
 
     PubsubMessage message = new PubsubMessage(
         interaction.toString().getBytes(StandardCharsets.UTF_8), attributes);
+    return FailureMessage.of(caller, message, e);
+  }
+
+  /**
+   * Return a PubsubMessage wrapping a PosthogEvent batch with attributes describing the error.
+   * TODO Investigate refactoring to not import PosthogEvent into this higher-level module.
+   */
+  public static PubsubMessage of(Object caller, KV<String, Iterable<PosthogEvent>> events,
+      Throwable e) {
+    Map<String, String> attributes = Map.of(Attribute.SUBMISSION_TIMESTAMP,
+        Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));
+
+    PubsubMessage message = new PubsubMessage(events.toString().getBytes(StandardCharsets.UTF_8),
+        attributes);
     return FailureMessage.of(caller, message, e);
   }
 
