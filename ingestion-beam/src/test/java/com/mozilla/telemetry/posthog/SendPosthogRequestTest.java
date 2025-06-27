@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.amplitude;
+package com.mozilla.telemetry.posthog;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
@@ -19,19 +19,19 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class SendRequestTest {
+public class SendPosthogRequestTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
-  private AmplitudeEvent.Builder getTestAmplitudeEvent() {
-    return AmplitudeEvent.builder().setUserId("test123").setSampleId(1)
-        .setEventType("category.event").setPlatform("firefox-desktop").setTime(1738620582500L);
+  private PosthogEvent.Builder getTestPosthogEvent() {
+    return PosthogEvent.builder().setUserId("test123").setSampleId(1).setEventType("category.event")
+        .setPlatform("firefox-desktop").setTime(1738620582500L);
   }
 
-  private AmplitudeEvent.Builder getTestAmplitudeEventWithExtras() {
-    return AmplitudeEvent.builder().setUserId("test123").setSampleId(1)
-        .setEventType("category.event").setPlatform("firefox-desktop").setTime(1738620582500L)
+  private PosthogEvent.Builder getTestPosthogEventWithExtras() {
+    return PosthogEvent.builder().setUserId("test123").setSampleId(1).setEventType("category.event")
+        .setPlatform("firefox-desktop").setTime(1738620582500L)
         .setEventExtras("{\"test\": 12, \"foo\": true}");
   }
 
@@ -45,11 +45,11 @@ public class SendRequestTest {
   public void testReportingDisabled() {
     MockWebServer server = new MockWebServer();
 
-    AmplitudeEvent event = getTestAmplitudeEvent().build();
-    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList
+    PosthogEvent event = getTestPosthogEvent().build();
+    List<KV<String, Iterable<PosthogEvent>>> input = ImmutableList
         .of(KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    pipeline.apply(Create.of(input)).apply(SendRequest.of(getApiKeys(), false, 10));
+    pipeline.apply(Create.of(input)).apply(SendPosthogRequest.of(getApiKeys(), false, 10));
 
     pipeline.run();
 
@@ -62,15 +62,15 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(500));
     server.enqueue(new MockResponse().setResponseCode(401));
 
-    AmplitudeEvent event = getTestAmplitudeEvent().build();
+    PosthogEvent event = getTestPosthogEvent().build();
 
-    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList.of(
+    List<KV<String, Iterable<PosthogEvent>>> input = ImmutableList.of(
         KV.of("firefox-desktop", ImmutableList.of(event)),
         KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<PosthogEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of(getApiKeys(), true, 10, server.url("/batch").toString()));
+        .apply(SendPosthogRequest.of(getApiKeys(), true, 10, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -78,7 +78,6 @@ public class SendRequestTest {
     });
 
     pipeline.run();
-
     Assert.assertEquals(2, server.getRequestCount());
   }
 
@@ -88,15 +87,15 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(200));
     server.enqueue(new MockResponse().setResponseCode(204));
 
-    AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
+    PosthogEvent event = getTestPosthogEventWithExtras().build();
 
-    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList.of(
+    List<KV<String, Iterable<PosthogEvent>>> input = ImmutableList.of(
         KV.of("firefox-desktop", ImmutableList.of(event)),
         KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<PosthogEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of(getApiKeys(), true, 1, server.url("/batch").toString()));
+        .apply(SendPosthogRequest.of(getApiKeys(), true, 1, server.url("/batch").toString()));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -104,7 +103,6 @@ public class SendRequestTest {
     });
 
     pipeline.run();
-
     Assert.assertEquals(2, server.getRequestCount());
   }
 
@@ -114,15 +112,15 @@ public class SendRequestTest {
     server.enqueue(new MockResponse().setResponseCode(200));
     server.enqueue(new MockResponse().setResponseCode(204));
 
-    AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
+    PosthogEvent event = getTestPosthogEventWithExtras().build();
 
-    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList.of(
+    List<KV<String, Iterable<PosthogEvent>>> input = ImmutableList.of(
         KV.of("firefox-desktop", ImmutableList.of(event, event)),
         KV.of("firefox-desktop", ImmutableList.of(event, event)));
 
-    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<PosthogEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of(getApiKeys(), true, 2, server.url("/batch").toString()));
+        .apply(SendPosthogRequest.of(getApiKeys(), true, 2, server.url("/batch").toString()));
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(2, Iterables.size(messages));
@@ -130,7 +128,6 @@ public class SendRequestTest {
     });
 
     pipeline.run();
-
     Assert.assertEquals(2, server.getRequestCount());
   }
 
@@ -139,14 +136,14 @@ public class SendRequestTest {
     MockWebServer server = new MockWebServer();
     server.enqueue(new MockResponse().setResponseCode(302));
 
-    AmplitudeEvent event = getTestAmplitudeEventWithExtras().build();
+    PosthogEvent event = getTestPosthogEventWithExtras().build();
 
-    List<KV<String, Iterable<AmplitudeEvent>>> input = ImmutableList
+    List<KV<String, Iterable<PosthogEvent>>> input = ImmutableList
         .of(KV.of("firefox-desktop", ImmutableList.of(event)));
 
-    WithFailures.Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> result = pipeline
+    WithFailures.Result<PCollection<KV<String, Iterable<PosthogEvent>>>, PubsubMessage> result = pipeline
         .apply(Create.of(input))
-        .apply(SendRequest.of(getApiKeys(), true, 1, server.url("/batch").toString()));
+        .apply(SendPosthogRequest.of(getApiKeys(), true, 1, server.url("/batch").toString()));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));
@@ -154,7 +151,6 @@ public class SendRequestTest {
     });
 
     pipeline.run();
-
     Assert.assertEquals(1, server.getRequestCount());
   }
 }

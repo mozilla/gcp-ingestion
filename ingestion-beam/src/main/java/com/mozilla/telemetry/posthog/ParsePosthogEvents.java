@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.amplitude;
+package com.mozilla.telemetry.posthog;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,74 +34,65 @@ import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
 /**
- * Convert PubSub Message with event data to Amplitude event.
+ * Convert PubSub Message with event data to Posthog event.
  */
-public class ParseAmplitudeEvents extends
-    PTransform<PCollection<PubsubMessage>, Result<PCollection<AmplitudeEvent>, PubsubMessage>> {
+public class ParsePosthogEvents extends
+    PTransform<PCollection<PubsubMessage>, Result<PCollection<PosthogEvent>, PubsubMessage>> {
 
   private final String eventsAllowListPath;
-
   private static transient volatile List<String[]> singletonAllowedEvents;
 
-  public static ParseAmplitudeEvents of(String eventsAllowListPath) {
-    return new ParseAmplitudeEvents(eventsAllowListPath);
+  public static ParsePosthogEvents of(String eventsAllowListPath) {
+    return new ParsePosthogEvents(eventsAllowListPath);
   }
 
-  private ParseAmplitudeEvents(String eventsAllowListPath) {
+  private ParsePosthogEvents(String eventsAllowListPath) {
     this.eventsAllowListPath = eventsAllowListPath;
   }
 
   @Override
-  public Result<PCollection<AmplitudeEvent>, PubsubMessage> expand(
+  public Result<PCollection<PosthogEvent>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
-    return messages.apply(FlatMapElements.into(TypeDescriptor.of(AmplitudeEvent.class))
-        .via((PubsubMessage message) -> {
+    return messages.apply(
+        FlatMapElements.into(TypeDescriptor.of(PosthogEvent.class)).via((PubsubMessage message) -> {
           message = PubsubConstraints.ensureNonNull(message);
-
           ObjectNode payload;
           try {
             payload = Json.readObjectNode(message.getPayload());
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
-
-          // A CSV file contains a set of event names and categories that should be sent to
-          // Amplitude.
-          // This is to limit the event volume and cost in Amplitude.
           try {
             readAllowedEventsFromFile();
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
-
-          final String namespace = Optional //
-              .ofNullable(message.getAttribute(Attribute.DOCUMENT_NAMESPACE)) //
+          final String namespace = Optional
+              .ofNullable(message.getAttribute(Attribute.DOCUMENT_NAMESPACE))
               .orElseThrow(() -> new InvalidAttributeException("Missing namespace"));
-          final String docType = Optional //
-              .ofNullable(message.getAttribute(Attribute.DOCUMENT_TYPE)) //
+          final String docType = Optional.ofNullable(message.getAttribute(Attribute.DOCUMENT_TYPE))
               .orElseThrow(() -> new InvalidAttributeException("Missing docType"));
-          final String clientId = Optional //
-              .ofNullable(message.getAttribute(Attribute.CLIENT_ID)) //
+          final String clientId = Optional.ofNullable(message.getAttribute(Attribute.CLIENT_ID))
               .orElseThrow(() -> new InvalidAttributeException("Missing clientId"));
-          final Integer sampleId = Optional //
-              .ofNullable(Integer.parseInt(message.getAttribute(Attribute.SAMPLE_ID))) //
+          final Integer sampleId = Optional
+              .ofNullable(Integer.parseInt(message.getAttribute(Attribute.SAMPLE_ID)))
               .orElseThrow(() -> new InvalidAttributeException("Missing sampleId"));
-          final String appVersion = Optional //
-              .ofNullable(message.getAttribute(Attribute.APP_VERSION)).orElseGet(() -> (null));
-          final String osName = Optional //
-              .ofNullable(message.getAttribute(Attribute.NORMALIZED_OS)).orElseGet(() -> (null));
-          final String osVersion = Optional //
+          final String appVersion = Optional.ofNullable(message.getAttribute(Attribute.APP_VERSION))
+              .orElseGet(() -> (null));
+          final String osName = Optional.ofNullable(message.getAttribute(Attribute.NORMALIZED_OS))
+              .orElseGet(() -> (null));
+          final String osVersion = Optional
               .ofNullable(message.getAttribute(Attribute.NORMALIZED_OS_VERSION))
               .orElseGet(() -> (null));
-          final String country = Optional //
-              .ofNullable(message.getAttribute(Attribute.GEO_COUNTRY)).orElseGet(() -> (null));
-          final String device_model = Optional //
+          final String country = Optional.ofNullable(message.getAttribute(Attribute.GEO_COUNTRY))
+              .orElseGet(() -> (null));
+          final String device_model = Optional
               .ofNullable(message.getAttribute(Attribute.DEVICE_MODEL)).orElseGet(() -> (null));
-          final String device_manufacturer = Optional //
+          final String device_manufacturer = Optional
               .ofNullable(message.getAttribute(Attribute.DEVICE_MANUFACTURER))
               .orElseGet(() -> (null));
-          final String locale = Optional //
-              .ofNullable(message.getAttribute(Attribute.LOCALE)).orElseGet(() -> (null));
+          final String locale = Optional.ofNullable(message.getAttribute(Attribute.LOCALE))
+              .orElseGet(() -> (null));
 
           final JsonNode experimentsNode = payload.path(Attribute.PING_INFO)
               .path(Attribute.EXPERIMENTS);
@@ -118,13 +109,7 @@ public class ParseAmplitudeEvents extends
 
           try {
             if (docType.equals("metrics")) {
-              // For the POC, metric pings are used to indicate whether a client was active on a
-              // given day.
-              // This is not a 100% accurate representation of user activity, but close enough for
-              // the POC.
-              // See https://mozilla-hub.atlassian.net/browse/DENG-7616
-              AmplitudeEvent.Builder userActivityEventBuilder = AmplitudeEvent.builder();
-
+              PosthogEvent.Builder userActivityEventBuilder = PosthogEvent.builder();
               userActivityEventBuilder.setTime(Instant.now().toEpochMilli());
               userActivityEventBuilder.setUserId(clientId);
               userActivityEventBuilder.setSampleId(sampleId);
@@ -138,46 +123,41 @@ public class ParseAmplitudeEvents extends
               userActivityEventBuilder.setLanguage(locale);
               userActivityEventBuilder.setExperiments(experiments);
               userActivityEventBuilder.setEventType("user_activity");
-
               return ImmutableList.of(userActivityEventBuilder.build());
             } else {
-              // each event from the payload is mapped to a separate Amplitude event
               final List<ObjectNode> events = extractEvents(payload, namespace, docType);
               return events.stream().map((ObjectNode event) -> {
-                AmplitudeEvent.Builder amplitudeEventBuilder = AmplitudeEvent.builder();
-
-                amplitudeEventBuilder.setTime(extractTimestamp(payload, event));
-                amplitudeEventBuilder.setUserId(clientId);
-                amplitudeEventBuilder.setSampleId(sampleId);
-                amplitudeEventBuilder.setAppVersion(appVersion);
-                amplitudeEventBuilder.setPlatform(namespace);
-                amplitudeEventBuilder.setOsName(osName);
-                amplitudeEventBuilder.setOsVersion(osVersion);
-                amplitudeEventBuilder.setCountry(country);
-                amplitudeEventBuilder.setDeviceModel(device_model);
-                amplitudeEventBuilder.setDeviceManufacturer(device_manufacturer);
-                amplitudeEventBuilder.setLanguage(locale);
-                amplitudeEventBuilder.setExperiments(experiments);
-                amplitudeEventBuilder.setEventType(event.get("event_type").asText());
-                amplitudeEventBuilder.setEventExtras(event.get("event_extras").toString());
-
-                return amplitudeEventBuilder.build();
+                PosthogEvent.Builder posthogEventBuilder = PosthogEvent.builder();
+                posthogEventBuilder.setTime(extractTimestamp(payload, event));
+                posthogEventBuilder.setUserId(clientId);
+                posthogEventBuilder.setSampleId(sampleId);
+                posthogEventBuilder.setAppVersion(appVersion);
+                posthogEventBuilder.setPlatform(namespace);
+                posthogEventBuilder.setOsName(osName);
+                posthogEventBuilder.setOsVersion(osVersion);
+                posthogEventBuilder.setCountry(country);
+                posthogEventBuilder.setDeviceModel(device_model);
+                posthogEventBuilder.setDeviceManufacturer(device_manufacturer);
+                posthogEventBuilder.setLanguage(locale);
+                posthogEventBuilder.setExperiments(experiments);
+                posthogEventBuilder.setEventType(event.get("event_type").asText());
+                posthogEventBuilder.setEventExtras(event.get("event_extras").toString());
+                return posthogEventBuilder.build();
               }).collect(Collectors.toList());
             }
           } catch (IOException e) {
             throw new UncheckedIOException(e);
           }
-
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-        .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
-          try {
-            throw ee.exception();
-          } catch (UncheckedIOException | IOException | IllegalArgumentException
-              | InvalidAttributeException e) {
-            return FailureMessage.of(ParseAmplitudeEvents.class.getSimpleName(), ee.element(),
-                ee.exception());
-          }
-        }));
+            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
+              try {
+                throw ee.exception();
+              } catch (UncheckedIOException | IOException | IllegalArgumentException
+                  | InvalidAttributeException e) {
+                return FailureMessage.of(ParsePosthogEvents.class.getSimpleName(), ee.element(),
+                    ee.exception());
+              }
+            }));
   }
 
   @VisibleForTesting
@@ -185,63 +165,42 @@ public class ParseAmplitudeEvents extends
     return Instant.parse(timestamp).toEpochMilli();
   }
 
-  /**
-   * Compute the event timestamp.
-   * Based on the same logic used in:
-   * https://github.com/mozilla/bigquery-etl/blob/cb1f059c1ba3437747baced399b09b3b89725024/sql_generators/glean_usage/templates/events_stream_v1.query.sql#L127-L130
-   */
   @VisibleForTesting
   private static long extractTimestamp(ObjectNode payload, ObjectNode event) {
     JsonNode gleanTimestamp = event.path("event_extras").path(Attribute.GLEAN_TIMESTAMP);
-
     if (!gleanTimestamp.isMissingNode()) {
       return gleanTimestamp.asLong();
     }
-
     JsonNode startTime = payload.path(Attribute.PING_INFO).path(Attribute.PARSED_START_TIME);
     JsonNode eventTime = event.path(Attribute.TIMESTAMP);
-
     if (!startTime.isMissingNode() && !eventTime.isMissingNode()) {
       long timestampMillis = timestampStringToMillis(startTime.textValue());
       return timestampMillis + eventTime.asLong();
     }
-
     return Instant.now().toEpochMilli();
   }
 
-  /**
-   * Reads allowed document name, document type, event category and event name combination from CSV.
-   * Expected format:
-   * org-mozilla-ios-firefox,events,bookmark,*
-   * org-mozilla-fenix,events,nimbus_events,enroll_failed
-   */
   List<String[]> readAllowedEventsFromFile() throws IOException {
     if (singletonAllowedEvents != null) {
       return singletonAllowedEvents;
     }
-
     if (eventsAllowListPath == null) {
       throw new IllegalArgumentException("File location must be defined");
     }
-
-    synchronized (ParseAmplitudeEvents.class) {
+    synchronized (ParsePosthogEvents.class) {
       if (singletonAllowedEvents == null) {
         try (InputStream inputStream = BeamFileInputStream.open(eventsAllowListPath);
             InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
             BufferedReader reader = new BufferedReader(inputStreamReader)) {
           singletonAllowedEvents = new ArrayList<String[]>();
-
           while (reader.ready()) {
             String line = reader.readLine();
-
             if (line != null && !line.isEmpty()) {
               String[] separated = line.split(",");
-
               if (separated.length != 4) {
                 throw new IllegalArgumentException(
                     "Invalid mapping: " + line + "; four-column csv expected");
               }
-
               singletonAllowedEvents.add(separated);
             }
           }
@@ -250,32 +209,24 @@ public class ParseAmplitudeEvents extends
         }
       }
     }
-
     return singletonAllowedEvents;
   }
 
-  /**
-   * Read events from ping payload, filter based on allowed events and return as JSON.
-   */
   @VisibleForTesting
   static List<ObjectNode> extractEvents(ObjectNode payload, String namespace, String docType)
       throws IOException {
     ObjectMapper mapper = new ObjectMapper();
-
     return StreamSupport.stream(payload.path("events").spliterator(), false).map(event -> {
       final ObjectNode result = mapper.createObjectNode();
       final JsonNode eventCategory = event.get("category");
       final JsonNode eventName = event.get("name");
       String eventType = "";
-
       if (eventCategory != null && !eventCategory.isNull()) {
         eventType = eventCategory.asText();
-
         if (eventName != null && !eventName.isNull()) {
           eventType += "." + eventName.asText();
         }
       }
-
       if (isEventAllowed(namespace, docType, eventCategory, eventName)) {
         result.put("event_type", eventType);
         result.put("event_extras", event.get("extra"));
