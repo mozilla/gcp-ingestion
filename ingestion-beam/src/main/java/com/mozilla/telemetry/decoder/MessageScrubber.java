@@ -318,6 +318,10 @@ public class MessageScrubber {
       }
     }
 
+    if ("pageload-domain".equals(docType)) {
+      throw new MessageShouldBeDroppedException("DENG-9045");
+    }
+
     // Check for other signatures that we want to send to error output, but which should appear
     // in normal pipeline monitoring.
     if (bug1489560Affected(attributes, json)) {
