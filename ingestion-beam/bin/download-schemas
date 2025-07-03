@@ -149,7 +149,7 @@ init_working_directory
 # Fetch schemas
 BRANCH="generated-schemas"
 TARFILE="$BRANCH.tar.gz"
-curl -sL https://github.com/mozilla-services/mozilla-pipeline-schemas/archive/$TARFILE > schemas.tar.gz
+curl -sL https://github.com/akkomar/mozilla-pipeline-schemas/archive/$TARFILE > schemas.tar.gz
 
 # Extract and rename the top-level folder
 mps="mozilla-pipeline-schemas"
