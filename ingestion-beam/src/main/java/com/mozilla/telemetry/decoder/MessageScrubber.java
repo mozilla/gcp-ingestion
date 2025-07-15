@@ -143,6 +143,7 @@ public class MessageScrubber {
       .<String, String>builder().put("pioneer-study", "1631849") //
       .put("frecency-update", "1633525") //
       .put("saved-session", "1656910") //
+      .put("modules", "DENG-8496") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
