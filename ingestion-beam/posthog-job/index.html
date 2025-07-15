@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../..">
+        <link rel="prev" href="../ingestion_testing_workflow/">
       
       
-        <link rel="next" href="../bigquery_sink_specification/">
+        <link rel="next" href="../republisher-job/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Overview - GCP Ingestion</title>
+        <title>Posthog Publisher Job - GCP Ingestion</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#gcp-ingestion-architecture" class="md-skip">
+        <a href="#posthog-publisher-job" class="md-skip">
           Skip to content
         </a>
       
@@ -108,7 +108,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overview
+              Posthog Publisher Job
             
           </span>
         </div>
@@ -210,13 +210,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
           
   
   
@@ -252,11 +250,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../ingestion-beam/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -359,29 +359,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
             
   
   
@@ -394,7 +391,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -405,32 +402,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Overview
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
         
   
   
@@ -441,200 +416,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#architecture-diagram" class="md-nav__link">
-    <span class="md-ellipsis">
-      Architecture Diagram
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      Architecture Components
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Architecture Components">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#ingestion-edge" class="md-nav__link">
-    <span class="md-ellipsis">
-      Ingestion Edge
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#raw-sink" class="md-nav__link">
-    <span class="md-ellipsis">
-      Raw Sink
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#decoder" class="md-nav__link">
-    <span class="md-ellipsis">
-      Decoder
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#republisher" class="md-nav__link">
-    <span class="md-ellipsis">
-      Republisher
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#live-sink" class="md-nav__link">
-    <span class="md-ellipsis">
-      Live Sink
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#decoded-sink" class="md-nav__link">
-    <span class="md-ellipsis">
-      Decoded Sink
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Notes
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#design-decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Design Decisions
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Design Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes-engine-and-pubsub" class="md-nav__link">
-    <span class="md-ellipsis">
-      Kubernetes Engine and PubSub
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#different-topics-for-raw-and-validated-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Different topics for "raw" and "validated" data
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bigquery" class="md-nav__link">
-    <span class="md-ellipsis">
-      BigQuery
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#archive-messages-from-each-stage-of-the-pipeline-as-json-payloads-in-bigquery" class="md-nav__link">
-    <span class="md-ellipsis">
-      Archive messages from each stage of the pipeline as JSON payloads in BigQuery
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-destination-tables" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use destination tables
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-views-for-user-facing-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use views for user-facing data
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      Limits
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#further-reading" class="md-nav__link">
-    <span class="md-ellipsis">
-      Further Reading
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -690,7 +471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../bigquery_sink_specification/" class="md-nav__link">
+      <a href="../../architecture/bigquery_sink_specification/" class="md-nav__link">
         
   
   
@@ -713,7 +494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../decoder_service_specification/" class="md-nav__link">
+      <a href="../../architecture/decoder_service_specification/" class="md-nav__link">
         
   
   
@@ -736,7 +517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../differences_from_aws/" class="md-nav__link">
+      <a href="../../architecture/differences_from_aws/" class="md-nav__link">
         
   
   
@@ -759,7 +540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../edge_migration_plan/" class="md-nav__link">
+      <a href="../../architecture/edge_migration_plan/" class="md-nav__link">
         
   
   
@@ -782,7 +563,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../edge_service_specification/" class="md-nav__link">
+      <a href="../../architecture/edge_service_specification/" class="md-nav__link">
         
   
   
@@ -805,7 +586,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../landfill_service_specification/" class="md-nav__link">
+      <a href="../../architecture/landfill_service_specification/" class="md-nav__link">
         
   
   
@@ -828,7 +609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pain_points/" class="md-nav__link">
+      <a href="../../architecture/pain_points/" class="md-nav__link">
         
   
   
@@ -851,7 +632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../reliability/" class="md-nav__link">
+      <a href="../../architecture/reliability/" class="md-nav__link">
         
   
   
@@ -874,7 +655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../test_requirements/" class="md-nav__link">
+      <a href="../../architecture/test_requirements/" class="md-nav__link">
         
   
   
@@ -982,26 +763,29 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
+        
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
-        
-          
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -1014,7 +798,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             ingestion-beam
@@ -1028,7 +812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -1048,8 +832,10 @@
                 
   
   
+    
   
   
+  
     
     
     
@@ -1058,13 +844,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
         
           
           <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
@@ -1080,7 +864,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_2">
             <span class="md-nav__icon md-icon"></span>
             Ingestion beam
@@ -1094,7 +878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/contextual-services-job/" class="md-nav__link">
+      <a href="../contextual-services-job/" class="md-nav__link">
         
   
   
@@ -1117,7 +901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/decoder-job/" class="md-nav__link">
+      <a href="../decoder-job/" class="md-nav__link">
         
   
   
@@ -1140,7 +924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/ingestion_testing_workflow/" class="md-nav__link">
+      <a href="../ingestion_testing_workflow/" class="md-nav__link">
         
   
   
@@ -1160,10 +944,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../ingestion-beam/posthog-job/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Posthog Publisher Job
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1174,6 +980,122 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#beam-pipeline-transforms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Beam Pipeline Transforms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Beam Pipeline Transforms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pubsub-republished-topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pub/Sub republished topic
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#decompress" class="md-nav__link">
+    <span class="md-ellipsis">
+      Decompress
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filter-by-doc-type-and-namespaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Filter by Doc Type and Namespaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      [optional] Sampling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parse-posthog-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parse Posthog Events
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batching-of-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batching of Events
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#send-request" class="md-nav__link">
+    <span class="md-ellipsis">
+      Send request
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#working-with-the-beam-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with the Beam Job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test Deployment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1186,7 +1108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/republisher-job/" class="md-nav__link">
+      <a href="../republisher-job/" class="md-nav__link">
         
   
   
@@ -1209,7 +1131,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../ingestion-beam/sink-job/" class="md-nav__link">
+      <a href="../sink-job/" class="md-nav__link">
         
   
   
@@ -1340,82 +1262,91 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#architecture-diagram" class="md-nav__link">
+  <a href="#beam-pipeline-transforms" class="md-nav__link">
     <span class="md-ellipsis">
-      Architecture Diagram
+      Beam Pipeline Transforms
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#architecture-components" class="md-nav__link">
-    <span class="md-ellipsis">
-      Architecture Components
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Architecture Components">
+    <nav class="md-nav" aria-label="Beam Pipeline Transforms">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#ingestion-edge" class="md-nav__link">
+  <a href="#pubsub-republished-topic" class="md-nav__link">
     <span class="md-ellipsis">
-      Ingestion Edge
+      Pub/Sub republished topic
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#raw-sink" class="md-nav__link">
+  <a href="#decompress" class="md-nav__link">
     <span class="md-ellipsis">
-      Raw Sink
+      Decompress
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#decoder" class="md-nav__link">
+  <a href="#filter-by-doc-type-and-namespaces" class="md-nav__link">
     <span class="md-ellipsis">
-      Decoder
+      Filter by Doc Type and Namespaces
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#republisher" class="md-nav__link">
+  <a href="#optional-sampling" class="md-nav__link">
     <span class="md-ellipsis">
-      Republisher
+      [optional] Sampling
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#live-sink" class="md-nav__link">
+  <a href="#parse-posthog-events" class="md-nav__link">
     <span class="md-ellipsis">
-      Live Sink
+      Parse Posthog Events
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#decoded-sink" class="md-nav__link">
+  <a href="#batching-of-events" class="md-nav__link">
     <span class="md-ellipsis">
-      Decoded Sink
+      Batching of Events
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
+  <a href="#send-request" class="md-nav__link">
     <span class="md-ellipsis">
-      Notes
+      Send request
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#working-with-the-beam-job" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with the Beam Job
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-deployment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Test Deployment
     </span>
   </a>
   
@@ -1423,93 +1354,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#design-decisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Design Decisions
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Design Decisions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#kubernetes-engine-and-pubsub" class="md-nav__link">
-    <span class="md-ellipsis">
-      Kubernetes Engine and PubSub
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#different-topics-for-raw-and-validated-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Different topics for "raw" and "validated" data
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bigquery" class="md-nav__link">
-    <span class="md-ellipsis">
-      BigQuery
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#archive-messages-from-each-stage-of-the-pipeline-as-json-payloads-in-bigquery" class="md-nav__link">
-    <span class="md-ellipsis">
-      Archive messages from each stage of the pipeline as JSON payloads in BigQuery
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-destination-tables" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use destination tables
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-views-for-user-facing-data" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use views for user-facing data
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#limits" class="md-nav__link">
-    <span class="md-ellipsis">
-      Limits
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#further-reading" class="md-nav__link">
-    <span class="md-ellipsis">
-      Further Reading
-    </span>
-  </a>
   
 </li>
       
@@ -1532,191 +1376,70 @@
   
 
 
-<h1 id="gcp-ingestion-architecture">GCP Ingestion Architecture</h1>
-<p>This document specifies the architecture for GCP Ingestion as a whole.</p>
-<h2 id="architecture-diagram">Architecture Diagram</h2>
-<p><img alt="diagram.mmd" src="../diagram.svg" title="Architecture Diagram" /></p>
+<h1 id="posthog-publisher-job">Posthog Publisher Job</h1>
+<p>The Posthog publisher job sends a specific set of events to the Posthog batch API. This job is currently used to run a proof-of-concept evaluation of Posthog on a subset of events. For more context see: https://mozilla-hub.atlassian.net/browse/DENG-7616</p>
+<p>The code is defined in the <a href="https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/PosthogPublisher.java"><code>com.mozilla.telemetry.PosthogPublisher</code></a> class.</p>
+<p>This job reads from per doctype Pub/Sub topics of specific applications.</p>
+<h2 id="beam-pipeline-transforms">Beam Pipeline Transforms</h2>
+<p>The goal is to have event data in Posthog that is as close as possible to the data used for calculating KPIs and is used for other creating other datasets in BigQuery. Therefore, the transformation steps closely resemble <a href="https://mozilla.github.io/gcp-ingestion/ingestion-beam/decoder-job/">those of the Decoder job</a>.</p>
+<h3 id="pubsub-republished-topic">Pub/Sub republished topic</h3>
+<p>The input to this job is the subset of decoded messages from various namespaces that have pings with event data and <code>metrics</code> pings.</p>
+<h3 id="decompress">Decompress</h3>
+<p>Attempt to decompress payload with gzip, on failure pass the message through
+unmodified.</p>
+<h3 id="filter-by-doc-type-and-namespaces">Filter by Doc Type and Namespaces</h3>
+<p>Depending on what Pub/Sub topic the job is configured to read from, this will allow to filter for specific namespaces and doc types that should be processed further.</p>
+<h3 id="optional-sampling">[optional] Sampling</h3>
+<p>Optionally, a sampling can be configured for the job. This is to reduce the number of events that get sent to the Posthog API.</p>
+<h3 id="parse-posthog-events">Parse Posthog Events</h3>
+<p>This step reads an external CSV configuration file that contains a set of events that should be sent do Posthog. The format of this file is as follows:</p>
+<pre><code class="language-csv">&lt;namespace&gt;,&lt;doc type&gt;,&lt;event category&gt;,&lt;event name or '*'&gt;
+</code></pre>
+<p>The <code>events</code> are getting parsed from the message payload and transformed into individual events that can be sent to the Posthog API. Events that don't match the allow list are being filtered out.</p>
+<p>This step also maps <code>metrics</code> pings to <code>user_activity</code> events, which are sent to Posthog to indicate that a user was active on a given day.
+For the POC, the decision was made to use the <code>metrics</code> ping instead of the more precise <code>baseline</code> ping because the event volume for baseline pings is significantly higher and would exceed Posthog storage limits. The <code>metrics</code> ping gets sent at most once a day per client, resulting a much lower volume. However, it's important to note that these pings may not reliably indicate active client sessions, as they are scheduled to be sent at 4 a.m. client time. If the browser is closed and not running at this time, the metrics ping may be sent later.</p>
+<p>For the POC, the metrics ping is considered as good enough. If/when this moves to production, coming up with a more accurate way to measure user activity might be needed.</p>
+<h3 id="batching-of-events">Batching of Events</h3>
+<p>Since the Posthog API has <a href="https://posthog.com/docs/api/capture#batch-events">limitations</a> around how large the event payload can be for a single request, this step creates batches of events.</p>
+<h3 id="send-request">Send request</h3>
+<p>This step sends batched events to the Posthog API.
+// todo: retry mechanism on failures which can happen when API limits are exceeded</p>
+<h3 id="working-with-the-beam-job">Working with the Beam Job</h3>
+<p>Options specific to this job are found in https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/posthog/PosthogPublisherOptions.java</p>
+<h3 id="test-deployment">Test Deployment</h3>
+<p>This job can be deployed in a sandbox project for testing.</p>
+<p>There are a few required components to get a job running:</p>
 <ul>
-<li>The Kubernetes <code>Ingestion Edge</code> sends messages from <code>Producers</code> (e.g.
-  Firefox) to a set of PubSub <code>Raw Topics</code>, routing messages based on <code>uri</code></li>
-<li><code>Raw Topics</code> are the first layer of a "pipeline family"; the diagram shows
-  only the "structured" pipeline family, but there are also deployments
-  for "telemetry" and "stub-installer"</li>
-<li>The <code>Raw Sink</code> job copies messages from a PubSub <code>Raw Topic</code> to
-  <code>BigQuery</code></li>
-<li>The Dataflow <code>Decoder</code> job decodes messages from the PubSub <code>Raw Topic</code> to
-  the PubSub <code>Decoded Topic</code></li>
-<li>The Dataflow <code>Republisher</code> job reads messages from the PubSub <code>Decoded Topic</code>
-  and republishes them to various
-  lower volume derived topics including <code>Monitoring Sample Topics</code> and
-  <code>Per DocType Topics</code></li>
-<li>The Kubernetes <code>Decoded Sink</code> job copies messages from the PubSub <code>Decoded Topic</code>
-  to <code>BigQuery</code> with the payload encoded as JSON</li>
-<li>The Kubernetes <code>Live Sink</code> job copies messages from the PubSub <code>Decoded Topic</code>
-  to <code>BigQuery</code> with the payload structure parsed out to individual fields</li>
+<li>Upload a <code>.ndjson</code> file with example payload data to a GCS bucket</li>
+<li>A event allowed list stored in GCS</li>
+<li>Optionally, if reporting is enabled, a file with the Posthog API key uploaded to GCS</li>
+<li>The Beam pipeline running on Dataflow, reading from the input, and sending data to Posthog</li>
 </ul>
-<h2 id="architecture-components">Architecture Components</h2>
-<h3 id="ingestion-edge">Ingestion Edge</h3>
-<ul>
-<li>Must send messages from producers to PubSub topics</li>
-<li>Must store messages on disk when PubSub is unavailable</li>
-<li>Must attempt to deliver all new messages to PubSub before storing on disk</li>
-<li>Must not be scaled down when there are messages on disk</li>
-<li>Must respond server error if PubSub and disk are both unavailable</li>
-<li>Must use a 5XX error error code</li>
-<li>Must accept configuration mapping <code>uri</code> to PubSub Topic</li>
-<li>Expected initial topics are Structured Ingestion, Telemetry, and Pioneer</li>
-<li>Must accept configuration defining HTTP headers to capture</li>
-</ul>
-<h3 id="raw-sink">Raw Sink</h3>
-<ul>
-<li>Must copy messages from PubSub topics to BigQuery</li>
-<li>This copy may be for backfill, recovery, or testing</li>
-<li>Must not ack messages read from PubSub until they are delivered</li>
-<li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
-<li>Should retry transient Cloud Storage errors indefinitely</li>
-<li>Should use exponential back-off to determine retry timing</li>
-</ul>
-<h3 id="decoder">Decoder</h3>
-<ul>
-<li>Must decode messages from PubSub topics to PubSub topics</li>
-<li>Must not ack messages read from PubSub until they are delivered</li>
-<li>Must apply the following transforms in order
-  (<a href="../../ingestion-beam/src/main/java/com/mozilla/telemetry/decoder/">implementations here</a>):</li>
-<li>Resolve GeoIP from <code>remote_addr</code> or <code>x_forwarded_for</code> attribute into
-     <code>geo_*</code> attributes</li>
-<li>Parse <code>uri</code> attribute into multiple attributes</li>
-<li>Gzip decompress <code>payload</code> if gzip compressed</li>
-<li>Validate <code>payload</code> using a JSON Schema determined by attributes</li>
-<li>Parse <code>agent</code> attribute into <code>user_agent_*</code> attributes</li>
-<li>Produce <code>normalized_</code> variants of select attributes</li>
-<li>Sanitize attributes, configurable per document type via schema metadata</li>
-<li>Inject <code>normalized_</code> attributes at the top level and other select
-     attributes into a nested <code>metadata</code> top level key in <code>payload</code></li>
-<li>Should deduplicate messages based on the <code>uri</code> attribute</li>
-<li>Must ensure at least once delivery, so deduplication is only "best effort"</li>
-<li>Must send messages rejected by transforms to a configurable error destination</li>
-<li>Must allow error destination in BigQuery</li>
-</ul>
-<h3 id="republisher">Republisher</h3>
-<ul>
-<li>Must copy messages from PubSub topics to PubSub topics</li>
-<li>Must ack messages read from PubSub after they are delivered to all
-  matching destinations</li>
-<li>Must not ack messages read from PubSub before they are delivered to all
-  matching destinations</li>
-<li>Must accept configuration enabling republishing of messages to a debug
-  topic if they contain an <code>x_debug_id</code> attribute</li>
-<li>Must accept configuration enabling or disabling debug republishing</li>
-<li>Must accept configuration for the destination topic</li>
-<li>Must accept configuration enabling republishing of a random sample of the
-  input stream</li>
-<li>Must accept configuration for the sample ratio</li>
-<li>Must accept configuration for the destination topic</li>
-<li>Must accept configuration mapping <code>document_type</code>s to PubSub topics</li>
-<li>Must accept configuration for the destination topic pattern</li>
-<li>Must accept configuration for which <code>document_type</code>s to republish</li>
-<li>Must only deliver messages with configured destinations</li>
-<li>Must accept configuration mapping <code>document_namespace</code>s to PubSub topics</li>
-<li>Must accept configuration for a map from <code>document_namespace</code>s to topics</li>
-<li>Must only deliver messages with configured destinations</li>
-<li>Must accept optional configuration for sampling telemetry data</li>
-<li>Must accept configuration for the destination topic pattern</li>
-<li>Must accept configuration for the sampling ratio for each channel (nightly,
-    beta, and release)</li>
-</ul>
-<h3 id="live-sink">Live Sink</h3>
-<ul>
-<li>Must copy messages from PubSub topics to BigQuery</li>
-<li>Must not ack messages read from PubSub until they are delivered</li>
-<li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
-<li>Must accept configuration for using streaming or batch loads</li>
-<li>Must transform all field names to lowercase with underscores (<code>snake_case</code>)
-  and perform other field name cleaning to match the transformations
-  expected by the <a href="https://github.com/mozilla/jsonschema-transpiler"><code>jsonschema-transpiler</code></a></li>
-<li>Must set <a href="https://beam.apache.org/releases/javadoc/2.7.0/org/apache/beam/sdk/io/gcp/bigquery/BigQueryIO.Write.html#ignoreUnknownValues--"><code>ignoreUnknownValues</code></a>
-  to <code>true</code></li>
-<li>Should retry transient BigQuery errors indefinitely</li>
-<li>Should use exponential back-off to determine retry timing</li>
-<li>Must send messages rejected by BigQuery to a configurable error destination</li>
-<li>Must allow error destinations in BigQuery</li>
-</ul>
-<h3 id="decoded-sink">Decoded Sink</h3>
-<ul>
-<li>Must copy messages from PubSub topics to BigQuery</li>
-<li>May be used to backfill BigQuery columns previously unspecified in the
-    table schema</li>
-<li>May be used by BigQuery, Spark, and Dataflow to access columns missing
-    from BigQuery Tables</li>
-<li>Must not ack messages read from PubSub until they are delivered</li>
-<li>Must accept configuration mapping PubSub topics to BigQuery tables</li>
-<li>Should retry transient BigQuery errors indefinitely</li>
-<li>Should use exponential back-off to determine retry timing</li>
-</ul>
-<h3 id="notes">Notes</h3>
-<p>PubSub stores unacknowledged messages for 7 days. Any PubSub subscription more
-than 7 days behind requires a backfill.</p>
-<p>Dataflow will extend ack deadlines indefinitely when consuming messages, and
-will not ack messages until they are processed by an output or <code>GroupByKey</code>
-transform.</p>
-<p>Dataflow jobs achieve at least once delivery by <em>not</em> using GroupByKey
-transforms and <em>not</em> falling more than 7 days behind in processing.</p>
-<h2 id="design-decisions">Design Decisions</h2>
-<h3 id="kubernetes-engine-and-pubsub">Kubernetes Engine and PubSub</h3>
-<p>Kubernetes Engine is a scalable, managed service based on an industry standard.
-PubSub is a simple, scalable, managed service. By comparison a compute instance
-group instead of Kubernetes Engine and Kafka instead of PubSub would require
-more operational overhead and engineering effort for maintenance.</p>
-<h3 id="different-topics-for-raw-and-validated-data">Different topics for "raw" and "validated" data</h3>
-<p>We don't want to have to repeat the validation logic in the case where we have
-multiple consumers of the data. Raw data can be sent to a single topic to
-simplify the edge service and then validated data can be sent to topics split
-by <code>docType</code> and other attributes, in order to allow consumers for specific
-sets of data.</p>
-<h3 id="bigquery">BigQuery</h3>
-<p>BigQuery provides a simple, scalable, managed service for executing SQL queries
-over arbitrarily large or small amounts of data, with built-in schema
-validation, hyperloglog functions, UDF support, and destination tables
-(sometimes called materialized views) for minimizing cost and latency of
-derived tables. Alternatives (such as Presto) would have more operational
-overhead and engineering effort for maintenance, while generally being less
-featureful.</p>
-<h3 id="archive-messages-from-each-stage-of-the-pipeline-as-json-payloads-in-bigquery">Archive messages from each stage of the pipeline as JSON payloads in BigQuery</h3>
-<p>One of the primary challenges of building a real-world data pipeline is
-anticipating and adapting to changes in the schemas of messages flowing through
-the system. Strong schemas and structured data give us many usability and
-performance benefits, but changes to the schema at one point in the pipeline
-can lead to processing errors or dropped data further down the pipeline.</p>
-<p>Saving JSON messages as compressed bytes fields in BigQuery tables allows
-use to gracefully handle new fields added upstream without needing to specify
-those fields completely before they are stored. New columns can be added to a
-table's schema and then restored via a backfill operation.</p>
-<h3 id="use-destination-tables">Use destination tables</h3>
-<p>For complex queries that are calculated over time-based windows of data, using
-destination tables allows us to save time and cost by only querying each new
-window of data once.</p>
-<h3 id="use-views-for-user-facing-data">Use views for user-facing data</h3>
-<p>Views we create in BigQuery can be a stable interface for users while we
-potentially change versions or implementations of a pipeline behind the scenes.
-If we wanted to rewrite a materialized view, for example, we might run the new
-and old definitions in parallel, writing to separate tables; when we’re
-comfortable that the new implementation is stable, we could cut users over to
-the new implementation by simply changing the definition of the user-facing
-view.</p>
-<h2 id="limits">Limits</h2>
-<ul>
-<li>The maximum <code>Content-Length</code> accepted at the edge is 1 MB; larger payloads
-  will be dropped and <a href="https://mozilla.github.io/gcp-ingestion/architecture/edge_service_specification/#server-requestresponse">the request will return a 413 response code</a></li>
-<li>The maximum payload size after being decompressed in the Decoder is 8 MB;
-  larger payloads will trigger a <code>PayloadTooLarge</code> exception and be sent to
-  error output</li>
-<li>Hard limit of 10,000 columns per table in BigQuery (see <a href="https://cloud.google.com/bigquery/quotas#load_jobs">Load job limits</a>)</li>
-<li>Max of 1,000,000 streaming inserts per second per BigQuery table, lower if we populate <code>insertId</code> (see <a href="https://cloud.google.com/bigquery/quotas#streaming_inserts">Streaming insert limits</a>)</li>
-<li>A PubSub topic without any subscriptions drops all messages until a subscription is created</li>
-<li>API Rate Limit: 20 req/sec</li>
-</ul>
-<h2 id="further-reading">Further Reading</h2>
-<p><a href="../differences_from_aws/">Differences from AWS</a></p>
+<p>Example script to start the Dataflow job from the ingestion-beam directory:</p>
+<pre><code>#!/bin/bash
+
+set -ux
+
+PROJECT=&quot;posthog-dev&quot;
+JOB_NAME=&quot;posthog&quot;
+path=&quot;$BUCKET/data/*.ndjson&quot;
+
+mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PosthogPublisher -Dexec.args=&quot;\
+    --runner=Dataflow \
+    --jobName=$JOB_NAME \
+    --project=$PROJECT  \
+    --inputType=file \
+    --input=$path \
+    --bqReadMethod=storageapi \
+    --outputType=bigquery \
+    --bqWriteMethod=file_loads \
+    --errorOutputType=stderr \
+    --tempLocation=posthog-data-dev/temp/bq-loads \
+    --eventsAllowList=posthog-data-dev/eventsAllowlist.csv \
+    --apiKeys=posthog-data-dev/apiKeys.csv \
+    --region=us-central1 \
+&quot;
+</code></pre>
 
 
 
