@@ -90,11 +90,13 @@ public class SendPosthogRequest extends
           getOrCreateHttpClient();
           ObjectNode body = Json.createObjectNode();
 
-          if (apiKeys.containsKey(eventBatch.getKey())) {
-            body.put("api_key", this.apiKeys.get(eventBatch.getKey()));
+          String shardedKey = eventBatch.getKey();
+          String platform = shardedKey.split("::")[0];
+
+          if (apiKeys.containsKey(platform)) {
+            body.put("api_key", this.apiKeys.get(platform));
           } else {
-            throw new UncheckedIOException(
-                new IOException("No API key for " + eventBatch.getKey()));
+            throw new UncheckedIOException(new IOException("No API key for " + platform));
           }
 
           ArrayNode jsonEvents = Json.createArrayNode();
