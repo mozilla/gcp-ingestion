@@ -18,7 +18,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 @DefaultSchema(AutoValueSchema.class)
 public abstract class PosthogEvent implements Serializable {
 
-  abstract String getUserId();
+  public abstract String getUserId();
 
   abstract String getEventType();
 
