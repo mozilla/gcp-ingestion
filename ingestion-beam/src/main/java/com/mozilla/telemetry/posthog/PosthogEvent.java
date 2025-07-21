@@ -82,23 +82,17 @@ public abstract class PosthogEvent implements Serializable {
     if (getEventExtras() != null && !getEventExtras().equals("null")) {
       try {
         JsonNode extras = objectMapper.readTree(getEventExtras());
-        if (extras.isObject()) {
-          extras.fields().forEachRemaining(entry -> {
-            String key = "event_extras_" + entry.getKey();
-            JsonNode value = entry.getValue();
-            if (value.isNull()) {
-              properties.putNull(key);
-            } else if (value.isTextual()) {
-              properties.put(key, value.asText());
-            } else if (value.isNumber()) {
-              properties.put(key, value.numberValue().toString());
-            } else {
-              properties.set(key, value);
-            }
-          });
-        }
+        extras.fields().forEachRemaining(entry -> {
+          String key = "event_extras_" + entry.getKey();
+          JsonNode value = entry.getValue();
+          if (value.isNull()) {
+            properties.putNull(key);
+          } else {
+            properties.put(key, value.asText());
+          }
+        });
       } catch (Exception e) {
-        // ignore parse error
+        System.err.println("Error parsing event extras: " + e.getMessage());
       }
     }
     if (getOsName() != null && !getOsName().equals("null")) {
