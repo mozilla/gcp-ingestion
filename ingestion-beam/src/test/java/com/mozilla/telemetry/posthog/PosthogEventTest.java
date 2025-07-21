@@ -19,7 +19,9 @@ public class PosthogEventTest {
     experiments.put("experiment2", "branch_b");
     PosthogEvent eventWithExtras = PosthogEvent.builder().setUserId("test").setSampleId(1)
         .setEventType("bookmark.event").setPlatform("firefox-desktop").setTime(1738620582500L)
-        .setEventExtras("{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"}")
+        .setEventExtras("{" + "\"metadata1\":\"extra\"," + "\"metadata2\":\"more_extra\","
+            + "\"intVal\":42," + "\"floatVal\":3.14," + "\"boolVal\":true," + "\"nullVal\":null,"
+            + "\"nested\":{\"subkey\":\"subval\",\"subnum\":7}" + "}")
         .setExperiments(experiments).build();
 
     String expectedJsonEvent = "{" + "\"event\":\"bookmark.event\","
@@ -27,7 +29,10 @@ public class PosthogEventTest {
         + "\"platform\":\"firefox-desktop\",\"language\":\"en\"}}";
     String expectedJsonEventWithExtras = "{" + "\"event\":\"bookmark.event\","
         + "\"properties\":{\"distinct_id\":\"test\",\"sample_id\":1,"
-        + "\"event_extras\":{\"metadata1\":\"extra\",\"metadata2\":\"more_extra\"},"
+        + "\"event_extras_metadata1\":\"extra\"," + "\"event_extras_metadata2\":\"more_extra\","
+        + "\"event_extras_intVal\":\"42\"," + "\"event_extras_floatVal\":\"3.14\","
+        + "\"event_extras_boolVal\":true," + "\"event_extras_nullVal\":null,"
+        + "\"event_extras_nested\":{\"subkey\":\"subval\",\"subnum\":7},"
         + "\"platform\":\"firefox-desktop\","
         + "\"experiments\":{\"experiment2\":\"branch_b\",\"experiment1\":null}}}";
 
