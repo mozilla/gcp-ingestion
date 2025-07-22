@@ -27,6 +27,7 @@ import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.transforms.GroupIntoBatches;
+import org.apache.beam.sdk.transforms.Reshuffle;
 import org.apache.beam.sdk.transforms.WithKeys;
 import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
@@ -77,13 +78,20 @@ public class PosthogPublisher extends Sink {
     PCollection<KV<String, Iterable<PosthogEvent>>> events = messages
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
             .withClientCompressionRecorded())
-        .apply(ParsePosthogEvents.of(options.getEventsAllowList())).failuresTo(errorCollections)
-        .apply(WithKeys.of((PosthogEvent event) -> event.getPlatform()))
-        .setCoder(KvCoder.of(StringUtf8Coder.of(), PosthogEvent.getCoder()))
-        .apply(GroupIntoBatches.<String, PosthogEvent>ofSize(options.getMaxEventBatchSize())
-            .withMaxBufferingDuration(Duration.standardSeconds(options.getMaxBufferingDuration())))
+        .apply(ParsePosthogEvents.of(options.getEventsAllowList())).failuresTo(errorCollections) //
+        // shard by platform + hash to allow concurrent batches
+        .apply("ShardKeys", WithKeys.of((PosthogEvent event) -> { //
+          String platform = event.getPlatform();
+          int shardId = Math.abs(event.getUserId().hashCode() % 100);
+          return platform + "::" + shardId;
+        })).setCoder(KvCoder.of(StringUtf8Coder.of(), PosthogEvent.getCoder())) //
+        // group into batches per shard
+        .apply(GroupIntoBatches.<String, PosthogEvent>ofSize(options.getMaxEventBatchSize()) //
+            .withMaxBufferingDuration(Duration.standardSeconds(options.getMaxBufferingDuration()))) //
+        // reshuffle to break fusion and allow SendPosthogRequest to scale
+        .apply("Reshuffle", Reshuffle.viaRandomKey()) //
         .apply(SendPosthogRequest.of(apiKeys, options.getReportingEnabled(),
-            options.getMaxBatchesPerSecond()))
+            options.getMaxBatchesPerSecond())) //
         .failuresTo(errorCollections);
 
     PCollectionList.of(errorCollections).apply("FlattenErrorCollections", Flatten.pCollections())
