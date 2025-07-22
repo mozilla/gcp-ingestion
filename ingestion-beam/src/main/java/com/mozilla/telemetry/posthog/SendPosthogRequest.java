@@ -1,6 +1,5 @@
-package com.mozilla.telemetry.amplitude;
+package com.mozilla.telemetry.posthog;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.metrics.KeyedCounter;
@@ -26,21 +25,18 @@ import org.apache.beam.sdk.values.KV;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
 
-/**
- * Send GET requests of event batches to Amplitude endpoint.
- */
 @SuppressWarnings("checkstyle:lineLength")
-public class SendRequest extends
-    PTransform<PCollection<KV<String, Iterable<AmplitudeEvent>>>, Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage>> {
+public class SendPosthogRequest extends
+    PTransform<PCollection<KV<String, Iterable<PosthogEvent>>>, Result<PCollection<KV<String, Iterable<PosthogEvent>>>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
+  private final String posthogUrl;
 
-  private final Distribution requestTimer = Metrics.distribution(SendRequest.class,
+  private final Distribution requestTimer = Metrics.distribution(SendPosthogRequest.class,
       "reporting_request_millis");
-  private final Boolean reportingEnabled;
-  private final String amplitudeUrl;
-  private final Integer maxBatchesPerSecond;
   private final Map<String, String> apiKeys;
+  private final boolean reportingEnabled;
+  private final int maxBatchesPerSecond;
 
   public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
@@ -59,65 +55,60 @@ public class SendRequest extends
   }
 
   /**
-   * Constructor without custom Amplitude URL.
+   * Constructor without custom Posthog URL.
    */
-  public SendRequest(Map<String, String> apiKeys, Boolean reportingEnabled,
+  public SendPosthogRequest(Map<String, String> apiKeys, Boolean reportingEnabled,
       Integer maxBatchesPerSecond) {
-    this(apiKeys, reportingEnabled, maxBatchesPerSecond, "https://api2.amplitude.com");
+    this(apiKeys, reportingEnabled, maxBatchesPerSecond, "https://us.i.posthog.com");
   }
 
-  /**
-   * Constructor with custom Amplitude API URL.
-   */
-  public SendRequest(Map<String, String> apiKeys, Boolean reportingEnabled,
-      Integer maxBatchesPerSecond, String amplitudeUrl) {
-    this.reportingEnabled = reportingEnabled;
-    this.amplitudeUrl = amplitudeUrl;
-    this.maxBatchesPerSecond = maxBatchesPerSecond;
+  private SendPosthogRequest(Map<String, String> apiKeys, boolean reportingEnabled,
+      int maxBatchesPerSecond, String posthogUrl) {
     this.apiKeys = apiKeys;
+    this.reportingEnabled = reportingEnabled;
+    this.maxBatchesPerSecond = maxBatchesPerSecond;
+    this.posthogUrl = posthogUrl;
   }
 
-  public static SendRequest of(Map<String, String> apiKeys, Boolean reportingEnabled,
-      Integer maxBatchesPerSecond) {
-    return new SendRequest(apiKeys, reportingEnabled, maxBatchesPerSecond);
+  public static SendPosthogRequest of(Map<String, String> apiKeys, boolean reportingEnabled,
+      int maxBatchesPerSecond) {
+    return new SendPosthogRequest(apiKeys, reportingEnabled, maxBatchesPerSecond);
   }
 
-  public static SendRequest of(Map<String, String> apiKeys, Boolean reportingEnabled,
-      Integer maxBatchesPerSecond, String amplitudeUrl) {
-    return new SendRequest(apiKeys, reportingEnabled, maxBatchesPerSecond, amplitudeUrl);
+  public static SendPosthogRequest of(Map<String, String> apiKeys, Boolean reportingEnabled,
+      Integer maxBatchesPerSecond, String posthogUrl) {
+    return new SendPosthogRequest(apiKeys, reportingEnabled, maxBatchesPerSecond, posthogUrl);
   }
 
   @Override
-  public Result<PCollection<KV<String, Iterable<AmplitudeEvent>>>, PubsubMessage> expand(
-      PCollection<KV<String, Iterable<AmplitudeEvent>>> eventBatches) {
-    TypeDescriptor<KV<String, Iterable<AmplitudeEvent>>> td = new TypeDescriptor<KV<String, Iterable<AmplitudeEvent>>>() {
+  public Result<PCollection<KV<String, Iterable<PosthogEvent>>>, PubsubMessage> expand(
+      PCollection<KV<String, Iterable<PosthogEvent>>> eventBatches) {
+    TypeDescriptor<KV<String, Iterable<PosthogEvent>>> td = new TypeDescriptor<KV<String, Iterable<PosthogEvent>>>() {
     };
     return eventBatches
-        .apply(MapElements.into(td).via((KV<String, Iterable<AmplitudeEvent>> eventBatch) -> {
+        .apply(MapElements.into(td).via((KV<String, Iterable<PosthogEvent>> eventBatch) -> {
           getOrCreateHttpClient();
           ObjectNode body = Json.createObjectNode();
 
-          if (apiKeys.containsKey(eventBatch.getKey())) {
-            body.put("api_key", this.apiKeys.get(eventBatch.getKey()));
+          String shardedKey = eventBatch.getKey();
+          String platform = shardedKey.split("::")[0];
+
+          if (apiKeys.containsKey(platform)) {
+            body.put("api_key", this.apiKeys.get(platform));
           } else {
-            throw new UncheckedIOException(
-                new IOException("No API key for " + eventBatch.getKey()));
+            throw new UncheckedIOException(new IOException("No API key for " + platform));
           }
 
           ArrayNode jsonEvents = Json.createArrayNode();
 
-          for (AmplitudeEvent event : eventBatch.getValue()) {
-            try {
-              jsonEvents.add(event.toJson());
-            } catch (JsonProcessingException e) {
-              throw new UncheckedIOException(e);
-            }
+          for (PosthogEvent event : eventBatch.getValue()) {
+            jsonEvents.add(event.toJson());
           }
 
-          body.put("events", jsonEvents);
+          body.put("batch", jsonEvents);
 
           RequestBody requestBody = RequestBody.create(body.toString(), JSON);
-          Request request = new Request.Builder().url(amplitudeUrl + "/batch").post(requestBody)
+          Request request = new Request.Builder().url(posthogUrl + "/batch").post(requestBody)
               .build();
 
           if (reportingEnabled) {
@@ -126,11 +117,11 @@ public class SendRequest extends
 
           return eventBatch;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<KV<String, Iterable<AmplitudeEvent>>> ee) -> {
+            .exceptionsVia((ExceptionElement<KV<String, Iterable<PosthogEvent>>> ee) -> {
               try {
                 throw ee.exception();
               } catch (UncheckedIOException e) {
-                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
+                return FailureMessage.of(SendPosthogRequest.class.getSimpleName(), ee.element(),
                     ee.exception());
               }
             }));
@@ -162,5 +153,4 @@ public class SendRequest extends
     }
     return httpClient;
   }
-
 }

@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.amplitude;
+package com.mozilla.telemetry.posthog;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;

@@ -1,4 +1,4 @@
-package com.mozilla.telemetry.amplitude;
+package com.mozilla.telemetry.posthog;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -24,17 +24,15 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ParseAmplitudeEventsTest {
+public class ParsePosthogEventsTest {
 
-  private static final String EVENTS_ALLOW_LIST = "src/test/resources/amplitude/eventsAllowlist.csv";
+  private static final String EVENTS_ALLOW_LIST = "src/test/resources/posthog/eventsAllowlist.csv";
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
 
   @Test
   public void testAllowedEventsLoadAndFilter() throws IOException {
-    ParseAmplitudeEvents parseAmplitudeEvents;
-    parseAmplitudeEvents = ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST);
     pipeline.run();
 
     ArrayList<String[]> expectedAllowedEvents = new ArrayList<>();
@@ -47,9 +45,9 @@ public class ParseAmplitudeEventsTest {
     expectedAllowedEvents.add(new String[] { "firefox-desktop", "events", "bookmark", "*" });
     expectedAllowedEvents
         .add(new String[] { "org-mozilla-ios-firefox", "events", "bookmark", "*" });
-    List<String[]> allowedEvents = parseAmplitudeEvents.readAllowedEventsFromFile();
+    ParsePosthogEvents parsePosthogEvents = ParsePosthogEvents.of(EVENTS_ALLOW_LIST);
+    List<String[]> allowedEvents = parsePosthogEvents.readAllowedEventsFromFile();
     assert expectedAllowedEvents.size() == allowedEvents.size();
-
     for (int i = 0; i < expectedAllowedEvents.size(); i++) {
       assert Arrays.equals(expectedAllowedEvents.get(i), allowedEvents.get(i));
     }
@@ -58,7 +56,6 @@ public class ParseAmplitudeEventsTest {
   @Test
   public void testExtractEvents() throws IOException {
     final ObjectNode payload = Json.createObjectNode();
-
     ObjectNode eventObject = Json.createObjectNode();
     eventObject.put("category", "top_site");
     eventObject.put("name", "contile_click");
@@ -74,10 +71,10 @@ public class ParseAmplitudeEventsTest {
     List<ObjectNode> expect = new ArrayList<ObjectNode>();
     expect.add(expectedEventObject);
 
-    ParseAmplitudeEvents parseAmplitudeEvents = ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST);
-    parseAmplitudeEvents.readAllowedEventsFromFile();
+    ParsePosthogEvents parsePosthogEvents = ParsePosthogEvents.of(EVENTS_ALLOW_LIST);
+    parsePosthogEvents.readAllowedEventsFromFile();
 
-    List<ObjectNode> actual = parseAmplitudeEvents.extractEvents(payload, "firefox-desktop",
+    List<ObjectNode> actual = parsePosthogEvents.extractEvents(payload, "firefox-desktop",
         "quick-suggest");
     if (!expect.equals(actual)) {
       System.err.println(Json.asString(actual));
@@ -87,7 +84,7 @@ public class ParseAmplitudeEventsTest {
   }
 
   @Test
-  public void testParsedAmplitudeEvents() {
+  public void testParsedPosthogEvents() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "events",
         Attribute.CLIENT_ID, "xxx", Attribute.SAMPLE_ID, "1", Attribute.DOCUMENT_NAMESPACE,
         "firefox-desktop", Attribute.USER_AGENT_OS, "Windows", Attribute.SUBMISSION_TIMESTAMP,
@@ -113,25 +110,23 @@ public class ParseAmplitudeEventsTest {
     }).map(payload -> new PubsubMessage(Json.asBytes(payload), attributes))
         .collect(Collectors.toList());
 
-    Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline //
+    Result<PCollection<PosthogEvent>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST));
+        .apply(ParsePosthogEvents.of(EVENTS_ALLOW_LIST));
 
-    PAssert.that(result.output()).satisfies(amplitudeEvents -> {
-      List<AmplitudeEvent> payloads = new ArrayList<>();
-      amplitudeEvents.forEach(payloads::add);
+    PAssert.that(result.output()).satisfies(posthogEvents -> {
+      List<PosthogEvent> payloads = new ArrayList<>();
+      posthogEvents.forEach(payloads::add);
 
       Assert.assertEquals("1 events in output", 1, payloads.size());
 
-      Assert.assertTrue("amplitude event type is accessibility.dynamic_text",
+      Assert.assertTrue("posthog event type is accessibility.dynamic_text",
           payloads.get(0).getEventType().equals("accessibility.dynamic_text"));
-      Assert.assertTrue("amplitude event user ID is xxx",
-          payloads.get(0).getUserId().equals("xxx"));
-      Assert.assertTrue("amplitude event sample ID is 1", payloads.get(0).getSampleId() == 1);
-      Assert.assertTrue("amplitude event app version is null",
+      Assert.assertTrue("posthog event user ID is xxx", payloads.get(0).getUserId().equals("xxx"));
+      Assert.assertTrue("posthog event sample ID is 1", payloads.get(0).getSampleId() == 1);
+      Assert.assertTrue("posthog event app version is null",
           payloads.get(0).getAppVersion() == null);
-      Assert.assertTrue("amplitude event timestamp is ",
-          payloads.get(0).getTime() == 1738782714952L);
+      Assert.assertTrue("posthog event timestamp is ", payloads.get(0).getTime() == 1738782714952L);
 
       return null;
     });
@@ -140,7 +135,7 @@ public class ParseAmplitudeEventsTest {
   }
 
   @Test
-  public void testParsedAmplitudeEventsEventTimestamps() {
+  public void testParsedPosthogEventsEventTimestamps() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "events",
         Attribute.CLIENT_ID, "xxx", Attribute.SAMPLE_ID, "1", Attribute.DOCUMENT_NAMESPACE,
         "firefox-desktop", Attribute.USER_AGENT_OS, "Windows", Attribute.SUBMISSION_TIMESTAMP,
@@ -215,28 +210,28 @@ public class ParseAmplitudeEventsTest {
         new PubsubMessage(Json.asBytes(payload2), attributes),
         new PubsubMessage(Json.asBytes(payload3), incorrectAttributes));
 
-    Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline //
+    Result<PCollection<PosthogEvent>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST));
+        .apply(ParsePosthogEvents.of(EVENTS_ALLOW_LIST));
 
-    PAssert.that(result.output()).satisfies(amplitudeEvents -> {
-      List<AmplitudeEvent> payloads = new ArrayList<>();
-      amplitudeEvents.forEach(payloads::add);
+    PAssert.that(result.output()).satisfies(posthogEvents -> {
+      List<PosthogEvent> payloads = new ArrayList<>();
+      posthogEvents.forEach(payloads::add);
 
       Assert.assertEquals("3 events in output", 3, payloads.size());
 
-      for (AmplitudeEvent event : amplitudeEvents) {
+      for (PosthogEvent event : posthogEvents) {
         if (event.getEventType().equals("bookmark.add")) {
-          Assert.assertTrue("amplitude event timestamp is 1647362558010l",
+          Assert.assertTrue("posthog event timestamp is 1647362558010l",
               event.getTime() == 1647362558010L);
         } else if (event.getEventType().equals("bookmark")) {
-          Assert.assertTrue("amplitude event timestamp is 1647362558010l",
+          Assert.assertTrue("posthog event timestamp is 1647362558010l",
               event.getTime() == 1647362558010L);
         } else if (event.getEventType().equals("bookmark.test")) {
-          Assert.assertTrue("amplitude event timestamp is larger 0", payloads.get(2).getTime() > 0);
+          Assert.assertTrue("posthog event timestamp is larger 0", payloads.get(2).getTime() > 0);
         } else {
           System.err.println(event.getEventType());
-          Assert.assertTrue("amplitude event with unknown type", false);
+          Assert.assertTrue("posthog event with unknown type", false);
         }
       }
 
@@ -247,7 +242,7 @@ public class ParseAmplitudeEventsTest {
   }
 
   @Test
-  public void testParsedAmplitudeEventsWithMissingClientId() {
+  public void testParsedPosthogEventsWithMissingClientId() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "events",
         Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS, "Windows",
         Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z", Attribute.SAMPLE_ID, "1");
@@ -270,9 +265,9 @@ public class ParseAmplitudeEventsTest {
     List<PubsubMessage> input = ImmutableList
         .of(new PubsubMessage(Json.asBytes(payload), attributes));
 
-    Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline //
+    Result<PCollection<PosthogEvent>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST));
+        .apply(ParsePosthogEvents.of(EVENTS_ALLOW_LIST));
 
     PAssert.that(result.failures()).satisfies(messages -> {
       Assert.assertEquals(1, Iterators.size(messages.iterator()));
@@ -283,7 +278,7 @@ public class ParseAmplitudeEventsTest {
   }
 
   @Test
-  public void testParsedAmplitudeEventsMetricsPing() {
+  public void testParsedPosthogEventsMetricsPing() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "metrics",
         Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS, "Windows",
         Attribute.SUBMISSION_TIMESTAMP, "2022-03-15T16:42:38Z", Attribute.CLIENT_ID, "xxx",
@@ -296,21 +291,20 @@ public class ParseAmplitudeEventsTest {
     List<PubsubMessage> input = ImmutableList
         .of(new PubsubMessage(Json.asBytes(payload), attributes));
 
-    Result<PCollection<AmplitudeEvent>, PubsubMessage> result = pipeline //
+    Result<PCollection<PosthogEvent>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
-        .apply(ParseAmplitudeEvents.of(EVENTS_ALLOW_LIST));
+        .apply(ParsePosthogEvents.of(EVENTS_ALLOW_LIST));
 
-    PAssert.that(result.output()).satisfies(amplitudeEvents -> {
-      List<AmplitudeEvent> payloads = new ArrayList<>();
-      amplitudeEvents.forEach(payloads::add);
+    PAssert.that(result.output()).satisfies(posthogEvents -> {
+      List<PosthogEvent> payloads = new ArrayList<>();
+      posthogEvents.forEach(payloads::add);
 
       Assert.assertEquals("1 event in output", 1, payloads.size());
 
       Assert.assertTrue("event type is user_activity",
           payloads.get(0).getEventType().equals("user_activity"));
-      Assert.assertTrue("amplitude event user ID is xxx",
-          payloads.get(0).getUserId().equals("xxx"));
-      Assert.assertTrue("amplitude event app version is null",
+      Assert.assertTrue("posthog event user ID is xxx", payloads.get(0).getUserId().equals("xxx"));
+      Assert.assertTrue("posthog event app version is null",
           payloads.get(0).getAppVersion() == null);
 
       return null;

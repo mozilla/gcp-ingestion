@@ -1,9 +1,9 @@
 package com.mozilla.telemetry.transforms;
 
 import com.google.common.collect.ImmutableMap;
-import com.mozilla.telemetry.amplitude.AmplitudeEvent;
 import com.mozilla.telemetry.contextualservices.SponsoredInteraction;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.posthog.PosthogEvent;
 import com.mozilla.telemetry.util.Time;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -57,10 +57,10 @@ public class FailureMessage {
   }
 
   /**
-   * Return a PubsubMessage wrapping a AmplitudeEvent batch with attributes describing the error.
-   * TODO Investigate refactoring to not import AmplitudeEvent into this higher-level module.
+   * Return a PubsubMessage wrapping a PosthogEvent batch with attributes describing the error.
+   * TODO Investigate refactoring to not import PosthogEvent into this higher-level module.
    */
-  public static PubsubMessage of(Object caller, KV<String, Iterable<AmplitudeEvent>> events,
+  public static PubsubMessage of(Object caller, KV<String, Iterable<PosthogEvent>> events,
       Throwable e) {
     Map<String, String> attributes = Map.of(Attribute.SUBMISSION_TIMESTAMP,
         Time.epochMicrosToTimestamp(new Instant().getMillis() * 1000));

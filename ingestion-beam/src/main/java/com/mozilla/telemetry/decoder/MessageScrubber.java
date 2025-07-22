@@ -137,12 +137,14 @@ public class MessageScrubber {
       .put("com-log-edcationcloud", "1971192") //
       .put("djb-pengpenggop-aha", "1971191") //
       .put("com-immersivetranslate-browser-babel", "1971190") //
+      .put("org-hexis-firefox", "1978366") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
       .<String, String>builder().put("pioneer-study", "1631849") //
       .put("frecency-update", "1633525") //
       .put("saved-session", "1656910") //
+      .put("modules", "DENG-8496") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",

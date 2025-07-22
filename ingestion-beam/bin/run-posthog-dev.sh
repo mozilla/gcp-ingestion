@@ -3,7 +3,7 @@
 set -exo pipefail
 
 PROJECT=""
-JOB_NAME="amplitude-test"
+JOB_NAME="posthog-test"
 BUCKET="gs://$PROJECT"
 
 path="$BUCKET/data/*.ndjson"
@@ -12,7 +12,7 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 # this script assumes it's being run from the ingestion-beam directory
 # of the gcp-ingestion repo.
 
-$SCRIPT_DIR/mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.AmplitudePublisher -Dexec.args="\
+$SCRIPT_DIR/mvn -X compile exec:java -Dexec.mainClass=com.mozilla.telemetry.PosthogPublisher -Dexec.args="\
     --runner=Dataflow \
     --jobName=$JOB_NAME \
     --project=$PROJECT  \
