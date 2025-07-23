@@ -35,11 +35,9 @@ public class PosthogEventTest {
         + "\"event_extras_boolVal\":\"true\"," + "\"event_extras_nullVal\":null,"
         + "\"event_extras_nested\":\"{\\\"subkey\\\":\\\"subval\\\",\\\"subnum\\\":7}\","
         + "\"platform\":\"firefox-desktop\","
-        + "\"experiments\":{\"experiment2\":\"branch_b\",\"experiment1\":null}}}";
+        + "\"experiments_experiment2\":\"branch_b\",\"experiments_experiment1\":null}}";
 
     Assert.assertEquals(expectedJsonEvent, event.toJson().toString());
-    System.out.println(eventWithExtras.toJson().toString());
-    System.out.println(expectedJsonEventWithExtras);
     Assert.assertEquals(expectedJsonEventWithExtras, eventWithExtras.toJson().toString());
   }
 

@@ -117,7 +117,15 @@ public abstract class PosthogEvent implements Serializable {
       properties.put("language", getLanguage());
     }
     if (getExperiments() != null) {
-      properties.set("experiments", objectMapper.valueToTree(getExperiments()));
+      for (Map.Entry<String, String> entry : getExperiments().entrySet()) {
+        String key = "experiments_" + entry.getKey();
+        String value = entry.getValue();
+        if (value == null) {
+          properties.putNull(key);
+        } else {
+          properties.put(key, value);
+        }
+      }
     }
 
     json.set("properties", properties);
