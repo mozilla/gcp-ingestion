@@ -18,7 +18,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 @DefaultSchema(AutoValueSchema.class)
 public abstract class PosthogEvent implements Serializable {
 
-  abstract String getUserId();
+  public abstract String getUserId();
 
   abstract String getEventType();
 
@@ -82,9 +82,17 @@ public abstract class PosthogEvent implements Serializable {
     if (getEventExtras() != null && !getEventExtras().equals("null")) {
       try {
         JsonNode extras = objectMapper.readTree(getEventExtras());
-        properties.set("event_extras", extras);
+        extras.fields().forEachRemaining(entry -> {
+          String key = "event_extras_" + entry.getKey();
+          JsonNode value = entry.getValue();
+          if (value.isNull()) {
+            properties.putNull(key);
+          } else {
+            properties.put(key, value.asText());
+          }
+        });
       } catch (Exception e) {
-        // ignore parse error
+        System.err.println("Error parsing event extras: " + e.getMessage());
       }
     }
     if (getOsName() != null && !getOsName().equals("null")) {
@@ -109,7 +117,15 @@ public abstract class PosthogEvent implements Serializable {
       properties.put("language", getLanguage());
     }
     if (getExperiments() != null) {
-      properties.set("experiments", objectMapper.valueToTree(getExperiments()));
+      for (Map.Entry<String, String> entry : getExperiments().entrySet()) {
+        String key = "experiments_" + entry.getKey();
+        String value = entry.getValue();
+        if (value == null) {
+          properties.putNull(key);
+        } else {
+          properties.put(key, value);
+        }
+      }
     }
 
     json.set("properties", properties);
