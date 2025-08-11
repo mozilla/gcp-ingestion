@@ -138,6 +138,8 @@ public class MessageScrubber {
       .put("djb-pengpenggop-aha", "1971191") //
       .put("com-immersivetranslate-browser-babel", "1971190") //
       .put("org-hexis-firefox", "1978366") //
+      .put("org-global-glaxy", "1981558") //
+      .put("org-mozilla-zxff", "1981560") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
