@@ -187,6 +187,7 @@ public class MessageScrubber {
       // Bing
       "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZL", "MOZM", "MOZO",
       "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03", "MZTOF", "MZCP", "MZABT",
+      "MZBDC",
       // Google
       "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
       "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
