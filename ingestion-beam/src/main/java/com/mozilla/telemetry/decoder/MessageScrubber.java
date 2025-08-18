@@ -187,13 +187,15 @@ public class MessageScrubber {
       // Bing
       "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZL", "MOZM", "MOZO",
       "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03", "MZTOF", "MZCP", "MZABT",
+      "MZBDC",
       // Google
       "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
       "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
       "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
       "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
       "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "firefox-b-vv", "firefox-b-tf",
-      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "ubuntu", "ubuntu-sn",
+      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "lens-firefox-fcm",
+      "ubuntu", "ubuntu-sn",
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "lm", "newext",
