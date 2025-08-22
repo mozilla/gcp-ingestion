@@ -50,17 +50,12 @@ public class Decoder extends Sink {
    */
   public static PipelineResult run(String[] args) {
     registerOptions(); // Defined in Sink.java
-    // RepublisherOptions will need to be registered in Sink.java as well.
-    // And DecoderOptions should be updated to extend RepublisherOptions.
     final DecoderOptions.Parsed options = DecoderOptions.parseDecoderOptions(
         PipelineOptionsFactory.fromArgs(args).withValidation().as(DecoderOptions.class));
     return run(options);
   }
 
-  /**
-   * Execute an Apache Beam pipeline and return the {@code PipelineResult}. This assumes that
-   * DecoderOptions has been updated to include all options from RepublisherOptions.
-   */
+  /** Execute an Apache Beam pipeline and return the {@code PipelineResult}. */
   public static PipelineResult run(DecoderOptions.Parsed options) {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();
