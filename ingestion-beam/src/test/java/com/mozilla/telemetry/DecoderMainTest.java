@@ -165,4 +165,151 @@ public class DecoderMainTest extends TestWithDeterministicJson {
     assertThat("Main output differed from expectation", outputLines,
         matchesInAnyOrder(expectedOutputLines));
   }
+
+  // Tests for republishing functionality, moved from RepublisherMainTest.
+
+  @Test
+  public void testDebugDestination() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/*.ndjson";
+    String mainOutput = outputPath + "/out";
+    String debugOutput = outputPath + "/debug_out";
+
+    Decoder.main(new String[] {"--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + mainOutput,
+        "--enableDebugDestination", "--debugDestination=" + debugOutput,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr",
+        // Decoder specific args
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz"});
+
+    List<String> inputLines = Lines.files(inputPath + "/debug-messages.ndjson");
+    List<String> outputLines = Lines.files(debugOutput + "/*.ndjson");
+    assertThat(outputLines, matchesInAnyOrder(inputLines));
+  }
+
+  @Test
+  public void testRandomSampleDestination() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/*.ndjson";
+    String mainOutput = outputPath + "/out";
+    String randomOutput = outputPath + "/random_out";
+
+    Decoder.main(new String[] {"--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + mainOutput,
+        "--randomSampleRatio=0.5", "--randomSampleDestination=" + randomOutput,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr",
+        // Decoder specific args
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz"});
+
+    List<String> inputLines = Lines.files(inputPath + "/*.ndjson");
+    List<String> outputLines = Lines.files(randomOutput + "/*.ndjson");
+    assertThat(outputLines.size() * 1.0, Matchers.closeTo(inputLines.size() / 2.0, 10.0));
+  }
+
+  @Test
+  public void testPerDocType() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/*.ndjson";
+    String mainOutput = outputPath + "/out";
+    String perDocTypePath = outputPath + "/per_doctype";
+    String perDocTypeDestinations = "{\"" + perDocTypePath
+        + "/out_telemetry_event\":[\"telemetry/event\"], \"" + perDocTypePath
+        + "/out_bar_foo\": [\"bar/foo\"]}";
+
+    Decoder.main(new String[] {"--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + mainOutput,
+        "--perDocTypeDestinations=" + perDocTypeDestinations,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr",
+        // Decoder specific args
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz"});
+
+    List<String> expectedLines = Lines.files(inputPath + "/per-doctype-*.ndjson");
+    List<String> outputLines = Lines.files(perDocTypePath + "/*.ndjson");
+    assertThat("Only specified docTypes should be published", outputLines,
+        matchesInAnyOrder(expectedLines));
+
+    List<String> expectedLinesEvent = Lines.files(inputPath + "/per-doctype-event.ndjson");
+    List<String> outputLinesEvent = Lines.files(perDocTypePath + "/out_telemetry_event*.ndjson");
+    assertThat("All docType=event messages are published", outputLinesEvent,
+        matchesInAnyOrder(expectedLinesEvent));
+
+    List<String> expectedLinesFoo = Lines.files(inputPath + "/per-doctype-foo.ndjson");
+    List<String> outputLinesFoo = Lines.files(perDocTypePath + "/out_bar_foo*.ndjson");
+    assertThat("All docType=foo messages are published", outputLinesFoo,
+        matchesInAnyOrder(expectedLinesFoo));
+  }
+
+  @Test
+  public void testPerNamespace() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/*.ndjson";
+    String mainOutput = outputPath + "/out";
+    String perNamespacePath = outputPath + "/per_namespace";
+    String perNamespaceDestinations =
+        "{\"mynamespace\":\"" + perNamespacePath + "/per-namespace_mynamespace" + "\"}";
+
+    Decoder.main(new String[] {"--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + mainOutput,
+        "--perNamespaceDestinations=" + perNamespaceDestinations,
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputType=stderr",
+        // Decoder specific args
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz"});
+
+    List<String> expectedLines = Lines.files(inputPath + "/per-namespace-*.ndjson");
+    List<String> outputLines = Lines.files(perNamespacePath + "/*.ndjson");
+    assertThat("Only specified namespaces should be published", outputLines,
+        matchesInAnyOrder(expectedLines));
+
+    List<String> expectedLinesMyNamespace =
+        Lines.files(inputPath + "/per-namespace-mynamespace.ndjson");
+    List<String> outputLinesMyNamespace =
+        Lines.files(perNamespacePath + "/per-namespace_mynamespace*.ndjson");
+    assertThat("All namespace=mynamespace messages are published", outputLinesMyNamespace,
+        matchesInAnyOrder(expectedLinesMyNamespace));
+  }
+
+  @Test
+  public void testPerChannel() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String inputPath = Resources.getResource("testdata/republisher-integration").getPath();
+    String input = inputPath + "/per-channel-*.ndjson";
+    String mainOutput = outputPath + "/out";
+    String perChannelPath = outputPath + "/per_channel";
+    String perChannelDestination = perChannelPath + "/out-${channel}";
+
+    Decoder.main(new String[] {"--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + mainOutput,
+        "--perChannelDestination=" + perChannelDestination,
+        "--outputFileCompression=UNCOMPRESSED",
+        "--perChannelSampleRatios={\"beta\":1.0,\"release\":0.5}", "--errorOutputType=stderr",
+        // Decoder specific args
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz"});
+
+    List<String> inputLinesBeta = Lines.files(inputPath + "/per-channel-beta.ndjson");
+    List<String> outputLinesBeta = Lines.files(perChannelPath + "/out-beta*.ndjson");
+    assertThat(outputLinesBeta, matchesInAnyOrder(inputLinesBeta));
+
+    List<String> outputLinesNightly = Lines.files(perChannelPath + "/out-nightly*.ndjson");
+    assertThat(outputLinesNightly, Matchers.hasSize(0));
+
+    List<String> outputLinesRelease = Lines.files(perChannelPath + "/out-release*.ndjson");
+    assertThat("50% random sample of 20 elements should produce at least 2",
+        outputLinesRelease.size(), Matchers.greaterThanOrEqualTo(2));
+    assertThat("50% random sample of 20 elements should produce at most 18",
+        outputLinesRelease.size(), Matchers.lessThanOrEqualTo(18));
+  }
 }
