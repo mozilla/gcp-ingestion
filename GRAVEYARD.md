@@ -1,5 +1,9 @@
 # Link to code removed from this repository
 
+- 2025-08-18 (available until [commit `52c1727`](https://github.com/mozilla/gcp-ingestion/commit/52c17273ee55825df295951fdf763a8553be831a))
+  - Remove Posthog POC pipeline
+- 2025-07-01 (available until [commit `37f74c2`](https://github.com/mozilla/gcp-ingestion/commit/37f74c25a7d41ffa83513bad6c3f848543866c39))
+  - Remove Amplitude POC pipeline
 - 2021-03-12 (available until [commit `c05fbab`](https://github.com/mozilla/gcp-ingestion/commit/c05fbabcb44c5a8a290be311a87951728cf587b6))
   - Remove support for Account Ecosystem Telemetry (AET);
     see [Bug 1697602](https://bugzilla.mozilla.org/show_bug.cgi?id=1697602)
