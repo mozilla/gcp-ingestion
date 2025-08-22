@@ -1,10 +1,5 @@
 package com.mozilla.telemetry;
 
-import com.mozilla.telemetry.republisher.RandomSampler;
-import com.mozilla.telemetry.republisher.RepublishPerChannel;
-import com.mozilla.telemetry.republisher.RepublishPerDocType;
-import com.mozilla.telemetry.republisher.RepublishPerNamespace;
-import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
 import com.mozilla.telemetry.decoder.ExtractIpFromLogEntry;
@@ -16,6 +11,11 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.SanitizeAttributes;
+import com.mozilla.telemetry.republisher.RandomSampler;
+import com.mozilla.telemetry.republisher.RepublishPerChannel;
+import com.mozilla.telemetry.republisher.RepublishPerDocType;
+import com.mozilla.telemetry.republisher.RepublishPerNamespace;
+import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
@@ -26,8 +26,8 @@ import java.util.Optional;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
-import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.transforms.Filter;
 import org.apache.beam.sdk.transforms.Flatten;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PCollectionList;
@@ -55,7 +55,9 @@ public class Decoder extends Sink {
     return run(options);
   }
 
-  /** Execute an Apache Beam pipeline and return the {@code PipelineResult}. */
+  /**
+   * Execute an Apache Beam pipeline and return the {@code PipelineResult}.
+   */
   public static PipelineResult run(DecoderOptions.Parsed options) {
     final Pipeline pipeline = Pipeline.create(options);
     final List<PCollection<PubsubMessage>> failureCollections = new ArrayList<>();

@@ -1,8 +1,8 @@
 package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.DecoderOptions;
-import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.options.SinkOptions;
+import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import java.util.ArrayList;
 import java.util.List;

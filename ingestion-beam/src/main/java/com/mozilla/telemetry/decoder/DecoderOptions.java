@@ -12,6 +12,7 @@ import org.apache.beam.sdk.options.Validation.Required;
  * <p>Inherits standard configuration options and {@code Republisher} configuration options.
  */
 public interface DecoderOptions extends RepublisherOptions {
+
   @Description("Path to a gzipped tarball of schemas.")
   @Required
   String getSchemasLocation();
@@ -40,9 +41,12 @@ public interface DecoderOptions extends RepublisherOptions {
 
   void setLogIngestionEnabled(Boolean value);
 
-  /** A custom {@link org.apache.beam.sdk.options.PipelineOptions} that includes derived fields. */
+  /**
+   * A custom {@link org.apache.beam.sdk.options.PipelineOptions} that includes derived fields.
+   */
   @Hidden
-  interface Parsed extends DecoderOptions, RepublisherOptions.Parsed {}
+  interface Parsed extends DecoderOptions, RepublisherOptions.Parsed {
+  }
 
   /**
    * Return the input {@link DecoderOptions} instance promoted to a {@link
@@ -54,7 +58,9 @@ public interface DecoderOptions extends RepublisherOptions {
     return parsed;
   }
 
-  /** Set all the derived fields of a {@link DecoderOptions.Parsed} instance. */
+  /**
+   * Set all the derived fields of a {@link DecoderOptions.Parsed} instance.
+   */
   static void enrichDecoderOptions(Parsed options) {
     RepublisherOptions.enrichRepublisherOptions(options);
   }
