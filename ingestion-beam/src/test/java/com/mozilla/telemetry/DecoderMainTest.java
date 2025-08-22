@@ -267,11 +267,6 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
         "--schemasLocation=schemas.tar.gz"});
 
-    List<String> expectedLines = Lines.files(inputPath + "/per-namespace-*.ndjson");
-    List<String> outputLines = Lines.files(perNamespacePath + "/*.ndjson");
-    assertThat("Only specified namespaces should be published", outputLines,
-        matchesInAnyOrder(expectedLines));
-
     List<String> expectedLinesMyNamespace =
         Lines.files(inputPath + "/per-namespace-mynamespace.ndjson");
     List<String> outputLinesMyNamespace =

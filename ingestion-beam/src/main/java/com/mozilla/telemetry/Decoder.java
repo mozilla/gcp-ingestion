@@ -113,7 +113,7 @@ public class Decoder extends Sink {
     if (options.getEnableDebugDestination()) {
       RepublisherOptions.Parsed opts = options.as(RepublisherOptions.Parsed.class);
       opts.setOutput(options.getDebugDestination());
-      mainOutput //
+      decoded //
           .apply("FilterDebugMessages", Filter.by(message -> {
             message = PubsubConstraints.ensureNonNull(message);
             return message.getAttribute("x_debug_id") != null;
@@ -126,7 +126,7 @@ public class Decoder extends Sink {
       final Double ratio = options.getRandomSampleRatio();
       RepublisherOptions.Parsed opts = options.as(RepublisherOptions.Parsed.class);
       opts.setOutput(options.getRandomSampleDestination());
-      mainOutput //
+      decoded //
           .apply("SampleBySampleIdOrRandomNumber", Filter.by(message -> {
             message = PubsubConstraints.ensureNonNull(message);
             String sampleId = message.getAttribute("sample_id");
@@ -136,13 +136,13 @@ public class Decoder extends Sink {
 
     // Republish to per-docType, per-namespace, and per-channel destinations
     if (options.getPerDocTypeDestinations() != null) {
-      mainOutput.apply(RepublishPerDocType.of(options));
+      decoded.apply(RepublishPerDocType.of(options));
     }
     if (options.getPerNamespaceDestinations() != null) {
-      mainOutput.apply(RepublishPerNamespace.of(options));
+      decoded.apply(RepublishPerNamespace.of(options));
     }
     if (options.getPerChannelSampleRatios() != null) {
-      mainOutput.apply(RepublishPerChannel.of(options));
+      decoded.apply(RepublishPerChannel.of(options));
     }
 
     // Error output
