@@ -1,6 +1,7 @@
 package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.DecoderOptions;
+import com.mozilla.telemetry.republisher.RepublisherOptions;
 import com.mozilla.telemetry.options.SinkOptions;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import java.util.ArrayList;
@@ -65,6 +66,7 @@ public class Sink {
     // register options classes so that `--help=SinkOptions`, etc. works
     PipelineOptionsFactory.register(SinkOptions.class);
     PipelineOptionsFactory.register(DecoderOptions.class);
+    PipelineOptionsFactory.register(RepublisherOptions.class);
   }
 
 }
