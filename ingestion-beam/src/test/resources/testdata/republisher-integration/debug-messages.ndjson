@@ -1,4 +1,4 @@
-{"attributeMap":{"app_update_channel":"nightly","document_namespace":"glean","document_type":"glean","x_debug_id":""},"payload":"dGVzdA=="}
-{"attributeMap":{"app_update_channel":"nightly","document_namespace":"glean","document_type":"glean","x_debug_id":"mysession"},"payload":"dGVzdA=="}
-{"attributeMap":{"app_update_channel":"nightly","document_namespace":"glean","document_type":"glean","x_debug_id":"othersession"},"payload":"dGVzdA=="}
-{"attributeMap":{"app_update_channel":"nightly","document_namespace":"glean","document_type":"glean","x_debug_id":"mysession"},"payload":"dGVzdA=="}
+{"attributeMap":{"x_debug_id":"","uri":"/submit/test/test/1/80453484-e8b5-4d71-8adb-5f640d76428e"},"payload":"e30="}
+{"attributeMap":{"x_debug_id":"mysession","uri":"/submit/test/test/1/c23b1535-de6d-401c-a868-9bb6535968f3"},"payload":"e30="}
+{"attributeMap":{"x_debug_id":"othersession","uri":"/submit/test/test/1/4c0b2a62-9a51-4ca8-b983-b9367c67face"},"payload":"e30="}
+{"attributeMap":{"x_debug_id":"mysession","uri":"/submit/test/test/1/ae42f602-4e21-4144-9b6d-084a75b496ae"},"payload":"e30="}

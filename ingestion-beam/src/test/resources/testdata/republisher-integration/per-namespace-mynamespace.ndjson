@@ -1,2 +1,2 @@
-{"attributeMap":{"app_update_channel":"nightly","document_namespace":"mynamespace","document_type":"type1"},"payload":"dGVzdA=="}
-{"attributeMap":{"app_update_channel":"nightly","document_namespace":"mynamespace","document_type":"type2"},"payload":"dGVzdA=="}
+{"attributeMap":{"app_update_channel":"nightly","document_namespace":"mynamespace","document_type":"type1","uri":"/submit/mynamespace/type1/1/170b987f-2908-41b7-9903-597acf5277bb"},"payload":"dGVzdA=="}
+{"attributeMap":{"app_update_channel":"nightly","document_namespace":"mynamespace","document_type":"type2","uri":"/submit/mynamespace/type2/1/eac29ce4-97b0-4762-ad31-daaba5913ca1"},"payload":"dGVzdA=="}

@@ -1,2 +1,2 @@
-{"attributeMap":{"app_update_channel":"nightly","document_namespace":"bar","document_type":"foo"},"payload":"dGVzdA=="}
-{"attributeMap":{"app_update_channel":"release","document_namespace":"bar","document_type":"foo"},"payload":"dGVzdA=="}
+{"attributeMap":{"app_update_channel":"nightly","document_namespace":"bar","document_type":"foo","uri":"/submit/bar/foo/1/55518407-90e7-4ce4-9f3d-09eaae1734d0"},"payload":"dGVzdA=="}
+{"attributeMap":{"app_update_channel":"release","document_namespace":"bar","document_type":"foo","uri":"/submit/bar/foo/1/c1c789b7-9e92-4c0c-ba33-7bdd930a57fc"},"payload":"dGVzdA=="}
