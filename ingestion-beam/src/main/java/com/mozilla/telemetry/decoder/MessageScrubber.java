@@ -140,6 +140,8 @@ public class MessageScrubber {
       .put("org-hexis-firefox", "1978366") //
       .put("org-global-glaxy", "1981558") //
       .put("org-mozilla-zxff", "1981560") //
+      .put("com-dykt-main", "1987968") //
+      .put("com-agci-acebrowser", "1987968") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
