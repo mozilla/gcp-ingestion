@@ -87,7 +87,8 @@ public class ParseLogEntry extends
             "Message has no submission_timestamp but is not in a known LogEntry format");
       }
 
-    // Measure zone/namespace combinations for routed logs. See https://mozilla-hub.atlassian.net/browse/SVCSE-3450
+      // Measure zone/namespace combinations for routed logs. See
+      // https://mozilla-hub.atlassian.net/browse/SVCSE-3450
       if (zone != null && documentNamespace != null) {
         KeyedCounter.inc("log_entry_zone/" + zone + "/" + documentNamespace);
       }
