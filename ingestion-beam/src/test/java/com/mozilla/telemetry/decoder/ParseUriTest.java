@@ -312,6 +312,10 @@ public class ParseUriTest extends TestWithDeterministicJson {
           validIntCases("windows_ubr"), //
           validStringCases("stub_build_id")));
 
+  private static final Map<String, String> VALID_V11_DIMENSIONS = joinCases(
+      Arrays.asList(VALID_V10_DIMENSIONS, //
+          validStringCases("launched_by")));
+
   private static final Map<String, String> VALID_V6_CASES = joinCases(Arrays.asList(//
       ImmutableMap.of("v6", "\"ping_version\":\"v6\"", //
           "v6-1", "\"ping_version\":\"v6-1\",\"funnelcake\":\"1\""), //
@@ -337,6 +341,11 @@ public class ParseUriTest extends TestWithDeterministicJson {
           "v10-3", "\"ping_version\":\"v10-3\",\"funnelcake\":\"3\""), //
       VALID_V10_DIMENSIONS));
 
+  private static final Map<String, String> VALID_V11_CASES = joinCases(Arrays.asList(//
+      ImmutableMap.of("v11", "\"ping_version\":\"v11\"", //
+          "v11-3", "\"ping_version\":\"v11-3\",\"funnelcake\":\"3\""), //
+      VALID_V11_DIMENSIONS));
+
   @Test
   public void testStubUri() {
     final List<String> input = Streams.stream(Iterables.concat(//
@@ -345,12 +354,14 @@ public class ParseUriTest extends TestWithDeterministicJson {
         VALID_V8_CASES.keySet(), //
         VALID_V9_CASES.keySet(), //
         VALID_V10_CASES.keySet(), //
+        VALID_V11_CASES.keySet(), //
         Arrays.asList(//
             "v6/" + String.join("/", Collections.nCopies(35, " ")), //
             "v7/" + String.join("/", Collections.nCopies(36, " ")), //
             "v8/" + String.join("/", Collections.nCopies(38, " ")), //
             "v9/" + String.join("/", Collections.nCopies(40, " ")), //
             "v10/" + String.join("/", Collections.nCopies(42, " ")), //
+            "v11/" + String.join("/", Collections.nCopies(43, " ")), //
             "v6", "v7", "v8", "v9", "v10", // UnexpectedPathElementsException
             "", "v1", "v61", "v21" // UnknownPingVersionException
         ))).map(v -> "{\"attributeMap\":{\"message_id\":\"00000000001\",\"uri\":\"/stub/" + v
@@ -362,7 +373,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
         VALID_V7_CASES.values(), //
         VALID_V8_CASES.values(), //
         VALID_V9_CASES.values(), //
-        VALID_V10_CASES.values())) //
+        VALID_V10_CASES.values(), //
+        VALID_V11_CASES.values())) //
         .map(v -> sortJSON("{\"installer_type\":\"stub\",\"installer_version\":\"\"," + v + "}"))
         .collect(Collectors.toList());
     final List<String> expectedAttributes = Collections.nCopies(expectedPayloads.size(),
@@ -381,6 +393,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$InvalidIntegerException",
+        "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
         "com.mozilla.telemetry.decoder.ParseUri$UnexpectedPathElementsException",
