@@ -63,7 +63,12 @@ public class DecompressPayload
         message = PubsubConstraints.ensureNonNull(message);
         try {
           Map<String, String> attributes = message.getAttributeMap();
-          PerDocTypeCounter.inc(attributes, "predecompress_submission_bytes",
+
+          // valid doc types and namespaces shouldn't have % or url-encoded characters
+          boolean validUri = attributes != null
+              && !attributes.getOrDefault("document_namespace", "").contains("%")
+              && !attributes.getOrDefault("document_type", "").contains("%");
+          PerDocTypeCounter.inc(validUri ? attributes : null, "predecompress_submission_bytes",
               message.getPayload().length);
 
           ByteArrayInputStream payloadStream = new ByteArrayInputStream(message.getPayload());
