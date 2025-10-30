@@ -146,7 +146,7 @@ public class MessageScrubber {
       .put("regrets-reporter", "1997452") //
       .put("org-mozilla-ios-tiktok-reporter", "1997452") //
       .put("org-mozilla-tiktokreporter", "1997452") //
-      .put("org-mozilla-tiktok-reporter-tiktok-reportershare", "1997452") //
+      .put("org-mozilla-ios-tiktok-reporter-tiktok-reportershare", "1997452") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
