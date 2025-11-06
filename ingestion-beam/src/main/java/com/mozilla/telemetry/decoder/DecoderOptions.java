@@ -62,6 +62,14 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
   void setLogIngestionEnabled(Boolean value);
 
+  @Description("If set to true, enable ingestion of messages published directly to Pub/Sub"
+      + " with simplified flat envelope format. Pub/Sub publishTime will be used as"
+      + " submission_timestamp. See com.mozilla.telemetry.decoder.ParseDirectPubsub.")
+  @Default.Boolean(false)
+  Boolean getDirectPubsubEnabled();
+
+  void setDirectPubsubEnabled(Boolean value);
+
   /*
    * Subinterface and static methods.
    */
@@ -93,6 +101,12 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
    */
   static void enrichDecoderOptions(Parsed options) {
     SinkOptions.enrichSinkOptions(options);
+
+    if (options.getLogIngestionEnabled() && options.getDirectPubsubEnabled()) {
+      throw new IllegalArgumentException(
+          "Cannot enable both --logIngestionEnabled and --directPubsubEnabled. "
+              + "Use separate pipelines for different message formats.");
+    }
   }
 
 }
