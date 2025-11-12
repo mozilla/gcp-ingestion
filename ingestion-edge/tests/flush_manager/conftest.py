@@ -157,7 +157,8 @@ def cluster(options: Dict[str, Any]) -> Iterator[Optional[str]]:
                     try:
                         pv.spec.persistent_volume_reclaim_policy = "Delete"
                         api.patch_persistent_volume(
-                            name=pv.metadata.name, body=pv,
+                            name=pv.metadata.name,
+                            body=pv,
                         )
                         api.delete_persistent_volume(
                             name=pv.metadata.name,
@@ -180,7 +181,7 @@ def cluster(options: Dict[str, Any]) -> Iterator[Optional[str]]:
 def kube_methods(path: str, **replace) -> Dict[str, Callable]:
     with open(os.path.join(os.path.dirname(__file__), path)) as p:
         raw = p.read().format_map(replace)
-    body = yaml.load(raw)
+    body = yaml.safe_load(raw)
     kind = re.sub(r"(?<!^)(?=[A-Z])", "_", body["kind"]).lower()
     name = body["metadata"]["name"]
     namespace = body["metadata"].get("namespace")

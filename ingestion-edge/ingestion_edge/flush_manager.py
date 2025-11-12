@@ -58,6 +58,10 @@ DEFAULT_ENV = [
     for name in get_config_dict()
     if name in os.environ
 ]
+FLUSH_JOB_REQUESTS_CPU = os.environ.get("FLUSH_JOB_REQUESTS_CPU", "100m")
+FLUSH_JOB_REQUESTS_MEMORY = os.environ.get("FLUSH_JOB_REQUESTS_MEMORY", "100Mi")
+FLUSH_JOB_LIMITS_CPU = os.environ.get("FLUSH_JOB_LIMITS_CPU", None)
+FLUSH_JOB_LIMITS_MEMORY = os.environ.get("FLUSH_JOB_LIMITS_MEMORY", "500Mi")
 
 parser = ArgumentParser(description=__doc__)
 parser.add_argument(
@@ -67,7 +71,10 @@ parser.add_argument(
     help="Docker command for flush jobs; must drain queue until empty or exit non-zero",
 )
 parser.add_argument(
-    "--env", default=DEFAULT_ENV, type=json.loads, help="env to use for flush jobs",
+    "--env",
+    default=DEFAULT_ENV,
+    type=json.loads,
+    help="env to use for flush jobs",
 )
 parser.add_argument(
     "--image",
@@ -75,7 +82,9 @@ parser.add_argument(
     help="Docker image to use for flush jobs",
 )
 parser.add_argument(
-    "--namespace", default="default", help="Kubernetes namespace to use",
+    "--namespace",
+    default="default",
+    help="Kubernetes namespace to use",
 )
 parser.add_argument(
     "--service-account-name",
@@ -192,6 +201,24 @@ def _create_flush_job(
                                         V1VolumeMount(mount_path="/data", name="queue")
                                     ],
                                     env=env,
+                                    resources=V1ResourceRequirements(
+                                        requests={
+                                            key: value
+                                            for key, value in (
+                                                ("cpu", FLUSH_JOB_REQUESTS_CPU),
+                                                ("memory", FLUSH_JOB_REQUESTS_MEMORY),
+                                            )
+                                            if value
+                                        },
+                                        limits={
+                                            key: value
+                                            for key, value in (
+                                                ("cpu", FLUSH_JOB_LIMITS_CPU),
+                                                ("memory", FLUSH_JOB_LIMITS_MEMORY),
+                                            )
+                                            if value
+                                        },
+                                    ),
                                 )
                             ],
                             restart_policy="OnFailure",
@@ -254,12 +281,19 @@ def flush_released_pvs(
             )
 
 
+def _job_is_complete(job: V1Job) -> bool:
+    """Robust completion check that tolerates condition order changes in v1.32."""
+    return job.status.conditions and any(
+        condition.type == "Complete" and condition.status == "True"
+        for condition in job.status.conditions
+    )
+
+
 def delete_complete_jobs(api: CoreV1Api, batch_api: BatchV1Api, namespace: str):
     """Delete complete jobs."""
     for job in batch_api.list_namespaced_job(namespace).items:
         if (
-            job.status.conditions
-            and job.status.conditions[0].type == "Complete"
+            _job_is_complete(job)
             and not job.metadata.deletion_timestamp
             and _is_flush_job(job)
         ):

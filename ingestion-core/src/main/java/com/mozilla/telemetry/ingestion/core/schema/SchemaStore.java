@@ -33,7 +33,6 @@ public abstract class SchemaStore<T> {
    * @throws SchemaNotFoundException if schema matching the attributes exists
    */
   public T getSchema(String path) throws SchemaNotFoundException {
-    ensureSchemasLoaded();
     T schema = schemas.get(getAndCacheNormalizedPath(path));
     if (schema == null) {
       throw SchemaNotFoundException.forName(path);
@@ -47,7 +46,6 @@ public abstract class SchemaStore<T> {
    * @throws SchemaNotFoundException if schema matching the attributes exists
    */
   public T getSchema(Map<String, String> attributes) throws SchemaNotFoundException {
-    ensureSchemasLoaded();
     if (attributes == null) {
       throw new SchemaNotFoundException("No schema for message with null attributeMap");
     }
@@ -60,7 +58,6 @@ public abstract class SchemaStore<T> {
 
   /** Returns true if we found at least one schema with the given doctype and namespace. */
   public boolean docTypeExists(String namespace, String docType) {
-    ensureSchemasLoaded();
     if (namespace == null || docType == null) {
       return false;
     } else {
@@ -85,6 +82,15 @@ public abstract class SchemaStore<T> {
     } else {
       this.open = open;
     }
+    try {
+      if (this.schemasLocation != null) {
+        // schemasLocation can be null in
+        // com.mozilla.telemetry.ingestion.core.schema.BigQuerySchemaStore.FromApi
+        loadAllSchemas();
+      }
+    } catch (IOException e) {
+      throw new UncheckedIOException("Unexpected error while loading schemas", e);
+    }
   }
 
   private final String schemasLocation;
@@ -105,7 +111,6 @@ public abstract class SchemaStore<T> {
 
   @VisibleForTesting
   int numLoadedSchemas() {
-    ensureSchemasLoaded();
     return schemas.size();
   }
 
@@ -143,16 +148,6 @@ public abstract class SchemaStore<T> {
     }
     schemas = tempSchemas;
     dirs = tempDirs;
-  }
-
-  protected void ensureSchemasLoaded() {
-    if (schemas == null) {
-      try {
-        loadAllSchemas();
-      } catch (IOException e) {
-        throw new UncheckedIOException("Unexpected error while loading schemas", e);
-      }
-    }
   }
 
   /**

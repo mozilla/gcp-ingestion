@@ -34,8 +34,8 @@ public class BigQueryLoadTest {
     bigQuery = mock(com.google.cloud.bigquery.BigQuery.class);
     job = mock(Job.class);
     jobStatus = mock(JobStatus.class);
-    when(bigQuery.create(any(JobInfo.class), any())).thenReturn(job);
-    when(job.waitFor(any())).thenReturn(job);
+    when(bigQuery.create(any(JobInfo.class))).thenReturn(job);
+    when(job.waitFor()).thenReturn(job);
     when(job.getStatus()).thenReturn(jobStatus);
   }
 
@@ -46,7 +46,7 @@ public class BigQueryLoadTest {
     when(blob.getBlobId()).thenReturn(BlobId.of("bucket", name));
     when(blob.getSize()).thenReturn(1L);
     try {
-      new BigQuery.Load(bigQuery, storage, 0, 0, Duration.ZERO, ForkJoinPool.commonPool(),
+      new BigQuery.Load(bigQuery, storage, 0, 0, Duration.ZERO, ForkJoinPool.commonPool(), false,
           BigQuery.Load.Delete.onSuccess).apply(blob).join();
     } catch (CompletionException e) {
       if (e.getCause() instanceof BigQuery.BigQueryErrors) {

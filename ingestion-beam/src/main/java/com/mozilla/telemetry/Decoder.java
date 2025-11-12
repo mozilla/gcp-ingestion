@@ -2,14 +2,15 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
+import com.mozilla.telemetry.decoder.ExtractIpFromLogEntry;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GeoIspLookup;
+import com.mozilla.telemetry.decoder.ParseLogEntry;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.SanitizeAttributes;
-import com.mozilla.telemetry.decoder.rally.DecryptPayloads;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
@@ -60,32 +61,32 @@ public class Decoder extends Sink {
         // Input
         .map(p -> p //
             .apply(options.getInputType().read(options)) //
+            // We apply ParseUri without failures here, and add failures later, so that parseProxy
+            // can use pipeline metadata to adjust what IP to use for geo lookups.
+            .apply("ParseUri", ParseUri.withoutFailures()) //
             // We apply ParseProxy and GeoCityLookup and GeoIspLookup first so that IP
             // address is already removed before any message gets routed to error output; see
             // https://github.com/mozilla/gcp-ingestion/issues/1096
-            .apply(ParseProxy.of(options.getProxyIps())) //
+            .apply(ParseProxy.of(options.getSchemasLocation())) //
             .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())
                 .withClientCompressionRecorded()))
 
-        // URI Parsing
-        .map(p -> p //
-            .apply("ParseUri", ParseUri.of()).failuresTo(failureCollections))
-
-        // Special case: decryption of Rally/Pioneer payloads. There is a
-        // separate decoder instance that only contains pioneer-* and rally-*
-        // documents as per bugs 1628539 and 1675479. All messages sent in
-        // plaintext not intended for Rally/Pioneer will be rejected in some
-        // form (e.g. KeyNotFound or Validation errors). Both legacy messages
-        // sent to the `telemetry.pioneer-study` doctype and the glean.js-styled
-        // messages are supported respectively.
-        .map(p -> options.getPioneerEnabled() ? p //
-            .apply("DecryptRallyAndPioneerPayloads",
-                DecryptPayloads.of(options.getPioneerMetadataLocation(),
-                    options.getSchemasLocation(), options.getPioneerKmsEnabled(),
-                    options.getPioneerDecompressPayload())) //
+        // Special case: parsing structured telemetry pings submitted from Cloud Logging.
+        .map(p -> options.getLogIngestionEnabled() ? p //
+            // We first extract IP address from the log entry and remove it from the payload
+            // for consistency with the standard flow.
+            .apply(ExtractIpFromLogEntry.of()) //
+            .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
+            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
+            // Now we can parse the log entry and route failures to error output
+            .apply(ParseLogEntry.of())//
             .failuresTo(failureCollections) : p)
+
+        // Add parse uri failures separately so that they don't prevent geo lookups
+        .map(p -> p //
+            .apply("ParseUriAddFailures", ParseUri.addFailures()).failuresTo(failureCollections))
 
         // Main output
         .map(p -> p //

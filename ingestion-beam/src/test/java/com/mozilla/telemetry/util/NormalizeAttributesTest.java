@@ -12,7 +12,7 @@ public class NormalizeAttributesTest {
    *
    * <pre>{@code
    * SELECT channel, normalized_channel, count(*)
-   * FROM `moz-fx-data-derived-datasets.telemetry.clients_daily_v6`
+   * FROM `moz-fx-data-derived-datasets.telemetry.clients_daily_joined`
    * WHERE true
    *   and submission_date_s3 >= DATE('2018-07-01')
    *   and normalized_channel != 'Other'

@@ -94,6 +94,15 @@ public class PubsubMessageToObjectNodeBeamTest {
   }
 
   @Test
+  public void testCoerceBooleanToFloat() throws Exception {
+    ObjectNode parent = Json.createObjectNode().put("payload", true);
+    List<Field> bqFields = ImmutableList.of(Field.of("payload", LegacySQLTypeName.FLOAT));
+    Map<String, Object> expected = ImmutableMap.of("payload", 1);
+    TRANSFORM.transformForBqSchema(parent, bqFields, null);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Test
   public void testCoerceMapValueToString() throws Exception {
     String mainPing = "{\"payload\":{\"processes\":{\"parent\":{\"scalars\":"
         + "{\"timestamps.first_paint\":5405}}}}}";
@@ -435,6 +444,31 @@ public class PubsubMessageToObjectNodeBeamTest {
     Map<String, Object> expected = ImmutableMap.of("metrics", ImmutableMap.of("counter",
         ImmutableMap.of("my_count", 3), "url2", ImmutableMap.of("my_url", "http://example.com")));
     TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(Json.createObjectNode(), additionalProperties);
+    assertEquals(expected, Json.asMap(parent));
+  }
+
+  @Test
+  public void testRenameGleanMetricsNoExistingFieldForBug1737656() throws Exception {
+    ObjectNode additionalProperties = Json.createObjectNode();
+    ObjectNode parent = Json.readObjectNode("{\n" //
+        + "  \"metrics\": {\n" //
+        + "    \"counter\": {\"my_count\": 3},\n" //
+        + "    \"url\": {\"my_url\": \"http://example.com\"}\n" //
+        + "  }\n" //
+        + "}\n");
+    List<Field> bqFields = ImmutableList.of(Field.newBuilder("metrics", LegacySQLTypeName.RECORD, //
+        Field.of("counter", LegacySQLTypeName.RECORD, //
+            Field.of("my_count", LegacySQLTypeName.INTEGER)), //
+        Field.of("counter2", LegacySQLTypeName.RECORD, //
+            Field.of("my_count", LegacySQLTypeName.INTEGER)), //
+        Field.of("url2", LegacySQLTypeName.RECORD, Field.of("my_url", LegacySQLTypeName.STRING)))
+        .build());
+
+    Map<String, Object> expected = ImmutableMap.of("metrics", ImmutableMap.of("counter",
+        ImmutableMap.of("my_count", 3), "url2", ImmutableMap.of("my_url", "http://example.com")));
+    TRANSFORM.transformForBqSchema(parent, bqFields, additionalProperties);
+    assertEquals(Json.createObjectNode(), additionalProperties);
     assertEquals(expected, Json.asMap(parent));
   }
 
@@ -452,8 +486,7 @@ public class PubsubMessageToObjectNodeBeamTest {
         .put("date", "Mon, 12 Mar 2018 21:02:18 GMT").put("dnt", "1")
         .put("host", "incoming.telemetry.mozilla.org").put("user_agent", "pingsender/1.0")
         .put("x_forwarded_for", "10.98.132.74, 103.3.237.12").put("x_pingsender_version", "1.0")
-        .put("x_debug_id", "my_debug_session_1")
-        .put("x_pipeline_proxy", "2018-03-12T21:02:18.123456Z").build();
+        .put("x_debug_id", "my_debug_session_1").build();
     byte[] data = "test".getBytes(StandardCharsets.UTF_8);
     Map<String, String> expected = ImmutableMap.<String, String>builder().putAll(attributes)
         .put("payload", "dGVzdA==").build();

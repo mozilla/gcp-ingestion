@@ -1,19 +1,10 @@
 package com.mozilla.telemetry.decoder;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-
-import com.google.common.collect.Lists;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.List;
-import org.apache.beam.sdk.PipelineResult;
-import org.apache.beam.sdk.metrics.MetricNameFilter;
-import org.apache.beam.sdk.metrics.MetricResult;
-import org.apache.beam.sdk.metrics.MetricsFilter;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -33,70 +24,26 @@ public class ParseProxyTest extends TestWithDeterministicJson {
         // to pad them out to be valid base64.
         "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
-            + "{\"x_pipeline_proxy\":1" //
-            + "},\"payload\":\"proxied+\"}",
-        "{\"attributeMap\":" //
-            + "{\"x_pipeline_proxy\":\"\"" //
-            + "},\"payload\":\"emptyXPP\"}",
-        "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"3, 2, 1\"" //
-            + "},\"payload\":\"notProxied++\"}",
-        "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4, 3, 6.7.8.9, 1\"" //
-            + "},\"payload\":\"staticProxied+++\"}",
-        "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
             + ",\"x_forwarded_for\":\"4, 3, 2, 1\"" //
-            + ",\"x_pipeline_proxy\":\"1999-12-31T23:59:59.999999Z\"" //
-            + "},\"payload\":\"proxiedWithTimestamp\"}",
-        "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
-            + ",\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4, 3, 2\"" //
-            + "},\"payload\":\"retried+\"}");
+            + "},\"payload\":\"test\"}");
 
     final List<String> expected = Arrays.asList(//
         "{\"attributeMap\":{},\"payload\":\"\"}", //
-        "{\"attributeMap\":{},\"payload\":\"proxied+\"}", //
-        "{\"attributeMap\":{},\"payload\":\"emptyXPP\"}", //
         "{\"attributeMap\":" //
             + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"3, 2, 1\"" //
-            + "},\"payload\":\"notProxied++\"}",
-        "{\"attributeMap\":" //
-            + "{\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"4,3,1\"" //
-            + "},\"payload\":\"staticProxied+++\"}",
-        "{\"attributeMap\":" //
-            + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
-            + ",\"x_forwarded_for\":\"4, 3, 2\"" //
-            + "},\"payload\":\"proxiedWithTimestamp\"}",
-        "{\"attributeMap\":" //
-            + "{\"proxy_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"submission_timestamp\":\"1999-12-31T23:59:59.999999Z\"" //
-            + ",\"x_forwarded_for\":\"4, 3, 2\"" //
-            + "},\"payload\":\"retried+\"}");
+            + ",\"x_forwarded_for\":\"4,3\"" //
+            + "},\"payload\":\"test\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of("2.3.4.5,6.7.8.9")) //
+        .apply(ParseProxy.of(null)) //
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 
-    final PipelineResult result = pipeline.run();
-
-    final List<MetricResult<Long>> counters = Lists.newArrayList(result.metrics()
-        .queryMetrics(MetricsFilter.builder()
-            .addNameFilter(MetricNameFilter.inNamespace(ParseProxy.Fn.class)).build())
-        .getCounters());
-
-    assertEquals(2, counters.size());
-    counters.forEach(counter -> assertThat(counter.getCommitted(), greaterThan(0L)));
+    pipeline.run();
   }
 
   @Test
@@ -104,43 +51,67 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     final List<String> input = Arrays.asList(//
         "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
-            + "{\"x_forwarded_for\":\"_, 202.196.224.0, _\"" //
-            + "},\"payload\":\"notProxied++\"}",
+            + "{\"x_forwarded_for\":\"_, 202.196.224.0, _, _\"" //
+            + "},\"payload\":\"test\"}",
         "{\"attributeMap\":" //
             + "{\"x_pipeline_proxy\":1" //
             + ",\"x_forwarded_for\":\"_, 202.196.224.0, _, _\"" //
-            + "},\"payload\":\"proxied+\"}",
-        "{\"attributeMap\":" //
-            + "{\"x_pipeline_proxy\":\"2000-01-01T00:00:00.000000Z\"" //
-            + ",\"x_forwarded_for\":\"_, 202.196.224.0, _, _\"" //
-            + "},\"payload\":\"proxiedWithTimestamp\"}");
+            + "},\"payload\":\"ignorePipelineProxy+\"}");
 
     final List<String> expected = Arrays.asList(//
-        "{\"attributeMap\":{\"geo_db_version\":\"2019-01-03T21:26:19Z\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":{},\"payload\":\"\"}", //
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
-            + "},\"payload\":\"notProxied++\"}",
+            + "},\"payload\":\"test\"}",
         "{\"attributeMap\":" //
             + "{\"geo_country\":\"PH\"" //
             + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
-            + "},\"payload\":\"proxied+\"}",
-        "{\"attributeMap\":" //
-            + "{\"geo_country\":\"PH\"" //
-            + ",\"geo_db_version\":\"2019-01-03T21:26:19Z\"" //
-            + ",\"submission_timestamp\":\"2000-01-01T00:00:00.000000Z\"" //
-            + "},\"payload\":\"proxiedWithTimestamp\"}");
+            + ",\"x_pipeline_proxy\":\"1\"" //
+            + "},\"payload\":\"ignorePipelineProxy+\"}");
 
     final PCollection<String> output = pipeline //
         .apply(Create.of(input)) //
         .apply(InputFileFormat.json.decode()) //
-        .apply(ParseProxy.of("no-proxy-ip")) //
+        .apply(ParseProxy.of(null)) //
         .apply(GeoCityLookup.of("src/test/resources/cityDB/GeoIP2-City-Test.mmdb", null))
         .apply(OutputFileFormat.json.encode());
 
     PAssert.that(output).containsInAnyOrder(expected);
 
-    final PipelineResult result = pipeline.run();
+    pipeline.run();
   }
 
+  @Test
+  public void testGeoipSkip() {
+    final List<String> input = Arrays.asList(//
+        // Note that payloads are interpreted as base64 strings, so we sometimes add '+'
+        // to pad them out to be valid base64.
+        "{\"attributeMap\":{\"x_forwarded_for\":\"4, 3, 2, 1\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"document_namespace\":\"test\"" //
+            + ",\"document_type\":\"geoip-skip\"" //
+            + ",\"document_version\":\"1\"" //
+            + ",\"x_forwarded_for\":\"4, 3, 2, 1\"" //
+            + "},\"payload\":\"test\"}");
+
+    final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":{\"x_forwarded_for\":\"4,3\"},\"payload\":\"\"}", //
+        "{\"attributeMap\":" //
+            + "{\"document_namespace\":\"test\"" //
+            + ",\"document_type\":\"geoip-skip\"" //
+            + ",\"document_version\":\"1\"" //
+            + ",\"x_forwarded_for\":\"4\"" //
+            + "},\"payload\":\"test\"}");
+
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()) //
+        .apply(ParseProxy.of("schemas.tar.gz")) //
+        .apply(OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
 }

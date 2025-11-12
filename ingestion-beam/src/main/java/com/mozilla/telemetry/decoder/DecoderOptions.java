@@ -14,13 +14,6 @@ import org.apache.beam.sdk.options.Validation;
  */
 public interface DecoderOptions extends SinkOptions, PipelineOptions {
 
-  @Description("Comma-separated list of static IPs associated with load balancers; "
-      + "will be ignored for IP lookups")
-  @Default.String("35.227.207.240,34.120.208.123")
-  String getProxyIps();
-
-  void setProxyIps(String value);
-
   @Description("Path (local or gs://) to GeoIP2-City.mmdb")
   @Validation.Required
   String getGeoCityDatabase();
@@ -40,34 +33,6 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   String getGeoIspDatabase();
 
   void setGeoIspDatabase(String value);
-
-  @Description("If set to true, enable decryption of Pioneer payloads.")
-  @Default.Boolean(false)
-  Boolean getPioneerEnabled();
-
-  void setPioneerEnabled(Boolean value);
-
-  @Description("Path (local or gs://) to JSON array of metadata entries enumerating encrypted"
-      + " private keys, Cloud KMS resource ids for decrypting those keys, and their corresponding"
-      + " document namespaces; this must be set if Pioneer is enabled.")
-  String getPioneerMetadataLocation();
-
-  void setPioneerMetadataLocation(String value);
-
-  @Description("If set to true, assume that all private keys are encrypted with the associated"
-      + " KMS resourceId. Otherwise ignore KMS and assume all private keys are stored in plaintext."
-      + " This may be used for debugging.")
-  @Default.Boolean(true)
-  Boolean getPioneerKmsEnabled();
-
-  void setPioneerKmsEnabled(Boolean value);
-
-  @Hidden
-  @Description("Decompress pioneer pings.")
-  @Default.Boolean(true)
-  Boolean getPioneerDecompressPayload();
-
-  void setPioneerDecompressPayload(Boolean value);
 
   @Description("If set to true, enable decryption of Account Ecosystem Telemetry identifiers.")
   @Default.Boolean(false)
@@ -89,6 +54,13 @@ public interface DecoderOptions extends SinkOptions, PipelineOptions {
   Boolean getAetKmsEnabled();
 
   void setAetKmsEnabled(Boolean value);
+
+  @Description("If set to true, enable ingestion of messages sent from Cloud Logging."
+      + "See com.mozilla.telemetry.decoder.ParseLogEntry.")
+  @Default.Boolean(false)
+  Boolean getLogIngestionEnabled();
+
+  void setLogIngestionEnabled(Boolean value);
 
   /*
    * Subinterface and static methods.

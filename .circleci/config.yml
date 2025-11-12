@@ -33,7 +33,7 @@ jobs:
 
   docs:
     docker:
-    - image: circleci/python:3.8
+    - image: circleci/python:3.10
     steps:
     - checkout
     - run:
@@ -46,7 +46,7 @@ jobs:
             mkdocs-awesome-pages-plugin
     - add_ssh_keys:
         fingerprints:
-        - "84:b0:66:dd:ec:68:b1:45:9d:5d:66:fd:4a:4f:1b:57"
+        - "1e:fb:d5:8d:d5:16:bd:3e:c3:e6:19:cf:20:01:1c:ad"
     - run:
         name: Build and deploy docs
         command: |
@@ -55,7 +55,7 @@ jobs:
   ingestion-edge: &edge
     working_directory: /root/project/ingestion-edge
     docker:
-    - image: python:3.8
+    - image: python:3.10
     steps:
     - &checkout
       checkout:
@@ -84,10 +84,10 @@ jobs:
         keys:
           # when lock files change, use increasingly general patterns to restore cache
           - &cache_key_edge
-            python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
-          - python-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-
-          - python-packages-v1-{{ .Branch }}-
-          - python-packages-v1-
+            python-3.10-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-{{ checksum "requirements.txt" }}
+          - python-3.10-packages-v1-{{ .Branch }}-{{ checksum "requirements.in" }}-
+          - python-3.10-packages-v1-{{ .Branch }}-
+          - python-3.10-packages-v1-
     - run:
         name: Build
         command: bin/build
@@ -102,6 +102,10 @@ jobs:
       run:
         name: Report code coverage
         command: |
+          # Install gpgv if not available (Debian Trixie moved it to separate package)
+          if ! command -v gpgv >/dev/null 2>&1; then
+            apt-get update && apt-get install -y gpgv
+          fi
           curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           curl -Os https://uploader.codecov.io/latest/linux/codecov.SHA256SUM
@@ -126,8 +130,8 @@ jobs:
           # form of a package name and a version specifier"
           command: |
             pip install pip-tools --constraint requirements.in
-            pip-compile --quiet --allow-unsafe --generate-hashes
-            git diff --exit-code requirements.txt
+            pip-compile --allow-unsafe --generate-hashes --quiet
+            git diff --exit-code -G '^ *[^# ]' -- requirements.txt
 
   ingestion-edge-release:
     working_directory: /root/project/ingestion-edge
@@ -138,7 +142,7 @@ jobs:
     - &setup_remote_docker
       setup_remote_docker:
         docker_layer_caching: true
-        version: 19.03.13
+        version: default
     - &create_version_json
       run:
         name: Create version.json
@@ -229,7 +233,7 @@ jobs:
           if [ "integration" = "<< parameters.scope >>" ]; then
             export GOOGLE_APPLICATION_CREDENTIALS="/tmp/gcp.json"
             echo "$GCLOUD_SERVICE_KEY" > "$GOOGLE_APPLICATION_CREDENTIALS"
-            SCOPE_FLAGS="-Dtest=*IntegrationTest -DfailIfNoTests=false"
+            SCOPE_FLAGS="-Dtest=*IntegrationTest -Dsurefire.failIfNoSpecifiedTests=false"
           else
             SCOPE_FLAGS=
           fi

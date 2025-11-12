@@ -2,6 +2,8 @@ from ingestion_edge.util import AsyncioBatch
 from google.cloud.pubsub_v1 import PublisherClient
 from persistqueue import SQLiteAckQueue
 from sanic import Sanic
+from sanic_testing import TestManager
+
 import grpc
 import os
 import pytest
@@ -9,7 +11,9 @@ import pytest
 
 @pytest.fixture
 def app() -> Sanic:
-    return Sanic(name="test", register=False)
+    app = Sanic(name="test")
+    TestManager(app)
+    return app
 
 
 @pytest.fixture

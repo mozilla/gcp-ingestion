@@ -14,8 +14,8 @@
     <packaging>jar</packaging>
 
     <properties>
-        <log4j.version>2.17.1</log4j.version>
-        <opencensus.version>0.30.0</opencensus.version>
+        <log4j.version>2.19.0</log4j.version>
+        <opencensus.version>0.31.1</opencensus.version>
         <exec.mainClass>com.mozilla.telemetry.ingestion.sink.Sink</exec.mainClass>
     </properties>
 
@@ -47,15 +47,9 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>libraries-bom</artifactId>
-                <version>24.1.1</version>
+                <version>26.64.0</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-            <!-- explicitly version PubSub Lite until it is included in libraries-bom. -->
-            <dependency>
-                <groupId>com.google.cloud</groupId>
-                <artifactId>google-cloud-pubsublite</artifactId>
-                <version>1.4.7</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
@@ -87,12 +81,18 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
-            <version>1.9</version>
+            <version>1.14.0</version>
         </dependency>
         <dependency>
             <!-- Use log4j implementation of slf4j -->
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+        </dependency>
+        <dependency>
+            <!-- workaround https://issues.apache.org/jira/browse/LOG4J2-3601 -->
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <!-- Runtime dependency for log4j yaml config support
@@ -126,7 +126,7 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.2.0</version>
+            <version>5.18.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -155,7 +155,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.5.1</version>
                 <configuration>
                     <skip>false</skip>
                 </configuration>

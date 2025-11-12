@@ -4,13 +4,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
 
@@ -45,6 +51,7 @@ public class MessageScrubber {
       .put("com-athena-equality-firefox", "1686088") //
       .put("com-authenticatedreality-fireios", "1686087") //
       .put("com-netsweeper-clientfilter-lgfl-homeprotect", "1686085") //
+      .put("com-netsweeper-clientfilter-homeprotectbylgfl", "1804285") //
       .put("com-myie9-xf", "1684918") //
       .put("com-netsweeper-clientfilter-lgfl-socialblocked", "1688689") //
       .put("com-only4free-activate", "1687350") //
@@ -71,6 +78,75 @@ public class MessageScrubber {
       .put("com-qebrowser", "1740091") //
       .put("org-mozilla-sorizava-focus", "1740091") //
       .put("com-pando-pandobrowser", "1745742") //
+      .put("com-wqty-browser", "1752883") //
+      .put("com-valvesoftware-android-steam-community", "1754042") //
+      .put("net-decentr-browser", "1754007") //
+      .put("mozilla-lockbox", "1759183") //
+      .put("org-you-ios-fennec", "1759182") //
+      .put("org-mozilla-focut", "1759181") //
+      .put("org-mozilla-feniz", "1761808") //
+      .put("org-mozilla-firefox-betd", "1761809") //
+      .put("org-mozilla-feniw", "1761811") //
+      .put("net-chinaedu-crystal", "1767076") //
+      .put("com-you-browser", "1767077") //
+      .put("org-giveasyoulive-donationreminder", "1767078") //
+      .put("org-mozilla-firefrd", "1777636") //
+      .put("org-mozilla-firefox-betc", "1786344") //
+      .put("com-max-browser", "1802981") //
+      .put("com-differ-xiaoming", "1806484") //
+      .put("org-cloudveil-android-browser", "1816487") //
+      .put("com-abaqoo-browser", "1819142") //
+      .put("orn-nomi-noma", "1820615") //
+      .put("com-readboy-firefox", "1833203") //
+      .put("website-carbon-ios-browser", "1833204") //
+      .put("viu-politica", "1826535") //
+      .put("com-freespoke-app", "1834366") //
+      .put("com-ruiyi-testsystem", "1828562") //
+      .put("org-mozilla-fenix-mod", "1835701") //
+      .put("org-immersivel-firefox", "1841614") //
+      .put("com-wheatleygroup-firefox", "1847643") //
+      .put("com-work-custchrome", "1859282") //
+      .put("com-mykarma-karmasearch", "1860820") //
+      .put("org-mozilla-fennec-mylinux", "1863385") //
+      .put("com-internet-smartphonebrowser", "1864572") //
+      .put("com-ecosia-ecosiaapp", "1883854") //
+      .put("com-ecosia-ecosiaapp-firefox", "1883854") //
+      .put("org-luxxle-luxxle", "1884755") //
+      .put("net-decentr-ios-browser", "1884754") //
+      .put("com-immersivetranslate-immersive-translate-browser", "1884752") //
+      .put("com-immersivetranslate-browser", "1884751") //
+      .put("com-jio-web-ios", "1887756") //
+      .put("com-pekobbrowser-unblocksites", "1896079") //
+      .put("com-eusoft-trans-en", "1902673") //
+      .put("com-goodtoolapps-zeus", "1907131") //
+      .put("io-orbitmobile-firefox", "1919089") //
+      .put("app-borderfree-borderfree", "1921529") //
+      .put("com-ff2024-01-firefox", "1925612") //
+      .put("org-mozilla-firefox-cp", "1925615") //
+      .put("com-feifan-topvan", "1924135") //
+      .put("com-feifan-chrome-ios-dev", "1930793") //
+      .put("us-spotco-fennec-dos", "1938660") //
+      .put("com-atomic-browser-ios-client", "1941536") //
+      .put("org-lilo-browser-chrome-ios-herebedragons", "1947334") //
+      .put("com-xyz-aba", "1952966") //
+      .put("org-codesista-firefox-titan", "1953225") //
+      .put("com-android-vending", "1955662") //
+      .put("org-cloudnexus365-flonbrowser", "1955660") //
+      .put("org-mozilla-limit", "1965334") //
+      .put("com-edu-assistant", "1967600") //
+      .put("com-log-edcationcloud", "1971192") //
+      .put("djb-pengpenggop-aha", "1971191") //
+      .put("com-immersivetranslate-browser-babel", "1971190") //
+      .put("org-hexis-firefox", "1978366") //
+      .put("org-global-glaxy", "1981558") //
+      .put("org-mozilla-zxff", "1981560") //
+      .put("com-dykt-main", "1987968") //
+      .put("com-agci-acebrowser", "1987968") //
+      .put("regrets-reporter-ucs", "1997452") //
+      .put("regrets-reporter", "1997452") //
+      .put("org-mozilla-ios-tiktok-reporter", "1997452") //
+      .put("org-mozilla-tiktokreporter", "1997452") //
+      .put("org-mozilla-ios-tiktok-reporter-tiktok-reportershare", "1997452") //
       .put("com-feifan-browser", "1999796") //
       .put("com-dykt-fenix", "1999797") //
       .build();
@@ -79,6 +155,7 @@ public class MessageScrubber {
       .<String, String>builder().put("pioneer-study", "1631849") //
       .put("frecency-update", "1633525") //
       .put("saved-session", "1656910") //
+      .put("modules", "DENG-8496") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
@@ -88,6 +165,75 @@ public class MessageScrubber {
       .put("/submit/sslreports", "1585144") //
       .put("/submit/sslreports/", "1585144") //
       .build();
+
+  private static final String DESKTOP_REDACTED_SEARCH_CODE_VALUE = "other.scrubbed";
+  private static final String MOBILE_REDACTED_SEARCH_CODE_VALUE = "other-scrubbed";
+
+  // The key format is <provider>.in-content:[sap|sap-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_COUNTS_PATTERN = Pattern
+      .compile("(?<prefix>[^.]+\\.in-content[:.][^:]+:)(?<code>.*)");
+
+  // The key format is <provider>:[tagged|tagged-follow-on|organic]:[<code>|none]
+  private static final Pattern DESKTOP_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("(?<prefix>[^:]+:[^:]+:)(?<code>.*)");
+
+  // The key format is <provider>.in-content.[sap|sap-follow-on|organic].[<code>|none](.<channel>)?
+  private static final Pattern MOBILE_SEARCH_CONTENT_PATTERN = Pattern
+      .compile("(?<prefix>[^.]+\\.in-content\\.[^.]+\\.)(?<code>[^.]*)\\.?(?<channel>.*)");
+
+  // TODO: Pull list from RemoteSettings.
+  private static final Set<String> ALLOWED_DESKTOP_SEARCH_CODES = ImmutableSet.of("none",
+      // Client-side sanitization will produce "other"
+      "other",
+      // Additional DDG-specific codes; ideally these would be marked as "none" for organic,
+      // but to avoid additional pipeline complexity, we add them as allowed codes here;
+      // see bug 1752239.
+      "ha", "hs", "hz", "h_",
+      // Values below are pulled from search-telemetry-v2.json as defined in
+      // https://phabricator.services.mozilla.com/D136768
+      // Longer-term, they will be available in RemoteSettings at:
+      // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
+      // Bing
+      "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZL", "MOZM", "MOZO",
+      "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03", "MZTOF", "MZCP", "MZABT",
+      "MZBDC",
+      // Google
+      "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
+      "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
+      "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
+      "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
+      "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "firefox-b-vv", "firefox-b-tf",
+      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "lens-firefox-fcm",
+      "ubuntu", "ubuntu-sn",
+      // DuckDuckGo
+      "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
+      "ftas", "ftsa", "lm", "newext",
+      // Baidu
+      "monline_dg", "monline_3_dg", "monline_4_dg", "monline_7_dg",
+      // Ecosia
+      "mzl", "813cf1dd", "16eeffc4",
+      // Qwant
+      "brz-moz", "ff_android", "ff_ios"
+  // End copied desktop codes.
+  );
+
+  private static final Set<String> ALLOWED_MOBILE_SEARCH_CODES = ImmutableSet.<String>builder()
+      .addAll(ALLOWED_DESKTOP_SEARCH_CODES) //
+      // These Baidu codes are only relevant for mobile.
+      .add("1000969a", "1000969b") //
+      .build()
+      // Search codes are lowercased on mobile before sending to telemetry.
+      .stream().map(String::toLowerCase) //
+      // Codes that start with digits have "_" prepended before sending to telemetry.
+      .map(s -> Character.isDigit(s.charAt(0)) ? "_" + s : s) //
+      .collect(Collectors.toSet());
+
+  private static final Set<String> ALLOWED_SEARCH_CHANNELS = ImmutableSet.of("ts");
+
+  private static final Set<String> BUG_1751955_AFFECTED_NAMESPACES = ImmutableSet.of(
+      "org-mozilla-firefox", "org-mozilla-firefox-beta", "org-mozilla-fenix",
+      "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora", "org-mozilla-focus",
+      "org-mozilla-focus-beta", "org-mozilla-focus-nightly", "org-mozilla-klar");
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -103,8 +249,9 @@ public class MessageScrubber {
     final String appVersion = attributes.get(Attribute.APP_VERSION);
     final String appUpdateChannel = attributes.get(Attribute.APP_UPDATE_CHANNEL);
     final String appBuildId = attributes.get(Attribute.APP_BUILD_ID);
-    // NOTE: this value may be null
+    // NOTE: these values may be null
     final String userAgent = attributes.get(Attribute.USER_AGENT);
+    final String xTelemetryAgent = attributes.get(Attribute.X_TELEMETRY_AGENT);
 
     // Check for toxic data that should be dropped without sending to error output.
     if (ParseUri.TELEMETRY.equals(namespace) && "crash".equals(docType)
@@ -137,6 +284,19 @@ public class MessageScrubber {
     if ("account-ecosystem".equals(docType)) {
       throw new MessageShouldBeDroppedException("1697602");
     }
+    if ("firefox-desktop".equals(namespace) && "background-update".equals(docType)) {
+      throw new MessageShouldBeDroppedException("1784911");
+    }
+    if ("firefox-desktop-background-update".equals(namespace)
+        && "new-metric-capture-emulation".equals(docType)) {
+      throw new MessageShouldBeDroppedException("1817821");
+    }
+
+    if (bug1712850Affected(attributes)) {
+      if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
+        throw new MessageShouldBeDroppedException("1712850");
+      }
+    }
 
     // Check for unwanted data; these messages aren't thrown out, but this class of errors will be
     // ignored for most pipeline monitoring.
@@ -159,11 +319,22 @@ public class MessageScrubber {
       throw new UnwantedDataException("1592010");
     }
 
-    // Glean enforces a particular user-agent string that a rogue fuzzer is not abiding by
+    // Up to the v0.13 Glean enforces a particular user-agent string
+    // that a rogue fuzzer is not abiding by
     // https://searchfox.org/mozilla-central/source/third_party/rust/glean-core/src/upload/request.rs#35,72-75
-    if ("firefox-desktop".equals(namespace)
-        && (userAgent == null || !userAgent.startsWith("Glean"))) {
-      throw new UnwantedDataException("1684980");
+    // The Glean SDK stopped submitting a special user-agent after v44.0.0, sending that value
+    // in the X-Telemetry-Agent header instead. We require one of the two to be valid;
+    // see https://bugzilla.mozilla.org/show_bug.cgi?id=1766424
+    if ("firefox-desktop".equals(namespace)) {
+      boolean isValidGleanAgentOldStyle = Strings.nullToEmpty(userAgent).startsWith("Glean");
+      boolean isValidGleanAgentNewStyle = Strings.nullToEmpty(xTelemetryAgent).startsWith("Glean");
+      if (!isValidGleanAgentOldStyle && !isValidGleanAgentNewStyle) {
+        throw new UnwantedDataException("1684980");
+      }
+    }
+
+    if ("pageload-domain".equals(docType)) {
+      throw new MessageShouldBeDroppedException("DENG-9045");
     }
 
     // Check for other signatures that we want to send to error output, but which should appear
@@ -175,7 +346,7 @@ public class MessageScrubber {
 
     // No such docType: default-browser-agent/1
     if ("default-browser-agent".equals(namespace) && "1".equals(docType)) {
-      throw new AffectedByBugException("1626020");
+      throw new UnwantedDataException("1626020");
     }
 
     // Redactions (message is altered, but allowed through).
@@ -204,6 +375,15 @@ public class MessageScrubber {
           markBugCounter("1642386");
         });
       });
+    }
+
+    if (ParseUri.TELEMETRY.equals(namespace) && "main".equals(docType)) {
+      processForBug1751753(json);
+    }
+
+    if ("metrics".equals(docType) && namespace != null
+        && BUG_1751955_AFFECTED_NAMESPACES.contains(namespace)) {
+      processForBug1751955(json);
     }
 
     // Data collected prior to glean.js 0.17.0 is effectively useless.
@@ -322,11 +502,99 @@ public class MessageScrubber {
         && attributes.get(Attribute.APP_VERSION).matches("^([0-9]|[0-2][0-7])\\..*"); // <= 27
   }
 
+  // See bug 1712850
+  @VisibleForTesting
+  static boolean bug1712850Affected(Map<String, String> attributes) {
+    return "contextual-services".equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "quicksuggest-impression".equals(attributes.get(Attribute.DOCUMENT_TYPE));
+  }
+
   // See bug 1733118 for discussion of affected versions, etc.
   private static boolean bug1733118Affected(String namespace, String docType, ObjectNode json) {
     return "mozillavpn".equals(namespace) && "main".equals(docType)
         && ParsePayload.getGleanClientInfo(json).path("telemetry_sdk_build").asText("")
             .matches("0[.]([0-9]|1[0-6])[.].*"); // < 0.17
+  }
+
+  // See bug 1751753 for explanation of context.
+  private static void processForBug1751753(ObjectNode json) {
+    // Sanitize keys in the SEARCH_COUNTS histogram.
+    JsonNode searchCounts = json.path("payload").path("keyedHistograms").path("SEARCH_COUNTS");
+    if (searchCounts.isObject()) {
+      sanitizeDesktopSearchKeys((ObjectNode) searchCounts, DESKTOP_SEARCH_COUNTS_PATTERN);
+    }
+
+    // Sanitize keys in browser.search.content.* keyed scalars.
+    json.path("payload").path("processes").path("parent").path("keyedScalars") //
+        .fields().forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.content.") && entry.getValue().isObject()) {
+            sanitizeDesktopSearchKeys((ObjectNode) entry.getValue(),
+                DESKTOP_SEARCH_CONTENT_PATTERN);
+          }
+        });
+  }
+
+  private static void sanitizeDesktopSearchKeys(ObjectNode searchNode, Pattern pattern) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      Matcher match = pattern.matcher(name);
+      if (match.matches()) {
+        final String prefix = match.group("prefix");
+        final String code = match.group("code");
+        if (!ALLOWED_DESKTOP_SEARCH_CODES.contains(code)) {
+          // Search code is not recognized; redact the value.
+          String newKey = prefix + DESKTOP_REDACTED_SEARCH_CODE_VALUE;
+          JsonNode value = searchNode.remove(name);
+          searchNode.set(newKey, value);
+          markBugCounter("1751753");
+        }
+      }
+    });
+  }
+
+  // See bug 1751955 for explanation of context.
+  private static void processForBug1751955(ObjectNode json) {
+    // Sanitize keys in browser.search.* labeled counters.
+    json.path("metrics").path("labeled_counter") //
+        .fields().forEachRemaining(entry -> {
+          if (entry.getKey().startsWith("browser.search.") && entry.getValue().isObject()) {
+            sanitizeMobileSearchKeys((ObjectNode) entry.getValue());
+          }
+        });
+  }
+
+  private static void sanitizeMobileSearchKeys(ObjectNode searchNode) {
+    Lists.newArrayList(searchNode.fieldNames()).forEach(name -> {
+      Matcher match = MOBILE_SEARCH_CONTENT_PATTERN.matcher(name);
+      if (match.matches()) {
+        String prefix = match.group("prefix");
+        String code = match.group("code");
+        String channel = match.group("channel");
+        boolean codeIsValid = ALLOWED_MOBILE_SEARCH_CODES.contains(code);
+        boolean channelIsValid = Strings.isNullOrEmpty(channel)
+            || ALLOWED_SEARCH_CHANNELS.contains(channel);
+        if (codeIsValid && channelIsValid) {
+          // Key is valid, so no rewrite is needed and we can return early.
+          return;
+        }
+
+        // Sanitize the code and channel as needed.
+        String newKey;
+        if (codeIsValid) {
+          newKey = prefix + code;
+          if (ALLOWED_SEARCH_CHANNELS.contains(channel)) {
+            // Channel is an optional field; we include it only if it's a known value.
+            // See related client-side implementation in
+            // https://github.com/mozilla-mobile/android-components/pull/11622
+            newKey = String.format("%s.%s", newKey, channel);
+          }
+        } else {
+          newKey = prefix + MOBILE_REDACTED_SEARCH_CODE_VALUE;
+        }
+        JsonNode value = searchNode.remove(name);
+        searchNode.set(newKey, value);
+        markBugCounter("1751955");
+      }
+    });
   }
 
 }

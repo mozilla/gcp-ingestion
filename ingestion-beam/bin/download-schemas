@@ -32,42 +32,6 @@ function jwe_mapping() {
 EOF
 }
 
-function insert_rally_schema() {
-    # insert a rally schema, to be used within insert_testing_schemas
-    local namespace=$1
-    local mapping=$2
-    local doctype=${3:-baseline}
-    local bq_dataset_family=${namespace/-/_}
-    mkdir -p "schemas/$namespace/$doctype"
-    cat > "schemas/$namespace/$doctype/$doctype.1.schema.json" << EOF
-{
-  "mozPipelineMetadata": {
-    "bq_dataset_family": "${bq_dataset_family}",
-    "bq_metadata_format": "pioneer",
-    "bq_table": "${doctype}",
-    "jwe_mappings": ${mapping}
-  },
-  "type": "object"
-}
-EOF
-}
-
-function insert_rally_schema_missing_jwe_mappings() {
-    local namespace=$1
-    local bq_dataset_family=${namespace/-/_}
-    mkdir -p "schemas/$namespace/baseline"
-    cat > "schemas/$namespace/baseline/baseline.1.schema.json" << EOF
-{
-  "mozPipelineMetadata": {
-    "bq_dataset_family": "${bq_dataset_family}",
-    "bq_metadata_format": "pioneer",
-    "bq_table": "baseline"
-  },
-  "type": "object"
-}
-EOF
-}
-
 function insert_testing_schemas() {
     # Patch the current schema archive with testing resources. This function
     # should be called within the root directory of the extracted archive.
@@ -78,7 +42,11 @@ function insert_testing_schemas() {
   "mozPipelineMetadata": {
     "bq_dataset_family": "test",
     "bq_metadata_format": "structured",
-    "bq_table": "test_v1"
+    "bq_table": "test_v1",
+    "sample_id_source_uuid_attribute": "client_id",
+    "sample_id_source_uuid_payload_path": [
+      "impression_id"
+    ]
   },
   "type" : "object",
   "title" : "default_schema",
@@ -115,6 +83,44 @@ EOF
   "type" : "object"
 }
 EOF
+    mkdir -p schemas/test/sample
+    cat > schemas/test/sample/sample.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "seconds_v1",
+    "sample_id_source_uuid_attribute": "document_id"
+  },
+  "type" : "object"
+}
+EOF
+    mkdir -p schemas/test/expiration-policy
+    cat > schemas/test/expiration-policy/expiration-policy.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "expiration_policy_v1",
+    "expiration_policy": {
+      "collect_through_date": "2022-03-01"
+    }
+  },
+  "type" : "object"
+}
+EOF
+    mkdir -p schemas/test/geoip-skip
+    cat > schemas/test/geoip-skip/geoip-skip.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "geoip_skip_v1",
+    "geoip_skip_entries": 1
+  },
+  "type" : "object"
+}
+EOF
     mkdir -p schemas/my-namespace/my-test
     cat > schemas/my-namespace/my-test/my-test.1.bq << 'EOF'
 [
@@ -135,16 +141,6 @@ EOF
   }
 ]
 EOF
-    # testing schemas for jwe decryption
-    insert_rally_schema rally-study-foo "$(jwe_mapping '/payload' '')"
-    insert_rally_schema rally-study-bar "$(jwe_mapping '/payload' '')"
-    insert_rally_schema rally-missing []
-    insert_rally_schema rally-missing-parent "$(jwe_mapping '/payload' '/nonexistent/parent')"
-    insert_rally_schema rally-wrong "$(jwe_mapping '/payload' '/payload')"
-    insert_rally_schema pioneer-rally "$(jwe_mapping '/payload' '')"
-    insert_rally_schema_missing_jwe_mappings rally-missing-jwe
-    # add a deletion request schema for testing
-    insert_rally_schema rally-study-foo "$(jwe_mapping '/payload' '')" deletion-request
 }
 
 cd "$(dirname "$0")/.."

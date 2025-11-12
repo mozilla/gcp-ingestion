@@ -54,16 +54,13 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
 
-        <auto-value.version>1.9</auto-value.version>
-        <beam.version>2.35.0</beam.version>
+        <auto-value.version>1.11.0</auto-value.version>
+        <beam.version>2.66.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
-        <jackson.version>2.13.0</jackson.version>
-        <avro.version>1.8.2</avro.version>
-
-        <!-- The version pulled in by avro does not support Apple Silicon as of Jan 2022 -->
-        <snappy.version>1.1.8.4</snappy.version>
+        <jackson.version>2.15.4</jackson.version>
+        <avro.version>1.11.4</avro.version>
 
         <!-- Set empty default. -->
         <exec.mainClass></exec.mainClass>
@@ -92,20 +89,24 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
-            <dependency>
-                <groupId>org.xerial.snappy</groupId>
-                <artifactId>snappy-java</artifactId>
-                <version>${snappy.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
         <!-- dependencies for ingestion-core must be specified here -->
         <dependency>
+            <!-- Originally we've used google-http-client-jackson2 transitively imported with
+                 google-cloud-bigquery. Since it was removed in version 2.21 we must import it here.
+                 see: https://github.com/googleapis/java-bigquery/blob/main/CHANGELOG.md#features-13
+                 TODO: Check if we can migrate to gson -->
+            <groupId>com.google.http-client</groupId>
+            <artifactId>google-http-client-jackson2</artifactId>
+            <version>1.47.1</version>
+        </dependency>
+        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.0.1-jre</version>
+            <version>33.4.8-jre</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -118,12 +119,12 @@
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.11.0</version>
+            <version>2.20.0</version>
         </dependency>
         <dependency>
             <groupId>com.github.everit-org.json-schema</groupId>
             <artifactId>org.everit.json.schema</artifactId>
-            <version>1.14.0</version>
+            <version>1.14.4</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -132,12 +133,12 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
-            <version>1.9</version>
+            <version>1.14.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.21</version>
+            <version>1.27.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.avro</groupId>
@@ -148,7 +149,7 @@
             <!-- Use slf4j api for logging, but let submodules determine backend -->
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.32</version>
+            <version>2.0.17</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -168,7 +169,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.11.0</version>
                 <configuration>
                     <showWarnings>true</showWarnings>
                     <compilerArgument>-Xlint:all</compilerArgument>
@@ -186,7 +187,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.6.1</version>
                 <executions>
                     <execution>
                         <id>enforce-java</id>
@@ -205,7 +206,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.7.1</version>
                 <executions>
                     <execution>
                         <id>create-schemas-tarball</id>
@@ -228,7 +229,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.5.1</version>
                 <executions>
                     <execution>
                         <goals>
@@ -246,7 +247,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.8.1</version>
                 <executions>
                     <execution>
                         <id>copy-dependencies</id>
@@ -262,7 +263,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.4.2</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -275,13 +276,12 @@
             </plugin>
             <plugin>
                 <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.1.2</version>
+                <version>3.6.0</version>
                 <configuration>
                     <configLocation>checkstyle/checks.xml</configLocation>
                     <suppressionsLocation>checkstyle/suppressions.xml</suppressionsLocation>
                     <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
                     <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                    <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
                     <linkXRef>false</linkXRef>
@@ -290,7 +290,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>9.2.1</version>
+                        <version>10.26.1</version>
                     </dependency>
                 </dependencies>
                 <executions>
@@ -305,7 +305,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
+                <version>3.5.3</version>
                 <configuration>
                     <reportFormat>plain</reportFormat>
                     <excludes>
@@ -327,7 +327,7 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
-                <version>2.18.0</version>
+                <version>2.27.2</version>
                 <configuration>
                     <java>
                         <excludes>
@@ -361,7 +361,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.7</version>
+                <version>0.8.13</version>
                 <executions>
                     <execution>
                         <goals>
@@ -380,7 +380,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.2.0</version>
+                <version>3.6.1</version>
                 <executions>
                     <!-- add ingestion-core/src to all modules -->
                     <execution>

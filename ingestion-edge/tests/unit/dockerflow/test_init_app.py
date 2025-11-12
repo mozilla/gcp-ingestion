@@ -11,12 +11,8 @@ def init(app, mocker):
     init_app(app, {})
 
 
-async def test_heartbeat(app):
-    responses = []
-    request = Request(b"/__heartbeat__", {}, "1.1", "GET", "http", app)
-    await app.handle_request(request, lambda r: responses.append(r), None)
-    assert len(responses) == 1
-    response = responses.pop()
+def test_heartbeat(app):
+    _, response = app.test_client.get("/__heartbeat__")
     assert response.status == 200
     assert json.loads(response.body.decode()) == {
         "status": "ok",
@@ -25,22 +21,14 @@ async def test_heartbeat(app):
     }
 
 
-async def test_lbheartbeat(app):
-    responses = []
-    request = Request(b"/__lbheartbeat__", {}, "1.1", "GET", "http", app)
-    await app.handle_request(request, lambda r: responses.append(r), None)
-    assert len(responses) == 1
-    response = responses.pop()
+def test_lbheartbeat(app):
+    _, response = app.test_client.get("/__lbheartbeat__")
     assert response.status == 200
     assert response.body == b""
 
 
-async def test_version(app):
-    responses = []
-    request = Request(b"/__version__", {}, "1.1", "GET", "http", app)
-    await app.handle_request(request, lambda r: responses.append(r), None)
-    assert len(responses) == 1
-    response = responses.pop()
+def test_version(app):
+    _, response = app.test_client.get("/__version__")
     assert response.status == 200
     assert set(json.loads(response.body.decode()).keys()) == {
         "build",

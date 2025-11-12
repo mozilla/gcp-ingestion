@@ -9,34 +9,46 @@ import com.mozilla.telemetry.decoder.MessageScrubber.MessageScrubberException;
 import com.mozilla.telemetry.decoder.MessageScrubber.MessageShouldBeDroppedException;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.JSONSchemaStore;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
 import com.mozilla.telemetry.ingestion.core.transform.NestedMetadata;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
+import com.mozilla.telemetry.schema.SchemaStoreSingletonFactory;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.util.BeamFileInputStream;
 import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.JsonValidator;
+import com.mozilla.telemetry.util.Time;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Distribution;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.transforms.FlatMapElements;
+import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ProcessFunction;
+import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.WithFailures;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
-import org.apache.beam.sdk.values.TypeDescriptor;
+import org.apache.beam.sdk.values.PCollectionTuple;
+import org.apache.beam.sdk.values.TupleTag;
+import org.apache.beam.sdk.values.TupleTagList;
+import org.everit.json.schema.ObjectSchema;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 
@@ -63,9 +75,20 @@ public class ParsePayload extends
 
   private final String schemasLocation;
 
+  // When splitting pings, most metadata fields are in attributes and included in all resulting
+  // pings from there, but fields in this set need to be copied to the payload of each ping.
+  private static final Set<String> additionalMetadataFields = Set.of("clientId", "client_id",
+      "client_info");
+
   private transient JsonValidator validator;
   private transient JSONSchemaStore schemaStore;
+  private transient PipelineMetadataStore metadataStore;
   private transient CRC32 crc32;
+
+  final TupleTag<PubsubMessage> outputTag = new TupleTag<>() {
+  };
+  final TupleTag<PubsubMessage> failureTag = new TupleTag<>() {
+  };
 
   private ParsePayload(String schemasLocation) {
     this.schemasLocation = schemasLocation;
@@ -74,113 +97,158 @@ public class ParsePayload extends
   @Override
   public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
       PCollection<PubsubMessage> messages) {
-    return messages.apply(FlatMapElements.into(TypeDescriptor.of(PubsubMessage.class)) //
-        .via(new Fn()) //
-        .exceptionsInto(TypeDescriptor.of(PubsubMessage.class)) //
-        .exceptionsVia((WithFailures.ExceptionElement<PubsubMessage> ee) -> {
-          try {
-            throw ee.exception();
-          } catch (IOException | SchemaNotFoundException | ValidationException
-              | MessageScrubberException e) {
-            return FailureMessage.of(ParsePayload.class.getSimpleName(), //
-                ee.element(), //
-                ee.exception());
-          }
-        }));
+    PCollectionTuple parsed = messages
+        .apply(ParDo.of(new Fn()).withOutputTags(outputTag, TupleTagList.of(failureTag)));
+    return WithFailures.Result.of(parsed.get(outputTag), parsed.get(failureTag));
   }
 
-  private class Fn implements ProcessFunction<PubsubMessage, Iterable<PubsubMessage>> {
+  private class Fn extends DoFn<PubsubMessage, PubsubMessage> {
 
-    @Override
-    public Iterable<PubsubMessage> apply(PubsubMessage message) throws IOException {
-      message = PubsubConstraints.ensureNonNull(message);
-      Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+    @Setup
+    public void setup() {
+      schemaStore = SchemaStoreSingletonFactory.getJsonSchemaStore(schemasLocation);
+      metadataStore = SchemaStoreSingletonFactory.getPipelineMetadataStore(schemasLocation);
+      validator = new JsonValidator();
+    }
 
-      if (schemaStore == null) {
-        schemaStore = JSONSchemaStore.of(schemasLocation, BeamFileInputStream::open);
-      }
-
-      final int submissionBytes = message.getPayload().length;
-
-      ObjectNode json;
+    @ProcessElement
+    public void processElement(@Element PubsubMessage message, MultiOutputReceiver out) {
       try {
-        json = parseTimed(message.getPayload());
-      } catch (IOException e) {
-        Map<String, String> attrs = schemaStore.docTypeExists(message.getAttributeMap())
-            ? message.getAttributeMap()
-            : null; // null attributes will cause docType to show up as "unknown_doc_type"
-        // in metrics
-        PerDocTypeCounter.inc(attrs, "error_json_parse");
-        PerDocTypeCounter.inc(attrs, "error_submission_bytes", submissionBytes);
-        throw e;
-      }
+        message = PubsubConstraints.ensureNonNull(message);
+        Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
-      // In case this message is being replayed from an error output where AddMetadata has already
-      // been applied, we strip out any existing metadata fields and put them into attributes.
-      NestedMetadata.stripPayloadMetadataToAttributes(attributes, json);
+        final int submissionBytes = message.getPayload().length;
 
-      // Check the contents of the message, potentially throwing an exception that causes the
-      // message to be dropped or routed to error output; may also also alter the payload to
-      // redact sensitive fields.
-      try {
-        MessageScrubber.scrub(attributes, json);
-      } catch (MessageShouldBeDroppedException e) {
-        // This message should go to no output, so we return an empty list immediately.
-        return Collections.emptyList();
-      }
-
-      boolean validDocType = schemaStore.docTypeExists(attributes);
-      if (!validDocType) {
-        PerDocTypeCounter.inc(null, "error_invalid_doc_type");
-        PerDocTypeCounter.inc(null, "error_submission_bytes", submissionBytes);
-        throw new SchemaNotFoundException(String.format("No such docType: %s/%s",
-            attributes.get("document_namespace"), attributes.get("document_type")));
-      }
-
-      // If no "document_version" attribute was parsed from the URI, this element must be from the
-      // /submit/telemetry endpoint and we now need to grab version from the payload.
-      if (!attributes.containsKey(Attribute.DOCUMENT_VERSION)) {
+        ObjectNode json;
         try {
-          String version = getVersionFromTelemetryPayload(json);
-          attributes.put(Attribute.DOCUMENT_VERSION, version);
+          json = parseTimed(message.getPayload());
+        } catch (IOException e) {
+          Map<String, String> attrs = schemaStore.docTypeExists(message.getAttributeMap())
+              ? message.getAttributeMap()
+              : null; // null attributes will cause docType to show up as "unknown_doc_type"
+          // in metrics
+          PerDocTypeCounter.inc(attrs, "error_json_parse");
+          PerDocTypeCounter.inc(attrs, "error_submission_bytes", submissionBytes);
+          throw e;
+        }
+
+        // In case this message is being replayed from an error output where AddMetadata has already
+        // been applied, we strip out any existing metadata fields and put them into attributes.
+        NestedMetadata.stripPayloadMetadataToAttributes(attributes, json);
+
+        // Check the contents of the message, potentially throwing an exception that causes the
+        // message to be dropped or routed to error output; may also alter the payload to
+        // redact sensitive fields.
+        try {
+          MessageScrubber.scrub(attributes, json);
+        } catch (MessageShouldBeDroppedException e) {
+          // This message should go to no output, so we return immediately without writing to output
+          // receiver.
+          return;
+        }
+
+        boolean validDocType = schemaStore.docTypeExists(attributes);
+        if (!validDocType) {
+          PerDocTypeCounter.inc(null, "error_invalid_doc_type");
+          PerDocTypeCounter.inc(null, "error_submission_bytes", submissionBytes);
+          throw new SchemaNotFoundException(String.format("No such docType: %s/%s",
+              attributes.get("document_namespace"), attributes.get("document_type")));
+        }
+
+        // If no "document_version" attribute was parsed from the URI, this element must be from the
+        // /submit/telemetry endpoint and we now need to grab version from the payload.
+        if (!attributes.containsKey(Attribute.DOCUMENT_VERSION)) {
+          try {
+            String version = getVersionFromTelemetryPayload(json);
+            attributes.put(Attribute.DOCUMENT_VERSION, version);
+          } catch (SchemaNotFoundException e) {
+            PerDocTypeCounter.inc(attributes, "error_missing_version");
+            PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+            throw e;
+          }
+        }
+
+        // Throws SchemaNotFoundException if there's no schema
+        Schema schema;
+        try {
+          schema = schemaStore.getSchema(attributes);
         } catch (SchemaNotFoundException e) {
-          PerDocTypeCounter.inc(attributes, "error_missing_version");
+          PerDocTypeCounter.inc(attributes, "error_schema_not_found");
           PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
           throw e;
         }
+
+        try {
+          validateTimed(schema, json);
+        } catch (ValidationException e) {
+          PerDocTypeCounter.inc(attributes, "error_schema_validation");
+          PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+          throw e;
+        }
+
+        final PipelineMetadataStore.PipelineMetadata meta = metadataStore.getSchema(attributes);
+
+        try {
+          deprecationCheck(attributes, meta);
+        } catch (DeprecatedMessageException e) {
+          PerDocTypeCounter.inc(attributes, "error_deprecated_message");
+          PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+          throw e;
+        }
+
+        addAttributesFromPayload(attributes, json, meta);
+
+        // Optionally split message into multiple messages based on pipeline metadata
+        final PipelineMetadataStore.SplitConfig splitConfig = meta.split_config();
+        final List<PubsubMessage> messages = new ArrayList<>();
+        if (splitConfig == null || splitConfig.preserve_original()) {
+          // https://github.com/mozilla/gcp-ingestion/issues/780
+          // We need to be careful to consistently use our util methods (which use Jackson) for
+          // serializing and de-serializing JSON to reduce the possibility of introducing encoding
+          // issues. We previously called json.toString().getBytes() here without specifying a
+          // charset.
+          messages.add(new PubsubMessage(Json.asBytes(json), attributes));
+        }
+
+        if (splitConfig != null) {
+          for (PipelineMetadataStore.SplitConfigTarget subsetConfig : splitConfig.subsets()) {
+            final Map<String, String> subsetAttributes = new HashMap<>(attributes);
+            subsetAttributes.put(Attribute.DOCUMENT_NAMESPACE, subsetConfig.document_namespace());
+            subsetAttributes.put(Attribute.DOCUMENT_TYPE, subsetConfig.document_type());
+            subsetAttributes.put(Attribute.DOCUMENT_VERSION, subsetConfig.document_version());
+            final ObjectNode subsetJson = Json.createObjectNode();
+            final ObjectSchema subsetSchema;
+            try {
+              subsetSchema = (ObjectSchema) schemaStore.getSchema(subsetAttributes);
+            } catch (SchemaNotFoundException e) {
+              PerDocTypeCounter.inc(attributes, "error_schema_not_found");
+              PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
+              throw e;
+            }
+            jsonMove(json, subsetJson, subsetSchema, true);
+            messages.add(new PubsubMessage(Json.asBytes(subsetJson), subsetAttributes));
+          }
+
+          if (splitConfig.remainder() != null) {
+            final Map<String, String> remainderAttributes = new HashMap<>(attributes);
+            remainderAttributes.put(Attribute.DOCUMENT_NAMESPACE,
+                splitConfig.remainder().document_namespace());
+            remainderAttributes.put(Attribute.DOCUMENT_TYPE,
+                splitConfig.remainder().document_type());
+            remainderAttributes.put(Attribute.DOCUMENT_VERSION,
+                splitConfig.remainder().document_version());
+            messages.add(new PubsubMessage(Json.asBytes(json), remainderAttributes));
+          }
+        }
+
+        PerDocTypeCounter.inc(attributes, "valid_submission");
+        PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
+        messages.forEach(out.get(outputTag)::output);
+      } catch (IOException | SchemaNotFoundException | ValidationException
+          | MessageScrubberException | DeprecatedMessageException e) {
+        out.get(failureTag)
+            .output(FailureMessage.of(ParsePayload.class.getSimpleName(), message, e));
       }
-
-      // Throws SchemaNotFoundException if there's no schema
-      Schema schema;
-      try {
-        schema = schemaStore.getSchema(attributes);
-      } catch (SchemaNotFoundException e) {
-        PerDocTypeCounter.inc(attributes, "error_schema_not_found");
-        PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-        throw e;
-      }
-
-      try {
-        validateTimed(schema, json);
-      } catch (ValidationException e) {
-        PerDocTypeCounter.inc(attributes, "error_schema_validation");
-        PerDocTypeCounter.inc(attributes, "error_submission_bytes", submissionBytes);
-        throw e;
-      }
-
-      addAttributesFromPayload(attributes, json);
-
-      // https://github.com/mozilla/gcp-ingestion/issues/780
-      // We need to be careful to consistently use our util methods (which use Jackson) for
-      // serializing and de-serializing JSON to reduce the possibility of introducing encoding
-      // issues. We previously called json.toString().getBytes() here without specifying a
-      // charset.
-      byte[] normalizedPayload = Json.asBytes(json);
-
-      PerDocTypeCounter.inc(attributes, "valid_submission");
-      PerDocTypeCounter.inc(attributes, "valid_submission_bytes", submissionBytes);
-
-      return Collections.singletonList(new PubsubMessage(normalizedPayload, attributes));
     }
   }
 
@@ -200,7 +268,8 @@ public class ParsePayload extends
     }
   }
 
-  private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json) {
+  private void addAttributesFromPayload(Map<String, String> attributes, ObjectNode json,
+      PipelineMetadataStore.PipelineMetadata meta) {
     // Try to get glean-style client_info object.
     JsonNode gleanClientInfo = getGleanClientInfo(json);
 
@@ -247,12 +316,16 @@ public class ParsePayload extends
 
     addClientIdFromPayload(attributes, json);
 
-    // Add sample id, usually based on hashing clientId, but some other IDs are also supported to
-    // allow sampling on non-telemetry pings.
-    Stream.of(attributes.get(Attribute.CLIENT_ID),
-        // "impression_id" is a client_id-like identifier used in activity-stream ping
-        // that do not contain a client_id.
-        json.path("impression_id").textValue()) //
+    // Add sample_id, by hashing an attribute or payload path that contains a UUID, ignore any
+    // attribute or path that is not a valid UUID, and when both are available prefer the attribute
+    String uuidAttribute = meta.sample_id_source_uuid_attribute();
+    List<String> uuidPayloadPath = meta.sample_id_source_uuid_payload_path();
+    if (uuidAttribute == null && uuidPayloadPath == null) {
+      // default to using client_id
+      uuidAttribute = Attribute.CLIENT_ID;
+    }
+    Stream.of(uuidAttribute == null ? null : attributes.get(uuidAttribute), //
+        uuidPayloadPath == null ? null : jsonPathText(json, uuidPayloadPath)) //
         .map(ParsePayload::normalizeUuid) //
         .filter(Objects::nonNull) //
         .findFirst() //
@@ -341,12 +414,71 @@ public class ParsePayload extends
   }
 
   private void validateTimed(Schema schema, ObjectNode json) throws JsonProcessingException {
-    if (validator == null) {
-      validator = new JsonValidator();
-    }
     long startTime = System.currentTimeMillis();
     validator.validate(schema, json);
     long endTime = System.currentTimeMillis();
     validateTimer.update(endTime - startTime);
+  }
+
+  private void deprecationCheck(Map<String, String> attributes,
+      PipelineMetadataStore.PipelineMetadata meta) throws DeprecatedMessageException {
+    if (meta.expiration_policy() != null
+        && meta.expiration_policy().collect_through_date() != null) {
+
+      LocalDate collectThroughDate;
+      try {
+        collectThroughDate = LocalDate.parse(meta.expiration_policy().collect_through_date(),
+            DateTimeFormatter.ISO_LOCAL_DATE);
+      } catch (DateTimeParseException e) {
+        collectThroughDate = null;
+      }
+
+      Instant submissionInstant = Time
+          .parseAsInstantOrNull(attributes.get(Attribute.SUBMISSION_TIMESTAMP));
+
+      if (submissionInstant != null && collectThroughDate != null
+          && LocalDate.ofInstant(submissionInstant, ZoneOffset.UTC).isAfter(collectThroughDate)) {
+        throw new DeprecatedMessageException();
+      }
+    }
+  }
+
+  private static String jsonPathText(JsonNode json, List<String> path) {
+    JsonNode node = json;
+    for (String pathElement : path) {
+      node = node.path(pathElement);
+    }
+    return node.asText();
+  }
+
+  private static void jsonMove(ObjectNode json, ObjectNode subsetJson, ObjectSchema subsetSchema,
+      boolean isRoot) {
+    if (isRoot) {
+      for (String propertyName : additionalMetadataFields) {
+        if (json.has(propertyName)) {
+          subsetJson.set(propertyName, json.get(propertyName));
+        }
+      }
+    }
+    // for now only support moving explicitly defined properties, with no additional properties
+    subsetSchema.getPropertySchemas().forEach((propertyName, propertySchema) -> {
+      if (json.has(propertyName)) {
+        if (propertySchema instanceof ObjectSchema) {
+          if (json.path(propertyName).isObject()) {
+            ObjectNode obj = Json.createObjectNode();
+            subsetJson.set(propertyName, obj);
+            jsonMove((ObjectNode) json.path(propertyName), obj, (ObjectSchema) propertySchema,
+                false);
+          }
+        } else if (!isRoot || !additionalMetadataFields.contains(propertyName)) {
+          // don't remove additionalMetadataFields from json.
+          // only support recursing into object schemas.
+          subsetJson.set(propertyName, json.remove(propertyName));
+        }
+      }
+    });
+  }
+
+  static class DeprecatedMessageException extends RuntimeException {
   }
 }

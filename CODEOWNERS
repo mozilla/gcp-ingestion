@@ -1,0 +1,5 @@
+# Dependency updates (via dependabot)
+/ingestion-edge/requirements.txt @mozilla/data-platform-infra-wg
+/ingestion-edge/requirements.in @mozilla/data-platform-infra-wg
+/*/pom.xml @mozilla/data-platform-infra-wg
+pom.xml @mozilla/data-platform-infra-wg

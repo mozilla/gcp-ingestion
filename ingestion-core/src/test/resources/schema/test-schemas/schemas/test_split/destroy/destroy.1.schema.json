@@ -1,0 +1,40 @@
+{
+  "$schema" : "http://json-schema.org/draft-04/schema#",
+  "type" : "object",
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test_split",
+    "bq_metadata_format": "structured",
+    "bq_table": "destroy_v1",
+    "split_config": {
+      "preserve_original": false,
+      "subsets": [
+        {
+          "document_namespace": "test_split",
+          "document_type": "subset",
+          "document_version": "1"
+        }
+      ]
+    }
+  },
+  "properties" : {
+    "payload": {
+      "type": "object",
+      "properties" : {
+        "int": {
+          "type": "integer"
+        },
+        "string": {
+          "type": "string"
+        }
+      },
+      "required" : []
+    },
+    "test_int": {
+      "type": "integer"
+    },
+    "test_string": {
+      "type": "string"
+    }
+  },
+  "required" : []
+}

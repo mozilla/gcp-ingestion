@@ -1,13 +1,10 @@
 package com.mozilla.telemetry.contextualservices;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
-import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashMap;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -25,8 +22,9 @@ import org.apache.beam.sdk.values.TypeDescriptor;
 /**
  * Send GET requests to reporting endpoint.
  */
+@SuppressWarnings("checkstyle:lineLength")
 public class SendRequest extends
-    PTransform<PCollection<PubsubMessage>, Result<PCollection<PubsubMessage>, PubsubMessage>> {
+    PTransform<PCollection<SponsoredInteraction>, Result<PCollection<SponsoredInteraction>, PubsubMessage>> {
 
   private static OkHttpClient httpClient;
 
@@ -71,13 +69,12 @@ public class SendRequest extends
   }
 
   @Override
-  public Result<PCollection<PubsubMessage>, PubsubMessage> expand(
-      PCollection<PubsubMessage> messages) {
-    return messages.apply(
-        MapElements.into(TypeDescriptor.of(PubsubMessage.class)).via((PubsubMessage message) -> {
-          message = PubsubConstraints.ensureNonNull(message);
+  public Result<PCollection<SponsoredInteraction>, PubsubMessage> expand(
+      PCollection<SponsoredInteraction> interactions) {
+    return interactions.apply(MapElements.into(TypeDescriptor.of(SponsoredInteraction.class))
+        .via((SponsoredInteraction interaction) -> {
 
-          String reportingUrl = message.getAttribute(Attribute.REPORTING_URL);
+          String reportingUrl = interaction.getReportingUrl();
 
           if (reportingUrl == null) {
             throw new IllegalArgumentException("reporting url cannot be null");
@@ -95,16 +92,16 @@ public class SendRequest extends
             throw new RequestContentException(reportingUrl);
           }
 
-          return new PubsubMessage(message.getPayload(), new HashMap<>());
+          return interaction;
         }).exceptionsInto(TypeDescriptor.of(PubsubMessage.class))
-            .exceptionsVia((ExceptionElement<PubsubMessage> ee) -> {
-              try {
-                throw ee.exception();
-              } catch (UncheckedIOException | RequestContentException e) {
-                return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
-                    ee.exception());
-              }
-            }));
+        .exceptionsVia((ExceptionElement<SponsoredInteraction> ee) -> {
+          try {
+            throw ee.exception();
+          } catch (UncheckedIOException | RequestContentException e) {
+            return FailureMessage.of(SendRequest.class.getSimpleName(), ee.element(),
+                ee.exception());
+          }
+        }));
   }
 
   private void sendRequest(Request request) {

@@ -221,7 +221,7 @@ def node_pools(options: Dict[str, Any]) -> Iterator[List[str]]:
 def kube_methods(path, **replace) -> Dict[str, Callable]:
     with open(os.path.join(os.path.dirname(__file__), path)) as p:
         raw = p.read().format_map(replace)
-    body = yaml.load(raw)
+    body = yaml.safe_load(raw)
     kind = body["kind"].lower()
     name = body["metadata"]["name"]
     namespace = body["metadata"].get("namespace", "default")

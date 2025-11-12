@@ -28,6 +28,7 @@ public class VerifyMetadataTest {
   @Test
   public void testRejectUncompressed() {
     Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
         Attribute.USER_AGENT_BROWSER, "Firefox", //
         Attribute.USER_AGENT_VERSION, "90");
 
@@ -69,6 +70,7 @@ public class VerifyMetadataTest {
   @Test
   public void testRejectUserAgent() {
     Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click", //
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
         Attribute.USER_AGENT_BROWSER, "Firefoxd", //
         Attribute.USER_AGENT_VERSION, "90", //
         Attribute.CLIENT_COMPRESSION, "gzip");
@@ -95,40 +97,44 @@ public class VerifyMetadataTest {
   }
 
   @Test
-  public void testRejectFirefoxVersion() {
-    // Build list of messages with different doctype/version combinations
-    final List<PubsubMessage> input = Streams
-        .zip(Stream.of("topsites-click", "quicksuggest-click", "topsites-click"),
-            Stream.of("87", "87", "86"),
-            (doctype, version) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
-                Attribute.USER_AGENT_BROWSER, "Firefox", //
-                Attribute.USER_AGENT_VERSION, version, //
-                Attribute.CLIENT_COMPRESSION, "gzip"))
-        .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
-        .collect(Collectors.toList());
+  public void testRejectIspCountry() {
+    Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
+        Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
+        Attribute.CLIENT_COMPRESSION, "gzip", //
+        Attribute.USER_AGENT_BROWSER, "Firefox", //
+        Attribute.USER_AGENT_VERSION, "90");
+
+    Map<String, String> shouldThrow = ImmutableMap.<String, String>builder().putAll(baseAttributes)
+        .put(Attribute.GEO_COUNTRY, "IN").put(Attribute.ISP_NAME, "Infonet Comm Enterprises")
+        .build();
+    Map<String, String> validIsp = ImmutableMap.<String, String>builder().putAll(baseAttributes)
+        .put(Attribute.GEO_COUNTRY, "IN").put(Attribute.ISP_NAME, "Other ISP").build();
+    Map<String, String> validCountry = ImmutableMap.<String, String>builder().putAll(baseAttributes)
+        .put(Attribute.GEO_COUNTRY, "US").put(Attribute.ISP_NAME, "Infonet Comm Enterprises")
+        .build();
+
+    final List<PubsubMessage> input = Arrays.asList(
+        new PubsubMessage(new byte[] {}, baseAttributes),
+        new PubsubMessage(new byte[] {}, shouldThrow), new PubsubMessage(new byte[] {}, validIsp),
+        new PubsubMessage(new byte[] {}, validCountry));
 
     WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
         .apply(Create.of(input)) //
         .apply(VerifyMetadata.of());
 
     PAssert.that(result.failures()).satisfies(messages -> {
-      Assert.assertEquals(2, Iterables.size(messages));
+      Assert.assertEquals(1, Iterables.size(messages));
       PubsubMessage message = Iterables.get(messages, 0);
 
       String errorMessage = message.getAttribute("error_message");
       Assert.assertTrue(errorMessage.contains(RejectedMessageException.class.getCanonicalName()));
-      Assert.assertTrue(errorMessage.contains("Firefox version"));
+      Assert.assertTrue(errorMessage.contains("CONSVC-1764"));
 
       return null;
     });
 
     PAssert.that(result.output()).satisfies(messages -> {
-      Assert.assertEquals(1, Iterables.size(messages));
-      Assert.assertEquals("topsites-click",
-          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_TYPE));
-      Assert.assertEquals("87",
-          Iterables.get(messages, 0).getAttribute(Attribute.USER_AGENT_VERSION));
-
+      Assert.assertEquals(3, Iterables.size(messages));
       return null;
     });
 
@@ -136,16 +142,14 @@ public class VerifyMetadataTest {
   }
 
   @Test
-  public void testRejectChannel() {
+  public void testPassNonDesktop() {
     // Build list of messages with different doctype/version combinations
     final List<PubsubMessage> input = Streams
-        .zip(Stream.of("quicksuggest-impression", "quicksuggest-click"),
-            Stream.of("beta", "release"),
-            (doctype, channel) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
-                Attribute.USER_AGENT_BROWSER, "Firefox", //
-                Attribute.USER_AGENT_VERSION, "93", //
+        .zip(Stream.of("topsites-impression", "topsites-click"),
+            Stream.of("org-mozilla-firefox-beta", "contextual-services"),
+            (doctype, namespace) -> ImmutableMap.of(Attribute.DOCUMENT_TYPE, doctype, //
                 Attribute.CLIENT_COMPRESSION, "gzip", //
-                Attribute.NORMALIZED_CHANNEL, channel))
+                Attribute.DOCUMENT_NAMESPACE, namespace))
         .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
         .collect(Collectors.toList());
 
@@ -159,17 +163,16 @@ public class VerifyMetadataTest {
 
       String errorMessage = message.getAttribute("error_message");
       Assert.assertTrue(errorMessage.contains(RejectedMessageException.class.getCanonicalName()));
-      Assert.assertTrue(errorMessage.contains("Disallowed channel"));
 
       return null;
     });
 
     PAssert.that(result.output()).satisfies(messages -> {
       Assert.assertEquals(1, Iterables.size(messages));
-      Assert.assertEquals("quicksuggest-click",
+      Assert.assertEquals("topsites-impression",
           Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_TYPE));
-      Assert.assertEquals("release",
-          Iterables.get(messages, 0).getAttribute(Attribute.NORMALIZED_CHANNEL));
+      Assert.assertEquals("org-mozilla-firefox-beta",
+          Iterables.get(messages, 0).getAttribute(Attribute.DOCUMENT_NAMESPACE));
 
       return null;
     });

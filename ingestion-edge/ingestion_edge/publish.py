@@ -8,7 +8,7 @@ from functools import partial
 from google.api_core.retry import Retry, if_exception_type
 from google.cloud.pubsub_v1 import PublisherClient
 from persistqueue import SQLiteAckQueue
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Optional, Tuple
 from .config import logger
 from .util import AsyncioBatch, HTTP_STATUS
 import google.api_core.exceptions
@@ -23,6 +23,37 @@ TRANSIENT_ERRORS = if_exception_type(
     # Service outage or connection issue
     google.api_core.exceptions.ServerError,
 )
+
+
+def _legacy_encoding(value: Optional[str], request: Request) -> Optional[str]:
+    """Convert string from UTF-8 with surrogate escape characters to ISO-8859-1.
+
+    As of Sanic 21.3.0 in sanic.http.http1 headers are decoded with the default codec
+    (UTF-8) and errors="surrogateescape", but behavior prior to that was to decode
+    headers with ISO-8859-1, aka latin-1.
+
+    Unit tests hit decode headers in sanic.http.http1, but prod and some integration
+    tests decode headers in sanic.asgi with the latin-1 codec. It's not possible to
+    reliably determine which codec was used from the string alone, but requests built in
+    sanic.http.http1 set request.head, while those built in sanic.asgi don't set
+    request.head, so it defaults to b"". Thus request.head being empty can be used as a
+    proxy to determine whether legacy encoding needs to be restored.
+
+    Surrogate escape characters cause exceptions to be thrown if they are encoded back
+    to bytes without specifying an error handling strategy, such as when checking the
+    byte length of individual headers, and when encoding the value as protobuf to be
+    sent to PubSub.
+
+    This changes the decoding back to ISO-8859-1 when request.head is present to
+    preserve legacy behavior and ensure all character sequences are valid and safe to
+    encode as UTF-8.
+    """
+    if value is None or request.head == b"":
+        # header not present, or already using desired codec
+        return value
+    # Sanic used the default codec to decode value, so don't explicitly specify a codec
+    # for value.encode, even though it is expected to be UTF-8
+    return value.encode(errors="surrogateescape").decode("ISO-8859-1")
 
 
 async def submit(
@@ -49,7 +80,7 @@ async def submit(
             remote_addr=request.ip,
             host=request.host,
             **{
-                attr: request.headers.get(header)
+                attr: _legacy_encoding(request.headers.get(header), request)
                 for header, attr in metadata_headers.items()
             },
         ).items()

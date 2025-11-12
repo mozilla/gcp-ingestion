@@ -7,7 +7,19 @@ that is shared. For more context, see the
 
 The code is defined in the [`com.mozilla.telemetry.ContextualServicesReporter`](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java) class.
 
-The input of this job is all `contextual-services` namespace messages, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`.
+The input of this job is all `contextual-services` namespace messages for desktop Firefox, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`. It also includes `topsites-impression` pings from various mobile applications.
+
+## Data flows for Contextual Services
+
+Note that in addition to this near real-time Dataflow job, we have several batch workflows
+for preparing Contextual Services data for both internal analytic use and for sending to
+external partners.
+
+Search terms handling starts with [log routing configuration in `cloudops-infra`](https://github.com/mozilla-services/cloudops-infra/blob/master/projects/merino/tf/modules/log-routing/main.tf) (Mozilla internal)
+and then proceeds with a series of nightly scheduled queries defined under [`search_terms_derived`](https://github.com/mozilla/bigquery-etl/tree/main/sql/moz-fx-data-shared-prod/search_terms_derived) in `bigquery-etl`.
+Additional aggregations for clicks and impressions are defined under [`contextual_services_derived`](https://github.com/mozilla/bigquery-etl/tree/main/sql/moz-fx-data-shared-prod/contextual_services_derived) in `bigquery-etl`.
+
+Some daily aggregate data is shared with an external partner via the [`adm_export`](https://github.com/mozilla/telemetry-airflow/blob/main/dags/adm_export.py) DAG defined in `telemetry-airflow`.
 
 ## Beam Pipeline Transforms
 
@@ -18,7 +30,7 @@ The following diagram shows the steps in the Beam pipeline. This is up to date a
 
 ### Pub/Sub republished topic
 
-The input to this job is the subset of decoded messages in the `contextual-services` namespace.
+The input to this job is the subset of decoded messages in the `contextual-services` namespace as well as `topsites-impression` pings from various namespaces associated with mobile applications sending telemetry via Glean.
 
 ### `FilterByDoctype`
 
