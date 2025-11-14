@@ -392,6 +392,12 @@ public class MessageScrubber {
       throw new AffectedByBugException("1733118");
     }
 
+    // temporary block to allow the tables to be deleted
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=2000247
+    if ("experimenter-backend".equals(namespace)) {
+      throw new AffectedByBugException("2000247");
+    }
+
   }
 
   /**
