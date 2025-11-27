@@ -149,6 +149,9 @@ public class MessageScrubber {
       .put("org-mozilla-ios-tiktok-reporter-tiktok-reportershare", "1997452") //
       .put("com-feifan-browser", "1999796") //
       .put("com-dykt-fenix", "1999797") //
+      .put("com-credinet-app", "2002358") //
+      .put("com-feifan-browserapp", "2002360") //
+      .put("org-bspl-fox", "2002867") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
