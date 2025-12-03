@@ -63,8 +63,8 @@ public class ExtractIpFromLogEntry
           if (maybeFieldsNode.isObject()) {
             ObjectNode fields = (ObjectNode) maybeFieldsNode;
             JsonNode ipAddress = fields.remove("ip_address");
-            if (ipAddress != null) {
-              // if ipAddress is null, it means it wasn't present in the payload
+            if (ipAddress != null && ipAddress.isTextual()) {
+              // Only extract if ip_address was present AND is a string value (not JSON null)
               String clientIpAddress = ipAddress.textValue();
               attributes.put(Attribute.X_FORWARDED_FOR, clientIpAddress);
               countIpExtracted.inc();
