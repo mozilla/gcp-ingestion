@@ -1,5 +1,6 @@
 package com.mozilla.telemetry.decoder;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.io.Resources;
 import com.mozilla.telemetry.io.Read;
 import com.mozilla.telemetry.options.InputFileFormat;
@@ -69,6 +70,31 @@ public class ExtractIpFromLogEntryTest {
     PAssert.that(payloads).containsInAnyOrder(expectedPayloads);
 
     // Pipeline should run and not throw an exception on the malformed message
+    pipeline.run();
+  }
+
+  @Test
+  public void canHandleNullIpAddress() {
+    String inputPath = Resources.getResource("testdata").getPath();
+    // This file contains a message with ip_address: null (JSON null)
+    String input = inputPath + "/logentry_null_ip.ndjson";
+
+    PCollection<PubsubMessage> output = pipeline
+        .apply(new Read.FileInput(input, InputFileFormat.json)).apply(ExtractIpFromLogEntry.of());
+
+    // Validate that x_forwarded_for is NOT added when ip_address is null
+    final PCollection<String> attributes = output
+        .apply(MapElements.into(TypeDescriptors.strings()).via(m -> {
+          try {
+            return Json.asString(m.getAttributeMap());
+          } catch (JsonProcessingException e) {
+            throw new UncheckedIOException(e);
+          }
+        }));
+    final List<String> expectedAttributes = Arrays
+        .asList("{\"logging.googleapis.com/timestamp\":\"2023-06-28T07:29:17.075926141Z\"}");
+    PAssert.that(attributes).containsInAnyOrder(expectedAttributes);
+
     pipeline.run();
   }
 }
