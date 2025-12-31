@@ -155,6 +155,8 @@ public class MessageScrubber {
       .put("com-mohen-edu-firefox", "2007562") //
       .put("com-feifan-browserclient", "2007561") //
       .put("com-feifanx-abcclient", "2007560") //
+      .put("com-feifanabc-xclient", "2008133") //
+      .put("com-dykt-firefox", "2008135") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
