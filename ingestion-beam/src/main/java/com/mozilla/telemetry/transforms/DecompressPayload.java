@@ -1,6 +1,7 @@
 package com.mozilla.telemetry.transforms;
 
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -61,13 +62,21 @@ public class DecompressPayload
       } else {
         message = PubsubConstraints.ensureNonNull(message);
         try {
+          Map<String, String> attributes = message.getAttributeMap();
+
+          // valid doc types and namespaces shouldn't have % or url-encoded characters
+          boolean validUri = attributes != null
+              && !attributes.getOrDefault("document_namespace", "").contains("%")
+              && !attributes.getOrDefault("document_type", "").contains("%");
+          PerDocTypeCounter.inc(validUri ? attributes : null, "predecompress_submission_bytes",
+              message.getPayload().length);
+
           ByteArrayInputStream payloadStream = new ByteArrayInputStream(message.getPayload());
           GZIPInputStream gzipStream = new GZIPInputStream(payloadStream);
           ByteArrayOutputStream decompressedStream = new ByteArrayOutputStream();
           // Throws IOException
           IOUtils.copy(gzipStream, decompressedStream);
           compressedInput.inc();
-          Map<String, String> attributes = message.getAttributeMap();
           if (recordInputCompression) {
             attributes = new HashMap<>(message.getAttributeMap());
             attributes.putIfAbsent(Attribute.CLIENT_COMPRESSION, "gzip");

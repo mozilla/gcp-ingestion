@@ -26,7 +26,10 @@ def test_delete_complete_jobs(api: MagicMock, batch_api: MagicMock):
                         resource_version=f"{i}",
                     ),
                     status=V1JobStatus(
-                        conditions=[V1JobCondition(status="", type="Complete")]
+                        conditions=[
+                            V1JobCondition(status="True", type="SuccessCriteriaMet"),
+                            V1JobCondition(status="True", type="Complete"),
+                        ]
                     ),
                 )
                 for i in range(3)
@@ -38,7 +41,10 @@ def test_delete_complete_jobs(api: MagicMock, batch_api: MagicMock):
                     deletion_timestamp=datetime.utcnow(),
                 ),
                 status=V1JobStatus(
-                    conditions=[V1JobCondition(status="", type="Complete")]
+                    conditions=[
+                        V1JobCondition(status="True", type="SuccessCriteriaMet"),
+                        V1JobCondition(status="True", type="Complete"),
+                    ],
                 ),
             ),
             # don't delete because not complete
@@ -54,7 +60,10 @@ def test_delete_complete_jobs(api: MagicMock, batch_api: MagicMock):
             V1Job(
                 metadata=V1ObjectMeta(name="cron-1"),
                 status=V1JobStatus(
-                    conditions=[V1JobCondition(status="", type="Complete")]
+                    conditions=[
+                        V1JobCondition(status="True", type="SuccessCriteriaMet"),
+                        V1JobCondition(status="True", type="Complete"),
+                    ]
                 ),
             ),
         ]
@@ -113,7 +122,10 @@ def test_delete_complete_jobs_raises_server_error(api: MagicMock, batch_api: Mag
                     name="flush-pv-1", uid="uid-flush-pv-1", resource_version="1"
                 ),
                 status=V1JobStatus(
-                    conditions=[V1JobCondition(status="", type="Complete")]
+                    conditions=[
+                        V1JobCondition(status="True", type="SuccessCriteriaMet"),
+                        V1JobCondition(status="True", type="Complete"),
+                    ],
                 ),
             ),
         ]

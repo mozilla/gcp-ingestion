@@ -80,6 +80,7 @@ public class FilterByDocType
       if ("contextual-services".equals(namespace) || "firefox-desktop".equals(namespace)) {
         // Verify Firefox version here so rejected messages don't go to error output
         final int minVersion;
+        int maxVersion = Integer.MAX_VALUE;
         final boolean isLegacyDesktop;
         if (doctype.startsWith("topsites-")) {
           minVersion = 87;
@@ -87,7 +88,11 @@ public class FilterByDocType
         } else if (doctype.startsWith("quicksuggest-")) {
           minVersion = 89;
           isLegacyDesktop = true;
-        } else if ("top-sites".equals(doctype) || "quick-suggest".equals(doctype)) {
+        } else if ("top-sites".equals(doctype)) {
+          minVersion = 116;
+          maxVersion = 136;
+          isLegacyDesktop = false;
+        } else if ("quick-suggest".equals(doctype)) {
           minVersion = 116;
           isLegacyDesktop = false;
         } else if ("search-with".equals(doctype)) {
@@ -100,8 +105,8 @@ public class FilterByDocType
         final String version = message.getAttribute(Attribute.USER_AGENT_VERSION);
         try {
           if (version == null || minVersion > Integer.parseInt(version)
-              || (limitLegacyDesktopVersion && isLegacyDesktop
-                  && 116 <= Integer.parseInt(version))) {
+              || maxVersion < Integer.parseInt(version) || (limitLegacyDesktopVersion
+                  && isLegacyDesktop && 116 <= Integer.parseInt(version))) {
             PerDocTypeCounter.inc(message.getAttributeMap(), "version_filter_rejected");
             return; // drop message
           }
