@@ -164,6 +164,7 @@ public class SinkConfig {
   }
 
   enum OutputType {
+
     pipe {
 
       @Override

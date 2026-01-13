@@ -4,6 +4,7 @@ import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO.TypedRead.Method;
 
 public enum BigQueryReadMethod {
+
   export(Method.EXPORT), //
   storageapi(Method.DIRECT_READ);
 

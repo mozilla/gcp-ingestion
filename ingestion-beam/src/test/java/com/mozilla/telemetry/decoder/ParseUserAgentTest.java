@@ -28,23 +28,22 @@ public class ParseUserAgentTest extends TestWithDeterministicJson {
 
   private static final Map<String, Map<String, String>> osSingleMatch = new ImmutableMap //
       .Builder<String, Map<String, String>>()
-          .put("Firefox AndroidSync", ImmutableMap.of(BROWSER, "FxSync", OS, "Android"))
-          .put("Firefox-iOS-Sync", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS"))
-          .put("iPod", ImmutableMap.of(OS, "iPod")) //
-          .put("iPad", ImmutableMap.of(OS, "iPad")) //
-          .put("iPhone", ImmutableMap.of(OS, "iPhone"))
-          .put("Android", ImmutableMap.of(OS, "Android"))
-          .put("BlackBerry", ImmutableMap.of(OS, "BlackBerry"))
-          .put("Macintosh", ImmutableMap.of(OS, "Macintosh"))
-          .put("Mozilla/5.0 (Mobile;", ImmutableMap.of(OS, "FirefoxOS"))
-          .put("Windows NT 10.0", ImmutableMap.of(OS, "Windows 10"))
-          .put("Windows NT 6.3", ImmutableMap.of(OS, "Windows 8.1"))
-          .put("Windows NT 6.2", ImmutableMap.of(OS, "Windows 8"))
-          .put("Windows NT 6.1", ImmutableMap.of(OS, "Windows 7"))
-          .put("Windows NT 6.0", ImmutableMap.of(OS, "Windows Vista"))
-          .put("Windows NT 5.1", ImmutableMap.of(OS, "Windows XP"))
-          .put("Windows NT 5.0", ImmutableMap.of(OS, "Windows 2000")) //
-          .build();
+      .put("Firefox AndroidSync", ImmutableMap.of(BROWSER, "FxSync", OS, "Android"))
+      .put("Firefox-iOS-Sync", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS"))
+      .put("iPod", ImmutableMap.of(OS, "iPod")) //
+      .put("iPad", ImmutableMap.of(OS, "iPad")) //
+      .put("iPhone", ImmutableMap.of(OS, "iPhone")).put("Android", ImmutableMap.of(OS, "Android"))
+      .put("BlackBerry", ImmutableMap.of(OS, "BlackBerry"))
+      .put("Macintosh", ImmutableMap.of(OS, "Macintosh"))
+      .put("Mozilla/5.0 (Mobile;", ImmutableMap.of(OS, "FirefoxOS"))
+      .put("Windows NT 10.0", ImmutableMap.of(OS, "Windows 10"))
+      .put("Windows NT 6.3", ImmutableMap.of(OS, "Windows 8.1"))
+      .put("Windows NT 6.2", ImmutableMap.of(OS, "Windows 8"))
+      .put("Windows NT 6.1", ImmutableMap.of(OS, "Windows 7"))
+      .put("Windows NT 6.0", ImmutableMap.of(OS, "Windows Vista"))
+      .put("Windows NT 5.1", ImmutableMap.of(OS, "Windows XP"))
+      .put("Windows NT 5.0", ImmutableMap.of(OS, "Windows 2000")) //
+      .build();
 
   private static final List<String> osPriority = new ArrayList<>(osSingleMatch.keySet());
   private static final List<List<String>> osBestMatch = IntStream.range(0, osPriority.size() - 1)
@@ -52,25 +51,24 @@ public class ParseUserAgentTest extends TestWithDeterministicJson {
 
   private static final Map<String, Map<String, String>> browserSingleMatch = new ImmutableMap //
       .Builder<String, Map<String, String>>()
-          .put("Edge/1", ImmutableMap.of(BROWSER, "Edge", VERSION, "1"))
-          .put("Edge", ImmutableMap.of(BROWSER, "Edge"))
-          .put("Chrome/2", ImmutableMap.of(BROWSER, "Chrome", VERSION, "2"))
-          .put("Chrome", ImmutableMap.of(BROWSER, "Chrome"))
-          .put("Opera Mini", ImmutableMap.of(BROWSER, "Opera Mini"))
-          .put("Opera Mobi", ImmutableMap.of(BROWSER, "Opera Mobi"))
-          .put("Opera", ImmutableMap.of(BROWSER, "Opera"))
-          .put("MSIE 3", ImmutableMap.of(BROWSER, "MSIE", VERSION, "3"))
-          .put("MSIE", ImmutableMap.of(BROWSER, "MSIE"))
-          .put("Trident/7.0", ImmutableMap.of(BROWSER, "MSIE", VERSION, "11"))
-          .put("Safari", ImmutableMap.of(BROWSER, "Safari"))
-          .put("Firefox AndroidSync 4",
-              ImmutableMap.of(BROWSER, "FxSync", OS, "Android", VERSION, "4"))
-          .put("Firefox AndroidSync", ImmutableMap.of(BROWSER, "FxSync", OS, "Android"))
-          .put("Firefox-iOS-Sync/5", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS", VERSION, "5"))
-          .put("Firefox-iOS-Sync", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS"))
-          .put("Firefox/6", ImmutableMap.of(BROWSER, "Firefox", VERSION, "6"))
-          .put("Firefox", ImmutableMap.of(BROWSER, "Firefox")) //
-          .build();
+      .put("Edge/1", ImmutableMap.of(BROWSER, "Edge", VERSION, "1"))
+      .put("Edge", ImmutableMap.of(BROWSER, "Edge"))
+      .put("Chrome/2", ImmutableMap.of(BROWSER, "Chrome", VERSION, "2"))
+      .put("Chrome", ImmutableMap.of(BROWSER, "Chrome"))
+      .put("Opera Mini", ImmutableMap.of(BROWSER, "Opera Mini"))
+      .put("Opera Mobi", ImmutableMap.of(BROWSER, "Opera Mobi"))
+      .put("Opera", ImmutableMap.of(BROWSER, "Opera"))
+      .put("MSIE 3", ImmutableMap.of(BROWSER, "MSIE", VERSION, "3"))
+      .put("MSIE", ImmutableMap.of(BROWSER, "MSIE"))
+      .put("Trident/7.0", ImmutableMap.of(BROWSER, "MSIE", VERSION, "11"))
+      .put("Safari", ImmutableMap.of(BROWSER, "Safari"))
+      .put("Firefox AndroidSync 4", ImmutableMap.of(BROWSER, "FxSync", OS, "Android", VERSION, "4"))
+      .put("Firefox AndroidSync", ImmutableMap.of(BROWSER, "FxSync", OS, "Android"))
+      .put("Firefox-iOS-Sync/5", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS", VERSION, "5"))
+      .put("Firefox-iOS-Sync", ImmutableMap.of(BROWSER, "FxSync", OS, "iOS"))
+      .put("Firefox/6", ImmutableMap.of(BROWSER, "Firefox", VERSION, "6"))
+      .put("Firefox", ImmutableMap.of(BROWSER, "Firefox")) //
+      .build();
 
   private static final List<String> browserPriority = new ArrayList<>(browserSingleMatch.keySet());
   private static final List<List<String>> browserBestMatch = IntStream

@@ -30,6 +30,7 @@ public class ParseUserAgent
   ////////
 
   private enum Os {
+
     // Define os's in descending order of best match
     IPOD("iPod"), //
     IPAD("iPad"), //
@@ -70,6 +71,7 @@ public class ParseUserAgent
   }
 
   private enum Browser {
+
     // Define browsers in descending order of best match
     EDGE("Edge", "/"), //
     CHROME("Chrome", "/"), //

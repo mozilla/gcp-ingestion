@@ -23,6 +23,7 @@ import org.apache.beam.sdk.values.TypeDescriptor;
  * Enumeration of error output types that each provide a {@code writeFailures} method.
  */
 public enum ErrorOutputType {
+
   stdout {
 
     /** Return a PTransform that prints errors to STDOUT; only for local running. */
