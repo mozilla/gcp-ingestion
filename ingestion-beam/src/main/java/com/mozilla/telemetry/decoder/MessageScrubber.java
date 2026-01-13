@@ -133,12 +133,37 @@ public class MessageScrubber {
       .put("com-android-vending", "1955662") //
       .put("org-cloudnexus365-flonbrowser", "1955660") //
       .put("org-mozilla-limit", "1965334") //
+      .put("com-edu-assistant", "1967600") //
+      .put("com-log-edcationcloud", "1971192") //
+      .put("djb-pengpenggop-aha", "1971191") //
+      .put("com-immersivetranslate-browser-babel", "1971190") //
+      .put("org-hexis-firefox", "1978366") //
+      .put("org-global-glaxy", "1981558") //
+      .put("org-mozilla-zxff", "1981560") //
+      .put("com-dykt-main", "1987968") //
+      .put("com-agci-acebrowser", "1987968") //
+      .put("regrets-reporter-ucs", "1997452") //
+      .put("regrets-reporter", "1997452") //
+      .put("org-mozilla-ios-tiktok-reporter", "1997452") //
+      .put("org-mozilla-tiktokreporter", "1997452") //
+      .put("org-mozilla-ios-tiktok-reporter-tiktok-reportershare", "1997452") //
+      .put("com-feifan-browser", "1999796") //
+      .put("com-dykt-fenix", "1999797") //
+      .put("com-credinet-app", "2002358") //
+      .put("com-feifan-browserapp", "2002360") //
+      .put("org-bspl-fox", "2002867") //
+      .put("com-mohen-edu-firefox", "2007562") //
+      .put("com-feifan-browserclient", "2007561") //
+      .put("com-feifanx-abcclient", "2007560") //
+      .put("com-feifanabc-xclient", "2008133") //
+      .put("com-dykt-firefox", "2008135") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
       .<String, String>builder().put("pioneer-study", "1631849") //
       .put("frecency-update", "1633525") //
       .put("saved-session", "1656910") //
+      .put("modules", "DENG-8496") //
       .build();
 
   private static final ImmutableSet<String> FIREFOX_ONLY_DOCTYPES = ImmutableSet.of("event", "main",
@@ -178,13 +203,15 @@ public class MessageScrubber {
       // https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/search-telemetry-v2/records
       // Bing
       "MOZ2", "MOZ4", "MOZ5", "MOZA", "MOZB", "MOZD", "MOZE", "MOZI", "MOZL", "MOZM", "MOZO",
-      "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03", "MZTOF", "MZCP",
+      "MOZR", "MOZT", "MOZW", "MOZX", "MZSL01", "MZSL02", "MZSL03", "MZTOF", "MZCP", "MZABT",
+      "MZBDC",
       // Google
       "firefox-a", "firefox-b", "firefox-b-1", "firefox-b-ab", "firefox-b-1-ab", "firefox-b-d",
       "firefox-b-1-d", "firefox-b-e", "firefox-b-1-e", "firefox-b-m", "firefox-b-1-m",
       "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
       "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
       "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "firefox-b-vv", "firefox-b-tf",
+      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "lens-firefox-fcm",
       "ubuntu", "ubuntu-sn",
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
@@ -312,6 +339,10 @@ public class MessageScrubber {
       if (!isValidGleanAgentOldStyle && !isValidGleanAgentNewStyle) {
         throw new UnwantedDataException("1684980");
       }
+    }
+
+    if ("pageload-domain".equals(docType)) {
+      throw new MessageShouldBeDroppedException("DENG-9045");
     }
 
     // Check for other signatures that we want to send to error output, but which should appear

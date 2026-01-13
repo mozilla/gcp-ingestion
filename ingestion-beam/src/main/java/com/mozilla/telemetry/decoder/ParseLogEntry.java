@@ -3,6 +3,7 @@ package com.mozilla.telemetry.decoder;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
@@ -60,7 +61,6 @@ public class ParseLogEntry extends
       countLogEntryPayload.inc();
 
       ObjectNode logEntry;
-      Map<String, String> attributes = new HashMap<String, String>(m.getAttributeMap());
       try {
         logEntry = Json.readObjectNode(m.getPayload());
       } catch (IOException e) {
@@ -77,6 +77,7 @@ public class ParseLogEntry extends
       String documentVersion = fields.path("document_version").textValue();
       String payload = fields.path("payload").textValue();
       String receiveTimestamp = logEntry.path("receiveTimestamp").textValue();
+      String zone = logEntry.path("resource").path("labels").path("location").textValue();
 
       boolean isValidLogEntry = documentId != null && documentNamespace != null
           && documentType != null && documentVersion != null && payload != null
@@ -86,6 +87,13 @@ public class ParseLogEntry extends
             "Message has no submission_timestamp but is not in a known LogEntry format");
       }
 
+      // Measure zone/namespace combinations for routed logs. See
+      // https://mozilla-hub.atlassian.net/browse/SVCSE-3450
+      if (zone != null && documentNamespace != null) {
+        KeyedCounter.inc("log_entry_zone/" + zone + "/" + documentNamespace);
+      }
+
+      Map<String, String> attributes = new HashMap<String, String>(m.getAttributeMap());
       attributes.put(Attribute.DOCUMENT_ID, documentId);
       attributes.put(Attribute.SUBMISSION_TIMESTAMP, receiveTimestamp);
       attributes.put(Attribute.DOCUMENT_NAMESPACE, documentNamespace);
