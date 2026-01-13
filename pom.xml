@@ -52,7 +52,9 @@
 
         <!-- MAVEN_OPTS environment variable configuration is not picked up by jacoco, so we configure memory here -->
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
-        <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true</argLine>
+        <!-- The add-opens flag is required for system-rules library (EnvironmentVariables) to access
+             java.util.Collections via reflection on Java 17+ and some modern builds of earlier versions. See https://junit-pioneer.org/docs/environment-variables/ -->
+        <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true --add-opens java.base/java.util=ALL-UNNAMED</argLine>
 
         <auto-value.version>1.11.1</auto-value.version>
         <beam.version>2.69.0</beam.version>
@@ -206,7 +208,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.7.1</version>
+                <version>3.8.0</version>
                 <executions>
                     <execution>
                         <id>create-schemas-tarball</id>
