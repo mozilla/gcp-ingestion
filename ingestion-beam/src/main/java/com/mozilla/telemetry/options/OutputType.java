@@ -14,6 +14,7 @@ import com.mozilla.telemetry.transforms.Println;
  * Enumeration of output types that each provide a {@code write} method.
  */
 public enum OutputType {
+
   stdout {
 
     /** Return a PTransform that prints messages to STDOUT; only for local running. */
