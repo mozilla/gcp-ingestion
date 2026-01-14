@@ -473,8 +473,8 @@ public class ParseReportingUrl extends
 
   private Optional<String> parseScenario(ObjectNode metrics) {
     return optionalNode(metrics.path(Attribute.IMPROVE_SUGGEST_EXPERIENCE_CHECKED),
-        metrics.path("improve_suggest_experience")).map(
-            node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
+        metrics.path("improve_suggest_experience"))
+        .map(node -> node.asBoolean() ? SponsoredInteraction.ONLINE : SponsoredInteraction.OFFLINE);
   }
 
   private Optional<String> parseMatchType(JsonNode metrics) {

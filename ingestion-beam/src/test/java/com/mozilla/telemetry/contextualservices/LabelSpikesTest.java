@@ -152,8 +152,8 @@ public class LabelSpikesTest {
       long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
           .filter(m -> m.getReportingUrl().contains("click-status=65")) //
           .count();
-      assert countWithStatus == 0 : ("Expected 0 messages with click-status, but found "
-          + countWithStatus);
+      assert countWithStatus == 0
+          : ("Expected 0 messages with click-status, but found " + countWithStatus);
       return null;
     });
 
@@ -194,8 +194,8 @@ public class LabelSpikesTest {
       long countWithStatus = StreamSupport.stream(iter.spliterator(), false) //
           .filter(m -> m.getReportingUrl().contains("click-status=65")) //
           .count();
-      assert countWithStatus == 0 : ("Expected 0 messages with click_status, but found "
-          + countWithStatus);
+      assert countWithStatus == 0
+          : ("Expected 0 messages with click_status, but found " + countWithStatus);
       return null;
     });
 
