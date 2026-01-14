@@ -171,7 +171,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.14.1</version>
                 <configuration>
                     <showWarnings>true</showWarnings>
                     <compilerArgument>-Xlint:all</compilerArgument>
