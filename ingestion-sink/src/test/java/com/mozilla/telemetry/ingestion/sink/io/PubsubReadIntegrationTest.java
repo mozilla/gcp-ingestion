@@ -23,7 +23,13 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.junit.LoggerContextRule;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.logging.log4j.core.layout.JsonLayout;
+import org.apache.logging.log4j.test.appender.ListAppender;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemErrRule;
@@ -35,9 +41,6 @@ public class PubsubReadIntegrationTest {
 
   @Rule
   public final SinglePubsubTopic pubsub = new SinglePubsubTopic();
-
-  @Rule
-  public final LoggerContextRule logs = new LoggerContextRule("log4j2-list.yaml");
 
   @Test
   public void canReadOneMessage() {
@@ -65,48 +68,66 @@ public class PubsubReadIntegrationTest {
 
   @Test
   public void canRetryOnException() {
+    // Set up a ListAppender on the actual LoggerContext (not an isolated test context)
+    // This ensures we capture logs from Pubsub.Read's static logger
+    LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    Configuration config = ctx.getConfiguration();
+    ListAppender listAppender = new ListAppender("TestListAppender", null, JsonLayout.newBuilder()
+        .setCompact(true).setEventEol(true).setStacktraceAsString(true).build(), false, false);
+    listAppender.start();
+    LoggerConfig rootLogger = config.getRootLogger();
+    rootLogger.addAppender(listAppender, Level.WARN, null);
+    ctx.updateLoggers();
 
-    final String messageId = pubsub.publish(TEST_MESSAGE).get(0);
+    try {
+      final String messageId = pubsub.publish(TEST_MESSAGE).get(0);
 
-    final List<PubsubMessage> received = new LinkedList<>();
-    final AtomicReference<Pubsub.Read> input = new AtomicReference<>();
+      final List<PubsubMessage> received = new LinkedList<>();
+      final AtomicReference<Pubsub.Read> input = new AtomicReference<>();
 
-    final BatchException batchException = (BatchException) BatchException
-        .of(new RuntimeException("batch"), 2);
-    final RuntimeException runtimeException = new RuntimeException("single");
+      final BatchException batchException = (BatchException) BatchException
+          .of(new RuntimeException("batch"), 2);
+      final RuntimeException runtimeException = new RuntimeException("single");
 
-    input.set(new Pubsub.Read(pubsub.getSubscription(),
-        // handler
-        message -> CompletableFuture.completedFuture(message) // create a future with message
-            .thenAccept(received::add) // add message to received
-            .thenRun(() -> {
-              // throw the same batch exception to nack the message the first and second time
-              if (received.size() == 1 || received.size() == 2) {
-                throw batchException;
-              }
-              // throw a runtime exception to nack the message the third time
-              if (received.size() == 3 || received.size() == 4) {
-                throw runtimeException;
-              }
-            }).thenRun(() -> input.get().subscriber.stopAsync()), // stop the subscriber
-        // config
-        builder -> pubsub.channelProvider
-            .map(channelProvider -> builder.setChannelProvider(channelProvider)
-                .setCredentialsProvider(pubsub.noCredentialsProvider))
-            .orElse(builder),
-        m -> m));
+      input.set(new Pubsub.Read(pubsub.getSubscription(),
+          // handler
+          message -> CompletableFuture.completedFuture(message) // create a future with message
+              .thenAccept(received::add) // add message to received
+              .thenRun(() -> {
+                // throw the same batch exception to nack the message the first and second time
+                if (received.size() == 1 || received.size() == 2) {
+                  throw batchException;
+                }
+                // throw a runtime exception to nack the message the third time
+                if (received.size() == 3 || received.size() == 4) {
+                  throw runtimeException;
+                }
+              }).thenRun(() -> input.get().subscriber.stopAsync()), // stop the subscriber
+          // config
+          builder -> pubsub.channelProvider
+              .map(channelProvider -> builder.setChannelProvider(channelProvider)
+                  .setCredentialsProvider(pubsub.noCredentialsProvider))
+              .orElse(builder),
+          m -> m));
 
-    input.get().run();
+      input.get().run();
 
-    assertEquals(Collections.nCopies(5, messageId),
-        received.stream().map(PubsubMessage::getMessageId).collect(Collectors.toList()));
-    // assert that batch exception logged once, and other exception logged every time
-    assertThat(logs.getListAppender("STDOUT").getMessages(),
-        contains(containsString("java.lang.RuntimeException: batch"),
-            containsString("java.lang.RuntimeException: single"),
-            containsString("failed message type: ?/?"),
-            containsString("java.lang.RuntimeException: single"),
-            containsString("failed message type: ?/?")));
+      assertEquals(Collections.nCopies(5, messageId),
+          received.stream().map(PubsubMessage::getMessageId).collect(Collectors.toList()));
+
+      // Assert that batch exception logged once, and other exception logged every time
+      assertThat(listAppender.getMessages(),
+          contains(containsString("java.lang.RuntimeException: batch"),
+              containsString("java.lang.RuntimeException: single"),
+              containsString("failed message type: ?/?"),
+              containsString("java.lang.RuntimeException: single"),
+              containsString("failed message type: ?/?")));
+    } finally {
+      // Clean up: remove the appender
+      rootLogger.removeAppender("TestListAppender");
+      listAppender.stop();
+      ctx.updateLoggers();
+    }
   }
 
   @Rule
