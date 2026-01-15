@@ -15,6 +15,9 @@ updates:
   - dependency-name: org.apache.logging.log4j:log4j-core
     # Log4j 2.2+ requires Junit5, otherwise ingestion-sink build fails
     versions: [ ">=2.2.0" ]
+  - dependency-name: com.squareup.okhttp3:*
+    # OkHttp 5.x uses Kotlin Multiplatform and requires artifact changes (okhttp -> okhttp-jvm)
+    versions: [">=5.0.0"]
   schedule:
     interval: daily
   labels:
