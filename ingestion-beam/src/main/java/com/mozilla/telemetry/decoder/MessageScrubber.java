@@ -159,6 +159,11 @@ public class MessageScrubber {
       .put("com-dykt-firefox", "2008135") //
       .build();
 
+  private static final Map<String, String> IGNORED_NAMESPACE_PREFIXES = ImmutableMap
+      .<String, String>builder() //
+      .put("com-feifan", "2010623") //
+      .build();
+
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
       .<String, String>builder().put("pioneer-study", "1631849") //
       .put("frecency-update", "1633525") //
@@ -310,6 +315,13 @@ public class MessageScrubber {
     // ignored for most pipeline monitoring.
     if (IGNORED_NAMESPACES.containsKey(namespace)) {
       throw new UnwantedDataException(IGNORED_NAMESPACES.get(namespace));
+    }
+    if (namespace != null) {
+      for (String prefix : IGNORED_NAMESPACE_PREFIXES.keySet()) {
+        if (namespace.startsWith(prefix)) {
+          throw new UnwantedDataException(IGNORED_NAMESPACE_PREFIXES.get(prefix));
+        }
+      }
     }
 
     if (ParseUri.TELEMETRY.equals(namespace) && IGNORED_TELEMETRY_DOCTYPES.containsKey(docType)) {

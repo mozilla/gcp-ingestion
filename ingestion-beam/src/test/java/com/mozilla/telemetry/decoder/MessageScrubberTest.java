@@ -773,4 +773,16 @@ public class MessageScrubberTest {
         .build();
     MessageScrubber.scrub(attributes, Json.createObjectNode());
   }
+
+  @Test
+  public void testScrubNamespacePrefix() {
+    ObjectNode payload = Json.createObjectNode();
+    MessageScrubber.scrub(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox"),
+        payload);
+    MessageScrubber.scrub(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "com-mozilla"), payload);
+    assertThrows(UnwantedDataException.class, () -> MessageScrubber
+        .scrub(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "com-feifan"), payload));
+    assertThrows(UnwantedDataException.class, () -> MessageScrubber
+        .scrub(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "com-feifanabcdef"), payload));
+  }
 }
