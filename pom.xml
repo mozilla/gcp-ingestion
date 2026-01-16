@@ -57,7 +57,7 @@
         <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true --add-opens java.base/java.util=ALL-UNNAMED</argLine>
 
         <auto-value.version>1.11.1</auto-value.version>
-        <beam.version>2.69.0</beam.version>
+        <beam.version>2.70.0</beam.version>
 
         <!-- Keep these dependency versions in sync with what is pulled in by beam;
              check https://mvnrepository.com/artifact/org.apache.beam -->
