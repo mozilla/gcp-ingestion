@@ -559,6 +559,7 @@ packaging==24.0 \
     #   build
     #   gunicorn
     #   pytest
+    #   wheel
 pathspec==0.10.2 \
     --hash=sha256:88c2606f2c1e818b978540f73ecc908e13999c6c3a383daf3705652ae79807a5 \
     --hash=sha256:8f6bf73e5758fd365ef5d58ce09ac7c27d2833a8d7da51712eac6e27e35141b0
@@ -1123,9 +1124,9 @@ websockets==10.4 \
     --hash=sha256:fe10ddc59b304cb19a1bdf5bd0a7719cbbc9fbdd57ac80ed436b709fcf889106 \
     --hash=sha256:ff64a1d38d156d429404aaa84b27305e957fd10c30e5880d1765c9480bea490f
     # via sanic
-wheel==0.38.1 \
-    --hash=sha256:7a95f9a8dc0924ef318bd55b616112c70903192f524d120acc614f59547a9e1f \
-    --hash=sha256:ea041edf63f4ccba53ad6e035427997b3bb10ee88a4cd014ae82aeb9eea77bb9
+wheel==0.46.2 \
+    --hash=sha256:33ae60725d69eaa249bc1982e739943c23b34b58d51f1cb6253453773aca6e65 \
+    --hash=sha256:3d79e48fde9847618a5a181f3cc35764c349c752e2fe911e65fa17faab9809b0
     # via pip-tools
 yarl==1.17.2 \
     --hash=sha256:0c8e589379ef0407b10bed16cc26e7392ef8f86961a706ade0a22309a45414d7 \
