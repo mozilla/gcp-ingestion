@@ -157,6 +157,8 @@ public class MessageScrubber {
       .put("com-feifanx-abcclient", "2007560") //
       .put("com-feifanabc-xclient", "2008133") //
       .put("com-dykt-firefox", "2008135") //
+      .put("org-lilo-mobile-android2020", "2013260") //
+      .put("co-searcha-bistre", "2013260") //
       .build();
 
   private static final Map<String, String> IGNORED_NAMESPACE_PREFIXES = ImmutableMap
