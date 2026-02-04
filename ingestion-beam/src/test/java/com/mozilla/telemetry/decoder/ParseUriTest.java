@@ -363,7 +363,7 @@ public class ParseUriTest extends TestWithDeterministicJson {
             "v10/" + String.join("/", Collections.nCopies(42, " ")), //
             "v11/" + String.join("/", Collections.nCopies(43, " ")), //
             "v6", "v7", "v8", "v9", "v10", "v11", // UnexpectedPathElementsException
-            "", "v1", "v61", "v21" // UnknownPingVersionException
+            "", "/", "v1", "v61", "v21" // UnknownPingVersionException
         ))).map(v -> "{\"attributeMap\":{\"message_id\":\"00000000001\",\"uri\":\"/stub/" + v
             + "\"},\"payload\":\"\"}")
         .collect(Collectors.toList());
@@ -382,7 +382,8 @@ public class ParseUriTest extends TestWithDeterministicJson {
             + "\"document_namespace\":\"firefox-installer\"," //
             + "\"document_type\":\"install\",\"document_version\":\"1\"}");
     final List<String> expectedExceptions = Arrays.asList(
-        // "", v1, v61, v21 should be unknown
+        // "", /, v1, v61, v21 should be unknown
+        "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",
         "com.mozilla.telemetry.decoder.ParseUri$StubUri$UnknownPingVersionException",

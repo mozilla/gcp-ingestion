@@ -348,6 +348,9 @@ public class ParseUri {
     }
 
     private static ObjectNode parsePingVersion(String[] elements) throws InvalidUriException {
+      if (elements.length == 0) {
+        throw new UnknownPingVersionException("");
+      }
       // Parse ping version using a regex pattern
       String pingVersion = elements[0];
       Matcher matcher = PING_VERSION_PATTERN.matcher(pingVersion);
