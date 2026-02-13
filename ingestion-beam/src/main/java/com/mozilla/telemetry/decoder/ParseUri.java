@@ -248,7 +248,7 @@ public class ParseUri {
         .compile(String.format("^v(?<%s>[6-9]|1[0-9])(-(?<%s>\\d+))?$", VERSION, FUNNELCAKE));
 
     public static final Map<String, Integer> SUFFIX_LENGTH = ImmutableMap.of("6", 36, "7", 37, "8",
-        39, "9", 41, "10", 43, "11", 44);
+        39, "9", 41, "10", 43, "11", 44, "12", 45);
 
     /**
      * NOTE: When adding new fields here, the version must be incremented on the client.
@@ -303,7 +303,8 @@ public class ParseUri {
         putIntegerAsString("profile_cleanup_prompt"), putBool("profile_cleanup_requested"),
         putString("distribution_id"), putString("distribution_version"), //
         putInteger("windows_ubr"), putString("stub_build_id"), //
-        putString("launched_by"));
+        putString("launched_by"), //
+        putInteger("download_requests_blocked_by_server"));
 
     private static BiConsumer<String, ObjectNode> ignore() {
       return (value, payload) -> {
