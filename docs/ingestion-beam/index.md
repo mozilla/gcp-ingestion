@@ -35,14 +35,7 @@ Before anything else, be sure to download the test data:
 ./bin/download-schemas
 ```
 
-Run tests locally with [CircleCI Local CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros)
-
-```bash
-(cd .. && circleci build --job ingestion-beam)
-```
-
-To make more targeted test invocations, you can install Java and maven locally or
-use the `bin/mvn` executable to run maven in docker:
+You can install Java and maven locally or use the `bin/mvn` executable to run maven in docker:
 
 ```bash
 ./bin/mvn clean test
