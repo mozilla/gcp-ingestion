@@ -1408,11 +1408,7 @@ documentation:</p>
 ./bin/download-geolite2
 ./bin/download-schemas
 </code></pre>
-<p>Run tests locally with <a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros">CircleCI Local CLI</a></p>
-<pre><code class="language-bash">(cd .. &amp;&amp; circleci build --job ingestion-beam)
-</code></pre>
-<p>To make more targeted test invocations, you can install Java and maven locally or
-use the <code>bin/mvn</code> executable to run maven in docker:</p>
+<p>You can install Java and maven locally or use the <code>bin/mvn</code> executable to run maven in docker:</p>
 <pre><code class="language-bash">./bin/mvn clean test
 </code></pre>
 <p>If you wish to just run a single test class or a single test case, try something like this:</p>
