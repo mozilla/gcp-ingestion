@@ -1,0 +1,35 @@
+name: Build and Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ingestion-edge:
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
+    with:
+      image_name: ingestion-edge
+      gar_name: ingestion-edge-prod
+      project_id: moz-fx-ingestion-edge-prod
+      image_build_context: ./ingestion-edge
+      dockerfile_path: ./ingestion-edge/Dockerfile
+
+  ingestion-sink:
+    secrets: inherit
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
+    with:
+      image_name: ingestion-sink
+      gar_name: ingestion-sink-prod
+      project_id: moz-fx-ingestion-sink-prod
+      image_build_context: ./ingestion-sink
+      dockerfile_path: ./ingestion-sink/Dockerfile
