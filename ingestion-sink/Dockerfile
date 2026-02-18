@@ -25,4 +25,4 @@ COPY --from=build /app/ /app/
 RUN mkdir -p /opt/cloud-profiler && \
   wget -q -O- https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent.tar.gz \
   | tar xzv -C /opt/cloud-profiler
-CMD exec java $JAVA_OPTS -jar /app/ingestion-sink/target/*.jar
+CMD ["sh", "-c", "exec java $JAVA_OPTS -jar /app/ingestion-sink/target/*.jar"]

@@ -16,9 +16,4 @@ FROM base
 COPY --from=build /usr/local /usr/local
 COPY . /app
 ENV HOST=0.0.0.0 PORT=8000
-CMD exec gunicorn \
-  --bind "$HOST:$PORT" \
-  --log-file - \
-  --worker-class uvicorn.workers.UvicornWorker \
-  --max-requests ${GUNICORN_MAX_REQUESTS:-0} \
-  ingestion_edge.wsgi:app
+CMD ["sh", "-c", "exec gunicorn --bind \"$HOST:$PORT\" --log-file - --worker-class uvicorn.workers.UvicornWorker --max-requests ${GUNICORN_MAX_REQUESTS:-0} ingestion_edge.wsgi:app"]
