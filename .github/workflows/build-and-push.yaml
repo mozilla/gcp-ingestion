@@ -7,11 +7,9 @@ on:
 
 jobs:
   ingestion-edge:
-    secrets: inherit
     permissions:
       contents: read
       id-token: write
-      packages: write
     uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
       image_name: ingestion-edge
@@ -21,11 +19,9 @@ jobs:
       dockerfile_path: ./ingestion-edge/Dockerfile
 
   ingestion-sink:
-    secrets: inherit
     permissions:
       contents: read
       id-token: write
-      packages: write
     uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
     with:
       image_name: ingestion-sink
