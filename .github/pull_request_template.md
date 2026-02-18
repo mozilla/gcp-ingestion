@@ -36,5 +36,4 @@ for updating the code version.
   - The merge will occur within 2 hours of the UTC date change, or
   - You are merging multiple PRs in quick suggestion
 
-See the full [code deployment policy](https://mozilla-hub.atlassian.net/wiki/spaces/SRE/pages/27922303/Ingestion+Beam#Prod-Code-Deployment-Policy)
-for details.
+See the full [code deployment policy](https://mozilla-hub.atlassian.net/wiki/spaces/SRE/pages/27922303/Ingestion+Beam#Prod-Code-Deployment-Policy) for details.
