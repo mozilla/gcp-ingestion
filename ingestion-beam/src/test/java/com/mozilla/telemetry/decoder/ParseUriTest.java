@@ -322,7 +322,15 @@ public class ParseUriTest extends TestWithDeterministicJson {
 
   private static final Map<String, String> VALID_V13_DIMENSIONS = joinCases(
       Arrays.asList(VALID_V12_DIMENSIONS, //
-          validIntCases("desktop_launcher_status")));
+          ImmutableMap.<String, String>builder() //
+              .put("0", "\"desktop_launcher_status\":0") //
+              .put("1", "\"desktop_launcher_status\":1") //
+              .put("2", "\"desktop_launcher_status\":2") //
+              .put("3", "\"desktop_launcher_status\":3") //
+              .put("4", "\"desktop_launcher_status\":4") //
+              .put("5", "\"desktop_launcher_status\":5") //
+              .put("6", "\"desktop_launcher_status\":6") //
+              .build()));
 
   private static final Map<String, String> VALID_V6_CASES = joinCases(Arrays.asList(//
       ImmutableMap.of("v6", "\"ping_version\":\"v6\"", //
