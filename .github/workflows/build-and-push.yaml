@@ -27,5 +27,5 @@ jobs:
       image_name: ingestion-sink
       gar_name: ingestion-sink-prod
       project_id: moz-fx-ingestion-sink-prod
-      image_build_context: ./ingestion-sink
+      image_build_context: ./
       dockerfile_path: ./ingestion-sink/Dockerfile
