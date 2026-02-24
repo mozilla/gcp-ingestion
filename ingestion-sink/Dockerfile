@@ -11,7 +11,9 @@ RUN mvn prepare-package
 COPY ingestion-core/src /app/ingestion-core/src
 COPY ingestion-sink/src /app/ingestion-sink/src
 COPY ingestion-sink/version.json /app/version.json
-RUN mvn package
+# Disable Log4j JMX to work around a JDK 11 NPE in CgroupV2Subsystem on
+# cgroups v2 Docker hosts. Proper fix is to upgrade to a newer JDK.
+RUN MAVEN_OPTS="-Dlog4j2.disable.jmx=true" mvn package
 # delete everything from target that isn't the package
 RUN find target -mindepth 1 -not -name '*'.jar -not -name '*.lib' -delete
 
