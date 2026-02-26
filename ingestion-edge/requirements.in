@@ -6,7 +6,7 @@ google-cloud-monitoring==2.22.2
 google-cloud-pubsub==1.0.2
 gunicorn==22.0.0
 kubernetes==28.1.0
-persist-queue==0.8.1
+persist-queue==1.1.0
 pip-tools==7.4.1
 psutil==6.1.0
 pytest-asyncio==0.24.0
