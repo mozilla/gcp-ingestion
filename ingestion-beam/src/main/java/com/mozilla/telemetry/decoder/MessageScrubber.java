@@ -408,6 +408,14 @@ public class MessageScrubber {
       processForBug1751955(json);
     }
 
+    // Replace null values in metrics.string_list with empty arrays for ads-backend.
+    // The ads backend serializes nil Go slices as null instead of an empty array,
+    // which fails schema validation. Temporary workaround for backfill per DENG-10814.
+    // See https://github.com/mozilla/glean_parser/pull/837
+    if ("ads-backend".equals(namespace)) {
+      processNullStringListValues(json);
+    }
+
     // Data collected prior to glean.js 0.17.0 is effectively useless.
     if (bug1733118Affected(namespace, docType, json)) {
       // See also https://bugzilla.mozilla.org/show_bug.cgi?id=1733118
@@ -582,6 +590,19 @@ public class MessageScrubber {
             sanitizeMobileSearchKeys((ObjectNode) entry.getValue());
           }
         });
+  }
+
+  private static void processNullStringListValues(ObjectNode json) {
+    JsonNode stringList = json.path("metrics").path("string_list");
+    if (stringList.isObject()) {
+      ObjectNode stringListObj = (ObjectNode) stringList;
+      Lists.newArrayList(stringListObj.fieldNames()).forEach(name -> {
+        if (stringListObj.get(name).isNull()) {
+          stringListObj.set(name, stringListObj.arrayNode());
+          markBugCounter("string_list_null");
+        }
+      });
+    }
   }
 
   private static void sanitizeMobileSearchKeys(ObjectNode searchNode) {

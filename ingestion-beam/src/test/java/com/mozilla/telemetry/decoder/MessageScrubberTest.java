@@ -785,4 +785,29 @@ public class MessageScrubberTest {
     assertThrows(UnwantedDataException.class, () -> MessageScrubber
         .scrub(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "com-feifanabcdef"), payload));
   }
+
+  @Test
+  public void testNullStringListValues() throws Exception {
+    ObjectNode json = Json.readObjectNode(("{\n" //
+        + "  \"metrics\": {\n" //
+        + "    \"string_list\": {\n" //
+        + "      \"ad.categories\": null,\n" //
+        + "      \"ad.tags\": [\"foo\", \"bar\"]\n" //
+        + "    }\n" //
+        + "  }\n" //
+        + "}").getBytes(StandardCharsets.UTF_8));
+
+    Map<String, String> attributes = ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "ads-backend").put(Attribute.DOCUMENT_TYPE, "events")
+        .build();
+
+    assertTrue(json.path("metrics").path("string_list").path("ad.categories").isNull());
+    MessageScrubber.scrub(attributes, json);
+
+    assertTrue(json.path("metrics").path("string_list").path("ad.categories").isArray());
+    assertEquals(0, json.path("metrics").path("string_list").path("ad.categories").size());
+    // Non-null values should be preserved
+    assertTrue(json.path("metrics").path("string_list").path("ad.tags").isArray());
+    assertEquals(2, json.path("metrics").path("string_list").path("ad.tags").size());
+  }
 }
