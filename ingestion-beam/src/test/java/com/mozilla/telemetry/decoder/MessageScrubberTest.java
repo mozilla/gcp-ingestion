@@ -798,7 +798,7 @@ public class MessageScrubberTest {
         + "}").getBytes(StandardCharsets.UTF_8));
 
     Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "ads-backend").put(Attribute.DOCUMENT_TYPE, "events")
+        .put(Attribute.DOCUMENT_NAMESPACE, "ads_backend").put(Attribute.DOCUMENT_TYPE, "events")
         .build();
 
     assertTrue(json.path("metrics").path("string_list").path("ad.categories").isNull());
