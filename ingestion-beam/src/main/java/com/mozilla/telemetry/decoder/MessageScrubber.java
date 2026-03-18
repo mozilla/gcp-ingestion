@@ -412,7 +412,7 @@ public class MessageScrubber {
     // The ads backend serializes nil Go slices as null instead of an empty array,
     // which fails schema validation. Temporary workaround for backfill per DENG-10814.
     // See https://github.com/mozilla/glean_parser/pull/837
-    if ("ads-backend".equals(namespace)) {
+    if ("ads_backend".equals(namespace)) {
       processNullStringListValues(json);
     }
 
