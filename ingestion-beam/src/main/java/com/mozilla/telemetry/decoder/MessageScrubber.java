@@ -159,11 +159,13 @@ public class MessageScrubber {
       .put("com-dykt-firefox", "2008135") //
       .put("org-lilo-mobile-android2020", "2013260") //
       .put("co-searcha-bistre", "2013260") //
+      .put("com-buxue-student", "2024382") //
       .build();
 
   private static final Map<String, String> IGNORED_NAMESPACE_PREFIXES = ImmutableMap
       .<String, String>builder() //
       .put("com-feifan", "2010623") //
+      .put("org-global-g", "2024379") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
