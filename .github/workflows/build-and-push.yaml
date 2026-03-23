@@ -17,6 +17,7 @@ jobs:
       project_id: moz-fx-ingestion-edge-prod
       image_build_context: ./ingestion-edge
       dockerfile_path: ./ingestion-edge/Dockerfile
+      should_tag_latest: true
 
   ingestion-sink:
     permissions:
@@ -29,3 +30,4 @@ jobs:
       project_id: moz-fx-ingestion-sink-prod
       image_build_context: ./
       dockerfile_path: ./ingestion-sink/Dockerfile
+      should_tag_latest: true
