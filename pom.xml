@@ -54,7 +54,7 @@
         <!-- The classPath setting is a workaround for https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=911925 -->
         <!-- The add-opens flag is required for system-rules library (EnvironmentVariables) to access
              java.util.Collections via reflection on Java 17+ and some modern builds of earlier versions. See https://junit-pioneer.org/docs/environment-variables/ -->
-        <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+        <argLine>-Xmx1024m -Djdk.net.URLClassPath.disableClassPathURLCheck=true --add-opens java.base/java.util=ALL-UNNAMED -Dlog4j2.disable.jmx=true</argLine>
 
         <auto-value.version>1.11.1</auto-value.version>
         <beam.version>2.70.0</beam.version>
