@@ -45,8 +45,8 @@ public class ParseDirectPubsubTest {
       List<PubsubMessage> messages = ImmutableList.copyOf(collection);
       assert messages.size() == 1;
       PubsubMessage message = messages.get(0);
-      assert message
-          .getAttribute("submission_timestamp") != null : "submission_timestamp must be set";
+      assert message.getAttribute("submission_timestamp") != null
+          : "submission_timestamp must be set";
       assert message.getAttribute("document_id").equals("6c702690-02a7-4e81-b4cb-550a1ce10a22");
       assert message.getAttribute("document_namespace").equals("accounts_backend");
       assert message.getAttribute("document_type").equals("events");
