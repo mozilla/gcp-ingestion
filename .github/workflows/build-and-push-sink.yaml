@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - "checkstyle/**"
       - "ingestion-sink/**"
       - "ingestion-core/**"
       - "pom.xml"
