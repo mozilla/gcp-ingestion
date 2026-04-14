@@ -1,0 +1,26 @@
+name: Build and Push ingestion-sink
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "checkstyle/**"
+      - "ingestion-sink/**"
+      - "ingestion-core/**"
+      - "pom.xml"
+      - ".github/workflows/build-and-push-sink.yaml"
+
+jobs:
+  ingestion-sink:
+    permissions:
+      contents: read
+      id-token: write
+    uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
+    with:
+      image_name: ingestion-sink
+      gar_name: ingestion-sink-prod
+      project_id: moz-fx-ingestion-sink-prod
+      image_build_context: ./
+      dockerfile_path: ./ingestion-sink/Dockerfile
+      should_tag_latest: true
