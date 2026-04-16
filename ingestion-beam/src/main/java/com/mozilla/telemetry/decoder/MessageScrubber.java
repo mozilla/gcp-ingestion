@@ -160,6 +160,7 @@ public class MessageScrubber {
       .put("org-lilo-mobile-android2020", "2013260") //
       .put("co-searcha-bistre", "2013260") //
       .put("com-buxue-student", "2024382") //
+      .put("com-ziniao-smanager", "2032228") //
       .build();
 
   private static final Map<String, String> IGNORED_NAMESPACE_PREFIXES = ImmutableMap
