@@ -82,7 +82,6 @@ required group attributes {
   optional string dnt                        // header from client
   optional string x_pingsender_version       // header from client
   optional string x_debug_id                 // header from client
-  optional string x_foxsec_ip_reputation     // header from iprepd
   optional string x_lb_tags                  // header from load balancer
   optional string x_source_tags              // header from client
   optional string x_telemetry_agent          // header from client
