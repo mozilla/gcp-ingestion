@@ -103,6 +103,19 @@ parser.add_argument(
     help="Number of seconds to wait for persistent volume claims to remain detached "
     "before deleting",
 )
+parser.add_argument(
+    "--mode",
+    default=os.environ.get("FLUSH_MANAGER_MODE", "pv"),
+    choices=["pv", "pvc"],
+    help="Control loop mode. 'pv' (default) scans PersistentVolumes cluster-wide "
+    "for Released PVs claim-ref'd to the namespace, then rebinds and flushes them; "
+    "this is the original behavior and requires cluster-scoped PV list/patch RBAC. "
+    "'pvc' scans PersistentVolumeClaims in the namespace, treating any PVC with the "
+    "configured prefix and no attached pod as an orphan to flush; this requires only "
+    "namespace-scoped RBAC and assumes the StatefulSet uses "
+    "spec.persistentVolumeClaimRetentionPolicy.whenScaled=Retain so PVCs survive "
+    "scale-down. Can also be set via FLUSH_MANAGER_MODE env var.",
+)
 
 
 @dataclass(frozen=True)
@@ -180,7 +193,13 @@ def _create_flush_job(
     name: str,
     namespace: str,
     service_account_name: str,
+    claim_name: str = None,
 ) -> V1Job:
+    # claim_name defaults to name to preserve the legacy PV-scan behavior, where
+    # the flush job and the rebound PVC share the "flush-<pv>" name. The PVC-scan
+    # path passes the original orphan PVC name and uses "flush-<pvc>" as the job.
+    if claim_name is None:
+        claim_name = name
     logger.info(f"creating job: {name}")
     try:
         return batch_api.create_namespaced_job(
@@ -227,7 +246,7 @@ def _create_flush_job(
                                     name="queue",
                                     persistent_volume_claim=(
                                         V1PersistentVolumeClaimVolumeSource(
-                                            claim_name=name
+                                            claim_name=claim_name
                                         )
                                     ),
                                 )
@@ -365,6 +384,151 @@ def flush_released_pvs_and_delete_complete_jobs(
     delete_complete_jobs(api, batch_api, namespace)
 
 
+def _job_and_pvc_name_from_pvc(pvc: V1PersistentVolumeClaim) -> str:
+    return JOB_AND_PVC_PREFIX + pvc.metadata.name
+
+
+def flush_detached_pvcs(
+    api: CoreV1Api,
+    batch_api: BatchV1Api,
+    command: List[str],
+    env: List[V1EnvVar],
+    image: str,
+    namespace: str,
+    service_account_name: str,
+    claim_prefix: str,
+):
+    """
+    Flush persistent volume claims that are detached from any pod.
+
+    Namespace-scoped alternative to ``flush_released_pvs`` that does not
+    require cluster-wide PersistentVolume access. Assumes the StatefulSet sets
+    ``spec.persistentVolumeClaimRetentionPolicy.whenScaled: Retain`` so that
+    PVCs survive scale-down (rather than being deleted, which is what releases
+    the PV in the legacy flow).
+
+    For each PVC matching ``claim_prefix`` that is not attached to any pod and
+    has no existing flush job, spawn a flush job that mounts the orphan PVC
+    directly. ``delete_complete_jobs_pvc_mode`` then cascades the PVC delete
+    via the job's foreground propagation once the queue is drained.
+    """
+    attached_pvcs = {
+        volume.persistent_volume_claim.claim_name
+        for pod in api.list_namespaced_pod(namespace).items
+        if not _unschedulable_due_to_pvc(pod) and pod.spec and pod.spec.volumes
+        for volume in pod.spec.volumes
+        if volume.persistent_volume_claim
+    }
+    existing_jobs = {
+        job.metadata.name for job in batch_api.list_namespaced_job(namespace).items
+    }
+    for pvc in api.list_namespaced_persistent_volume_claim(namespace).items:
+        if (
+            pvc.metadata.name.startswith(claim_prefix)
+            and pvc.metadata.name not in attached_pvcs
+            and not pvc.metadata.deletion_timestamp
+        ):
+            job_name = _job_and_pvc_name_from_pvc(pvc)
+            if job_name in existing_jobs:
+                continue
+            logger.info(f"flushing detached pvc: {pvc.metadata.name}")
+            _create_flush_job(
+                batch_api,
+                command,
+                env,
+                image,
+                job_name,
+                namespace,
+                service_account_name,
+                claim_name=pvc.metadata.name,
+            )
+
+
+def delete_complete_jobs_pvc_mode(api: CoreV1Api, batch_api: BatchV1Api, namespace: str):
+    """Delete complete flush jobs and cascade-delete the orphan PVC they drained.
+
+    Counterpart to ``delete_complete_jobs`` for the namespace-scoped PVC-scan
+    path. Differs in two ways:
+
+    1. Does not patch the PersistentVolume reclaim policy (no cluster-scoped
+       PV access). The underlying PV is reclaimed via the StorageClass policy
+       when the PVC is deleted.
+    2. The PVC name is derived by stripping the ``flush-`` prefix from the job
+       name (the original orphan PVC), not by reconstructing the rebound PVC
+       name as in the PV-scan path.
+    """
+    for job in batch_api.list_namespaced_job(namespace).items:
+        if (
+            _job_is_complete(job)
+            and not job.metadata.deletion_timestamp
+            and _is_flush_job(job)
+        ):
+            pvc_name = job.metadata.name.replace(JOB_AND_PVC_PREFIX, "", 1)
+            logger.info(f"deleting complete job: {job.metadata.name}")
+            logger.info(f"including pvc in job delete: {pvc_name}")
+            api.patch_namespaced_persistent_volume_claim(
+                name=pvc_name,
+                namespace=namespace,
+                body=V1PersistentVolumeClaim(
+                    metadata=V1ObjectMeta(
+                        owner_references=[
+                            V1OwnerReference(
+                                api_version="batch/v1",
+                                kind="Job",
+                                name=job.metadata.name,
+                                uid=job.metadata.uid,
+                                block_owner_deletion=True,
+                            )
+                        ]
+                    )
+                ),
+            )
+            try:
+                batch_api.delete_namespaced_job(
+                    name=job.metadata.name,
+                    namespace=namespace,
+                    body=V1DeleteOptions(
+                        grace_period_seconds=0,
+                        propagation_policy="Foreground",
+                        preconditions=V1Preconditions(
+                            resource_version=job.metadata.resource_version,
+                            uid=job.metadata.uid,
+                        ),
+                    ),
+                )
+            except ApiException as e:
+                if e.reason not in (CONFLICT, NOT_FOUND):
+                    raise
+                logger.info(f"job already deleted or updated: {job.metadata.name}")
+
+
+def flush_detached_pvcs_and_delete_complete_jobs(
+    api: CoreV1Api,
+    batch_api: BatchV1Api,
+    command: List[str],
+    env: List[V1EnvVar],
+    image: str,
+    namespace: str,
+    service_account_name: str,
+    claim_prefix: str,
+):
+    """Flush detached PVCs then delete complete jobs (PVC-scan mode).
+
+    Run sequentially to avoid race conditions.
+    """
+    flush_detached_pvcs(
+        api,
+        batch_api,
+        command,
+        env,
+        image,
+        namespace,
+        service_account_name,
+        claim_prefix,
+    )
+    delete_complete_jobs_pvc_mode(api, batch_api, namespace)
+
+
 def _unschedulable_due_to_pvc(pod: V1Pod):
     return (
         pod.status
@@ -496,27 +660,52 @@ def main():
     load_incluster_config()
     api = CoreV1Api()
     batch_api = BatchV1Api()
-    tasks = [
-        partial(
-            flush_released_pvs_and_delete_complete_jobs,
-            api,
-            batch_api,
-            args.command,
-            args.env,
-            args.image,
-            args.namespace,
-            args.service_account_name,
-        ),
-        partial(
-            delete_detached_pvcs,
-            api,
-            args.namespace,
-            args.claim_prefix,
-            timedelta(seconds=args.pvc_cleanup_delay_seconds),
-            {},  # detached_pvc_cache
-        ),
-        partial(delete_unschedulable_pods, api, args.namespace),
-    ]
+    if args.mode == "pvc":
+        # Namespace-scoped path: flush orphan PVCs left behind by a StatefulSet
+        # configured with persistentVolumeClaimRetentionPolicy.whenScaled=Retain.
+        # delete_detached_pvcs is omitted here because flush_detached_pvcs +
+        # delete_complete_jobs_pvc_mode together reap the same PVCs after
+        # draining their queues.
+        logger.info("running in pvc mode (namespace-scoped)")
+        tasks = [
+            partial(
+                flush_detached_pvcs_and_delete_complete_jobs,
+                api,
+                batch_api,
+                args.command,
+                args.env,
+                args.image,
+                args.namespace,
+                args.service_account_name,
+                args.claim_prefix,
+            ),
+            partial(delete_unschedulable_pods, api, args.namespace),
+        ]
+    else:
+        # Default cluster-scoped PV-scan path. Unchanged behavior for GCPv1 and
+        # any deployment that grants list/patch on persistentvolumes.
+        logger.info("running in pv mode (cluster-scoped)")
+        tasks = [
+            partial(
+                flush_released_pvs_and_delete_complete_jobs,
+                api,
+                batch_api,
+                args.command,
+                args.env,
+                args.image,
+                args.namespace,
+                args.service_account_name,
+            ),
+            partial(
+                delete_detached_pvcs,
+                api,
+                args.namespace,
+                args.claim_prefix,
+                timedelta(seconds=args.pvc_cleanup_delay_seconds),
+                {},  # detached_pvc_cache
+            ),
+            partial(delete_unschedulable_pods, api, args.namespace),
+        ]
     with ThreadPool(len(tasks)) as pool:
         pool.map(run_task, tasks, chunksize=1)
 
