@@ -7,7 +7,6 @@ from kubernetes.client import (
     V1JobList,
     V1JobStatus,
     V1ObjectMeta,
-    V1ObjectReference,
     V1PersistentVolumeClaim,
     V1PersistentVolumeClaimList,
     V1PersistentVolumeClaimSpec,
@@ -112,7 +111,8 @@ def test_flush_detached_pvcs(api: MagicMock, batch_api: MagicMock):
     ] == [
         (
             call.kwargs["body"].metadata.name,
-            call.kwargs["body"].spec.template.spec.volumes[0]
+            call.kwargs["body"]
+            .spec.template.spec.volumes[0]
             .persistent_volume_claim.claim_name,
         )
         for call in batch_api.create_namespaced_job.call_args_list
@@ -179,9 +179,7 @@ def test_delete_complete_jobs_pvc_mode(api: MagicMock, batch_api: MagicMock):
         call.kwargs["body"].propagation_policy == "Foreground"
         for call in batch_api.delete_namespaced_job.call_args_list
     )
-    assert [
-        f"flush-queue-web-{i}" for i in range(2)
-    ] == [
+    assert [f"flush-queue-web-{i}" for i in range(2)] == [
         call.kwargs["name"] for call in batch_api.delete_namespaced_job.call_args_list
     ]
 

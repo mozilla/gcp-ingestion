@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from multiprocessing.pool import ThreadPool
 from time import sleep
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 import json
 import os
 
@@ -193,7 +193,7 @@ def _create_flush_job(
     name: str,
     namespace: str,
     service_account_name: str,
-    claim_name: str = None,
+    claim_name: Optional[str] = None,
 ) -> V1Job:
     # claim_name defaults to name to preserve the legacy PV-scan behavior, where
     # the flush job and the rebound PVC share the "flush-<pv>" name. The PVC-scan
@@ -444,7 +444,9 @@ def flush_detached_pvcs(
             )
 
 
-def delete_complete_jobs_pvc_mode(api: CoreV1Api, batch_api: BatchV1Api, namespace: str):
+def delete_complete_jobs_pvc_mode(
+    api: CoreV1Api, batch_api: BatchV1Api, namespace: str
+):
     """Delete complete flush jobs and cascade-delete the orphan PVC they drained.
 
     Counterpart to ``delete_complete_jobs`` for the namespace-scoped PVC-scan
