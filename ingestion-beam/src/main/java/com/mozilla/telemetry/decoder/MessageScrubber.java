@@ -168,7 +168,7 @@ public class MessageScrubber {
       .<String, String>builder() //
       .put("com-feifan", "2010623") //
       .put("org-global-g", "2024379") //
-      .put("org-global-wxc", "2037560") //  
+      .put("org-global-wxc", "2037560") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
