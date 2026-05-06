@@ -162,6 +162,10 @@ public class MessageScrubber {
       .put("com-buxue-student", "2024382") //
       .put("com-ziniao-smanager", "2032228") //
       .put("com-codeedge-childrenfence", "2034078") //
+      .put("org-global-wxc62106", "2037560") //
+      .put("org-global-wxc6223", "2037588") //
+      .put("org-global-wxc6275", "2037589") //
+      .put("org-global-wxc6221", "2037590") //
       .build();
 
   private static final Map<String, String> IGNORED_NAMESPACE_PREFIXES = ImmutableMap
