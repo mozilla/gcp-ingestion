@@ -170,7 +170,6 @@ public class MessageScrubber {
       .put("org-global-g", "2024379") //
       .put("org-global-wxc", "2037560") //
       .put("com-xiaobei-browser", "2039427") //
-      .put("firefox-desktop-background-defaultagent", "2039430") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
