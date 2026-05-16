@@ -2,9 +2,11 @@ package com.mozilla.telemetry;
 
 import com.mozilla.telemetry.decoder.AddMetadata;
 import com.mozilla.telemetry.decoder.DecoderOptions;
+import com.mozilla.telemetry.decoder.ExtractIpFromDirectPubsub;
 import com.mozilla.telemetry.decoder.ExtractIpFromLogEntry;
 import com.mozilla.telemetry.decoder.GeoCityLookup;
 import com.mozilla.telemetry.decoder.GeoIspLookup;
+import com.mozilla.telemetry.decoder.ParseDirectPubsub;
 import com.mozilla.telemetry.decoder.ParseLogEntry;
 import com.mozilla.telemetry.decoder.ParsePayload;
 import com.mozilla.telemetry.decoder.ParseProxy;
@@ -82,6 +84,17 @@ public class Decoder extends Sink {
             .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
             // Now we can parse the log entry and route failures to error output
             .apply(ParseLogEntry.of())//
+            .failuresTo(failureCollections) : p)
+
+        // Special case: parsing structured telemetry pings published directly to Pub/Sub.
+        .map(p -> options.getDirectPubsubEnabled() ? p //
+            // We first extract IP address from the payload and remove it for consistency
+            // with the standard flow.
+            .apply(ExtractIpFromDirectPubsub.of()) //
+            .apply(GeoIspLookup.of(options.getGeoIspDatabase())) //
+            .apply(GeoCityLookup.of(options.getGeoCityDatabase(), options.getGeoCityFilter())) //
+            // Now we can parse the direct Pub/Sub message and route failures to error output
+            .apply(ParseDirectPubsub.of())//
             .failuresTo(failureCollections) : p)
 
         // Add parse uri failures separately so that they don't prevent geo lookups
