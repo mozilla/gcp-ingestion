@@ -112,3 +112,7 @@ UUID
 SRE
 Glean.js
 JWK
+cloudops-infra
+LogEntry
+LogEntry-wrapped
+parameterized

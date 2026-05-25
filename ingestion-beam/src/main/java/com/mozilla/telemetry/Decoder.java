@@ -11,6 +11,7 @@ import com.mozilla.telemetry.decoder.ParseProxy;
 import com.mozilla.telemetry.decoder.ParseUri;
 import com.mozilla.telemetry.decoder.ParseUserAgent;
 import com.mozilla.telemetry.decoder.SanitizeAttributes;
+import com.mozilla.telemetry.decoder.StampSubmissionTimestamp;
 import com.mozilla.telemetry.transforms.DecompressPayload;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.NormalizeAttributes;
@@ -83,6 +84,13 @@ public class Decoder extends Sink {
             // Now we can parse the log entry and route failures to error output
             .apply(ParseLogEntry.of())//
             .failuresTo(failureCollections) : p)
+
+        // Special case: structured telemetry pings published directly to Pub/Sub.
+        // The publisher sets document_*, user_agent, and x_forwarded_for as message attributes,
+        // so routing/proxy/geo all run on the main stage. We need to stamp
+        // submission_timestamp from publishTime.
+        .map(p -> options.getDirectPubsubEnabled() ? p //
+            .apply("StampSubmissionTimestamp", StampSubmissionTimestamp.of()) : p)
 
         // Add parse uri failures separately so that they don't prevent geo lookups
         .map(p -> p //

@@ -10,6 +10,7 @@ import com.mozilla.telemetry.util.Json;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
@@ -127,6 +128,80 @@ public class DecoderMainTest extends TestWithDeterministicJson {
     List<String> expectedErrorLines = Lines.files(resourceDir + "/logentries-error-output.ndjson");
     assertThat("Error output differed from expectation", errorOutputLines,
         matchesInAnyOrder(expectedErrorLines));
+  }
+
+  /**
+   * Test ingestion of direct-Pub/Sub payloads.
+   *
+   * <p>The input file holds two messages in the attributes-shape: one with all routing
+   * attributes + user_agent + x_forwarded_for and an uncompressed body, and one with only
+   * required attributes and a gzipped body. We confirm that
+   * <ul>
+   *   <li>document_* attributes flow through to output unchanged,</li>
+   *   <li>{@code submission_timestamp} is stamped by the pipeline (any value),</li>
+   *   <li>the gzipped body is decompressed (asserted via {@code client_compression}),</li>
+   *   <li>x_forwarded_for drives geo lookup on the main stage.</li>
+   * </ul>
+   * Exact-value behavior of {@code StampSubmissionTimestamp} is covered by its unit test.
+   */
+  @Test
+  public void testDirectPubsubPayload() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
+    String input = resourceDir + "/directpubsub.ndjson";
+    String output = outputPath + "/out/out";
+    String errorOutput = outputPath + "/error/error";
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--directPubsubEnabled=true" });
+
+    List<String> outputLines = Lines.files(output + "*.ndjson");
+    List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
+
+    assertThat("All direct-pubsub messages should land in main output, none in error",
+        errorOutputLines, Matchers.empty());
+    assertThat("Expected one output message per input", outputLines, Matchers.hasSize(2));
+
+    PubsubMessage uncompressed = null;
+    PubsubMessage gzipped = null;
+    for (String line : outputLines) {
+      PubsubMessage message = Json.readPubsubMessage(line);
+      String documentId = message.getAttribute("document_id");
+      if ("2c3a0767-d84a-4d02-8a92-fa54a3376048".equals(documentId)) {
+        uncompressed = message;
+      } else if ("3c3a0767-d84a-4d02-8a92-fa54a3376051".equals(documentId)) {
+        gzipped = message;
+      }
+    }
+    assertThat("Uncompressed message present", uncompressed, Matchers.notNullValue());
+    assertThat("Gzipped message present", gzipped, Matchers.notNullValue());
+
+    Map<String, String> a1 = uncompressed.getAttributeMap();
+    assertThat(a1.get("document_namespace"), Matchers.equalTo("test"));
+    assertThat(a1.get("document_type"), Matchers.equalTo("test"));
+    assertThat(a1.get("document_version"), Matchers.equalTo("1"));
+    assertThat("submission_timestamp must be stamped", a1.get("submission_timestamp"),
+        Matchers.notNullValue());
+    assertThat("Geo lookup on x_forwarded_for from attribute", a1.get("geo_country"),
+        Matchers.equalTo("PH"));
+    assertThat("user_agent attribute passes through, parsed by ParseUserAgent",
+        a1.get("user_agent_browser"), Matchers.equalTo("Firefox"));
+    assertThat("x_forwarded_for must be scrubbed before output", a1.get("x_forwarded_for"),
+        Matchers.nullValue());
+
+    Map<String, String> a2 = gzipped.getAttributeMap();
+    assertThat(a2.get("document_namespace"), Matchers.equalTo("test"));
+    assertThat(a2.get("document_type"), Matchers.equalTo("test"));
+    assertThat(a2.get("document_version"), Matchers.equalTo("1"));
+    assertThat("submission_timestamp must be stamped", a2.get("submission_timestamp"),
+        Matchers.notNullValue());
+    assertThat("Gzipped body must be decompressed and recorded", a2.get("client_compression"),
+        Matchers.equalTo("gzip"));
   }
 
   @Test
