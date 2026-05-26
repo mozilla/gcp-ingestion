@@ -592,6 +592,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#deployment-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingestion-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingestion sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#data-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1416,6 +1438,28 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#deployment-topology" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deployment topology
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingestion-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ingestion sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#data-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1555,9 +1599,34 @@
 <h1 id="decoder-service-specification">Decoder Service Specification</h1>
 <p>This document specifies the behavior of the service that decodes messages
 in the Structured Ingestion pipeline.</p>
+<h2 id="deployment-topology">Deployment topology</h2>
+<p>Decoder runs as one Dataflow job per (pipeline family, input topic). Each pipeline
+family has its own <code>&lt;family&gt;-raw</code>, <code>&lt;family&gt;-decoded</code>, and <code>&lt;family&gt;-error</code> topics:
+<code>telemetry</code> (legacy Firefox telemetry), <code>structured</code> (Glean and other structured pings),
+and <code>stub_installer</code>. The <code>structured</code> family also has a <code>structured-logging</code> input
+topic served by a second decoder job with <code>--logIngestionEnabled=true</code>. Topics and jobs
+are defined in
+<a href="https://github.com/mozilla-services/cloudops-infra/tree/master/projects/beam">cloudops-infra</a>.</p>
+<h2 id="ingestion-sources">Ingestion sources</h2>
+<p>Each decoder instance accepts one input wire format, selected at deploy time via the
+<code>--logIngestionEnabled</code> and <code>--directPubsubEnabled</code> flags (defaulting to Edge if neither
+is set):</p>
+<ul>
+<li>Edge (HTTP) - default, messages from <code>ingestion-edge</code>. See
+  <a href="../edge_service_specification/#pubsub-message-schema">Edge Service PubSub Message Schema</a>.</li>
+<li>Cloud Logging (LogEntry) - enabled with <code>--logIngestionEnabled=true</code>.
+  Glean publishers log to stdout, Cloud Logging Sink ships
+  LogEntry-wrapped messages to <code>structured-logging</code>.</li>
+<li>Direct Pub/Sub - enabled with <code>--directPubsubEnabled=true</code>. Server-side
+  publishers write Glean ping JSON (optionally gzipped) as message body, with
+  ping metadata fields as message attributes: <code>document_namespace</code>,
+  <code>document_type</code>, <code>document_version</code>, <code>document_id</code>. Optional attributes: <code>user_agent</code>,
+  <code>x_forwarded_for</code>.</li>
+</ul>
 <h2 id="data-flow">Data Flow</h2>
 <ol>
-<li>Consume messages from Google Cloud PubSub raw topic</li>
+<li>Consume messages from the job's input Pub/Sub topic (see <a href="#deployment-topology">Deployment
+   topology</a>)</li>
 <li>Deduplicate message by <code>uri</code> (which generally contains <code>docId</code>)</li>
 <li>Disabled for stub-installer, which does not include a UUID in the URI</li>
 <li>Perform GeoIP lookup and drop <code>x_forwarded_for</code> and <code>remote_addr</code> and
@@ -1571,11 +1640,14 @@ in the Structured Ingestion pipeline.</p>
 <li>Extract user agent information and drop <code>user_agent</code></li>
 <li>Sanitize metadata based on per-document type configuration</li>
 <li>Add metadata fields to message</li>
-<li>Write message to PubSub decoded topic based on <code>namespace</code> and <code>docType</code></li>
+<li>Write message to the job's PubSub decoded topic (<code>&lt;family&gt;-decoded</code>)</li>
 </ol>
 <h3 id="implementation">Implementation</h3>
-<p>The above steps will be executed as a single Apache Beam job that can accept
-either a streaming input from PubSub or a batch input from Cloud Storage.</p>
+<p>The above steps are executed as a single Apache Beam pipeline that can accept either
+streaming input from Pub/Sub or batch input from Cloud Storage. The same pipeline runs
+as multiple Dataflow jobs in production, one per (pipeline family, input topic),
+parameterized by topic arguments and the <code>--logIngestionEnabled</code> /
+<code>--directPubsubEnabled</code> flags.</p>
 <h3 id="decoding-errors">Decoding Errors</h3>
 <p>All messages that are rejected at any step of the Data Flow above will be
 forwarded to a PubSub error topic for backfill and monitoring purposes.
