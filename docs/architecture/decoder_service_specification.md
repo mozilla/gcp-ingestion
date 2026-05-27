@@ -26,9 +26,11 @@ is set):
   LogEntry-wrapped messages to `structured-logging`.
 - Direct Pub/Sub - enabled with `--directPubsubEnabled=true`. Server-side
   publishers write Glean ping JSON (optionally gzipped) as message body, with
-  ping metadata fields as message attributes: `document_namespace`,
-  `document_type`, `document_version`, `document_id`. Optional attributes: `user_agent`,
-  `x_forwarded_for`.
+  ping metadata fields as message attributes. Required attributes:
+  `document_namespace`, `document_type`, `document_version`, `document_id`;
+  messages missing any of these are routed to the error topic. Optional
+  attributes: `user_agent`, `x_forwarded_for`. `submission_timestamp` is
+  stamped by the decoder from Pub/Sub's publishTime if not already set.
 
 ## Data Flow
 

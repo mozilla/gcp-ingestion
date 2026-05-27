@@ -204,6 +204,40 @@ public class DecoderMainTest extends TestWithDeterministicJson {
         Matchers.equalTo("gzip"));
   }
 
+  /**
+   * Direct-Pub/Sub messages missing any required routing attribute must be rejected to error
+   * output rather than passed through. This complements the unit test in
+   * {@code StampSubmissionTimestampTest} by exercising the full pipeline wiring.
+   */
+  @Test
+  public void testDirectPubsubMissingRequiredAttributeGoesToError() throws Exception {
+    String outputPath = outputFolder.getRoot().getAbsolutePath();
+    String resourceDir = Resources.getResource("testdata/decoder-integration").getPath();
+    String input = resourceDir + "/directpubsub-invalid.ndjson";
+    String output = outputPath + "/out/out";
+    String errorOutput = outputPath + "/error/error";
+
+    Decoder.main(new String[] { "--inputFileFormat=json", "--inputType=file", "--input=" + input,
+        "--outputFileFormat=json", "--outputType=file", "--output=" + output,
+        "--errorOutputType=file", "--errorOutput=" + errorOutput, "--includeStackTrace=false",
+        "--outputFileCompression=UNCOMPRESSED", "--errorOutputFileCompression=UNCOMPRESSED",
+        "--geoCityDatabase=src/test/resources/cityDB/GeoIP2-City-Test.mmdb",
+        "--geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb",
+        "--schemasLocation=schemas.tar.gz", "--directPubsubEnabled=true" });
+
+    List<String> outputLines = Lines.files(output + "*.ndjson");
+    List<String> errorOutputLines = Lines.files(errorOutput + "*.ndjson");
+
+    assertThat("No invalid messages should reach main output", outputLines, Matchers.empty());
+    assertThat("Each invalid message must be routed to error output", errorOutputLines,
+        Matchers.hasSize(4));
+    for (String line : errorOutputLines) {
+      PubsubMessage errorMessage = Json.readPubsubMessage(line);
+      assertThat("Failure must be attributed to StampSubmissionTimestamp",
+          errorMessage.getAttribute("error_type"), Matchers.equalTo("StampSubmissionTimestamp"));
+    }
+  }
+
   @Test
   public void testIdempotence() throws Exception {
     String outputPath = outputFolder.getRoot().getAbsolutePath();

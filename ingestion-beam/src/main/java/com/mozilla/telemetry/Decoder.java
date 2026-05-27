@@ -88,9 +88,10 @@ public class Decoder extends Sink {
         // Special case: structured telemetry pings published directly to Pub/Sub.
         // The publisher sets document_*, user_agent, and x_forwarded_for as message attributes,
         // so routing/proxy/geo all run on the main stage. We need to stamp
-        // submission_timestamp from publishTime.
+        // submission_timestamp from publishTime and reject messages missing required attributes.
         .map(p -> options.getDirectPubsubEnabled() ? p //
-            .apply("StampSubmissionTimestamp", StampSubmissionTimestamp.of()) : p)
+            .apply("StampSubmissionTimestamp", StampSubmissionTimestamp.of()) //
+            .failuresTo(failureCollections) : p)
 
         // Add parse uri failures separately so that they don't prevent geo lookups
         .map(p -> p //
