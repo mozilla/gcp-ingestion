@@ -1285,6 +1285,8 @@ deployed to Google Cloud Platform (GCP).</p>
   in Kubernetes, reading input from Google Cloud Pub/Sub and emitting
   records to outputs like GCS or BigQuery
   (<a href="https://mana.mozilla.org/wiki/display/SRE/Ingestion+Sink">deployment docs 🔒</a>)</li>
+<li><a href="https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-core">ingestion-core</a>: shared Java code used by both <code>ingestion-beam</code>
+  and <code>ingestion-sink</code>; not a separately deployed service</li>
 </ul>
 <p>The design behind the system along with various trade offs are documented in
 the <a href="architecture/overview/">architecture section</a>.</p>
@@ -1294,6 +1296,10 @@ To manage multiple local JDKs, consider <a href="https://www.jenv.be/">jenv</a> 
 Also consider reading through
 <a href="https://cwiki.apache.org/confluence/display/BEAM/Set+up+IntelliJ+from+scratch">Apache Beam's wiki article on IntelliJ IDEA setup</a>
 for some ideas on configuring an IDE environment.</p>
+<p><code>ingestion-core</code> is not consumed as a published jar; the root <code>pom.xml</code> co-compiles
+its sources into <code>ingestion-beam</code> and <code>ingestion-sink</code> via <code>build-helper</code>'s
+<code>add-source</code> goal. IDEs that don't recognize this report phantom "cannot resolve
+symbol" errors - enable the opt-in <code>IDE</code> profile (in both module poms) to fix them.</p>
 <p>Feel free to ask us in <code>#data-help</code> on Slack or <code>#telemetry</code> on <code>chat.mozilla.org</code>
 if you have specific questions.</p>
 

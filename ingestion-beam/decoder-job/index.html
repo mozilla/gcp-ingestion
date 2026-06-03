@@ -1078,6 +1078,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#transforms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1393,6 +1404,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#transforms" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1508,6 +1530,19 @@
 
 <h1 id="decoder-job">Decoder Job</h1>
 <p>A job for normalizing ingestion messages. Defined in the <code>com.mozilla.telemetry.Decoder</code> class (<a href="https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java">source</a>).</p>
+<h2 id="pipeline">Pipeline</h2>
+<p>The Decoder is a single Beam pipeline, configured per Dataflow instance, that reads
+one input topic. The input wire format is selected at deploy time by two mutually
+exclusive flags; <code>Edge</code> is the default when neither is set:</p>
+<ul>
+<li><strong>Edge</strong> (default, no flag) - pings delivered over HTTP by <code>ingestion-edge</code>.</li>
+<li><code>--logIngestionEnabled=true</code> - Glean server-side pings wrapped in Cloud Logging
+  <code>LogEntry</code> messages (the <code>structured-logging</code> input).</li>
+<li><code>--directPubsubEnabled=true</code> - structured pings published directly to Pub/Sub by
+  server-side producers.</li>
+</ul>
+<p>See the <a href="../../architecture/decoder_service_specification/">decoder service specification</a>
+for the ingestion sources and wire formats in more detail.</p>
 <h2 id="transforms">Transforms</h2>
 <p>These transforms are currently executed against each message in order.</p>
 <h3 id="geoip-lookup">GeoIP Lookup</h3>
