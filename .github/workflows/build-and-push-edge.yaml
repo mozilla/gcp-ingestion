@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: mozilla-it/deploy-actions/.github/workflows/build-and-push.yml@main
+    uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@v6.6.3
     with:
       image_name: ingestion-edge
       gar_name: ingestion-edge-prod
