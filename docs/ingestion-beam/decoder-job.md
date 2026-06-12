@@ -2,6 +2,21 @@
 
 A job for normalizing ingestion messages. Defined in the `com.mozilla.telemetry.Decoder` class ([source](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/Decoder.java)).
 
+## Pipeline
+
+The Decoder is a single Beam pipeline, configured per Dataflow instance, that reads
+one input topic. The input wire format is selected at deploy time by two mutually
+exclusive flags; `Edge` is the default when neither is set:
+
+- **Edge** (default, no flag) - pings delivered over HTTP by `ingestion-edge`.
+- `--logIngestionEnabled=true` - Glean server-side pings wrapped in Cloud Logging
+  `LogEntry` messages (the `structured-logging` input).
+- `--directPubsubEnabled=true` - structured pings published directly to Pub/Sub by
+  server-side producers.
+
+See the [decoder service specification](../architecture/decoder_service_specification.md)
+for the ingestion sources and wire formats in more detail.
+
 ## Transforms
 
 These transforms are currently executed against each message in order.

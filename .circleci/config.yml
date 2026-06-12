@@ -154,10 +154,6 @@ jobs:
           "$CIRCLE_PROJECT_REPONAME"
           "$CIRCLE_BUILD_URL"
           > version.json
-    - &persist_ci_env
-      run:
-        name: Persist CI environment file for passing into docker containers
-        command: env | grep '^CI' > circleci.env
     - run: &docker_compose_test
         name: Docker Compose Test
         command: >-
@@ -259,11 +255,11 @@ jobs:
       - *setup_remote_docker
       - *checkout
       - *create_version_json
-      - *persist_ci_env
       - run:
           <<: *docker_compose_test
           environment: &sink_compose_env
             <<: *edge_compose_env
+            COMPOSE_FILE: docker-compose.yml
             COMPOSE_PROJECT_NAME: circleci-ingestion-sink
       - run:
           name: Deploy to Dockerhub

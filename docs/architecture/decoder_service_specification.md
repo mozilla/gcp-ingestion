@@ -3,9 +3,39 @@
 This document specifies the behavior of the service that decodes messages
 in the Structured Ingestion pipeline.
 
+## Deployment topology
+
+Decoder runs as one Dataflow job per (pipeline family, input topic). Each pipeline
+family has its own `<family>-raw`, `<family>-decoded`, and `<family>-error` topics:
+`telemetry` (legacy Firefox telemetry), `structured` (Glean and other structured pings),
+and `stub_installer`. The `structured` family also has a `structured-logging` input
+topic served by a second decoder job with `--logIngestionEnabled=true`. Topics and jobs
+are defined in
+[cloudops-infra](https://github.com/mozilla-services/cloudops-infra/tree/master/projects/beam).
+
+## Ingestion sources
+
+Each decoder instance accepts one input wire format, selected at deploy time via the
+`--logIngestionEnabled` and `--directPubsubEnabled` flags (defaulting to Edge if neither
+is set):
+
+- Edge (HTTP) - default, messages from `ingestion-edge`. See
+  [Edge Service PubSub Message Schema](edge_service_specification.md#pubsub-message-schema).
+- Cloud Logging (LogEntry) - enabled with `--logIngestionEnabled=true`.
+  Glean publishers log to stdout, Cloud Logging Sink ships
+  LogEntry-wrapped messages to `structured-logging`.
+- Direct Pub/Sub - enabled with `--directPubsubEnabled=true`. Server-side
+  publishers write Glean ping JSON (optionally gzipped) as message body, with
+  ping metadata fields as message attributes. Required attributes:
+  `document_namespace`, `document_type`, `document_version`, `document_id`;
+  messages missing any of these are routed to the error topic. Optional
+  attributes: `user_agent`, `x_forwarded_for`. `submission_timestamp` is
+  stamped by the decoder from Pub/Sub's publishTime if not already set.
+
 ## Data Flow
 
-1. Consume messages from Google Cloud PubSub raw topic
+1. Consume messages from the job's input Pub/Sub topic (see [Deployment
+   topology](#deployment-topology))
 1. Deduplicate message by `uri` (which generally contains `docId`)
    - Disabled for stub-installer, which does not include a UUID in the URI
 1. Perform GeoIP lookup and drop `x_forwarded_for` and `remote_addr` and
@@ -19,12 +49,15 @@ in the Structured Ingestion pipeline.
 1. Extract user agent information and drop `user_agent`
 1. Sanitize metadata based on per-document type configuration
 1. Add metadata fields to message
-1. Write message to PubSub decoded topic based on `namespace` and `docType`
+1. Write message to the job's PubSub decoded topic (`<family>-decoded`)
 
 ### Implementation
 
-The above steps will be executed as a single Apache Beam job that can accept
-either a streaming input from PubSub or a batch input from Cloud Storage.
+The above steps are executed as a single Apache Beam pipeline that can accept either
+streaming input from Pub/Sub or batch input from Cloud Storage. The same pipeline runs
+as multiple Dataflow jobs in production, one per (pipeline family, input topic),
+parameterized by topic arguments and the `--logIngestionEnabled` /
+`--directPubsubEnabled` flags.
 
 ### Decoding Errors
 

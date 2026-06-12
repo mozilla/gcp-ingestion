@@ -8,6 +8,7 @@ ack'd
 acks
 ad-hoc
 AET
+AGENTS.md
 API
 async
 AWS
@@ -53,6 +54,7 @@ IDEA
 IntelliJ
 IPs
 irc.mozilla.org
+javac
 Javadoc
 jenv
 JDK
@@ -112,3 +114,8 @@ UUID
 SRE
 Glean.js
 JWK
+cloudops-infra
+LogEntry
+LogEntry-wrapped
+parameterized
+publishTime
