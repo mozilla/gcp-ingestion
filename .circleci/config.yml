@@ -106,7 +106,9 @@ jobs:
           if ! command -v gpgv >/dev/null 2>&1; then
             apt-get update && apt-get install -y gpgv
           fi
-          curl https://keybase.io/codecovsecurity/pgp_keys.asc | gpg --no-default-keyring --keyring trustedkeys.gpg --import
+          # Codecov's keybase.io identity was removed; fetch the uploader signing key
+          # (fingerprint 27034E7FDB850E0BBC2C62FF806BB28AED779869) from a keyserver instead.
+          curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x27034E7FDB850E0BBC2C62FF806BB28AED779869" | gpg --no-default-keyring --keyring trustedkeys.gpg --import
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           curl -Os https://uploader.codecov.io/latest/linux/codecov.SHA256SUM
           curl -Os https://uploader.codecov.io/latest/linux/codecov.SHA256SUM.sig
