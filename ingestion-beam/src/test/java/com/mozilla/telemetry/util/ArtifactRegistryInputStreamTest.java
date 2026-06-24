@@ -26,11 +26,11 @@ public class ArtifactRegistryInputStreamTest {
   }
 
   @Test
-  public void testToDownloadUrlEncodesFileId() {
+  public void testToDownloadUrlEncodesSlashesInFileId() {
     assertEquals(
-        "https://artifactregistry.googleapis.com/download/v1/projects/moz-fx-dev-whd-svcse-4252"
-            + "/locations/us-west1/repositories/artifacts-generic"
-            + "/files/schemas%3Aad36a04dc%3Aschemas.tar.gz:download?alt=media",
-        ArtifactRegistryInputStream.toDownloadUrl(RESOURCE_NAME));
+        "https://artifactregistry.googleapis.com/download/v1/projects/p/locations/us"
+            + "/repositories/r/files/pkg:v:sub%2Fdir%2Ffile.tar.gz:download?alt=media",
+        ArtifactRegistryInputStream.toDownloadUrl(
+            "projects/p/locations/us/repositories/r/files/pkg:v:sub/dir/file.tar.gz"));
   }
 }

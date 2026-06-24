@@ -6,10 +6,10 @@ import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.net.UrlEscapers;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Opens a file in an Artifact Registry generic repository given its resource name
@@ -38,6 +38,7 @@ public class ArtifactRegistryInputStream {
    */
   public static InputStream open(String location) throws IOException {
     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault();
+    // Scopes are only required when authenticating via a service account key.
     if (credentials.createScopedRequired()) {
       credentials = credentials.createScoped(SCOPE);
     }
@@ -51,11 +52,10 @@ public class ArtifactRegistryInputStream {
   /**
    * Convert a file resource name to its media download URL, url-encoding the file id segment.
    */
+  @VisibleForTesting
   static String toDownloadUrl(String resourceName) {
-    int idStart = resourceName.indexOf(FILES_SEGMENT) + FILES_SEGMENT.length();
-    String fileId = resourceName.substring(idStart);
-    String encodedFileId = URLEncoder.encode(fileId, StandardCharsets.UTF_8).replace("+", "%20");
-    return DOWNLOAD_PREFIX + resourceName.substring(0, idStart) + encodedFileId
-        + ":download?alt=media";
+    String[] parts = resourceName.split(FILES_SEGMENT, 2);
+    String encodedFileId = UrlEscapers.urlPathSegmentEscaper().escape(parts[1]);
+    return DOWNLOAD_PREFIX + parts[0] + FILES_SEGMENT + encodedFileId + ":download?alt=media";
   }
 }
