@@ -16,7 +16,6 @@ import com.mozilla.telemetry.ingestion.sink.io.Gcs;
 import com.mozilla.telemetry.ingestion.sink.io.Input;
 import com.mozilla.telemetry.ingestion.sink.io.Pipe;
 import com.mozilla.telemetry.ingestion.sink.io.Pubsub;
-import com.mozilla.telemetry.ingestion.sink.io.PubsubLite;
 import com.mozilla.telemetry.ingestion.sink.io.WriteWithErrors;
 import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToPubsubMessage;
 import com.mozilla.telemetry.ingestion.sink.transform.CompressPayload;
@@ -556,26 +555,20 @@ public class SinkConfig {
       final String subscription = env.getString(INPUT_SUBSCRIPTION);
       final long messagesOutstanding = output.type.getMaxOutstandingElementCount(env);
       final long bytesOutstanding = output.type.getMaxOutstandingRequestBytes(env);
-      // Pub/Sub Lite subscriptions specify a zone, otherwise it is a standard Pub/Sub subscription
-      if (subscription.matches(".*/locations/.*")) {
-        input = new PubsubLite.Read(subscription, messagesOutstanding, bytesOutstanding,
-            output.write, builder -> builder, decompress);
-      } else {
-        input = new Pubsub.Read(subscription, output, builder -> builder
-            .setFlowControlSettings(
-                FlowControlSettings.newBuilder().setMaxOutstandingElementCount(messagesOutstanding)
-                    .setMaxOutstandingRequestBytes(bytesOutstanding).build())
-            // The number of streaming subscriber connections for reading from Pub/Sub.
-            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L141
-            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L318-L320
-            // The default number of executor threads is max(6, 2*parallelPullCount).
-            // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
-            // Subscriber connections are expected to be CPU bound until flow control thresholds are
-            // reached, so parallelism should be no less than the number of available processors.
-            .setParallelPullCount(
-                env.getInt(INPUT_PARALLELISM, Runtime.getRuntime().availableProcessors())),
-            decompress);
-      }
+      input = new Pubsub.Read(subscription, output, builder -> builder
+          .setFlowControlSettings(
+              FlowControlSettings.newBuilder().setMaxOutstandingElementCount(messagesOutstanding)
+                  .setMaxOutstandingRequestBytes(bytesOutstanding).build())
+          // The number of streaming subscriber connections for reading from Pub/Sub.
+          // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L141
+          // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L318-L320
+          // The default number of executor threads is max(6, 2*parallelPullCount).
+          // https://github.com/googleapis/java-pubsub/blob/v1.105.0/google-cloud-pubsub/src/main/java/com/google/cloud/pubsub/v1/Subscriber.java#L566-L568
+          // Subscriber connections are expected to be CPU bound until flow control thresholds are
+          // reached, so parallelism should be no less than the number of available processors.
+          .setParallelPullCount(
+              env.getInt(INPUT_PARALLELISM, Runtime.getRuntime().availableProcessors())),
+          decompress);
       // Setup OpenCensus stackdriver exporter after all measurement views have been registered,
       // as seen in https://opencensus.io/exporters/supported-exporters/java/stackdriver-stats/
       if (getEnableOpenCensus(output.commonEnv)) {
