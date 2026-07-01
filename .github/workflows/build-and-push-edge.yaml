@@ -1,0 +1,23 @@
+name: Build and Push ingestion-edge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "ingestion-edge/**"
+      - ".github/workflows/build-and-push-edge.yaml"
+
+jobs:
+  ingestion-edge:
+    permissions:
+      contents: read
+      id-token: write
+    uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@v6.6.3
+    with:
+      image_name: ingestion-edge
+      gar_name: ingestion-edge-prod
+      project_id: moz-fx-ingestion-edge-prod
+      image_build_context: ./ingestion-edge
+      dockerfile_path: ./ingestion-edge/Dockerfile
+      should_tag_latest: true

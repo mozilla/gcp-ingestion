@@ -42,7 +42,9 @@ public interface SinkOptions extends PipelineOptions {
 
   void setOutputType(OutputType value);
 
-  @Description("Path (local or gs://) to a .tar.gz file containing json schemas and bq schemas"
+  @Description("Path (local, gs://, or an Artifact Registry file resource name of the form"
+      + " projects/PROJECT/locations/LOCATION/repositories/REPOSITORY/files/FILE) to a .tar.gz"
+      + " file containing json schemas and bq schemas"
       + " per docType; the json schemas are used by the Decoder to validate payload structure and"
       + " the bq schemas are used by the BigQuery sink to coerce the payload types to fit the "
       + " destination table; the BigQuery sink will fall back to using the BigQuery API to fetch"

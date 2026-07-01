@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.metrics.Metrics;
+import org.apache.beam.sdk.values.KV;
 
 /**
  * This class is called in {@link ParsePayload} to check for known signatures of potentially
@@ -160,12 +161,27 @@ public class MessageScrubber {
       .put("org-lilo-mobile-android2020", "2013260") //
       .put("co-searcha-bistre", "2013260") //
       .put("com-buxue-student", "2024382") //
+      .put("com-ziniao-smanager", "2032228") //
+      .put("com-codeedge-childrenfence", "2034078") //
+      .put("coverage", "SVCSE-4447") //
+      .build();
+
+  private static final Map<KV<String, String>, String> IGNORED_NAMESPACES_AND_DOCTYPES = ImmutableMap
+      .<KV<String, String>, String>builder()
+      .put(KV.of("firefox-desktop-background-defaultagent", "new-profile"), "2039430") //
+      .put(KV.of("firefox-desktop-background-defaultagent", "use-counters"), "2039430") //
+      .put(KV.of("firefox-desktop-background-defaultagent", "crash"), "2039430") //
+      .put(KV.of("firefox-desktop-background-defaultagent", "pageload"), "2039430") //
+      .put(KV.of("firefox-desktop-background-defaultagent", "temp-fog-initial-state"), "2039430") //
       .build();
 
   private static final Map<String, String> IGNORED_NAMESPACE_PREFIXES = ImmutableMap
       .<String, String>builder() //
       .put("com-feifan", "2010623") //
       .put("org-global-g", "2024379") //
+      .put("org-global-wxc", "2037560") //
+      .put("com-xiaobei-browser", "2039427") //
+      .put("org-global-", "2042210") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
@@ -326,6 +342,12 @@ public class MessageScrubber {
           throw new UnwantedDataException(IGNORED_NAMESPACE_PREFIXES.get(prefix));
         }
       }
+    }
+
+    // Check for unwanted document types for a specific namespace.
+    final KV<String, String> namespaceAndDocType = KV.of(namespace, docType);
+    if (IGNORED_NAMESPACES_AND_DOCTYPES.containsKey(namespaceAndDocType)) {
+      throw new UnwantedDataException(IGNORED_NAMESPACES_AND_DOCTYPES.get(namespaceAndDocType));
     }
 
     if (ParseUri.TELEMETRY.equals(namespace) && IGNORED_TELEMETRY_DOCTYPES.containsKey(docType)) {
