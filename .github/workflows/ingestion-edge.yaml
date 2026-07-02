@@ -1,0 +1,61 @@
+name: ingestion-edge
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "ingestion-edge/**"
+      - ".github/workflows/ingestion-edge.yaml"
+
+defaults:
+  run:
+    working-directory: ingestion-edge
+
+jobs:
+  ingestion-edge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: Build
+        run: bin/build
+      - name: PyTest with linters
+        run: bin/pytest-all
+        env:
+          PYTEST_ADDOPTS: --cov-report=xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingestion-edge-test-results
+          path: ingestion-edge/test-results
+      - name: Report code coverage
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          flags: ingestion_edge
+          working-directory: ingestion-edge
+
+  ingestion-edge-verify-requirements:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: Verify that requirements.txt contains the right dependencies for this python version
+        run: |
+          pip install pip-tools --constraint requirements.in
+          pip-compile --allow-unsafe --generate-hashes --quiet
+          git diff --exit-code -G '^ *[^# ]' -- requirements.txt
