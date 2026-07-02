@@ -30,7 +30,7 @@ jobs:
       - name: PyTest with linters
         run: bin/pytest-all
         env:
-          PYTEST_ADDOPTS: --cov-report=xml --cov-report=term-missing
+          PYTEST_ADDOPTS: --cov-report=xml
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
