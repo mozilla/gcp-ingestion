@@ -11,6 +11,7 @@ on:
       - "ingestion-core/**"
       - "ingestion-sink/**"
       - ".github/workflows/java.yaml"
+  workflow_dispatch:
 
 jobs:
   changed:
@@ -50,7 +51,7 @@ jobs:
   ingestion-beam-unit:
     name: ingestion-beam-unit-java-11
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true'
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -85,7 +86,7 @@ jobs:
   ingestion-beam-integration:
     name: ingestion-beam-integration-java-11
     needs: changed
-    if: (github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -125,7 +126,7 @@ jobs:
   ingestion-core-unit:
     name: ingestion-core-unit-java-11
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true'
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -158,7 +159,7 @@ jobs:
   ingestion-core-integration:
     name: ingestion-core-integration-java-11
     needs: changed
-    if: (github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -196,7 +197,7 @@ jobs:
   ingestion-sink-unit:
     name: ingestion-sink-unit-java-11
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true'
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -229,7 +230,7 @@ jobs:
   ingestion-sink-integration:
     name: ingestion-sink-integration-java-11
     needs: changed
-    if: (github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       contents: read
