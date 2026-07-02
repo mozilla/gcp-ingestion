@@ -1,12 +1,10 @@
 package com.mozilla.telemetry.io;
 
 import com.google.api.services.bigquery.model.TableSchema;
-import com.google.cloud.pubsublite.SubscriptionPath;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.Constant.FieldName;
 import com.mozilla.telemetry.options.BigQueryReadMethod;
 import com.mozilla.telemetry.options.InputFileFormat;
-import com.mozilla.telemetry.transforms.PubsubLiteCompat;
 import com.mozilla.telemetry.util.Time;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -21,8 +19,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.io.gcp.pubsublite.PubsubLiteIO;
-import org.apache.beam.sdk.io.gcp.pubsublite.SubscriberOptions;
 import org.apache.beam.sdk.transforms.MapElements;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.values.PBegin;
@@ -56,25 +52,6 @@ public abstract class Read extends PTransform<PBegin, PCollection<PubsubMessage>
             attributesWithMessageId.put(Attribute.MESSAGE_ID, message.getMessageId());
             return new PubsubMessage(message.getPayload(), attributesWithMessageId);
           }));
-    }
-  }
-
-  /** Implementation of reading from Pub/Sub Lite. */
-  public static class PubsubLiteInput extends Read {
-
-    private final SubscriptionPath path;
-
-    /** Constructor. */
-    public PubsubLiteInput(String subscription) {
-      path = SubscriptionPath.parse(subscription);
-    }
-
-    @Override
-    public PCollection<PubsubMessage> expand(PBegin input) {
-      return input
-          .apply(
-              PubsubLiteIO.read(SubscriberOptions.newBuilder().setSubscriptionPath(path).build()))
-          .apply(PubsubLiteCompat.fromPubsubLite());
     }
   }
 
