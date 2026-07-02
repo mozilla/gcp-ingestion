@@ -56,6 +56,9 @@ jobs:
           cache: "pip"
       - name: Verify that requirements.txt contains the right dependencies for this python version
         run: |
-          pip install pip-tools --constraint requirements.in
+          # requirements.in pins pip-tools==7.4.1, which predates pip-tools' fix for
+          # https://github.com/jazzband/pip-tools/issues/2319 (pip>=26 incompatibility).
+          # Constrain pip itself until that pin is bumped.
+          pip install "pip<26" pip-tools --constraint requirements.in
           pip-compile --allow-unsafe --generate-hashes --quiet
           git diff --exit-code -G '^ *[^# ]' -- requirements.txt
