@@ -55,7 +55,7 @@ import org.junit.rules.TemporaryFolder;
 public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
   private static final String STATIC_TEST_TEMP = //
-      "gs://gcp-ingestion-static-test-bucket/temp/bq-loads";
+      "gs://moz-fx-data-integration-tests-gcp-ingestion/temp/bq-loads";
 
   private BigQuery bigquery;
   private String projectId;
