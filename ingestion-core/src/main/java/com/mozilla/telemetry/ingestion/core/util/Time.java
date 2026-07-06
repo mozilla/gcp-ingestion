@@ -41,7 +41,7 @@ public class Time {
         duration = Duration.parse(modifiedValue);
       } catch (java.time.format.DateTimeParseException e) {
         throw new IllegalArgumentException(
-            "User-provided duration'" + value + "' was transformed to '" + modifiedValue
+            "User-provided duration '" + value + "' was transformed to '" + modifiedValue
                 + "', but java.time.Duration.parse() could not understand it.",
             e);
       }
