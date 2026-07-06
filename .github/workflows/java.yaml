@@ -86,6 +86,7 @@ jobs:
     name: ingestion-beam-integration-java-11
     needs: changed
     if: (github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    environment: dev
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -159,6 +160,7 @@ jobs:
     name: ingestion-core-integration-java-11
     needs: changed
     if: (github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    environment: dev
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -230,6 +232,7 @@ jobs:
     name: ingestion-sink-integration-java-11
     needs: changed
     if: (github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    environment: dev
     runs-on: ubuntu-latest
     permissions:
       contents: read
