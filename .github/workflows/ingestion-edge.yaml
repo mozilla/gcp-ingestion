@@ -5,16 +5,33 @@ on:
     branches:
       - main
   pull_request:
-    paths:
-      - "ingestion-edge/**"
-      - ".github/workflows/ingestion-edge.yaml"
 
 defaults:
   run:
     working-directory: ingestion-edge
 
 jobs:
+  changed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      edge: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          files: |
+            ingestion-edge/**
+            .github/workflows/ingestion-edge.yaml
+
   ingestion-edge:
+    needs: changed
+    if: github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,6 +62,8 @@ jobs:
           working-directory: ingestion-edge
 
   ingestion-edge-verify-requirements:
+    needs: changed
+    if: github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
