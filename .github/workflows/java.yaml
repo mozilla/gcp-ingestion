@@ -50,7 +50,7 @@ jobs:
   ingestion-beam-unit:
     name: ingestion-beam-unit-java-11
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true'
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -85,7 +85,7 @@ jobs:
   ingestion-beam-integration:
     name: ingestion-beam-integration-java-11
     needs: changed
-    if: (github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     environment: dev
     runs-on: ubuntu-latest
     permissions:
@@ -126,7 +126,7 @@ jobs:
   ingestion-core-unit:
     name: ingestion-core-unit-java-11
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true'
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -159,7 +159,7 @@ jobs:
   ingestion-core-integration:
     name: ingestion-core-integration-java-11
     needs: changed
-    if: (github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     environment: dev
     runs-on: ubuntu-latest
     permissions:
@@ -198,7 +198,7 @@ jobs:
   ingestion-sink-unit:
     name: ingestion-sink-unit-java-11
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true'
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -231,7 +231,7 @@ jobs:
   ingestion-sink-integration:
     name: ingestion-sink-integration-java-11
     needs: changed
-    if: (github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     environment: dev
     runs-on: ubuntu-latest
     permissions:

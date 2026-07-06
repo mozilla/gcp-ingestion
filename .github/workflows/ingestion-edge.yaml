@@ -31,7 +31,7 @@ jobs:
 
   ingestion-edge:
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true'
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -63,7 +63,7 @@ jobs:
 
   ingestion-edge-verify-requirements:
     needs: changed
-    if: github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true'
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
