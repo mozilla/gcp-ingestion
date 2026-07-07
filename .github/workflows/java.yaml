@@ -12,15 +12,13 @@ jobs:
     permissions:
       contents: read
     outputs:
-      beam: ${{ steps.changed-files-beam.outputs.any_changed }}
-      core: ${{ steps.changed-files-core.outputs.any_changed }}
-      sink: ${{ steps.changed-files-sink.outputs.any_changed }}
+      java: ${{ steps.changed-files.outputs.any_changed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
-      - id: changed-files-beam
+      - id: changed-files
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           files: |
@@ -29,35 +27,29 @@ jobs:
             .github/workflows/java.yaml
             ingestion-core/**
             ingestion-beam/**
-      - id: changed-files-core
-        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
-        with:
-          files: |
-            pom.xml
-            checkstyle/**
-            .github/workflows/java.yaml
-            ingestion-core/**
-      - id: changed-files-sink
-        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
-        with:
-          files: |
-            pom.xml
-            checkstyle/**
-            .github/workflows/java.yaml
-            ingestion-core/**
             ingestion-sink/**
 
-  ingestion-beam-unit:
-    name: ingestion-beam-unit-java-11
+  unit:
+    name: ${{ matrix.module }}-unit-java-11
     needs: changed
-    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true')
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: ingestion-beam
+            codecov_flag: ingestion_beam
+          - module: ingestion-core
+            codecov_flag: ingestion_core
+          - module: ingestion-sink
+            codecov_flag: ingestion_sink
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     defaults:
       run:
-        working-directory: ingestion-beam
+        working-directory: ${{ matrix.module }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -66,6 +58,7 @@ jobs:
           java-version: "11"
           cache: maven
       - name: Download resources needed for Beam tests
+        if: matrix.module == 'ingestion-beam'
         run: bin/download-schemas
       - name: Maven unit test
         run: mvn clean test
@@ -73,27 +66,37 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports-ingestion-beam-unit
-          path: ingestion-beam/target/surefire-reports
+          name: surefire-reports-${{ matrix.module }}-unit
+          path: ${{ matrix.module }}/target/surefire-reports
       - name: Report code coverage
         uses: codecov/codecov-action@v5
         with:
           use_oidc: true
-          flags: ingestion_beam
-          working-directory: ingestion-beam
+          flags: ${{ matrix.codecov_flag }}
+          working-directory: ${{ matrix.module }}
 
-  ingestion-beam-integration:
-    name: ingestion-beam-integration-java-11
+  integration:
+    name: ${{ matrix.module }}-integration-java-11
     needs: changed
-    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.beam == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     environment: dev
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: ingestion-beam
+            codecov_flag: ingestion_beam
+          - module: ingestion-core
+            codecov_flag: ingestion_core
+          - module: ingestion-sink
+            codecov_flag: ingestion_sink
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
     defaults:
       run:
-        working-directory: ingestion-beam
+        working-directory: ${{ matrix.module }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -102,6 +105,7 @@ jobs:
           java-version: "11"
           cache: maven
       - name: Download resources needed for Beam tests
+        if: matrix.module == 'ingestion-beam'
         run: bin/download-schemas
       - name: Authenticate to GCP (OIDC)
         uses: google-github-actions/auth@v2
@@ -114,155 +118,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-reports-ingestion-beam-integration
-          path: ingestion-beam/target/surefire-reports
+          name: surefire-reports-${{ matrix.module }}-integration
+          path: ${{ matrix.module }}/target/surefire-reports
       - name: Report code coverage
         uses: codecov/codecov-action@v5
         with:
           use_oidc: true
-          flags: ingestion_beam
-          working-directory: ingestion-beam
-
-  ingestion-core-unit:
-    name: ingestion-core-unit-java-11
-    needs: changed
-    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    defaults:
-      run:
-        working-directory: ingestion-core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "11"
-          cache: maven
-      - name: Maven unit test
-        run: mvn clean test
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports-ingestion-core-unit
-          path: ingestion-core/target/surefire-reports
-      - name: Report code coverage
-        uses: codecov/codecov-action@v5
-        with:
-          use_oidc: true
-          flags: ingestion_core
-          working-directory: ingestion-core
-
-  ingestion-core-integration:
-    name: ingestion-core-integration-java-11
-    needs: changed
-    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.core == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    environment: dev
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    defaults:
-      run:
-        working-directory: ingestion-core
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "11"
-          cache: maven
-      - name: Authenticate to GCP (OIDC)
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCPV2_GITHUB_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_INTEGRATION_SERVICE_ACCOUNT_EMAIL }}
-      - name: Maven integration test
-        run: mvn clean test -Dtest=*IntegrationTest -Dsurefire.failIfNoSpecifiedTests=false
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports-ingestion-core-integration
-          path: ingestion-core/target/surefire-reports
-      - name: Report code coverage
-        uses: codecov/codecov-action@v5
-        with:
-          use_oidc: true
-          flags: ingestion_core
-          working-directory: ingestion-core
-
-  ingestion-sink-unit:
-    name: ingestion-sink-unit-java-11
-    needs: changed
-    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    defaults:
-      run:
-        working-directory: ingestion-sink
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "11"
-          cache: maven
-      - name: Maven unit test
-        run: mvn clean test
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports-ingestion-sink-unit
-          path: ingestion-sink/target/surefire-reports
-      - name: Report code coverage
-        uses: codecov/codecov-action@v5
-        with:
-          use_oidc: true
-          flags: ingestion_sink
-          working-directory: ingestion-sink
-
-  ingestion-sink-integration:
-    name: ingestion-sink-integration-java-11
-    needs: changed
-    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.sink == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-    environment: dev
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    defaults:
-      run:
-        working-directory: ingestion-sink
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "11"
-          cache: maven
-      - name: Authenticate to GCP (OIDC)
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ vars.GCPV2_GITHUB_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.GCP_INTEGRATION_SERVICE_ACCOUNT_EMAIL }}
-      - name: Maven integration test
-        run: mvn clean test -Dtest=*IntegrationTest -Dsurefire.failIfNoSpecifiedTests=false
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports-ingestion-sink-integration
-          path: ingestion-sink/target/surefire-reports
-      - name: Report code coverage
-        uses: codecov/codecov-action@v5
-        with:
-          use_oidc: true
-          flags: ingestion_sink
-          working-directory: ingestion-sink
+          flags: ${{ matrix.codecov_flag }}
+          working-directory: ${{ matrix.module }}
