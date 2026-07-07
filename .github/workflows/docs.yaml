@@ -31,6 +31,8 @@ jobs:
 
   docs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: gh-pages
     runs-on: ubuntu-latest
     permissions:
       contents: write
