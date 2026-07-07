@@ -41,7 +41,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-          cache: "pip"
       - name: Build
         run: bin/build
       - name: PyTest with linters
