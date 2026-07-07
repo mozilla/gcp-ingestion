@@ -113,7 +113,7 @@ jobs:
           workload_identity_provider: ${{ vars.GCPV2_GITHUB_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_INTEGRATION_SERVICE_ACCOUNT_EMAIL }}
       - name: Maven integration test
-        run: mvn clean test -Dtest=*IntegrationTest -Dsurefire.failIfNoSpecifiedTests=false
+        run: mvn clean test -Dtest='*IntegrationTest' -Dsurefire.failIfNoSpecifiedTests=false
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
