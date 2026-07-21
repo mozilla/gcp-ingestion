@@ -64,10 +64,11 @@ public class DecompressPayload
         try {
           Map<String, String> attributes = message.getAttributeMap();
 
-          // valid doc types and namespaces shouldn't have % or url-encoded characters
+          // valid namespaces, doc types, and versions shouldn't have % or url-encoded characters.
           boolean validUri = attributes != null
               && !attributes.getOrDefault("document_namespace", "").contains("%")
-              && !attributes.getOrDefault("document_type", "").contains("%");
+              && !attributes.getOrDefault("document_type", "").contains("%")
+              && !attributes.getOrDefault("document_version", "").contains("%");
           PerDocTypeCounter.inc(validUri ? attributes : null, "predecompress_submission_bytes",
               message.getPayload().length);
 
