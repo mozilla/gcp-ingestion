@@ -231,9 +231,7 @@ def _create_flush_job(
             fs_group=10001,
             seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
         )
-    toleration_objs = (
-        [V1Toleration(**t) for t in tolerations] if tolerations else None
-    )
+    toleration_objs = [V1Toleration(**t) for t in tolerations or ()] or None
     try:
         return batch_api.create_namespaced_job(
             namespace=namespace,
