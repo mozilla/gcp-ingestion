@@ -14,6 +14,7 @@ from kubernetes.config import load_incluster_config
 from kubernetes.client import (
     BatchV1Api,
     CoreV1Api,
+    V1Capabilities,
     V1Container,
     V1DeleteOptions,
     V1EnvVar,
@@ -28,10 +29,13 @@ from kubernetes.client import (
     V1PersistentVolumeClaimVolumeSource,
     V1PersistentVolumeSpec,
     V1Pod,
+    V1PodSecurityContext,
     V1PodSpec,
     V1PodTemplateSpec,
     V1Preconditions,
     V1ResourceRequirements,
+    V1SeccompProfile,
+    V1SecurityContext,
     V1Volume,
     V1VolumeMount,
 )
@@ -102,6 +106,14 @@ parser.add_argument(
     type=int,
     help="Number of seconds to wait for persistent volume claims to remain detached "
     "before deleting",
+)
+parser.add_argument(
+    "--enable-restricted-security-context",
+    action="store_true",
+    help="Add a securityContext to flush job pods that satisfies the Pod Security "
+    "Standard 'restricted' policy. Required on clusters that enforce PSS restricted "
+    "(e.g. GKE shared clusters); disabled by default for backwards compatibility with "
+    "clusters that don't enforce PSS and run containers as root.",
 )
 
 
@@ -180,8 +192,24 @@ def _create_flush_job(
     name: str,
     namespace: str,
     service_account_name: str,
+    restricted_security_context: bool = False,
 ) -> V1Job:
     logger.info(f"creating job: {name}")
+    container_security_context = None
+    pod_security_context = None
+    if restricted_security_context:
+        container_security_context = V1SecurityContext(
+            allow_privilege_escalation=False,
+            capabilities=V1Capabilities(drop=["ALL"]),
+            seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
+        )
+        pod_security_context = V1PodSecurityContext(
+            run_as_non_root=True,
+            run_as_user=10001,
+            run_as_group=10001,
+            fs_group=10001,
+            seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
+        )
     try:
         return batch_api.create_namespaced_job(
             namespace=namespace,
@@ -219,9 +247,11 @@ def _create_flush_job(
                                             if value
                                         },
                                     ),
+                                    security_context=container_security_context,
                                 )
                             ],
                             restart_policy="OnFailure",
+                            security_context=pod_security_context,
                             volumes=[
                                 V1Volume(
                                     name="queue",
@@ -253,6 +283,7 @@ def flush_released_pvs(
     image: str,
     namespace: str,
     service_account_name: str,
+    restricted_security_context: bool = False,
 ):
     """
     Flush persistent volumes.
@@ -277,7 +308,14 @@ def flush_released_pvs(
                 pvc = _create_pvc(api, name, namespace, pv)
                 _bind_pvc(api, pv, pvc)
             _create_flush_job(
-                batch_api, command, env, image, name, namespace, service_account_name
+                batch_api,
+                command,
+                env,
+                image,
+                name,
+                namespace,
+                service_account_name,
+                restricted_security_context,
             )
 
 
@@ -354,13 +392,21 @@ def flush_released_pvs_and_delete_complete_jobs(
     image: str,
     namespace: str,
     service_account_name: str,
+    restricted_security_context: bool = False,
 ):
     """Flush released persistent volumes then delete complete jobs.
 
     Run sequentially to avoid race conditions.
     """
     flush_released_pvs(
-        api, batch_api, command, env, image, namespace, service_account_name
+        api,
+        batch_api,
+        command,
+        env,
+        image,
+        namespace,
+        service_account_name,
+        restricted_security_context,
     )
     delete_complete_jobs(api, batch_api, namespace)
 
@@ -506,6 +552,7 @@ def main():
             args.image,
             args.namespace,
             args.service_account_name,
+            args.enable_restricted_security_context,
         ),
         partial(
             delete_detached_pvcs,
