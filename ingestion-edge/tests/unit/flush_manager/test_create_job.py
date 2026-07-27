@@ -344,6 +344,60 @@ def test_flush_released_pvs_with_node_selector_and_tolerations(
     assert toleration.effect == "NoExecute"
 
 
+def test_flush_released_pvs_accepts_camelcase_toleration_keys(
+    api: MagicMock, batch_api: MagicMock
+):
+    """Toleration dicts with camelCase keys (matching K8s YAML) are accepted."""
+    api.list_persistent_volume.return_value = V1PersistentVolumeList(
+        items=[
+            V1PersistentVolume(
+                metadata=V1ObjectMeta(name="pv-0"),
+                spec=V1PersistentVolumeSpec(
+                    claim_ref=V1ObjectReference(
+                        name="queue-web-0", namespace="namespace"
+                    ),
+                    persistent_volume_reclaim_policy="Retain",
+                ),
+                status=V1PersistentVolumeStatus(phase="Released"),
+            ),
+        ]
+    )
+
+    def create_pvc(namespace, body):
+        body.metadata.uid = "uid-" + body.metadata.name
+        body.metadata.resource_version = "1"
+        return body
+
+    api.create_namespaced_persistent_volume_claim.side_effect = create_pvc
+    batch_api.list_namespaced_job.return_value = V1JobList(items=[])
+
+    flush_released_pvs(
+        api,
+        batch_api,
+        ["command"],
+        [],
+        "image",
+        "namespace",
+        "service-account-name",
+        tolerations=[
+            {
+                "key": "tenant",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 30,
+            }
+        ],
+    )
+
+    batch_api.create_namespaced_job.assert_called_once()
+    body = batch_api.create_namespaced_job.call_args.kwargs["body"]
+    toleration = body.spec.template.spec.tolerations[0]
+    assert toleration.key == "tenant"
+    assert toleration.operator == "Exists"
+    assert toleration.effect == "NoExecute"
+    assert toleration.toleration_seconds == 30
+
+
 def test_create_pvc_raises_server_error(api: MagicMock, batch_api: MagicMock):
     api.list_persistent_volume.return_value = V1PersistentVolumeList(
         items=[

@@ -49,6 +49,12 @@ ALREADY_EXISTS = "AlreadyExists"
 CONFLICT = "Conflict"
 NOT_FOUND = "Not Found"
 
+# V1Toleration's __init__ accepts snake_case names (e.g. toleration_seconds),
+# but Kubernetes YAML/JSON conventionally uses camelCase (tolerationSeconds).
+# Map the wire-format names to Python attribute names so --tolerations JSON
+# can use either convention.
+_TOLERATION_KEY_MAP = {v: k for k, v in V1Toleration.attribute_map.items()}
+
 DEFAULT_IMAGE_VERSION = "latest"
 try:
     with open("version.json") as fp:
@@ -128,10 +134,11 @@ parser.add_argument(
     "--tolerations",
     default=[],
     type=json.loads,
-    help="Tolerations for flush job pods as a JSON list of toleration objects with "
-    'snake_case keys (e.g. \'[{"key": "tenant", "operator": "Equal", '
-    '"value": "ingestion-edge", "effect": "NoExecute"}]\'). Defaults to none. Set '
-    "to match the workload's tolerations so drain Jobs are not evicted from tainted "
+    help="Tolerations for flush job pods as a JSON list of toleration objects "
+    '(e.g. \'[{"key": "tenant", "operator": "Equal", "value": '
+    '"ingestion-edge", "effect": "NoExecute"}]\'). Keys may be snake_case '
+    "or camelCase (matching Kubernetes YAML). Defaults to none. Set to match "
+    "the workload's tolerations so drain Jobs are not evicted from tainted "
     "node pools.",
 )
 
@@ -224,6 +231,9 @@ def _create_flush_job(
             capabilities=V1Capabilities(drop=["ALL"]),
             seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
         )
+        # UID/GID 10001 matches the default non-root user baked into the
+        # mozcloud helm chart (mozilla/helm-charts). Keep in sync so the
+        # Job pod's fsGroup can chgrp the mounted PV.
         pod_security_context = V1PodSecurityContext(
             run_as_non_root=True,
             run_as_user=10001,
@@ -231,7 +241,10 @@ def _create_flush_job(
             fs_group=10001,
             seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
         )
-    toleration_objs = [V1Toleration(**t) for t in tolerations or ()] or None
+    toleration_objs = [
+        V1Toleration(**{_TOLERATION_KEY_MAP.get(k, k): v for k, v in t.items()})
+        for t in tolerations or ()
+    ] or None
     try:
         return batch_api.create_namespaced_job(
             namespace=namespace,
