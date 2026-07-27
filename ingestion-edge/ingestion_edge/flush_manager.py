@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from multiprocessing.pool import ThreadPool
 from time import sleep
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 import json
 import os
 
@@ -129,7 +129,7 @@ parser.add_argument(
     default=[],
     type=json.loads,
     help="Tolerations for flush job pods as a JSON list of toleration objects with "
-    "snake_case keys (e.g. '[{\"key\": \"tenant\", \"operator\": \"Equal\", "
+    'snake_case keys (e.g. \'[{"key": "tenant", "operator": "Equal", '
     '"value": "ingestion-edge", "effect": "NoExecute"}]\'). Defaults to none. Set '
     "to match the workload's tolerations so drain Jobs are not evicted from tainted "
     "node pools.",
@@ -212,8 +212,8 @@ def _create_flush_job(
     namespace: str,
     service_account_name: str,
     restricted_security_context: bool = False,
-    node_selector: Dict[str, str] = None,
-    tolerations: List[dict] = None,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ) -> V1Job:
     logger.info(f"creating job: {name}")
     container_security_context = None
@@ -308,8 +308,8 @@ def flush_released_pvs(
     namespace: str,
     service_account_name: str,
     restricted_security_context: bool = False,
-    node_selector: Dict[str, str] = None,
-    tolerations: List[dict] = None,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ):
     """
     Flush persistent volumes.
@@ -421,8 +421,8 @@ def flush_released_pvs_and_delete_complete_jobs(
     namespace: str,
     service_account_name: str,
     restricted_security_context: bool = False,
-    node_selector: Dict[str, str] = None,
-    tolerations: List[dict] = None,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ):
     """Flush released persistent volumes then delete complete jobs.
 
