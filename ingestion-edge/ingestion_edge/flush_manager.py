@@ -36,6 +36,7 @@ from kubernetes.client import (
     V1ResourceRequirements,
     V1SeccompProfile,
     V1SecurityContext,
+    V1Toleration,
     V1Volume,
     V1VolumeMount,
 )
@@ -115,6 +116,24 @@ parser.add_argument(
     "(e.g. GKE shared clusters); disabled by default for backwards compatibility with "
     "clusters that don't enforce PSS and run containers as root.",
 )
+parser.add_argument(
+    "--node-selector",
+    default={},
+    type=json.loads,
+    help="nodeSelector for flush job pods as a JSON object (e.g. "
+    '\'{"tenant": "ingestion-edge"}\'). Defaults to no selector. Set to match the '
+    "workload's nodeSelector so drain Jobs schedule on the same node pool.",
+)
+parser.add_argument(
+    "--tolerations",
+    default=[],
+    type=json.loads,
+    help="Tolerations for flush job pods as a JSON list of toleration objects with "
+    "snake_case keys (e.g. '[{\"key\": \"tenant\", \"operator\": \"Equal\", "
+    '"value": "ingestion-edge", "effect": "NoExecute"}]\'). Defaults to none. Set '
+    "to match the workload's tolerations so drain Jobs are not evicted from tainted "
+    "node pools.",
+)
 
 
 @dataclass(frozen=True)
@@ -193,6 +212,8 @@ def _create_flush_job(
     namespace: str,
     service_account_name: str,
     restricted_security_context: bool = False,
+    node_selector: Dict[str, str] = None,
+    tolerations: List[dict] = None,
 ) -> V1Job:
     logger.info(f"creating job: {name}")
     container_security_context = None
@@ -210,6 +231,9 @@ def _create_flush_job(
             fs_group=10001,
             seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
         )
+    toleration_objs = (
+        [V1Toleration(**t) for t in tolerations] if tolerations else None
+    )
     try:
         return batch_api.create_namespaced_job(
             namespace=namespace,
@@ -263,6 +287,8 @@ def _create_flush_job(
                                 )
                             ],
                             service_account_name=service_account_name,
+                            node_selector=node_selector or None,
+                            tolerations=toleration_objs,
                         )
                     )
                 ),
@@ -284,6 +310,8 @@ def flush_released_pvs(
     namespace: str,
     service_account_name: str,
     restricted_security_context: bool = False,
+    node_selector: Dict[str, str] = None,
+    tolerations: List[dict] = None,
 ):
     """
     Flush persistent volumes.
@@ -316,6 +344,8 @@ def flush_released_pvs(
                 namespace,
                 service_account_name,
                 restricted_security_context,
+                node_selector,
+                tolerations,
             )
 
 
@@ -393,6 +423,8 @@ def flush_released_pvs_and_delete_complete_jobs(
     namespace: str,
     service_account_name: str,
     restricted_security_context: bool = False,
+    node_selector: Dict[str, str] = None,
+    tolerations: List[dict] = None,
 ):
     """Flush released persistent volumes then delete complete jobs.
 
@@ -407,6 +439,8 @@ def flush_released_pvs_and_delete_complete_jobs(
         namespace,
         service_account_name,
         restricted_security_context,
+        node_selector,
+        tolerations,
     )
     delete_complete_jobs(api, batch_api, namespace)
 
@@ -553,6 +587,8 @@ def main():
             args.namespace,
             args.service_account_name,
             args.enable_restricted_security_context,
+            args.node_selector,
+            args.tolerations,
         ),
         partial(
             delete_detached_pvcs,

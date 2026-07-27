@@ -282,6 +282,66 @@ def test_flush_released_pvs_without_restricted_security_context(
     pod_spec = body.spec.template.spec
     assert pod_spec.security_context is None
     assert pod_spec.containers[0].security_context is None
+    assert pod_spec.node_selector is None
+    assert pod_spec.tolerations is None
+
+
+def test_flush_released_pvs_with_node_selector_and_tolerations(
+    api: MagicMock, batch_api: MagicMock
+):
+    """Node selector and tolerations propagate to the Job PodSpec."""
+    api.list_persistent_volume.return_value = V1PersistentVolumeList(
+        items=[
+            V1PersistentVolume(
+                metadata=V1ObjectMeta(name="pv-0"),
+                spec=V1PersistentVolumeSpec(
+                    claim_ref=V1ObjectReference(
+                        name="queue-web-0", namespace="namespace"
+                    ),
+                    persistent_volume_reclaim_policy="Retain",
+                ),
+                status=V1PersistentVolumeStatus(phase="Released"),
+            ),
+        ]
+    )
+
+    def create_pvc(namespace, body):
+        body.metadata.uid = "uid-" + body.metadata.name
+        body.metadata.resource_version = "1"
+        return body
+
+    api.create_namespaced_persistent_volume_claim.side_effect = create_pvc
+    batch_api.list_namespaced_job.return_value = V1JobList(items=[])
+
+    flush_released_pvs(
+        api,
+        batch_api,
+        ["command"],
+        [],
+        "image",
+        "namespace",
+        "service-account-name",
+        node_selector={"tenant": "ingestion-edge"},
+        tolerations=[
+            {
+                "key": "tenant",
+                "operator": "Equal",
+                "value": "ingestion-edge",
+                "effect": "NoExecute",
+            }
+        ],
+    )
+
+    batch_api.create_namespaced_job.assert_called_once()
+    body = batch_api.create_namespaced_job.call_args.kwargs["body"]
+    pod_spec = body.spec.template.spec
+    assert pod_spec.node_selector == {"tenant": "ingestion-edge"}
+    assert len(pod_spec.tolerations) == 1
+    toleration = pod_spec.tolerations[0]
+    assert toleration.key == "tenant"
+    assert toleration.operator == "Equal"
+    assert toleration.value == "ingestion-edge"
+    assert toleration.effect == "NoExecute"
 
 
 def test_create_pvc_raises_server_error(api: MagicMock, batch_api: MagicMock):
