@@ -324,6 +324,9 @@ public class MessageScrubber {
         && "new-metric-capture-emulation".equals(docType)) {
       throw new MessageShouldBeDroppedException("1817821");
     }
+    if (bug11464Affected(namespace, docType, json)) {
+      throw new MessageShouldBeDroppedException("DENG-11464");
+    }
 
     if (bug1712850Affected(attributes)) {
       if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
@@ -553,6 +556,37 @@ public class MessageScrubber {
   static boolean bug1712850Affected(Map<String, String> attributes) {
     return "contextual-services".equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
         && "quicksuggest-impression".equals(attributes.get(Attribute.DOCUMENT_TYPE));
+  }
+
+  // A resolved DLL name in a third-party-modules ping should either be a bare file name or a path
+  // rooted at one of these environment variables. Anything else that still contains a path
+  // separator is treated as an unsanitized path. See DENG-11464.
+  private static final Set<String> DENG_11464_ALLOWED_DLL_PATH_PREFIXES = ImmutableSet
+      .of("%programfiles%\\", "%programfiles% (x86)\\", "%systemroot%\\", "%temp%\\");
+
+  private static boolean bug11464Affected(String namespace, String docType, ObjectNode json) {
+    if (!ParseUri.TELEMETRY.equals(namespace) || !"third-party-modules".equals(docType)) {
+      return false;
+    }
+    boolean windows = Optional
+        .ofNullable(json.path("environment").path("system").path("os").path("name").textValue())
+        .filter(name -> name.startsWith("Windows")).isPresent();
+    if (!windows) {
+      return false;
+    }
+    return Streams.stream(json.path("payload").path("modules").elements()) //
+        .map(module -> module.path("resolvedDllName")) //
+        .filter(JsonNode::isTextual) //
+        .map(JsonNode::textValue) //
+        .anyMatch(MessageScrubber::isUnsanitizedDllPath);
+  }
+
+  private static boolean isUnsanitizedDllPath(String resolvedDllName) {
+    if (resolvedDllName.indexOf('\\') < 0) {
+      return false;
+    }
+    String lower = resolvedDllName.toLowerCase();
+    return DENG_11464_ALLOWED_DLL_PATH_PREFIXES.stream().noneMatch(lower::startsWith);
   }
 
   // See bug 1733118 for discussion of affected versions, etc.
