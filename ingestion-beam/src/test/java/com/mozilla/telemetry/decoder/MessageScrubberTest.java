@@ -199,6 +199,53 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testShouldScrubThirdPartyModulesDeng11464() throws Exception {
+    Map<String, String> attributes = Maps.newHashMap(
+        ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+            .put(Attribute.DOCUMENT_TYPE, "third-party-modules").build());
+
+    // A module whose resolved DLL name is a full path that isn't rooted at an allowed
+    // environment variable leaks the local username and should be dropped.
+    ObjectNode leaked = Json.readObjectNode(("{\n" //
+        + "  \"environment\": { \"system\": { \"os\": { \"name\": \"Windows_NT\" } } },\n" //
+        + "  \"payload\": { \"modules\": [\n" //
+        + "    { \"resolvedDllName\": \"%SystemRoot%\\\\System32\\\\ntdll.dll\" },\n" //
+        + "    { \"resolvedDllName\": \"C:\\\\Users\\\\johndoe\\\\evil.dll\" }\n" //
+        + "  ] }\n" //
+        + "}").getBytes(StandardCharsets.UTF_8));
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, leaked));
+
+    // Bare file names and paths rooted at the allowed environment variables are fine.
+    ObjectNode sanitized = Json.readObjectNode(("{\n" //
+        + "  \"environment\": { \"system\": { \"os\": { \"name\": \"Windows_NT\" } } },\n" //
+        + "  \"payload\": { \"modules\": [\n" //
+        + "    { \"resolvedDllName\": \"ntdll.dll\" },\n" //
+        + "    { \"resolvedDllName\": \"%ProgramFiles%\\\\Mozilla Firefox\\\\xul.dll\" },\n" //
+        + "    { \"resolvedDllName\": \"%ProgramFiles% (x86)\\\\foo\\\\bar.dll\" },\n" //
+        + "    { \"resolvedDllName\": \"%SystemRoot%\\\\System32\\\\ntdll.dll\" },\n" //
+        + "    { \"resolvedDllName\": \"%TEMP%\\\\baz.dll\" }\n" //
+        + "  ] }\n" //
+        + "}").getBytes(StandardCharsets.UTF_8));
+    MessageScrubber.scrub(attributes, sanitized);
+
+    // A leaked path on a non-Windows OS is out of scope for this rule.
+    ObjectNode nonWindows = Json.readObjectNode(("{\n" //
+        + "  \"environment\": { \"system\": { \"os\": { \"name\": \"Linux\" } } },\n" //
+        + "  \"payload\": { \"modules\": [\n" //
+        + "    { \"resolvedDllName\": \"C:\\\\Users\\\\johndoe\\\\evil.dll\" }\n" //
+        + "  ] }\n" //
+        + "}").getBytes(StandardCharsets.UTF_8));
+    MessageScrubber.scrub(attributes, nonWindows);
+
+    // The rule only applies to telemetry third-party-modules pings.
+    Map<String, String> otherDocType = Maps.newHashMap(
+        ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, "telemetry")
+            .put(Attribute.DOCUMENT_TYPE, "not-third-party-modules").build());
+    MessageScrubber.scrub(otherDocType, leaked);
+  }
+
+  @Test
   public void testShouldScrubBhrBug1562011() throws Exception {
     ObjectNode ping = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //
