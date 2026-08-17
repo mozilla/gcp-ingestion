@@ -3,7 +3,6 @@ package com.mozilla.telemetry.io;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.bigquery.model.ErrorProto;
 import com.google.api.services.bigquery.model.TableRow;
-import com.google.cloud.pubsublite.TopicPath;
 import com.mozilla.telemetry.avro.BinaryRecordFormatter;
 import com.mozilla.telemetry.avro.GenericRecordBinaryEncoder;
 import com.mozilla.telemetry.avro.PubsubMessageRecordFormatter;
@@ -18,7 +17,6 @@ import com.mozilla.telemetry.transforms.FailureMessage;
 import com.mozilla.telemetry.transforms.KeyByBigQueryTableDestination;
 import com.mozilla.telemetry.transforms.LimitPayloadSize;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
-import com.mozilla.telemetry.transforms.PubsubLiteCompat;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow;
 import com.mozilla.telemetry.transforms.PubsubMessageToTableRow.TableRowFormat;
 import com.mozilla.telemetry.util.BeamFileInputStream;
@@ -49,8 +47,6 @@ import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessageWithAttributesCoder;
-import org.apache.beam.sdk.io.gcp.pubsublite.PublisherOptions;
-import org.apache.beam.sdk.io.gcp.pubsublite.PubsubLiteIO;
 import org.apache.beam.sdk.transforms.Contextful;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.transforms.DoFn;
@@ -321,36 +317,6 @@ public abstract class Write
           .apply(CompressPayload.of(compression).withMaxCompressedBytes(maxCompressedBytes)) //
           .apply(PubsubConstraints.truncateAttributes()) //
           .apply(PubsubIO.writeMessages().to(topic));
-      return WithFailures.Result.of(done, EmptyErrors.in(input.getPipeline()));
-    }
-  }
-
-  /** Implementation of writing to a Pub/Sub topic. */
-  public static class PubsubLiteOutput extends Write {
-
-    private final TopicPath path;
-    private final Compression compression;
-    private final int maxCompressedBytes;
-
-    /** Constructor. */
-    public PubsubLiteOutput(String topic, Compression compression, int maxCompressedBytes) {
-      this.path = TopicPath.parse(topic);
-      this.compression = compression;
-      this.maxCompressedBytes = maxCompressedBytes;
-    }
-
-    /** Constructor. */
-    public PubsubLiteOutput(String topic, Compression compression) {
-      this(topic, compression, Integer.MAX_VALUE);
-    }
-
-    @Override
-    public WithFailures.Result<PDone, PubsubMessage> expand(PCollection<PubsubMessage> input) {
-      PDone done = input //
-          .apply(CompressPayload.of(compression).withMaxCompressedBytes(maxCompressedBytes)) //
-          .apply(PubsubConstraints.truncateAttributes()) //
-          .apply(PubsubLiteCompat.toPubsubLite()) //
-          .apply(PubsubLiteIO.write(PublisherOptions.newBuilder().setTopicPath(path).build()));
       return WithFailures.Result.of(done, EmptyErrors.in(input.getPipeline()));
     }
   }

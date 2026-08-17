@@ -17,6 +17,8 @@ The components are:
   in Kubernetes, reading input from Google Cloud Pub/Sub and emitting
   records to outputs like GCS or BigQuery
   ([deployment docs 🔒](https://mana.mozilla.org/wiki/display/SRE/Ingestion+Sink))
+- [ingestion-core](https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-core): shared Java code used by both `ingestion-beam`
+  and `ingestion-sink`; not a separately deployed service
 
 The design behind the system along with various trade offs are documented in
 the [architecture section](./architecture/overview.md).
@@ -27,6 +29,11 @@ To manage multiple local JDKs, consider [jenv](https://www.jenv.be/) and the
 Also consider reading through
 [Apache Beam's wiki article on IntelliJ IDEA setup](https://cwiki.apache.org/confluence/display/BEAM/Set+up+IntelliJ+from+scratch)
 for some ideas on configuring an IDE environment.
+
+`ingestion-core` is not consumed as a published jar; the root `pom.xml` co-compiles
+its sources into `ingestion-beam` and `ingestion-sink` via `build-helper`'s
+`add-source` goal. IDEs that don't recognize this report phantom "cannot resolve
+symbol" errors - enable the opt-in `IDE` profile (in both module poms) to fix them.
 
 Feel free to ask us in `#data-help` on Slack or `#telemetry` on `chat.mozilla.org`
 if you have specific questions.

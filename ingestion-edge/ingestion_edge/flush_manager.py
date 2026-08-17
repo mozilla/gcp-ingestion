@@ -14,6 +14,7 @@ from kubernetes.config import load_incluster_config
 from kubernetes.client import (
     BatchV1Api,
     CoreV1Api,
+    V1Capabilities,
     V1Container,
     V1DeleteOptions,
     V1EnvVar,
@@ -28,10 +29,14 @@ from kubernetes.client import (
     V1PersistentVolumeClaimVolumeSource,
     V1PersistentVolumeSpec,
     V1Pod,
+    V1PodSecurityContext,
     V1PodSpec,
     V1PodTemplateSpec,
     V1Preconditions,
     V1ResourceRequirements,
+    V1SeccompProfile,
+    V1SecurityContext,
+    V1Toleration,
     V1Volume,
     V1VolumeMount,
 )
@@ -43,6 +48,12 @@ JOB_AND_PVC_PREFIX = "flush-"
 ALREADY_EXISTS = "AlreadyExists"
 CONFLICT = "Conflict"
 NOT_FOUND = "Not Found"
+
+# V1Toleration's __init__ accepts snake_case names (e.g. toleration_seconds),
+# but Kubernetes YAML/JSON conventionally uses camelCase (tolerationSeconds).
+# Map the wire-format names to Python attribute names so --tolerations JSON
+# can use either convention.
+_TOLERATION_KEY_MAP = {v: k for k, v in V1Toleration.attribute_map.items()}
 
 DEFAULT_IMAGE_VERSION = "latest"
 try:
@@ -115,6 +126,33 @@ parser.add_argument(
     "namespace-scoped RBAC and assumes the StatefulSet uses "
     "spec.persistentVolumeClaimRetentionPolicy.whenScaled=Retain so PVCs survive "
     "scale-down. Can also be set via FLUSH_MANAGER_MODE env var.",
+)
+parser.add_argument(
+    "--enable-restricted-security-context",
+    action="store_true",
+    help="Add a securityContext to flush job pods that satisfies the Pod Security "
+    "Standard 'restricted' policy. Required on clusters that enforce PSS restricted "
+    "(e.g. GKE shared clusters); disabled by default for backwards compatibility with "
+    "clusters that don't enforce PSS and run containers as root.",
+)
+parser.add_argument(
+    "--node-selector",
+    default={},
+    type=json.loads,
+    help="nodeSelector for flush job pods as a JSON object (e.g. "
+    '\'{"tenant": "ingestion-edge"}\'). Defaults to no selector. Set to match the '
+    "workload's nodeSelector so drain Jobs schedule on the same node pool.",
+)
+parser.add_argument(
+    "--tolerations",
+    default=[],
+    type=json.loads,
+    help="Tolerations for flush job pods as a JSON list of toleration objects "
+    '(e.g. \'[{"key": "tenant", "operator": "Equal", "value": '
+    '"ingestion-edge", "effect": "NoExecute"}]\'). Keys may be snake_case '
+    "or camelCase (matching Kubernetes YAML). Defaults to none. Set to match "
+    "the workload's tolerations so drain Jobs are not evicted from tainted "
+    "node pools.",
 )
 
 
@@ -194,6 +232,9 @@ def _create_flush_job(
     namespace: str,
     service_account_name: str,
     claim_name: Optional[str] = None,
+    restricted_security_context: bool = False,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ) -> V1Job:
     # claim_name defaults to name to preserve the legacy PV-scan behavior, where
     # the flush job and the rebound PVC share the "flush-<pv>" name. The PVC-scan
@@ -201,6 +242,28 @@ def _create_flush_job(
     if claim_name is None:
         claim_name = name
     logger.info(f"creating job: {name}")
+    container_security_context = None
+    pod_security_context = None
+    if restricted_security_context:
+        container_security_context = V1SecurityContext(
+            allow_privilege_escalation=False,
+            capabilities=V1Capabilities(drop=["ALL"]),
+            seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
+        )
+        # UID/GID 10001 matches the default non-root user baked into the
+        # mozcloud helm chart (mozilla/helm-charts). Keep in sync so the
+        # Job pod's fsGroup can chgrp the mounted PV.
+        pod_security_context = V1PodSecurityContext(
+            run_as_non_root=True,
+            run_as_user=10001,
+            run_as_group=10001,
+            fs_group=10001,
+            seccomp_profile=V1SeccompProfile(type="RuntimeDefault"),
+        )
+    toleration_objs = [
+        V1Toleration(**{_TOLERATION_KEY_MAP.get(k, k): v for k, v in t.items()})
+        for t in tolerations or ()
+    ] or None
     try:
         return batch_api.create_namespaced_job(
             namespace=namespace,
@@ -238,9 +301,11 @@ def _create_flush_job(
                                             if value
                                         },
                                     ),
+                                    security_context=container_security_context,
                                 )
                             ],
                             restart_policy="OnFailure",
+                            security_context=pod_security_context,
                             volumes=[
                                 V1Volume(
                                     name="queue",
@@ -252,6 +317,8 @@ def _create_flush_job(
                                 )
                             ],
                             service_account_name=service_account_name,
+                            node_selector=node_selector or None,
+                            tolerations=toleration_objs,
                         )
                     )
                 ),
@@ -272,6 +339,9 @@ def flush_released_pvs(
     image: str,
     namespace: str,
     service_account_name: str,
+    restricted_security_context: bool = False,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ):
     """
     Flush persistent volumes.
@@ -296,7 +366,16 @@ def flush_released_pvs(
                 pvc = _create_pvc(api, name, namespace, pv)
                 _bind_pvc(api, pv, pvc)
             _create_flush_job(
-                batch_api, command, env, image, name, namespace, service_account_name
+                batch_api,
+                command,
+                env,
+                image,
+                name,
+                namespace,
+                service_account_name,
+                restricted_security_context,
+                node_selector,
+                tolerations,
             )
 
 
@@ -373,13 +452,25 @@ def flush_released_pvs_and_delete_complete_jobs(
     image: str,
     namespace: str,
     service_account_name: str,
+    restricted_security_context: bool = False,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ):
     """Flush released persistent volumes then delete complete jobs.
 
     Run sequentially to avoid race conditions.
     """
     flush_released_pvs(
-        api, batch_api, command, env, image, namespace, service_account_name
+        api,
+        batch_api,
+        command,
+        env,
+        image,
+        namespace,
+        service_account_name,
+        restricted_security_context,
+        node_selector,
+        tolerations,
     )
     delete_complete_jobs(api, batch_api, namespace)
 
@@ -397,6 +488,9 @@ def flush_detached_pvcs(
     namespace: str,
     service_account_name: str,
     claim_prefix: str,
+    restricted_security_context: bool = False,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ):
     """
     Flush persistent volume claims that are detached from any pod.
@@ -441,6 +535,9 @@ def flush_detached_pvcs(
                 namespace,
                 service_account_name,
                 claim_name=pvc.metadata.name,
+                restricted_security_context=restricted_security_context,
+                node_selector=node_selector,
+                tolerations=tolerations,
             )
 
 
@@ -513,6 +610,9 @@ def flush_detached_pvcs_and_delete_complete_jobs(
     namespace: str,
     service_account_name: str,
     claim_prefix: str,
+    restricted_security_context: bool = False,
+    node_selector: Optional[Dict[str, str]] = None,
+    tolerations: Optional[List[dict]] = None,
 ):
     """Flush detached PVCs then delete complete jobs (PVC-scan mode).
 
@@ -527,6 +627,9 @@ def flush_detached_pvcs_and_delete_complete_jobs(
         namespace,
         service_account_name,
         claim_prefix,
+        restricted_security_context,
+        node_selector,
+        tolerations,
     )
     delete_complete_jobs_pvc_mode(api, batch_api, namespace)
 
@@ -680,6 +783,9 @@ def main():
                 args.namespace,
                 args.service_account_name,
                 args.claim_prefix,
+                args.enable_restricted_security_context,
+                args.node_selector,
+                args.tolerations,
             ),
             partial(delete_unschedulable_pods, api, args.namespace),
         ]
@@ -697,6 +803,9 @@ def main():
                 args.image,
                 args.namespace,
                 args.service_account_name,
+                args.enable_restricted_security_context,
+                args.node_selector,
+                args.tolerations,
             ),
             partial(
                 delete_detached_pvcs,
