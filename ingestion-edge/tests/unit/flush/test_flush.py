@@ -113,3 +113,27 @@ def test_publish_exception(
     assert flush.q.ready_count() == 1
     assert flush.q.acked_count() == 0
     assert flush.q.size == 1
+
+
+def test_run_forever_ignores_exceptions(
+    flush: ingestion_edge.flush.Flush, mocker: MockFixture
+):
+    flushes = 0
+
+    async def _flush():
+        nonlocal flushes
+        flushes += 1
+        if flushes == 1:
+            # Exceptions shouldn't stop `run_forever`
+            raise Exception("pubsub unavailable")
+        # Stop `run_forever` after the second flush
+        flush.running = False
+        return 0
+
+    mocker.patch.object(flush, "_flush", _flush)
+    # Don't wait between flushes
+    flush.sleep_seconds = 0
+
+    asyncio.run(flush.run_forever())
+
+    assert flushes == 2
