@@ -44,3 +44,15 @@ def test_main():
     with _cm_run_task as _run_task, _cm_sys_argv, _cm_kube_config:
         main()
     assert 3 == _run_task.call_count
+
+
+def test_main_pvc_mode():
+    # PVC mode dispatches a 2-task loop (flush+delete combined, plus
+    # delete_unschedulable_pods); the cluster-scoped delete_detached_pvcs
+    # task is intentionally absent.
+    _cm_run_task = patch("ingestion_edge.flush_manager.run_task")
+    _cm_sys_argv = patch("sys.argv", ["flush-manager", "--mode", "pvc"])
+    _cm_kube_config = patch("ingestion_edge.flush_manager.load_incluster_config")
+    with _cm_run_task as _run_task, _cm_sys_argv, _cm_kube_config:
+        main()
+    assert 2 == _run_task.call_count
