@@ -195,6 +195,209 @@ def test_create_flush_job_raises_server_error(api: MagicMock, batch_api: MagicMo
     batch_api.list_namespaced_job.called_once_with("namespace")
 
 
+def test_flush_released_pvs_with_restricted_security_context(
+    api: MagicMock, batch_api: MagicMock
+):
+    api.list_persistent_volume.return_value = V1PersistentVolumeList(
+        items=[
+            V1PersistentVolume(
+                metadata=V1ObjectMeta(name="pv-0"),
+                spec=V1PersistentVolumeSpec(
+                    claim_ref=V1ObjectReference(
+                        name="queue-web-0", namespace="namespace"
+                    ),
+                    persistent_volume_reclaim_policy="Retain",
+                ),
+                status=V1PersistentVolumeStatus(phase="Released"),
+            ),
+        ]
+    )
+
+    def create_pvc(namespace, body):
+        body.metadata.uid = "uid-" + body.metadata.name
+        body.metadata.resource_version = "1"
+        return body
+
+    api.create_namespaced_persistent_volume_claim.side_effect = create_pvc
+    batch_api.list_namespaced_job.return_value = V1JobList(items=[])
+
+    flush_released_pvs(
+        api,
+        batch_api,
+        ["command"],
+        [],
+        "image",
+        "namespace",
+        "service-account-name",
+        restricted_security_context=True,
+    )
+
+    batch_api.create_namespaced_job.assert_called_once()
+    body = batch_api.create_namespaced_job.call_args.kwargs["body"]
+    pod_spec = body.spec.template.spec
+    assert pod_spec.security_context.run_as_non_root is True
+    assert pod_spec.security_context.run_as_user == 10001
+    assert pod_spec.security_context.run_as_group == 10001
+    assert pod_spec.security_context.fs_group == 10001
+    assert pod_spec.security_context.seccomp_profile.type == "RuntimeDefault"
+    container_sc = pod_spec.containers[0].security_context
+    assert container_sc.allow_privilege_escalation is False
+    assert container_sc.capabilities.drop == ["ALL"]
+    assert container_sc.seccomp_profile.type == "RuntimeDefault"
+
+
+def test_flush_released_pvs_without_restricted_security_context(
+    api: MagicMock, batch_api: MagicMock
+):
+    """Default behavior: no securityContext, preserves v1 cluster compatibility."""
+    api.list_persistent_volume.return_value = V1PersistentVolumeList(
+        items=[
+            V1PersistentVolume(
+                metadata=V1ObjectMeta(name="pv-0"),
+                spec=V1PersistentVolumeSpec(
+                    claim_ref=V1ObjectReference(
+                        name="queue-web-0", namespace="namespace"
+                    ),
+                    persistent_volume_reclaim_policy="Retain",
+                ),
+                status=V1PersistentVolumeStatus(phase="Released"),
+            ),
+        ]
+    )
+
+    def create_pvc(namespace, body):
+        body.metadata.uid = "uid-" + body.metadata.name
+        body.metadata.resource_version = "1"
+        return body
+
+    api.create_namespaced_persistent_volume_claim.side_effect = create_pvc
+    batch_api.list_namespaced_job.return_value = V1JobList(items=[])
+
+    flush_released_pvs(
+        api, batch_api, ["command"], [], "image", "namespace", "service-account-name"
+    )
+
+    batch_api.create_namespaced_job.assert_called_once()
+    body = batch_api.create_namespaced_job.call_args.kwargs["body"]
+    pod_spec = body.spec.template.spec
+    assert pod_spec.security_context is None
+    assert pod_spec.containers[0].security_context is None
+    assert pod_spec.node_selector is None
+    assert pod_spec.tolerations is None
+
+
+def test_flush_released_pvs_with_node_selector_and_tolerations(
+    api: MagicMock, batch_api: MagicMock
+):
+    """Node selector and tolerations propagate to the Job PodSpec."""
+    api.list_persistent_volume.return_value = V1PersistentVolumeList(
+        items=[
+            V1PersistentVolume(
+                metadata=V1ObjectMeta(name="pv-0"),
+                spec=V1PersistentVolumeSpec(
+                    claim_ref=V1ObjectReference(
+                        name="queue-web-0", namespace="namespace"
+                    ),
+                    persistent_volume_reclaim_policy="Retain",
+                ),
+                status=V1PersistentVolumeStatus(phase="Released"),
+            ),
+        ]
+    )
+
+    def create_pvc(namespace, body):
+        body.metadata.uid = "uid-" + body.metadata.name
+        body.metadata.resource_version = "1"
+        return body
+
+    api.create_namespaced_persistent_volume_claim.side_effect = create_pvc
+    batch_api.list_namespaced_job.return_value = V1JobList(items=[])
+
+    flush_released_pvs(
+        api,
+        batch_api,
+        ["command"],
+        [],
+        "image",
+        "namespace",
+        "service-account-name",
+        node_selector={"tenant": "ingestion-edge"},
+        tolerations=[
+            {
+                "key": "tenant",
+                "operator": "Equal",
+                "value": "ingestion-edge",
+                "effect": "NoExecute",
+            }
+        ],
+    )
+
+    batch_api.create_namespaced_job.assert_called_once()
+    body = batch_api.create_namespaced_job.call_args.kwargs["body"]
+    pod_spec = body.spec.template.spec
+    assert pod_spec.node_selector == {"tenant": "ingestion-edge"}
+    assert len(pod_spec.tolerations) == 1
+    toleration = pod_spec.tolerations[0]
+    assert toleration.key == "tenant"
+    assert toleration.operator == "Equal"
+    assert toleration.value == "ingestion-edge"
+    assert toleration.effect == "NoExecute"
+
+
+def test_flush_released_pvs_accepts_camelcase_toleration_keys(
+    api: MagicMock, batch_api: MagicMock
+):
+    """Toleration dicts with camelCase keys (matching K8s YAML) are accepted."""
+    api.list_persistent_volume.return_value = V1PersistentVolumeList(
+        items=[
+            V1PersistentVolume(
+                metadata=V1ObjectMeta(name="pv-0"),
+                spec=V1PersistentVolumeSpec(
+                    claim_ref=V1ObjectReference(
+                        name="queue-web-0", namespace="namespace"
+                    ),
+                    persistent_volume_reclaim_policy="Retain",
+                ),
+                status=V1PersistentVolumeStatus(phase="Released"),
+            ),
+        ]
+    )
+
+    def create_pvc(namespace, body):
+        body.metadata.uid = "uid-" + body.metadata.name
+        body.metadata.resource_version = "1"
+        return body
+
+    api.create_namespaced_persistent_volume_claim.side_effect = create_pvc
+    batch_api.list_namespaced_job.return_value = V1JobList(items=[])
+
+    flush_released_pvs(
+        api,
+        batch_api,
+        ["command"],
+        [],
+        "image",
+        "namespace",
+        "service-account-name",
+        tolerations=[
+            {
+                "key": "tenant",
+                "operator": "Exists",
+                "effect": "NoExecute",
+                "tolerationSeconds": 30,
+            }
+        ],
+    )
+
+    batch_api.create_namespaced_job.assert_called_once()
+    body = batch_api.create_namespaced_job.call_args.kwargs["body"]
+    toleration = body.spec.template.spec.tolerations[0]
+    assert toleration.key == "tenant"
+    assert toleration.operator == "Exists"
+    assert toleration.effect == "NoExecute"
+    assert toleration.toleration_seconds == 30
+
+
 def test_create_pvc_raises_server_error(api: MagicMock, batch_api: MagicMock):
     api.list_persistent_volume.return_value = V1PersistentVolumeList(
         items=[
