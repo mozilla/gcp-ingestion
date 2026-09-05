@@ -1,0 +1,58 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  spelling:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mdspell
+        run: npm install markdown-spellcheck
+      - name: Spell Check
+        run: npx mdspell --ignore-numbers --en-us --report '**/*.md' '!node_modules/**/*.md'
+
+  prettier:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install prettier
+        run: npm install prettier
+      - name: Check markdown is formatted with prettier
+        run: npx prettier -c '**/*.md'
+
+  docs:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: gh-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install \
+            mkdocs \
+            mkdocs-material \
+            markdown-include \
+            mkdocs-awesome-pages-plugin
+      - name: Configure git for gh-deploy
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+      - name: Build and deploy docs
+        run: |
+          mkdocs gh-deploy -m "[ci skip] Deployed ${{ github.sha }} with MkDocs version: {version}"

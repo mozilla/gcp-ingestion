@@ -1,0 +1,84 @@
+name: ingestion-edge
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+defaults:
+  run:
+    working-directory: ingestion-edge
+
+jobs:
+  changed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      edge: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          files: |
+            ingestion-edge/**
+            .github/workflows/ingestion-edge.yaml
+
+  ingestion-edge:
+    needs: changed
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Build
+        run: bin/build
+      - name: PyTest with linters
+        run: bin/pytest-all
+        env:
+          PYTEST_ADDOPTS: --cov-report=xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingestion-edge-test-results
+          path: ingestion-edge/test-results
+      - name: Report code coverage
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          flags: ingestion_edge
+          working-directory: ingestion-edge
+
+  ingestion-edge-verify-requirements:
+    needs: changed
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.edge == 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: "pip"
+      - name: Verify that requirements.txt contains the right dependencies for this python version
+        run: |
+          # requirements.in pins pip-tools==7.4.1 (March 2024), which relies on internal
+          # pip APIs removed in later pip releases (pip 25.3 dropped `use_pep517`, pip 26
+          # dropped `allow_all_prereleases` - see jazzband/pip-tools#2319 and #2252).
+          # Constrain pip to the 24.x line, contemporaneous with this pip-tools release,
+          # until the pip-tools pin is bumped.
+          pip install "pip<25" pip-tools --constraint requirements.in
+          pip-compile --allow-unsafe --generate-hashes --quiet
+          git diff --exit-code -G '^ *[^# ]' -- requirements.txt

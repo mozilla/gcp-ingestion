@@ -1,0 +1,128 @@
+name: Java
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  changed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      java: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          files: |
+            pom.xml
+            checkstyle/**
+            .github/workflows/java.yaml
+            ingestion-core/**
+            ingestion-beam/**
+            ingestion-sink/**
+
+  unit:
+    name: ${{ matrix.module }}-unit-java-11
+    needs: changed
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: ingestion-beam
+            codecov_flag: ingestion_beam
+          - module: ingestion-core
+            codecov_flag: ingestion_core
+          - module: ingestion-sink
+            codecov_flag: ingestion_sink
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: maven
+      - name: Download resources needed for Beam tests
+        if: matrix.module == 'ingestion-beam'
+        run: bin/download-schemas
+      - name: Maven unit test
+        run: mvn clean test
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.module }}-unit
+          path: ${{ matrix.module }}/target/surefire-reports
+      - name: Report code coverage
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          flags: ${{ matrix.codecov_flag }}
+          working-directory: ${{ matrix.module }}
+
+  integration:
+    name: ${{ matrix.module }}-integration-java-11
+    needs: changed
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    environment: dev
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: ingestion-beam
+            codecov_flag: ingestion_beam
+          - module: ingestion-core
+            codecov_flag: ingestion_core
+          - module: ingestion-sink
+            codecov_flag: ingestion_sink
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: maven
+      - name: Download resources needed for Beam tests
+        if: matrix.module == 'ingestion-beam'
+        run: bin/download-schemas
+      - name: Authenticate to GCP (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCPV2_GITHUB_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_INTEGRATION_SERVICE_ACCOUNT_EMAIL }}
+      - name: Maven integration test
+        run: mvn clean test -Dtest='*IntegrationTest' -Dsurefire.failIfNoSpecifiedTests=false
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.module }}-integration
+          path: ${{ matrix.module }}/target/surefire-reports
+      - name: Report code coverage
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
+          flags: ${{ matrix.codecov_flag }}
+          working-directory: ${{ matrix.module }}
