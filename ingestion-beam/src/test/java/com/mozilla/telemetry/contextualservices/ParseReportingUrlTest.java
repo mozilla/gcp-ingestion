@@ -90,6 +90,29 @@ public class ParseReportingUrlTest {
   }
 
   @Test
+  public void testIsMozAdsReportingUrl() {
+    Assert.assertTrue(
+        ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/v1/st?suggestion_id=abc"));
+    Assert.assertTrue(
+        ParseReportingUrl.isMozAdsReportingUrl("https://ads.allizom.org/v1/st?suggestion_id=abc"));
+
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsReportingUrl("https://bridge.us.admarketplace.net/ctp?a=1"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://imp.mt48.net/imp?a=1"));
+    Assert
+        .assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://mozillacla.ampxdirect.com/"));
+
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org.example.com/?a=1"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://evil-ads.mozilla.org.co/"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://mozilla.org/?a=1"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://x.ads.mozilla.org/"));
+
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl(null));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("not a url"));
+  }
+
+  @Test
   public void testParsedUrlOutput() {
     final Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "top-sites",
         Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", Attribute.USER_AGENT_OS, "Windows");
@@ -1007,6 +1030,43 @@ public class ParseReportingUrlTest {
                 reportingUrl.contains("form-factor=desktop"));
           });
 
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  /**
+   * A Mozilla-operated reporting URL passes through as a no-op. It carries {@code suggestion_id}
+   * into the Glean ping tables rather than calling an endpoint, so unlike the partner hosts in
+   * {@link #testInternationalSuggest} it gets no dimensions appended at all and its query string is
+   * not re-serialized.
+   *
+   * <p>{@code ads.mozilla.org} is deliberately absent from the test allow list, so this also verifies
+   * the behavior that these URLs are recognized before the allow list is consulted and don't need an
+   * entry there.
+   */
+  @Test
+  public void testMozAdsReportingUrlPassesThroughUnmodified() {
+    String impressionUrl = "https://ads.mozilla.org/v1/st?suggestion_id="
+        + "550e8400-e29b-41d4-a716-446655440000";
+
+    // The URL only ever needs to carry suggestion_id, so the ping carries nothing else.
+    ObjectNode payload = Json.createObjectNode();
+    payload.put(Attribute.REPORTING_URL, impressionUrl);
+
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "quicksuggest-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services");
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(ImmutableList.of(new PubsubMessage(Json.asBytes(payload), attributes)))) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
+        .satisfies(interactions -> {
+          Assert.assertEquals(1, Iterables.size(interactions));
+          Assert.assertEquals(impressionUrl,
+              Iterables.getOnlyElement(interactions).getReportingUrl());
           return null;
         });
 
