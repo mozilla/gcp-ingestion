@@ -39,14 +39,14 @@ public class FilterMozAdsInteractions
 
   private static class Fn extends DoFn<SponsoredInteraction, SponsoredInteraction> {
 
-    private final Counter notReportedCounter = Metrics.counter(FilterMozAdsInteractions.class,
-        "moz_ads_interaction_not_reported");
+    private final Counter filteredUrlsCounter = Metrics.counter(FilterMozAdsInteractions.class,
+        "quick_suggest_moz_ads_filtered_urls");
 
     @ProcessElement
     public void processElement(@Element SponsoredInteraction interaction,
         OutputReceiver<SponsoredInteraction> out) {
       if (ParseReportingUrl.isMozAdsReportingUrl(interaction.getReportingUrl())) {
-        notReportedCounter.inc();
+        filteredUrlsCounter.inc();
         return; // drop element; nothing to report for a Mozilla-operated reporting URL
       }
       out.output(interaction);
