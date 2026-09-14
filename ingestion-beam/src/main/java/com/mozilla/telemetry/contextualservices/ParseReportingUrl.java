@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +67,10 @@ public class ParseReportingUrl extends
   private static final Map<String, List<String>> DT_TO_METRIC_SOURCES = ImmutableMap.of(DT_TOPSITES,
       ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"),
       DT_SEARCHWITH, ImmutableList.of("search_with"));
+
+  // Hosts that carry non-AMP, Mozilla-supplied sponsored interactions.
+  private static final Set<String> MOZ_ADS_REPORTING_HOSTS = ImmutableSet.of("ads.mozilla.org",
+      "ads.allizom.org");
 
   // doctypes for Firefox Mobile glean telemetry
   private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
@@ -238,9 +244,15 @@ public class ParseReportingUrl extends
 
           SponsoredInteraction interaction = interactionBuilder.build();
           String reportingUrl = extractReportingUrl(metrics);
-          BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+
+          if (isMozAdsReportingUrl(reportingUrl)) {
+            PerDocTypeCounter.inc(attributes, "valid_url");
+            return interaction.toBuilder().setReportingUrl(reportingUrl).build();
+          }
+
+          BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
 
           if (!isUrlValid(builtUrl.getReportingUrl(),
               Objects.requireNonNull(interaction.getInteractionType()))) {
@@ -290,6 +302,26 @@ public class ParseReportingUrl extends
                 ee.exception());
           }
         }));
+  }
+
+  /**
+   * Return whether {@code reportingUrl} points at a Mozilla-operated reporting host.
+   *
+   * <p>Matches on exact host equality against {@link #MOZ_ADS_REPORTING_HOSTS}, never by substring
+   * or suffix. A partner host can never be treated as Mozilla-operated.
+   *
+   * <p>Returns false for a null or unparseable URL.
+   */
+  @VisibleForTesting
+  static boolean isMozAdsReportingUrl(String reportingUrl) {
+    if (reportingUrl == null) {
+      return false;
+    }
+    try {
+      return MOZ_ADS_REPORTING_HOSTS.contains(new URL(reportingUrl).getHost());
+    } catch (MalformedURLException e) {
+      return false;
+    }
   }
 
   private static void addCustomDataForDesktopSuggest(BuildReportingUrl builtUrl,
