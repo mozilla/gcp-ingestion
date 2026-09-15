@@ -8,7 +8,7 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
 
 /**
- * Drop interactions whose reporting URL points at a Mozilla-operated host.
+ * Drop interactions whose reporting URL is the MARS suggest reporting endpoint.
  *
  * <p>MARS's suggest ingestor sets {@code reporting_url} to
  * {@code https://ads.mozilla.org/v1/st?suggestion_id=<id>} for non-AMP sponsored suggestions. That
@@ -17,6 +17,9 @@ import org.apache.beam.sdk.values.PCollection;
  * the sponsored suggestions snapshots archive.
  *
  * <p>Reporting is therefore a no-op for these interactions.
+ *
+ * <p>Matching is on host <em>and</em> path, so only {@code /v1/st} is dropped. Other endpoints on
+ * the same host stay on the normal reporting path.
  *
  * <p>This runs upstream of every send path, so a non-AMP interaction can never reach an ad partner
  * no matter what {@code AggregateImpressions}, {@code LabelSpikes}, or {@code SendRequest} do with

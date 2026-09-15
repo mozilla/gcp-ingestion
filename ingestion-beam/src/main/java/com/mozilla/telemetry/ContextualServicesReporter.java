@@ -71,7 +71,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections) //
-        .apply(EmitCounters.of()).apply(FilterMozAdsInteractions.of());
+        .apply(FilterMozAdsInteractions.of()).apply(EmitCounters.of());
 
     Set<String> individualImpressions = ImmutableSet.of("topsites-impression");
     Set<String> individualClicks = ImmutableSet.of("topsites-click");

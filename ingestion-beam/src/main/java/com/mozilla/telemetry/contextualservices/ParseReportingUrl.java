@@ -72,6 +72,10 @@ public class ParseReportingUrl extends
   private static final Set<String> MOZ_ADS_REPORTING_HOSTS = ImmutableSet.of("ads.mozilla.org",
       "ads.allizom.org");
 
+  // Path of the MARS suggest reporting URL. Matched exactly, so other endpoints on the hosts above
+  // keep the normal reporting path
+  private static final String MOZ_ADS_REPORTING_PATH = "/v1/st";
+
   // doctypes for Firefox Mobile glean telemetry
   private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
   private static final String PT_MOBILE_QUICKSUGGEST_IMPRESSION = "fxsuggest-impression";
@@ -305,10 +309,14 @@ public class ParseReportingUrl extends
   }
 
   /**
-   * Return whether {@code reportingUrl} points at a Mozilla-operated reporting host.
+   * Return whether {@code reportingUrl} is a MARS suggest reporting URL.
    *
-   * <p>Matches on exact host equality against {@link #MOZ_ADS_REPORTING_HOSTS}, never by substring
-   * or suffix. A partner host can never be treated as Mozilla-operated.
+   * <p>Matches on exact host equality against {@link #MOZ_ADS_REPORTING_HOSTS} and exact path
+   * equality against {@link #MOZ_ADS_REPORTING_PATH}, never by substring or suffix. A partner host
+   * can never be treated as Mozilla-operated.
+   *
+   * <p>The path check keeps this to the suggest endpoint alone. Other endpoints on a
+   * Mozilla-operated host stay on the normal reporting path.
    *
    * <p>Returns false for a null or unparseable URL.
    */
@@ -318,7 +326,9 @@ public class ParseReportingUrl extends
       return false;
     }
     try {
-      return MOZ_ADS_REPORTING_HOSTS.contains(new URL(reportingUrl).getHost());
+      URL url = new URL(reportingUrl);
+      return MOZ_ADS_REPORTING_HOSTS.contains(url.getHost())
+          && MOZ_ADS_REPORTING_PATH.equals(url.getPath());
     } catch (MalformedURLException e) {
       return false;
     }

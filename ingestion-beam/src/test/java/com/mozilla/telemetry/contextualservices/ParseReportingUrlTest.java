@@ -108,6 +108,18 @@ public class ParseReportingUrlTest {
     Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://mozilla.org/?a=1"));
     Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://x.ads.mozilla.org/"));
 
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/v1/t?data=abc"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsReportingUrl("https://ads.allizom.org/v1/t?data=abc"));
+
+    // Only the exact suggest path matches; no prefix, suffix, or nesting.
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/v1/stx"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/v1/st/"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/v2/st"));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/x/v1/st"));
+
     Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl(null));
     Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("not a url"));
   }
