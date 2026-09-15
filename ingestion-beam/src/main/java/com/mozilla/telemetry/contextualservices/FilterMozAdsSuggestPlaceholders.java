@@ -8,7 +8,7 @@ import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PCollection;
 
 /**
- * Drop interactions whose reporting URL is the MARS suggest reporting endpoint.
+ * Drop interactions whose reporting URL is the MARS suggest placeholder.
  *
  * <p>MARS's suggest ingestor sets {@code reporting_url} to
  * {@code https://ads.mozilla.org/v1/st?suggestion_id=<id>} for non-AMP sponsored suggestions. That
@@ -18,21 +18,23 @@ import org.apache.beam.sdk.values.PCollection;
  *
  * <p>Reporting is therefore a no-op for these interactions.
  *
- * <p>Matching is on host <em>and</em> path, so only {@code /v1/st} is dropped. Other endpoints on
- * the same host stay on the normal reporting path.
+ * <p>The placeholder is identified by
+ * {@link ParseReportingUrl#isMozAdsSuggestPlaceholderToFilter}, which matches host
+ * <em>and</em> path. Other endpoints on the same hosts -- notably the legacy topsites callback at
+ * {@code /v1/t} -- are real reporting URLs and stay on the normal path through the URL allow list.
  *
  * <p>This runs upstream of every send path, so a non-AMP interaction can never reach an ad partner
  * no matter what {@code AggregateImpressions}, {@code LabelSpikes}, or {@code SendRequest} do with
  * the elements they receive.
  */
-public class FilterMozAdsInteractions
+public class FilterMozAdsSuggestPlaceholders
     extends PTransform<PCollection<SponsoredInteraction>, PCollection<SponsoredInteraction>> {
 
-  public static FilterMozAdsInteractions of() {
-    return new FilterMozAdsInteractions();
+  public static FilterMozAdsSuggestPlaceholders of() {
+    return new FilterMozAdsSuggestPlaceholders();
   }
 
-  private FilterMozAdsInteractions() {
+  private FilterMozAdsSuggestPlaceholders() {
   }
 
   @Override
@@ -42,15 +44,15 @@ public class FilterMozAdsInteractions
 
   private static class Fn extends DoFn<SponsoredInteraction, SponsoredInteraction> {
 
-    private final Counter filteredUrlsCounter = Metrics.counter(FilterMozAdsInteractions.class,
-        "quick_suggest_moz_ads_filtered_urls");
+    private final Counter filteredUrlsCounter = Metrics
+        .counter(FilterMozAdsSuggestPlaceholders.class, "quick_suggest_moz_ads_filtered_urls");
 
     @ProcessElement
     public void processElement(@Element SponsoredInteraction interaction,
         OutputReceiver<SponsoredInteraction> out) {
-      if (ParseReportingUrl.isMozAdsReportingUrl(interaction.getReportingUrl())) {
+      if (ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter(interaction.getReportingUrl())) {
         filteredUrlsCounter.inc();
-        return; // drop element; nothing to report for a Mozilla-operated reporting URL
+        return; // drop element; the placeholder URL is not an endpoint and is never requested
       }
       out.output(interaction);
     }

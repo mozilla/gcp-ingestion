@@ -68,13 +68,14 @@ public class ParseReportingUrl extends
       ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"),
       DT_SEARCHWITH, ImmutableList.of("search_with"));
 
-  // Hosts that carry non-AMP, Mozilla-supplied sponsored interactions.
-  private static final Set<String> MOZ_ADS_REPORTING_HOSTS = ImmutableSet.of("ads.mozilla.org",
-      "ads.allizom.org");
-
-  // Path of the MARS suggest reporting URL. Matched exactly, so other endpoints on the hosts above
-  // keep the normal reporting path
-  private static final String MOZ_ADS_REPORTING_PATH = "/v1/st";
+  // Host and path of the MARS suggest placeholder reporting URL, the one interactions are filtered
+  // out on. Together these identify the URL counted by quick_suggest_moz_ads_filtered_urls in
+  // FilterMozAdsSuggestPlaceholders. Both are matched exactly: the hosts also serve unrelated
+  // endpoints
+  // (notably the legacy topsites callback at /v1/t) that must stay on the normal reporting path.
+  private static final Set<String> MOZ_ADS_SUGGEST_PLACEHOLDER_HOSTS_TO_FILTER = ImmutableSet
+      .of("ads.mozilla.org", "ads.allizom.org");
+  private static final String MOZ_ADS_SUGGEST_PLACEHOLDER_PATH_TO_FILTER = "/v1/st";
 
   // doctypes for Firefox Mobile glean telemetry
   private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
@@ -251,7 +252,7 @@ public class ParseReportingUrl extends
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
-          if (isMozAdsReportingUrl(reportingUrl)) {
+          if (isMozAdsSuggestPlaceholderToFilter(reportingUrl)) {
             PerDocTypeCounter.inc(attributes, "valid_url");
             return interaction.toBuilder().setReportingUrl(reportingUrl).build();
           }
@@ -309,26 +310,32 @@ public class ParseReportingUrl extends
   }
 
   /**
-   * Return whether {@code reportingUrl} is a MARS suggest reporting URL.
+   * Return whether {@code reportingUrl} is the MARS non-AMP suggest ads placeholder, and so should be filtered
+   * out rather than reported.
    *
-   * <p>Matches on exact host equality against {@link #MOZ_ADS_REPORTING_HOSTS} and exact path
-   * equality against {@link #MOZ_ADS_REPORTING_PATH}, never by substring or suffix. A partner host
-   * can never be treated as Mozilla-operated.
+   * <p>True only for an exact host match against {@link #MOZ_ADS_SUGGEST_PLACEHOLDER_HOSTS_TO_FILTER} and an
+   * exact path match against {@link #MOZ_ADS_SUGGEST_PLACEHOLDER_PATH_TO_FILTER} -- never by substring or
+   * suffix, so a partner host can never be mistaken for a Mozilla-operated one.
    *
-   * <p>The path check keeps this to the suggest endpoint alone. Other endpoints on a
-   * Mozilla-operated host stay on the normal reporting path.
+   * <p>The path match matters as much as the host: the same hosts serve the legacy topsites
+   * callback at {@code /v1/t}, which is a real reporting URL and has to stay on the normal path
+   * through the URL allow list.
+   *
+   * <p>Callers are the short-circuit in {@link #expand} and {@link FilterMozAdsSuggestPlaceholders}, whose
+   * {@code quick_suggest_moz_ads_filtered_urls} counter counts exactly the URLs this returns true
+   * for.
    *
    * <p>Returns false for a null or unparseable URL.
    */
   @VisibleForTesting
-  static boolean isMozAdsReportingUrl(String reportingUrl) {
+  static boolean isMozAdsSuggestPlaceholderToFilter(String reportingUrl) {
     if (reportingUrl == null) {
       return false;
     }
     try {
       URL url = new URL(reportingUrl);
-      return MOZ_ADS_REPORTING_HOSTS.contains(url.getHost())
-          && MOZ_ADS_REPORTING_PATH.equals(url.getPath());
+      return MOZ_ADS_SUGGEST_PLACEHOLDER_HOSTS_TO_FILTER.contains(url.getHost())
+          && MOZ_ADS_SUGGEST_PLACEHOLDER_PATH_TO_FILTER.equals(url.getPath());
     } catch (MalformedURLException e) {
       return false;
     }

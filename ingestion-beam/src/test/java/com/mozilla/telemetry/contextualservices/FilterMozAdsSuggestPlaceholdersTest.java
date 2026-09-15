@@ -12,7 +12,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class FilterMozAdsInteractionsTest {
+public class FilterMozAdsSuggestPlaceholdersTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -36,7 +36,7 @@ public class FilterMozAdsInteractionsTest {
    * path, so it is the case that distinguishes host-only matching from host-and-path matching.
    */
   @Test
-  public void testDropsOnlyMozAdsSuggestInteractions() {
+  public void testDropsOnlyMozAdsSuggestPlaceholders() {
     String ampClickUrl = "https://bridge.us.admarketplace.net/ctp?version=1&ci=1";
     String ampImpressionUrl = "https://imp.mt48.net/imp?id=1";
     String legacyTopsitesUrl = "https://ads.mozilla.org/v1/t?data=abc";
@@ -50,7 +50,7 @@ public class FilterMozAdsInteractionsTest {
 
     PCollection<SponsoredInteraction> output = pipeline //
         .apply(Create.of(input).withCoder(SponsoredInteraction.getCoder())) //
-        .apply(FilterMozAdsInteractions.of());
+        .apply(FilterMozAdsSuggestPlaceholders.of());
 
     PAssert.that(output).satisfies(interactions -> {
       List<String> urls = StreamSupport.stream(interactions.spliterator(), false)
@@ -74,7 +74,7 @@ public class FilterMozAdsInteractionsTest {
     PCollection<SponsoredInteraction> output = pipeline //
         .apply(Create.of(ImmutableList.of(interactionWithUrl(lookalikeUrl)))
             .withCoder(SponsoredInteraction.getCoder())) //
-        .apply(FilterMozAdsInteractions.of());
+        .apply(FilterMozAdsSuggestPlaceholders.of());
 
     PAssert.that(output).satisfies(interactions -> {
       List<String> urls = StreamSupport.stream(interactions.spliterator(), false)
