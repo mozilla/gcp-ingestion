@@ -91,25 +91,46 @@ public class ParseReportingUrlTest {
 
   @Test
   public void testIsMozAdsReportingUrl() {
-    Assert.assertTrue(
-        ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org/v1/st?suggestion_id=abc"));
-    Assert.assertTrue(
-        ParseReportingUrl.isMozAdsReportingUrl("https://ads.allizom.org/v1/st?suggestion_id=abc"));
+    Assert.assertTrue(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/st?suggestion_id=abc"));
+    Assert.assertTrue(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.allizom.org/v1/st?suggestion_id=abc"));
 
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://bridge.us.admarketplace.net/ctp?a=1"));
     Assert.assertFalse(
-        ParseReportingUrl.isMozAdsReportingUrl("https://bridge.us.admarketplace.net/ctp?a=1"));
-    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://imp.mt48.net/imp?a=1"));
-    Assert
-        .assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://mozillacla.ampxdirect.com/"));
-
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://imp.mt48.net/imp?a=1"));
     Assert.assertFalse(
-        ParseReportingUrl.isMozAdsReportingUrl("https://ads.mozilla.org.example.com/?a=1"));
-    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://evil-ads.mozilla.org.co/"));
-    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://mozilla.org/?a=1"));
-    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("https://x.ads.mozilla.org/"));
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://mozillacla.ampxdirect.com/"));
 
-    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl(null));
-    Assert.assertFalse(ParseReportingUrl.isMozAdsReportingUrl("not a url"));
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org.example.com/?a=1"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://evil-ads.mozilla.org.co/"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://mozilla.org/?a=1"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://x.ads.mozilla.org/"));
+
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/t?data=abc"));
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.allizom.org/v1/t?data=abc"));
+
+    // Only the exact suggest path matches; no prefix, suffix, or nesting.
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/stx"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/st/"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v2/st"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/x/v1/st"));
+
+    Assert.assertFalse(ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter(null));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("not a url"));
   }
 
   @Test

@@ -5,7 +5,7 @@ import com.mozilla.telemetry.contextualservices.AggregateImpressions;
 import com.mozilla.telemetry.contextualservices.ContextualServicesReporterOptions;
 import com.mozilla.telemetry.contextualservices.EmitCounters;
 import com.mozilla.telemetry.contextualservices.FilterByDocType;
-import com.mozilla.telemetry.contextualservices.FilterMozAdsInteractions;
+import com.mozilla.telemetry.contextualservices.FilterMozAdsSuggestPlaceholders;
 import com.mozilla.telemetry.contextualservices.LabelSpikes;
 import com.mozilla.telemetry.contextualservices.ParseReportingUrl;
 import com.mozilla.telemetry.contextualservices.SendRequest;
@@ -71,7 +71,7 @@ public class ContextualServicesReporter extends Sink {
         .apply(DecompressPayload.enabled(options.getDecompressInputPayloads())) //
         .apply(ParseReportingUrl.of(options.getUrlAllowList())) //
         .failuresTo(errorCollections) //
-        .apply(EmitCounters.of()).apply(FilterMozAdsInteractions.of());
+        .apply(FilterMozAdsSuggestPlaceholders.of()).apply(EmitCounters.of());
 
     Set<String> individualImpressions = ImmutableSet.of("topsites-impression");
     Set<String> individualClicks = ImmutableSet.of("topsites-click");

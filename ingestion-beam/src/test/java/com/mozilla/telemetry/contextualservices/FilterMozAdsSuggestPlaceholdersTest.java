@@ -12,7 +12,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class FilterMozAdsInteractionsTest {
+public class FilterMozAdsSuggestPlaceholdersTest {
 
   @Rule
   public final transient TestPipeline pipeline = TestPipeline.create();
@@ -28,30 +28,35 @@ public class FilterMozAdsInteractionsTest {
   }
 
   /**
-   * Interactions on a Mozilla-operated host are dropped, and partner interactions pass through.
-   * Both are present in the same bundle so the filter is exercised on a mixed stream, which is the
-   * steady state for this job.
+   * Suggest interactions on a Mozilla-operated host are dropped, and everything else passes
+   * through. All are present in the same bundle so the filter is exercised on a mixed stream, which
+   * is the steady state for this job.
+   *
+   * <p>The legacy topsites callback shares a host with the suggest endpoint and differs only by
+   * path, so it is the case that distinguishes host-only matching from host-and-path matching.
    */
   @Test
-  public void testDropsOnlyMozAdsInteractions() {
+  public void testDropsOnlyMozAdsSuggestPlaceholders() {
     String ampClickUrl = "https://bridge.us.admarketplace.net/ctp?version=1&ci=1";
     String ampImpressionUrl = "https://imp.mt48.net/imp?id=1";
+    String legacyTopsitesUrl = "https://ads.mozilla.org/v1/t?data=abc";
 
     List<SponsoredInteraction> input = ImmutableList.of(
         interactionWithUrl("https://ads.mozilla.org/v1/st?suggestion_id=abc"),
         interactionWithUrl("https://ads.allizom.org/v1/st?suggestion_id=def"),
+        interactionWithUrl(legacyTopsitesUrl), //
         interactionWithUrl(ampClickUrl), //
         interactionWithUrl(ampImpressionUrl));
 
     PCollection<SponsoredInteraction> output = pipeline //
         .apply(Create.of(input).withCoder(SponsoredInteraction.getCoder())) //
-        .apply(FilterMozAdsInteractions.of());
+        .apply(FilterMozAdsSuggestPlaceholders.of());
 
     PAssert.that(output).satisfies(interactions -> {
       List<String> urls = StreamSupport.stream(interactions.spliterator(), false)
           .map(SponsoredInteraction::getReportingUrl).sorted().collect(Collectors.toList());
 
-      Assert.assertEquals(ImmutableList.of(ampClickUrl, ampImpressionUrl), urls);
+      Assert.assertEquals(ImmutableList.of(legacyTopsitesUrl, ampClickUrl, ampImpressionUrl), urls);
       return null;
     });
 
@@ -69,7 +74,7 @@ public class FilterMozAdsInteractionsTest {
     PCollection<SponsoredInteraction> output = pipeline //
         .apply(Create.of(ImmutableList.of(interactionWithUrl(lookalikeUrl)))
             .withCoder(SponsoredInteraction.getCoder())) //
-        .apply(FilterMozAdsInteractions.of());
+        .apply(FilterMozAdsSuggestPlaceholders.of());
 
     PAssert.that(output).satisfies(interactions -> {
       List<String> urls = StreamSupport.stream(interactions.spliterator(), false)
