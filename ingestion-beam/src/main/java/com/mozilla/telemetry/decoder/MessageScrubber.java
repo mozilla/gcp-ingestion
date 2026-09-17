@@ -283,7 +283,7 @@ public class MessageScrubber {
       "org-mozilla-klar");
 
   // Bug tracking removal of Java exception messages from the crash ping.
-  private static final String JAVA_EXCEPTION_BUG = "2049744";
+  private static final String JAVA_EXCEPTION_BUG = "2073281";
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -674,9 +674,10 @@ public class MessageScrubber {
   // - The `meta.annotations` object metric, which is `{"source": "<serialized JSON>"}` holding
   // the raw crash annotations. The `JavaException` annotation inside it is itself a serialized
   // JSON string, so both levels are parsed, scrubbed, and re-serialized. This metric only
-  // started being submitted in Firefox 155.
+  // started being submitted in Firefox 155, by
+  // https://bugzilla.mozilla.org/show_bug.cgi?id=2049744.
   //
-  // See https://bugzilla.mozilla.org/show_bug.cgi?id=2049744 and the JavaException entry in
+  // See https://bugzilla.mozilla.org/show_bug.cgi?id=2073281 and the JavaException entry in
   // toolkit/crashreporter/CrashAnnotations.yaml for the structure versions.
   private static void scrubJavaExceptionMessages(ObjectNode json) {
     final JsonNode objectMetrics = json.path("metrics").path("object");

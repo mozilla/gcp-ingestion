@@ -639,7 +639,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testRedactJavaExceptionThrowableMessagesBug2049744() throws Exception {
+  public void testRedactJavaExceptionThrowableMessagesBug2073281() throws Exception {
     // Version 1 of the structure: messages live in throwables[].message.
     ObjectNode json = crashPingWithJavaException("{\n" //
         + "  \"throwables\": [\n" //
@@ -666,7 +666,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testRedactJavaExceptionLegacyMessagesBug2049744() throws Exception {
+  public void testRedactJavaExceptionLegacyMessagesBug2073281() throws Exception {
     // Version 0 of the structure: messages live in a top-level messages array.
     ObjectNode json = crashPingWithJavaException("{\n" //
         + "  \"messages\": [\"secret user data\", \"more secret data\"],\n" //
@@ -680,7 +680,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testRedactJavaExceptionSentryShapeBug2049744() throws Exception {
+  public void testRedactJavaExceptionSentryShapeBug2073281() throws Exception {
     ObjectNode json = crashPingWithJavaException("{\n" //
         + "  \"exception\": {\"values\": [\n" //
         + "    {\"stacktrace\": {\"value\": \"secret user data\", \"frames\": []}},\n" //
@@ -698,7 +698,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testRedactJavaExceptionMetaAnnotationsBug2049744() throws Exception {
+  public void testRedactJavaExceptionMetaAnnotationsBug2073281() throws Exception {
     // metrics.object["meta.annotations"] is {"source": "<serialized JSON>"}, and the JavaException
     // annotation inside it is itself a serialized JSON string.
     ObjectNode sourceAnnotations = Json.createObjectNode();
@@ -728,7 +728,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testRedactMetaAnnotationsStructuredSourceBug2049744() throws Exception {
+  public void testRedactMetaAnnotationsStructuredSourceBug2073281() throws Exception {
     // source is declared as a string, but if it ever arrives as structured JSON the messages must
     // still be removed rather than passed through.
     ObjectNode json = Json.readObjectNode("{\"metrics\":{\"object\":{\"meta.annotations\":{"
@@ -745,7 +745,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testDropUnparseableMetaAnnotationsSourceBug2049744() throws Exception {
+  public void testDropUnparseableMetaAnnotationsSourceBug2073281() throws Exception {
     ObjectNode json = Json.createObjectNode();
     json.putObject("metrics").putObject("object").putObject("meta.annotations").put("source",
         "this is not json");
@@ -757,7 +757,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testJavaExceptionUntouchedForUnaffectedNamespaceBug2049744() throws Exception {
+  public void testJavaExceptionUntouchedForUnaffectedNamespaceBug2073281() throws Exception {
     String original = "{\"throwables\":[{\"message\":\"kept\"}]}";
 
     // A desktop crash ping does not carry Java exceptions, so it is left alone.
@@ -780,7 +780,7 @@ public class MessageScrubberTest {
   }
 
   @Test
-  public void testJavaExceptionScrubTolerantOfMissingFieldsBug2049744() throws Exception {
+  public void testJavaExceptionScrubTolerantOfMissingFieldsBug2073281() throws Exception {
     // A crash ping with no object metrics at all must pass through untouched.
     ObjectNode empty = Json.createObjectNode();
     MessageScrubber.scrub(androidCrashAttributes("org-mozilla-firefox-beta"), empty);
