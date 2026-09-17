@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -613,6 +614,187 @@ public class MessageScrubberTest {
         + "}\n").getBytes(StandardCharsets.UTF_8));
     MessageScrubber.scrub(attributes, json);
     assertEquals(expected, json);
+  }
+
+  private static Map<String, String> androidCrashAttributes(String namespace) {
+    return ImmutableMap.<String, String>builder() //
+        .put(Attribute.DOCUMENT_NAMESPACE, namespace) //
+        .put(Attribute.DOCUMENT_TYPE, "crash") //
+        .put(Attribute.DOCUMENT_VERSION, "1") //
+        .build();
+  }
+
+  /**
+   * Build a crash ping carrying {@code crash.java_exception} as a structured object metric.
+   */
+  private static ObjectNode crashPingWithJavaException(String javaExceptionJson) throws Exception {
+    ObjectNode json = Json.createObjectNode();
+    json.putObject("metrics").putObject("object").set("crash.java_exception",
+        Json.readObjectNode(javaExceptionJson));
+    return json;
+  }
+
+  private static JsonNode javaExceptionOf(ObjectNode json) {
+    return json.path("metrics").path("object").path("crash.java_exception");
+  }
+
+  @Test
+  public void testRedactJavaExceptionThrowableMessagesBug2049744() throws Exception {
+    // Version 1 of the structure: messages live in throwables[].message.
+    ObjectNode json = crashPingWithJavaException("{\n" //
+        + "  \"throwables\": [\n" //
+        + "    {\n" //
+        + "      \"message\": \"secret user data\",\n" //
+        + "      \"type_name\": \"java.lang.NullPointerException\",\n" //
+        + "      \"stack\": [{\"file\": \"A.kt\", \"line\": 12, \"is_native\": false}]\n" //
+        + "    },\n" //
+        + "    {\"message\": \"more secret data\", \"type_name\": \"java.lang.RuntimeException\"}\n" //
+        + "  ]\n" //
+        + "}");
+
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-firefox"), json);
+
+    JsonNode throwables = javaExceptionOf(json).path("throwables");
+    assertEquals(2, throwables.size());
+    assertFalse(throwables.path(0).has("message"));
+    assertFalse(throwables.path(1).has("message"));
+    // Everything else is preserved.
+    assertEquals("java.lang.NullPointerException",
+        throwables.path(0).path("type_name").textValue());
+    assertEquals("A.kt", throwables.path(0).path("stack").path(0).path("file").textValue());
+    assertEquals("java.lang.RuntimeException", throwables.path(1).path("type_name").textValue());
+  }
+
+  @Test
+  public void testRedactJavaExceptionLegacyMessagesBug2049744() throws Exception {
+    // Version 0 of the structure: messages live in a top-level messages array.
+    ObjectNode json = crashPingWithJavaException("{\n" //
+        + "  \"messages\": [\"secret user data\", \"more secret data\"],\n" //
+        + "  \"stack\": [{\"file\": \"A.kt\", \"line\": 12}]\n" //
+        + "}");
+
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-focus"), json);
+
+    assertFalse(javaExceptionOf(json).has("messages"));
+    assertEquals("A.kt", javaExceptionOf(json).path("stack").path(0).path("file").textValue());
+  }
+
+  @Test
+  public void testRedactJavaExceptionSentryShapeBug2049744() throws Exception {
+    ObjectNode json = crashPingWithJavaException("{\n" //
+        + "  \"exception\": {\"values\": [\n" //
+        + "    {\"stacktrace\": {\"value\": \"secret user data\", \"frames\": []}},\n" //
+        + "    {\"stacktrace\": {\"value\": \"more secret data\"}}\n" //
+        + "  ]}\n" //
+        + "}");
+
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-klar"), json);
+
+    JsonNode values = javaExceptionOf(json).path("exception").path("values");
+    assertEquals(2, values.size());
+    assertFalse(values.path(0).path("stacktrace").has("value"));
+    assertFalse(values.path(1).path("stacktrace").has("value"));
+    assertTrue(values.path(0).path("stacktrace").has("frames"));
+  }
+
+  @Test
+  public void testRedactJavaExceptionMetaAnnotationsBug2049744() throws Exception {
+    // metrics.object["meta.annotations"] is {"source": "<serialized JSON>"}, and the JavaException
+    // annotation inside it is itself a serialized JSON string.
+    ObjectNode sourceAnnotations = Json.createObjectNode();
+    sourceAnnotations.put("Version", "142.0");
+    sourceAnnotations.put("JavaException", "{\"throwables\":[{\"message\":\"secret user data\","
+        + "\"type_name\":\"java.lang.IllegalStateException\"}]}");
+
+    ObjectNode json = Json.createObjectNode();
+    json.putObject("metrics").putObject("object").putObject("meta.annotations").put("source",
+        Json.asString(sourceAnnotations));
+
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-fenix"), json);
+
+    JsonNode annotations = json.path("metrics").path("object").path("meta.annotations");
+    // source is still a serialized JSON string.
+    assertTrue(annotations.path("source").isTextual());
+    ObjectNode scrubbedSource = Json.readObjectNode(annotations.path("source").textValue());
+    // Unrelated annotations are preserved.
+    assertEquals("142.0", scrubbedSource.path("Version").textValue());
+    // JavaException is still a serialized JSON string, with the message removed.
+    assertTrue(scrubbedSource.path("JavaException").isTextual());
+    ObjectNode scrubbedException = Json
+        .readObjectNode(scrubbedSource.path("JavaException").textValue());
+    assertFalse(scrubbedException.path("throwables").path(0).has("message"));
+    assertEquals("java.lang.IllegalStateException",
+        scrubbedException.path("throwables").path(0).path("type_name").textValue());
+  }
+
+  @Test
+  public void testRedactMetaAnnotationsStructuredSourceBug2049744() throws Exception {
+    // source is declared as a string, but if it ever arrives as structured JSON the messages must
+    // still be removed rather than passed through.
+    ObjectNode json = Json.readObjectNode("{\"metrics\":{\"object\":{\"meta.annotations\":{"
+        + "\"source\":{\"Version\":\"142.0\",\"JavaException\":"
+        + "{\"throwables\":[{\"message\":\"secret user data\",\"type_name\":\"E\"}]}}}}}}");
+
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-focus-nightly"), json);
+
+    JsonNode source = json.path("metrics").path("object").path("meta.annotations").path("source");
+    assertEquals("142.0", source.path("Version").textValue());
+    assertFalse(source.path("JavaException").path("throwables").path(0).has("message"));
+    assertEquals("E",
+        source.path("JavaException").path("throwables").path(0).path("type_name").textValue());
+  }
+
+  @Test
+  public void testDropUnparseableMetaAnnotationsSourceBug2049744() throws Exception {
+    ObjectNode json = Json.createObjectNode();
+    json.putObject("metrics").putObject("object").putObject("meta.annotations").put("source",
+        "this is not json");
+
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-fenix-nightly"), json);
+
+    // We cannot scrub what we cannot parse, so the field is dropped entirely.
+    assertFalse(json.path("metrics").path("object").path("meta.annotations").has("source"));
+  }
+
+  @Test
+  public void testJavaExceptionUntouchedForUnaffectedNamespaceBug2049744() throws Exception {
+    String original = "{\"throwables\":[{\"message\":\"kept\"}]}";
+
+    // A desktop crash ping does not carry Java exceptions, so it is left alone.
+    ObjectNode json = crashPingWithJavaException(original);
+    MessageScrubber.scrub(
+        ImmutableMap.<String, String>builder()
+            .put(Attribute.DOCUMENT_NAMESPACE, "firefox-crashreporter")
+            .put(Attribute.DOCUMENT_TYPE, "crash").put(Attribute.DOCUMENT_VERSION, "1").build(),
+        json);
+    assertEquals(Json.readObjectNode(original), javaExceptionOf(json));
+
+    // Neither is a non-crash ping from an affected namespace.
+    ObjectNode metricsPing = crashPingWithJavaException(original);
+    MessageScrubber.scrub(
+        ImmutableMap.<String, String>builder()
+            .put(Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox")
+            .put(Attribute.DOCUMENT_TYPE, "baseline").put(Attribute.DOCUMENT_VERSION, "1").build(),
+        metricsPing);
+    assertEquals(Json.readObjectNode(original), javaExceptionOf(metricsPing));
+  }
+
+  @Test
+  public void testJavaExceptionScrubTolerantOfMissingFieldsBug2049744() throws Exception {
+    // A crash ping with no object metrics at all must pass through untouched.
+    ObjectNode empty = Json.createObjectNode();
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-firefox-beta"), empty);
+    assertEquals(Json.createObjectNode(), empty);
+
+    // Unexpected types must not throw.
+    ObjectNode wrongTypes = Json
+        .readObjectNode("{\"metrics\":{\"object\":{" + "\"crash.java_exception\":\"not an object\","
+            + "\"meta.annotations\":{\"source\":42}}}}");
+    MessageScrubber.scrub(androidCrashAttributes("org-mozilla-fennec-aurora"), wrongTypes);
+    assertEquals(Json
+        .readObjectNode("{\"metrics\":{\"object\":{" + "\"crash.java_exception\":\"not an object\","
+            + "\"meta.annotations\":{\"source\":42}}}}"),
+        wrongTypes);
   }
 
   @Test

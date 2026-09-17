@@ -11,6 +11,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.util.Json;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -268,6 +270,21 @@ public class MessageScrubber {
       "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora", "org-mozilla-focus",
       "org-mozilla-focus-beta", "org-mozilla-focus-nightly", "org-mozilla-klar");
 
+  // Document namespaces making up the fenix, focus_android, and klar_android app groupings, which
+  // are the Android apps that report an uncaught Java exception in the crash ping; see
+  // https://probeinfo.telemetry.mozilla.org/v2/glean/app-listings
+  private static final Set<String> JAVA_EXCEPTION_AFFECTED_NAMESPACES = ImmutableSet.of(
+      // fenix
+      "org-mozilla-firefox", "org-mozilla-firefox-beta", "org-mozilla-fenix",
+      "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora",
+      // focus_android
+      "org-mozilla-focus", "org-mozilla-focus-beta", "org-mozilla-focus-nightly",
+      // klar_android
+      "org-mozilla-klar");
+
+  // Bug tracking removal of Java exception messages from the crash ping.
+  private static final String JAVA_EXCEPTION_BUG = "2049744";
+
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
    *
@@ -433,6 +450,11 @@ public class MessageScrubber {
     if ("metrics".equals(docType) && namespace != null
         && BUG_1751955_AFFECTED_NAMESPACES.contains(namespace)) {
       processForBug1751955(json);
+    }
+
+    if ("crash".equals(docType) && namespace != null
+        && JAVA_EXCEPTION_AFFECTED_NAMESPACES.contains(namespace)) {
+      scrubJavaExceptionMessages(json);
     }
 
     // Data collected prior to glean.js 0.17.0 is effectively useless.
@@ -640,6 +662,127 @@ public class MessageScrubber {
             sanitizeMobileSearchKeys((ObjectNode) entry.getValue());
           }
         });
+  }
+
+  // Java exception messages may contain arbitrary strings pulled from the crashing app's state, so
+  // they must not be persisted. There are two places in an Android crash ping that carry them:
+  //
+  // - The `crash.java_exception` object metric, which is structured JSON in the payload. Version
+  // 0 of that structure held the messages in `messages`, version 1 holds them in
+  // `throwables[].message`; both are removed here because old clients may still submit
+  // version 0.
+  // - The `meta.annotations` object metric, which is `{"source": "<serialized JSON>"}` holding
+  // the raw crash annotations. The `JavaException` annotation inside it is itself a serialized
+  // JSON string, so both levels are parsed, scrubbed, and re-serialized. This metric only
+  // started being submitted in Firefox 155.
+  //
+  // See https://bugzilla.mozilla.org/show_bug.cgi?id=2049744 and the JavaException entry in
+  // toolkit/crashreporter/CrashAnnotations.yaml for the structure versions.
+  private static void scrubJavaExceptionMessages(ObjectNode json) {
+    final JsonNode objectMetrics = json.path("metrics").path("object");
+
+    if (removeJavaExceptionMessages(objectMetrics.path("crash.java_exception"))) {
+      markBugCounter(JAVA_EXCEPTION_BUG);
+    }
+
+    final JsonNode annotations = objectMetrics.path("meta.annotations");
+    if (!annotations.isObject()) {
+      return;
+    }
+    final JsonNode source = annotations.path("source");
+    if (source.isTextual()) {
+      scrubSerializedAnnotations((ObjectNode) annotations);
+    } else if (source.isObject() && scrubJavaExceptionAnnotation((ObjectNode) source)) {
+      // Tolerate source arriving as structured JSON rather than a serialized string.
+      markBugCounter(JAVA_EXCEPTION_BUG);
+    }
+  }
+
+  /**
+   * Scrub {@code meta.annotations} in its declared shape, where {@code source} is a string
+   * holding the serialized raw crash annotations.
+   */
+  private static void scrubSerializedAnnotations(ObjectNode annotations) {
+    final ObjectNode source;
+    try {
+      source = Json.readObjectNode(annotations.path("source").textValue());
+    } catch (IOException e) {
+      // We know this field can carry exception messages but cannot parse it to remove them
+      // surgically, so drop it entirely rather than risk persisting them.
+      annotations.remove("source");
+      markUnparseableJavaExceptionCounter("source");
+      return;
+    }
+
+    if (scrubJavaExceptionAnnotation(source)) {
+      annotations.put("source", Json.asString(source));
+      markBugCounter(JAVA_EXCEPTION_BUG);
+    }
+  }
+
+  /**
+   * Remove exception messages from the {@code JavaException} annotation of a parsed annotations
+   * object, returning whether anything was changed.
+   */
+  private static boolean scrubJavaExceptionAnnotation(ObjectNode source) {
+    final JsonNode javaException = source.path("JavaException");
+
+    if (javaException.isTextual()) {
+      // The raw annotation is a string containing serialized JSON.
+      try {
+        ObjectNode parsed = Json.readObjectNode(javaException.textValue());
+        if (removeJavaExceptionMessages(parsed)) {
+          source.put("JavaException", Json.asString(parsed));
+          return true;
+        }
+        return false;
+      } catch (IOException e) {
+        // As above, drop what we cannot scrub surgically.
+        source.remove("JavaException");
+        markUnparseableJavaExceptionCounter("java_exception");
+        return true;
+      }
+    }
+
+    return removeJavaExceptionMessages(javaException);
+  }
+
+  private static void markUnparseableJavaExceptionCounter(String suffix) {
+    Metrics.counter(MessageScrubber.class, "bug_" + JAVA_EXCEPTION_BUG + "_unparseable_" + suffix)
+        .inc();
+  }
+
+  /**
+   * Remove every known Java exception message field from {@code javaException}, returning whether
+   * anything was removed.
+   */
+  private static boolean removeJavaExceptionMessages(JsonNode javaException) {
+    if (!javaException.isObject()) {
+      return false;
+    }
+    boolean modified = false;
+
+    // Version 0 of the structure: {"messages": [...], "stack": [...]}
+    if (((ObjectNode) javaException).remove("messages") != null) {
+      modified = true;
+    }
+
+    // Version 1 of the structure: {"throwables": [{"message": ..., "type_name": ..., ...}]}
+    for (JsonNode throwable : javaException.path("throwables")) {
+      if (throwable.isObject() && ((ObjectNode) throwable).remove("message") != null) {
+        modified = true;
+      }
+    }
+
+    // Sentry-shaped payload: {"exception": {"values": [{"stacktrace": {"value": ...}}]}}
+    for (JsonNode value : javaException.path("exception").path("values")) {
+      JsonNode stacktrace = value.path("stacktrace");
+      if (stacktrace.isObject() && ((ObjectNode) stacktrace).remove("value") != null) {
+        modified = true;
+      }
+    }
+
+    return modified;
   }
 
   private static void sanitizeMobileSearchKeys(ObjectNode searchNode) {
