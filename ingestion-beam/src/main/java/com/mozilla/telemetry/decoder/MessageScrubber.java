@@ -289,8 +289,17 @@ public class MessageScrubber {
   // ping_info sections from their schemas.
   private static final String INFO_SECTIONS_BUG = "2074273";
 
-  private static final Set<String> INFO_SECTIONS_REMOVED_DOCTYPES = ImmutableSet.of("quick-suggest",
-      "urlbar-keyword-exposure");
+  private static final Set<String> INFO_SECTIONS_REMOVED_DESKTOP_DOCTYPES = ImmutableSet
+      .of("quick-suggest", "urlbar-keyword-exposure");
+
+  // Document namespaces making up the fenix app grouping, which submits the suggest pings on
+  // Android; see https://probeinfo.telemetry.mozilla.org/v2/glean/app-listings
+  private static final Set<String> FENIX_NAMESPACES = ImmutableSet.of("org-mozilla-firefox",
+      "org-mozilla-firefox-beta", "org-mozilla-fenix", "org-mozilla-fenix-nightly",
+      "org-mozilla-fennec-aurora");
+
+  private static final Set<String> INFO_SECTIONS_REMOVED_FENIX_DOCTYPES = ImmutableSet
+      .of("fx-suggest", "fx-suggest-api");
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -464,7 +473,7 @@ public class MessageScrubber {
       scrubJavaExceptionMessages(json);
     }
 
-    if ("firefox-desktop".equals(namespace) && INFO_SECTIONS_REMOVED_DOCTYPES.contains(docType)) {
+    if (infoSectionsRemoved(namespace, docType)) {
       removeInfoSections(json);
     }
 
@@ -795,6 +804,17 @@ public class MessageScrubber {
     }
 
     return modified;
+  }
+
+  // Whether the ping identified by this namespace and doc type has moved to OHTTP submission and
+  // therefore no longer declares the info sections; the suggest pings are named differently on
+  // desktop and on Android.
+  private static boolean infoSectionsRemoved(String namespace, String docType) {
+    if ("firefox-desktop".equals(namespace)) {
+      return INFO_SECTIONS_REMOVED_DESKTOP_DOCTYPES.contains(docType);
+    }
+    return FENIX_NAMESPACES.contains(namespace)
+        && INFO_SECTIONS_REMOVED_FENIX_DOCTYPES.contains(docType);
   }
 
   // These pings are submitted via OHTTP, so they no longer declare the Glean client_info and
