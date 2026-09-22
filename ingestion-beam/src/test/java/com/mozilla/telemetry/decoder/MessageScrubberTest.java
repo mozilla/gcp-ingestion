@@ -441,12 +441,14 @@ public class MessageScrubberTest {
     assertTrue(json.path("payload").path("slowSQL").isMissingNode());
   }
 
+  private static Map<String, String> ohttpAttributes(String docType) {
+    return ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop").put(Attribute.DOCUMENT_TYPE, docType)
+        .put(Attribute.X_TELEMETRY_AGENT, "Glean/60.0.0").build();
+  }
+
   @Test
   public void testRedactForBug2074273() throws Exception {
-    Map<String, String> attributes = ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop")
-        .put(Attribute.DOCUMENT_TYPE, "quick-suggest")
-        .put(Attribute.X_TELEMETRY_AGENT, "Glean/60.0.0").build();
     String payload = "{\n" //
         + "  \"client_info\": {\n" //
         + "    \"client_id\": \"c0ffeec0-ffee-c0ff-eec0-ffeec0ffee01\",\n" //
@@ -463,31 +465,32 @@ public class MessageScrubberTest {
         + "  }\n" //
         + "}";
 
-    // Old clients still send the info sections; they are removed so that the payload validates
-    // against the schema that no longer declares them.
-    ObjectNode json = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
-    MessageScrubber.scrub(attributes, json);
-    assertTrue(json.path("client_info").isMissingNode());
-    assertTrue(json.path("ping_info").isMissingNode());
-    assertEquals("firefox-suggest",
-        json.path("metrics").path("string").path("quick_suggest.match_type").textValue());
+    for (String docType : Arrays.asList("quick-suggest", "urlbar-keyword-exposure")) {
+      // Old clients still send the info sections; they are removed so that the payload validates
+      // against the schema that no longer declares them.
+      ObjectNode json = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
+      MessageScrubber.scrub(ohttpAttributes(docType), json);
+      assertTrue(json.path("client_info").isMissingNode());
+      assertTrue(json.path("ping_info").isMissingNode());
+      assertEquals("firefox-suggest",
+          json.path("metrics").path("string").path("quick_suggest.match_type").textValue());
 
-    // Payloads from newer clients pass through untouched.
-    ObjectNode withoutInfoSections = Json
-        .readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8));
-    MessageScrubber.scrub(attributes, withoutInfoSections);
-    assertEquals(Json.readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8)),
-        withoutInfoSections);
+      // Payloads from newer clients pass through untouched.
+      ObjectNode withoutInfoSections = Json
+          .readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8));
+      MessageScrubber.scrub(ohttpAttributes(docType), withoutInfoSections);
+      assertEquals(Json.readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8)),
+          withoutInfoSections);
+    }
 
     // Other doc types in the same namespace keep their info sections.
-    ObjectNode otherDocType = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
-    MessageScrubber.scrub(
-        ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop")
-            .put(Attribute.DOCUMENT_TYPE, "quick-suggest-deletion-request")
-            .put(Attribute.X_TELEMETRY_AGENT, "Glean/60.0.0").build(),
-        otherDocType);
-    assertTrue(otherDocType.path("client_info").isObject());
-    assertTrue(otherDocType.path("ping_info").isObject());
+    for (String docType : Arrays.asList("quick-suggest-deletion-request",
+        "urlbar-potential-exposure")) {
+      ObjectNode otherDocType = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
+      MessageScrubber.scrub(ohttpAttributes(docType), otherDocType);
+      assertTrue(otherDocType.path("client_info").isObject());
+      assertTrue(otherDocType.path("ping_info").isObject());
+    }
   }
 
   @Test
