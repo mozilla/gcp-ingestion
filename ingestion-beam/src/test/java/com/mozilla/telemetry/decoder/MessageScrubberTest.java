@@ -18,6 +18,7 @@ import com.mozilla.telemetry.util.Json;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -441,10 +442,10 @@ public class MessageScrubberTest {
     assertTrue(json.path("payload").path("slowSQL").isMissingNode());
   }
 
-  private static Map<String, String> ohttpAttributes(String docType) {
-    return ImmutableMap.<String, String>builder()
-        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop").put(Attribute.DOCUMENT_TYPE, docType)
-        .put(Attribute.X_TELEMETRY_AGENT, "Glean/60.0.0").build();
+  private static Map<String, String> ohttpAttributes(String namespace, String docType) {
+    return ImmutableMap.<String, String>builder().put(Attribute.DOCUMENT_NAMESPACE, namespace)
+        .put(Attribute.DOCUMENT_TYPE, docType).put(Attribute.X_TELEMETRY_AGENT, "Glean/60.0.0")
+        .build();
   }
 
   @Test
@@ -465,31 +466,53 @@ public class MessageScrubberTest {
         + "  }\n" //
         + "}";
 
-    for (String docType : Arrays.asList("quick-suggest", "urlbar-keyword-exposure")) {
-      // Old clients still send the info sections; they are removed so that the payload validates
-      // against the schema that no longer declares them.
-      ObjectNode json = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
-      MessageScrubber.scrub(ohttpAttributes(docType), json);
-      assertTrue(json.path("client_info").isMissingNode());
-      assertTrue(json.path("ping_info").isMissingNode());
-      assertEquals("firefox-suggest",
-          json.path("metrics").path("string").path("quick_suggest.match_type").textValue());
+    List<String> fenixNamespaces = Arrays.asList("org-mozilla-firefox", "org-mozilla-firefox-beta",
+        "org-mozilla-fenix", "org-mozilla-fenix-nightly", "org-mozilla-fennec-aurora");
 
-      // Payloads from newer clients pass through untouched.
-      ObjectNode withoutInfoSections = Json
-          .readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8));
-      MessageScrubber.scrub(ohttpAttributes(docType), withoutInfoSections);
-      assertEquals(Json.readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8)),
-          withoutInfoSections);
+    Map<String, List<String>> affected = new LinkedHashMap<>();
+    affected.put("firefox-desktop", Arrays.asList("quick-suggest", "urlbar-keyword-exposure"));
+    for (String namespace : fenixNamespaces) {
+      affected.put(namespace, Arrays.asList("fx-suggest", "fx-suggest-api"));
     }
 
-    // Other doc types in the same namespace keep their info sections.
-    for (String docType : Arrays.asList("quick-suggest-deletion-request",
-        "urlbar-potential-exposure")) {
-      ObjectNode otherDocType = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
-      MessageScrubber.scrub(ohttpAttributes(docType), otherDocType);
-      assertTrue(otherDocType.path("client_info").isObject());
-      assertTrue(otherDocType.path("ping_info").isObject());
+    for (Map.Entry<String, List<String>> entry : affected.entrySet()) {
+      String namespace = entry.getKey();
+      for (String docType : entry.getValue()) {
+        // Old clients still send the info sections; they are removed so that the payload validates
+        // against the schema that no longer declares them.
+        ObjectNode json = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
+        MessageScrubber.scrub(ohttpAttributes(namespace, docType), json);
+        assertTrue(json.path("client_info").isMissingNode());
+        assertTrue(json.path("ping_info").isMissingNode());
+        assertEquals("firefox-suggest",
+            json.path("metrics").path("string").path("quick_suggest.match_type").textValue());
+
+        // Payloads from newer clients pass through untouched.
+        ObjectNode withoutInfoSections = Json
+            .readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8));
+        MessageScrubber.scrub(ohttpAttributes(namespace, docType), withoutInfoSections);
+        assertEquals(Json.readObjectNode("{\"metrics\":{}}".getBytes(StandardCharsets.UTF_8)),
+            withoutInfoSections);
+      }
+    }
+
+    // Doc types that did not move to OHTTP keep their info sections, as do the suggest doc types
+    // of the other platform and namespaces outside the fenix app grouping.
+    Map<String, List<String>> unaffected = new LinkedHashMap<>();
+    unaffected.put("firefox-desktop",
+        Arrays.asList("quick-suggest-deletion-request", "urlbar-potential-exposure", "fx-suggest"));
+    unaffected.put("org-mozilla-fenix", Arrays.asList("quick-suggest", "fx-suggest-deletion"));
+    unaffected.put("org-mozilla-focus", Arrays.asList("fx-suggest", "fx-suggest-api"));
+    unaffected.put("org-mozilla-klar", Arrays.asList("fx-suggest", "fx-suggest-api"));
+
+    for (Map.Entry<String, List<String>> entry : unaffected.entrySet()) {
+      String namespace = entry.getKey();
+      for (String docType : entry.getValue()) {
+        ObjectNode json = Json.readObjectNode(payload.getBytes(StandardCharsets.UTF_8));
+        MessageScrubber.scrub(ohttpAttributes(namespace, docType), json);
+        assertTrue(json.path("client_info").isObject());
+        assertTrue(json.path("ping_info").isObject());
+      }
     }
   }
 
