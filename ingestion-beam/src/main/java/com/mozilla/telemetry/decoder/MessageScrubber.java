@@ -285,9 +285,12 @@ public class MessageScrubber {
   // Bug tracking removal of Java exception messages from the crash ping.
   private static final String JAVA_EXCEPTION_BUG = "2073281";
 
-  // Bug tracking the move of the quick-suggest ping to OHTTP submission, which drops the
-  // client_info and ping_info sections from the schema.
-  private static final String QUICK_SUGGEST_INFO_SECTIONS_BUG = "2074273";
+  // Bug tracking the move of these pings to OHTTP submission, which drops the client_info and
+  // ping_info sections from their schemas.
+  private static final String INFO_SECTIONS_BUG = "2074273";
+
+  private static final Set<String> INFO_SECTIONS_REMOVED_DOCTYPES = ImmutableSet.of("quick-suggest",
+      "urlbar-keyword-exposure");
 
   /**
    * Inspect the contents of the message to check for known signatures of potentially harmful data.
@@ -461,7 +464,7 @@ public class MessageScrubber {
       scrubJavaExceptionMessages(json);
     }
 
-    if ("firefox-desktop".equals(namespace) && "quick-suggest".equals(docType)) {
+    if ("firefox-desktop".equals(namespace) && INFO_SECTIONS_REMOVED_DOCTYPES.contains(docType)) {
       removeInfoSections(json);
     }
 
@@ -794,19 +797,19 @@ public class MessageScrubber {
     return modified;
   }
 
-  // The quick-suggest ping is submitted via OHTTP, so it no longer declares the Glean
-  // client_info and ping_info sections and its schema sets additionalProperties to false. Older
-  // clients still send those sections, which would otherwise fail schema validation and land in
-  // the error table, so we remove them here; note that MessageScrubber runs ahead of validation
-  // in ParsePayload. This can be dropped once the affected versions are no longer reporting; the
-  // bug counter tracks how many pings still carry the sections.
+  // These pings are submitted via OHTTP, so they no longer declare the Glean client_info and
+  // ping_info sections and their schemas set additionalProperties to false. Older clients still
+  // send those sections, which would otherwise fail schema validation and land in the error
+  // table, so we remove them here; note that MessageScrubber runs ahead of validation in
+  // ParsePayload. This can be dropped once the affected versions are no longer reporting; the bug
+  // counter tracks how many pings still carry the sections.
   //
   // See https://bugzilla.mozilla.org/show_bug.cgi?id=2074273
   private static void removeInfoSections(ObjectNode json) {
     boolean removedClientInfo = json.remove("client_info") != null;
     boolean removedPingInfo = json.remove("ping_info") != null;
     if (removedClientInfo || removedPingInfo) {
-      markBugCounter(QUICK_SUGGEST_INFO_SECTIONS_BUG);
+      markBugCounter(INFO_SECTIONS_BUG);
     }
   }
 
