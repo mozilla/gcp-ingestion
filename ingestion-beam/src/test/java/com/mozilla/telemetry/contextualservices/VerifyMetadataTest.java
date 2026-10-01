@@ -97,6 +97,43 @@ public class VerifyMetadataTest {
   }
 
   @Test
+  public void testOhttpQuickSuggestWithoutUserAgent() {
+    Map<String, String> ohttp = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quick-suggest", //
+        Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", //
+        Attribute.CLIENT_COMPRESSION, "gzip");
+    // A non-Firefox user agent is still rejected, as is a missing one on other doc types
+    Map<String, String> otherBrowser = ImmutableMap.<String, String>builder().putAll(ohttp)
+        .put(Attribute.USER_AGENT_BROWSER, "Chrome").build();
+    Map<String, String> topSites = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "top-sites", //
+        Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", //
+        Attribute.CLIENT_COMPRESSION, "gzip");
+
+    final List<PubsubMessage> input = Stream.of(ohttp, otherBrowser, topSites)
+        .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
+        .collect(Collectors.toList());
+
+    WithFailures.Result<PCollection<PubsubMessage>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(VerifyMetadata.of());
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(2, Iterables.size(messages));
+      messages.forEach(message -> Assert
+          .assertTrue(message.getAttribute("error_message").contains("Invalid user agent")));
+      return null;
+    });
+
+    PAssert.that(result.output()).satisfies(messages -> {
+      PubsubMessage message = Iterables.getOnlyElement(messages);
+      Assert.assertEquals("quick-suggest", message.getAttribute(Attribute.DOCUMENT_TYPE));
+      Assert.assertNull(message.getAttribute(Attribute.USER_AGENT_BROWSER));
+      return null;
+    });
+
+    pipeline.run();
+  }
+
+  @Test
   public void testRejectIspCountry() {
     Map<String, String> baseAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "topsites-click",
         Attribute.DOCUMENT_NAMESPACE, "contextual-services", //
