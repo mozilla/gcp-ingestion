@@ -5,6 +5,7 @@ import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
@@ -25,7 +26,7 @@ public class FilterByDocType
   private static transient Set<String> allowedNamespacesSet;
 
   @VisibleForTesting
-  static synchronized void clearSingletonsForTests() {
+  public static synchronized void clearSingletonsForTests() {
     allowedDocTypesSet = null;
     allowedNamespacesSet = null;
   }
@@ -41,6 +42,19 @@ public class FilterByDocType
   public static FilterByDocType of(String allowedDocTypes, String allowedNamespaces,
       boolean limitLegacyDesktopVersion) {
     return new FilterByDocType(allowedDocTypes, allowedNamespaces, limitLegacyDesktopVersion);
+  }
+
+  /**
+   * Whether this is a desktop quick-suggest ping submitted via OHTTP, which carries no
+   * User-Agent header (bug 2074273). The decoder drops the raw header after parsing, so a missing
+   * header is identified by all the parsed user agent attributes being absent.
+   */
+  static boolean isOhttpQuickSuggest(Map<String, String> attributes) {
+    return "firefox-desktop".equals(attributes.get(Attribute.DOCUMENT_NAMESPACE))
+        && "quick-suggest".equals(attributes.get(Attribute.DOCUMENT_TYPE))
+        && attributes.get(Attribute.USER_AGENT_BROWSER) == null
+        && attributes.get(Attribute.USER_AGENT_OS) == null
+        && attributes.get(Attribute.USER_AGENT_VERSION) == null;
   }
 
   private Set<String> parseAllowlistString(String allowlistString, String argument) {
@@ -76,8 +90,11 @@ public class FilterByDocType
       }
       PerDocTypeCounter.inc(message.getAttributeMap(), "doctype_filter_passed");
 
-      // Special handling for desktop pings.
-      if ("contextual-services".equals(namespace) || "firefox-desktop".equals(namespace)) {
+      // Firefox 156+ sends quick-suggest pings over OHTTP, those pings have no version to check.
+      if (isOhttpQuickSuggest(message.getAttributeMap())) {
+        PerDocTypeCounter.inc(message.getAttributeMap(), "version_filter_skipped_ohttp");
+      } else if ("contextual-services".equals(namespace) || "firefox-desktop".equals(namespace)) {
+        // Special handling for desktop pings.
         // Verify Firefox version here so rejected messages don't go to error output
         final int minVersion;
         int maxVersion = Integer.MAX_VALUE;

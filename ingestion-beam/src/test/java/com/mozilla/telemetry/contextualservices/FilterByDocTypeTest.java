@@ -101,4 +101,39 @@ public class FilterByDocTypeTest {
     });
     pipeline.run();
   }
+
+  @Test
+  public void testOhttpQuickSuggestSkipsVersionFilter() {
+    FilterByDocType.clearSingletonsForTests();
+    Map<String, String> ohttp = ImmutableMap.of(Attribute.DOCUMENT_TYPE, "quick-suggest",
+        Attribute.DOCUMENT_NAMESPACE, "firefox-desktop", //
+        Attribute.CLIENT_COMPRESSION, "gzip");
+    // Only quick-suggest is exempt, and only when no user agent attribute is present
+    Map<String, String> topSites = ImmutableMap.<String, String>builder()
+        .putAll(ImmutableMap.of(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop",
+            Attribute.CLIENT_COMPRESSION, "gzip"))
+        .put(Attribute.DOCUMENT_TYPE, "top-sites").build();
+    Map<String, String> osOnly = ImmutableMap.<String, String>builder().putAll(ohttp)
+        .put(Attribute.USER_AGENT_OS, "Windows").build();
+    Map<String, String> browserOnly = ImmutableMap.<String, String>builder().putAll(ohttp)
+        .put(Attribute.USER_AGENT_BROWSER, "Firefox").build();
+
+    final List<PubsubMessage> input = Stream.of(ohttp, topSites, osOnly, browserOnly)
+        .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
+        .collect(Collectors.toList());
+
+    PCollection<PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(FilterByDocType.of("quick-suggest,top-sites", "firefox-desktop", true));
+
+    PAssert.that(result).satisfies(messages -> {
+      Assert.assertEquals(1, Iterables.size(messages));
+      PubsubMessage message = Iterables.getOnlyElement(messages);
+      Assert.assertEquals("quick-suggest", message.getAttribute(Attribute.DOCUMENT_TYPE));
+      Assert.assertNull(message.getAttribute(Attribute.USER_AGENT_OS));
+      Assert.assertNull(message.getAttribute(Attribute.USER_AGENT_BROWSER));
+      return null;
+    });
+    pipeline.run();
+  }
 }
