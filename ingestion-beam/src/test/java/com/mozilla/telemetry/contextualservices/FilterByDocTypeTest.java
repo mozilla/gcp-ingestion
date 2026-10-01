@@ -117,8 +117,11 @@ public class FilterByDocTypeTest {
         .put(Attribute.USER_AGENT_OS, "Windows").build();
     Map<String, String> browserOnly = ImmutableMap.<String, String>builder().putAll(ohttp)
         .put(Attribute.USER_AGENT_BROWSER, "Firefox").build();
+    // A version below the minimum is dropped, which it would not be if treated as OHTTP
+    Map<String, String> versionOnly = ImmutableMap.<String, String>builder().putAll(ohttp)
+        .put(Attribute.USER_AGENT_VERSION, "115").build();
 
-    final List<PubsubMessage> input = Stream.of(ohttp, topSites, osOnly, browserOnly)
+    final List<PubsubMessage> input = Stream.of(ohttp, topSites, osOnly, browserOnly, versionOnly)
         .map(attributes -> new PubsubMessage(new byte[] {}, attributes))
         .collect(Collectors.toList());
 
