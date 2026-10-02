@@ -38,6 +38,7 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Instant;
 
 /**
@@ -81,6 +82,9 @@ public class ParseReportingUrl extends
   private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
   private static final String PT_MOBILE_QUICKSUGGEST_IMPRESSION = "fxsuggest-impression";
   private static final String PT_MOBILE_QUICKSUGGEST_CLICK = "fxsuggest-click";
+
+  // Client-reported country metric, under the quick_suggest and fx_suggest metric sources
+  private static final String CLIENT_COUNTRY = "country";
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -290,7 +294,8 @@ public class ParseReportingUrl extends
               addCustomDataForDesktopSuggest(builtUrl, interaction);
             }
 
-            addAdditionalDimensionsForInternationalSuggest(builtUrl, interaction, payload);
+            addAdditionalDimensionsForInternationalSuggest(builtUrl, interaction, payload, metrics,
+                attributes, NS_DESKTOP.equals(namespace));
           }
 
           reportingUrl = builtUrl.toString();
@@ -353,8 +358,23 @@ public class ParseReportingUrl extends
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
   }
 
+  /**
+   * Add dimensions for suggestions sourced from the AMP Suggest API.
+   *
+   * <p>For Glean pings the country-code is the client-reported country, from the
+   * quick_suggest.country (desktop) and fx_suggest.country (mobile) metrics (bug 1968154). Suggest
+   * pings submitted via OHTTP arrive from the OHTTP gateway, so their normalized_country_code is
+   * the gateway's country (always US) rather than the client's. Only pings submitted directly,
+   * identified by having a user agent, fall back to normalized_country_code; these are older
+   * clients (e.g. ESR 128) that predate the client-reported country. OHTTP pings without one omit
+   * the country-code.
+   *
+   * <p>Pings in the contextual-services namespace are pre-Glean telemetry, which has no
+   * client-reported country and is never submitted via OHTTP, so they use normalized_country_code.
+   */
   private static void addAdditionalDimensionsForInternationalSuggest(BuildReportingUrl builtUrl,
-      SponsoredInteraction interaction, ObjectNode payload) {
+      SponsoredInteraction interaction, ObjectNode payload, JsonNode metrics,
+      Map<String, String> attributes, boolean isContextualServicesNamespace) {
     // Do not add additional parameters for legacy suggest URLs.
     //
     // Glean events do not indicate how the suggest data was sourced (from the AMP SFTP server or
@@ -371,12 +391,25 @@ public class ParseReportingUrl extends
       return;
     }
 
-    if (payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
-      builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
-          payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+    Optional<String> clientCountry = isContextualServicesNamespace ? Optional.empty()
+        : parseClientCountry(metrics);
+    if (clientCountry.isPresent()) {
+      builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE, clientCountry.get());
+    } else if (isContextualServicesNamespace || !Ohttp.isOhttpSuggest(attributes)) {
+      if (payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
+        builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
+            payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+      }
+    } else {
+      PerDocTypeCounter.inc(attributes, "missing_client_country");
     }
 
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
+  }
+
+  private static Optional<String> parseClientCountry(JsonNode metrics) {
+    return optionalNode(metrics.path(CLIENT_COUNTRY)).map(JsonNode::asText)
+        .filter(StringUtils::isNotBlank);
   }
 
   private static void addAdditionalDimensionsForTopSitesClicks(BuildReportingUrl builtUrl,
