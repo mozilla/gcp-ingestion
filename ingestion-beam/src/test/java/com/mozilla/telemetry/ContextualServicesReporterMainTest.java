@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -104,19 +105,33 @@ public class ContextualServicesReporterMainTest {
 
     List<String> sentUrls = reportedUrls(errorOutput);
 
-    // Query params are re-sorted when the URL is built, so match the id anywhere in the query.
     assertThat(sentUrls, Matchers.hasSize(3));
-    assertThat(sentUrls, Matchers.hasItem(Matchers
-        .allOf(Matchers.startsWith("https://imp.mt48.net/imp?"), Matchers.endsWith("&id=ohttp"))));
+    assertThat(sentUrls,
+        Matchers.hasItem(Matchers.allOf(Matchers.startsWith("https://imp.mt48.net/imp?"),
+            isTestCase("ohttp-no-user-agent"))));
     assertThat(sentUrls,
         Matchers
             .hasItem(Matchers.allOf(Matchers.startsWith("https://bridge.us.admarketplace.net/ctp?"),
-                Matchers.endsWith("&id=ohttp"))));
-    assertThat(sentUrls,
-        Matchers.hasItem(Matchers.allOf(Matchers.startsWith("https://imp.mt48.net/imp?"),
-            Matchers.endsWith("&id=firefox"))));
+                isTestCase("ohttp-no-user-agent"))));
+    assertThat(sentUrls, Matchers.hasItem(Matchers
+        .allOf(Matchers.startsWith("https://imp.mt48.net/imp?"), isTestCase("direct-firefox"))));
     assertThat(errorMessages(errorOutput),
         Matchers.hasItem(Matchers.containsString("Invalid user agent: Chrome")));
+
+    // OHTTP pings are geolocated to the gateway (US), so the client-reported country is sent
+    assertThat(sentUrls.stream().filter(isTestCase("ohttp-no-user-agent")::matches).collect(
+        Collectors.toList()), Matchers.everyItem(Matchers.containsString("country-code=DE")));
+    assertThat(sentUrls, Matchers.hasItem(
+        Matchers.allOf(isTestCase("direct-firefox"), Matchers.containsString("country-code=GB"))));
+  }
+
+  /**
+   * Match a reported URL by the {@code test-case} param that identifies each input ping. It is a
+   * test-only label, not a param the job interprets. Query params are sorted when the URL is
+   * built, so it is always the last one.
+   */
+  private static Matcher<String> isTestCase(String testCase) {
+    return Matchers.endsWith("&test-case=" + testCase);
   }
 
   /**
