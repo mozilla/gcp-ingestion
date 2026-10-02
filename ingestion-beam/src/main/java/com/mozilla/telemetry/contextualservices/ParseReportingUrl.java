@@ -395,7 +395,7 @@ public class ParseReportingUrl extends
         : parseClientCountry(metrics);
     if (clientCountry.isPresent()) {
       builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE, clientCountry.get());
-    } else if (isContextualServicesNamespace || isSubmittedDirectly(attributes)) {
+    } else if (isContextualServicesNamespace || !Ohttp.isOhttpSuggest(attributes)) {
       if (payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
         builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
             payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
@@ -405,16 +405,6 @@ public class ParseReportingUrl extends
     }
 
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
-  }
-
-  /**
-   * Whether the ping was submitted directly rather than via OHTTP. OHTTP submissions carry no
-   * User-Agent header, so they have none of the parsed user agent attributes.
-   */
-  private static boolean isSubmittedDirectly(Map<String, String> attributes) {
-    return Stream
-        .of(Attribute.USER_AGENT_BROWSER, Attribute.USER_AGENT_OS, Attribute.USER_AGENT_VERSION)
-        .map(attributes::get).anyMatch(Objects::nonNull);
   }
 
   private static Optional<String> parseClientCountry(JsonNode metrics) {
