@@ -55,7 +55,7 @@ public class VerifyMetadata extends
           // User agent must be Firefox, except for pings sent over OHTTP (Firefox 156+), which have
           // no user agent
           String userAgent = attributes.get(Attribute.USER_AGENT_BROWSER);
-          if (!"Firefox".equals(userAgent) && !FilterByDocType.isOhttpQuickSuggest(attributes)) {
+          if (!"Firefox".equals(userAgent) && !Ohttp.isOhttpSuggest(attributes)) {
             throw new RejectedMessageException("Invalid user agent: " + userAgent, "user_agent");
           }
 
