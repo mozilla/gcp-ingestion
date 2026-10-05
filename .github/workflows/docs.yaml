@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Install mdspell
         run: npm install markdown-spellcheck
       - name: Spell Check
@@ -23,7 +23,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
       - name: Install prettier
         run: npm install prettier
       - name: Check markdown is formatted with prettier
@@ -37,8 +37,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.10"
       - name: Install dependencies
@@ -52,7 +52,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          # gh-deploy builds on top of origin/gh-pages, which the default shallow
+          # checkout doesn't fetch. Without it the push is rejected as non-fast-forward.
+          git fetch --depth=1 origin gh-pages:refs/remotes/origin/gh-pages
       - name: Build and deploy docs
         run: |
           mkdocs gh-deploy -m "[ci skip] Deployed ${{ github.sha }} with MkDocs version: {version}"
