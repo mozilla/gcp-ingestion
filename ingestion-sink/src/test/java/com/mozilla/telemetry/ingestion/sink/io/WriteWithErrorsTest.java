@@ -30,4 +30,20 @@ public class WriteWithErrorsTest {
     assertEquals(3, attempt.get());
     assertEquals(ImmutableList.of("1"), errors);
   }
+
+  @Test
+  public void canCountBatchErrorsCausedByError() {
+    final AtomicInteger attempt = new AtomicInteger(0);
+    final List<String> errors = new LinkedList<>();
+
+    new WriteWithErrors(msg -> {
+      attempt.incrementAndGet();
+      throw BatchException.of(new OutOfMemoryError("test"), 2);
+    }, msg -> {
+      errors.add(msg.getMessageId());
+      return CompletableFuture.completedFuture(null);
+    }, 2).apply(PubsubMessage.newBuilder().setMessageId("1").build()).join();
+    assertEquals(2, attempt.get());
+    assertEquals(ImmutableList.of("1"), errors);
+  }
 }

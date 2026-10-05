@@ -128,8 +128,8 @@ public class SinkConfig {
   // BigQuery Load API limits maximum load requests per table per day to 1,000 but mixed mode
   // expects fewer than 1,000 messages per day to need file loads, so use streaming max delay.
   private static final String DEFAULT_STREAMING_LOAD_MAX_DELAY = DEFAULT_STREAMING_BATCH_MAX_DELAY;
-  // BatchExceptions don't count toward this limit. Only used when error output is configured,
-  // otherwise messages will be immediately nacked on failure.
+  // BatchExceptions caused by a RuntimeException don't count toward this limit. Only used when
+  // error output is configured, otherwise messages will be immediately nacked on failure.
   private static final int DEFAULT_OUTPUT_MAX_ATTEMPTS = 3;
 
   @VisibleForTesting
