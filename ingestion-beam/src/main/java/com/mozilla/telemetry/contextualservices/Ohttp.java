@@ -18,6 +18,9 @@ import java.util.stream.Stream;
  */
 class Ohttp {
 
+  private Ohttp() {
+  }
+
   /**
    * Whether this is a suggest ping submitted via OHTTP: desktop quick-suggest or mobile fx-suggest
    * without a User-Agent header. Other doc types, such as top-sites, are not submitted via OHTTP.
