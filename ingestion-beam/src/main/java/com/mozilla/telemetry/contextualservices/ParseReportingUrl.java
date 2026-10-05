@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -38,7 +39,6 @@ import org.apache.beam.sdk.transforms.WithFailures.ExceptionElement;
 import org.apache.beam.sdk.transforms.WithFailures.Result;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.TypeDescriptor;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Instant;
 
 /**
@@ -85,6 +85,7 @@ public class ParseReportingUrl extends
 
   // Client-reported country metric, under the quick_suggest and fx_suggest metric sources
   private static final String CLIENT_COUNTRY = "country";
+  private static final Pattern CLIENT_COUNTRY_PATTERN = Pattern.compile("[A-Z]{2}");
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -407,9 +408,16 @@ public class ParseReportingUrl extends
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
   }
 
+  /**
+   * Parse the client-reported country, if it is a two-letter country code.
+   *
+   * <p>The value comes from the client and the schema only requires a string. It is added to the
+   * reporting URL without encoding, so anything else, such as a value containing "&", would add
+   * query params to the request; it is treated as missing instead.
+   */
   private static Optional<String> parseClientCountry(JsonNode metrics) {
     return optionalNode(metrics.path(CLIENT_COUNTRY)).map(JsonNode::asText)
-        .filter(StringUtils::isNotBlank);
+        .filter(country -> CLIENT_COUNTRY_PATTERN.matcher(country).matches());
   }
 
   private static void addAdditionalDimensionsForTopSitesClicks(BuildReportingUrl builtUrl,
