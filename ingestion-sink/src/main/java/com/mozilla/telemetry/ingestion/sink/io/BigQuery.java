@@ -1,9 +1,11 @@
 package com.mozilla.telemetry.ingestion.sink.io;
 
 import com.google.cloud.bigquery.BigQueryError;
+import com.google.cloud.bigquery.BigQueryException;
 import com.google.cloud.bigquery.FormatOptions;
 import com.google.cloud.bigquery.InsertAllRequest;
 import com.google.cloud.bigquery.InsertAllResponse;
+import com.google.cloud.bigquery.Job;
 import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.JobStatus;
 import com.google.cloud.bigquery.LoadJobConfiguration;
@@ -44,6 +46,27 @@ public class BigQuery {
       super(errors.toString());
       this.errors = errors;
     }
+
+    private BigQueryErrors(List<BigQueryError> errors, String message, Throwable cause) {
+      super(message, cause);
+      this.errors = errors;
+    }
+
+    /** Describe a failed action and its errors, such as "load job x into y failed: [...]". */
+    private static BigQueryErrors failed(String action, List<BigQueryError> errors) {
+      return new BigQueryErrors(errors, action + " failed: " + errors, null);
+    }
+
+    /**
+     * Describe a failed action from a BigQueryException.
+     *
+     * <p>Transport errors such as timeouts have no BigQuery errors, so use the exception's message.
+     */
+    private static BigQueryErrors failed(String action, BigQueryException e) {
+      List<BigQueryError> errors = Optional.ofNullable(e.getErrors()).orElse(ImmutableList.of());
+      String reason = errors.isEmpty() ? e.getMessage() : errors.toString();
+      return new BigQueryErrors(errors, action + " failed: " + reason, e);
+    }
   }
 
   private static final Pattern OUTPUT_TABLE_PATTERN = Pattern
@@ -66,6 +89,12 @@ public class BigQuery {
     } else {
       throw new IllegalArgumentException("TableId requires dataset but none found in: " + input);
     }
+  }
+
+  /** Format a TableId as project.dataset.table, or dataset.table if it has no project. */
+  private static String tableSpec(TableId tableId) {
+    return (tableId.getProject() == null ? "" : tableId.getProject() + ".") + tableId.getDataset()
+        + "." + tableId.getTable();
   }
 
   public static class Write
@@ -210,20 +239,40 @@ public class BigQuery {
       protected CompletableFuture<Void> close() {
         List<String> sourceUris = sourceBlobIds.stream().map(BlobIdToString::apply)
             .collect(Collectors.toList());
+        String target = String.format("into %s with %d files", tableSpec(tableId),
+            sourceUris.size());
         boolean loadSuccess = false;
         try {
-          JobStatus status = bigQuery
-              .create(JobInfo.of(LoadJobConfiguration.newBuilder(tableId, sourceUris)
-                  .setCreateDisposition(JobInfo.CreateDisposition.CREATE_NEVER)
-                  .setWriteDisposition(JobInfo.WriteDisposition.WRITE_APPEND)
-                  .setFormatOptions(FormatOptions.json()).setIgnoreUnknownValues(true)
-                  .setAutodetect(false).setMaxBadRecords(0).build()))
-              .waitFor().getStatus();
+          final Job job;
+          try {
+            job = bigQuery.create(JobInfo.of(LoadJobConfiguration.newBuilder(tableId, sourceUris)
+                .setCreateDisposition(JobInfo.CreateDisposition.CREATE_NEVER)
+                .setWriteDisposition(JobInfo.WriteDisposition.WRITE_APPEND)
+                .setFormatOptions(FormatOptions.json()).setIgnoreUnknownValues(true)
+                .setAutodetect(false).setMaxBadRecords(0).build()));
+          } catch (BigQueryException e) {
+            throw BigQueryErrors.failed("creating load job " + target, e);
+          }
+          String loadJob = String.format("load job %s %s", job.getJobId(), target);
+          final Job completed;
+          try {
+            completed = job.waitFor();
+          } catch (BigQueryException e) {
+            // Thrown when the job finished with an error, and when checking its status failed.
+            throw BigQueryErrors.failed("waiting for " + loadJob, e);
+          }
+          if (completed == null) {
+            throw new BigQueryErrors(ImmutableList.of(),
+                loadJob + " was not found while waiting for it to finish", null);
+          }
+          JobStatus status = completed.getStatus();
+          // waitFor already throws when the job has an error, so in practice only jobs with
+          // execution errors and no top-level error get past this point and fail here.
           if (status.getError() != null) {
-            throw new BigQueryErrors(ImmutableList.of(status.getError()));
+            throw BigQueryErrors.failed(loadJob, ImmutableList.of(status.getError()));
           } else if (status.getExecutionErrors() != null
               && status.getExecutionErrors().size() > 0) {
-            throw new BigQueryErrors(status.getExecutionErrors());
+            throw BigQueryErrors.failed(loadJob, status.getExecutionErrors());
           }
           loadSuccess = true;
           return CompletableFuture.completedFuture(null);
