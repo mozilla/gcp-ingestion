@@ -43,7 +43,8 @@ public class Pubsub {
             if (exception.getCause() instanceof BatchException) {
               // only log batch exception once
               ((BatchException) exception.getCause()).handle((batchExc) -> logger.error(
-                  String.format("failed to deliver %d messages", batchExc.size),
+                  String.format("failed to deliver %d messages", batchExc.size)
+                      + (batchExc.description == null ? "" : " in batch " + batchExc.description),
                   batchExc.getCause()));
             } else {
               // log exception specific to this message
