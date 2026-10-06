@@ -85,6 +85,7 @@ but with a few extra flags:
     `--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Decoder`
 - `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
 - `--geoCityFilter=/path/to/cities15000.txt` (optional)
+- `--geoIspDatabase=/path/to/GeoIP2-ISP.mmdb` (required)
 
 To download the [GeoLite2 database](https://dev.maxmind.com/geoip/geoip2/geolite2/),
 you need to [register for a MaxMind account](https://www.maxmind.com/en/geolite2/signup)
