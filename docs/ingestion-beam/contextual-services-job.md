@@ -7,7 +7,7 @@ that is shared. For more context, see the
 
 The code is defined in the [`com.mozilla.telemetry.ContextualServicesReporter`](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java) class.
 
-The input of this job is all `contextual-services` namespace messages for desktop Firefox, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`. It also includes `topsites-impression` pings from various mobile applications.
+The input of this job is all `contextual-services` namespace messages for desktop Firefox, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`. It also includes `firefox-desktop` namespace Glean pings (`top-sites`, `quick-suggest`, and `search-with`), each gated to specific Firefox versions, as well as `topsites-impression` pings from various mobile applications.
 
 ## Data flows for Contextual Services
 
