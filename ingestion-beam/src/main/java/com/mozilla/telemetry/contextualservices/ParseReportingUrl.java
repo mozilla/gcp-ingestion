@@ -362,16 +362,22 @@ public class ParseReportingUrl extends
   /**
    * Add dimensions for suggestions sourced from the AMP Suggest API.
    *
-   * <p>For Glean pings the country-code is the client-reported country, from the
-   * quick_suggest.country (desktop) and fx_suggest.country (mobile) metrics (bug 1968154). Suggest
-   * pings submitted via OHTTP arrive from the OHTTP gateway, so their normalized_country_code is
-   * the gateway's country (always US) rather than the client's. Only pings submitted directly,
-   * identified by having a user agent, fall back to normalized_country_code; these are older
-   * clients (e.g. ESR 128) that predate the client-reported country. OHTTP pings without one omit
-   * the country-code.
-   *
-   * <p>Pings in the contextual-services namespace are pre-Glean telemetry, which has no
-   * client-reported country and is never submitted via OHTTP, so they use normalized_country_code.
+   * <p>The country-code is preferably the country derived from the request IP
+   * (normalized_country_code), so that AMP gets the user's actual location even when it differs
+   * from the suggestions they were served (see https://github.com/mozilla/gcp-ingestion/pull/2777).
+   * The client-reported country is the user's home region, from the quick_suggest.country (desktop)
+   * and fx_suggest.country (mobile) metrics (bug 1968154). By type of ping:
+   * <ul>
+   *   <li>Glean pings submitted directly (with a user agent) use the IP-derived country, and fall
+   *   back to the client-reported country only if the IP-derived country is missing.</li>
+   *   <li>Glean pings submitted via OHTTP (no user agent) use the client-reported country, because
+   *   they arrive from the OHTTP gateway and their normalized_country_code is the gateway's (always
+   *   US). If the client did not report a valid country, the country-code is omitted and the ping
+   *   is counted as missing_client_country.</li>
+   *   <li>Pre-Glean pings in the contextual-services namespace use the IP-derived country. They
+   *   have no client-reported country and are never submitted via OHTTP.</li>
+   *   <li>Reporting URLs in the older format get no country-code or form-factor (see below).</li>
+   * </ul>
    */
   private static void addAdditionalDimensionsForInternationalSuggest(BuildReportingUrl builtUrl,
       SponsoredInteraction interaction, ObjectNode payload, JsonNode metrics,
@@ -392,18 +398,22 @@ public class ParseReportingUrl extends
       return;
     }
 
-    Optional<String> clientCountry = isContextualServicesNamespace ? Optional.empty()
-        : parseClientCountry(metrics);
-    if (clientCountry.isPresent()) {
-      builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE, clientCountry.get());
-    } else if (isContextualServicesNamespace || !Ohttp.isOhttpSuggest(attributes)) {
-      if (payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
-        builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
-            payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+    Optional<String> ipCountry = payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)
+        ? Optional.of(payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText())
+        : Optional.empty();
+    final Optional<String> countryCode;
+    if (isContextualServicesNamespace) {
+      countryCode = ipCountry;
+    } else if (Ohttp.isOhttpSuggest(attributes)) {
+      countryCode = parseClientCountry(metrics);
+      if (countryCode.isEmpty()) {
+        PerDocTypeCounter.inc(attributes, "missing_client_country");
       }
     } else {
-      PerDocTypeCounter.inc(attributes, "missing_client_country");
+      countryCode = ipCountry.or(() -> parseClientCountry(metrics));
     }
+    countryCode.ifPresent(
+        country -> builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE, country));
 
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
   }
