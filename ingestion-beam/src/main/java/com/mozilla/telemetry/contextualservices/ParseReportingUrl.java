@@ -85,7 +85,8 @@ public class ParseReportingUrl extends
 
   // Client-reported country metric, under the quick_suggest and fx_suggest metric sources
   private static final String CLIENT_COUNTRY = "country";
-  private static final Pattern CLIENT_COUNTRY_PATTERN = Pattern.compile("[A-Z]{2}");
+  // Format of a country-code; it is added to the reporting URL without encoding
+  private static final Pattern COUNTRY_CODE_PATTERN = Pattern.compile("[A-Z]{2}");
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -378,6 +379,7 @@ public class ParseReportingUrl extends
    *   have no client-reported country and are never submitted via OHTTP.</li>
    *   <li>Reporting URLs in the older format get no country-code or form-factor (see below).</li>
    * </ul>
+   * Either country is used only if it is a two-letter code; otherwise it is treated as missing.
    */
   private static void addAdditionalDimensionsForInternationalSuggest(BuildReportingUrl builtUrl,
       SponsoredInteraction interaction, ObjectNode payload, JsonNode metrics,
@@ -398,9 +400,10 @@ public class ParseReportingUrl extends
       return;
     }
 
-    Optional<String> ipCountry = payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)
-        ? Optional.of(payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText())
-        : Optional.empty();
+    // normalized_country_code is normally two letters or "Other" (NormalizeAttributes), but a value
+    // supplied in the payload can remain if the IP lookup found no country, so check it too
+    Optional<String> ipCountry = Optional.ofNullable(payload.get(Attribute.NORMALIZED_COUNTRY_CODE))
+        .map(JsonNode::asText).filter(ParseReportingUrl::isCountryCode);
     final Optional<String> countryCode;
     if (isContextualServicesNamespace) {
       countryCode = ipCountry;
@@ -427,7 +430,11 @@ public class ParseReportingUrl extends
    */
   private static Optional<String> parseClientCountry(JsonNode metrics) {
     return optionalNode(metrics.path(CLIENT_COUNTRY)).map(JsonNode::asText)
-        .filter(country -> CLIENT_COUNTRY_PATTERN.matcher(country).matches());
+        .filter(ParseReportingUrl::isCountryCode);
+  }
+
+  private static boolean isCountryCode(String value) {
+    return COUNTRY_CODE_PATTERN.matcher(value).matches();
   }
 
   private static void addAdditionalDimensionsForTopSitesClicks(BuildReportingUrl builtUrl,

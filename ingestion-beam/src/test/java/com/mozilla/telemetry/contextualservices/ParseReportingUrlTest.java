@@ -1079,7 +1079,8 @@ public class ParseReportingUrlTest {
    *   normalized_country_code is the OHTTP gateway's (always US).</li>
    *   <li>OHTTP pings without a valid client-reported country omit the country-code, and are
    *   counted as missing_client_country.</li>
-   *   <li>A client-reported country that is not a two-letter code is treated as missing.</li>
+   *   <li>A client-reported or IP-derived country that is not a two-letter code is treated as
+   *   missing.</li>
    *   <li>Pre-Glean contextual-services pings use the IP-derived country.</li>
    *   <li>Reporting URLs in the older format (imp.mt48.net/static) never get a country-code.</li>
    * </ul>
@@ -1152,6 +1153,13 @@ public class ParseReportingUrlTest {
     // Direct pings fall back to the client country only if the IP country is missing
     final ObjectNode desktopDirectNoGeo = glean.apply("quick_suggest", "desktop-direct-no-geo");
     desktopDirectNoGeo.with("metrics").with("string").put("quick_suggest.country", "DE");
+    // An IP country that is not a two-letter code is treated as missing too
+    final ObjectNode desktopDirectIpOther = glean.apply("quick_suggest", "desktop-direct-ip-other")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "Other");
+    desktopDirectIpOther.with("metrics").with("string").put("quick_suggest.country", "DE");
+    final ObjectNode desktopDirectIpExtraParam = glean
+        .apply("quick_suggest", "desktop-direct-ip-extra-param")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US&form-factor=phone");
     // Reporting URLs in the older format never get a country-code, even with a client country
     final ObjectNode desktopStaticUrl = glean.apply("quick_suggest", "desktop-ohttp-static-url")
         .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
@@ -1181,6 +1189,8 @@ public class ParseReportingUrlTest {
     expectedCountry.put("desktop-direct-invalid-no-geo", null);
     expectedCountry.put("desktop-direct-valid", "FR");
     expectedCountry.put("desktop-direct-no-geo", "DE");
+    expectedCountry.put("desktop-direct-ip-other", "DE");
+    expectedCountry.put("desktop-direct-ip-extra-param", null);
     expectedCountry.put("desktop-ohttp-static-url", null);
     expectedCountry.put("contextual-services", "IT");
     expectedCountry.put("contextual-services-no-geo", null);
@@ -1199,6 +1209,8 @@ public class ParseReportingUrlTest {
         new PubsubMessage(Json.asBytes(desktopDirectInvalidNoGeo), desktopDirectAttributes),
         new PubsubMessage(Json.asBytes(desktopDirectValid), desktopDirectAttributes),
         new PubsubMessage(Json.asBytes(desktopDirectNoGeo), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectIpOther), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectIpExtraParam), desktopDirectAttributes),
         new PubsubMessage(Json.asBytes(desktopStaticUrl), desktopAttributes),
         new PubsubMessage(Json.asBytes(contextualServices), contextualServicesAttributes),
         new PubsubMessage(Json.asBytes(contextualServicesNoGeo), contextualServicesAttributes));
@@ -1219,7 +1231,8 @@ public class ParseReportingUrlTest {
             BuildReportingUrl url = new BuildReportingUrl(interaction.getReportingUrl());
             actualCountry.put(url.getQueryParam("test-case"),
                 url.getQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE));
-            if ("desktop-ohttp-extra-param".equals(url.getQueryParam("test-case"))) {
+            if (ImmutableSet.of("desktop-ohttp-extra-param", "desktop-direct-ip-extra-param")
+                .contains(url.getQueryParam("test-case"))) {
               Assert.assertFalse(
                   "the client country does not add query params to the reporting URL",
                   interaction.getReportingUrl().contains("form-factor=phone"));
