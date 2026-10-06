@@ -48,9 +48,9 @@ This step attempts to decompress a gzip-compressed payload. This transform is sh
 
 This is where the URLs used for reporting events are built. The `reporting_url` value from the message payload is used as the base URL, then additional query parameters are added based on the message metadata such as the client’s country, region, and OS. The updated `reporting_url` value is put in the message payload and attributes.
 
-### `LabelClickSpikes`
+### `LabelSpikes`
 
-This step counts the number of click events per client (using the `context_id` attribute) in a time interval. This transform uses Beam’s state and timers; a state and a timer is maintained for every client. The state is a list of recent timestamps of clicks from the current client and the timer will clear the state if there are no recent clicks from the client. If the number of elements in the list exceeds the set threshold, any additional clicks will be marked with a `click-status`. Because a state needs to be maintained per client, the memory required for this step increases with the number of unique clients.
+This step counts the number of click or impression events per client (using the `context_id` attribute) in a time interval. This transform uses Beam’s state and timers; a state and a timer is maintained for every client. The state is a list of recent timestamps of events from the current client and the timer will clear the state if there are no recent events from the client. If the number of elements in the list exceeds the set threshold, any additional events will be marked with a `click-status` or `impression-status`. Because a state needs to be maintained per client, the memory required for this step increases with the number of unique clients. Click spikes are controlled via `--clickSpikeWindowDuration`/`--clickSpikeThreshold` (defaults `3m`/`10`), and impression spikes via the newer `--impressionSpikeWindowDuration`/`--impressionSpikeThreshold` (defaults `3m`/`20`).
 
 ### `AggregateImpressions`
 
