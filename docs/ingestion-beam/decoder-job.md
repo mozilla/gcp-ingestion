@@ -37,6 +37,12 @@ These transforms are currently executed against each message in order.
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
 1. Remove any `null` values added to attributes
 
+### GeoIsp Lookup
+
+Lookup the client IP (from `x_forwarded_for`) in the configured
+`GeoIP2-ISP.mmdb` and add `isp_name`, `isp_organization`, and
+`isp_db_version` attributes.
+
 ### Parse URI
 
 Attempt to extract attributes from `uri`, on failure send messages to the
