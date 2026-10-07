@@ -121,6 +121,18 @@ EOF
   "type" : "object"
 }
 EOF
+    mkdir -p schemas/test/ohttp
+    cat > schemas/test/ohttp/ohttp.1.schema.json << 'EOF'
+{
+  "mozPipelineMetadata": {
+    "bq_dataset_family": "test",
+    "bq_metadata_format": "structured",
+    "bq_table": "ohttp_v1",
+    "uploader_capabilities": ["ohttp"]
+  },
+  "type" : "object"
+}
+EOF
     mkdir -p schemas/my-namespace/my-test
     cat > schemas/my-namespace/my-test/my-test.1.bq << 'EOF'
 [

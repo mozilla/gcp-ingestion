@@ -1,14 +1,21 @@
 package com.mozilla.telemetry.decoder;
 
+import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.options.InputFileFormat;
 import com.mozilla.telemetry.options.OutputFileFormat;
 import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.StreamSupport;
+import org.apache.beam.sdk.PipelineResult;
+import org.apache.beam.sdk.metrics.MetricNameFilter;
+import org.apache.beam.sdk.metrics.MetricResult;
+import org.apache.beam.sdk.metrics.MetricsFilter;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
 import org.apache.beam.sdk.values.PCollection;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -113,5 +120,55 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     PAssert.that(output).containsInAnyOrder(expected);
 
     pipeline.run();
+  }
+
+  @Test
+  public void testOhttpMismatchCounters() {
+    final String ohttpAttributes = "\"document_namespace\":\"test\"" //
+        + ",\"document_type\":\"ohttp\"" //
+        + ",\"document_version\":\"1\"" //
+        + ",\"x_forwarded_for\":\"4, 3, 2, 1\"";
+    final List<String> input = Arrays.asList(//
+        // submitted through the OHTTP gateway, so no user agent
+        "{\"attributeMap\":{" + ohttpAttributes + "},\"payload\":\"\"}", //
+        // submitted directly
+        "{\"attributeMap\":{" + ohttpAttributes + ",\"user_agent\":\"Firefox\"}" //
+            + ",\"payload\":\"\"}", //
+        // doesn't declare ohttp
+        "{\"attributeMap\":" //
+            + "{\"document_namespace\":\"test\"" //
+            + ",\"document_type\":\"geoip-skip\"" //
+            + ",\"document_version\":\"1\"" //
+            + ",\"user_agent\":\"Firefox\"" //
+            + "},\"payload\":\"\"}");
+
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()) //
+        .apply(ParseProxy.of("schemas.tar.gz")) //
+        .apply(OutputFileFormat.json.encode());
+
+    // the IP is kept, so geo and ISP lookups still run
+    PAssert.that(output).satisfies(messages -> {
+      messages.forEach(m -> {
+        if (m.contains("\"ohttp\"")) {
+          Assert.assertTrue(m, m.contains("\"x_forwarded_for\":\"4,3\""));
+        }
+      });
+      return null;
+    });
+
+    final PipelineResult result = pipeline.run();
+
+    Assert.assertEquals(2, counterValue(result, "test/ohttp_v1/ohttp_declared"));
+    Assert.assertEquals(1, counterValue(result, "test/ohttp_v1/ohttp_declared_direct_submission"));
+    Assert.assertEquals(0, counterValue(result, "test/geoip_skip_v1/ohttp_declared"));
+  }
+
+  private static long counterValue(PipelineResult result, String name) {
+    return StreamSupport.stream(result.metrics()
+        .queryMetrics(MetricsFilter.builder()
+            .addNameFilter(MetricNameFilter.named(KeyedCounter.class, name)).build())
+        .getCounters().spliterator(), false).mapToLong(MetricResult::getCommitted).sum();
   }
 }
