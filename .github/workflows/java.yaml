@@ -1,0 +1,147 @@
+name: Java
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  changed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      java: ${{ steps.changed-files.outputs.any_changed }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changed-files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          files: |
+            pom.xml
+            checkstyle/**
+            .github/workflows/java.yaml
+            ingestion-core/**
+            ingestion-beam/**
+            ingestion-sink/**
+
+  unit:
+    name: ${{ matrix.module }}-unit-java-11
+    needs: changed
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - module: ingestion-beam
+            codecov_flag: ingestion_beam
+          - module: ingestion-core
+            codecov_flag: ingestion_core
+          - module: ingestion-sink
+            codecov_flag: ingestion_sink
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6  # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: maven
+      - name: Download resources needed for Beam tests
+        if: matrix.module == 'ingestion-beam'
+        run: bin/download-schemas
+      - name: Maven unit test
+        run: mvn clean test
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: surefire-reports-${{ matrix.module }}-unit
+          path: ${{ matrix.module }}/target/surefire-reports
+      - name: Report code coverage
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
+        with:
+          use_oidc: true
+          flags: ${{ matrix.codecov_flag }}
+          working-directory: ${{ matrix.module }}
+
+  integration:
+    name: ${{ matrix.module }}-integration-java-11
+    needs: changed
+    if: always() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+    environment: dev
+    strategy:
+      fail-fast: false
+      matrix:
+        # ingestion-core has no integration tests.
+        include:
+          - module: ingestion-beam
+            codecov_flag: ingestion_beam
+          - module: ingestion-sink
+            codecov_flag: ingestion_sink
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: ${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6  # v6.0.1
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: maven
+      - name: Download resources needed for Beam tests
+        if: matrix.module == 'ingestion-beam'
+        run: bin/download-schemas
+      - name: Authenticate to GCP (OIDC)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCPV2_GITHUB_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_INTEGRATION_SERVICE_ACCOUNT_EMAIL }}
+      - name: Maven integration test
+        run: mvn clean test -Dtest='*IntegrationTest' -Dsurefire.failIfNoSpecifiedTests=false
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: surefire-reports-${{ matrix.module }}-integration
+          path: ${{ matrix.module }}/target/surefire-reports
+      - name: Report code coverage
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5  # v7.1.1
+        with:
+          use_oidc: true
+          flags: ${{ matrix.codecov_flag }}
+          working-directory: ${{ matrix.module }}
+
+  # Single required status check for Java. A matrix job skipped by its job-level
+  # `if` posts one check under its unexpanded name, so the per-module checks above
+  # can't be required. Skipped jobs count as passing here; failed or cancelled don't.
+  java:
+    needs: [changed, unit, integration]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            if [ "$result" != success ] && [ "$result" != skipped ]; then
+              exit 1
+            fi
+          done
