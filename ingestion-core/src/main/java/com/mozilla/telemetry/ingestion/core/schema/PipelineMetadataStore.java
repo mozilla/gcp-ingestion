@@ -202,6 +202,9 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     @Nullable
     public abstract Integer geoip_skip_entries();
 
+    @Nullable
+    public abstract List<String> uploader_capabilities();
+
     @AutoValue.Builder
     @JsonPOJOBuilder(withPrefix = "")
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -228,6 +231,8 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
       public abstract Builder split_config(SplitConfig value);
 
       public abstract Builder geoip_skip_entries(Integer value);
+
+      public abstract Builder uploader_capabilities(List<String> value);
 
       public abstract PipelineMetadata build();
     }
