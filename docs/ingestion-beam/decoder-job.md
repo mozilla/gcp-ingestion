@@ -37,6 +37,12 @@ These transforms are currently executed against each message in order.
 1. Remove the `x_forwarded_for` and `remote_addr` attributes
 1. Remove any `null` values added to attributes
 
+### GeoIsp Lookup
+
+Lookup the client IP (from `x_forwarded_for`) in the configured
+`GeoIP2-ISP.mmdb` and add `isp_name`, `isp_organization`, and
+`isp_db_version` attributes.
+
 ### Parse URI
 
 Attempt to extract attributes from `uri`, on failure send messages to the
@@ -79,6 +85,7 @@ but with a few extra flags:
     `--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Decoder`
 - `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
 - `--geoCityFilter=/path/to/cities15000.txt` (optional)
+- `--geoIspDatabase=/path/to/GeoIP2-ISP.mmdb` (required)
 
 To download the [GeoLite2 database](https://dev.maxmind.com/geoip/geoip2/geolite2/),
 you need to [register for a MaxMind account](https://www.maxmind.com/en/geolite2/signup)
