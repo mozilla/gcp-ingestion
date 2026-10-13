@@ -29,8 +29,10 @@ public class WriteWithErrors implements Function<PubsubMessage, CompletableFutur
   private CompletableFuture<Void> apply(PubsubMessage message, int attempt) {
     return CompletableFuture.completedFuture(message).thenCompose(write)
         .thenApply(CompletableFuture::completedFuture).exceptionally(t -> {
-          if (t.getCause() instanceof BatchException) {
-            // batch exceptions don't count toward attempt limit
+          if (t.getCause() instanceof BatchException
+              && t.getCause().getCause() instanceof RuntimeException) {
+            // batch exceptions don't count toward attempt limit, unless an Error such as
+            // OutOfMemoryError caused them, so a batch that keeps hitting it still gives up
             return apply(message, attempt);
           }
           if (attempt < maxAttempts) {
