@@ -121,6 +121,7 @@ public class ContextualServicesReporterMainTest {
     // OHTTP pings are geolocated to the gateway (US), so the client-reported country is sent
     assertThat(sentUrls.stream().filter(isTestCase("ohttp-no-user-agent")::matches).collect(
         Collectors.toList()), Matchers.everyItem(Matchers.containsString("country-code=DE")));
+    // Direct pings send the IP-derived country (GB), even though this client reports DE
     assertThat(sentUrls, Matchers.hasItem(
         Matchers.allOf(isTestCase("direct-firefox"), Matchers.containsString("country-code=GB"))));
   }
