@@ -10,6 +10,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.pubsub.v1.PubsubMessage;
 import com.mozilla.telemetry.ingestion.core.transform.PubsubMessageToObjectNode;
 import com.mozilla.telemetry.ingestion.core.util.Json;
+import com.mozilla.telemetry.ingestion.sink.transform.BlobIdToString;
 import com.mozilla.telemetry.ingestion.sink.transform.PubsubMessageToTemplatedString;
 import com.mozilla.telemetry.ingestion.sink.util.BatchWrite;
 import java.io.ByteArrayOutputStream;
@@ -145,6 +146,11 @@ public class Gcs {
       protected CompletableFuture<Void> close() {
         return batchCloseHook.apply(
             storage.create(blobInfo, content.toByteArray(), BlobTargetOption.doesNotExist()));
+      }
+
+      @Override
+      protected String describe() {
+        return BlobIdToString.apply(blobInfo.getBlobId());
       }
 
       @Override

@@ -1,9 +1,12 @@
 package com.mozilla.telemetry.ingestion.sink.util;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.Test;
 
@@ -74,5 +77,58 @@ public class BatchWriteTest {
     NoopBatchWrite x = new NoopBatchWrite(0, 0, Duration.ofMillis(0));
     CompletableFuture.allOf(x.apply("x"), x.apply("x")).join();
     assertEquals(2, x.batchCount);
+  }
+
+  private static class ErrorBatchWrite extends NoopBatchWrite {
+
+    private ErrorBatchWrite(long maxBytes, int maxMessages, Duration maxDelay) {
+      super(maxBytes, maxMessages, maxDelay);
+    }
+
+    @Override
+    protected synchronized Batch getBatch(String batchKey) {
+      return new Batch() {
+
+        @Override
+        protected CompletableFuture<Void> close() {
+          throw new OutOfMemoryError("test");
+        }
+
+        @Override
+        protected String describe() {
+          return "batch " + batchKey;
+        }
+      };
+    }
+  }
+
+  private static Throwable joinCause(CompletableFuture<Void> future) {
+    try {
+      future.join();
+    } catch (CompletionException e) {
+      return e.getCause();
+    }
+    fail("expected batch to fail");
+    return null;
+  }
+
+  @Test
+  public void canFailSingleMessageWithError() {
+    ErrorBatchWrite x = new ErrorBatchWrite(0, 0, Duration.ofMillis(0));
+    Throwable cause = joinCause(x.apply("x"));
+    assertTrue(cause instanceof OutOfMemoryError);
+  }
+
+  @Test
+  public void canFailBatchWithError() {
+    ErrorBatchWrite x = new ErrorBatchWrite(100, 100, Duration.ofMillis(100));
+    CompletableFuture<Void> first = x.apply("x");
+    final CompletableFuture<Void> second = x.apply("x");
+    Throwable cause = joinCause(first);
+    assertTrue(cause instanceof BatchException);
+    assertEquals(2, ((BatchException) cause).size);
+    assertEquals("batch x", ((BatchException) cause).description);
+    assertTrue(cause.getCause() instanceof OutOfMemoryError);
+    assertEquals(cause, joinCause(second));
   }
 }
