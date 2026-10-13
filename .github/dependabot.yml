@@ -24,6 +24,9 @@ updates:
   - dependency-name: com.squareup.okhttp3:*
     # OkHttp 5.x uses Kotlin Multiplatform and requires artifact changes (okhttp -> okhttp-jvm)
     versions: [">=5.0.0"]
+  - dependency-name: com.maxmind.geoip2:geoip2
+    # GeoIP2 5.x requires Java 17
+    versions: [">=5.0.0"]
   schedule:
     interval: daily
   labels:
