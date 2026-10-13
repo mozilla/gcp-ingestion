@@ -12,6 +12,9 @@ updates:
   - dependency-name: com.puppycrawl.tools:checkstyle
     # Checkstyle 11+ requires Java 17
     versions: [">=11.0.0"]
+  - dependency-name: com.diffplug.spotless:spotless-maven-plugin
+    # Spotless 3.x requires Java 17
+    versions: [">=3.0.0"]
   - dependency-name: org.apache.logging.log4j:log4j-bom
     # Log4j 2.2+ requires Junit5, otherwise ingestion-sink build fails
     versions: [">=2.2.0"]
