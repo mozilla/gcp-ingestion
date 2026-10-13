@@ -183,7 +183,7 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     // wait for full then synchronize and close
     private final CompletableFuture<BatchResultT> result = full
         .thenComposeAsync(this::synchronousClose, executor).exceptionally(exception -> {
-          throw BatchException.of((RuntimeException) exception.getCause(), this.size);
+          throw BatchException.of(exception.getCause(), this.size, describe());
         });
 
     @VisibleForTesting
@@ -222,6 +222,11 @@ public abstract class BatchWrite<InputT, EncodedT, BatchKeyT, BatchResultT>
     }
 
     protected void checkResultFor(BatchResultT batchResult, int index) {
+    }
+
+    /** Describe what this batch writes to, such as a file or table, for logs. */
+    protected String describe() {
+      return null;
     }
 
     protected abstract CompletableFuture<BatchResultT> close();
