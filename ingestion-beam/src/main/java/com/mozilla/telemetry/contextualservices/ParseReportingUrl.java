@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.transforms.FailureMessage;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.transforms.MapElements;
@@ -66,10 +69,24 @@ public class ParseReportingUrl extends
       ImmutableList.of("top_sites"), DT_QUICKSUGGEST, ImmutableList.of("quick_suggest"),
       DT_SEARCHWITH, ImmutableList.of("search_with"));
 
+  // Host and path of the MARS suggest placeholder reporting URL, the one interactions are filtered
+  // out on. Together these identify the URL counted by quick_suggest_moz_ads_filtered_urls in
+  // FilterMozAdsSuggestPlaceholders. Both are matched exactly: the hosts also serve unrelated
+  // endpoints
+  // (notably the legacy topsites callback at /v1/t) that must stay on the normal reporting path.
+  private static final Set<String> MOZ_ADS_SUGGEST_PLACEHOLDER_HOSTS_TO_FILTER = ImmutableSet
+      .of("ads.mozilla.org", "ads.allizom.org");
+  private static final String MOZ_ADS_SUGGEST_PLACEHOLDER_PATH_TO_FILTER = "/v1/st";
+
   // doctypes for Firefox Mobile glean telemetry
   private static final String DT_MOBILE_QUICKSUGGEST = "fx-suggest";
   private static final String PT_MOBILE_QUICKSUGGEST_IMPRESSION = "fxsuggest-impression";
   private static final String PT_MOBILE_QUICKSUGGEST_CLICK = "fxsuggest-click";
+
+  // Client-reported country metric, under the quick_suggest and fx_suggest metric sources
+  private static final String CLIENT_COUNTRY = "country";
+  // Format of a country-code; it is added to the reporting URL without encoding
+  private static final Pattern COUNTRY_CODE_PATTERN = Pattern.compile("[A-Z]{2}");
 
   // Values from the user_agent_os attribute
   private static final String OS_WINDOWS = "Windows";
@@ -238,9 +255,15 @@ public class ParseReportingUrl extends
 
           SponsoredInteraction interaction = interactionBuilder.build();
           String reportingUrl = extractReportingUrl(metrics);
-          BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
 
           Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
+
+          if (isMozAdsSuggestPlaceholderToFilter(reportingUrl)) {
+            PerDocTypeCounter.inc(attributes, "valid_url");
+            return interaction.toBuilder().setReportingUrl(reportingUrl).build();
+          }
+
+          BuildReportingUrl builtUrl = new BuildReportingUrl(reportingUrl);
 
           if (!isUrlValid(builtUrl.getReportingUrl(),
               Objects.requireNonNull(interaction.getInteractionType()))) {
@@ -273,7 +296,8 @@ public class ParseReportingUrl extends
               addCustomDataForDesktopSuggest(builtUrl, interaction);
             }
 
-            addAdditionalDimensionsForInternationalSuggest(builtUrl, interaction, payload);
+            addAdditionalDimensionsForInternationalSuggest(builtUrl, interaction, payload, metrics,
+                attributes, NS_DESKTOP.equals(namespace));
           }
 
           reportingUrl = builtUrl.toString();
@@ -292,6 +316,38 @@ public class ParseReportingUrl extends
         }));
   }
 
+  /**
+   * Return whether {@code reportingUrl} is the MARS non-AMP suggest ads placeholder, and so should be filtered
+   * out rather than reported.
+   *
+   * <p>True only for an exact host match against {@link #MOZ_ADS_SUGGEST_PLACEHOLDER_HOSTS_TO_FILTER} and an
+   * exact path match against {@link #MOZ_ADS_SUGGEST_PLACEHOLDER_PATH_TO_FILTER} -- never by substring or
+   * suffix, so a partner host can never be mistaken for a Mozilla-operated one.
+   *
+   * <p>The path match matters as much as the host: the same hosts serve the legacy topsites
+   * callback at {@code /v1/t}, which is a real reporting URL and has to stay on the normal path
+   * through the URL allow list.
+   *
+   * <p>Callers are the short-circuit in {@link #expand} and {@link FilterMozAdsSuggestPlaceholders}, whose
+   * {@code quick_suggest_moz_ads_filtered_urls} counter counts exactly the URLs this returns true
+   * for.
+   *
+   * <p>Returns false for a null or unparseable URL.
+   */
+  @VisibleForTesting
+  static boolean isMozAdsSuggestPlaceholderToFilter(String reportingUrl) {
+    if (reportingUrl == null) {
+      return false;
+    }
+    try {
+      URL url = new URL(reportingUrl);
+      return MOZ_ADS_SUGGEST_PLACEHOLDER_HOSTS_TO_FILTER.contains(url.getHost())
+          && MOZ_ADS_SUGGEST_PLACEHOLDER_PATH_TO_FILTER.equals(url.getPath());
+    } catch (MalformedURLException e) {
+      return false;
+    }
+  }
+
   private static void addCustomDataForDesktopSuggest(BuildReportingUrl builtUrl,
       SponsoredInteraction interaction) {
     Stream<Optional<String>> customDataElements = Stream.of(
@@ -304,8 +360,30 @@ public class ParseReportingUrl extends
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_CUSTOM_DATA, customDataParam);
   }
 
+  /**
+   * Add dimensions for suggestions sourced from the AMP Suggest API.
+   *
+   * <p>The country-code is preferably the country derived from the request IP
+   * (normalized_country_code), so that AMP gets the user's actual location even when it differs
+   * from the suggestions they were served (see https://github.com/mozilla/gcp-ingestion/pull/2777).
+   * The client-reported country is the user's home region, from the quick_suggest.country (desktop)
+   * and fx_suggest.country (mobile) metrics (bug 1968154). By type of ping:
+   * <ul>
+   *   <li>Glean pings submitted directly (with a user agent) use the IP-derived country, and fall
+   *   back to the client-reported country only if the IP-derived country is missing.</li>
+   *   <li>Glean pings submitted via OHTTP (no user agent) use the client-reported country, because
+   *   they arrive from the OHTTP gateway and their normalized_country_code is the gateway's (always
+   *   US). If the client did not report a valid country, the country-code is omitted and the ping
+   *   is counted as missing_client_country.</li>
+   *   <li>Pre-Glean pings in the contextual-services namespace use the IP-derived country. They
+   *   have no client-reported country and are never submitted via OHTTP.</li>
+   *   <li>Reporting URLs in the older format get no country-code or form-factor (see below).</li>
+   * </ul>
+   * Either country is used only if it is a two-letter code; otherwise it is treated as missing.
+   */
   private static void addAdditionalDimensionsForInternationalSuggest(BuildReportingUrl builtUrl,
-      SponsoredInteraction interaction, ObjectNode payload) {
+      SponsoredInteraction interaction, ObjectNode payload, JsonNode metrics,
+      Map<String, String> attributes, boolean isContextualServicesNamespace) {
     // Do not add additional parameters for legacy suggest URLs.
     //
     // Glean events do not indicate how the suggest data was sourced (from the AMP SFTP server or
@@ -322,12 +400,41 @@ public class ParseReportingUrl extends
       return;
     }
 
-    if (payload.hasNonNull(Attribute.NORMALIZED_COUNTRY_CODE)) {
-      builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE,
-          payload.get(Attribute.NORMALIZED_COUNTRY_CODE).asText());
+    // normalized_country_code is normally two letters or "Other" (NormalizeAttributes), but a value
+    // supplied in the payload can remain if the IP lookup found no country, so check it too
+    Optional<String> ipCountry = Optional.ofNullable(payload.get(Attribute.NORMALIZED_COUNTRY_CODE))
+        .map(JsonNode::asText).filter(ParseReportingUrl::isCountryCode);
+    final Optional<String> countryCode;
+    if (isContextualServicesNamespace) {
+      countryCode = ipCountry;
+    } else if (Ohttp.isOhttpSuggest(attributes)) {
+      countryCode = parseClientCountry(metrics);
+      if (countryCode.isEmpty()) {
+        PerDocTypeCounter.inc(attributes, "missing_client_country");
+      }
+    } else {
+      countryCode = ipCountry.or(() -> parseClientCountry(metrics));
     }
+    countryCode.ifPresent(
+        country -> builtUrl.addQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE, country));
 
     builtUrl.addQueryParam(BuildReportingUrl.PARAM_FORM_FACTOR, interaction.getFormFactor());
+  }
+
+  /**
+   * Parse the client-reported country, if it is a two-letter country code.
+   *
+   * <p>The value comes from the client and the schema only requires a string. It is added to the
+   * reporting URL without encoding, so anything else, such as a value containing "&", would add
+   * query params to the request; it is treated as missing instead.
+   */
+  private static Optional<String> parseClientCountry(JsonNode metrics) {
+    return optionalNode(metrics.path(CLIENT_COUNTRY)).map(JsonNode::asText)
+        .filter(ParseReportingUrl::isCountryCode);
+  }
+
+  private static boolean isCountryCode(String value) {
+    return COUNTRY_CODE_PATTERN.matcher(value).matches();
   }
 
   private static void addAdditionalDimensionsForTopSitesClicks(BuildReportingUrl builtUrl,

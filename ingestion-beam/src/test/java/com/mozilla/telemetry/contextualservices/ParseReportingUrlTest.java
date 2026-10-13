@@ -7,17 +7,24 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
+import com.mozilla.telemetry.metrics.KeyedCounter;
 import com.mozilla.telemetry.util.Json;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
+import org.apache.beam.sdk.metrics.MetricNameFilter;
+import org.apache.beam.sdk.metrics.MetricResult;
+import org.apache.beam.sdk.metrics.MetricsFilter;
 import org.apache.beam.sdk.testing.PAssert;
 import org.apache.beam.sdk.testing.TestPipeline;
 import org.apache.beam.sdk.transforms.Create;
@@ -87,6 +94,50 @@ public class ParseReportingUrlTest {
       System.err.println(Json.asString(expect));
     }
     assert expect.equals(actual);
+  }
+
+  @Test
+  public void testIsMozAdsReportingUrl() {
+    Assert.assertTrue(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/st?suggestion_id=abc"));
+    Assert.assertTrue(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.allizom.org/v1/st?suggestion_id=abc"));
+
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://bridge.us.admarketplace.net/ctp?a=1"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://imp.mt48.net/imp?a=1"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://mozillacla.ampxdirect.com/"));
+
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org.example.com/?a=1"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://evil-ads.mozilla.org.co/"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://mozilla.org/?a=1"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://x.ads.mozilla.org/"));
+
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/t?data=abc"));
+    Assert.assertFalse(ParseReportingUrl
+        .isMozAdsSuggestPlaceholderToFilter("https://ads.allizom.org/v1/t?data=abc"));
+
+    // Only the exact suggest path matches; no prefix, suffix, or nesting.
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/stx"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v1/st/"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/v2/st"));
+    Assert.assertFalse(
+        ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("https://ads.mozilla.org/x/v1/st"));
+
+    Assert.assertFalse(ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter(null));
+    Assert.assertFalse(ParseReportingUrl.isMozAdsSuggestPlaceholderToFilter("not a url"));
   }
 
   @Test
@@ -940,13 +991,15 @@ public class ParseReportingUrlTest {
 
     ObjectNode impressionPayload = basePayload.deepCopy();
     ObjectNode impressionMetrics = impressionPayload.putObject("metrics");
-    impressionMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-impression");
+    impressionMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-impression")
+        .put("quick_suggest.country", "GB");
     impressionMetrics.putObject("url").put("quick_suggest.reporting_url",
         "https://imp.mt48.net/imp?foo=bar");
 
     ObjectNode clickPayload = basePayload.deepCopy();
     ObjectNode clickMetrics = clickPayload.putObject("metrics");
-    clickMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-click");
+    clickMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-click")
+        .put("quick_suggest.country", "GB");
     clickMetrics.putObject("url").put("quick_suggest.reporting_url",
         "https://bridge.pdx1.admarketplace.net/ctp?foo=bar");
 
@@ -965,8 +1018,8 @@ public class ParseReportingUrlTest {
     legacyClickMetrics.putObject("url").put("quick_suggest.reporting_url",
         "https://mozillacla.ampxdirect.com/?foo=bar");
 
-    // Don't set a country code if we can't determine the user's country
-    ObjectNode noCountryPayload = Json.createObjectNode();
+    // Don't set a country code if the client didn't report one; the IP-derived country is not used
+    ObjectNode noCountryPayload = basePayload.deepCopy();
     ObjectNode noCountryMetrics = noCountryPayload.putObject("metrics");
     noCountryMetrics.putObject("uuid").put("quick_suggest.context_id", noCountryContextId);
     noCountryMetrics.putObject("string").put("quick_suggest.ping_type", "quicksuggest-impression");
@@ -1007,6 +1060,239 @@ public class ParseReportingUrlTest {
                 reportingUrl.contains("form-factor=desktop"));
           });
 
+          return null;
+        });
+
+    pipeline.run();
+  }
+
+  /**
+   * Test the country-code sent to AMP for suggest pings.
+   *
+   * <p>Each case is identified by the test-case param on its reporting URL. The rules are:
+   * <ul>
+   *   <li>Direct pings (with a user agent) use the IP-derived country (normalized_country_code),
+   *   even when the client reports a different one.</li>
+   *   <li>Direct pings fall back to the client-reported country only if the IP-derived country is
+   *   missing.</li>
+   *   <li>OHTTP pings (no user agent) use the client-reported country, because their
+   *   normalized_country_code is the OHTTP gateway's (always US).</li>
+   *   <li>OHTTP pings without a valid client-reported country omit the country-code, and are
+   *   counted as missing_client_country.</li>
+   *   <li>A client-reported or IP-derived country that is not a two-letter code is treated as
+   *   missing.</li>
+   *   <li>Pre-Glean contextual-services pings use the IP-derived country.</li>
+   *   <li>Reporting URLs in the older format (imp.mt48.net/static) never get a country-code.</li>
+   * </ul>
+   */
+  @Test
+  public void testClientReportedCountry() {
+    // OHTTP submissions have no user agent attributes; direct submissions do
+    final Map<String, String> desktopAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "quick-suggest", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop");
+    final Map<String, String> desktopDirectAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "quick-suggest", Attribute.DOCUMENT_NAMESPACE, "firefox-desktop",
+        Attribute.USER_AGENT_BROWSER, "Firefox", Attribute.USER_AGENT_VERSION, "128");
+    final Map<String, String> mobileAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "fx-suggest", Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox");
+    final Map<String, String> mobileDirectAttributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "fx-suggest", Attribute.DOCUMENT_NAMESPACE, "org-mozilla-firefox", Attribute.USER_AGENT_OS,
+        "Android", Attribute.USER_AGENT_VERSION, "139");
+    final Map<String, String> contextualServicesAttributes = ImmutableMap.of(
+        Attribute.DOCUMENT_TYPE, "quicksuggest-impression", Attribute.DOCUMENT_NAMESPACE,
+        "contextual-services");
+
+    // Each case is identified by a test-only "test-case" param on its reporting URL
+    BiFunction<String, String, ObjectNode> glean = (source, testCase) -> {
+      ObjectNode payload = Json.createObjectNode();
+      ObjectNode metrics = payload.putObject("metrics");
+      metrics.putObject("string").put(source + ".ping_type",
+          source.equals("fx_suggest") ? "fxsuggest-impression" : "quicksuggest-impression");
+      metrics.putObject("url").put(source + ".reporting_url",
+          "https://imp.mt48.net/imp?test-case=" + testCase);
+      return payload;
+    };
+
+    final ObjectNode desktopOhttp = glean.apply("quick_suggest", "desktop-ohttp")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    desktopOhttp.with("metrics").with("string").put("quick_suggest.country", "DE");
+    final ObjectNode desktopNoGeo = glean.apply("quick_suggest", "desktop-ohttp-no-geo");
+    desktopNoGeo.with("metrics").with("string").put("quick_suggest.country", "FR");
+    final ObjectNode desktopBlank = glean.apply("quick_suggest", "desktop-ohttp-blank")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "GB");
+    desktopBlank.with("metrics").with("string").put("quick_suggest.country", "");
+    final ObjectNode desktopMissing = glean.apply("quick_suggest", "desktop-ohttp-missing")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    // Older clients that predate the client-reported country submit directly
+    final ObjectNode desktopDirectMissing = glean.apply("quick_suggest", "desktop-direct-missing")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "GB");
+    final ObjectNode mobileOhttp = glean.apply("fx_suggest", "mobile-ohttp")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    mobileOhttp.with("metrics").with("string").put("fx_suggest.country", "IN");
+    final ObjectNode mobileMissing = glean.apply("fx_suggest", "mobile-ohttp-missing")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    final ObjectNode mobileDirectMissing = glean.apply("fx_suggest", "mobile-direct-missing")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "GB");
+    // The client-reported country must be a two-letter code. Anything else is treated as missing;
+    // it is added to the URL without encoding, so "&" could otherwise add query params.
+    final ObjectNode desktopExtraParam = glean.apply("quick_suggest", "desktop-ohttp-extra-param")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    desktopExtraParam.with("metrics").with("string").put("quick_suggest.country",
+        "DE&form-factor=phone");
+    final ObjectNode desktopLowercase = glean.apply("quick_suggest", "desktop-ohttp-lowercase")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    desktopLowercase.with("metrics").with("string").put("quick_suggest.country", "de");
+    // Without an IP country, an invalid client value is treated as missing on direct pings too
+    final ObjectNode desktopDirectInvalidNoGeo = glean.apply("quick_suggest",
+        "desktop-direct-invalid-no-geo");
+    desktopDirectInvalidNoGeo.with("metrics").with("string").put("quick_suggest.country", "GBR");
+    // Direct pings use the IP country even when the client reports a different one
+    final ObjectNode desktopDirectValid = glean.apply("quick_suggest", "desktop-direct-valid")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "FR");
+    desktopDirectValid.with("metrics").with("string").put("quick_suggest.country", "DE");
+    // Direct pings fall back to the client country only if the IP country is missing
+    final ObjectNode desktopDirectNoGeo = glean.apply("quick_suggest", "desktop-direct-no-geo");
+    desktopDirectNoGeo.with("metrics").with("string").put("quick_suggest.country", "DE");
+    // An IP country that is not a two-letter code is treated as missing too
+    final ObjectNode desktopDirectIpOther = glean.apply("quick_suggest", "desktop-direct-ip-other")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "Other");
+    desktopDirectIpOther.with("metrics").with("string").put("quick_suggest.country", "DE");
+    final ObjectNode desktopDirectIpExtraParam = glean
+        .apply("quick_suggest", "desktop-direct-ip-extra-param")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US&form-factor=phone");
+    // Reporting URLs in the older format never get a country-code, even with a client country
+    final ObjectNode desktopStaticUrl = glean.apply("quick_suggest", "desktop-ohttp-static-url")
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "US");
+    desktopStaticUrl.with("metrics").with("string").put("quick_suggest.country", "DE");
+    desktopStaticUrl.with("metrics").with("url").put("quick_suggest.reporting_url",
+        "https://imp.mt48.net/static?test-case=desktop-ohttp-static-url");
+    // Pre-Glean contextual-services pings have no client-reported country, even if the payload
+    // has a "country" field
+    final ObjectNode contextualServices = Json.createObjectNode()
+        .put(Attribute.NORMALIZED_COUNTRY_CODE, "IT").put("country", "DE")
+        .put(Attribute.REPORTING_URL, "https://imp.mt48.net/imp?test-case=contextual-services");
+    final ObjectNode contextualServicesNoGeo = Json.createObjectNode().put(Attribute.REPORTING_URL,
+        "https://imp.mt48.net/imp?test-case=contextual-services-no-geo");
+
+    // A null value means no country-code param is sent
+    Map<String, String> expectedCountry = new HashMap<>();
+    expectedCountry.put("desktop-ohttp", "DE");
+    expectedCountry.put("desktop-ohttp-no-geo", "FR");
+    expectedCountry.put("desktop-ohttp-blank", null);
+    expectedCountry.put("desktop-ohttp-missing", null);
+    expectedCountry.put("desktop-direct-missing", "GB");
+    expectedCountry.put("mobile-ohttp", "IN");
+    expectedCountry.put("mobile-ohttp-missing", null);
+    expectedCountry.put("mobile-direct-missing", "GB");
+    expectedCountry.put("desktop-ohttp-extra-param", null);
+    expectedCountry.put("desktop-ohttp-lowercase", null);
+    expectedCountry.put("desktop-direct-invalid-no-geo", null);
+    expectedCountry.put("desktop-direct-valid", "FR");
+    expectedCountry.put("desktop-direct-no-geo", "DE");
+    expectedCountry.put("desktop-direct-ip-other", "DE");
+    expectedCountry.put("desktop-direct-ip-extra-param", null);
+    expectedCountry.put("desktop-ohttp-static-url", null);
+    expectedCountry.put("contextual-services", "IT");
+    expectedCountry.put("contextual-services-no-geo", null);
+
+    List<PubsubMessage> input = ImmutableList.of(
+        new PubsubMessage(Json.asBytes(desktopOhttp), desktopAttributes),
+        new PubsubMessage(Json.asBytes(desktopNoGeo), desktopAttributes),
+        new PubsubMessage(Json.asBytes(desktopBlank), desktopAttributes),
+        new PubsubMessage(Json.asBytes(desktopMissing), desktopAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectMissing), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(mobileOhttp), mobileAttributes),
+        new PubsubMessage(Json.asBytes(mobileMissing), mobileAttributes),
+        new PubsubMessage(Json.asBytes(mobileDirectMissing), mobileDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopExtraParam), desktopAttributes),
+        new PubsubMessage(Json.asBytes(desktopLowercase), desktopAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectInvalidNoGeo), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectValid), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectNoGeo), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectIpOther), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopDirectIpExtraParam), desktopDirectAttributes),
+        new PubsubMessage(Json.asBytes(desktopStaticUrl), desktopAttributes),
+        new PubsubMessage(Json.asBytes(contextualServices), contextualServicesAttributes),
+        new PubsubMessage(Json.asBytes(contextualServicesNoGeo), contextualServicesAttributes));
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(input)) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that(result.failures()).satisfies(messages -> {
+      Assert.assertEquals(0, Iterators.size(messages.iterator()));
+      return null;
+    });
+
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
+        .satisfies(sponsoredInteractions -> {
+          Map<String, String> actualCountry = new HashMap<>();
+          sponsoredInteractions.forEach(interaction -> {
+            BuildReportingUrl url = new BuildReportingUrl(interaction.getReportingUrl());
+            actualCountry.put(url.getQueryParam("test-case"),
+                url.getQueryParam(BuildReportingUrl.PARAM_COUNTRY_CODE));
+            if (ImmutableSet.of("desktop-ohttp-extra-param", "desktop-direct-ip-extra-param")
+                .contains(url.getQueryParam("test-case"))) {
+              Assert.assertFalse(
+                  "the client country does not add query params to the reporting URL",
+                  interaction.getReportingUrl().contains("form-factor=phone"));
+            }
+          });
+          Assert.assertEquals(expectedCountry, actualCountry);
+          return null;
+        });
+
+    PipelineResult pipelineResult = pipeline.run();
+
+    // Only OHTTP pings whose client country is missing, blank or invalid are counted: direct pings
+    // fall back to the IP country, and contextual-services and older-format URLs never use the
+    // client country
+    Assert.assertEquals(4,
+        counterValue(pipelineResult, "firefox_desktop/quick_suggest/missing_client_country"));
+    Assert.assertEquals(1,
+        counterValue(pipelineResult, "org_mozilla_firefox/fx_suggest/missing_client_country"));
+    Assert.assertEquals(0, counterValue(pipelineResult,
+        "contextual_services/quicksuggest_impression/missing_client_country"));
+  }
+
+  private static long counterValue(PipelineResult result, String name) {
+    return StreamSupport.stream(result.metrics()
+        .queryMetrics(MetricsFilter.builder()
+            .addNameFilter(MetricNameFilter.named(KeyedCounter.class, name)).build())
+        .getCounters().spliterator(), false).mapToLong(MetricResult::getCommitted).sum();
+  }
+
+  /**
+   * A Mozilla-operated reporting URL passes through as a no-op. It carries {@code suggestion_id}
+   * into the Glean ping tables rather than calling an endpoint, so unlike the partner hosts in
+   * {@link #testInternationalSuggest} it gets no dimensions appended at all and its query string is
+   * not re-serialized.
+   *
+   * <p>{@code ads.mozilla.org} is deliberately absent from the test allow list, so this also verifies
+   * the behavior that these URLs are recognized before the allow list is consulted and don't need an
+   * entry there.
+   */
+  @Test
+  public void testMozAdsReportingUrlPassesThroughUnmodified() {
+    String impressionUrl = "https://ads.mozilla.org/v1/st?suggestion_id="
+        + "550e8400-e29b-41d4-a716-446655440000";
+
+    // The URL only ever needs to carry suggestion_id, so the ping carries nothing else.
+    ObjectNode payload = Json.createObjectNode();
+    payload.put(Attribute.REPORTING_URL, impressionUrl);
+
+    Map<String, String> attributes = ImmutableMap.of(Attribute.DOCUMENT_TYPE,
+        "quicksuggest-impression", Attribute.DOCUMENT_NAMESPACE, "contextual-services");
+
+    Result<PCollection<SponsoredInteraction>, PubsubMessage> result = pipeline //
+        .apply(Create.of(ImmutableList.of(new PubsubMessage(Json.asBytes(payload), attributes)))) //
+        .apply(ParseReportingUrl.of(URL_ALLOW_LIST));
+
+    PAssert.that(result.output().setCoder(SponsoredInteraction.getCoder()))
+        .satisfies(interactions -> {
+          Assert.assertEquals(1, Iterables.size(interactions));
+          Assert.assertEquals(impressionUrl,
+              Iterables.getOnlyElement(interactions).getReportingUrl());
           return null;
         });
 

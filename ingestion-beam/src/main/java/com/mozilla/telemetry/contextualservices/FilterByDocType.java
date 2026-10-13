@@ -25,7 +25,7 @@ public class FilterByDocType
   private static transient Set<String> allowedNamespacesSet;
 
   @VisibleForTesting
-  static synchronized void clearSingletonsForTests() {
+  public static synchronized void clearSingletonsForTests() {
     allowedDocTypesSet = null;
     allowedNamespacesSet = null;
   }
@@ -76,8 +76,11 @@ public class FilterByDocType
       }
       PerDocTypeCounter.inc(message.getAttributeMap(), "doctype_filter_passed");
 
-      // Special handling for desktop pings.
-      if ("contextual-services".equals(namespace) || "firefox-desktop".equals(namespace)) {
+      // Firefox 156+ sends quick-suggest pings over OHTTP, those pings have no version to check.
+      if (Ohttp.isOhttpSuggest(message.getAttributeMap())) {
+        PerDocTypeCounter.inc(message.getAttributeMap(), "version_filter_skipped_ohttp");
+      } else if ("contextual-services".equals(namespace) || "firefox-desktop".equals(namespace)) {
+        // Special handling for desktop pings.
         // Verify Firefox version here so rejected messages don't go to error output
         final int minVersion;
         int maxVersion = Integer.MAX_VALUE;
