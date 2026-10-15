@@ -360,6 +360,9 @@ public class MessageScrubber {
     if (bug11464Affected(namespace, docType, json)) {
       throw new MessageShouldBeDroppedException("DENG-11464");
     }
+    if (deng11758Affected(namespace, docType, json)) {
+      throw new MessageShouldBeDroppedException("DENG-11758");
+    }
 
     if (bug1712850Affected(attributes)) {
       if (json.hasNonNull("search_query") || json.hasNonNull("matched_keywords")) {
@@ -629,6 +632,18 @@ public class MessageScrubber {
     }
     String lower = resolvedDllName.toLowerCase();
     return DENG_11464_ALLOWED_DLL_PATH_PREFIXES.stream().noneMatch(lower::startsWith);
+  }
+
+  // See DENG-11758.
+  private static final Set<String> DENG_11758_AFFECTED_APP_BUILDS = ImmutableSet.of(
+      "20260410211335", "20260411091926", "20260411211605", "20260412075731", "20260413091642",
+      "20260413220854", "20260414085455", "20260414211344", "20260415040720", "20260415154314",
+      "20260415212114", "20260416093720", "20260416155948");
+
+  private static boolean deng11758Affected(String namespace, String docType, ObjectNode json) {
+    return "firefox-desktop-background-defaultagent".equals(namespace)
+        && "default-agent".equals(docType) && DENG_11758_AFFECTED_APP_BUILDS
+            .contains(ParsePayload.getGleanClientInfo(json).path("app_build").asText(""));
   }
 
   // See bug 1733118 for discussion of affected versions, etc.
