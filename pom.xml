@@ -151,7 +151,7 @@
             <!-- Use slf4j api for logging, but let submodules determine backend -->
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.17</version>
+            <version>2.0.20</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -307,7 +307,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.3</version>
+                <version>3.6.0</version>
                 <configuration>
                     <reportFormat>plain</reportFormat>
                     <excludes>
@@ -382,7 +382,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.6.2</version>
                 <executions>
                     <!-- add ingestion-core/src to all modules -->
                     <execution>
