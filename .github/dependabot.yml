@@ -28,7 +28,15 @@ updates:
     # GeoIP2 5.x requires Java 17
     versions: [">=5.0.0"]
   schedule:
-    interval: daily
+    interval: weekly
+  groups:
+    java-minor-patch:
+      update-types: [minor, patch]
+      patterns: ["*"]
+      exclude-patterns:
+      # Bump these separately so they stay in line with the versions in Beam's BOM
+      - "org.apache.beam:*"
+      - "com.google.http-client:*"
   labels:
   - dependencies
   - java
