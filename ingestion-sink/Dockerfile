@@ -7,13 +7,15 @@ COPY pom.xml /app/pom.xml
 COPY ingestion-sink/pom.xml /app/ingestion-sink/pom.xml
 COPY checkstyle /app/checkstyle
 COPY ingestion-sink/checkstyle /app/ingestion-sink/checkstyle
-RUN mvn prepare-package
+# Skip the Spotless check: CircleCI already checks formatting. Spotless downloads
+# its formatter from download.eclipse.org, so an outage there would fail this build.
+RUN mvn prepare-package -Dspotless.check.skip=true
 COPY ingestion-core/src /app/ingestion-core/src
 COPY ingestion-sink/src /app/ingestion-sink/src
 COPY ingestion-sink/version.json /app/version.json
 # Disable Log4j JMX to work around a JDK 11 NPE in CgroupV2Subsystem on
 # cgroups v2 Docker hosts. Proper fix is to upgrade to a newer JDK.
-RUN MAVEN_OPTS="-Dlog4j2.disable.jmx=true" mvn package
+RUN MAVEN_OPTS="-Dlog4j2.disable.jmx=true" mvn package -Dspotless.check.skip=true
 # delete everything from target that isn't the package
 RUN find target -mindepth 1 -not -name '*'.jar -not -name '*.lib' -delete
 

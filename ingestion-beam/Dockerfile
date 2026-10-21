@@ -5,10 +5,12 @@ COPY pom.xml /app/pom.xml
 COPY ingestion-beam/pom.xml /app/ingestion-beam/pom.xml
 COPY checkstyle /app/checkstyle
 COPY ingestion-beam/checkstyle /app/ingestion-sink/checkstyle
-RUN mvn prepare-package
+# Skip the Spotless check: CircleCI already checks formatting. Spotless downloads
+# its formatter from download.eclipse.org, so an outage there would fail this build.
+RUN mvn prepare-package -Dspotless.check.skip=true
 COPY ingestion-core/src /app/ingestion-core/src
 COPY ingestion-beam/src /app/ingestion-beam/src
-RUN mvn package -Dmaven.test.skip=true -Dmaven.compiler.release=11
+RUN mvn package -Dmaven.test.skip=true -Dmaven.compiler.release=11 -Dspotless.check.skip=true
 
 # This is the base image for the final image we're building.
 # The base image documentation is here:
