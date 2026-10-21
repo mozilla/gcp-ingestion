@@ -34,9 +34,8 @@ updates:
       update-types: [minor, patch]
       patterns: ["*"]
       exclude-patterns:
-      # Bump these separately so they stay in line with the versions in Beam's BOM
+      # Review Beam upgrades separately for breaking changes
       - "org.apache.beam:*"
-      - "com.google.http-client:*"
   labels:
   - dependencies
   - java

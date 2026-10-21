@@ -103,7 +103,6 @@
                  TODO: Check if we can migrate to gson -->
             <groupId>com.google.http-client</groupId>
             <artifactId>google-http-client-jackson2</artifactId>
-            <version>2.2.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
