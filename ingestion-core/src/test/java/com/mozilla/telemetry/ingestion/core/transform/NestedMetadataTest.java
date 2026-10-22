@@ -69,7 +69,6 @@ public class NestedMetadataTest {
   public void testHeadersFromAttributes() throws Exception {
     Map<String, String> attributes = ImmutableMap.<String, String>builder().put("dnt", "1") //
         .put("sample_id", "18") //
-        .put("x_foxsec_ip_reputation", "95") //
         .put("x_lb_tags", "TLSv1.3, 009C") //
         .put("x_source_tags", "automation, perf") //
         .put("x_debug_id", "mysession") //
@@ -78,7 +77,6 @@ public class NestedMetadataTest {
     ObjectNode headers = NestedMetadata.headersFromAttributes(attributes);
     ObjectNode expected = mapToObjectNode(ImmutableMap.of("dnt", "1", //
         "x_debug_id", "mysession", //
-        "x_foxsec_ip_reputation", "95", //
         "x_lb_tags", "TLSv1.3, 009C", //
         "x_source_tags", "automation, perf", //
         "x_telemetry_agent", "Glean/0.40.0 (Kotlin on Android)"));
