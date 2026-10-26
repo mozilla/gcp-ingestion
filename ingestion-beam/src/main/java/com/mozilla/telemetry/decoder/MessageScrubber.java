@@ -238,8 +238,11 @@ public class MessageScrubber {
       "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
       "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
       "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "firefox-b-vv", "firefox-b-tf",
-      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "lens-firefox-fcm",
-      "ubuntu", "ubuntu-sn",
+      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "firefox-b-exp1",
+      "lens-firefox-fcm", "linux-firefox-cm-re", "linux-firefox-ntp-re", "linux-firefox-o-re",
+      "linux-firefoxmnt-cm-re", "linux-firefoxmnt-ntp-re", "linux-firefoxmnt-o-re",
+      "macos-firefox-cm-re", "macos-firefox-ntp-re", "macos-firefox-o-re", "windows-firefox-cm-re",
+      "windows-firefox-ntp-re", "windows-firefox-o-re", "ubuntu", "ubuntu-sn",
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "lm", "newext",
@@ -254,6 +257,10 @@ public class MessageScrubber {
 
   private static final Set<String> ALLOWED_MOBILE_SEARCH_CODES = ImmutableSet.<String>builder()
       .addAll(ALLOWED_DESKTOP_SEARCH_CODES) //
+      // These Google codes are only relevant for mobile.
+      .add("android-firefox-b-re", "android-firefox-cm-re", "android-firefox-msw-re",
+          "android-firefox-o-re", "ios-firefox-b-re", "ios-firefox-cm-re", "ios-firefox-msw-re",
+          "ios-firefox-o-re") //
       // These Baidu codes are only relevant for mobile.
       .add("1000969a", "1000969b") //
       .build()
