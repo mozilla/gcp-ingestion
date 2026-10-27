@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.cloud.bigquery.BigQueryError;
@@ -12,6 +13,7 @@ import com.google.cloud.bigquery.Job;
 import com.google.cloud.bigquery.JobId;
 import com.google.cloud.bigquery.JobInfo;
 import com.google.cloud.bigquery.JobStatus;
+import com.google.cloud.bigquery.LoadJobConfiguration;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.Storage;
@@ -22,6 +24,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ForkJoinPool;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 public class BigQueryLoadTest {
 
@@ -51,8 +54,8 @@ public class BigQueryLoadTest {
     when(blob.getBlobId()).thenReturn(BlobId.of("bucket", name));
     when(blob.getSize()).thenReturn(1L);
     try {
-      new BigQuery.Load(bigQuery, storage, 0, 0, Duration.ZERO, ForkJoinPool.commonPool(), false,
-          BigQuery.Load.Delete.onSuccess).apply(blob).join();
+      new BigQuery.Load(bigQuery, storage, 0, 0, Duration.ZERO, Duration.ofMinutes(30),
+          ForkJoinPool.commonPool(), false, BigQuery.Load.Delete.onSuccess).apply(blob).join();
     } catch (CompletionException e) {
       if (e.getCause() instanceof BigQuery.BigQueryErrors) {
         return Optional.of((BigQuery.BigQueryErrors) e.getCause());
@@ -67,6 +70,17 @@ public class BigQueryLoadTest {
     when(jobStatus.getError()).thenReturn(null);
     when(jobStatus.getExecutionErrors()).thenReturn(null);
     assertEquals(Optional.empty(), load());
+  }
+
+  @Test
+  public void canSetJobTimeout() {
+    when(jobStatus.getError()).thenReturn(null);
+    when(jobStatus.getExecutionErrors()).thenReturn(null);
+    load();
+    ArgumentCaptor<JobInfo> jobInfo = ArgumentCaptor.forClass(JobInfo.class);
+    verify(bigQuery).create(jobInfo.capture());
+    assertEquals(Long.valueOf(Duration.ofMinutes(30).toMillis()),
+        ((LoadJobConfiguration) jobInfo.getValue().getConfiguration()).getJobTimeoutMs());
   }
 
   @Test

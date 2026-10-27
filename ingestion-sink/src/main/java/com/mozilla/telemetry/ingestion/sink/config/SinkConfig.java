@@ -65,6 +65,7 @@ public class SinkConfig {
   private static final String BATCH_MAX_MESSAGES = "BATCH_MAX_MESSAGES";
   private static final String BIG_QUERY_OUTPUT_MODE = "BIG_QUERY_OUTPUT_MODE";
   private static final String BIG_QUERY_DEFAULT_PROJECT = "BIG_QUERY_DEFAULT_PROJECT";
+  private static final String LOAD_JOB_TIMEOUT = "LOAD_JOB_TIMEOUT";
   private static final String LOAD_MAX_BYTES = "LOAD_MAX_BYTES";
   private static final String LOAD_MAX_DELAY = "LOAD_MAX_DELAY";
   private static final String LOAD_MAX_FILES = "LOAD_MAX_FILES";
@@ -84,10 +85,11 @@ public class SinkConfig {
 
   private static final Set<String> OUTPUT_ENV_VARS = ImmutableSet.of(BATCH_MAX_BYTES,
       BATCH_MAX_DELAY, BATCH_MAX_MESSAGES, BIG_QUERY_OUTPUT_MODE, BIG_QUERY_DEFAULT_PROJECT,
-      LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET, OUTPUT_COMPRESSION,
-      OUTPUT_FORMAT, OUTPUT_MAX_ATTEMPTS, OUTPUT_PARALLELISM, OUTPUT_PIPE, OUTPUT_TABLE,
-      OUTPUT_TOPIC, SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES, STREAMING_BATCH_MAX_DELAY,
-      STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES, STRICT_SCHEMA_DOCTYPES);
+      LOAD_JOB_TIMEOUT, LOAD_MAX_BYTES, LOAD_MAX_DELAY, LOAD_MAX_FILES, OUTPUT_BUCKET,
+      OUTPUT_COMPRESSION, OUTPUT_FORMAT, OUTPUT_MAX_ATTEMPTS, OUTPUT_PARALLELISM, OUTPUT_PIPE,
+      OUTPUT_TABLE, OUTPUT_TOPIC, SCHEMAS_LOCATION, STREAMING_BATCH_MAX_BYTES,
+      STREAMING_BATCH_MAX_DELAY, STREAMING_BATCH_MAX_MESSAGES, STREAMING_DOCTYPES,
+      STRICT_SCHEMA_DOCTYPES);
 
   // BigQuery.Write.Batch.getByteSize reports protobuf size, which can be ~1/3rd more
   // efficient than the JSON that actually gets sent over HTTP, so we use to 60% of the
@@ -128,6 +130,9 @@ public class SinkConfig {
   // BigQuery Load API limits maximum load requests per table per day to 1,000 but mixed mode
   // expects fewer than 1,000 messages per day to need file loads, so use streaming max delay.
   private static final String DEFAULT_STREAMING_LOAD_MAX_DELAY = DEFAULT_STREAMING_BATCH_MAX_DELAY;
+  // Load jobs normally finish within a few minutes including queue time, so a job running this long
+  // is likely stuck, and cancelling it to retry may get it routed to healthier BigQuery infra.
+  private static final String DEFAULT_LOAD_JOB_TIMEOUT = "30m"; // 30 minutes
   // BatchExceptions caused by a RuntimeException don't count toward this limit. Only used when
   // error output is configured, otherwise messages will be immediately nacked on failure.
   private static final int DEFAULT_OUTPUT_MAX_ATTEMPTS = 3;
@@ -237,7 +242,8 @@ public class SinkConfig {
         final Function<Blob, CompletableFuture<Void>> bigQueryLoad = new BigQuery.Load(
             getBigQueryService(env), storage, env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
             env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-            env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY), executor,
+            env.getDuration(LOAD_MAX_DELAY, DEFAULT_LOAD_MAX_DELAY),
+            env.getDuration(LOAD_JOB_TIMEOUT, DEFAULT_LOAD_JOB_TIMEOUT), executor,
             getEnableOpenCensus(commonEnv),
             // don't delete files until successfully loaded
             BigQuery.Load.Delete.onSuccess);
@@ -331,7 +337,8 @@ public class SinkConfig {
           bigQueryLoad = new BigQuery.Load(bigQuery, storage,
               env.getLong(LOAD_MAX_BYTES, DEFAULT_LOAD_MAX_BYTES),
               env.getInt(LOAD_MAX_FILES, DEFAULT_LOAD_MAX_FILES),
-              env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY), executor,
+              env.getDuration(LOAD_MAX_DELAY, DEFAULT_STREAMING_LOAD_MAX_DELAY),
+              env.getDuration(LOAD_JOB_TIMEOUT, DEFAULT_LOAD_JOB_TIMEOUT), executor,
               getEnableOpenCensus(commonEnv),
               // files will be recreated if not successfully loaded
               BigQuery.Load.Delete.always);
