@@ -69,10 +69,6 @@
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
-            <artifactId>google-cloud-kms</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-pubsub</artifactId>
         </dependency>
         <dependency>
@@ -89,11 +85,6 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-jdk14</artifactId>
             <version>2.0.20</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bitbucket.b_c</groupId>
-            <artifactId>jose4j</artifactId>
-            <version>0.9.6</version>
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>

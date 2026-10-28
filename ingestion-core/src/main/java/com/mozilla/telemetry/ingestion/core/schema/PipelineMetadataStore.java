@@ -1,7 +1,6 @@
 package com.mozilla.telemetry.ingestion.core.schema;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.auto.value.AutoValue;
@@ -20,32 +19,6 @@ import org.apache.commons.io.IOUtils;
  * {@link PipelineMetadata} objects parsed from each schema's "mozPipelineMetadata" entry.
  */
 public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.PipelineMetadata> {
-
-  @AutoValue
-  @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_JweMapping.Builder.class)
-  public abstract static class JweMapping {
-
-    public static Builder builder() {
-      return new AutoValue_PipelineMetadataStore_JweMapping.Builder();
-    }
-
-    public abstract JsonPointer source_field_path();
-
-    public abstract JsonPointer decrypted_field_path();
-
-    @AutoValue.Builder
-    @JsonPOJOBuilder(withPrefix = "")
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public abstract static class Builder {
-
-      public abstract Builder source_field_path(JsonPointer value);
-
-      public abstract Builder decrypted_field_path(JsonPointer value);
-
-      public abstract JweMapping build();
-    }
-
-  }
 
   @AutoValue
   @JsonDeserialize(builder = AutoValue_PipelineMetadataStore_AttributeOverride.Builder.class)
@@ -185,9 +158,6 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
     public abstract List<AttributeOverride> override_attributes();
 
     @Nullable
-    public abstract List<JweMapping> jwe_mappings();
-
-    @Nullable
     public abstract ExpirationPolicy expiration_policy();
 
     @Nullable
@@ -219,8 +189,6 @@ public class PipelineMetadataStore extends SchemaStore<PipelineMetadataStore.Pip
       public abstract Builder submission_timestamp_granularity(String value);
 
       public abstract Builder override_attributes(List<AttributeOverride> value);
-
-      public abstract Builder jwe_mappings(List<JweMapping> value);
 
       public abstract Builder expiration_policy(ExpirationPolicy value);
 
