@@ -191,15 +191,17 @@ public class BigQuery {
     private final com.google.cloud.bigquery.BigQuery bigQuery;
     private final Storage storage;
     private final Delete delete;
+    private final Duration jobTimeout;
 
     /** Constructor. */
     public Load(com.google.cloud.bigquery.BigQuery bigQuery, Storage storage, long maxBytes,
-        int maxFiles, Duration maxDelay, Executor executor, boolean enableOpenCensus,
-        Delete delete) {
+        int maxFiles, Duration maxDelay, Duration jobTimeout, Executor executor,
+        boolean enableOpenCensus, Delete delete) {
       super(maxBytes, maxFiles, maxDelay, null, executor, enableOpenCensus);
       this.bigQuery = bigQuery;
       this.storage = storage;
       this.delete = delete;
+      this.jobTimeout = jobTimeout;
     }
 
     @Override
@@ -249,7 +251,8 @@ public class BigQuery {
                 .setCreateDisposition(JobInfo.CreateDisposition.CREATE_NEVER)
                 .setWriteDisposition(JobInfo.WriteDisposition.WRITE_APPEND)
                 .setFormatOptions(FormatOptions.json()).setIgnoreUnknownValues(true)
-                .setAutodetect(false).setMaxBadRecords(0).build()));
+                .setAutodetect(false).setMaxBadRecords(0).setJobTimeoutMs(jobTimeout.toMillis())
+                .build()));
           } catch (BigQueryException e) {
             throw BigQueryErrors.failed("creating load job " + target, e);
           }
