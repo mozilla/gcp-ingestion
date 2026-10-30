@@ -1,8 +1,4 @@
-# Dependency updates (via dependabot)
-/ingestion-edge/requirements.txt @mozilla/data-platform-infra-wg
-/ingestion-edge/requirements.in @mozilla/data-platform-infra-wg
-/*/pom.xml @mozilla/data-platform-infra-wg
-pom.xml @mozilla/data-platform-infra-wg
+* @mozilla/dataplatform-admins-wg
 
 # Contextual Services
 /docs/ingestion-beam/contextual-services-job.md @mozilla/ads-engineering
