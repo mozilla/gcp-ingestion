@@ -3,3 +3,11 @@
 /ingestion-edge/requirements.in @mozilla/data-platform-infra-wg
 /*/pom.xml @mozilla/data-platform-infra-wg
 pom.xml @mozilla/data-platform-infra-wg
+
+# Contextual Services
+/docs/ingestion-beam/contextual-services-job.md @mozilla/ads-engineering
+/ingestion-beam/bin/run-contextual-services-dev.sh @mozilla/ads-engineering
+/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java @mozilla/ads-engineering
+/ingestion-beam/src/main/java/com/mozilla/telemetry/contextualservices/ @mozilla/ads-engineering
+/ingestion-beam/src/test/java/com/mozilla/telemetry/contextualservices/ @mozilla/ads-engineering
+/ingestion-beam/src/test/resources/contextualServices/ @mozilla/ads-engineering
