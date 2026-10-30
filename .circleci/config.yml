@@ -135,46 +135,6 @@ jobs:
             pip-compile --allow-unsafe --generate-hashes --quiet
             git diff --exit-code -G '^ *[^# ]' -- requirements.txt
 
-  ingestion-edge-release:
-    working_directory: /root/project/ingestion-edge
-    docker:
-    - image: docker/compose:1.22.0
-    steps:
-    - *checkout
-    - &setup_remote_docker
-      setup_remote_docker:
-        docker_layer_caching: true
-        version: default
-    - &create_version_json
-      run:
-        name: Create version.json
-        command: >-
-          printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n'
-          "$CIRCLE_SHA1"
-          "${CIRCLE_TAG-latest}"
-          "$CIRCLE_PROJECT_USERNAME"
-          "$CIRCLE_PROJECT_REPONAME"
-          "$CIRCLE_BUILD_URL"
-          > version.json
-    - run: &docker_compose_test
-        name: Docker Compose Test
-        command: >-
-          docker-compose
-          up
-          --build
-          --abort-on-container-exit
-          --force-recreate
-          --quiet-pull
-        environment: &edge_compose_env
-          COMPOSE_FILE: docker-compose.yml:docker-compose.circleci.yml
-          COMPOSE_PROJECT_NAME: circleci-ingestion-edge
-    - run:
-        name: Deploy to Dockerhub
-        command: |
-          echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-          docker-compose push web
-        environment: *edge_compose_env
-
   maven:
     parameters:
       executor:
@@ -249,27 +209,6 @@ jobs:
                 - ~/.m2
               key: *cache_key
 
-  ingestion-sink-release:
-    working_directory: /root/project/ingestion-sink
-    docker:
-    - image: docker/compose:1.22.0
-    steps:
-      - *setup_remote_docker
-      - *checkout
-      - *create_version_json
-      - run:
-          <<: *docker_compose_test
-          environment: &sink_compose_env
-            <<: *edge_compose_env
-            COMPOSE_FILE: docker-compose.yml
-            COMPOSE_PROJECT_NAME: circleci-ingestion-sink
-      - run:
-          name: Deploy to Dockerhub
-          command: |
-            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-            docker-compose push sink
-          environment: *sink_compose_env
-
 workflows:
   version: 2
   build:
@@ -282,12 +221,6 @@ workflows:
             only: main
     - ingestion-edge
     - ingestion-edge-verify-requirements
-    - ingestion-edge-release:
-        filters:
-          branches:
-            only: main
-          tags:
-            only: /.*/
     - maven: &java_matrix
         # Use human readable job names, like:
         #  ingestion-sink-unit-java-11
@@ -298,9 +231,3 @@ workflows:
             executor: [java-11]
             module: [ingestion-beam, ingestion-core, ingestion-sink]
             scope: [unit, integration]
-    - ingestion-sink-release:
-        filters:
-          branches:
-            only: main
-          tags:
-            only: /.*/

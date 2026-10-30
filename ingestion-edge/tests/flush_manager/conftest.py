@@ -24,6 +24,12 @@ import pytest
 import yaml
 
 
+DEFAULT_IMAGE = (
+    "us-docker.pkg.dev/moz-fx-ingestion-edge-prod/ingestion-edge-prod/ingestion-edge"
+    ":latest"
+)
+
+
 def pytest_addoption(parser: _pytest.config.argparsing.Parser):
     # Cluster options
     group = parser.getgroup("flush manager tests")
@@ -65,9 +71,9 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
     group.addoption(
         "--image",
         dest="image",
-        default="mozilla/ingestion-edge:latest",
-        help="Docker image for server, flush manager, and flush containers;"
-        "default is 'mozilla/ingestion-edge:latest'",
+        default=DEFAULT_IMAGE,
+        help="Docker image for server, flush manager, and flush containers; "
+        f"default is '{DEFAULT_IMAGE}'",
     )
     group.addoption(
         "--topic",
