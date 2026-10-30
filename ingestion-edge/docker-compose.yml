@@ -4,7 +4,7 @@ version: '3'
 services:
   web:
     build: .
-    image: &image "${DOCKERHUB_REPO-ingestion-edge}:${CIRCLE_TAG-latest}"
+    image: &image "ingestion-edge:latest"
     environment:
     - &route_table >-
       ROUTE_TABLE=[

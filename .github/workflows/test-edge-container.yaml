@@ -1,0 +1,40 @@
+name: Test ingestion-edge container
+
+on:
+  pull_request:
+    paths:
+      - "ingestion-edge/**"
+      - ".github/workflows/test-edge-container.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "ingestion-edge/**"
+      - ".github/workflows/test-edge-container.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  docker-compose-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ingestion-edge
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Pass the compose files explicitly so docker-compose.override.yml is not
+      # applied. It mounts the source tree over /app, and we want to test the image.
+      - name: Run tests against the container
+        run: >-
+          docker compose
+          -f docker-compose.yml
+          -f docker-compose.ci.yml
+          up
+          --build
+          --exit-code-from test
+          --quiet-pull

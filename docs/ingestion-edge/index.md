@@ -150,9 +150,6 @@ Test a remote server (requires credentials to read PubSub)
 # define the same ROUTE_TABLE as your edge server
 export ROUTE_TABLE='[["/submit/telemetry/<suffix:path>","projects/PROJECT/topics/TOPIC"]]'
 
-# docker using latest image and no git checkout
-docker run --rm --tty --interactive --env ROUTE_TABLE mozilla/ingestion-edge:latest bin/pytest tests/integration --server https://myedgeserver.example.com
-
 # docker-compose
 docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --server https://myedgeserver.example.com
 
@@ -165,9 +162,6 @@ docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --serve
 Run a load test (defaults to a single GKE cluster and a PubSub emulator)
 
 ```bash
-# docker using latest image and no git checkout
-docker run --rm --tty --interactive mozilla/ingestion-edge:latest bin/pytest tests/load
-
 # docker-compose
 docker-compose run --rm test bin/pytest tests/load
 
@@ -210,7 +204,8 @@ Load test options (from `./bin/test -h`)
                         telemetry/suffix', ignored when --no-generator is
                         specified or --load-balancer is missing
   --image=IMAGE         Docker image for server deployment, default is
-                        'mozilla/ingestion-edge:latest', ignored when --load-
+                        'us-docker.pkg.dev/moz-fx-ingestion-edge-prod/ingestion-
+                        edge-prod/ingestion-edge:latest', ignored when --load-
                         balancer is specified
   --no-emulator         Don't use a PubSub emulator, ignored when --load-
                         balancer is specified
