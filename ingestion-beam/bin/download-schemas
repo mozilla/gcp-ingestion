@@ -19,19 +19,6 @@ function init_working_directory() {
     cd "$workdir" || exit
 }
 
-function jwe_mapping() {
-    local source=$1
-    local destination=$2
-    cat << EOF
-[
-    {
-      "source_field_path": "${source}",
-      "decrypted_field_path": "${destination}"
-    }
-]
-EOF
-}
-
 function insert_testing_schemas() {
     # Patch the current schema archive with testing resources. This function
     # should be called within the root directory of the extracted archive.
