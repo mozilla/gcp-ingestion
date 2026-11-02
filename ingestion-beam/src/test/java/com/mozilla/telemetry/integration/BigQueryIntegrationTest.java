@@ -32,6 +32,7 @@ import com.mozilla.telemetry.util.TestWithDeterministicJson;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.beam.sdk.PipelineResult;
 import org.hamcrest.Matchers;
@@ -54,8 +55,10 @@ import org.junit.rules.TemporaryFolder;
  */
 public class BigQueryIntegrationTest extends TestWithDeterministicJson {
 
-  private static final String STATIC_TEST_TEMP = //
-      "gs://gcp-ingestion-static-test-bucket/temp/bq-loads";
+  // CircleCI overrides this with the legacy bucket, which its credentials can access.
+  private static final String STATIC_TEST_TEMP = Optional
+      .ofNullable(System.getenv("BQ_STATIC_TEST_TEMP"))
+      .orElse("gs://moz-fx-data-integration-tests-gcp-ingestion/temp/bq-loads");
 
   private BigQuery bigquery;
   private String projectId;

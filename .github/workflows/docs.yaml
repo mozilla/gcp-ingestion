@@ -1,0 +1,60 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  spelling:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install mdspell
+        run: npm install markdown-spellcheck
+      - name: Spell Check
+        run: npx mdspell --ignore-numbers --en-us --report '**/*.md' '!node_modules/**/*.md'
+
+  prettier:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: Install prettier
+        run: npm install prettier
+      - name: Check markdown is formatted with prettier
+        run: npx prettier -c '**/*.md'
+
+  docs:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: gh-pages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.10"
+      - name: Install dependencies
+        run: |
+          pip install \
+            mkdocs \
+            mkdocs-material \
+            markdown-include \
+            mkdocs-awesome-pages-plugin
+      - name: Configure git for gh-deploy
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # gh-deploy builds on top of origin/gh-pages, which the default shallow
+          # checkout doesn't fetch. Without it the push is rejected as non-fast-forward.
+          git fetch --depth=1 origin gh-pages:refs/remotes/origin/gh-pages
+      - name: Build and deploy docs
+        run: |
+          mkdocs gh-deploy -m "[ci skip] Deployed ${{ github.sha }} with MkDocs version: {version}"
