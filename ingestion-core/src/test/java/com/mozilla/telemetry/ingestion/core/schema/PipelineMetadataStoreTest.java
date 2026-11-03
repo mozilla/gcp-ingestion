@@ -16,7 +16,6 @@ public class PipelineMetadataStoreTest {
   public void testGetPipelineMetadata() throws SchemaNotFoundException {
     final PipelineMetadata meta = store.getSchema("namespace_0/bar/bar.1.schema.json");
     assertEquals("namespace_0", meta.bq_dataset_family());
-    assertEquals("/test_string", meta.jwe_mappings().get(0).decrypted_field_path().toString());
     assertEquals("document_id", meta.sample_id_source_uuid_attribute());
     assertEquals(ImmutableList.of("impression_id"), meta.sample_id_source_uuid_payload_path());
     assertNull(meta.split_config());

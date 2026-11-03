@@ -55,12 +55,15 @@ NOT_FOUND = "Not Found"
 # can use either convention.
 _TOLERATION_KEY_MAP = {v: k for k, v in V1Toleration.attribute_map.items()}
 
+DEFAULT_IMAGE = (
+    "us-docker.pkg.dev/moz-fx-ingestion-edge-prod/ingestion-edge-prod/ingestion-edge"
+)
 DEFAULT_IMAGE_VERSION = "latest"
 try:
     with open("version.json") as fp:
-        DEFAULT_IMAGE_VERSION = str(
-            json.load(fp).get("version") or DEFAULT_IMAGE_VERSION
-        )
+        # Images in GAR are tagged with the first 10 characters of the commit hash.
+        commit = json.load(fp).get("commit") or ""
+        DEFAULT_IMAGE_VERSION = commit[:10] or DEFAULT_IMAGE_VERSION
 except (FileNotFoundError, json.decoder.JSONDecodeError):  # pragma: no cover
     pass  # use default
 
@@ -89,7 +92,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--image",
-    default="mozilla/ingestion-edge:" + DEFAULT_IMAGE_VERSION,
+    default=DEFAULT_IMAGE + ":" + DEFAULT_IMAGE_VERSION,
     help="Docker image to use for flush jobs",
 )
 parser.add_argument(
