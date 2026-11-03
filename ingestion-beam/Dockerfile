@@ -5,7 +5,7 @@ COPY pom.xml /app/pom.xml
 COPY ingestion-beam/pom.xml /app/ingestion-beam/pom.xml
 COPY checkstyle /app/checkstyle
 COPY ingestion-beam/checkstyle /app/ingestion-sink/checkstyle
-# Skip the Spotless check: CircleCI already checks formatting. Spotless downloads
+# Skip the Spotless check: CI already checks formatting. Spotless downloads
 # its formatter from download.eclipse.org, so an outage there would fail this build.
 RUN mvn prepare-package -Dspotless.check.skip=true
 COPY ingestion-core/src /app/ingestion-core/src
