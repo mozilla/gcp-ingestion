@@ -1573,13 +1573,8 @@ environment variables:</p>
   between flush attempts, defaults to 1 second and may require tuning</li>
 </ul>
 <h2 id="testing">Testing</h2>
-<p>Run tests with <a href="https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros">CircleCI Local
-CLI</a>,
-<code>docker-compose</code>, or <code>pytest</code> wrappers</p>
-<pre><code class="language-bash"># circleci
-(cd .. &amp;&amp; circleci build --job ingestion-edge)
-
-# docker-compose
+<p>Run tests with <code>docker-compose</code> or <code>pytest</code> wrappers</p>
+<pre><code class="language-bash"># docker-compose
 docker-compose run --rm test
 
 # pytest wrapper (pytest-all calls lint and pytest)
@@ -1596,7 +1591,7 @@ docker-compose run --rm test
 <li><code>REQUIRE_CODE_COVERAGE</code> controls whether <code>bin/pytest-all</code> will fail if
   code coverage is less than 100%, defaults to <code>true</code></li>
 <li>Use comments like <code># pragma: no cov</code> to disable coverage for things that
-    cannot be reasonably covered in CircleCI, as described in the <a href="https://coverage.readthedocs.io/en/coverage-5.2/excluding.html"><code>coverage.py</code>
+    cannot be reasonably covered in CI, as described in the <a href="https://coverage.readthedocs.io/en/coverage-5.2/excluding.html"><code>coverage.py</code>
     docs</a></li>
 </ul>
 <h3 id="style-checks">Style Checks</h3>
