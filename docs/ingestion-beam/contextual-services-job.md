@@ -7,7 +7,19 @@ that is shared. For more context, see the
 
 The code is defined in the [`com.mozilla.telemetry.ContextualServicesReporter`](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-beam/src/main/java/com/mozilla/telemetry/ContextualServicesReporter.java) class.
 
-The input of this job is all `contextual-services` namespace messages for desktop Firefox, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`. It also includes `firefox-desktop` namespace Glean pings (`top-sites`, `quick-suggest`, and `search-with`), each gated to specific Firefox versions, as well as `topsites-impression` pings from various mobile applications.
+The input of this job is all `contextual-services` namespace messages for desktop Firefox, which includes `topsites-impression`, `topsites-click`, `quicksuggest-impression`, and `quicksuggest-click`. It can also include `firefox-desktop` namespace Glean pings (`top-sites`, `quick-suggest`, and `search-with`) if `firefox-desktop` is added to `--allowedNamespaces` (the default is `contextual-services` only), as well as `topsites-impression` pings from various mobile applications.
+
+Desktop pings are dropped unless the Firefox version is in the accepted range:
+
+| Document type    | Namespace             | Firefox versions |
+| ---------------- | --------------------- | ---------------- |
+| `topsites-*`     | `contextual-services` | 87+              |
+| `quicksuggest-*` | `contextual-services` | 89+              |
+| `top-sites`      | `firefox-desktop`     | 116–136          |
+| `quick-suggest`  | `firefox-desktop`     | 116+             |
+| `search-with`    | `firefox-desktop`     | 122+             |
+
+With `--limitLegacyDesktopVersion=true`, `contextual-services` pings from Firefox 116+ are also dropped, to avoid double reporting events that are available from Glean. Firefox 156+ sends `quick-suggest` pings over `OHTTP`; those pings carry no version, so the version check is skipped for them.
 
 ## Data flows for Contextual Services
 
@@ -50,7 +62,7 @@ This is where the URLs used for reporting events are built. The `reporting_url` 
 
 ### `LabelSpikes`
 
-This step counts the number of click or impression events per client (using the `context_id` attribute) in a time interval. This transform uses Beam’s state and timers; a state and a timer is maintained for every client. The state is a list of recent timestamps of events from the current client and the timer will clear the state if there are no recent events from the client. If the number of elements in the list exceeds the set threshold, any additional clicks will be marked with `click-status=65` and any additional impressions with `custom-data=invalid`. Because a state needs to be maintained per client, the memory required for this step increases with the number of unique clients. Click spikes are controlled via `--clickSpikeWindowDuration`/`--clickSpikeThreshold` (defaults `3m`/`10`), and impression spikes via the newer `--impressionSpikeWindowDuration`/`--impressionSpikeThreshold` (defaults `3m`/`20`).
+This step counts the number of top sites click or impression events per client (using the `context_id` attribute) in a time interval. This transform uses Beam’s state and timers; a state and a timer is maintained for every client. The state is a list of recent timestamps of events from the current client and the timer will clear the state if there are no recent events from the client. If the number of elements in the list exceeds the set threshold, any additional clicks will be marked with `click-status=65` and any additional impressions with `custom-data=invalid`. Because a state needs to be maintained per client, the memory required for this step increases with the number of unique clients. The transform is applied separately to clicks and to impressions, so state is kept per client for each event type. Click spikes are controlled via `--clickSpikeWindowDuration`/`--clickSpikeThreshold` (defaults `3m`/`10`), and impression spikes via the newer `--impressionSpikeWindowDuration`/`--impressionSpikeThreshold` (defaults `3m`/`20`).
 
 ### `AggregateImpressions`
 
