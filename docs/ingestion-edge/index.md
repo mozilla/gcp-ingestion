@@ -79,14 +79,9 @@ environment variables:
 
 ## Testing
 
-Run tests with [CircleCI Local
-CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros),
-`docker-compose`, or `pytest` wrappers
+Run tests with `docker-compose` or `pytest` wrappers
 
 ```bash
-# circleci
-(cd .. && circleci build --job ingestion-edge)
-
 # docker-compose
 docker-compose run --rm test
 
@@ -105,7 +100,7 @@ The `pytest` wrappers add these options via the environment:
 - `REQUIRE_CODE_COVERAGE` controls whether `bin/pytest-all` will fail if
   code coverage is less than 100%, defaults to `true`
   - Use comments like `# pragma: no cov` to disable coverage for things that
-    cannot be reasonably covered in CircleCI, as described in the [`coverage.py`
+    cannot be reasonably covered in CI, as described in the [`coverage.py`
     docs](https://coverage.readthedocs.io/en/coverage-5.2/excluding.html)
 
 ### Style Checks
