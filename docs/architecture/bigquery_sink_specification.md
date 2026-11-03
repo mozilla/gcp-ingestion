@@ -10,10 +10,10 @@ and insert them into BigQuery. Send errors to another configurable location.
 
 ### Implementation
 
-This was originally executed as an Apache Beam job. That job has since been
-replaced by `ingestion-sink`, a custom Java application running on GKE, which
-is now the production implementation; the Beam job is retained only for local
-testing (archived).
+This was originally executed as an Apache Beam job. For loading messages from
+PubSub into BigQuery, that job is deprecated and has been replaced by
+`ingestion-sink`, a custom Java application running on GKE, which is now the
+production implementation.
 
 ### Configuration
 
