@@ -39,6 +39,7 @@ gcp-ingestion
 GCP
 GCS
 GeoIP
+GeoIsp
 GeoLite2
 GKE
 GroupByKey
