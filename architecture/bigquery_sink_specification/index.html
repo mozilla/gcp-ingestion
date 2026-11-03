@@ -1559,8 +1559,10 @@ messages into BigQuery.</p>
 <p>Consume messages from a PubSub topic or Cloud Storage location or BigQuery table
 and insert them into BigQuery. Send errors to another configurable location.</p>
 <h3 id="implementation">Implementation</h3>
-<p>Execute this as an Apache Beam job. <em>Note:</em> As of February 2020, we are
-transitioning this sink to a custom Java application running on GKE.</p>
+<p>This was originally executed as an Apache Beam job. For loading messages from
+PubSub into BigQuery, that job is deprecated and has been replaced by
+<code>ingestion-sink</code>, a custom Java application running on GKE, which is now the
+production implementation.</p>
 <h3 id="configuration">Configuration</h3>
 <p>Require configuration for:</p>
 <ul>

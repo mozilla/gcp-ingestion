@@ -1101,6 +1101,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#geoisp-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GeoIsp Lookup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#geoip-lookup" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1427,6 +1438,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#geoisp-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GeoIsp Lookup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#geoip-lookup" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1545,6 +1567,20 @@ exclusive flags; <code>Edge</code> is the default when neither is set:</p>
 for the ingestion sources and wire formats in more detail.</p>
 <h2 id="transforms">Transforms</h2>
 <p>These transforms are currently executed against each message in order.</p>
+<h3 id="geoisp-lookup">GeoIsp Lookup</h3>
+<ol>
+<li>Skip the message if the <code>isp_name</code> attribute is already present</li>
+<li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute</li>
+<li>use the last value (the immediate sending client IP), unlike GeoIP Lookup below</li>
+<li>Set <code>isp_db_version</code> to the build date of the configured <code>GeoIP2-ISP.mmdb</code>; this is
+   set whenever <code>x_forwarded_for</code> is present, even if the steps below fail</li>
+<li>Execute the following steps until one fails and ignore the exception</li>
+<li>Parse <code>ip</code> using <code>InetAddress.getByName</code></li>
+<li>Lookup <code>ip</code> in the configured <code>GeoIP2-ISP.mmdb</code></li>
+<li>Extract <code>isp</code> as <code>isp_name</code> and <code>organization</code> as <code>isp_organization</code></li>
+<li>Remove any <code>null</code> values added to attributes</li>
+</ol>
+<p>This step does not remove <code>x_forwarded_for</code>; that happens in GeoIP Lookup.</p>
 <h3 id="geoip-lookup">GeoIP Lookup</h3>
 <ol>
 <li>Extract <code>ip</code> from the <code>x_forwarded_for</code> attribute</li>
@@ -1594,11 +1630,15 @@ but with a few extra flags:</p>
     <code>--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Decoder</code></li>
 <li><code>--geoCityDatabase=/path/to/GeoIP2-City.mmdb</code></li>
 <li><code>--geoCityFilter=/path/to/cities15000.txt</code> (optional)</li>
+<li><code>--geoIspDatabase=/path/to/GeoIP2-ISP.mmdb</code> (required)</li>
 </ul>
 <p>To download the <a href="https://dev.maxmind.com/geoip/geoip2/geolite2/">GeoLite2 database</a>,
 you need to <a href="https://www.maxmind.com/en/geolite2/signup">register for a MaxMind account</a>
 to obtain a license key. After generating a new license key, set <code>MM_LICENSE_KEY</code> to
 your license key.</p>
+<p>There is no free GeoLite2 edition of the ISP database (<code>GeoIP2-ISP</code> is a paid MaxMind
+product), so <code>bin/download-geolite2</code> does not fetch it. For local testing, use the test
+database at <code>src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb</code>.</p>
 <p>Example:</p>
 <pre><code class="language-bash"># create a test input file
 mkdir -p tmp/
@@ -1616,6 +1656,7 @@ export MM_LICENSE_KEY=&quot;Your MaxMind License Key&quot;
 ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args=&quot;\
     --geoCityDatabase=GeoLite2-City.mmdb \
     --geoCityFilter=cities15000.txt \
+    --geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb \
     --schemasLocation=schemas.tar.gz \
     --inputType=file \
     --input=tmp/input.json \

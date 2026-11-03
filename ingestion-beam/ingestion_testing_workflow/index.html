@@ -1428,6 +1428,15 @@ about the sandbox environment that is provided by data operations.</p>
 </ul>
 <h2 id="building-the-project">Building the project</h2>
 <p>Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.</p>
+<blockquote>
+<p><strong>Note:</strong> The Beam <code>Sink</code> job used below for the BigQuery step has been
+replaced by <a href="../../ingestion-sink/"><code>ingestion-sink</code></a>, a
+Kubernetes-based app configured via environment variables, which is now the
+canonical path for loading messages from PubSub into BigQuery. The Beam
+command below still works for loading sample files in a sandbox project; see
+<a href="../../ingestion-sink/#executing">Executing in the <code>ingestion-sink</code> docs</a>
+to run <code>ingestion-sink</code> locally instead.</p>
+</blockquote>
 <pre><code class="language-bash"># this must be an absolute path
 export GOOGLE_APPLICATION_CREDENTIALS=keys.json
 PROJECT=$(gcloud config get-value project)
