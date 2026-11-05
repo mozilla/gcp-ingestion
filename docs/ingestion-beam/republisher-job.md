@@ -17,8 +17,9 @@ so should not be set for `telemetry-decoded` input.
 
 ### Per-`docType` Republishing
 
-If `--perDocTypeEnabledList` is provided, a separate producer will be created
-for each `docType` specified in the given comma-separated list.
+If `--perDocTypeDestinations` is provided, a separate producer will be created
+for each `docType` specified in the given JSON map of topic names to lists of
+`namespace/docType` entries.
 See the `--help` output for details on format.
 
 ### Per-Channel Sampled Republishing
