@@ -17,9 +17,17 @@ so should not be set for `telemetry-decoded` input.
 
 ### Per-`docType` Republishing
 
-If `--perDocTypeEnabledList` is provided, a separate producer will be created
-for each `docType` specified in the given comma-separated list.
+If `--perDocTypeDestinations` is provided, a separate producer will be created
+for each `docType` specified in the given JSON map of topic names to lists of
+`namespace/docType` entries.
 See the `--help` output for details on format.
+
+### Per-Namespace Republishing
+
+If `--perNamespaceDestinations` is provided, a separate producer will be
+created for each namespace specified in the given JSON map of namespaces to
+output topic names. Messages are partitioned by the `document_namespace`
+attribute.
 
 ### Per-Channel Sampled Republishing
 
@@ -29,6 +37,12 @@ according to the ratios provided per channel.
 This is currently intended as a feature only for telemetry data, so should
 not be set for `structured-decoded` input.
 See the `--help` output for details on format.
+
+### Random-Sample Republishing
+
+If `--randomSampleRatio` is provided, a random sample of messages (independent
+of channel) will be republished to `--randomSampleDestination`. Messages are
+selected by `sample_id` attribute if present, or else a random number.
 
 ## Executing
 
@@ -53,7 +67,7 @@ To enable debug republishing:
 
 To enable per-`docType` republishing:
 
-- `--perDocTypeDestination='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'` (compile-time)
+- `--perDocTypeDestinations='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'` (compile-time)
 
 To enable per-channel sampled republishing:
 
