@@ -54,7 +54,7 @@ To enable debug republishing:
 
 To enable per-`docType` republishing:
 
-- `--perDocTypeDestination='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'` (compile-time)
+- `--perDocTypeDestinations='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'` (compile-time)
 
 To enable per-channel sampled republishing:
 
