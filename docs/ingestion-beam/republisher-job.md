@@ -31,6 +31,12 @@ This is currently intended as a feature only for telemetry data, so should
 not be set for `structured-decoded` input.
 See the `--help` output for details on format.
 
+### Random-Sample Republishing
+
+If `--randomSampleRatio` is provided, a random sample of messages (independent
+of channel) will be republished to `--randomSampleDestination`. Messages are
+selected by `sample_id` attribute if present, or else a random number.
+
 ## Executing
 
 Republisher jobs are executed the [same way as sink jobs](../sink-job/#executing)
