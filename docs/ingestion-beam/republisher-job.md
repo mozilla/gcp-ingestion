@@ -22,6 +22,13 @@ for each `docType` specified in the given JSON map of topic names to lists of
 `namespace/docType` entries.
 See the `--help` output for details on format.
 
+### Per-Namespace Republishing
+
+If `--perNamespaceDestinations` is provided, a separate producer will be
+created for each namespace specified in the given JSON map of namespaces to
+output topic names. Messages are partitioned by the `document_namespace`
+attribute.
+
 ### Per-Channel Sampled Republishing
 
 If `--perChannelSampleRatios` is provided, a separate producer will be created
