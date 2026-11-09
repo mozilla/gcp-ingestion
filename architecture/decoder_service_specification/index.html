@@ -1603,10 +1603,12 @@ in the Structured Ingestion pipeline.</p>
 <p>Decoder runs as one Dataflow job per (pipeline family, input topic). Each pipeline
 family has its own <code>&lt;family&gt;-raw</code>, <code>&lt;family&gt;-decoded</code>, and <code>&lt;family&gt;-error</code> topics:
 <code>telemetry</code> (legacy Firefox telemetry), <code>structured</code> (Glean and other structured pings),
-and <code>stub_installer</code>. The <code>structured</code> family also has a <code>structured-logging</code> input
-topic served by a second decoder job with <code>--logIngestionEnabled=true</code>. Topics and jobs
-are defined in
-<a href="https://github.com/mozilla-services/cloudops-infra/tree/master/projects/beam">cloudops-infra</a>.</p>
+and <code>stub_installer</code>. The <code>structured</code> family has two more input topics, each served
+by its own decoder job: <code>structured-logging</code> (<code>--logIngestionEnabled=true</code>) and
+<code>structured-direct</code> (<code>--directPubsubEnabled=true</code>). Jobs are defined in
+<a href="https://github.com/mozilla-services/cloudops-infra/tree/master/projects/beam">cloudops-infra projects/beam</a>
+and topics in
+<a href="https://github.com/mozilla-services/cloudops-infra/tree/master/projects/data-shared">cloudops-infra projects/data-shared</a>.</p>
 <h2 id="ingestion-sources">Ingestion sources</h2>
 <p>Each decoder instance accepts one input wire format, selected at deploy time via the
 <code>--logIngestionEnabled</code> and <code>--directPubsubEnabled</code> flags (defaulting to Edge if neither
@@ -1622,8 +1624,10 @@ is set):</p>
   ping metadata fields as message attributes. Required attributes:
   <code>document_namespace</code>, <code>document_type</code>, <code>document_version</code>, <code>document_id</code>;
   messages missing any of these are routed to the error topic. Optional
-  attributes: <code>user_agent</code>, <code>x_forwarded_for</code>. <code>submission_timestamp</code> is
-  stamped by the decoder from Pub/Sub's publishTime if not already set.</li>
+  attributes: <code>user_agent</code>, <code>x_forwarded_for</code>. <code>x_forwarded_for</code> should hold
+  only the client IP; if it has more than one entry, the decoder drops the
+  last two as load balancer IPs. <code>submission_timestamp</code> is stamped by the
+  decoder from Pub/Sub's publishTime if not already set.</li>
 </ul>
 <h2 id="data-flow">Data Flow</h2>
 <ol>
