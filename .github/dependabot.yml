@@ -59,5 +59,13 @@ updates:
   directory: /
   schedule:
     interval: weekly
+  cooldown:
+    default-days: 7
+  groups:
+    github-actions:
+      patterns: ["*"]
+      exclude-patterns:
+      # Bumping this changes build-and-push-*.yaml, which rebuilds the prod images
+      - "mozilla/deploy-actions*"
   labels:
   - dependencies

@@ -15,7 +15,6 @@ AWS
 backfilled
 base64
 BigQuery
-CircleCI
 CLI
 cron
 CSV
@@ -40,6 +39,7 @@ gcp-ingestion
 GCP
 GCS
 GeoIP
+GeoIsp
 GeoLite2
 GKE
 GroupByKey
