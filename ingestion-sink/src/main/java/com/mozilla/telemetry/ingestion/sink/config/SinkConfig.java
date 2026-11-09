@@ -105,7 +105,10 @@ public class SinkConfig {
   // 100GB, so at least 10MB per file is needed for bigQueryLoad to maximize load request
   // size. The default is intended to limit memory usage and how much data is
   // reprocessed due to errors, while staying above 10MB to maximize load request size.
-  private static final long DEFAULT_BATCH_MAX_BYTES = 100_000_000L; // 100MB
+  // Messages stay outstanding until their batch is written, so this must stay well below
+  // the default MAX_OUTSTANDING_REQUEST_BYTES (30MB), otherwise batches can never fill and
+  // every batch waits for BATCH_MAX_DELAY.
+  private static final long DEFAULT_BATCH_MAX_BYTES = 15_000_000L; // 15MB
   // BigQuery Load API does not limit number of rows, but rows are generally over 100 bytes in size,
   // so setting this any higher than BATCH_MAX_BYTES/100 is expected to have no impact.
   private static final int DEFAULT_BATCH_MAX_MESSAGES = 1_000_000; // 1,000,000
