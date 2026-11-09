@@ -8,10 +8,12 @@ in the Structured Ingestion pipeline.
 Decoder runs as one Dataflow job per (pipeline family, input topic). Each pipeline
 family has its own `<family>-raw`, `<family>-decoded`, and `<family>-error` topics:
 `telemetry` (legacy Firefox telemetry), `structured` (Glean and other structured pings),
-and `stub_installer`. The `structured` family also has a `structured-logging` input
-topic served by a second decoder job with `--logIngestionEnabled=true`. Topics and jobs
-are defined in
-[cloudops-infra](https://github.com/mozilla-services/cloudops-infra/tree/master/projects/beam).
+and `stub_installer`. The `structured` family has two more input topics, each served
+by its own decoder job: `structured-logging` (`--logIngestionEnabled=true`) and
+`structured-direct` (`--directPubsubEnabled=true`). Jobs are defined in
+[cloudops-infra projects/beam](https://github.com/mozilla-services/cloudops-infra/tree/master/projects/beam)
+and topics in
+[cloudops-infra projects/data-shared](https://github.com/mozilla-services/cloudops-infra/tree/master/projects/data-shared).
 
 ## Ingestion sources
 
@@ -29,8 +31,10 @@ is set):
   ping metadata fields as message attributes. Required attributes:
   `document_namespace`, `document_type`, `document_version`, `document_id`;
   messages missing any of these are routed to the error topic. Optional
-  attributes: `user_agent`, `x_forwarded_for`. `submission_timestamp` is
-  stamped by the decoder from Pub/Sub's publishTime if not already set.
+  attributes: `user_agent`, `x_forwarded_for`. `x_forwarded_for` should hold
+  only the client IP; if it has more than one entry, the decoder drops the
+  last two as load balancer IPs. `submission_timestamp` is stamped by the
+  decoder from Pub/Sub's publishTime if not already set.
 
 ## Data Flow
 
