@@ -9,6 +9,12 @@ updates:
   - dependency-name: org.springframework:spring-core
     # Spring 6 requires Java 17
     versions: [">=6.0.0"]
+  - dependency-name: com.puppycrawl.tools:checkstyle
+    # Checkstyle 11+ requires Java 17
+    versions: [">=11.0.0"]
+  - dependency-name: com.diffplug.spotless:spotless-maven-plugin
+    # Spotless 3.x requires Java 17
+    versions: [">=3.0.0"]
   - dependency-name: org.apache.logging.log4j:log4j-bom
     # Log4j 2.2+ requires Junit5, otherwise ingestion-sink build fails
     versions: [">=2.2.0"]
@@ -18,8 +24,18 @@ updates:
   - dependency-name: com.squareup.okhttp3:*
     # OkHttp 5.x uses Kotlin Multiplatform and requires artifact changes (okhttp -> okhttp-jvm)
     versions: [">=5.0.0"]
+  - dependency-name: com.maxmind.geoip2:geoip2
+    # GeoIP2 5.x requires Java 17
+    versions: [">=5.0.0"]
   schedule:
-    interval: daily
+    interval: weekly
+  groups:
+    java-minor-patch:
+      update-types: [minor, patch]
+      patterns: ["*"]
+      exclude-patterns:
+      # Review Beam upgrades separately for breaking changes
+      - "org.apache.beam:*"
   labels:
   - dependencies
   - java
@@ -39,3 +55,17 @@ updates:
   labels:
   - dependencies
   - python
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    interval: weekly
+  cooldown:
+    default-days: 7
+  groups:
+    github-actions:
+      patterns: ["*"]
+      exclude-patterns:
+      # Bumping this changes build-and-push-*.yaml, which rebuilds the prod images
+      - "mozilla/deploy-actions*"
+  labels:
+  - dependencies

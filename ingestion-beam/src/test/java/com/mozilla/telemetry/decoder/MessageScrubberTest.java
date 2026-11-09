@@ -248,6 +248,31 @@ public class MessageScrubberTest {
   }
 
   @Test
+  public void testShouldDropDefaultAgentDeng11758() throws Exception {
+    Map<String, String> attributes = Maps.newHashMap(ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop-background-defaultagent")
+        .put(Attribute.DOCUMENT_TYPE, "default-agent").build());
+
+    ObjectNode affected = Json.readObjectNode(
+        "{\"client_info\": {\"app_build\": \"20260413091642\", \"app_channel\": \"nightly\"}}"
+            .getBytes(StandardCharsets.UTF_8));
+    assertThrows(MessageShouldBeDroppedException.class,
+        () -> MessageScrubber.scrub(attributes, affected));
+
+    // Builds outside the affected range are fine.
+    ObjectNode unaffected = Json.readObjectNode(
+        "{\"client_info\": {\"app_build\": \"20260417093720\", \"app_channel\": \"nightly\"}}"
+            .getBytes(StandardCharsets.UTF_8));
+    MessageScrubber.scrub(attributes, unaffected);
+
+    // The rule only applies to the default-agent ping.
+    Map<String, String> otherDocType = Maps.newHashMap(ImmutableMap.<String, String>builder()
+        .put(Attribute.DOCUMENT_NAMESPACE, "firefox-desktop-background-defaultagent")
+        .put(Attribute.DOCUMENT_TYPE, "metrics").build());
+    MessageScrubber.scrub(otherDocType, affected);
+  }
+
+  @Test
   public void testShouldScrubBhrBug1562011() throws Exception {
     ObjectNode ping = Json.readObjectNode(("{\n" //
         + "  \"payload\": {\n" //

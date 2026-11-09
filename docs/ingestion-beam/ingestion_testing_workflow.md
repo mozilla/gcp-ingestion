@@ -50,6 +50,14 @@ about the sandbox environment that is provided by data operations.
 
 Follow the instructions of the project readme. Here is a quick-reference for a running a job from a set of files in GCS.
 
+> **Note:** The Beam `Sink` job used below for the BigQuery step has been
+> replaced by [`ingestion-sink`](../ingestion-sink/index.md), a
+> Kubernetes-based app configured via environment variables, which is now the
+> canonical path for loading messages from PubSub into BigQuery. The Beam
+> command below still works for loading sample files in a sandbox project; see
+> [Executing in the `ingestion-sink` docs](../ingestion-sink/index.md#executing)
+> to run `ingestion-sink` locally instead.
+
 ```bash
 # this must be an absolute path
 export GOOGLE_APPLICATION_CREDENTIALS=keys.json

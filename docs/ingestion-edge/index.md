@@ -79,14 +79,9 @@ environment variables:
 
 ## Testing
 
-Run tests with [CircleCI Local
-CLI](https://circleci.com/docs/2.0/local-cli/#installing-the-circleci-local-cli-on-macos-and-linux-distros),
-`docker-compose`, or `pytest` wrappers
+Run tests with `docker-compose` or `pytest` wrappers
 
 ```bash
-# circleci
-(cd .. && circleci build --job ingestion-edge)
-
 # docker-compose
 docker-compose run --rm test
 
@@ -105,7 +100,7 @@ The `pytest` wrappers add these options via the environment:
 - `REQUIRE_CODE_COVERAGE` controls whether `bin/pytest-all` will fail if
   code coverage is less than 100%, defaults to `true`
   - Use comments like `# pragma: no cov` to disable coverage for things that
-    cannot be reasonably covered in CircleCI, as described in the [`coverage.py`
+    cannot be reasonably covered in CI, as described in the [`coverage.py`
     docs](https://coverage.readthedocs.io/en/coverage-5.2/excluding.html)
 
 ### Style Checks
@@ -150,9 +145,6 @@ Test a remote server (requires credentials to read PubSub)
 # define the same ROUTE_TABLE as your edge server
 export ROUTE_TABLE='[["/submit/telemetry/<suffix:path>","projects/PROJECT/topics/TOPIC"]]'
 
-# docker using latest image and no git checkout
-docker run --rm --tty --interactive --env ROUTE_TABLE mozilla/ingestion-edge:latest bin/pytest tests/integration --server https://myedgeserver.example.com
-
 # docker-compose
 docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --server https://myedgeserver.example.com
 
@@ -165,9 +157,6 @@ docker-compose run --rm -e ROUTE_TABLE test bin/pytest tests/integration --serve
 Run a load test (defaults to a single GKE cluster and a PubSub emulator)
 
 ```bash
-# docker using latest image and no git checkout
-docker run --rm --tty --interactive mozilla/ingestion-edge:latest bin/pytest tests/load
-
 # docker-compose
 docker-compose run --rm test bin/pytest tests/load
 
@@ -210,7 +199,8 @@ Load test options (from `./bin/test -h`)
                         telemetry/suffix', ignored when --no-generator is
                         specified or --load-balancer is missing
   --image=IMAGE         Docker image for server deployment, default is
-                        'mozilla/ingestion-edge:latest', ignored when --load-
+                        'us-docker.pkg.dev/moz-fx-ingestion-edge-prod/ingestion-
+                        edge-prod/ingestion-edge:latest', ignored when --load-
                         balancer is specified
   --no-emulator         Don't use a PubSub emulator, ignored when --load-
                         balancer is specified

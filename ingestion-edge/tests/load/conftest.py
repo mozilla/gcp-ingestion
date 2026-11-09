@@ -22,6 +22,12 @@ import time
 import yaml
 
 
+DEFAULT_IMAGE = (
+    "us-docker.pkg.dev/moz-fx-ingestion-edge-prod/ingestion-edge-prod/ingestion-edge"
+    ":latest"
+)
+
+
 def pytest_addoption(parser: _pytest.config.argparsing.Parser):
     group = parser.getgroup("load tests")
     # Test options
@@ -109,9 +115,9 @@ def pytest_addoption(parser: _pytest.config.argparsing.Parser):
     group.addoption(
         "--image",
         dest="image",
-        default="mozilla/ingestion-edge:latest",
-        help="Docker image for server deployment, default is "
-        "'mozilla/ingestion-edge:latest', ignored when --load-balancer is specified",
+        default=DEFAULT_IMAGE,
+        help=f"Docker image for server deployment, default is '{DEFAULT_IMAGE}', "
+        "ignored when --load-balancer is specified",
     )
     group.addoption(
         "--no-emulator",

@@ -18,18 +18,15 @@ See https://docs.github.com/en/repositories/managing-your-repositorys-settings-a
 
 ## Merging Guidelines
 
-### Changes affecting ingestion-edge
+### Changes affecting `ingestion-edge`
 
-Code updates are always safe to merge since production code updates are always
-deployed manually.
+Code updates are always safe to merge since production code updates are deployed manually via [Argo CD](https://dataservices.argocd.global.mozgcp.net/applications/ingestion-edge-prod-us-west1-ingestion-edge).
 
-### Changes affecting ingestion-sink
+### Changes affecting `ingestion-sink`
 
-Code updates are always safe to merge since production code updates are always
-deployed manually. See [these instructions](https://mozilla-hub.atlassian.net/wiki/spaces/SRE/pages/27921000/Ingestion+Sink#IngestionSink-Toupdatethecodeversion)
-for updating the code version.
+Only merge changes to `main` that you want to propagate to production automatically via [Argo CD](https://dataservices.argocd.global.mozgcp.net/applications/argocd-dataservices/ingestion-sink-prod-us-west1-ingestion-sink).
 
-### Changes affecting ingestion-beam (including ingestion-core)
+### Changes affecting `ingestion-beam` (including `ingestion-core`)
 
 - Only merge changes to `main` that you want to propagate to production automatically
 - Check [pipeline latency](https://yardstick.mozilla.org/d/bZHv1mUMk/pipeline-latency?orgId=1&from=now-6h&to=now) before merging, particularly if:

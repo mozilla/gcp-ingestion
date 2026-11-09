@@ -13,8 +13,10 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@v6.6.3
+    uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@1f02139c84391c65aff23bd7c74ff39bec5c29a7  # v6.8.0
     with:
+      # The artifact-writer service account only trusts jobs in the `build` environment.
+      environment: build
       image_name: ingestion-edge
       gar_name: ingestion-edge-prod
       project_id: moz-fx-ingestion-edge-prod

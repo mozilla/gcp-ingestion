@@ -3,7 +3,9 @@ package com.mozilla.telemetry.decoder;
 import com.google.common.annotations.VisibleForTesting;
 import com.mozilla.telemetry.ingestion.core.Constant.Attribute;
 import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore;
+import com.mozilla.telemetry.ingestion.core.schema.PipelineMetadataStore.PipelineMetadata;
 import com.mozilla.telemetry.ingestion.core.schema.SchemaNotFoundException;
+import com.mozilla.telemetry.metrics.PerDocTypeCounter;
 import com.mozilla.telemetry.schema.SchemaStoreSingletonFactory;
 import com.mozilla.telemetry.transforms.PubsubConstraints;
 import java.util.Arrays;
@@ -93,6 +95,16 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
             attributes.put(Attribute.X_FORWARDED_FOR, String.join(",", xff));
           });
 
+      // Monitor pings that declare the ohttp uploader capability. Submissions that went through
+      // the OHTTP gateway carry no User-Agent header, so one that has it was submitted directly,
+      // e.g. by an older client, and GeoIspLookup and GeoCityLookup use the client's real IP.
+      if (declaresOhttp(attributes)) {
+        PerDocTypeCounter.inc(attributes, "ohttp_declared");
+        if (attributes.containsKey(Attribute.USER_AGENT)) {
+          PerDocTypeCounter.inc(attributes, "ohttp_declared_direct_submission");
+        }
+      }
+
       // Remove unused ip from attributes
       attributes.remove(Attribute.REMOTE_ADDR);
 
@@ -101,6 +113,20 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
 
       // Return new message.
       out.output(new PubsubMessage(message.getPayload(), attributes));
+    }
+
+    private boolean declaresOhttp(Map<String, String> attributes) {
+      if (schemasLocation == null) {
+        return false;
+      }
+      try {
+        final PipelineMetadata meta = metadataStore.getSchema(attributes);
+        return meta.uploader_capabilities() != null
+            && meta.uploader_capabilities().contains("ohttp");
+      } catch (SchemaNotFoundException ignore) {
+        // this function is not allowed to fail, so ignore the lack of schema
+        return false;
+      }
     }
   }
 

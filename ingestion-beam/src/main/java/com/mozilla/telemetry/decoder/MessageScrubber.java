@@ -238,8 +238,11 @@ public class MessageScrubber {
       "firefox-b-o", "firefox-b-1-o", "firefox-b-lm", "firefox-b-1-lm", "firefox-b-lg",
       "firefox-b-huawei-h1611", "firefox-b-is-oem1", "firefox-b-oem1", "firefox-b-oem2",
       "firefox-b-tinno", "firefox-b-pn-wt", "firefox-b-pn-wt-us", "firefox-b-vv", "firefox-b-tf",
-      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "lens-firefox-fcm",
-      "ubuntu", "ubuntu-sn",
+      "firefox-b-1-ar", "firefox-b-ar", "firefox-b-1-dt", "firefox-b-dt", "firefox-b-exp1",
+      "lens-firefox-fcm", "linux-firefox-cm-re", "linux-firefox-ntp-re", "linux-firefox-o-re",
+      "linux-firefoxmnt-cm-re", "linux-firefoxmnt-ntp-re", "linux-firefoxmnt-o-re",
+      "macos-firefox-cm-re", "macos-firefox-ntp-re", "macos-firefox-o-re", "windows-firefox-cm-re",
+      "windows-firefox-ntp-re", "windows-firefox-o-re", "ubuntu", "ubuntu-sn",
       // DuckDuckGo
       "ffab", "ffcm", "ffhp", "ffip", "ffit", "ffnt", "ffocus", "ffos", "ffsb", "fpas", "fpsa",
       "ftas", "ftsa", "lm", "newext",
@@ -254,6 +257,10 @@ public class MessageScrubber {
 
   private static final Set<String> ALLOWED_MOBILE_SEARCH_CODES = ImmutableSet.<String>builder()
       .addAll(ALLOWED_DESKTOP_SEARCH_CODES) //
+      // These Google codes are only relevant for mobile.
+      .add("android-firefox-b-re", "android-firefox-cm-re", "android-firefox-msw-re",
+          "android-firefox-o-re", "ios-firefox-b-re", "ios-firefox-cm-re", "ios-firefox-msw-re",
+          "ios-firefox-o-re") //
       // These Baidu codes are only relevant for mobile.
       .add("1000969a", "1000969b") //
       .build()
@@ -359,6 +366,9 @@ public class MessageScrubber {
     }
     if (bug11464Affected(namespace, docType, json)) {
       throw new MessageShouldBeDroppedException("DENG-11464");
+    }
+    if (deng11758Affected(namespace, docType, json)) {
+      throw new MessageShouldBeDroppedException("DENG-11758");
     }
 
     if (bug1712850Affected(attributes)) {
@@ -629,6 +639,18 @@ public class MessageScrubber {
     }
     String lower = resolvedDllName.toLowerCase();
     return DENG_11464_ALLOWED_DLL_PATH_PREFIXES.stream().noneMatch(lower::startsWith);
+  }
+
+  // See DENG-11758.
+  private static final Set<String> DENG_11758_AFFECTED_APP_BUILDS = ImmutableSet.of(
+      "20260410211335", "20260411091926", "20260411211605", "20260412075731", "20260413091642",
+      "20260413220854", "20260414085455", "20260414211344", "20260415040720", "20260415154314",
+      "20260415212114", "20260416093720", "20260416155948");
+
+  private static boolean deng11758Affected(String namespace, String docType, ObjectNode json) {
+    return "firefox-desktop-background-defaultagent".equals(namespace)
+        && "default-agent".equals(docType) && DENG_11758_AFFECTED_APP_BUILDS
+            .contains(ParsePayload.getGleanClientInfo(json).path("app_build").asText(""));
   }
 
   // See bug 1733118 for discussion of affected versions, etc.

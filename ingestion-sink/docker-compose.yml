@@ -5,6 +5,6 @@ services:
     build: &build
       context: ..
       dockerfile: ingestion-sink/Dockerfile
-    image: &image "${DOCKER_IMAGE_PREFIX}ingestion-sink:${CIRCLE_TAG-latest}"
+    image: &image "ingestion-sink:latest"
     command:
       mvn clean test

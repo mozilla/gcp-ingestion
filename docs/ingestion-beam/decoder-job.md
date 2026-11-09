@@ -21,6 +21,21 @@ for the ingestion sources and wire formats in more detail.
 
 These transforms are currently executed against each message in order.
 
+### GeoIsp Lookup
+
+1. Skip the message if the `isp_name` attribute is already present
+1. Extract `ip` from the `x_forwarded_for` attribute
+   - use the last value (the immediate sending client IP), unlike GeoIP Lookup below
+1. Set `isp_db_version` to the build date of the configured `GeoIP2-ISP.mmdb`; this is
+   set whenever `x_forwarded_for` is present, even if the steps below fail
+1. Execute the following steps until one fails and ignore the exception
+   1. Parse `ip` using `InetAddress.getByName`
+   1. Lookup `ip` in the configured `GeoIP2-ISP.mmdb`
+   1. Extract `isp` as `isp_name` and `organization` as `isp_organization`
+1. Remove any `null` values added to attributes
+
+This step does not remove `x_forwarded_for`; that happens in GeoIP Lookup.
+
 ### GeoIP Lookup
 
 1. Extract `ip` from the `x_forwarded_for` attribute
@@ -79,11 +94,16 @@ but with a few extra flags:
     `--build-arg FLEX_TEMPLATE_JAVA_MAIN_CLASS=com.mozilla.telemetry.Decoder`
 - `--geoCityDatabase=/path/to/GeoIP2-City.mmdb`
 - `--geoCityFilter=/path/to/cities15000.txt` (optional)
+- `--geoIspDatabase=/path/to/GeoIP2-ISP.mmdb` (required)
 
 To download the [GeoLite2 database](https://dev.maxmind.com/geoip/geoip2/geolite2/),
 you need to [register for a MaxMind account](https://www.maxmind.com/en/geolite2/signup)
 to obtain a license key. After generating a new license key, set `MM_LICENSE_KEY` to
 your license key.
+
+There is no free GeoLite2 edition of the ISP database (`GeoIP2-ISP` is a paid MaxMind
+product), so `bin/download-geolite2` does not fetch it. For local testing, use the test
+database at `src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb`.
 
 Example:
 
@@ -104,6 +124,7 @@ export MM_LICENSE_KEY="Your MaxMind License Key"
 ./bin/mvn compile exec:java -Dexec.mainClass=com.mozilla.telemetry.Decoder -Dexec.args="\
     --geoCityDatabase=GeoLite2-City.mmdb \
     --geoCityFilter=cities15000.txt \
+    --geoIspDatabase=src/test/resources/ispDB/GeoIP2-ISP-Test.mmdb \
     --schemasLocation=schemas.tar.gz \
     --inputType=file \
     --input=tmp/input.json \
