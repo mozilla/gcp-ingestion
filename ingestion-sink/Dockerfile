@@ -1,4 +1,4 @@
-FROM maven:3-jdk-11 AS base
+FROM maven:3.10-eclipse-temurin-17 AS base
 WORKDIR /app/ingestion-sink
 
 FROM base AS build

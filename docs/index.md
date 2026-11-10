@@ -23,7 +23,7 @@ The components are:
 The design behind the system along with various trade offs are documented in
 the [architecture section](./architecture/overview.md).
 
-This project requires Java 11.
+This project requires Java 17.
 To manage multiple local JDKs, consider [jenv](https://www.jenv.be/) and the
 `jenv enable-plugin maven` command.
 Also consider reading through

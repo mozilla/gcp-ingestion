@@ -78,11 +78,11 @@ public class Env {
   }
 
   public Integer getInt(String key, Integer defaultValue) {
-    return optString(key).map(Integer::new).orElse(defaultValue);
+    return optString(key).map(Integer::valueOf).orElse(defaultValue);
   }
 
   public Long getLong(String key, Long defaultValue) {
-    return optString(key).map(Long::new).orElse(defaultValue);
+    return optString(key).map(Long::valueOf).orElse(defaultValue);
   }
 
   public Boolean getBool(String key, Boolean defaultValue) {

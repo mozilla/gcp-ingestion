@@ -26,6 +26,7 @@ import io.opencensus.exporter.stats.stackdriver.StackdriverStatsExporter;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -108,8 +109,9 @@ public class SinkBigQueryIntegrationTest {
     assertEquals(sorted, actual);
   }
 
+  // BigQuery stores microseconds, but the JDK 17 clock on Linux has nanosecond precision.
   private static final String SUBMISSION_TIMESTAMP = ZonedDateTime.now(ZoneOffset.UTC)
-      .format(DateTimeFormatter.ISO_DATE_TIME);
+      .truncatedTo(ChronoUnit.MICROS).format(DateTimeFormatter.ISO_DATE_TIME);
 
   private static final PubsubMessage SIMPLE_MESSAGE = PubsubMessage.newBuilder() //
       .setData(ByteString.copyFromUtf8("x")) //
