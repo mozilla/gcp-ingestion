@@ -30,7 +30,7 @@ jobs:
             ingestion-sink/**
 
   unit:
-    name: ${{ matrix.module }}-unit-java-11
+    name: ${{ matrix.module }}-unit-java-17
     needs: changed
     if: ${{ !cancelled() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true') }}
     strategy:
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6.1.0
         with:
           distribution: temurin
-          java-version: "11"
+          java-version: "17"
           cache: maven
           cache-dependency-path: |
             pom.xml
@@ -71,7 +71,7 @@ jobs:
           path: ${{ matrix.module }}/target/site/jacoco
 
   integration:
-    name: ${{ matrix.module }}-integration-java-11
+    name: ${{ matrix.module }}-integration-java-17
     needs: changed
     if: ${{ !cancelled() && (github.ref == 'refs/heads/main' || needs.changed.outputs.java == 'true') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     environment:
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad  # v6.1.0
         with:
           distribution: temurin
-          java-version: "11"
+          java-version: "17"
           cache: maven
           cache-dependency-path: |
             pom.xml
