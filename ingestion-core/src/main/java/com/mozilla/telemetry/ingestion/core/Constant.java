@@ -27,7 +27,6 @@ public class Constant {
     public static final String DOCUMENT_TYPE = "document_type";
     public static final String DOCUMENT_VERSION = "document_version";
     public static final String EXPERIMENTS = "experiments";
-    public static final String FASTLY_CLIENT_IP = "fastly_client_ip";
     public static final String GEO_CITY = "geo_city";
     public static final String GEO_COUNTRY = "geo_country";
     public static final String GEO_SUBDIVISION1 = "geo_subdivision1";
@@ -70,6 +69,7 @@ public class Constant {
     public static final String X_DEBUG_ID = "x_debug_id";
     public static final String X_FORWARDED_FOR = "x_forwarded_for";
     public static final String X_FOXSEC_IP_REPUTATION = "x_foxsec_ip_reputation";
+    public static final String X_INGESTION_CLIENT_IP = "x_ingestion_client_ip";
     public static final String X_LB_TAGS = "x_lb_tags";
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";
     public static final String X_SOURCE_TAGS = "x_source_tags";

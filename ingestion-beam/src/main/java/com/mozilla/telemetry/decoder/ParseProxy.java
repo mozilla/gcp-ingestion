@@ -58,8 +58,8 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
       // Set by the Fastly WAF; always remove it so this client IP isn't propagated downstream
-      final String fastlyClientIp = StringUtils
-          .trimToNull(attributes.remove(Attribute.FASTLY_CLIENT_IP));
+      final String clientIp = StringUtils
+          .trimToNull(attributes.remove(Attribute.X_INGESTION_CLIENT_IP));
 
       Optional.ofNullable(attributes.get(Attribute.X_FORWARDED_FOR))
           .map(v -> Arrays.stream(v.split("\\s*,\\s*")).filter(StringUtils::isNotBlank)
@@ -81,21 +81,23 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
               xff.remove(xff.size() - 1);
             }
 
-            // Requests routed through the Fastly WAF carry a Fastly-Client-IP header, and the
-            // last entry in X-Forwarded-For is the Fastly edge node that connected to the load
-            // balancer. Remove the Fastly hop and make sure the Fastly client IP is the last
-            // entry, so downstream transforms read the real client IP. Requests sent directly to
+            // Our Fastly WAF sets an X-Ingestion-Client-IP header, and the last entry in
+            // X-Forwarded-For is then the Fastly edge node that connected to the load balancer.
+            // Remove the Fastly hop and make sure the client IP is the last entry, so
+            // downstream transforms read the real client IP. We use our own header name rather
+            // than Fastly-Client-IP, which other Fastly services may already be sending us.
+            // Requests sent directly to
             // the load balancer have no such header and are unaffected, so both paths can be
             // served at the same time while the WAF is rolled out.
-            if (fastlyClientIp != null) {
+            if (clientIp != null) {
               PerDocTypeCounter.inc(attributes, "fastly_path");
               if (!xff.isEmpty()) {
                 // Remove Fastly edge IP
                 xff.remove(xff.size() - 1);
               }
               // Fastly normally appends the client IP to X-Forwarded-For; avoid duplicating it
-              if (xff.isEmpty() || !xff.get(xff.size() - 1).equals(fastlyClientIp)) {
-                xff.add(fastlyClientIp);
+              if (xff.isEmpty() || !xff.get(xff.size() - 1).equals(clientIp)) {
+                xff.add(clientIp);
               }
             } else {
               PerDocTypeCounter.inc(attributes, "direct_path");

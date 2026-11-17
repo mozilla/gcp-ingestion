@@ -166,24 +166,24 @@ public class ParseProxyTest extends TestWithDeterministicJson {
   }
 
   @Test
-  public void testFastlyClientIp() {
+  public void testIngestionClientIp() {
     final String attributes = "\"document_namespace\":\"test\"" //
         + ",\"document_type\":\"geoip-skip\"" //
         + ",\"document_version\":\"1\"";
     final List<String> input = Arrays.asList(//
         // via fastly: client, fastly-appended client, fastly edge, forwarding rule, lb
-        "{\"attributeMap\":{\"fastly_client_ip\":\"5\"" //
+        "{\"attributeMap\":{\"x_ingestion_client_ip\":\"5\"" //
             + ",\"x_forwarded_for\":\"6, 5, 151.101.1.1, 2, 1\"},\"payload\":\"\"}",
         // via fastly, client ip not appended to x-forwarded-for
-        "{\"attributeMap\":{\"fastly_client_ip\":\"5\"" //
+        "{\"attributeMap\":{\"x_ingestion_client_ip\":\"5\"" //
             + ",\"x_forwarded_for\":\"151.101.1.1, 2, 1\"},\"payload\":\"\"}",
         // via fastly, with geoip_skip_entries=1 applied after the fastly hop is handled
-        "{\"attributeMap\":{" + attributes + ",\"fastly_client_ip\":\"5\"" //
+        "{\"attributeMap\":{" + attributes + ",\"x_ingestion_client_ip\":\"5\"" //
             + ",\"x_forwarded_for\":\"6, 5, 151.101.1.1, 2, 1\"},\"payload\":\"\"}",
         // direct: unchanged behavior
         "{\"attributeMap\":{\"x_forwarded_for\":\"4, 3, 2, 1\"},\"payload\":\"\"}",
         // header without x-forwarded-for is still removed
-        "{\"attributeMap\":{\"fastly_client_ip\":\"5\"},\"payload\":\"\"}");
+        "{\"attributeMap\":{\"x_ingestion_client_ip\":\"5\"},\"payload\":\"\"}");
 
     final List<String> expected = Arrays.asList(//
         "{\"attributeMap\":{\"x_forwarded_for\":\"6,5\"},\"payload\":\"\"}",

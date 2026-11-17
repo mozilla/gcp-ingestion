@@ -44,7 +44,6 @@ required group attributes {
   optional string content_length       // example: "4722"
   optional string date                 // example: "Mon, 12 Mar 2018 21:02:18 GMT"
   optional string dnt                  // example: "1"
-  optional string fastly_client_ip     // set by the Fastly WAF, example: "103.3.237.12"
   optional string host                 // example: "incoming.telemetry.mozilla.org"
   optional string user_agent           // example: "pingsender/1.0"
   optional string x_forwarded_for      // example: "10.98.132.74, 103.3.237.12"
@@ -54,6 +53,7 @@ required group attributes {
   optional string x_telemetry_agent    // example: "Glean/0.40.0 (Kotlin on Android)"
   optional string x_source_tags        // example: "automation, other"
   optional string x_foxsec_ip_reputation // example: "95"
+  optional string x_ingestion_client_ip  // client IP set by the Fastly WAF, example: "103.3.237.12"
   optional string x_lb_tags            // example: "TLSv1.3, 009C"
 }
 ```
