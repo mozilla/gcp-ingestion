@@ -27,6 +27,9 @@ updates:
   - dependency-name: com.maxmind.geoip2:geoip2
     # GeoIP2 5.x requires Java 17
     versions: [">=5.0.0"]
+  - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
+    # 3.7.0+ requires Maven 3.9, but the Docker builds use maven:3-jdk-11 (Maven 3.8)
+    versions: [">=3.7.0"]
   schedule:
     interval: weekly
   groups:

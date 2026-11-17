@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@1f02139c84391c65aff23bd7c74ff39bec5c29a7  # v6.8.0
+    uses: mozilla/deploy-actions/.github/workflows/build-and-push.yml@bbd46e2861ce05be67e3bf5e4fb7bb33f27592a0  # v6.10.0
     with:
       # The artifact-writer service account only trusts jobs in the `build` environment.
       environment: build
