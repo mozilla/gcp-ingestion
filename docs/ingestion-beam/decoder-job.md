@@ -21,6 +21,18 @@ for the ingestion sources and wire formats in more detail.
 
 These transforms are currently executed against each message in order.
 
+### Parse Proxy
+
+1. Remove the last two values from `x_forwarded_for` (a Google load balancer IP added by nginx,
+   and a forwarding rule IP added by the Google load balancer)
+1. Count messages as `fastly_path` if the `x_ingestion_client_ip` attribute (set by the Fastly
+   WAF) is present, otherwise as `direct_path`. For `fastly_path` messages, also count whether
+   `x_ingestion_client_ip` is the value before the Fastly edge IP in `x_forwarded_for`
+   (`fastly_path_client_ip_in_xff` / `fastly_path_client_ip_not_in_xff`)
+1. Remove a further `geoip_skip_entries` values if the pipeline metadata for the
+   document type sets it
+1. Remove the `x_ingestion_client_ip` and `remote_addr` attributes
+
 ### GeoIsp Lookup
 
 1. Skip the message if the `isp_name` attribute is already present

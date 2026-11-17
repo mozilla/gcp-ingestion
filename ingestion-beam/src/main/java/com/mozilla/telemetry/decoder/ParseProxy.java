@@ -57,6 +57,10 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       // Copy attributes
       final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
+      // Set by the Fastly WAF; always remove it so this client IP isn't propagated downstream
+      final String clientIp = StringUtils
+          .trimToNull(attributes.remove(Attribute.X_INGESTION_CLIENT_IP));
+
       Optional.ofNullable(attributes.get(Attribute.X_FORWARDED_FOR))
           .map(v -> Arrays.stream(v.split("\\s*,\\s*")).filter(StringUtils::isNotBlank)
               .collect(Collectors.toList()))
@@ -75,6 +79,22 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
               xff.remove(xff.size() - 1);
               // Remove global forwarding rule IP
               xff.remove(xff.size() - 1);
+            }
+
+            // Our Fastly WAF sets an X-Ingestion-Client-IP header, and the last entry in
+            // X-Forwarded-For is then the Fastly edge node that connected to the load balancer.
+            // For now we only count these messages, to confirm that nothing outside our WAF
+            // sends this header and that Fastly appends the client IP to X-Forwarded-For,
+            // before we start removing the Fastly hop.
+            if (clientIp != null) {
+              PerDocTypeCounter.inc(attributes, "fastly_path");
+              if (xff.size() > 1 && xff.get(xff.size() - 2).equals(clientIp)) {
+                PerDocTypeCounter.inc(attributes, "fastly_path_client_ip_in_xff");
+              } else {
+                PerDocTypeCounter.inc(attributes, "fastly_path_client_ip_not_in_xff");
+              }
+            } else {
+              PerDocTypeCounter.inc(attributes, "direct_path");
             }
 
             if (schemasLocation != null) {
