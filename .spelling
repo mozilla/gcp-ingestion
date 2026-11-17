@@ -119,3 +119,6 @@ LogEntry
 LogEntry-wrapped
 parameterized
 publishTime
+Fastly
+WAF
+geo
