@@ -44,6 +44,7 @@ required group attributes {
   optional string content_length       // example: "4722"
   optional string date                 // example: "Mon, 12 Mar 2018 21:02:18 GMT"
   optional string dnt                  // example: "1"
+  optional string fastly_client_ip     // set by the Fastly WAF, example: "103.3.237.12"
   optional string host                 // example: "incoming.telemetry.mozilla.org"
   optional string user_agent           // example: "pingsender/1.0"
   optional string x_forwarded_for      // example: "10.98.132.74, 103.3.237.12"

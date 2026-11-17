@@ -57,6 +57,10 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       // Copy attributes
       final Map<String, String> attributes = new HashMap<>(message.getAttributeMap());
 
+      // Set by the Fastly WAF; always remove it so this client IP isn't propagated downstream
+      final String fastlyClientIp = StringUtils
+          .trimToNull(attributes.remove(Attribute.FASTLY_CLIENT_IP));
+
       Optional.ofNullable(attributes.get(Attribute.X_FORWARDED_FOR))
           .map(v -> Arrays.stream(v.split("\\s*,\\s*")).filter(StringUtils::isNotBlank)
               .collect(Collectors.toList()))
@@ -75,6 +79,26 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
               xff.remove(xff.size() - 1);
               // Remove global forwarding rule IP
               xff.remove(xff.size() - 1);
+            }
+
+            // Requests routed through the Fastly WAF carry a Fastly-Client-IP header, and the
+            // last entry in X-Forwarded-For is the Fastly edge node that connected to the load
+            // balancer. Remove the Fastly hop and make sure the Fastly client IP is the last
+            // entry, so downstream transforms read the real client IP. Requests sent directly to
+            // the load balancer have no such header and are unaffected, so both paths can be
+            // served at the same time while the WAF is rolled out.
+            if (fastlyClientIp != null) {
+              PerDocTypeCounter.inc(attributes, "fastly_path");
+              if (!xff.isEmpty()) {
+                // Remove Fastly edge IP
+                xff.remove(xff.size() - 1);
+              }
+              // Fastly normally appends the client IP to X-Forwarded-For; avoid duplicating it
+              if (xff.isEmpty() || !xff.get(xff.size() - 1).equals(fastlyClientIp)) {
+                xff.add(fastlyClientIp);
+              }
+            } else {
+              PerDocTypeCounter.inc(attributes, "direct_path");
             }
 
             if (schemasLocation != null) {

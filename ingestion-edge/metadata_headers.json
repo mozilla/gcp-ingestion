@@ -2,6 +2,7 @@
     "Content-Length",
     "Date",
     "DNT",
+    "Fastly-Client-IP",
     "User-Agent",
     "X-Forwarded-For",
     "X-Pingsender-Version",

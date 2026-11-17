@@ -27,6 +27,7 @@ public class Constant {
     public static final String DOCUMENT_TYPE = "document_type";
     public static final String DOCUMENT_VERSION = "document_version";
     public static final String EXPERIMENTS = "experiments";
+    public static final String FASTLY_CLIENT_IP = "fastly_client_ip";
     public static final String GEO_CITY = "geo_city";
     public static final String GEO_COUNTRY = "geo_country";
     public static final String GEO_SUBDIVISION1 = "geo_subdivision1";
