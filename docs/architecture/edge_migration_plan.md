@@ -2,6 +2,8 @@
 
 This document outlines plans to migrate edge traffic from AWS to GCP using the code in this repository.
 
+**Status: complete.** This migration finished years ago; the Phase 4 end state (Data Producers → GCP Edge) is now the sole production architecture, and the AWS Edge, Kafka, and Hindsight components described below have been retired. This document is retained as a historical record of the migration plan; see [Architecture Overview](overview.md) and [Differences from AWS](differences_from_aws.md) for the current production architecture.
+
 ## Current state
 
 Today, data producers send data to the ingestion stack on AWS as described [here](https://github.com/mozilla/firefox-data-docs/blob/042fddcbf27aa5993ee5578224200a3ef65fd7c7/src/concepts/pipeline/data_pipeline_detail.md#ingestion).
