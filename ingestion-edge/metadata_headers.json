@@ -9,6 +9,7 @@
     "X-Debug-ID",
     "X-Foxsec-IP-Reputation",
     "X-Ingestion-Client-IP",
+    "X-Ingestion-LB-Tags",
     "X-LB-Tags",
     "X-Source-Tags",
     "X-Telemetry-Agent"
