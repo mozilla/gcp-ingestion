@@ -1168,10 +1168,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#per-namespace-republishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Namespace Republishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#per-channel-sampled-republishing" class="md-nav__link">
     <span class="md-ellipsis">
       
         Per-Channel Sampled Republishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#random-sample-republishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Random-Sample Republishing
       
     </span>
   </a>
@@ -1394,10 +1416,32 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#per-namespace-republishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-Namespace Republishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#per-channel-sampled-republishing" class="md-nav__link">
     <span class="md-ellipsis">
       
         Per-Channel Sampled Republishing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#random-sample-republishing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Random-Sample Republishing
       
     </span>
   </a>
@@ -1452,9 +1496,15 @@ attribute will be republished to a destination that's configurable at runtime.
 This is currently expected to be a feature specific to structured ingestion,
 so should not be set for <code>telemetry-decoded</code> input.</p>
 <h3 id="per-doctype-republishing">Per-<code>docType</code> Republishing</h3>
-<p>If <code>--perDocTypeEnabledList</code> is provided, a separate producer will be created
-for each <code>docType</code> specified in the given comma-separated list.
+<p>If <code>--perDocTypeDestinations</code> is provided, a separate producer will be created
+for each <code>docType</code> specified in the given JSON map of topic names to lists of
+<code>namespace/docType</code> entries.
 See the <code>--help</code> output for details on format.</p>
+<h3 id="per-namespace-republishing">Per-Namespace Republishing</h3>
+<p>If <code>--perNamespaceDestinations</code> is provided, a separate producer will be
+created for each namespace specified in the given JSON map of namespaces to
+output topic names. Messages are partitioned by the <code>document_namespace</code>
+attribute.</p>
 <h3 id="per-channel-sampled-republishing">Per-Channel Sampled Republishing</h3>
 <p>If <code>--perChannelSampleRatios</code> is provided, a separate producer will be created
 for each specified release channel. The messages will be randomly sampled
@@ -1462,6 +1512,10 @@ according to the ratios provided per channel.
 This is currently intended as a feature only for telemetry data, so should
 not be set for <code>structured-decoded</code> input.
 See the <code>--help</code> output for details on format.</p>
+<h3 id="random-sample-republishing">Random-Sample Republishing</h3>
+<p>If <code>--randomSampleRatio</code> is provided, a random sample of messages (independent
+of channel) will be republished to <code>--randomSampleDestination</code>. Messages are
+selected by <code>sample_id</code> attribute if present, or else a random number.</p>
 <h2 id="executing">Executing</h2>
 <p>Republisher jobs are executed the <a href="../sink-job/#executing">same way as sink jobs</a>
 but with a few differences in flags. You'll need to set the <code>mainClass</code>:</p>
@@ -1483,7 +1537,7 @@ that determines the specific location (usually a topic name) for each publisher.
 </ul>
 <p>To enable per-<code>docType</code> republishing:</p>
 <ul>
-<li><code>--perDocTypeDestination='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'</code> (compile-time)</li>
+<li><code>--perDocTypeDestinations='{"/some/pubsub/topic/path/per-doctype-name":["activity-stream/impression-stats"]}'</code> (compile-time)</li>
 </ul>
 <p>To enable per-channel sampled republishing:</p>
 <ul>
