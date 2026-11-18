@@ -166,6 +166,7 @@ public class MessageScrubber {
       .put("com-ziniao-smanager", "2032228") //
       .put("com-codeedge-childrenfence", "2034078") //
       .put("coverage", "SVCSE-4447") //
+      .put("com-lk00-top", "2094874") //
       .build();
 
   private static final Map<KV<String, String>, String> IGNORED_NAMESPACES_AND_DOCTYPES = ImmutableMap
@@ -184,6 +185,7 @@ public class MessageScrubber {
       .put("org-global-wxc", "2037560") //
       .put("com-xiaobei-browser", "2039427") //
       .put("org-global-", "2042210") //
+      .put("vifox-antidetect-cloud", "2089095") //
       .build();
 
   private static final Map<String, String> IGNORED_TELEMETRY_DOCTYPES = ImmutableMap
