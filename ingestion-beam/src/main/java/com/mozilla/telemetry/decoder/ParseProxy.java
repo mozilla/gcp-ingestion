@@ -61,6 +61,15 @@ public class ParseProxy extends PTransform<PCollection<PubsubMessage>, PCollecti
       final String clientIp = StringUtils
           .trimToNull(attributes.remove(Attribute.X_INGESTION_CLIENT_IP));
 
+      // Set by the Fastly WAF with the client's TLS version and cipher. Fastly terminates client
+      // TLS, so the x_lb_tags set by Google's load balancer only describe the Fastly -> load
+      // balancer connection; replace them so x_lb_tags keeps describing the client connection.
+      final String fastlyLbTags = StringUtils
+          .trimToNull(attributes.remove(Attribute.X_INGESTION_LB_TAGS));
+      if (fastlyLbTags != null) {
+        attributes.put(Attribute.X_LB_TAGS, fastlyLbTags);
+      }
+
       Optional.ofNullable(attributes.get(Attribute.X_FORWARDED_FOR))
           .map(v -> Arrays.stream(v.split("\\s*,\\s*")).filter(StringUtils::isNotBlank)
               .collect(Collectors.toList()))

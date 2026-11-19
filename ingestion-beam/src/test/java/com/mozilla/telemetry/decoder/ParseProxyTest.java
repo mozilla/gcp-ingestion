@@ -203,6 +203,38 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     Assert.assertEquals(1, counterValue(result, prefix + "direct_path"));
   }
 
+  @Test
+  public void testIngestionLbTagsReplaceLbTags() {
+    final List<String> input = Arrays.asList(//
+        // via fastly: the load balancer only sees fastly's tls connection
+        "{\"attributeMap\":{\"x_ingestion_lb_tags\":\"TLSv1, ECDHE-RSA-AES128-SHA, v2\"" //
+            + ",\"x_lb_tags\":\"TLSv1.3, 1302, v2\"},\"payload\":\"\"}",
+        // via fastly, plain http from the client
+        "{\"attributeMap\":{\"x_ingestion_lb_tags\":\", , v2\"" //
+            + ",\"x_lb_tags\":\"TLSv1.3, 1302, v2\"},\"payload\":\"\"}",
+        // blank header is ignored and removed
+        "{\"attributeMap\":{\"x_ingestion_lb_tags\":\" \"" //
+            + ",\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}",
+        // direct
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}");
+
+    final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1, ECDHE-RSA-AES128-SHA, v2\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_lb_tags\":\", , v2\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}");
+
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()) //
+        .apply(ParseProxy.of(null)) //
+        .apply(OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
   private static long counterValue(PipelineResult result, String name) {
     return StreamSupport.stream(result.metrics()
         .queryMetrics(MetricsFilter.builder()
