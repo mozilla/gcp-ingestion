@@ -7,13 +7,13 @@ updates:
   - dependency-name: com.fasterxml.jackson:jackson-bom
   - dependency-name: org.apache.avro:avro
   - dependency-name: org.springframework:spring-core
-    # Spring 6 requires Java 17
+    # Spring 6 requires Java 17; upgrade deferred to a separate PR
     versions: [">=6.0.0"]
   - dependency-name: com.puppycrawl.tools:checkstyle
-    # Checkstyle 11+ requires Java 17
+    # Checkstyle 11-12 require Java 17 and 13+ require Java 21; upgrade deferred to a separate PR
     versions: [">=11.0.0"]
   - dependency-name: com.diffplug.spotless:spotless-maven-plugin
-    # Spotless 3.x requires Java 17
+    # Spotless 3.x requires Java 17; upgrade deferred to a separate PR
     versions: [">=3.0.0"]
   - dependency-name: org.apache.logging.log4j:log4j-bom
     # Log4j 2.2+ requires Junit5, otherwise ingestion-sink build fails
@@ -25,10 +25,10 @@ updates:
     # OkHttp 5.x uses Kotlin Multiplatform and requires artifact changes (okhttp -> okhttp-jvm)
     versions: [">=5.0.0"]
   - dependency-name: com.maxmind.geoip2:geoip2
-    # GeoIP2 5.x requires Java 17
+    # GeoIP2 5.x removes Location.getMetroCode(), which GeoCityLookup uses for the DMA code
     versions: [">=5.0.0"]
   - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
-    # 3.7.0+ requires Maven 3.9, but the Docker builds use maven:3-jdk-11 (Maven 3.8)
+    # 3.7.0+ requires Maven 3.9; upgrade deferred to a separate PR
     versions: [">=3.7.0"]
   schedule:
     interval: weekly
