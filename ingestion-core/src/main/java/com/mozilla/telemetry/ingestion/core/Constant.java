@@ -70,7 +70,7 @@ public class Constant {
     public static final String X_FORWARDED_FOR = "x_forwarded_for";
     public static final String X_FOXSEC_IP_REPUTATION = "x_foxsec_ip_reputation";
     public static final String X_INGESTION_CLIENT_IP = "x_ingestion_client_ip";
-    public static final String X_INGESTION_LB_TAGS = "x_ingestion_lb_tags";
+    public static final String X_INGESTION_CLIENT_TLS = "x_ingestion_client_tls";
     public static final String X_LB_TAGS = "x_lb_tags";
     public static final String X_PINGSENDER_VERSION = "x_pingsender_version";
     public static final String X_SOURCE_TAGS = "x_source_tags";

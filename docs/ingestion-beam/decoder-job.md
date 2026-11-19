@@ -31,10 +31,10 @@ These transforms are currently executed against each message in order.
    (`fastly_path_client_ip_in_xff` / `fastly_path_client_ip_not_in_xff`)
 1. Remove a further `geoip_skip_entries` values if the pipeline metadata for the
    document type sets it
-1. Replace `x_lb_tags` with `x_ingestion_lb_tags` (the client's TLS version and cipher, set by
+1. Replace `x_lb_tags` with `x_ingestion_client_tls` (the client's TLS version and cipher, set by
    the Fastly WAF) if present, since behind Fastly the load balancer only sees Fastly's TLS
    connection
-1. Remove the `x_ingestion_client_ip`, `x_ingestion_lb_tags` and `remote_addr` attributes
+1. Remove the `x_ingestion_client_ip`, `x_ingestion_client_tls` and `remote_addr` attributes
 
 ### GeoIsp Lookup
 
