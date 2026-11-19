@@ -165,6 +165,76 @@ public class ParseProxyTest extends TestWithDeterministicJson {
     Assert.assertEquals(0, counterValue(result, "test/geoip_skip_v1/ohttp_declared"));
   }
 
+  @Test
+  public void testIngestionClientIpCounters() {
+    final List<String> input = Arrays.asList(//
+        // via fastly: client, fastly-appended client, fastly edge, forwarding rule, lb
+        "{\"attributeMap\":{\"x_ingestion_client_ip\":\"5\"" //
+            + ",\"x_forwarded_for\":\"6, 5, 151.101.1.1, 2, 1\"},\"payload\":\"\"}",
+        // via fastly, client ip not appended to x-forwarded-for
+        "{\"attributeMap\":{\"x_ingestion_client_ip\":\"5\"" //
+            + ",\"x_forwarded_for\":\"151.101.1.1, 2, 1\"},\"payload\":\"\"}",
+        // direct
+        "{\"attributeMap\":{\"x_forwarded_for\":\"4, 3, 2, 1\"},\"payload\":\"\"}",
+        // header without x-forwarded-for is still removed
+        "{\"attributeMap\":{\"x_ingestion_client_ip\":\"5\"},\"payload\":\"\"}");
+
+    // x-forwarded-for is handled exactly as before; only the header is removed
+    final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":{\"x_forwarded_for\":\"6,5,151.101.1.1\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_forwarded_for\":\"151.101.1.1\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_forwarded_for\":\"4,3\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{},\"payload\":\"\"}");
+
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()) //
+        .apply(ParseProxy.of(null)) //
+        .apply(OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    final PipelineResult result = pipeline.run();
+
+    final String prefix = "unknown_namespace/unknown_doctype/";
+    Assert.assertEquals(2, counterValue(result, prefix + "fastly_path"));
+    Assert.assertEquals(1, counterValue(result, prefix + "fastly_path_client_ip_in_xff"));
+    Assert.assertEquals(1, counterValue(result, prefix + "fastly_path_client_ip_not_in_xff"));
+    Assert.assertEquals(1, counterValue(result, prefix + "direct_path"));
+  }
+
+  @Test
+  public void testIngestionLbTagsReplaceLbTags() {
+    final List<String> input = Arrays.asList(//
+        // via fastly: the load balancer only sees fastly's tls connection
+        "{\"attributeMap\":{\"x_ingestion_client_tls\":\"TLSv1, ECDHE-RSA-AES128-SHA\"" //
+            + ",\"x_lb_tags\":\"TLSv1.3, 1302, v2\"},\"payload\":\"\"}",
+        // via fastly, plain http from the client
+        "{\"attributeMap\":{\"x_ingestion_client_tls\":\", \"" //
+            + ",\"x_lb_tags\":\"TLSv1.3, 1302, v2\"},\"payload\":\"\"}",
+        // blank header is ignored and removed
+        "{\"attributeMap\":{\"x_ingestion_client_tls\":\" \"" //
+            + ",\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}",
+        // direct
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}");
+
+    final List<String> expected = Arrays.asList(//
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1, ECDHE-RSA-AES128-SHA\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_lb_tags\":\", \"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}",
+        "{\"attributeMap\":{\"x_lb_tags\":\"TLSv1.2, c02f, v2\"},\"payload\":\"\"}");
+
+    final PCollection<String> output = pipeline //
+        .apply(Create.of(input)) //
+        .apply(InputFileFormat.json.decode()) //
+        .apply(ParseProxy.of(null)) //
+        .apply(OutputFileFormat.json.encode());
+
+    PAssert.that(output).containsInAnyOrder(expected);
+
+    pipeline.run();
+  }
+
   private static long counterValue(PipelineResult result, String name) {
     return StreamSupport.stream(result.metrics()
         .queryMetrics(MetricsFilter.builder()

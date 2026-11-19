@@ -8,6 +8,8 @@
     "X-Pipeline-Proxy",
     "X-Debug-ID",
     "X-Foxsec-IP-Reputation",
+    "X-Ingestion-Client-IP",
+    "X-Ingestion-Client-TLS",
     "X-LB-Tags",
     "X-Source-Tags",
     "X-Telemetry-Agent"
