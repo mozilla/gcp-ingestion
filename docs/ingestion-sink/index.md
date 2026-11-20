@@ -5,6 +5,9 @@ Pub/Sub and emitting records to batch-oriented outputs like GCS or BigQuery.
 Defined in the `ingestion-sink` package
 ([source](https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-sink/)).
 
+Merges to `main` automatically deploy `ingestion-sink` to production via
+Argo CD; unlike `ingestion-edge`, no manual deploy step is required.
+
 ## Supported Input and Outputs
 
 Supported inputs:
