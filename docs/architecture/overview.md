@@ -29,6 +29,9 @@ This document specifies the architecture for GCP Ingestion as a whole.
 
 ## Architecture Components
 
+The `ingestion-beam` and `ingestion-sink` jobs share common code via the
+`ingestion-core` Java module, which is not independently deployed.
+
 ### Ingestion Edge
 
 - Must send messages from producers to PubSub topics
