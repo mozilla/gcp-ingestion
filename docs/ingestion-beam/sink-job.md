@@ -94,6 +94,9 @@ payloads.
 Instead, records missing an attribute required by a placeholder
 will be redirected to error output if no default is provided.
 
+The `--bqWriteMethod` option controls how records are loaded into BigQuery
+and supports `streaming`, `file_loads` (the default), or `mixed`.
+
 ### Protocol
 
 When `--outputType=file`, `--output` may be prefixed by a protocol specifier
