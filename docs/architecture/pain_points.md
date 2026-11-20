@@ -2,7 +2,11 @@
 
 A running list of things that are suboptimal in GCP.
 
+_This page is a historical engineering log last updated in 2019 (see [PR #597](https://github.com/mozilla/gcp-ingestion/pull/597)) and has not been revised to reflect later architecture changes; see `overview.md` for the current architecture._
+
 # App Engine
+
+_Note: the production Ingestion Edge now runs on Kubernetes, not App Engine; this entry reflects an early prototype evaluation (see `overview.md` and `differences_from_aws.md`)._
 
 For network-bound applications it can be prohibitively expensive. A PubSub push
 subscription application that decodes protobuf and forwards messages to the

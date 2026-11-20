@@ -12,14 +12,17 @@ Supported inputs:
 
 - Google Cloud PubSub
 - Google Cloud Storage
+- Google Cloud BigQuery (table or query, via `--bqReadMethod=export` or `storageapi`)
 
 Supported outputs:
 
 - Google Cloud PubSub
 - Google Cloud Storage
 - Google Cloud BigQuery
+- Apache Avro files
 - stdout
 - stderr
+- ignore (discard the message)
 
 Supported error outputs, must include attributes and must not validate messages:
 
@@ -90,6 +93,9 @@ there is a default table whose schema is compatible with all potential
 payloads.
 Instead, records missing an attribute required by a placeholder
 will be redirected to error output if no default is provided.
+
+The `--bqWriteMethod` option controls how records are loaded into BigQuery
+and supports `streaming`, `file_loads` (the default), or `mixed`.
 
 ### Protocol
 

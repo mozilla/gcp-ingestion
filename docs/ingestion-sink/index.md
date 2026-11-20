@@ -5,6 +5,9 @@ Pub/Sub and emitting records to batch-oriented outputs like GCS or BigQuery.
 Defined in the `ingestion-sink` package
 ([source](https://github.com/mozilla/gcp-ingestion/tree/main/ingestion-sink/)).
 
+Merges to `main` automatically deploy `ingestion-sink` to production via
+Argo CD; unlike `ingestion-edge`, no manual deploy step is required.
+
 ## Supported Input and Outputs
 
 Supported inputs:
@@ -37,7 +40,12 @@ delimited JSON in the order they are received. Supported test outputs:
 
 ## Configuration
 
-All configuration is controlled by environment variables.
+All configuration is controlled by environment variables. Additional
+environment variables are available for tuning behavior not covered below,
+including `OUTPUT_PARALLELISM`, `OUTPUT_MAX_ATTEMPTS`, `OUTPUT_COMPRESSION`,
+and `BIG_QUERY_DEFAULT_PROJECT`; see
+[`SinkConfig.java`](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-sink/src/main/java/com/mozilla/telemetry/ingestion/sink/config/SinkConfig.java)
+for the full list.
 
 ## Output Specification
 
@@ -66,6 +74,13 @@ messages will be delivered to BigQuery via both the streaming API and load
 jobs, and `OUTPUT_BUCKET` is required. If `OUTPUT_TOPIC` is specified then it
 will be used the same as with `BIG_QUERY_OUTPUT_MODE=file_loads`, otherwise
 load jobs will be submitted by each running instance of ingestion-sink.
+
+In `mixed` mode, the `STREAMING_DOCTYPES` environment variable can list
+`namespace/docType` patterns (supporting `|` alternation and
+`namespace/.*` wildcards) that opt specific document types in to streaming
+delivery instead of load jobs. The `STRICT_SCHEMA_DOCTYPES` environment
+variable controls whether fields not present in the BigQuery table schema
+are dropped for matching document types.
 
 If none of the above configuration options are provided, then messages must be
 notifications from `BIG_QUERY_OUTPUT_MODE=file_loads` or
