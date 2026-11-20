@@ -2,7 +2,7 @@
 
 This document outlines plans to migrate edge traffic from AWS to GCP using the code in this repository.
 
-**Status: complete.** This migration finished years ago; the Phase 4 end state (Data Producers → GCP Edge) is now the sole production architecture, and the AWS Edge, Kafka, and Hindsight components described below have been retired. This document is retained as a historical record of the migration plan; see [Architecture Overview](overview.md) and [Differences from AWS](differences_from_aws.md) for the current production architecture.
+**Status: complete.** This migration finished years ago; the Phase 4 end state (Data Producers → GCP Edge) is now the sole production architecture, and the AWS Edge, Kafka, and Hindsight components described below have been retired; AWS-specific code (e.g. the `heka` input type and AWS dependencies) was removed from the codebase by January 2020. This document is retained as a historical record of the migration plan; see [Architecture Overview](overview.md) and [Differences from AWS](differences_from_aws.md) for the current production architecture.
 
 ## Current state
 
