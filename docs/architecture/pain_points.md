@@ -4,6 +4,8 @@ A running list of things that are suboptimal in GCP.
 
 # App Engine
 
+_Note: the production Ingestion Edge now runs on Kubernetes, not App Engine; this entry reflects an early prototype evaluation (see `overview.md` and `differences_from_aws.md`)._
+
 For network-bound applications it can be prohibitively expensive. A PubSub push
 subscription application that decodes protobuf and forwards messages to the
 ingestion-edge used `~300` instances at `$0.06` per instance hour to handle
