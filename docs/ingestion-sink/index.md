@@ -67,6 +67,13 @@ jobs, and `OUTPUT_BUCKET` is required. If `OUTPUT_TOPIC` is specified then it
 will be used the same as with `BIG_QUERY_OUTPUT_MODE=file_loads`, otherwise
 load jobs will be submitted by each running instance of ingestion-sink.
 
+In `mixed` mode, the `STREAMING_DOCTYPES` environment variable can list
+`namespace/docType` patterns (supporting `|` alternation and
+`namespace/.*` wildcards) that opt specific document types in to streaming
+delivery instead of load jobs. The `STRICT_SCHEMA_DOCTYPES` environment
+variable controls whether fields not present in the BigQuery table schema
+are dropped for matching document types.
+
 If none of the above configuration options are provided, then messages must be
 notifications from `BIG_QUERY_OUTPUT_MODE=file_loads` or
 `BIG_QUERY_OUTPUT_MODE=mixed`, and the blobs they indicate will be submitted to
