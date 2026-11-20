@@ -19,8 +19,10 @@ Supported outputs:
 - Google Cloud PubSub
 - Google Cloud Storage
 - Google Cloud BigQuery
+- Apache Avro files
 - stdout
 - stderr
+- ignore (discard the message)
 
 Supported error outputs, must include attributes and must not validate messages:
 
