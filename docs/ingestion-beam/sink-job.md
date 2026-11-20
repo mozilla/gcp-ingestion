@@ -12,6 +12,7 @@ Supported inputs:
 
 - Google Cloud PubSub
 - Google Cloud Storage
+- Google Cloud BigQuery (table or query, via `--bqReadMethod=export` or `storageapi`)
 
 Supported outputs:
 
