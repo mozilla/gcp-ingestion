@@ -37,7 +37,12 @@ delimited JSON in the order they are received. Supported test outputs:
 
 ## Configuration
 
-All configuration is controlled by environment variables.
+All configuration is controlled by environment variables. Additional
+environment variables are available for tuning behavior not covered below,
+including `OUTPUT_PARALLELISM`, `OUTPUT_MAX_ATTEMPTS`, `OUTPUT_COMPRESSION`,
+and `BIG_QUERY_DEFAULT_PROJECT`; see
+[`SinkConfig.java`](https://github.com/mozilla/gcp-ingestion/blob/main/ingestion-sink/src/main/java/com/mozilla/telemetry/ingestion/sink/config/SinkConfig.java)
+for the full list.
 
 ## Output Specification
 
