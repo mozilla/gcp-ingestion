@@ -15,6 +15,7 @@
 
     <properties>
         <exec.mainClass>com.mozilla.telemetry.Sink</exec.mainClass>
+        <okhttp.version>5.3.2</okhttp.version>
     </properties>
 
     <profiles>
@@ -66,6 +67,15 @@
         <dependency>
             <groupId>org.apache.beam</groupId>
             <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
+            <exclusions>
+                <!-- wire-grpc-client-jvm (via beam-sdks-java-extensions-protobuf and apicurio)
+                     pulls in okhttp 4.x, which conflicts with okhttp-jvm 5.x declared below.
+                     The two use different artifactIds, so Maven would keep both jars. -->
+                <exclusion>
+                    <groupId>com.squareup.okhttp3</groupId>
+                    <artifactId>okhttp</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.google.cloud</groupId>
@@ -98,15 +108,16 @@
             <version>5.3.39</version>
             <scope>test</scope>
         </dependency>
+        <!-- mockwebserver uses okhttp internals, so both must share okhttp.version -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
-            <version>4.12.1</version>
+            <artifactId>okhttp-jvm</artifactId>
+            <version>${okhttp.version}</version>
         </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>mockwebserver</artifactId>
-            <version>4.12.1</version>
+            <version>${okhttp.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
