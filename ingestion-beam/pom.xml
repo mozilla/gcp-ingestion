@@ -108,7 +108,8 @@
             <version>5.3.39</version>
             <scope>test</scope>
         </dependency>
-        <!-- mockwebserver uses okhttp internals, so both must share okhttp.version -->
+        <!-- okhttp 5.x puts its classes in okhttp-jvm. The plain okhttp artifact is an empty jar
+             for Maven. mockwebserver uses okhttp internals, so both must share okhttp.version. -->
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp-jvm</artifactId>
