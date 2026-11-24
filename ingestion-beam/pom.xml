@@ -15,7 +15,7 @@
 
     <properties>
         <exec.mainClass>com.mozilla.telemetry.Sink</exec.mainClass>
-        <okhttp.version>5.3.2</okhttp.version>
+        <okhttp.version>5.5.1</okhttp.version>
     </properties>
 
     <profiles>
