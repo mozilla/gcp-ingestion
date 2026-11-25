@@ -1,4 +1,4 @@
-FROM maven:3-jdk-11 AS base
+FROM maven:3.10-eclipse-temurin-17 AS base
 WORKDIR /app/ingestion-sink
 
 FROM base AS build
@@ -13,9 +13,7 @@ RUN mvn prepare-package -Dspotless.check.skip=true
 COPY ingestion-core/src /app/ingestion-core/src
 COPY ingestion-sink/src /app/ingestion-sink/src
 COPY ingestion-sink/version.json /app/version.json
-# Disable Log4j JMX to work around a JDK 11 NPE in CgroupV2Subsystem on
-# cgroups v2 Docker hosts. Proper fix is to upgrade to a newer JDK.
-RUN MAVEN_OPTS="-Dlog4j2.disable.jmx=true" mvn package -Dspotless.check.skip=true
+RUN mvn package -Dspotless.check.skip=true
 # delete everything from target that isn't the package
 RUN find target -mindepth 1 -not -name '*'.jar -not -name '*.lib' -delete
 

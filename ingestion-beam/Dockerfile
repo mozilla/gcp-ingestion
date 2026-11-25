@@ -1,5 +1,5 @@
 # Use maven image to build the jars that will be included via COPY later.
-FROM maven:3-jdk-11 AS build
+FROM maven:3.10-eclipse-temurin-17 AS build
 WORKDIR /app/ingestion-beam
 COPY pom.xml /app/pom.xml
 COPY ingestion-beam/pom.xml /app/ingestion-beam/pom.xml
@@ -10,14 +10,14 @@ COPY ingestion-beam/checkstyle /app/ingestion-sink/checkstyle
 RUN mvn prepare-package -Dspotless.check.skip=true
 COPY ingestion-core/src /app/ingestion-core/src
 COPY ingestion-beam/src /app/ingestion-beam/src
-RUN mvn package -Dmaven.test.skip=true -Dmaven.compiler.release=11 -Dspotless.check.skip=true
+RUN mvn package -Dmaven.test.skip=true -Dspotless.check.skip=true
 
 # This is the base image for the final image we're building.
 # The base image documentation is here:
 # https://cloud.google.com/dataflow/docs/guides/templates/configuring-flex-templates#changing_the_base_image
 # and the versions available are defined here:
 # https://cloud.google.com/dataflow/docs/reference/flex-templates-base-images
-FROM gcr.io/dataflow-templates-base/java11-template-launcher-base:20240918-rc00
+FROM gcr.io/dataflow-templates-base/java17-template-launcher-base:20261104-rc00
 ARG PACKAGE_VERSION=0.1-SNAPSHOT
 COPY --from=build /app/ingestion-beam/target/ingestion-beam-$PACKAGE_VERSION.lib/ /template/ingestion-beam-$PACKAGE_VERSION.lib/
 # copy jar after dependencies to maximize docker caching and reduce upload size
