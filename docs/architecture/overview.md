@@ -23,8 +23,14 @@ This document specifies the architecture for GCP Ingestion as a whole.
   to `BigQuery` with the payload encoded as JSON
 - The Kubernetes `Live Sink` job copies messages from the PubSub `Decoded Topic`
   to `BigQuery` with the payload structure parsed out to individual fields
+- The `Raw Sink`, `Decoded Sink`, and `Live Sink` jobs are implemented as a
+  single Kubernetes application, `ingestion-sink`, with behavior selected via
+  `OUTPUT_FORMAT` and `OUTPUT_TABLE` configuration
 
 ## Architecture Components
+
+The `ingestion-beam` and `ingestion-sink` jobs share common code via the
+`ingestion-core` Java module, which is not independently deployed.
 
 ### Ingestion Edge
 

@@ -29,6 +29,9 @@ Accept optional configuration for:
 - The output mode for BigQuery, default to `mixed`
 - List of document types to opt-in for streaming when running in `mixed`
   output mode
+- List of document types to opt-in for strict schema validation via
+  `STRICT_SCHEMA_DOCTYPES`, rejecting unknown fields instead of placing them
+  in `additional_properties`
 - The triggering frequency for writing to BigQuery, when output mode is
   `file_loads`
 

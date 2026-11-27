@@ -74,6 +74,15 @@ To enable per-channel sampled republishing:
 - `--perChannelSampleRatios='{"nightly":1.0,"beta":0.1,"release":0.01}'` (compile-time)
 - `--perChannelDestination=/some/pubsub/topic/path/per-channel-${channel}` (compile-time)
 
+To enable per-namespace republishing:
+
+- `--perNamespaceDestinations='{"telemetry":"/some/pubsub/topic/path/telemetry"}'` (compile-time)
+
+To enable random-sample republishing:
+
+- `--randomSampleRatio=0.01` (compile-time)
+- `--randomSampleDestination=/some/pubsub/topic/path/random-sample` (compile-time)
+
 Example:
 
 ```bash

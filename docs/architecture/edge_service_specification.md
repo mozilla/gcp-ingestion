@@ -120,6 +120,7 @@ even though this endpoint is for GET requests.
 - _411_ - missing content-length header
 - _413_ - request body too large (note that if we have badly-behaved clients that retry on `4XX`, we should send back 202 on body/path too long).
 - _414_ - request path too long (see above)
+- _431_ - request header too large, for example a header value exceeds PubSub's 1024-byte attribute value limit
 - _500_ - internal error
 - _507_ - insufficient storage, request failed because disk is full
 
